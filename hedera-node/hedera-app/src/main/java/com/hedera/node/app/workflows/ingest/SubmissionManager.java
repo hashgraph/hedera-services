@@ -26,7 +26,7 @@ import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.spi.config.Profile;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.state.ReceiptCache;
+import com.hedera.node.app.state.RecordCache;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.SpeedometerMetric;
@@ -43,7 +43,7 @@ public class SubmissionManager {
     private static final String SPEEDOMETER_FORMAT = "%,13.2f";
 
     private final Platform platform;
-    private final ReceiptCache recordCache;
+    private final RecordCache recordCache;
     private final boolean isProduction;
     private final SpeedometerMetric platformTxnRejections;
     private final AccountID nodeSelfID;
@@ -53,7 +53,7 @@ public class SubmissionManager {
      *
      * @param nodeSelfID the {@link AccountID} for referring to this node's operator account'
      * @param platform the {@link Platform} to which transactions will be submitted
-     * @param recordCache the {@link ReceiptCache} that tracks submitted transactions
+     * @param recordCache the {@link RecordCache} that tracks submitted transactions
      * @param nodeLocalProperties the {@link NodeLocalProperties} that keep local properties
      * @param metrics metrics related to submissions
      */
@@ -61,7 +61,7 @@ public class SubmissionManager {
     public SubmissionManager(
             @NodeSelfId @NonNull final AccountID nodeSelfID,
             @NonNull final Platform platform,
-            @NonNull final ReceiptCache recordCache,
+            @NonNull final RecordCache recordCache,
             @NonNull final NodeLocalProperties nodeLocalProperties,
             @NonNull final Metrics metrics) {
         this.nodeSelfID = requireNonNull(nodeSelfID);
@@ -111,7 +111,7 @@ public class SubmissionManager {
         if (recordCache.get(txId) == null) {
             final var success = platform.createTransaction(PbjConverter.asBytes(payload));
             if (success) {
-                recordCache.record(txBody.transactionIDOrThrow(), nodeSelfID);
+                recordCache.put(txBody.transactionIDOrThrow(), nodeSelfID);
             } else {
                 platformTxnRejections.cycle();
                 throw new PreCheckException(PLATFORM_TRANSACTION_NOT_CREATED);

@@ -16,26 +16,17 @@
 
 package com.hedera.node.app.state.merkle;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.UNKNOWN;
-
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
-import com.hedera.node.app.state.ReceiptCache;
+import com.hedera.node.app.state.RecordCache;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.concurrent.ConcurrentHashMap;
 
-/** An implementation of {@link ReceiptCache} */
-public class MerkleReceiptCache implements ReceiptCache {
-    /** All receipts filed with the {@link ReceiptCache} before consensus will have this status. */
-    private static final TransactionReceipt UNKNOWN_RECEIPT =
-            TransactionReceipt.newBuilder().status(UNKNOWN).build();
-
-    private final ConcurrentHashMap<TransactionID, TransactionReceipt> receipts = new ConcurrentHashMap<>();
+public class MonoRecordCache implements RecordCache {
 
     @Override
-    public void record(@NonNull TransactionID transactionID, @NonNull AccountID nodeAccountID) {
+    public void put(@NonNull TransactionID transactionID, @NonNull AccountID nodeAccountID) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 

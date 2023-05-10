@@ -32,7 +32,7 @@ import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.spi.config.Profile;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.state.ReceiptCache;
+import com.hedera.node.app.state.RecordCache;
 import com.hedera.node.app.workflows.ingest.SubmissionManager;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.metrics.Metrics;
@@ -51,9 +51,9 @@ class SubmissionManagerTest extends AppTestBase {
     /** A mocked {@link Platform} for accepting or rejecting submission of transaction bytes */
     @Mock
     private Platform platform;
-    /** A mocked {@link ReceiptCache} for tracking submitted transactions */
+    /** A mocked {@link RecordCache} for tracking submitted transactions */
     @Mock
-    private ReceiptCache recordCache;
+    private RecordCache recordCache;
     /** Mocked local properties to verify that we ONLY support Unchecked Submit when in PROD mode */
     @Mock
     private NodeLocalProperties nodeLocalProperties;
@@ -123,7 +123,7 @@ class SubmissionManagerTest extends AppTestBase {
             // Then the platform actually receives the bytes
             verify(platform).createTransaction(PbjConverter.asBytes(bytes));
             // And the record cache is updated with this transaction
-            verify(recordCache).record(txBody.transactionIDOrThrow(), nodeSelfAccountId);
+            verify(recordCache).put(txBody.transactionIDOrThrow(), nodeSelfAccountId);
             // And the metrics keeping track of errors submitting are NOT touched
             verify(platformTxnRejections, never()).cycle();
         }
@@ -194,7 +194,7 @@ class SubmissionManagerTest extends AppTestBase {
             // Then the platform actually sees the unchecked bytes
             verify(platform).createTransaction(uncheckedBytes);
             // And the record cache is updated with this transaction
-            verify(recordCache).record(txBody.transactionIDOrThrow(), nodeSelfAccountId);
+            verify(recordCache).put(txBody.transactionIDOrThrow(), nodeSelfAccountId);
             // And the metrics keeping track of errors submitting are NOT touched
             verify(platformTxnRejections, never()).cycle();
         }

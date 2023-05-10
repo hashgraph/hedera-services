@@ -58,6 +58,14 @@ public final class SignatureExpanderImpl implements SignatureExpander {
      * <p>This implementation <b>assumes</b> that all duplicate {@link SignaturePair}s have been removed from the
      * {@code sigPairs} list prior to calling this method. In addition, all {@link SignaturePair}s that are a strict
      * subset of other pairs in the list have also been removed.
+     *
+     * <p>It is absolutely essential in the implementation that there are NO DUPLICATE ENTRIES in the {@code sigPairs},
+     * and that this implementation ALWAYS VISITS EVERY ENTRY in the {@code sigPairs} list looking for the MOST
+     * SPECIFIC match. It is essential that every node deterministically expand the same set of {@link SignaturePair}s
+     * into the same set of {@link ExpandedSignaturePair}s. Our API uses a Set in a few places (such as the set of
+     * required keys), and if we were to iterate out of order, or if the sigPairs were out of order, or if we removed
+     * elements from the sig pair as we found them, then we might have subtle cases where we expand the same set of
+     * sigPairs into different sets of ExpandedSignaturePairs.
      */
     @Override
     public void expand(

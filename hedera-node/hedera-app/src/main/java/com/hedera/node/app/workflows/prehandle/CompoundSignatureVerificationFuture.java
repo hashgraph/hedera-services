@@ -48,7 +48,7 @@ import java.util.concurrent.TimeoutException;
  * {@link SignatureVerification#key()} is that key, and {@link SignatureVerification#passed()} is true if,
  * and only if, it did not encounter {@link #numCanFail} failing verifications in the list.
  */
-class CompoundSignatureVerificationFuture implements SignatureVerificationFuture {
+final class CompoundSignatureVerificationFuture implements SignatureVerificationFuture {
     /**
      * The Key we verified. This will *never* be null, because we would not have attempted signature verification
      * without having a key. If an EVM address was used, we would have already extracted the key, so it can be
@@ -98,11 +98,13 @@ class CompoundSignatureVerificationFuture implements SignatureVerificationFuture
         }
     }
 
+    /** {@inheritDoc} */
     @Nullable
     public Account hollowAccount() {
         return hollowAccount;
     }
 
+    /** {@inheritDoc} */
     @NonNull
     @Override
     public Key key() {
@@ -123,7 +125,7 @@ class CompoundSignatureVerificationFuture implements SignatureVerificationFuture
      * operation anyway.
      */
     @Override
-    public boolean cancel(boolean mayInterruptIfRunning) {
+    public boolean cancel(final boolean mayInterruptIfRunning) {
         // If we're already done, then we can't cancel again
         if (isDone()) {
             return false;
@@ -195,7 +197,7 @@ class CompoundSignatureVerificationFuture implements SignatureVerificationFuture
      * wait for the {@link Future} before proceeding (up to the timeout).
      */
     @Override
-    public SignatureVerification get(long timeout, TimeUnit unit)
+    public SignatureVerification get(final long timeout, final TimeUnit unit)
             throws InterruptedException, ExecutionException, TimeoutException {
         var millisRemaining = unit.toMillis(timeout);
         int failCount = 0;

@@ -22,14 +22,14 @@ import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.state.ReceiptCache;
+import com.hedera.node.app.state.RecordCache;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.Map;
 
 /** A useful test double for {@link HederaState}. Works together with {@link MapReadableStates} and other fixtures. */
 public class FakeHederaState implements HederaState {
-    private final ReceiptCache receiptCache = new FakeReceiptCache();
+    private final RecordCache receiptCache = new FakeRecordCache();
     // Key is Service, value is Map of state name to ReadableKVState
     private final Map<String, Map<String, ReadableKVState<?, ?>>> data = new HashMap<>();
 
@@ -55,7 +55,7 @@ public class FakeHederaState implements HederaState {
 
     @NonNull
     @Override
-    public ReceiptCache getReceiptCache() {
+    public RecordCache getRecordCache() {
         return receiptCache;
     }
 }

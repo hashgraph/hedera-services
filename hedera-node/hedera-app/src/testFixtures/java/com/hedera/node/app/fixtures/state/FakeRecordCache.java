@@ -21,17 +21,17 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.UNKNOWN;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
-import com.hedera.node.app.state.ReceiptCache;
+import com.hedera.node.app.state.RecordCache;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.HashSet;
 
-/** A useful test double for {@link ReceiptCache}. This implementation DOES NOT time out any receipts. */
-public class FakeReceiptCache implements ReceiptCache {
+/** A useful test double for {@link RecordCache}. This implementation DOES NOT time out any receipts. */
+public class FakeRecordCache implements RecordCache {
     private HashMap<TransactionID, CacheItem> cache = new HashMap<>();
 
     @Override
-    public void record(@NonNull final TransactionID transactionID, @NonNull final AccountID nodeAccountID) {
+    public void put(@NonNull final TransactionID transactionID, @NonNull final AccountID nodeAccountID) {
         final var item = cache.computeIfAbsent(
                 transactionID,
                 k -> new CacheItem(

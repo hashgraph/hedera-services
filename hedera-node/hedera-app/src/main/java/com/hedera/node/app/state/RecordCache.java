@@ -24,7 +24,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Set;
 
 /**
- * A time-limited cache of transaction receipts.
+ * A time-limited cache of transaction records and receipts.
  *
  * <p>Each {@link com.hedera.hapi.node.base.Transaction} has a unique {@link TransactionID}. Each {@link TransactionID}
  * is valid for only a certain period of time. If submitted before the {@link TransactionID#transactionValidStart()}
@@ -42,7 +42,7 @@ import java.util.Set;
  * needs to be detected and the node charged for the duplicate transactions.
  */
 /*@ThreadSafe*/
-public interface ReceiptCache {
+public interface RecordCache {
     /**
      * Represents a single item in the cache.
      * @param transactionID The transaction ID associated with the receipt
@@ -62,7 +62,7 @@ public interface ReceiptCache {
      * @param nodeAccountID The node that has seen this transaction
      */
     /*@ThreadSafe*/
-    void record(@NonNull TransactionID transactionID, @NonNull AccountID nodeAccountID);
+    void put(@NonNull TransactionID transactionID, @NonNull AccountID nodeAccountID);
 
     /**
      * Gets the {@link CacheItem} for the given {@link TransactionID}. If the {@link TransactionID} is not present in
