@@ -16,18 +16,17 @@
 
 package com.hedera.node.app.service.mono.context.properties;
 
-import static com.hedera.node.app.spi.config.PropertyNames.GRPC_PORT;
-import static com.hedera.node.app.spi.config.PropertyNames.GRPC_TLS_PORT;
-import static com.hedera.node.app.spi.config.PropertyNames.GRPC_WORKFLOWS_PORT;
-import static com.hedera.node.app.spi.config.PropertyNames.GRPC_WORKFLOWS_TLS_PORT;
-import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_PROFILES_ACTIVE;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.GRPC_PORT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.GRPC_TLS_PORT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.GRPC_WORKFLOWS_PORT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.GRPC_WORKFLOWS_TLS_PORT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_PROFILES_ACTIVE;
 import static java.util.Map.entry;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
-import com.hedera.node.app.spi.config.Profile;
 import java.util.Map;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;

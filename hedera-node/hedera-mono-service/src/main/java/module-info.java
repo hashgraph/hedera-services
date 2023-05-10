@@ -108,8 +108,10 @@ module com.hedera.node.app.service.mono {
     exports com.hedera.node.app.service.mono.txns;
     exports com.hedera.node.app.service.mono.throttling to
             com.fasterxml.jackson.databind,
-            com.hedera.node.app;
+            com.hedera.node.app,
+            com.hedera.node.config;
     exports com.hedera.node.app.service.mono.ledger.accounts.staking to
+            com.hedera.node.config,
             com.hedera.node.app;
     exports com.hedera.node.app.service.mono.context.init to
             com.hedera.node.app;

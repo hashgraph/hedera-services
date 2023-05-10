@@ -16,10 +16,10 @@
 
 package com.hedera.node.app.service.mono.ledger.accounts.staking;
 
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_STARTUP_HELPER_RECOMPUTE;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.forEach;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.withLoggedDuration;
-import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
-import static com.hedera.node.app.spi.config.PropertyNames.STAKING_STARTUP_HELPER_RECOMPUTE;
 
 import com.hedera.node.app.service.mono.context.annotations.CompositeProps;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
@@ -43,16 +43,15 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * A helper class to recompute staking metadata at startup. Its main work is to update the staking
- * info map to reflect any changes to the address book since the last restart.
+ * A helper class to recompute staking metadata at startup. Its main work is to update the staking info map to reflect
+ * any changes to the address book since the last restart.
  *
  * <p>However, if a bug has corrupted a piece of staking metadata (e.g., the pending rewards), this
- * class can also be used to recompute that metadata based on the value of the {@code
- * staking.startupHelper.recompute} property.
+ * class can also be used to recompute that metadata based on the value of the {@code staking.startupHelper.recompute}
+ * property.
  *
  * <p>Such re-computations are done <b>only</b> after an upgrade, since it is never safe to "undo"
- * the effects of a bug on state during reconnect. (Nodes that never fell out of sync will not get
- * this opportunity!)
+ * the effects of a bug on state during reconnect. (Nodes that never fell out of sync will not get this opportunity!)
  */
 @Singleton
 public class StakeStartupHelper {
@@ -79,12 +78,10 @@ public class StakeStartupHelper {
     }
 
     /**
-     * Given the genesis address book, prepares the network's staking infrastructure to work with
-     * this address book.
+     * Given the genesis address book, prepares the network's staking infrastructure to work with this address book.
      *
      * <p><b>FUTURE WORK:</b> Update this method to also accept the genesis staking infos map and do
-     * the {@code createGenesisChildren()} work currently still done by {@link
-     * com.hedera.node.app.service.mono.state.migration.StakingInfoMapBuilder}.
+     * the {@code createGenesisChildren()} work currently still done by {@link com.hedera.node.app.service.mono.state.migration.StakingInfoMapBuilder}.
      *
      * @param addressBook the genesis address book
      */
@@ -97,11 +94,10 @@ public class StakeStartupHelper {
     }
 
     /**
-     * Given the current address book and a mutable staking info map, updates the map to have
-     * exactly one entry for each node id in the address book. This could both remove and add
-     * entries to the map.
+     * Given the current address book and a mutable staking info map, updates the map to have exactly one entry for each
+     * node id in the address book. This could both remove and add entries to the map.
      *
-     * @param addressBook the current address book
+     * @param addressBook  the current address book
      * @param stakingInfos the mutable staking info map
      */
     public void doRestartHousekeeping(
@@ -119,13 +115,12 @@ public class StakeStartupHelper {
     }
 
     /**
-     * Given a mutable accounts map, staking info map, and network context, re-computes any
-     * requested staking metadata based on the value of the {@code staking.startupHelper.recompute}
-     * property.
+     * Given a mutable accounts map, staking info map, and network context, re-computes any requested staking metadata
+     * based on the value of the {@code staking.startupHelper.recompute} property.
      *
      * @param networkContext the mutable network context
-     * @param accounts the mutable accounts map
-     * @param stakingInfos the mutable staking info map
+     * @param accounts       the mutable accounts map
+     * @param stakingInfos   the mutable staking info map
      */
     public void doUpgradeHousekeeping(
             final MerkleNetworkContext networkContext,

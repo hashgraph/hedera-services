@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.service.mono.state.validation;
 
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
-import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
