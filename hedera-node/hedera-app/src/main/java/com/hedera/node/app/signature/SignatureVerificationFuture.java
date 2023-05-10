@@ -30,9 +30,17 @@ import java.util.concurrent.Future;
  * yields a {@link SignatureVerification}.
  */
 public interface SignatureVerificationFuture extends Future<SignatureVerification> {
+    /**
+     * Gets the hollow account, if any, that will be present on the resulting {@link SignatureVerification}.
+     * @return The hollow account, if any.
+     */
     @Nullable
     Account hollowAccount();
 
+    /**
+     * Gets the key that will be present on the resulting {@link SignatureVerification}.
+     * @return The key
+     */
     @NonNull
     Key key();
 }

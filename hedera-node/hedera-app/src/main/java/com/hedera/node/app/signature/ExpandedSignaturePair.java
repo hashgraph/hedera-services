@@ -23,12 +23,30 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
+/**
+ * Represents a {@link SignaturePair} where the {@link SignaturePair#pubKeyPrefix()} has been fully "expanded" to a
+ * full, uncompressed, public key.
+ *
+ * @param key The fully expanded public key
+ * @param hollowAccount If the sigPair applied to a hollow account, then that account will be provided here
+ * @param sigPair The original signature pair
+ */
 public record ExpandedSignaturePair(@NonNull Key key, @Nullable Account hollowAccount, @NonNull SignaturePair sigPair) {
-
+    /**
+     * Gets the {@link Bytes} representing the fully expanded public key.
+     * @return The key bytes.
+     */
+    @NonNull
     public Bytes keyBytes() {
         return sigPair.pubKeyPrefix();
     }
 
+    /**
+     * Gets the {@link Bytes} representing the signature signed by the private key matching the fully expanded public
+     * key.
+     * @return The signature bytes.
+     */
+    @NonNull
     public Bytes signature() {
         return sigPair.signature().as();
     }

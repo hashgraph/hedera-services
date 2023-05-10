@@ -307,11 +307,16 @@ final class SignatureExpanderImplTest extends AppTestBase implements Scenarios {
             // Then we find the expanded set only contains those keys we had in prefixes
             assertThat(expanded)
                     .containsExactlyInAnyOrder(
-                            new ExpandedSignaturePair(FAKE_ED25519_KEY_INFOS[0].publicKey(), null, sigList.get(0)),
-                            new ExpandedSignaturePair(FAKE_ED25519_KEY_INFOS[2].publicKey(), null, sigList.get(2)),
-                            new ExpandedSignaturePair(FAKE_ECDSA_KEY_INFOS[0].publicKey(), null, sigList.get(5)),
-                            new ExpandedSignaturePair(FAKE_ECDSA_KEY_INFOS[1].publicKey(), null, sigList.get(6)),
-                            new ExpandedSignaturePair(FAKE_ECDSA_KEY_INFOS[2].publicKey(), null, sigList.get(7)));
+                            new ExpandedSignaturePair(
+                                    FAKE_ED25519_KEY_INFOS[0].uncompressedPublicKey(), null, sigList.get(0)),
+                            new ExpandedSignaturePair(
+                                    FAKE_ED25519_KEY_INFOS[2].uncompressedPublicKey(), null, sigList.get(2)),
+                            new ExpandedSignaturePair(
+                                    FAKE_ECDSA_KEY_INFOS[0].uncompressedPublicKey(), null, sigList.get(5)),
+                            new ExpandedSignaturePair(
+                                    FAKE_ECDSA_KEY_INFOS[1].uncompressedPublicKey(), null, sigList.get(6)),
+                            new ExpandedSignaturePair(
+                                    FAKE_ECDSA_KEY_INFOS[2].uncompressedPublicKey(), null, sigList.get(7)));
         }
     }
 

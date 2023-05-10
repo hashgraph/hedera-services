@@ -28,7 +28,7 @@ import java.util.concurrent.Future;
  */
 public interface SignatureVerifier {
     /**
-     * Asynchronously verifies that the given {@code sigPairs} matches the given {@code signedBytes}.
+     * Asynchronously verifies that the given {@code sigPairs} match the given {@code signedBytes}.
      *
      * @param signedBytes The signed bytes to verify
      * @param sigPairs The matching set of signatures to be verified

@@ -40,7 +40,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /** Implementation of {@link SignatureExpander}. */
-public class SignatureExpanderImpl implements SignatureExpander {
+public final class SignatureExpanderImpl implements SignatureExpander {
     private static final Logger logger = LogManager.getLogger(SignatureExpanderImpl.class);
     /** All ED25519 keys have a length of 32 bytes. */
     private static final int ED25519_KEY_LENGTH = 32;
@@ -94,12 +94,25 @@ public class SignatureExpanderImpl implements SignatureExpander {
 
         // The key may be of some arbitrary depth and complexity, so we need to recursively expand it.
         switch (key.key().kind()) {
-                // If the key is a primitive key, then we simply iterate through the list of signature pairs and
-                // find the one that matches the key. If we find one, we add it to the expanded signature pair set.
-            case ED25519, ECDSA_SECP256K1 -> {
+                // If the key is an ED25519 cryptographic key, then we simply iterate through the list of signature
+                // pairs and find the one that matches the key.
+            case ED25519 -> {
                 final var match = findMatch(key, originals);
                 if (match != null) {
                     expanded.add(new ExpandedSignaturePair(key, null, match));
+                }
+            }
+                // If the key is an ECDSA_SECP256K1 cryptographic key, then we simply iterate through the list of
+                // signature pairs and find the one that matches the key, **and then decompress it**.
+            case ECDSA_SECP256K1 -> {
+                final var match = findMatch(key, originals);
+                if (match != null) {
+                    final var decompressed = decompressKey(key.ecdsaSecp256k1OrThrow());
+                    if (decompressed != null) {
+                        final var decompressedKey =
+                                Key.newBuilder().ecdsaSecp256k1(decompressed).build();
+                        expanded.add(new ExpandedSignaturePair(decompressedKey, null, match));
+                    }
                 }
             }
                 // If the key is a key list, then we need to recursively expand each key in the list.
@@ -107,17 +120,14 @@ public class SignatureExpanderImpl implements SignatureExpander {
                     .keysOrElse(emptyList())
                     .forEach(k -> expand(k, originals, expanded));
                 // If the key is a threshold key, then we need to recursively expand each key in the threshold key's
-                // list.
-                // At this point in the process we don't care whether we have enough keys for the threshold or not, we
-                // just
-                // expand whatever we find.
+                // list. At this point in the process we don't care whether we have enough keys for the threshold or
+                // not, we just expand whatever we find.
             case THRESHOLD_KEY -> key.thresholdKeyOrElse(ThresholdKey.DEFAULT)
                     .keysOrElse(KeyList.DEFAULT)
                     .keysOrElse(emptyList())
                     .forEach(k -> expand(k, originals, expanded));
-                // We don't support these, so we won't expand them
             case ECDSA_384, RSA_3072, CONTRACT_ID, DELEGATABLE_CONTRACT_ID, UNSET -> {
-                // Do nothing
+                // We don't support these, so we won't expand them
             }
         }
     }
@@ -156,6 +166,11 @@ public class SignatureExpanderImpl implements SignatureExpander {
      */
     @Nullable
     private SignaturePair findMatch(@NonNull final Bytes alias, @NonNull final List<SignaturePair> pairs) {
+        // We were give a bogus alias. It cannot possibly be a valid alias if it is not exactly 20 bytes long.
+        if (alias.length() != 20) {
+            return null;
+        }
+
         // FUTURE: We could implement support to extract the public key from the signature and signed bytes as well.
         for (final var sigPair : pairs) {
             // Only compressed ECDSA(secp256k1) keys can be used for hollow accounts, and the only valid prefix is
@@ -183,6 +198,27 @@ public class SignatureExpanderImpl implements SignatureExpander {
     private Bytes convertKeyToEvmAddress(@NonNull final Bytes keyBytes) {
         // Keccak hash the prefix and compare to the alias. Note that this prefix WILL BE COMPRESSED. We need
         // to uncompress it first.
+        final var decompressedKeyBytes = decompressKey(keyBytes);
+        if (decompressedKeyBytes != null) {
+            final var decompressedByteArray = new byte[(int) decompressedKeyBytes.length()];
+            decompressedKeyBytes.getBytes(0, decompressedByteArray);
+            final var hashedPrefixByteArray =
+                    MiscCryptoUtils.extractEvmAddressFromDecompressedECDSAKey(decompressedByteArray);
+            return Bytes.wrap(hashedPrefixByteArray);
+        }
+
+        return null;
+    }
+
+    /**
+     * Decompresses the ECDSA_SECP256K1 key.
+     *
+     * @param keyBytes The compressed key bytes
+     * @return The decompressed key bytes, or null if the key was not a valid compressed ECDSA_SECP256K1 key
+     */
+    @Nullable
+    private Bytes decompressKey(@Nullable final Bytes keyBytes) {
+        if (keyBytes == null) return null;
         final var compressedPrefixByteArray = new byte[(int) keyBytes.length()];
         keyBytes.getBytes(0, compressedPrefixByteArray);
         // If the compressed key begins with a prefix byte other than 0x02 or 0x03, decompressing will throw.
@@ -191,10 +227,8 @@ public class SignatureExpanderImpl implements SignatureExpander {
         // it isn't the end of the world.
         if (compressedPrefixByteArray[0] == 0x02 || compressedPrefixByteArray[0] == 0x03) {
             try {
-                final var prefixByteArray = MiscCryptoUtils.decompressSecp256k1(compressedPrefixByteArray);
-                final var hashedPrefixByteArray =
-                        MiscCryptoUtils.extractEvmAddressFromDecompressedECDSAKey(prefixByteArray);
-                return Bytes.wrap(hashedPrefixByteArray);
+                final var decompressedByteArray = MiscCryptoUtils.decompressSecp256k1(compressedPrefixByteArray);
+                return Bytes.wrap(decompressedByteArray);
             } catch (IllegalArgumentException e) {
                 // This isn't the key we're looking for. Move along.
                 logger.warn("Unable to decompress ECDSA(secp256k1) key. Should never happen", e);

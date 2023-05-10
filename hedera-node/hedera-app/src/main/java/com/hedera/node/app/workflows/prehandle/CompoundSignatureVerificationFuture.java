@@ -19,6 +19,8 @@ package com.hedera.node.app.workflows.prehandle;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.KeyList;
+import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
@@ -27,15 +29,24 @@ import com.swirlds.common.crypto.TransactionSignature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
- * A {@link Future} that waits on a {@link Map} of {@link TransactionSignature}s to complete signature checks, and
- * yields a {@link SignatureVerification}.
+ * A {@link Future} that waits on a {@link List} of {@link SignatureVerification}s to complete signature checks, and
+ * yields a single {@link SignatureVerification} representing the result of all those verifications.
+ *
+ * <p>For example, if an instance is created with a {@link KeyList} based {@link Key}, then when {@link #get()} or
+ * {@link #get(long, TimeUnit)} are called, it will return a {@link SignatureVerification} where the
+ * {@link SignatureVerification#key()} is that key, and {@link SignatureVerification#passed()} is true if,
+ * and only if, every {@link SignatureVerification} in the List has also passed.
+ *
+ * <p>If an instance is created with a {@link ThresholdKey} based {@link Key}, then when {@link #get()} or
+ * {@link #get(long, TimeUnit)} are called, it will return a {@link SignatureVerification} where the
+ * {@link SignatureVerification#key()} is that key, and {@link SignatureVerification#passed()} is true if,
+ * and only if, it did not encounter {@link #numCanFail} failing verifications in the list.
  */
 class CompoundSignatureVerificationFuture implements SignatureVerificationFuture {
     /**

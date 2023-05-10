@@ -59,21 +59,24 @@ public class SignatureVerifierImpl implements SignatureVerifier {
         // appropriate offsets. Rather than many small arrays, we're going to create one big array and reuse it
         // across all TransactionSignature objects. It gives a slight savings by having the signed bytes only copied
         // to the array one time.
-        final var bytesPerSig = 64;
-        final var bytesPerKey = 64; // 64 for ECDSA_SECP256K1, less for ED25519
+        final var bytesPerSig = 64; // Both of these numbers for bytesPerSig and bytesPerKey must be >= the real values.
+        final var bytesPerKey = 64;
         final var content = new byte[(int) signedBytes.length() + sigs.size() * (bytesPerSig + bytesPerKey)];
         int offset = add(content, 0, signedBytes);
 
+        // Gather each TransactionSignature to send to the platform and the resulting SignatureVerificationFutures
         final var platformSigs = new ArrayList<TransactionSignature>(sigs.size());
         final var futures = new HashMap<Key, SignatureVerificationFuture>(sigs.size());
         for (ExpandedSignaturePair sigPair : sigs) {
+            // Copy the signature into the content array
             final Bytes sigBytes = sigPair.signature();
             final var sigBytesOffset = offset;
             offset = add(content, offset, sigBytes);
-
+            // Copy the expanded public key into the content array
             final Bytes keyBytes = sigPair.keyBytes();
             final var keyBytesOffset = offset;
             offset = add(content, offset, keyBytes);
+            // Collect the TransactionSignature and SignatureVerificationFuture
             final var platformSig = new TransactionSignature(
                     content, sigBytesOffset, (int) sigBytes.length(), keyBytesOffset, (int) keyBytes.length(), 0, (int)
                             signedBytes.length());
@@ -82,13 +85,14 @@ public class SignatureVerifierImpl implements SignatureVerifier {
                     sigPair.key(),
                     new SignatureVerificationFutureImpl(sigPair.key(), sigPair.hollowAccount(), platformSig));
         }
-
+        // Submit to the crypto engine. We do it as a single list of objects to try to cut down on temporary object
+        // creation. If you call the platform for a single TransactionSignature at a time, it wraps each in a List.
         cryptoEngine.verifyAsync(platformSigs);
-
         return futures;
     }
 
-    private int add(byte[] content, int offset, Bytes bytes) {
+    /** Small utility method, should one day be replaced a new API in PBJ {@link Bytes} */
+    private int add(@NonNull final byte[] content, final int offset, @NonNull final Bytes bytes) {
         bytes.getBytes(0, content, offset, (int) bytes.length());
         return offset + (int) bytes.length();
     }

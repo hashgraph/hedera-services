@@ -35,7 +35,7 @@ import java.util.concurrent.TimeoutException;
  * A {@link Future} that waits on a {@link TransactionSignature} to complete signature checks, and yields a
  * {@link SignatureVerification}.
  */
-public class SignatureVerificationFutureImpl implements SignatureVerificationFuture {
+public final class SignatureVerificationFutureImpl implements SignatureVerificationFuture {
     /**
      * The Key we verified. This will *never* be null, because we would not have attempted signature verification
      * without having a key. If an EVM address was used, we would have already extracted the key, so it can be
@@ -66,24 +66,27 @@ public class SignatureVerificationFutureImpl implements SignatureVerificationFut
      * {@link SignatureVerification} is derived. This list must contain at least one element.
      */
     SignatureVerificationFutureImpl(
-            @NonNull Key key, @Nullable Account hollowAccount, @NonNull TransactionSignature txSig) {
+            @NonNull final Key key, @Nullable final Account hollowAccount, @NonNull final TransactionSignature txSig) {
         this.key = requireNonNull(key);
         this.hollowAccount = hollowAccount;
         this.txSig = requireNonNull(txSig);
     }
 
+    /** {@inheritDoc} */
     @Nullable
     @Override
     public Account hollowAccount() {
         return hollowAccount;
     }
 
+    /** {@inheritDoc} */
     @NonNull
     @Override
     public Key key() {
         return key;
     }
 
+    /** {@inheritDoc} */
     @NonNull
     public TransactionSignature txSig() {
         return txSig;
@@ -102,7 +105,7 @@ public class SignatureVerificationFutureImpl implements SignatureVerificationFut
      * cancel it. If it does not exist, we will let it be.
      */
     @Override
-    public boolean cancel(boolean mayInterruptIfRunning) {
+    public boolean cancel(final boolean mayInterruptIfRunning) {
         // If we're already done, then we can't cancel again
         if (isDone()) {
             return false;
@@ -149,6 +152,7 @@ public class SignatureVerificationFutureImpl implements SignatureVerificationFut
      * that a {@link Future} has not been assigned to one or more {@link TransactionSignature}s. In that case, we will
      * wait for the {@link Future} before proceeding.
      */
+    @NonNull
     @Override
     public SignatureVerification get() throws InterruptedException, ExecutionException {
         txSig.waitForFuture().get(); // Wait for the future to be assigned and completed
@@ -162,6 +166,7 @@ public class SignatureVerificationFutureImpl implements SignatureVerificationFut
      * that a {@link Future} has not been assigned to one or more {@link TransactionSignature}s. In that case, we will
      * wait for the {@link Future} before proceeding (up to the timeout).
      */
+    @NonNull
     @Override
     public SignatureVerification get(long timeout, TimeUnit unit)
             throws InterruptedException, ExecutionException, TimeoutException {
