@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.mono.context.properties;
 
 import static com.hedera.node.app.service.mono.context.properties.SemanticVersions.asSemVer;
-import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
@@ -89,24 +88,30 @@ public class SerializableSemVers implements SoftwareVersion {
         return RELEASE_027_VERSION;
     }
 
-    public boolean isAfter(@NonNull final SoftwareVersion other) {
-        requireNonNull(other);
+    // The software version can be null here because we use deserializedVersion as null
+    // on genesis initialization.
+    public boolean isAfter(@Nullable final SoftwareVersion other) {
         return compareTo(other) > 0;
     }
 
-    public boolean isBefore(@NonNull final SoftwareVersion other) {
-        requireNonNull(other);
+    // The software version can be null here because we use deserializedVersion as null
+    // on genesis initialization.
+    public boolean isBefore(@Nullable final SoftwareVersion other) {
         return compareTo(other) < 0;
     }
 
-    public boolean hasMigrationRecordsFrom(@NonNull final SoftwareVersion other) {
-        requireNonNull(other);
+    // The software version can be null here because we use deserializedVersion as null
+    // on genesis initialization.
+    public boolean hasMigrationRecordsFrom(@Nullable final SoftwareVersion other) {
         return isNonPatchUpgradeFrom(other) || (this.isAfter(other) && currentVersionHasPatchMigrationRecords);
     }
 
-    public boolean isNonConfigUpgrade(@NonNull final SoftwareVersion other) {
-        requireNonNull(other);
-
+    public boolean isNonConfigUpgrade(@Nullable final SoftwareVersion other) {
+        // The software version can be null here because we use deserializedVersion as null
+        // on genesis initialization.
+        if (other == null) {
+            return true;
+        }
         if (other instanceof SerializableSemVers that) {
             return this.isAfter(that) && haveDifferentNonBuildVersions(this, that);
         } else {
@@ -115,9 +120,12 @@ public class SerializableSemVers implements SoftwareVersion {
     }
 
     @VisibleForTesting
-    boolean isNonPatchUpgradeFrom(@NonNull final SoftwareVersion other) {
-        requireNonNull(other);
-
+    boolean isNonPatchUpgradeFrom(@Nullable final SoftwareVersion other) {
+        // The software version can be null here because we use deserializedVersion as null
+        // on genesis initialization.
+        if (other == null) {
+            return true;
+        }
         if (other instanceof SerializableSemVers that) {
             return this.isAfter(that) && haveDifferentMajorAndMinorVersions(this, that);
         } else {
