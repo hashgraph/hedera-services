@@ -134,7 +134,7 @@ public class SerializableSemVers implements SoftwareVersion {
             @NonNull final SerializableSemVers a, @NonNull final SerializableSemVers b) {
         return haveDifferentMajorAndMinorVersions(a, b)
                 || a.services.getPatch() != b.services.getPatch()
-                || a.services.getPre() != b.services.getPre();
+                || !a.services.getPre().equals(b.services.getPre());
     }
 
     @Override

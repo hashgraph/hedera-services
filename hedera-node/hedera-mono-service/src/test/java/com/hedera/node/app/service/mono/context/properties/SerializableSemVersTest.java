@@ -76,7 +76,7 @@ class SerializableSemVersTest {
                         < 0);
         assertTrue(SEM_VER_COMPARATOR.compare(semVerWith(1, 0, 1, null, "build"), semVerWith(1, 0, 1, null, null)) > 0);
         assertTrue(SEM_VER_COMPARATOR.compare(semVerWith(1, 0, 1, null, null), semVerWith(1, 0, 1, null, "build")) < 0);
-        assertTrue(SEM_VER_COMPARATOR.compare(semVerWith(1, 0, 1, null, null), semVerWith(1, 0, 1, null, null)) == 0);
+        assertEquals(0, SEM_VER_COMPARATOR.compare(semVerWith(1, 0, 1, null, null), semVerWith(1, 0, 1, null, null)));
         assertTrue(SEM_VER_COMPARATOR.compare(semVerWith(1, 0, 1, null, "2"), semVerWith(1, 0, 1, null, "1")) > 0);
         assertTrue(SEM_VER_COMPARATOR.compare(semVerWith(1, 0, 1, null, null), semVerWith(1, 0, 1, null, "1")) < 0);
     }
