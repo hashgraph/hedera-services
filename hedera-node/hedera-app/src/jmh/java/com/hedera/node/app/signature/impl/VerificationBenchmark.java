@@ -58,10 +58,10 @@ public class VerificationBenchmark extends AppTestBase implements Scenarios {
         subject = new SignatureVerifierImpl(fakeCryptoEngine);
     }
 
-//    @Benchmark
-//    public void verifyBench(Blackhole blackhole) {
-//        blackhole.consume(subject.verify(fakeSignedBytes, sigPairs));
-//    }
+    @Benchmark
+    public void verifyBench(Blackhole blackhole) {
+        blackhole.consume(subject.verify(fakeSignedBytes, sigPairs));
+    }
 
     private Set<ExpandedSignaturePair> createSigPairs(int numSigPairs) {
         final var pairs = new HashSet<ExpandedSignaturePair>();
