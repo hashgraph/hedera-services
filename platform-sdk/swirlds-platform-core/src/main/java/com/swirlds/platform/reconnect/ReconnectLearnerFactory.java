@@ -39,7 +39,7 @@ public class ReconnectLearnerFactory {
      * @param platformContext the platform context
      * @param threadManager          responsible for managing thread lifecycles
      * @param addressBook            the current address book
-     * @param reconnectSocketTimeout reconnectSocketTimeout
+     * @param reconnectSocketTimeout the socket timeout to use during the reconnect in milliseconds
      * @param statistics             reconnect metrics
      */
     public ReconnectLearnerFactory(
