@@ -76,7 +76,7 @@ class SerializableSemVersTest {
                         < 0);
         assertTrue(SEM_VER_COMPARATOR.compare(semVerWith(1, 0, 1, null, "build"), semVerWith(1, 0, 1, null, null)) > 0);
         assertTrue(SEM_VER_COMPARATOR.compare(semVerWith(1, 0, 1, null, null), semVerWith(1, 0, 1, null, "build")) < 0);
-        assertEquals(0, SEM_VER_COMPARATOR.compare(semVerWith(1, 0, 1, null, null), semVerWith(1, 0, 1, null, null)));
+        assertTrue(SEM_VER_COMPARATOR.compare(semVerWith(1, 0, 1, null, null), semVerWith(1, 0, 1, null, null)) == 0);
         assertTrue(SEM_VER_COMPARATOR.compare(semVerWith(1, 0, 1, null, "2"), semVerWith(1, 0, 1, null, "1")) > 0);
         assertTrue(SEM_VER_COMPARATOR.compare(semVerWith(1, 0, 1, null, null), semVerWith(1, 0, 1, null, "1")) < 0);
     }
@@ -120,8 +120,8 @@ class SerializableSemVersTest {
         assertTrue(b.compareTo(a) < 0);
         assertTrue(c.compareTo(a) > 0);
         assertEquals(0, a.compareTo(d));
-        assertThrows(NullPointerException.class, () -> a.isAfter(null));
-        assertThrows(NullPointerException.class, () -> a.isBefore(null));
+        assertTrue(a.isAfter(null));
+        assertFalse(a.isBefore(null));
     }
 
     @Test
@@ -155,7 +155,7 @@ class SerializableSemVersTest {
         final var major = new SerializableSemVers(someProto, servicesMajorUpgrade);
         final var mockVersion = mock(SoftwareVersion.class);
 
-        assertThrows(NullPointerException.class, () -> base.isNonPatchUpgradeFrom(null));
+        assertTrue(base.isNonPatchUpgradeFrom(null));
         assertFalse(base.isNonPatchUpgradeFrom(base));
         assertFalse(patch.isNonPatchUpgradeFrom(base));
         assertTrue(minor.isNonPatchUpgradeFrom(base));
@@ -179,7 +179,7 @@ class SerializableSemVersTest {
         final var config = new SerializableSemVers(someProto, servicesConfig);
         final var mockVersion = mock(SoftwareVersion.class);
 
-        assertThrows(NullPointerException.class, () -> base.isNonConfigUpgrade(null));
+        assertTrue(base.isNonConfigUpgrade(null));
         assertFalse(base.isNonConfigUpgrade(base));
         assertTrue(patch.isNonConfigUpgrade(base));
         assertTrue(minor.isNonConfigUpgrade(base));
