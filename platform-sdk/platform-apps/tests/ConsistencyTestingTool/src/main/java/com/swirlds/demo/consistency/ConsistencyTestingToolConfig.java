@@ -22,10 +22,8 @@ import com.swirlds.config.api.ConfigProperty;
 /**
  * Config for consistency testing tool
  *
- * @param permitGaps  whether to permit gaps in the log
  * @param logfileName the name of the log file
  */
 @ConfigData("consistencyTestingTool")
 public record ConsistencyTestingToolConfig(
-        @ConfigProperty(defaultValue = "false") boolean permitGaps,
         @ConfigProperty(defaultValue = "ConsistencyTestLog.csv") String logfileName) {}

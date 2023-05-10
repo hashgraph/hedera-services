@@ -47,11 +47,6 @@ public class TransactionHandlingHistory {
     private static final Logger logger = LogManager.getLogger(TransactionHandlingHistory.class);
 
     /**
-     * Whether gaps in the round history are permitted. If false, an error will be logged if a gap is found
-     */
-    private boolean permitRoundGaps;
-
-    /**
      * A map from round number to historical rounds
      */
     private final Map<Long, ConsistencyTestingToolRound> roundHistory;
@@ -91,11 +86,9 @@ public class TransactionHandlingHistory {
      * <p>
      * Reads the contents of the log file if it exists, and adds the included rounds to the history
      *
-     * @param permitRoundGaps whether gaps in the round history are permitted
      * @param logFilePath     the location of the log file
      */
-    public void init(final boolean permitRoundGaps, final @NonNull Path logFilePath) {
-        this.permitRoundGaps = permitRoundGaps;
+    public void init(final @NonNull Path logFilePath) {
         this.logFilePath = Objects.requireNonNull(logFilePath);
 
         logger.info(STARTUP.getMarker(), "Consistency testing tool log path: {}", logFilePath);
@@ -206,15 +199,6 @@ public class TransactionHandlingHistory {
         // make sure round numbers always increase
         if (newRoundNumber <= previousRoundHandled) {
             final String error = "Round " + newRoundNumber + " is not greater than round " + previousRoundHandled;
-            logger.error(EXCEPTION.getMarker(), error);
-
-            errors.add(error);
-        }
-        // if gaps in round history aren't permitted, check that the round numbers are consecutive
-        else if (!permitRoundGaps && newRoundNumber != previousRoundHandled + 1) {
-            final String error = "Gap in round history found. Round " + newRoundNumber
-                    + " was added, but previous round was " + previousRoundHandled;
-
             logger.error(EXCEPTION.getMarker(), error);
 
             errors.add(error);

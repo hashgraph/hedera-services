@@ -104,7 +104,7 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
 
         final Path logFilePath = stateConfig.savedStateDirectory().resolve(testingToolConfig.logfileName());
 
-        transactionHandlingHistory.init(testingToolConfig.permitGaps(), logFilePath);
+        transactionHandlingHistory.init(logFilePath);
     }
 
     /**
