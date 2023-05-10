@@ -29,12 +29,11 @@ import java.util.Set;
  * This ConfigSource is necessary for all {@link com.swirlds.config.api.ConfigData} records that require the
  * thread count as a property. It is currently used in:
  * <ul>
- *     <li>{@link com.swirlds.fchashmap.config.FCHashMapConfig}</li>
+ *     <li>{@code com.swirlds.fchashmap.config.FCHashMapConfig}</li>
  * </ul>
  *
  * @see com.swirlds.config.api.source.ConfigSource
  * @see com.swirlds.config.api.ConfigData
- * @see com.swirlds.fchashmap.config.FCHashMapConfig
  */
 public class ThreadCountPropertyConfigSource implements ConfigSource {
     private static final String ELEMENT_NOT_FOUND = "Element with name %s not found";
