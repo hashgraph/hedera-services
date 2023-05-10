@@ -41,9 +41,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.codec.DecoderException;
@@ -110,17 +107,6 @@ public class AdaptedMonoProcessLogic implements ProcessLogic {
     private List<TransactionSignature> extract(@Nullable final Collection<SignatureVerificationFuture> map) {
         if (map == null) return Collections.emptyList();
         return map.stream()
-                .map(future -> {
-                    try {
-                        return future.get(MILLIS_TO_WAIT_FOR_SIGNATURE_VERIFICATION, TimeUnit.MILLISECONDS);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        throw new RuntimeException(
-                                "Interrupted while waiting for a signature verification to complete!", e);
-                    } catch (ExecutionException | TimeoutException e) {
-                        throw new RuntimeException("Signature verification failed!", e);
-                    }
-                })
                 .map(SignatureVerificationFutureImpl.class::cast)
                 .map(SignatureVerificationFutureImpl::txSig)
                 .toList();

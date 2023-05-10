@@ -65,7 +65,7 @@ public final class SignatureVerificationFutureImpl implements SignatureVerificat
      * @param txSig The {@link TransactionSignature}s, from which the pass/fail status of the
      * {@link SignatureVerification} is derived. This list must contain at least one element.
      */
-    SignatureVerificationFutureImpl(
+    public SignatureVerificationFutureImpl(
             @NonNull final Key key, @Nullable final Account hollowAccount, @NonNull final TransactionSignature txSig) {
         this.key = requireNonNull(key);
         this.hollowAccount = hollowAccount;
