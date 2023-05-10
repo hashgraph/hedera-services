@@ -418,7 +418,10 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                             .alsoSigningWithFullPrefix(CIVILIAN)
                             .hasKnownStatusFrom(SUCCESS, CONTRACT_REVERT_EXECUTED);
                     allRunFor(spec, op);
-                    if (op.getActualStatus() == CONTRACT_REVERT_EXECUTED) {
+                    // If this ContractCall was converted to an EthereumTransaction, then it will
+                    // not be tracking the last receipt and we can't do this extra logging; this is
+                    // fine for now, since the _Eth spec hasn't been flaky
+                    if (op.hasActualStatus() && op.getActualStatus() == CONTRACT_REVERT_EXECUTED) {
                         final var lookup = getTxnRecord(creationAttempt).andAllChildRecords();
                         allRunFor(spec, lookup);
                         Assertions.fail("canCreateViaFungibleWithFractionalFee() failed w/ record "
