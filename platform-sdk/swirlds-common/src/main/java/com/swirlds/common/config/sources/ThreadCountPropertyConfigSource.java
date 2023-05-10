@@ -22,6 +22,20 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
+/**
+ * Implementation of {@link com.swirlds.config.api.source.ConfigSource} that provides the current thread count
+ * for all properties specified in {@code PROPERTY_NAMES} at runtime.
+ * <p>
+ * This ConfigSource is necessary for all {@link com.swirlds.config.api.ConfigData} records that require the
+ * thread count as a property. It is currently used in:
+ * <ul>
+ *     <li>{@link com.swirlds.fchashmap.config.FCHashMapConfig}</li>
+ * </ul>
+ *
+ * @see com.swirlds.config.api.source.ConfigSource
+ * @see com.swirlds.config.api.ConfigData
+ * @see com.swirlds.fchashmap.config.FCHashMapConfig
+ */
 public class ThreadCountPropertyConfigSource implements ConfigSource {
     private static final String ELEMENT_NOT_FOUND = "Element with name %s not found";
     private static final String THREAD_COUNT =
