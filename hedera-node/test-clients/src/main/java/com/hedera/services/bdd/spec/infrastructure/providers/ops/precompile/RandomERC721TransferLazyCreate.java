@@ -68,7 +68,7 @@ public class RandomERC721TransferLazyCreate implements OpProvider {
         return contractCall(
                         ERC_721_CONTRACT,
                         TRANSFER_FROM,
-                        HapiParserUtil.asHeadlongAddress(asAddress(registry.getTokenID(NON_FUNGIBLE_TOKEN))),
+                        HapiParserUtil.asHeadlongAddress(asAddress(registry.getTokenID(ERC_NON_FUNGIBLE_TOKEN))),
                         HapiParserUtil.asHeadlongAddress(asAddress(registry.getAccountID(OWNER))),
                         HapiParserUtil.asHeadlongAddress(addressBytes),
                         BigInteger.valueOf(1))

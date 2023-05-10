@@ -49,6 +49,7 @@ public class LazyCreatePrecompileFuzzingFactory {
     public static final String FUNGIBLE_TOKEN = "fungibleToken";
     public static final String ERC_FUNGIBLE_TOKEN = "ercFungibleToken";
     public static final String NON_FUNGIBLE_TOKEN = "nonFungibleToken";
+    public static final String ERC_NON_FUNGIBLE_TOKEN = "ercNonFungibleToken";
     public static final String MULTI_KEY = "purpose";
     public static final String OWNER = "owner";
     public static final String SENDER = "sender";
@@ -76,6 +77,7 @@ public class LazyCreatePrecompileFuzzingFactory {
                         initOpCommon(),
                         initOpHbarTransfer(),
                         initOpFungibleTransfer(),
+                        initOpNonFungibleTransfer(),
                         initOpERC20Transfer(),
                         initOpERC721Transfer())
                 .flatMap(Stream::of)
@@ -94,6 +96,9 @@ public class LazyCreatePrecompileFuzzingFactory {
                     .withOp(
                             new RandomHbarTransferLazyCreate(spec.registry(), keys),
                             intPropOrElse("randomHbar.bias", 0, props))
+                    .withOp(
+                            new RandomNonFungibleTransferLazyCreate(spec.registry(), keys),
+                            intPropOrElse("randomFungibleTransfer.bias", 0, props))
                     .withOp(
                             new RandomFungibleTransferLazyCreate(spec.registry(), keys),
                             intPropOrElse("randomFungibleTransfer.bias", 0, props))
@@ -153,6 +158,23 @@ public class LazyCreatePrecompileFuzzingFactory {
         };
     }
 
+    private static HapiSpecOperation[] initOpNonFungibleTransfer() {
+        return new HapiSpecOperation[] {
+            tokenCreate(NON_FUNGIBLE_TOKEN)
+                    .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                    .initialSupply(0)
+                    .treasury(TOKEN_TREASURY)
+                    .adminKey(MULTI_KEY)
+                    .supplyKey(MULTI_KEY),
+            tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
+            tokenAssociate(SPENDER, NON_FUNGIBLE_TOKEN),
+            tokenAssociate(TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT, NON_FUNGIBLE_TOKEN),
+            mintToken(NON_FUNGIBLE_TOKEN, erc721UniqueTokens()),
+            cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L)
+                    .between(TOKEN_TREASURY, OWNER))
+        };
+    }
+
     private static HapiSpecOperation[] initOpERC20Transfer() {
         final AtomicReference<String> tokenAddr = new AtomicReference<>();
 
@@ -175,7 +197,7 @@ public class LazyCreatePrecompileFuzzingFactory {
 
     private static HapiSpecOperation[] initOpERC721Transfer() {
         return new HapiSpecOperation[] {
-            tokenCreate(NON_FUNGIBLE_TOKEN)
+            tokenCreate(ERC_NON_FUNGIBLE_TOKEN)
                     .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                     .initialSupply(0)
                     .treasury(TOKEN_TREASURY)
@@ -183,17 +205,17 @@ public class LazyCreatePrecompileFuzzingFactory {
                     .supplyKey(MULTI_KEY),
             uploadInitCode(ERC_721_CONTRACT),
             contractCreate(ERC_721_CONTRACT),
-            tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
-            tokenAssociate(SPENDER, NON_FUNGIBLE_TOKEN),
-            tokenAssociate(ERC_721_CONTRACT, NON_FUNGIBLE_TOKEN),
-            mintToken(NON_FUNGIBLE_TOKEN, erc721UniqueTokens()),
-            cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L)
+            tokenAssociate(OWNER, ERC_NON_FUNGIBLE_TOKEN),
+            tokenAssociate(SPENDER, ERC_NON_FUNGIBLE_TOKEN),
+            tokenAssociate(ERC_721_CONTRACT, ERC_NON_FUNGIBLE_TOKEN),
+            mintToken(ERC_NON_FUNGIBLE_TOKEN, erc721UniqueTokens()),
+            cryptoTransfer(movingUnique(ERC_NON_FUNGIBLE_TOKEN, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L)
                     .between(TOKEN_TREASURY, OWNER)),
             cryptoApproveAllowance()
                     .payingWith(UNIQUE_PAYER_ACCOUNT)
                     .addNftAllowance(
                             OWNER,
-                            NON_FUNGIBLE_TOKEN,
+                            ERC_NON_FUNGIBLE_TOKEN,
                             ERC_721_CONTRACT,
                             false,
                             List.of(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L))
