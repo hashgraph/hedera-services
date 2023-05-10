@@ -284,7 +284,6 @@ class GlobalDynamicPropertiesTest {
         assertEquals(79, subject.recordSignatureFileVersion());
         assertEquals(98, subject.sumOfConsensusWeights());
         assertEquals(99, subject.cacheCryptoTransferWarmThreads());
-        assertEquals(100, subject.configVersion());
     }
 
     @Test
@@ -462,7 +461,6 @@ class GlobalDynamicPropertiesTest {
         assertEquals(90, subject.getSidecarMaxSizeMb());
         assertEquals(99, subject.sumOfConsensusWeights());
         assertEquals(100, subject.cacheCryptoTransferWarmThreads());
-        assertEquals(101, subject.configVersion());
     }
 
     @Test

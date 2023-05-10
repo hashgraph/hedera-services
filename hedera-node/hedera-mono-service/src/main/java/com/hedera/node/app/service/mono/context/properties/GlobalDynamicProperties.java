@@ -32,7 +32,6 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BALANCES_NODE_BALANCE_WARN_THRESHOLD;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CACHE_CRYPTO_TRANSFER_WARM_THREADS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CACHE_RECORDS_TTL;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONFIG_VERSION;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONSENSUS_HANDLE_MAX_FOLLOWING_RECORDS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONSENSUS_HANDLE_MAX_PRECEDING_RECORDS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONSENSUS_MESSAGE_MAX_BYTES_ALLOWED;
@@ -452,7 +451,6 @@ public class GlobalDynamicProperties implements EvmProperties {
         maxAutoAssociations = properties.getIntProperty(LEDGER_MAX_AUTO_ASSOCIATIONS);
         sumOfConsensusWeights = properties.getIntProperty(STAKING_SUM_OF_CONSENSUS_WEIGHTS);
         cacheWarmThreads = properties.getIntProperty(CACHE_CRYPTO_TRANSFER_WARM_THREADS);
-        configVersion = properties.getIntProperty(CONFIG_VERSION);
     }
 
     public int sumOfConsensusWeights() {
@@ -966,9 +964,5 @@ public class GlobalDynamicProperties implements EvmProperties {
 
     public int cacheCryptoTransferWarmThreads() {
         return cacheWarmThreads;
-    }
-
-    public int configVersion() {
-        return configVersion;
     }
 }
