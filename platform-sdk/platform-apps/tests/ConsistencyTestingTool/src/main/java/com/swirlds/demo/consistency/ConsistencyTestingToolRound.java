@@ -64,32 +64,32 @@ public record ConsistencyTestingToolRound(long roundNumber, long currentState, L
      * Construct a {@link ConsistencyTestingToolRound} from a string representation
      *
      * @param roundString the string representation of the round
-     * @return the new {@link ConsistencyTestingToolRound}
+     * @return the new {@link ConsistencyTestingToolRound}, or null if parsing failed
      */
-    @NonNull
+    @Nullable
     public static ConsistencyTestingToolRound fromString(final @NonNull String roundString) {
         Objects.requireNonNull(roundString);
 
-        final List<String> fields =
-                Arrays.stream(roundString.split(FIELD_SEPARATOR)).toList();
+        try {
+            final List<String> fields =
+                    Arrays.stream(roundString.split(FIELD_SEPARATOR)).toList();
 
-        if (fields.size() != 3) {
-            throw new IllegalStateException("Invalid round string: " + roundString);
+            String field = fields.get(0);
+            final long roundNumber = Long.parseLong(field.substring(ROUND_NUMBER_STRING.length()));
+
+            field = fields.get(1);
+            final long currentState = Long.parseLong(field.substring(CURRENT_STATE_STRING.length()));
+
+            field = fields.get(2);
+            final String transactionsString = field.substring(field.indexOf("[") + 1, field.indexOf("]"));
+            final List<Long> transactionsContents = Arrays.stream(transactionsString.split(LIST_ELEMENT_SEPARATOR))
+                    .map(Long::parseLong)
+                    .toList();
+
+            return new ConsistencyTestingToolRound(roundNumber, currentState, transactionsContents);
+        } catch (final Exception e) {
+            return null;
         }
-
-        String field = fields.get(0);
-        final long roundNumber = Long.parseLong(field.substring(ROUND_NUMBER_STRING.length()));
-
-        field = fields.get(1);
-        final long currentState = Long.parseLong(field.substring(CURRENT_STATE_STRING.length()));
-
-        field = fields.get(2);
-        final String transactionsString = field.substring(field.indexOf("[") + 1, field.indexOf("]"));
-        final List<Long> transactionsContents = Arrays.stream(transactionsString.split(LIST_ELEMENT_SEPARATOR))
-                .map(Long::parseLong)
-                .toList();
-
-        return new ConsistencyTestingToolRound(roundNumber, currentState, transactionsContents);
     }
 
     /**

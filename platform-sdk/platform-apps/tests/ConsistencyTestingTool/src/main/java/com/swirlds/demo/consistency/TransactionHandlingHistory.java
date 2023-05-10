@@ -86,7 +86,7 @@ public class TransactionHandlingHistory {
      * <p>
      * Reads the contents of the log file if it exists, and adds the included rounds to the history
      *
-     * @param logFilePath     the location of the log file
+     * @param logFilePath the location of the log file
      */
     public void init(final @NonNull Path logFilePath) {
         this.logFilePath = Objects.requireNonNull(logFilePath);
@@ -114,7 +114,16 @@ public class TransactionHandlingHistory {
         logger.info(STARTUP.getMarker(), "Log file found. Parsing previous history");
 
         try (final BufferedReader reader = new BufferedReader(new FileReader(logFilePath.toFile()))) {
-            reader.lines().forEach(line -> addRoundToHistory(ConsistencyTestingToolRound.fromString(line)));
+            reader.lines().forEach(line -> {
+                final ConsistencyTestingToolRound parsedRound = ConsistencyTestingToolRound.fromString(line);
+
+                if (parsedRound == null) {
+                    logger.error(EXCEPTION.getMarker(), "Failed to parse line from log file: {}", line);
+                    return;
+                }
+
+                addRoundToHistory(parsedRound);
+            });
         } catch (final IOException e) {
             logger.error(EXCEPTION.getMarker(), "Failed to read log file", e);
         }
