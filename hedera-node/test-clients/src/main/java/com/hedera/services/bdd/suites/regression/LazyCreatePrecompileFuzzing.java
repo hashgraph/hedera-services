@@ -30,6 +30,7 @@ import org.apache.logging.log4j.Logger;
 public class LazyCreatePrecompileFuzzing extends HapiSuite {
     private static final Logger log = LogManager.getLogger(LazyCreatePrecompileFuzzing.class);
     private static final String PROPERTIES = "lazycreate-precompile-fuzzing.properties";
+    public static final String ATOMIC_CRYPTO_TRANSFER = "contracts.precompile.atomicCryptoTransfer.enabled";
 
     public static void main(String... args) {
         new LazyCreatePrecompileFuzzing().runSuiteSync();
@@ -43,7 +44,7 @@ public class LazyCreatePrecompileFuzzing extends HapiSuite {
     private HapiSpec transferTokensFuzzing() {
 
         return propertyPreservingHapiSpec("TransferFungibleTokenLazyCreateFuzzing")
-                .preserving("contracts.precompile.atomicCryptoTransfer.enabled")
+                .preserving(ATOMIC_CRYPTO_TRANSFER)
                 .given(initOperations())
                 .when()
                 .then(runWithProvider(transferTokensFuzzingWith(PROPERTIES)).lasting(10L, TimeUnit.SECONDS));

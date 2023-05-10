@@ -24,6 +24,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.suites.HapiSuite.*;
+import static com.hedera.services.bdd.suites.regression.LazyCreatePrecompileFuzzing.ATOMIC_CRYPTO_TRANSFER;
 import static com.hedera.services.bdd.suites.regression.factories.RegressionProviderFactory.intPropOrElse;
 import static com.hedera.services.bdd.suites.utils.ECDSAKeysUtils.onlyEcdsaKeys;
 
@@ -41,6 +42,7 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 public class LazyCreatePrecompileFuzzingFactory {
     public static final long INITIAL_SUPPLY = 1_000_000_000L;
@@ -61,20 +63,57 @@ public class LazyCreatePrecompileFuzzingFactory {
     public static final String ERC_721_CONTRACT = "ERC721Contract";
     private static final String BASE_APPROVE_TXN = "baseApproveTxn";
     private static final String SPENDER = "spender";
-    private static final String FIRST = "FIRST";
     private static final int NUM_DISTINCT_ECDSA_KEYS = 42;
 
     private LazyCreatePrecompileFuzzingFactory() {}
 
+    /**
+     * Concatenated array of all initial operations used in .given()
+     * @return HapiSpecOperation
+     */
     public static HapiSpecOperation[] initOperations() {
-        final AtomicReference<String> tokenAddr = new AtomicReference<>();
+        return Stream.of(
+                        initOpCommon(),
+                        initOpHbarTransfer(),
+                        initOpFungibleTransfer(),
+                        initOpERC20Transfer(),
+                        initOpERC721Transfer())
+                .flatMap(Stream::of)
+                .toArray(HapiSpecOperation[]::new);
+    }
 
+    public static Function<HapiSpec, OpProvider> transferTokensFuzzingWith(final String resource) {
+        return spec -> {
+            final var props = RegressionProviderFactory.propsFrom(resource);
+
+            final var keys = new RegistrySourcedNameProvider<>(Key.class, spec.registry(), new RandomSelector());
+
+            return new BiasedDelegatingProvider()
+                    .shouldLogNormalFlow(true)
+                    .withInitialization(onlyEcdsaKeys(NUM_DISTINCT_ECDSA_KEYS))
+                    .withOp(
+                            new RandomHbarTransferLazyCreate(spec.registry(), keys),
+                            intPropOrElse("randomHbar.bias", 0, props))
+                    .withOp(
+                            new RandomFungibleTransferLazyCreate(spec.registry(), keys),
+                            intPropOrElse("randomFungibleTransfer.bias", 0, props))
+                    .withOp(
+                            new RandomERC20TransferLazyCreate(spec.registry(), keys),
+                            intPropOrElse("randomERC20Transfer.bias", 0, props))
+                    .withOp(
+                            new RandomERC721TransferLazyCreate(spec.registry(), keys),
+                            intPropOrElse("randomERC721Transfer.bias", 0, props));
+        };
+    }
+
+    private static HapiSpecOperation[] initOpCommon() {
         return new HapiSpecOperation[] {
             /**
              * In order for hbar transfer to work properly through precmompile
              * contracts.precompile.atomicCryptoTransfer.enabled need to be set to TRUE
              */
-            overriding("contracts.precompile.atomicCryptoTransfer.enabled", "true"),
+            overriding(ATOMIC_CRYPTO_TRANSFER, "true"),
+
             // common init
             newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
             newKeyNamed(MULTI_KEY),
@@ -83,14 +122,22 @@ public class LazyCreatePrecompileFuzzingFactory {
             cryptoCreate(SPENDER),
             cryptoCreate(UNIQUE_PAYER_ACCOUNT)
                     .balance(UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE)
-                    .withRecharging(),
+                    .withRecharging()
+        };
+    }
 
-            // HBAR TRANSFER
+    private static HapiSpecOperation[] initOpHbarTransfer() {
+        return new HapiSpecOperation[] {
             cryptoCreate(SENDER).balance(INITIAL_SUPPLY).key(MULTI_KEY).maxAutomaticTokenAssociations(5),
             uploadInitCode(NESTED_LAZY_PRECOMPILE_CONTRACT),
             contractCreate(NESTED_LAZY_PRECOMPILE_CONTRACT),
+        };
+    }
 
-            // Fungible init
+    private static HapiSpecOperation[] initOpFungibleTransfer() {
+        final AtomicReference<String> tokenAddr = new AtomicReference<>();
+
+        return new HapiSpecOperation[] {
             tokenCreate(FUNGIBLE_TOKEN)
                     .tokenType(TokenType.FUNGIBLE_COMMON)
                     .initialSupply(INITIAL_SUPPLY)
@@ -102,9 +149,32 @@ public class LazyCreatePrecompileFuzzingFactory {
             uploadInitCode(TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT),
             contractCreate(TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT),
             tokenAssociate(OWNER, List.of(FUNGIBLE_TOKEN)),
-            cryptoTransfer(moving(INITIAL_SUPPLY, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, OWNER)),
+            cryptoTransfer(moving(INITIAL_SUPPLY, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, OWNER))
+        };
+    }
 
-            // ERC721 init
+    private static HapiSpecOperation[] initOpERC20Transfer() {
+        final AtomicReference<String> tokenAddr = new AtomicReference<>();
+
+        return new HapiSpecOperation[] {
+            cryptoCreate(TOKEN_TREASURY_ERC),
+            tokenCreate(ERC_FUNGIBLE_TOKEN)
+                    .tokenType(TokenType.FUNGIBLE_COMMON)
+                    .initialSupply(INITIAL_SUPPLY)
+                    .treasury(TOKEN_TREASURY_ERC)
+                    .adminKey(MULTI_KEY)
+                    .supplyKey(MULTI_KEY)
+                    .exposingCreatedIdTo(id ->
+                            tokenAddr.set(HapiPropertySource.asHexedSolidityAddress(HapiPropertySource.asToken(id)))),
+            uploadInitCode(ERC_20_CONTRACT),
+            contractCreate(ERC_20_CONTRACT),
+            tokenAssociate(ERC_20_CONTRACT, List.of(ERC_FUNGIBLE_TOKEN)),
+            cryptoTransfer(moving(INITIAL_SUPPLY, ERC_FUNGIBLE_TOKEN).between(TOKEN_TREASURY_ERC, ERC_20_CONTRACT))
+        };
+    }
+
+    private static HapiSpecOperation[] initOpERC721Transfer() {
+        return new HapiSpecOperation[] {
             tokenCreate(NON_FUNGIBLE_TOKEN)
                     .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                     .initialSupply(0)
@@ -130,46 +200,7 @@ public class LazyCreatePrecompileFuzzingFactory {
                     .via(BASE_APPROVE_TXN)
                     .logged()
                     .signedBy(UNIQUE_PAYER_ACCOUNT, OWNER)
-                    .fee(ONE_HBAR),
-
-            // ERC20 init
-            cryptoCreate(TOKEN_TREASURY_ERC),
-            tokenCreate(ERC_FUNGIBLE_TOKEN)
-                    .tokenType(TokenType.FUNGIBLE_COMMON)
-                    .initialSupply(INITIAL_SUPPLY)
-                    .treasury(TOKEN_TREASURY_ERC)
-                    .adminKey(MULTI_KEY)
-                    .supplyKey(MULTI_KEY)
-                    .exposingCreatedIdTo(id ->
-                            tokenAddr.set(HapiPropertySource.asHexedSolidityAddress(HapiPropertySource.asToken(id)))),
-            uploadInitCode(ERC_20_CONTRACT),
-            contractCreate(ERC_20_CONTRACT),
-            tokenAssociate(ERC_20_CONTRACT, List.of(ERC_FUNGIBLE_TOKEN)),
-            cryptoTransfer(moving(INITIAL_SUPPLY, ERC_FUNGIBLE_TOKEN).between(TOKEN_TREASURY_ERC, ERC_20_CONTRACT))
-        };
-    }
-
-    public static Function<HapiSpec, OpProvider> transferTokensFuzzingWith(final String resource) {
-        return spec -> {
-            final var props = RegressionProviderFactory.propsFrom(resource);
-
-            final var keys = new RegistrySourcedNameProvider<>(Key.class, spec.registry(), new RandomSelector());
-
-            return new BiasedDelegatingProvider()
-                    .shouldLogNormalFlow(true)
-                    .withInitialization(onlyEcdsaKeys(NUM_DISTINCT_ECDSA_KEYS))
-                    .withOp(
-                            new RandomHbarTransferLazyCreate(spec.registry(), keys),
-                            intPropOrElse("randomHbar.bias", 0, props))
-                    .withOp(
-                            new RandomFungibleTransferLazyCreate(spec.registry(), keys),
-                            intPropOrElse("randomFungibleTransfer.bias", 0, props))
-                    .withOp(
-                            new RandomERC20TransferLazyCreate(spec.registry(), keys),
-                            intPropOrElse("randomERC20Transfer.bias", 0, props))
-                    .withOp(
-                            new RandomERC721TransferLazyCreate(spec.registry(), keys),
-                            intPropOrElse("randomERC721Transfer.bias", 0, props));
+                    .fee(ONE_HBAR)
         };
     }
 
