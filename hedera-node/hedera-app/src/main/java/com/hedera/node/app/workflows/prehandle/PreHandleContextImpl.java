@@ -58,9 +58,7 @@ public class PreHandleContextImpl implements PreHandleContext {
      * be updated to compare set contents rather than ordering.
      */
     private final Set<Key> requiredNonPayerKeys = new LinkedHashSet<>();
-    /**
-     * The set of all hollow accounts that need to be validated.
-     */
+    /** The set of all hollow accounts that need to be validated. */
     private final Set<Account> requiredHollowAccounts = new LinkedHashSet<>();
     /** Scheduled transactions have a secondary "inner context". Seems not quite right. */
     private PreHandleContext innerContext;
