@@ -42,13 +42,13 @@ jobs:
       access-token: ${{ secrets.GITHUB_TOKEN }}
 
   label-check:
-    name: "Label Check [CI:ExtendedChecks]"
+    name: "Label Check [CI:PlatformExtendedChecks]"
     runs-on: [self-hosted, Linux, medium, ephemeral]
-    if: ${{ contains(github.event.pull_request.labels.*.name, 'CI:ExtendedChecks') }}
+    if: ${{ contains(github.event.pull_request.labels.*.name, 'CI:PlatformExtendedChecks') }}
     steps:
       - name: Check Labels
         if: github.event_name == 'pull_request'
-        run: echo PR labels that trigger the tests is [CI:ExtendedChecks]
+        run: echo PR labels that trigger the tests is [CI:PlatformExtendedChecks]
 
 
   reconnect:
