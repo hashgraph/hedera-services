@@ -249,7 +249,7 @@ public class ServicesState extends PartialNaryMerkleInternal
             // Note this returns the app in case we need to do something with it after making
             // final changes to state (e.g. after migrating something from memory to disk)
             deserializedInit(platform, dualState, trigger, deserializedVersion);
-            final var isUpgrade = SEMANTIC_VERSIONS.deployedSoftwareVersion().isAfter(deserializedVersion);
+            final var isUpgrade = SEMANTIC_VERSIONS.deployedSoftwareVersion().isNonConfigUpgrade(deserializedVersion);
             if (isUpgrade) {
                 migrateFrom(deserializedVersion);
             }
@@ -374,7 +374,7 @@ public class ServicesState extends PartialNaryMerkleInternal
                     deployedVersion);
             app.systemExits().fail(1);
         } else {
-            final var isUpgrade = deployedVersion.isAfter(deserializedVersion);
+            final var isUpgrade = deployedVersion.isNonConfigUpgrade(deserializedVersion);
             if (trigger == RESTART) {
                 // We may still want to change the address book without an upgrade. But note
                 // that without a dynamic address book, this MUST be a no-op during reconnect.

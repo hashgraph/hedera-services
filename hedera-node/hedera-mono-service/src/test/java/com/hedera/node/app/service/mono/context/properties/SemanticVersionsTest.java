@@ -103,8 +103,8 @@ class SemanticVersionsTest {
 
     @Test
     void warnsOfUnavailableSemversAndUsesEmpty() {
-        final var shouldBeEmpty = SemanticVersions.fromResource(
-                "nonExistent.properties", "w/e", "n/a", "hedera.config.version");
+        final var shouldBeEmpty =
+                SemanticVersions.fromResource("nonExistent.properties", "w/e", "n/a", "hedera.config.version");
         final var desiredPrefix =
                 "Failed to parse resource 'nonExistent.properties' (keys 'w/e' and 'n/a') and resource 'bootstrap.properties' (key 'hedera.config.version'). Version info will be unavailable! java.lang.NullPointerException: inStream parameter is null";
 
@@ -116,10 +116,7 @@ class SemanticVersionsTest {
     @Test
     void warnsOfUnavailableSemversAndUsesEmptyConfig() {
         final var shouldBeEmpty = SemanticVersions.fromResource(
-                "nonExistent.properties",
-                "hapi.proto.version",
-                "hedera.services.version",
-                "test");
+                "nonExistent.properties", "hapi.proto.version", "hedera.services.version", "test");
         final var desiredPrefix =
                 "Failed to parse resource 'nonExistent.properties' (keys 'hapi.proto.version' and 'hedera.services.version') and resource 'bootstrap.properties' (key 'test'). Version info will be unavailable! java.lang.NullPointerException: inStream parameter is null";
 
@@ -140,14 +137,16 @@ class SemanticVersionsTest {
 
     @Test
     void doesntAppendBuildWhenConfigVersionIsEmpty() {
-        final var hederaSemVer = SemanticVersion.newBuilder().setMajor(1).setMinor(2).setPatch(4).build();
+        final var hederaSemVer =
+                SemanticVersion.newBuilder().setMajor(1).setMinor(2).setPatch(4).build();
         final var version = SemanticVersions.addConfigVersionToBuild("", hederaSemVer);
         assertTrue(version.getBuild().isEmpty());
     }
 
     @Test
     void appendsBuildWhenConfigVersionIsNonZero() {
-        final var hederaSemVer = SemanticVersion.newBuilder().setMajor(1).setMinor(2).setPatch(4).build();
+        final var hederaSemVer =
+                SemanticVersion.newBuilder().setMajor(1).setMinor(2).setPatch(4).build();
         final var version = SemanticVersions.addConfigVersionToBuild("10", hederaSemVer);
         assertEquals("10", version.getBuild());
     }

@@ -164,6 +164,31 @@ class SerializableSemVersTest {
     }
 
     @Test
+    void detectsNonConfigServicesUpgrades() {
+        final var services = semVerWith(1, 2, 3, null, null);
+        final var servicesConfig = semVerWith(1, 2, 3, null, "1");
+        final var servicesMinorUpgrade = semVerWith(1, 3, 3, null, null);
+        final var servicesMajorUpgrade = semVerWith(2, 2, 3, null, null);
+        final var servicesPatchUpgrade = semVerWith(1, 2, 4, null, null);
+        final var someProto = semVerWith(1, 1, 1, null, null);
+
+        final var base = new SerializableSemVers(someProto, services);
+        final var patch = new SerializableSemVers(someProto, servicesPatchUpgrade);
+        final var minor = new SerializableSemVers(someProto, servicesMinorUpgrade);
+        final var major = new SerializableSemVers(someProto, servicesMajorUpgrade);
+        final var config = new SerializableSemVers(someProto, servicesConfig);
+        final var mockVersion = mock(SoftwareVersion.class);
+
+        assertTrue(base.isNonConfigUpgrade(null));
+        assertFalse(base.isNonConfigUpgrade(base));
+        assertTrue(patch.isNonConfigUpgrade(base));
+        assertTrue(minor.isNonConfigUpgrade(base));
+        assertTrue(major.isNonConfigUpgrade(base));
+        assertFalse(config.isNonConfigUpgrade(base));
+        assertThrows(IllegalArgumentException.class, () -> base.isNonConfigUpgrade(mockVersion));
+    }
+
+    @Test
     void canOnlyCompareIfDeserializedAndToOwnType() {
         final var services = semVerWith(1, 1, 0, null, null);
         final var proto = semVerWith(1, 0, 1, null, null);

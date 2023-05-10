@@ -100,6 +100,17 @@ public class SerializableSemVers implements SoftwareVersion {
         return isNonPatchUpgradeFrom(other) || (this.isAfter(other) && currentVersionHasPatchMigrationRecords);
     }
 
+    public boolean isNonConfigUpgrade(@Nullable final SoftwareVersion other) {
+        if (other == null) {
+            return true;
+        }
+        if (other instanceof SerializableSemVers that) {
+            return this.isAfter(that) && haveDifferentNonBuildVersions(this, that);
+        } else {
+            throw new IllegalArgumentException("Version " + this + IS_INCOMPARABLE_MSG + other);
+        }
+    }
+
     @VisibleForTesting
     boolean isNonPatchUpgradeFrom(@Nullable final SoftwareVersion other) {
         if (other == null) {
@@ -115,6 +126,13 @@ public class SerializableSemVers implements SoftwareVersion {
     private boolean haveDifferentMajorAndMinorVersions(
             @NonNull final SerializableSemVers a, @NonNull final SerializableSemVers b) {
         return a.services.getMajor() != b.services.getMajor() || a.services.getMinor() != b.services.getMinor();
+    }
+
+    private boolean haveDifferentNonBuildVersions(
+            @NonNull final SerializableSemVers a, @NonNull final SerializableSemVers b) {
+        return haveDifferentMajorAndMinorVersions(a, b)
+                || a.services.getPatch() != b.services.getPatch()
+                || a.services.getPre() != b.services.getPre();
     }
 
     @Override

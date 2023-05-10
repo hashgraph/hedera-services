@@ -59,10 +59,7 @@ public enum SemanticVersions {
     private void ensureLoaded() {
         if (knownActive.get() == null) {
             final var deployed = fromResource(
-                    VERSION_INFO_RESOURCE,
-                    HAPI_VERSION_KEY,
-                    HEDERA_VERSION_KEY,
-                    HEDERA_CONFIG_VERSION_KEY);
+                    VERSION_INFO_RESOURCE, HAPI_VERSION_KEY, HEDERA_VERSION_KEY, HEDERA_CONFIG_VERSION_KEY);
             knownActive.set(deployed);
             knownSerializable.set(new SerializableSemVers(deployed.protoSemVer(), deployed.hederaSemVer()));
         }
@@ -70,10 +67,7 @@ public enum SemanticVersions {
 
     @NonNull
     static ActiveVersions fromResource(
-            final String propertiesFile,
-            final String protoKey,
-            final String servicesKey,
-            final String configKey) {
+            final String propertiesFile, final String protoKey, final String servicesKey, final String configKey) {
         try (final var in = SemanticVersions.class.getClassLoader().getResourceAsStream(propertiesFile)) {
             final var props = new Properties();
             props.load(in);

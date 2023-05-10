@@ -139,7 +139,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
     private final SoftwareVersion justPriorVersion = forHapiAndHedera("0.29.1", "0.29.2");
     private final SoftwareVersion currentVersion = SEMANTIC_VERSIONS.deployedSoftwareVersion();
     private final SoftwareVersion futureVersion = forHapiAndHedera("1.0.0", "1.0.0");
-    private final SoftwareVersion versionWithConfig = forHapiAndHedera("1.0.0", "1.0.0-config");
+    private final SoftwareVersion configVersion = forHapiAndHedera("0.32.0", "0.32.0");
     private final NodeId selfId = new NodeId(false, 1L);
     private static final String bookMemo = "0.0.4";
 
@@ -250,9 +250,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
         SEMANTIC_VERSIONS
                 .deployedSoftwareVersion()
                 .setServices(SemanticVersion.newBuilder().setMinor(32).build());
-        //        SEMANTIC_VERSIONS
-        //                .deployedSoftwareVersion()
-        //                .setConfigurationVersion("test-config-version");
         subject = tracked(new ServicesState());
         setAllChildren();
     }
@@ -609,6 +606,43 @@ class ServicesStateTest extends ResponsibleVMapUser {
 
         // when:
         subject.init(platform, dualState, RESTART, currentVersion);
+
+        verify(networkContext, never()).discardPreparedUpgradeMeta();
+        verify(dualState, never()).setFreezeTime(null);
+    }
+
+    @Test
+    void nonGenesisInitWithBuildDoesntRunMigrations() {
+        SEMANTIC_VERSIONS
+                .deployedSoftwareVersion()
+                .setProto(SemanticVersion.newBuilder().setMinor(32).build());
+        SEMANTIC_VERSIONS
+                .deployedSoftwareVersion()
+                .setServices(
+                        SemanticVersion.newBuilder().setMinor(32).setBuild("1").build());
+        subject = tracked(new ServicesState());
+        setAllChildren();
+
+        subject.setChild(StateChildIndices.SPECIAL_FILES, specialFiles);
+        subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+        subject.setChild(StateChildIndices.ACCOUNTS, accounts);
+
+        final var when = Instant.ofEpochSecond(1_234_567L, 890);
+        given(dualState.getFreezeTime()).willReturn(when);
+        given(dualState.getLastFrozenTime()).willReturn(when);
+
+        given(app.hashLogger()).willReturn(hashLogger);
+        given(app.initializationFlow()).willReturn(initFlow);
+        given(app.dualStateAccessor()).willReturn(dualStateAccessor);
+        given(platform.getSelfId()).willReturn(selfId);
+        given(app.sysFilesManager()).willReturn(systemFilesManager);
+        given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
+        // and:
+        APPS.save(selfId.getId(), app);
+
+        // when:
+
+        subject.init(platform, dualState, RESTART, configVersion);
 
         verify(networkContext, never()).discardPreparedUpgradeMeta();
         verify(dualState, never()).setFreezeTime(null);
