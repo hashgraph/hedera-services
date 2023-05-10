@@ -24,6 +24,12 @@ import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.signature.ExpandedSignaturePair;
 import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -36,13 +42,6 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Blackhole;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Measures the time it takes to expand {@link SignaturePair}s.
@@ -84,19 +83,20 @@ public class ExpansionBenchmark extends AppTestBase implements Scenarios {
     }
 
     private Key createKey() {
-        return switch(scenario) {
+        return switch (scenario) {
             case "key" -> createCryptographicKey();
-            case "keyList" -> Key.newBuilder().keyList(KeyList.newBuilder().keys(
-                    createCryptographicKey(),
-                    createCryptographicKey(),
-                    createCryptographicKey()
-            )).build();
-            case "thresholdKey" -> Key.newBuilder().thresholdKey(ThresholdKey.newBuilder()
+            case "keyList" -> Key.newBuilder()
+                    .keyList(KeyList.newBuilder()
+                            .keys(createCryptographicKey(), createCryptographicKey(), createCryptographicKey()))
+                    .build();
+            case "thresholdKey" -> Key.newBuilder()
+                    .thresholdKey(ThresholdKey.newBuilder()
                             .threshold(2)
-                            .keys(KeyList.newBuilder().keys(
-                                    createCryptographicKey(),
-                                    createCryptographicKey(),
-                                    createCryptographicKey())))
+                            .keys(KeyList.newBuilder()
+                                    .keys(
+                                            createCryptographicKey(),
+                                            createCryptographicKey(),
+                                            createCryptographicKey())))
                     .build();
             default -> throw new IllegalArgumentException("Unknown scenario: " + scenario);
         };

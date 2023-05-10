@@ -71,8 +71,8 @@ public class VerificationBenchmark extends AppTestBase implements Scenarios {
                     .ed25519(keyBytes)
                     .pubKeyPrefix(keyBytes.slice(0, 10))
                     .build();
-            pairs.add(new ExpandedSignaturePair(
-                    Key.newBuilder().ed25519(keyBytes).build(),null, sigPair));
+            pairs.add(
+                    new ExpandedSignaturePair(Key.newBuilder().ed25519(keyBytes).build(), null, sigPair));
         }
         return pairs;
     }

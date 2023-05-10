@@ -16,6 +16,16 @@
 
 package com.hedera.node.app.signature;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_PREFIX_MISMATCH;
+import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
@@ -33,22 +43,13 @@ import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.crypto.TransactionSignature;
+import java.util.List;
+import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import java.util.List;
-import java.util.function.Function;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_PREFIX_MISMATCH;
-import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class MonoSignaturePreparerTest {
@@ -92,8 +93,7 @@ class MonoSignaturePreparerTest {
     @BeforeEach
     void setUp() {
         subject =
-                new MonoSignaturePreparer(precheckVerifier, cryptoSigsCreation, keyToSigFactory,
- scopedFactoryProvider);
+                new MonoSignaturePreparer(precheckVerifier, cryptoSigsCreation, keyToSigFactory, scopedFactoryProvider);
     }
 
     @Test
@@ -122,10 +122,9 @@ class MonoSignaturePreparerTest {
         given(cryptoSigsCreation.createFrom(List.of(PAYER_KEY), keyToSigBytes, scopedFactory))
                 .willReturn(payerResult);
 
-        final var result = subject.expandedSigsFor(PbjConverter.toPbj(MOCK_TRANSACTION), PAYER_KEY,
- OTHER_PARTY_KEYS);
+        final var result = subject.expandedSigsFor(PbjConverter.toPbj(MOCK_TRANSACTION), PAYER_KEY, OTHER_PARTY_KEYS);
 
-        assertEquals(KEY_PREFIX_MISMATCH, result.status());
+        assertEquals(ResponseCodeEnum.KEY_PREFIX_MISMATCH, result.status());
         assertEquals(List.of(), result.cryptoSigs());
     }
 
@@ -141,10 +140,9 @@ class MonoSignaturePreparerTest {
         given(cryptoSigsCreation.createFrom((List) OTHER_PARTY_KEYS, keyToSigBytes, scopedFactory))
                 .willReturn(otherPartiesResult);
 
-        final var result = subject.expandedSigsFor(PbjConverter.toPbj(MOCK_TRANSACTION), PAYER_KEY,
- OTHER_PARTY_KEYS);
+        final var result = subject.expandedSigsFor(PbjConverter.toPbj(MOCK_TRANSACTION), PAYER_KEY, OTHER_PARTY_KEYS);
 
-        assertEquals(KEY_PREFIX_MISMATCH, result.status());
+        assertEquals(ResponseCodeEnum.KEY_PREFIX_MISMATCH, result.status());
         assertEquals(List.of(mockSig, mockSig), result.cryptoSigs());
     }
 
@@ -192,7 +190,6 @@ class MonoSignaturePreparerTest {
     }
 
     private void givenUnhappy(final PlatformSigsCreationResult result) {
-
         given(result.asCode()).willReturn(com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_PREFIX_MISMATCH);
         given(result.hasFailed()).willReturn(true);
     }
