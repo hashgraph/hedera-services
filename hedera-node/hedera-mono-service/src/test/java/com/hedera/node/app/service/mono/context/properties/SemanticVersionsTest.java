@@ -104,7 +104,7 @@ class SemanticVersionsTest {
     @Test
     void warnsOfUnavailableSemversAndUsesEmpty() {
         final var shouldBeEmpty = SemanticVersions.fromResource(
-                "nonExistent.properties", "bootstrap.properties", "w/e", "n/a", "hedera.config.version");
+                "nonExistent.properties", "w/e", "n/a", "hedera.config.version");
         final var desiredPrefix =
                 "Failed to parse resource 'nonExistent.properties' (keys 'w/e' and 'n/a') and resource 'bootstrap.properties' (key 'hedera.config.version'). Version info will be unavailable! java.lang.NullPointerException: inStream parameter is null";
 
@@ -117,7 +117,6 @@ class SemanticVersionsTest {
     void warnsOfUnavailableSemversAndUsesEmptyConfig() {
         final var shouldBeEmpty = SemanticVersions.fromResource(
                 "nonExistent.properties",
-                "bootstrap.properties",
                 "hapi.proto.version",
                 "hedera.services.version",
                 "test");
@@ -133,7 +132,6 @@ class SemanticVersionsTest {
     void doesntAppendBuildWhenConfigVersionIsZero() {
         final var version = SemanticVersions.fromResource(
                 "semantic-version.properties",
-                "bootstrap.properties",
                 "hapi.proto.version",
                 "hedera.services.version",
                 "hedera.config.version");
@@ -142,24 +140,16 @@ class SemanticVersionsTest {
 
     @Test
     void doesntAppendBuildWhenConfigVersionIsEmpty() {
-        final var version = SemanticVersions.fromResource(
-                "semantic-version.properties",
-                "bootstrap/empty-config.properties",
-                "hapi.proto.version",
-                "hedera.services.version",
-                "hedera.config.version");
-        assertTrue(version.hederaSemVer().getBuild().isEmpty());
+        final var hederaSemVer = SemanticVersion.newBuilder().setMajor(1).setMinor(2).setPatch(4).build();
+        final var version = SemanticVersions.addConfigVersionToBuild("", hederaSemVer);
+        assertTrue(version.getBuild().isEmpty());
     }
 
     @Test
     void appendsBuildWhenConfigVersionIsNonZero() {
-        final var version = SemanticVersions.fromResource(
-                "semantic-version.properties",
-                "bootstrap/standard.properties",
-                "hapi.proto.version",
-                "hedera.services.version",
-                "hedera.config.version");
-        assertEquals("10", version.hederaSemVer().getBuild());
+        final var hederaSemVer = SemanticVersion.newBuilder().setMajor(1).setMinor(2).setPatch(4).build();
+        final var version = SemanticVersions.addConfigVersionToBuild("10", hederaSemVer);
+        assertEquals("10", version.getBuild());
     }
 
     @Test

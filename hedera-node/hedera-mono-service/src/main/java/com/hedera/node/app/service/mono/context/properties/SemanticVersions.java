@@ -40,7 +40,6 @@ public enum SemanticVersions {
     private static final String HEDERA_VERSION_KEY = "hedera.services.version";
     private static final String HEDERA_CONFIG_VERSION_KEY = "hedera.config.version";
     private static final String VERSION_INFO_RESOURCE = "semantic-version.properties";
-    private static final String BOOTSTRAP_PROPERTIES_RESOURCE = "bootstrap.properties";
 
     private final AtomicReference<ActiveVersions> knownActive = new AtomicReference<>(null);
     private final AtomicReference<SerializableSemVers> knownSerializable = new AtomicReference<>(null);
@@ -61,7 +60,6 @@ public enum SemanticVersions {
         if (knownActive.get() == null) {
             final var deployed = fromResource(
                     VERSION_INFO_RESOURCE,
-                    BOOTSTRAP_PROPERTIES_RESOURCE,
                     HAPI_VERSION_KEY,
                     HEDERA_VERSION_KEY,
                     HEDERA_CONFIG_VERSION_KEY);
@@ -73,13 +71,10 @@ public enum SemanticVersions {
     @NonNull
     static ActiveVersions fromResource(
             final String propertiesFile,
-            final String bootstrapPropertiesFile,
             final String protoKey,
             final String servicesKey,
             final String configKey) {
-        try (final var in = SemanticVersions.class.getClassLoader().getResourceAsStream(propertiesFile);
-                final var bootstrapIn =
-                        SemanticVersions.class.getClassLoader().getResourceAsStream(bootstrapPropertiesFile)) {
+        try (final var in = SemanticVersions.class.getClassLoader().getResourceAsStream(propertiesFile)) {
             final var props = new Properties();
             props.load(in);
             log.info("Discovered semantic versions {} from resource '{}'", props, propertiesFile);
@@ -88,23 +83,22 @@ public enum SemanticVersions {
             final var protoSemVer = asSemVer((String) props.get(protoKey));
             final var hederaSemVer = asSemVer((String) props.get(servicesKey));
 
-            final var bootstrapProperties = new Properties();
-            bootstrapProperties.load(bootstrapIn);
-            final var configVersion = (String) bootstrapProperties.get(configKey);
-            log.info("Discovered configuration version {} from resource '{}'", configVersion, bootstrapPropertiesFile);
+            // Loads all the configuration properties from "bootstrap.properties" file.
+            final var bootstrapProperties = new BootstrapProperties(false);
+            final var configVersion = bootstrapProperties.getIntProperty(configKey);
+            log.info("Discovered configuration version {} from resource 'bootstrap.properties'", configVersion);
 
             // append the build portion of semver with the configurable property "hedera.config.version"
             // This is needed only for internal use to do config-only upgrades.
-            final var hederaSemVerWithConfig = addConfigVersionToBuild(configVersion, hederaSemVer);
+            final var hederaSemVerWithConfig = addConfigVersionToBuild(String.valueOf(configVersion), hederaSemVer);
             return new ActiveVersions(protoSemVer, hederaSemVerWithConfig);
         } catch (final Exception surprising) {
             log.warn(
-                    "Failed to parse resource '{}' (keys '{}' and '{}') and resource '{}' (key '{}')"
+                    "Failed to parse resource '{}' (keys '{}' and '{}') and resource 'bootstrap.properties' (key '{}')"
                             + ". Version info will be" + " unavailable!",
                     propertiesFile,
                     protoKey,
                     servicesKey,
-                    bootstrapPropertiesFile,
                     configKey,
                     surprising);
             final var emptySemver = SemanticVersion.getDefaultInstance();
@@ -121,7 +115,7 @@ public enum SemanticVersions {
      * @param hederaSemVer the original semver
      * @return the semver with the build portion appended
      */
-    private static SemanticVersion addConfigVersionToBuild(
+    static SemanticVersion addConfigVersionToBuild(
             @NonNull final String configVersion, @NonNull final SemanticVersion hederaSemVer) {
         if (!configVersion.isEmpty() && !configVersion.equals("0")) {
             return hederaSemVer.toBuilder().setBuild(configVersion).build();
