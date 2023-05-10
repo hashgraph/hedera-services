@@ -19,10 +19,11 @@ package com.hedera.node.app.signature.impl;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SignaturePair;
 import com.hedera.node.app.AppTestBase;
+import com.hedera.node.app.signature.ExpandedSignaturePair;
 import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -36,9 +37,7 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.infra.Blackhole;
 
-/**
- * This benchmark measures the time it takes to find the matching {@link SignaturePair}.
- */
+/** Measures the amount of time to prepare expanded signatures and call the crypto engine */
 @State(Scope.Benchmark)
 @Fork(value = 1, warmups = 1)
 @BenchmarkMode(Mode.AverageTime)
@@ -47,39 +46,33 @@ public class VerificationBenchmark extends AppTestBase implements Scenarios {
     @Param({"1", "2", "5", "10"})
     public int numSigPairs;
 
-    @Param({"key", "keyList", "thresholdKey", "deepTree", "hollow"})
-    public String scenario;
-
-    private Key key;
-    private List<SignaturePair> sigPairs;
+    private Set<ExpandedSignaturePair> sigPairs;
     private Bytes fakeSignedBytes;
     private SignatureVerifierImpl subject;
 
     @Setup(Level.Invocation)
     public void setUp() {
-        key = createKey(scenario);
         sigPairs = createSigPairs(numSigPairs);
-        final var fakeCryptoEngine = new FakeCryptoEngine();
+        final var fakeCryptoEngine = new DoNothingCryptoEngine();
         fakeSignedBytes = Bytes.wrap(new byte[] {1, 2, 3, 4, 5});
         subject = new SignatureVerifierImpl(fakeCryptoEngine);
     }
 
-    @Benchmark
-    public void singleKeySingleSignature(Blackhole blackhole) {
-        //        blackhole.consume(subject.match(key, fakeSignedBytes, sigPairs));
-    }
+//    @Benchmark
+//    public void verifyBench(Blackhole blackhole) {
+//        blackhole.consume(subject.verify(fakeSignedBytes, sigPairs));
+//    }
 
-    private Key createKey(String scenario) {
-        return FAKE_ED25519_KEY_INFOS[0].publicKey();
-    }
-
-    private List<SignaturePair> createSigPairs(int numSigPairs) {
-        final var pairs = new ArrayList<SignaturePair>();
+    private Set<ExpandedSignaturePair> createSigPairs(int numSigPairs) {
+        final var pairs = new HashSet<ExpandedSignaturePair>();
         for (int i = 0; i < numSigPairs; i++) {
-            pairs.add(SignaturePair.newBuilder()
-                    .ed25519(randomBytes(64))
-                    .pubKeyPrefix(randomBytes(32))
-                    .build());
+            final var keyBytes = randomBytes(32);
+            final var sigPair = SignaturePair.newBuilder()
+                    .ed25519(keyBytes)
+                    .pubKeyPrefix(keyBytes.slice(0, 10))
+                    .build();
+            pairs.add(new ExpandedSignaturePair(
+                    Key.newBuilder().ed25519(keyBytes).build(),null, sigPair));
         }
         return pairs;
     }

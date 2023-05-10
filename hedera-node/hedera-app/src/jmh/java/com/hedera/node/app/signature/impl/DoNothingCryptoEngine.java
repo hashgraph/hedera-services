@@ -27,7 +27,7 @@ import com.swirlds.common.io.SelfSerializable;
 import java.util.List;
 import java.util.concurrent.Future;
 
-public class FakeCryptoEngine implements Cryptography {
+public class DoNothingCryptoEngine implements Cryptography {
     @Override
     public void digestAsync(Message message) {}
 
