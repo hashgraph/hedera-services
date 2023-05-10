@@ -31,7 +31,7 @@ import java.util.function.LongSupplier;
  * implementations.
  *
  * <p>At present, only supplies the context needed for Consensus Service handlers in the
- * limited form described by https://github.com/hashgraph/hedera-services/issues/4945.
+ * limited form described by <a href="https://github.com/hashgraph/hedera-services/issues/4945">4945</a>.
  */
 public interface HandleContext {
     /**
@@ -76,13 +76,12 @@ public interface HandleContext {
     <C> C createReadableStore(@NonNull Class<C> storeInterface);
 
     /**
-     * Gets the {@link SignatureVerification} for the given key. If this key was not provided during
-     * pre-handle, then there will be no corresponding {@link SignatureVerification}. If the key was provided during
-     * pre-handle, then the corresponding {@link SignatureVerification} will be returned with the result of that
-     * verification operation.
+     * Gets the {@link SignatureVerification} for the given key. If this key was unknown during signature verification,
+     * either because it was not provided as a required key or because the signature map did not have a "full prefix"
+     * for this key, then {@code null} is returned.
      *
      * @param key the key to get the verification for
-     * @return the verification for the given key, or {@code null} if no such key was provided during pre-handle
+     * @return the verification for the given key, or {@code null} if no known key or signature at pre-handle
      */
     @Nullable
     SignatureVerification verificationFor(@NonNull final Key key);
@@ -95,7 +94,7 @@ public interface HandleContext {
      * available in the {@link SignatureVerification}.
      *
      * @param hollowAccountNumber the hollow account number to get the verification for
-     * @return the verification for the given account, or {@code null} if no such account was provided during pre-handle
+     * @return the verification for the given key, or {@code null} if no known key or signature at pre-handle
      */
     @Nullable
     SignatureVerification verificationFor(final long hollowAccountNumber);
