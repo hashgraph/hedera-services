@@ -141,6 +141,17 @@ class SemanticVersionsTest {
     }
 
     @Test
+    void doesntAppendBuildWhenConfigVersionIsEmpty() {
+        final var version = SemanticVersions.fromResource(
+                "semantic-version.properties",
+                "bootstrap/empty-config.properties",
+                "hapi.proto.version",
+                "hedera.services.version",
+                "hedera.config.version");
+        assertTrue(version.hederaSemVer().getBuild().isEmpty());
+    }
+
+    @Test
     void appendsBuildWhenConfigVersionIsNonZero() {
         final var version = SemanticVersions.fromResource(
                 "semantic-version.properties",

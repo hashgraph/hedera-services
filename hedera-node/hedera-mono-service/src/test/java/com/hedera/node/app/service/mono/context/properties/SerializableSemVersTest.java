@@ -55,6 +55,15 @@ class SerializableSemVersTest {
     }
 
     @Test
+    void ordersWithRespectToBuild() {
+        final var alpha2 = semVerWith(1, 9, 9, "alpha.1", "2");
+        final var alpha10 = semVerWith(1, 9, 9, "alpha.0", "10");
+        final var alpha1 = semVerWith(1, 9, 9, "alpha.0", "1");
+        assertTrue(SEM_VER_COMPARATOR.compare(alpha1, alpha2) < 0);
+        assertTrue(SEM_VER_COMPARATOR.compare(alpha10, alpha2) < 0);
+    }
+
+    @Test
     void comparatorPrioritizesOrderAsExpected() {
         assertTrue(
                 SEM_VER_COMPARATOR.compare(semVerWith(1, 9, 9, "pre", "build"), semVerWith(2, 0, 0, null, null)) < 0);
@@ -65,7 +74,9 @@ class SerializableSemVersTest {
         assertTrue(
                 SEM_VER_COMPARATOR.compare(semVerWith(1, 0, 1, "alpha.12345", null), semVerWith(1, 0, 1, null, "build"))
                         < 0);
-        assertTrue(SEM_VER_COMPARATOR.compare(semVerWith(1, 0, 1, null, "build"), semVerWith(1, 0, 1, null, null)) < 0);
+        assertTrue(SEM_VER_COMPARATOR.compare(semVerWith(1, 0, 1, null, "build"), semVerWith(1, 0, 1, null, null)) > 0);
+        assertTrue(SEM_VER_COMPARATOR.compare(semVerWith(1, 0, 1, null, null), semVerWith(1, 0, 1, null, null)) == 0);
+        assertTrue(SEM_VER_COMPARATOR.compare(semVerWith(1, 0, 1, null, "2"), semVerWith(1, 0, 1, null, "1")) > 0);
     }
 
     @Test
