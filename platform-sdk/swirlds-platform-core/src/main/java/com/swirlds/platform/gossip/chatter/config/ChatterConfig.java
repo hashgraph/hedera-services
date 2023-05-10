@@ -52,7 +52,7 @@ import java.time.Duration;
  */
 @ConfigData("chatter")
 public record ChatterConfig(
-        @ConfigProperty(defaultValue = "false") boolean useChatter,
+        @ConfigProperty(defaultValue = "true") boolean useChatter, // TODO revert
         @ConfigProperty(defaultValue = "40") int attemptedChatterEventPerSecond,
         @ConfigProperty(defaultValue = "0.5") double chatteringCreationThreshold,
         @ConfigProperty(defaultValue = "20") int chatterIntakeThrottle,

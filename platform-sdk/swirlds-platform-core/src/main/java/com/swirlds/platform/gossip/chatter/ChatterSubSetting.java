@@ -52,7 +52,8 @@ public class ChatterSubSetting extends SubSetting implements ChatterSettings {
 
     @Override
     public boolean isChatterUsed() {
-        return useChatter;
+        return true; // TODO revert
+//        return useChatter;
     }
 
     @Override
