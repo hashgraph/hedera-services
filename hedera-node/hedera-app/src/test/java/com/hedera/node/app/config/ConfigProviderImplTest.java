@@ -26,7 +26,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ConfigProviderImplTest {
 
-
     @Test
     void testInitialConfig() {
         // given
