@@ -17,11 +17,10 @@
 package com.hedera.node.app.workflows.handle;
 
 import com.hedera.node.app.components.StoreComponent;
-import com.hedera.node.app.service.admin.impl.handlers.AdminHandlers;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusHandlers;
 import com.hedera.node.app.service.contract.impl.handlers.ContractHandlers;
 import com.hedera.node.app.service.file.impl.handlers.FileHandlers;
-import com.hedera.node.app.service.network.impl.handlers.NetworkHandlers;
+import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkAdminHandlers;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleHandlers;
 import com.hedera.node.app.service.token.impl.handlers.TokenHandlers;
 import com.hedera.node.app.service.util.impl.handlers.UtilHandlers;
@@ -36,10 +35,9 @@ public interface HandlersModule {
     @Provides
     @Singleton
     static TransactionHandlers provideTransactionHandlers(
-            @NonNull final AdminHandlers adminHandlers,
+            @NonNull final NetworkAdminHandlers networkAdminHandlers,
             @NonNull final ConsensusHandlers consensusHandlers,
             @NonNull final FileHandlers fileHandlers,
-            @NonNull final NetworkHandlers networkHandlers,
             @NonNull final ContractHandlers contractHandlers,
             @NonNull final ScheduleHandlers scheduleHandlers,
             @NonNull final TokenHandlers tokenHandlers,
@@ -70,8 +68,8 @@ public interface HandlersModule {
                 fileHandlers.fileAppendHandler(),
                 fileHandlers.fileSystemDeleteHandler(),
                 fileHandlers.fileSystemUndeleteHandler(),
-                adminHandlers.freezeHandler(),
-                networkHandlers.networkUncheckedSubmitHandler(),
+                networkAdminHandlers.freezeHandler(),
+                networkAdminHandlers.networkUncheckedSubmitHandler(),
                 scheduleHandlers.scheduleCreateHandler(),
                 scheduleHandlers.scheduleSignHandler(),
                 scheduleHandlers.scheduleDeleteHandler(),
