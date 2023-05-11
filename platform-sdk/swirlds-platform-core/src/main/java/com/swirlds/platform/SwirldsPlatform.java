@@ -343,8 +343,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     private final QueueThread<EventIntakeTask> intakeQueue;
     private final EventLinker eventLinker;
     private SequenceCycle<EventIntakeTask> intakeCycle = null;
-    /** sleep in ms after each sync in SyncCaller. A public setter for this exists. */
-    private long delayAfterSync = 0;
     /**
      * Executes a sync with a remote node. Only used for sync, not chatter.
      */
@@ -1648,10 +1646,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     .setThreadName("SingleNodeNetworkSync")
                     .setHangingThreadPeriod(hangingThreadDuration)
                     .setWork(new SingleNodeNetworkSync(
-                            this::checkPlatformStatus,
-                            eventTaskCreator::createEvent,
-                            this::getSleepAfterSync,
-                            selfId.getId()))
+                            this::checkPlatformStatus, eventTaskCreator::createEvent, () -> 0, selfId.getId()))
                     .build(true));
 
             return;
@@ -1717,7 +1712,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                                             syncPermitProvider,
                                             criticalQuorum,
                                             peerAgnosticSyncChecks,
-                                            Duration.ofMillis(getSleepAfterSync()),
+                                            Duration.ZERO,
                                             syncMetrics,
                                             time)))))
                     .build(true));
@@ -1891,22 +1886,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             }
         }
         throw new IllegalStateException("Unable to sort events after 100 retries");
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public long getSleepAfterSync() {
-        return delayAfterSync;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void setSleepAfterSync(final long delay) {
-        delayAfterSync = delay;
     }
 
     /**

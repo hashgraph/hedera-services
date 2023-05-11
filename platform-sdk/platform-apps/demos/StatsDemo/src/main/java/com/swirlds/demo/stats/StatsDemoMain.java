@@ -37,7 +37,6 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.PlatformWithDeprecatedMethods;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.threading.framework.StoppableThread;
@@ -231,7 +230,6 @@ public class StatsDemoMain implements SwirldMain {
                 platform.getSelfId().getId(),
                 "Stats Demo v. 1.2\nThis writes statistics to a log file,"
                         + " such as the number of transactions per second.");
-        ((PlatformWithDeprecatedMethods) platform).setSleepAfterSync(syncDelay);
     }
 
     @Override

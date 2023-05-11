@@ -429,9 +429,7 @@ public class HashgraphDemoMain implements SwirldMain {
         p++;
 
         slowCheckbox.addItemListener(new ItemListener() {
-            public void itemStateChanged(final ItemEvent e) {
-                ((PlatformWithDeprecatedMethods) platform).setSleepAfterSync(e.getStateChange() == 1 ? 1000 : 0);
-            }
+            public void itemStateChanged(final ItemEvent e) {}
         });
 
         final GridBagConstraints constr = new GridBagConstraints();
