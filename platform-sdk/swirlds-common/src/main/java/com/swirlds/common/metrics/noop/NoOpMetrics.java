@@ -42,7 +42,7 @@ public class NoOpMetrics implements Metrics {
 
     @Override
     public NodeId getNodeId() {
-        return NodeId.create(42L);
+        return new NodeId(42L);
     }
 
     @Override

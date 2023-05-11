@@ -173,7 +173,7 @@ public class TransactionPool implements FastCopyable {
 
         /** If the startFreezeAfterMin is 0, we don't send freeze transaction */
         if (freezeConfig != null
-                && Objects.equals(platform.getSelfId(), NodeId.FIRST_NODE_ID)
+                && Objects.equals(platform.getSelfId(), new NodeId(0L))
                 && freezeConfig.getStartFreezeAfterMin() > 0) {
             this.freezeConfig = freezeConfig;
             this.needToSubmitFreezeTx = true;

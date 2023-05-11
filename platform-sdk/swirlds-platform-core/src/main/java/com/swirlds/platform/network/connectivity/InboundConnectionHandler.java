@@ -115,7 +115,7 @@ public class InboundConnectionHandler {
                     clientSocket.getOutputStream(), settings.connectionStreamBufferSize());
 
             final SocketConnection sc = SocketConnection.create(
-                    selfId, NodeId.create(otherId), connectionTracker, false, clientSocket, sis, sos);
+                    selfId, new NodeId(otherId), connectionTracker, false, clientSocket, sis, sos);
             newConnectionConsumer.accept(sc);
         } catch (final InterruptedException e) {
             Thread.currentThread().interrupt();

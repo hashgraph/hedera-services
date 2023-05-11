@@ -57,7 +57,7 @@ public class HeartbeatSender implements MessageProvider, MessageHandler<Heartbea
             final BiConsumer<NodeId, Long> pingConsumer,
             final Duration heartbeatInterval,
             final Time time) {
-        this.peerId = NodeId.create(peerId);
+        this.peerId = new NodeId(peerId);
         this.pingConsumer = pingConsumer;
         this.heartbeatInterval = heartbeatInterval;
         this.time = time;

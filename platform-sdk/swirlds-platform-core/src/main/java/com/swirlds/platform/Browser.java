@@ -623,7 +623,7 @@ public class Browser {
                         + " - " + address.getSelfName()
                         + " - " + infoSwirld.name
                         + " - " + infoSwirld.app.name;
-                final NodeId nodeId = NodeId.create(i);
+                final NodeId nodeId = new NodeId(i);
 
                 final PlatformContext platformContext =
                         new DefaultPlatformContext(nodeId, metricsProvider, configuration);

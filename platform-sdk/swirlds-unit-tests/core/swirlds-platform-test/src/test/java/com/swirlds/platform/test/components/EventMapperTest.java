@@ -44,7 +44,7 @@ class EventMapperTest {
     @DisplayName("DataInDataOutTest")
     void dataInDataOutTest() {
 
-        final EventMapper mapper = new EventMapper(NodeId.FIRST_NODE_ID);
+        final EventMapper mapper = new EventMapper(new NodeId(0L));
 
         final long nodeId1 = 1;
         final long nodeId2 = 2;
@@ -85,7 +85,7 @@ class EventMapperTest {
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("Orphaned Event Test")
     void orphanedEventTest() {
-        final EventMapper mapper = new EventMapper(NodeId.FIRST_NODE_ID);
+        final EventMapper mapper = new EventMapper(new NodeId(0L));
 
         // With no events in the mapper there will be no descendants
         for (int i = 0; i < 4; i++) {

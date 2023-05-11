@@ -29,7 +29,8 @@ import org.junit.jupiter.api.Test;
 class FallenBehindManagerTest {
     final int numNodes = 11;
     final double fallenBehindThreshold = 0.5;
-    final NodeId selfId = NodeId.FIRST_NODE_ID;
+    final NodeId selfId = new NodeId(0L);
+    ;
     final RandomGraph graph = new RandomGraph(numNodes, numNodes + (numNodes % 2), numNodes);
     final AtomicInteger platformNotification = new AtomicInteger(0);
     final AtomicInteger fallenBehindNotification = new AtomicInteger(0);
@@ -44,32 +45,32 @@ class FallenBehindManagerTest {
         assertFallenBehind(false, 0, "default should be none report fallen behind");
 
         // node 1 reports fallen behind
-        manager.reportFallenBehind(NodeId.create(1));
+        manager.reportFallenBehind(new NodeId(1));
         assertFallenBehind(false, 1, "one node only reported fallen behind");
 
         // if the same node reports again, nothing should change
-        manager.reportFallenBehind(NodeId.create(1));
+        manager.reportFallenBehind(new NodeId(1));
         assertFallenBehind(false, 1, "if the same node reports again, nothing should change");
 
-        manager.reportFallenBehind(NodeId.create(2));
-        manager.reportFallenBehind(NodeId.create(3));
-        manager.reportFallenBehind(NodeId.create(4));
-        manager.reportFallenBehind(NodeId.create(5));
+        manager.reportFallenBehind(new NodeId(2));
+        manager.reportFallenBehind(new NodeId(3));
+        manager.reportFallenBehind(new NodeId(4));
+        manager.reportFallenBehind(new NodeId(5));
         assertFallenBehind(false, 5, "we should still be missing one for fallen behind");
 
-        manager.reportFallenBehind(NodeId.create(6));
+        manager.reportFallenBehind(new NodeId(6));
         assertFallenBehind(true, 6, "we should be fallen behind");
 
-        manager.reportFallenBehind(NodeId.create(1));
-        manager.reportFallenBehind(NodeId.create(2));
-        manager.reportFallenBehind(NodeId.create(3));
-        manager.reportFallenBehind(NodeId.create(4));
-        manager.reportFallenBehind(NodeId.create(5));
-        manager.reportFallenBehind(NodeId.create(6));
+        manager.reportFallenBehind(new NodeId(1));
+        manager.reportFallenBehind(new NodeId(2));
+        manager.reportFallenBehind(new NodeId(3));
+        manager.reportFallenBehind(new NodeId(4));
+        manager.reportFallenBehind(new NodeId(5));
+        manager.reportFallenBehind(new NodeId(6));
         assertFallenBehind(true, 6, "if the same nodes report again, nothing should change");
 
-        manager.reportFallenBehind(NodeId.create(7));
-        manager.reportFallenBehind(NodeId.create(8));
+        manager.reportFallenBehind(new NodeId(7));
+        manager.reportFallenBehind(new NodeId(8));
         assertFallenBehind(true, 8, "more nodes reported, but the status should be the same");
 
         manager.resetFallenBehind();

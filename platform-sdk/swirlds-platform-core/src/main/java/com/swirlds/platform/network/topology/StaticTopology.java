@@ -61,7 +61,7 @@ public class StaticTopology implements NetworkTopology {
     public List<NodeId> getNeighbors(final Predicate<NodeId> filter) {
         return Arrays.stream(connectionGraph.getNeighbors(selfId.getIdAsInt()))
                 .mapToLong(i -> (long) i)
-                .mapToObj(NodeId::create)
+                .mapToObj(NodeId::new)
                 .filter(filter)
                 .collect(Collectors.toList());
     }

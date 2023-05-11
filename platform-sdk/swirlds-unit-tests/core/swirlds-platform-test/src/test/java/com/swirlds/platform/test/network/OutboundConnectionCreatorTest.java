@@ -68,8 +68,8 @@ class OutboundConnectionCreatorTest {
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.FAKE_HASH)
                 .setSequentialIds(true)
                 .build();
-        final NodeId thisNode = NodeId.create(r.nextInt(10));
-        final NodeId otherNode = NodeId.create(r.nextInt(10));
+        final NodeId thisNode = new NodeId(r.nextInt(10));
+        final NodeId otherNode = new NodeId(r.nextInt(10));
 
         final AtomicBoolean connected = new AtomicBoolean(true);
         final Socket socket = mock(Socket.class);
@@ -164,8 +164,8 @@ class OutboundConnectionCreatorTest {
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.FAKE_HASH)
                 .setSequentialIds(true)
                 .build();
-        final NodeId thisNode = NodeId.create(r.nextInt(10));
-        final NodeId otherNode = NodeId.create(r.nextInt(10));
+        final NodeId thisNode = new NodeId(r.nextInt(10));
+        final NodeId otherNode = new NodeId(r.nextInt(10));
 
         final AtomicBoolean connected = new AtomicBoolean(true);
         final Socket socket = mock(Socket.class);
@@ -223,8 +223,8 @@ class OutboundConnectionCreatorTest {
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.FAKE_HASH)
                 .setSequentialIds(true)
                 .build();
-        final NodeId thisNode = NodeId.create(r.nextInt(10));
-        final NodeId otherNode = NodeId.create(r.nextInt(10));
+        final NodeId thisNode = new NodeId(r.nextInt(10));
+        final NodeId otherNode = new NodeId(r.nextInt(10));
 
         final AtomicBoolean connected = new AtomicBoolean(true);
         final Socket socket = mock(Socket.class);

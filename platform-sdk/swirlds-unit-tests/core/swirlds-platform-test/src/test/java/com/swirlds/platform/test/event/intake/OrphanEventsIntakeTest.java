@@ -96,7 +96,7 @@ class OrphanEventsIntakeTest {
                     new ParentFinder(linkedEventMap::get),
                     100_000);
             intake = new EventIntake(
-                    NodeId.FIRST_NODE_ID,
+                    new NodeId(0L),
                     orphanBuffer,
                     () -> consensus,
                     generator.getAddressBook(),

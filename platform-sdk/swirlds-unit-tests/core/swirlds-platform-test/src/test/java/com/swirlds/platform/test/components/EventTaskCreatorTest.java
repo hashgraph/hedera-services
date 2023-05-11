@@ -72,7 +72,7 @@ class EventTaskCreatorTest {
         address = mock(Address.class);
         when(addressBook.getAddress(Mockito.anyLong())).thenReturn(address);
         when(addressBook.copy()).thenReturn(addressBook);
-        selfId = NodeId.create(1);
+        selfId = new NodeId(1);
         eventIntakeMetrics = mock(EventIntakeMetrics.class);
         eventQueueThread = mock(BlockingQueue.class);
         setting = mock(SettingsProvider.class);
@@ -169,7 +169,7 @@ class EventTaskCreatorTest {
         when(syncManager.shouldCreateEvent(any())).thenReturn(true);
 
         SyncResult syncResult = mock(SyncResult.class);
-        when(syncResult.getOtherId()).thenReturn(NodeId.create(2));
+        when(syncResult.getOtherId()).thenReturn(new NodeId(2));
 
         taskCreator.syncDone(syncResult);
 
@@ -185,7 +185,7 @@ class EventTaskCreatorTest {
         when(setting.getRandomEventProbability()).thenReturn(1);
 
         SyncResult syncResult = mock(SyncResult.class);
-        when(syncResult.getOtherId()).thenReturn(NodeId.create(2));
+        when(syncResult.getOtherId()).thenReturn(new NodeId(2));
 
         taskCreator.syncDone(syncResult);
 

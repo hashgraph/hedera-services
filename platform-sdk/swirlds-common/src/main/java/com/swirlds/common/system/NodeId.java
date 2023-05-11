@@ -29,33 +29,16 @@ public record NodeId(long id) implements Comparable<NodeId> {
     /** The first allowed Node ID. */
     public static final long LOWEST_NODE_NUMBER = 0L;
 
-    /** the first NodeId record */
-    public static final NodeId FIRST_NODE_ID = new NodeId(LOWEST_NODE_NUMBER);
-
     /**
-     * Constructs a NodeId object
-     * <p>
-     * Use {@link #create(long)} to create a new NodeId object. This method will return an existing NodeId object if one
-     * already exists with the same ID number.
+     * Constructs a NodeId object with the given ID number.  The ID number must be non-negative.
      *
      * @param id the ID number
+     * @throws IllegalArgumentException if the ID number is negative
      */
     public NodeId {
         if (id < LOWEST_NODE_NUMBER) {
             throw new IllegalArgumentException("id must be non-negative");
         }
-    }
-
-    /**
-     * Constructs a NodeId object
-     *
-     * @param id the ID number
-     * @return the object created
-     * @throws IllegalArgumentException if the ID number is negative
-     */
-    @NonNull
-    public static NodeId create(long id) {
-        return new NodeId(id);
     }
 
     /**

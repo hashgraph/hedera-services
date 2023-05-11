@@ -212,7 +212,7 @@ public class SyncCaller implements Runnable {
                     }
 
                     try (final MaybeLockedResource<ConnectionManager> resource =
-                            platform.getSharedConnectionLocks().tryLockConnection(NodeId.create(otherId))) {
+                            platform.getSharedConnectionLocks().tryLockConnection(new NodeId(otherId))) {
                         if (!resource.isLockAcquired()) {
                             continue;
                         }
@@ -326,7 +326,7 @@ public class SyncCaller implements Runnable {
         for (final Long neighborId : reconnectNeighbors) {
             // try to get the lock, it should be available if we have fallen behind
             try (final MaybeLockedResource<ConnectionManager> resource =
-                    platform.getSharedConnectionLocks().tryLockConnection(NodeId.create(neighborId))) {
+                    platform.getSharedConnectionLocks().tryLockConnection(new NodeId(neighborId))) {
                 if (!resource.isLockAcquired()) {
                     peerInfo.addPeerInfo(neighborId, "failed to acquire lock, blocked by heartbeat thread");
                     continue;

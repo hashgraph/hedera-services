@@ -50,8 +50,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 class SocketConnectionTests {
 
-    private NodeId selfId = NodeId.FIRST_NODE_ID;
-    private NodeId otherId = NodeId.create(1L);
+    private NodeId selfId = new NodeId(0L);
+    ;
+    private NodeId otherId = new NodeId(1L);
     private SwirldsPlatform platform;
     private Socket socket;
     private SyncInputStream dis;

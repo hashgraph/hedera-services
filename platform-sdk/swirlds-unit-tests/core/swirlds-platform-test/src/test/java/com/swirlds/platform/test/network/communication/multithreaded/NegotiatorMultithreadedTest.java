@@ -47,7 +47,7 @@ class NegotiatorMultithreadedTest {
     @Test
     void keepalive() throws Exception {
         final Pair<Connection, Connection> connections =
-                ConnectionFactory.createLocalConnections(NodeId.FIRST_NODE_ID, NodeId.create(1));
+                ConnectionFactory.createLocalConnections(new NodeId(0L), new NodeId(1));
         final NegotiatorPair pair = new NegotiatorPair(
                 new TestProtocol().setShouldInitiate(false),
                 Pair.of(

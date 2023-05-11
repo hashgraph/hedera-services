@@ -181,7 +181,7 @@ public final class RecoveryTestUtils {
 
         final EventStreamManager<EventImpl> eventEventStreamManager = new EventStreamManager<>(
                 getStaticThreadManager(),
-                NodeId.FIRST_NODE_ID,
+                new NodeId(0L),
                 x -> randomSignature(random),
                 "test",
                 true,

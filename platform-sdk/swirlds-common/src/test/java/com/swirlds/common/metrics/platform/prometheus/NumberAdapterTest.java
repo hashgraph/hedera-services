@@ -145,7 +145,7 @@ class NumberAdapterTest {
         final NumberAdapter adapter = new NumberAdapter(registry, metric, PLATFORM);
 
         // when
-        adapter.update(Snapshot.of(metric), NodeId.create(1L));
+        adapter.update(Snapshot.of(metric), new NodeId(1L));
 
         // then
         assertThat(registry.getSampleValue(MAPPING_NAME, NODE_LABEL, NODE_VALUE))
@@ -158,7 +158,7 @@ class NumberAdapterTest {
         final CollectorRegistry registry = new CollectorRegistry();
         final DefaultIntegerGauge metric = new DefaultIntegerGauge(new IntegerGauge.Config(CATEGORY, NAME));
         final NumberAdapter adapter = new NumberAdapter(registry, metric, PLATFORM);
-        final NodeId nodeId = NodeId.create(1L);
+        final NodeId nodeId = new NodeId(1L);
 
         // then
         assertThatThrownBy(() -> adapter.update(null, null)).isInstanceOf(IllegalArgumentException.class);
