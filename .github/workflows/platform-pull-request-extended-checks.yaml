@@ -33,14 +33,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
-    name: Code
-    uses: ./.github/workflows/node-zxc-compile-application-code.yaml
-    with:
-      enable-spotless-check: false
-    secrets:
-      access-token: ${{ secrets.GITHUB_TOKEN }}
-
   label-check:
     name: "Label Check [CI:PlatformExtendedChecks]"
     runs-on: [self-hosted, Linux, medium, ephemeral]
@@ -49,7 +41,6 @@ jobs:
       - name: Check Labels
         if: github.event_name == 'pull_request'
         run: echo PR labels that trigger the tests is [CI:PlatformExtendedChecks]
-
 
   reconnect:
     name: Reconnect
