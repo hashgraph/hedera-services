@@ -16,9 +16,7 @@
 
 package com.hedera.node.app.config;
 
-import com.hedera.node.app.config.internal.VersionedConfigImpl;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.converter.AccountIDConverter;
@@ -69,7 +67,6 @@ import com.hedera.node.config.data.UpgradeConfig;
 import com.hedera.node.config.data.UtilPrngConfig;
 import com.hedera.node.config.data.VirtualdatasourceConfig;
 import com.hedera.node.config.sources.DynamicConfigSource;
-import com.hedera.node.config.sources.PropertySourceBasedConfigSource;
 import com.hedera.node.config.validation.EmulatesMapValidator;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.threading.locks.AutoClosableLock;
@@ -77,15 +74,15 @@ import com.swirlds.common.threading.locks.Locks;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * Implementation of the {@link ConfigProvider} interface.
  */
+@Singleton
 public class ConfigProviderImpl implements ConfigProvider {
-
-    private final PropertySource propertySource;
 
     private final AtomicReference<VersionedConfiguration> configuration;
 
@@ -95,11 +92,9 @@ public class ConfigProviderImpl implements ConfigProvider {
 
     /**
      * Constructor.
-     *
-     * @param propertySource the property source to use. All properties will be read from this source.
      */
-    public ConfigProviderImpl(@NonNull final PropertySource propertySource) {
-        this.propertySource = Objects.requireNonNull(propertySource, "propertySource");
+    @Inject
+    public ConfigProviderImpl() {
         final Configuration config = createConfiguration();
         configuration = new AtomicReference<>(new VersionedConfigImpl(config, 0));
     }
@@ -120,7 +115,6 @@ public class ConfigProviderImpl implements ConfigProvider {
 
     private Configuration createConfiguration() {
         return ConfigurationBuilder.create()
-                .withSource(new PropertySourceBasedConfigSource(propertySource))
                 .withSource(dynamicConfigSource)
                 .withConverter(new CongestionMultipliersConverter())
                 .withConverter(new EntityScaleFactorsConverter())
