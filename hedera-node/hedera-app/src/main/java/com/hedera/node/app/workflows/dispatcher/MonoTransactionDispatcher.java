@@ -34,8 +34,8 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
-import com.hedera.node.app.service.util.records.PrngRecordBuilder;
 import com.hedera.node.app.service.token.impl.records.TokenCreateRecordBuilder;
+import com.hedera.node.app.service.util.records.PrngRecordBuilder;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -147,14 +147,13 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
     protected void finishTokenCreate(
             @NonNull final TokenCreateRecordBuilder recordBuilder, @NonNull final WritableTokenStore tokenStore) {
         // If token can't be created, due to the usage of a price regime, throw an exception
-        if(!usageLimits.areCreatableTokens(1)){
+        if (!usageLimits.areCreatableTokens(1)) {
             throw new HandleException(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
         }
 
         // Adapt the record builder outcome for mono-service
-        txnCtx.setCreated(PbjConverter.fromPbj(TokenID.newBuilder()
-                .tokenNum(recordBuilder.getCreatedToken())
-                .build()));
+        txnCtx.setCreated(PbjConverter.fromPbj(
+                TokenID.newBuilder().tokenNum(recordBuilder.getCreatedToken()).build()));
         accountStore.commit();
     }
 }

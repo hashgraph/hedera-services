@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.token.impl.records;
 
 import com.hedera.node.app.spi.records.UniversalRecordBuilder;
-
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

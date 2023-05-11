@@ -16,9 +16,7 @@
 
 package com.hedera.node.app.service.token;
 
-
 import com.hedera.hapi.node.state.token.TokenRelation;
-
 import java.util.Optional;
 
 /**
