@@ -111,7 +111,8 @@ import javax.inject.Singleton;
             InfoDaggerModule.class,
             ThrottleModule.class,
             SolvencyModule.class,
-            HandleWorkflowModule.class
+            HandleWorkflowModule.class,
+            ConfigModule.class
         })
 public interface HederaApp extends ServicesApp {
     /* Needed by ServicesState */
