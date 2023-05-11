@@ -55,6 +55,15 @@ class SerializableSemVersTest {
     }
 
     @Test
+    void ordersWithRespectToBuild() {
+        final var alpha2 = semVerWith(1, 9, 9, "alpha.1", "2");
+        final var alpha10 = semVerWith(1, 9, 9, "alpha.0", "10");
+        final var alpha1 = semVerWith(1, 9, 9, "alpha.0", "1");
+        assertTrue(SEM_VER_COMPARATOR.compare(alpha1, alpha2) < 0);
+        assertTrue(SEM_VER_COMPARATOR.compare(alpha10, alpha2) < 0);
+    }
+
+    @Test
     void comparatorPrioritizesOrderAsExpected() {
         assertTrue(
                 SEM_VER_COMPARATOR.compare(semVerWith(1, 9, 9, "pre", "build"), semVerWith(2, 0, 0, null, null)) < 0);
@@ -65,7 +74,11 @@ class SerializableSemVersTest {
         assertTrue(
                 SEM_VER_COMPARATOR.compare(semVerWith(1, 0, 1, "alpha.12345", null), semVerWith(1, 0, 1, null, "build"))
                         < 0);
-        assertTrue(SEM_VER_COMPARATOR.compare(semVerWith(1, 0, 1, null, "build"), semVerWith(1, 0, 1, null, null)) < 0);
+        assertTrue(SEM_VER_COMPARATOR.compare(semVerWith(1, 0, 1, null, "build"), semVerWith(1, 0, 1, null, null)) > 0);
+        assertTrue(SEM_VER_COMPARATOR.compare(semVerWith(1, 0, 1, null, null), semVerWith(1, 0, 1, null, "build")) < 0);
+        assertTrue(SEM_VER_COMPARATOR.compare(semVerWith(1, 0, 1, null, null), semVerWith(1, 0, 1, null, null)) == 0);
+        assertTrue(SEM_VER_COMPARATOR.compare(semVerWith(1, 0, 1, null, "2"), semVerWith(1, 0, 1, null, "1")) > 0);
+        assertTrue(SEM_VER_COMPARATOR.compare(semVerWith(1, 0, 1, null, null), semVerWith(1, 0, 1, null, "1")) < 0);
     }
 
     @Test
@@ -148,6 +161,31 @@ class SerializableSemVersTest {
         assertTrue(minor.isNonPatchUpgradeFrom(base));
         assertTrue(major.isNonPatchUpgradeFrom(base));
         assertThrows(IllegalArgumentException.class, () -> base.isNonPatchUpgradeFrom(mockVersion));
+    }
+
+    @Test
+    void detectsNonConfigServicesUpgrades() {
+        final var services = semVerWith(1, 2, 3, null, null);
+        final var servicesConfig = semVerWith(1, 2, 3, null, "1");
+        final var servicesMinorUpgrade = semVerWith(1, 3, 3, null, null);
+        final var servicesMajorUpgrade = semVerWith(2, 2, 3, null, null);
+        final var servicesPatchUpgrade = semVerWith(1, 2, 4, null, null);
+        final var someProto = semVerWith(1, 1, 1, null, null);
+
+        final var base = new SerializableSemVers(someProto, services);
+        final var patch = new SerializableSemVers(someProto, servicesPatchUpgrade);
+        final var minor = new SerializableSemVers(someProto, servicesMinorUpgrade);
+        final var major = new SerializableSemVers(someProto, servicesMajorUpgrade);
+        final var config = new SerializableSemVers(someProto, servicesConfig);
+        final var mockVersion = mock(SoftwareVersion.class);
+
+        assertTrue(base.isNonConfigUpgrade(null));
+        assertFalse(base.isNonConfigUpgrade(base));
+        assertTrue(patch.isNonConfigUpgrade(base));
+        assertTrue(minor.isNonConfigUpgrade(base));
+        assertTrue(major.isNonConfigUpgrade(base));
+        assertFalse(config.isNonConfigUpgrade(base));
+        assertThrows(IllegalArgumentException.class, () -> base.isNonConfigUpgrade(mockVersion));
     }
 
     @Test
