@@ -86,6 +86,7 @@ import com.swirlds.platform.dispatch.DispatchConfiguration;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventStreamConfig;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
+import com.swirlds.platform.gui.SwirldsGui;
 import com.swirlds.platform.gui.internal.InfoApp;
 import com.swirlds.platform.gui.internal.InfoMember;
 import com.swirlds.platform.gui.internal.InfoSwirld;
@@ -667,19 +668,18 @@ public class Browser {
                 // set here, then given to the state in run(). A copy of it is given to hashgraph.
                 final AddressBook initialAddressBook = addressBookInitializer.getInitialAddressBook();
 
+                SwirldsGui.setPlatformName(address.getId(), platformName);
+                SwirldsGui.setSwirldId(address.getId(), appDefinition.getSwirldId());
+                SwirldsGui.setInstanceNumber(address.getId(), i);
+
                 final SwirldsPlatform platform = new SwirldsPlatform(
-                        // window index
-                        ownHostIndex,
                         // all key pairs and CSPRNG state for this member
                         crypto[i],
-                        // the ID for this swirld (immutable since creation of this swirld)
-                        appDefinition.getSwirldId(),
                         // address book index, which is the member ID
                         nodeId,
                         // copy of the address book,
                         initialAddressBook,
                         platformContext,
-                        platformName,
                         mainClassName,
                         swirldName,
                         appVersion,

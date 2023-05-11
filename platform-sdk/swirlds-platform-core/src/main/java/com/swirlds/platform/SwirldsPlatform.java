@@ -270,8 +270,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      * is for this to replace EventMapper once syncing is removed from the code
      */
     private final ChatterEventMapper chatterEventMapper;
-    /** this is the Nth Platform running on this machine (N=winNum) */
-    private final int instanceNumber;
     /** The platforms freeze manager */
     private final FreezeManager freezeManager;
     /** is used for pausing event creation for a while at start up */
@@ -309,12 +307,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     private final ChatterCore<GossipEvent> chatterCore;
     /** all the events and other data about the hashgraph */
     private EventTaskCreator eventTaskCreator;
-    /** ID number of the swirld being run */
-    private final byte[] swirldId;
     /** the object that contains all key pairs and CSPRNG state for this member */
     private final Crypto crypto;
-    /** a long name including (app, swirld, member id, member self name) */
-    private final String platformName;
     /**
      * True if this node started from genesis.
      */
@@ -425,10 +419,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     /**
      * the browser gives the Platform what app to run. There can be multiple Platforms on one computer.
      *
-     * @param instanceNumber           this is the Nth copy of the Platform running on this machine (N=instanceNumber)
      * @param crypto                   an object holding all the public/private key pairs and the CSPRNG state for this
      *                                 member
-     * @param swirldId                 the ID of the swirld being run
      * @param id                       the ID number for this member (if this computer has multiple members in one
      *                                 swirld)
      * @param initialAddressBook       the address book listing all members in the community
@@ -441,13 +433,10 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      * @param emergencyRecoveryManager used in emergency recovery.
      */
     SwirldsPlatform(
-            final int instanceNumber,
             @NonNull final Crypto crypto,
-            @NonNull final byte[] swirldId,
             @NonNull final NodeId id,
             @NonNull final AddressBook initialAddressBook,
             @NonNull final PlatformContext platformContext,
-            @NonNull final String platformName,
             @NonNull final String mainClassName,
             @NonNull final String swirldName,
             @NonNull final SoftwareVersion appVersion,
@@ -483,7 +472,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         this.appVersion = appVersion;
 
-        this.instanceNumber = instanceNumber;
         // the memberId of the member running this Platform object
         this.selfId = id;
         // set here, then given to the state in run(). A copy of it is given to hashgraph.
@@ -493,7 +481,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         this.chatterEventMapper = new ChatterEventMapper();
 
         this.metrics = platformContext.getMetrics();
-        this.platformName = platformName;
 
         metrics.getOrCreate(StatConstructor.createEnumStat(
                 "PlatformStatus", Metrics.PLATFORM_CATEGORY, PlatformStatus.values(), currentPlatformStatus::get));
@@ -524,7 +511,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         this.shadowGraph = new ShadowGraph(syncMetrics, initialAddressBook.getSize());
 
-        this.swirldId = swirldId.clone();
         this.crypto = crypto;
 
         startUpEventFrozenManager = new StartUpEventFrozenManager(metrics, Instant::now);
@@ -861,32 +847,11 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     }
 
     /**
-     * If there are multiple platforms running in the same JVM, each will have a unique instance number.
-     *
-     * @return this platform's instance number
-     */
-    @Override
-    public int getInstanceNumber() {
-        return instanceNumber;
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override
     public NodeId getSelfId() {
         return selfId;
-    }
-
-    /**
-     * returns a name for this Platform, which includes the app, the swirld, the member id, and the member name. This is
-     * useful in the Browser window for showing data about each of the running Platform objects.
-     *
-     * @return the name for this Platform
-     */
-    public String getPlatformName() {
-        // this will be the empty string until the Browser calls setInfoMember. Then it will be correct.
-        return platformName;
     }
 
     /**
@@ -1394,7 +1359,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      * Constructs and starts all networking components needed for a chatter network to run: readers, writers and a
      * separate event creation thread.
      */
-    public void startChatterNetwork() {
+    private void startChatterNetwork() {
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
         final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
 
@@ -1546,7 +1511,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     /**
      * Constructs and starts all networking components needed for a sync network to run: heartbeats, callers, listeners
      */
-    public void startSyncNetwork() {
+    private void startSyncNetwork() {
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
 
         final StaticConnectionManagers connectionManagers = startCommonNetwork();
@@ -1879,14 +1844,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     @Override
     public NotificationEngine getNotificationEngine() {
         return notificationEngine;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public byte[] getSwirldId() {
-        return swirldId.clone();
     }
 
     /** {@inheritDoc} */

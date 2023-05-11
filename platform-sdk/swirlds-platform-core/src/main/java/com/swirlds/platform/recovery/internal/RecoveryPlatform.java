@@ -145,15 +145,6 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
     /**
      * {@inheritDoc}
      */
-    @Override
-    public int getInstanceNumber() {
-        // This never runs in the same JVM with other platform instances, so it's always instance 0.
-        return 0;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     @SuppressWarnings("unchecked")
     @Override
     public synchronized <T extends SwirldState> AutoCloseableWrapper<T> getLatestImmutableState(

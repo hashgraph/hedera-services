@@ -19,6 +19,7 @@ package com.swirlds.platform.gui.internal;
 import static com.swirlds.platform.gui.internal.GuiUtils.wrap;
 
 import com.swirlds.platform.SwirldsPlatform;
+import com.swirlds.platform.gui.SwirldsGui;
 import com.swirlds.platform.state.signed.SignedStateInfo;
 import java.awt.Font;
 import java.awt.Graphics;
@@ -52,7 +53,7 @@ class WinTab2Consensus extends PrePaintableJPanel {
             }
             SwirldsPlatform platform = WinBrowser.memberDisplayed.platform;
             String s = "";
-            s += platform.getPlatformName();
+            s += SwirldsGui.getPlatformName(platform.getSelfId().getId());
             long r1 = platform.getConsensus().getDeleteRound();
             long r2 = platform.getConsensus().getFameDecidedBelow();
             long r3 = platform.getConsensus().getMaxRound();

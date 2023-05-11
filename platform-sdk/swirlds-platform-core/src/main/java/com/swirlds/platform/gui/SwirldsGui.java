@@ -24,6 +24,8 @@ import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.gui.internal.SwirldMenu;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.GraphicsEnvironment;
@@ -42,18 +44,18 @@ public final class SwirldsGui {
 
     private static final Logger logger = LogManager.getLogger(SwirldsGui.class);
 
-    private static Map<Long, String> aboutStrings = new ConcurrentHashMap<>();
+    private static final Map<Long, String> aboutStrings = new ConcurrentHashMap<>();
+    private static final Map<Long, String> platformNames = new ConcurrentHashMap<>();
+    private static final Map<Long, byte[]> swirldIds = new ConcurrentHashMap<>();
+    private static final Map<Long, Integer> instanceNumbers = new ConcurrentHashMap<>();
 
     private SwirldsGui() {}
 
     /**
-     * Create a new window with a text console, of the recommended size and location, including the Swirlds
-     * menu.
+     * Create a new window with a text console, of the recommended size and location, including the Swirlds menu.
      *
-     * @param platform
-     * 		the platform to create the console with
-     * @param visible
-     * 		should the window be initially visible? If not, call setVisible(true) later.
+     * @param platform the platform to create the console with
+     * @param visible  should the window be initially visible? If not, call setVisible(true) later.
      * @return the new window
      */
     public static Console createConsole(final Platform platform, final boolean visible) {
@@ -64,7 +66,7 @@ public final class SwirldsGui {
 
         final AddressBook addressBook = platform.getAddressBook();
         final long selfId = platform.getSelfId().getId();
-        final int winNum = platform.getInstanceNumber();
+        final int winNum = SwirldsGui.getInstanceNumber(platform.getSelfId().getId());
 
         final Rectangle winRect = winRect(addressBook, winNum);
         // if SwirldMain calls createConsole, this remembers the window created
@@ -79,8 +81,7 @@ public final class SwirldsGui {
     /**
      * Create a new window of the recommended size and location, including the Swirlds menu.
      *
-     * @param visible
-     * 		should the window be initially visible? If not, call setVisible(true) later.
+     * @param visible should the window be initially visible? If not, call setVisible(true) later.
      * @return the new window
      */
     public static JFrame createWindow(final Platform platform, final boolean visible) {
@@ -91,7 +92,7 @@ public final class SwirldsGui {
 
         final AddressBook addressBook = platform.getAddressBook();
         final long selfId = platform.getSelfId().getId();
-        final int winNum = platform.getInstanceNumber();
+        final int winNum = SwirldsGui.getInstanceNumber(platform.getSelfId().getId());
 
         final Rectangle winRect = winRect(addressBook, winNum);
 
@@ -118,14 +119,12 @@ public final class SwirldsGui {
     }
 
     /**
-     * The SwirldMain calls this to set the string that is shown when the user chooses "About" from the
-     * Swirlds menu in the upper-right corner of the window. It is recommended that this be a short string
-     * that includes the name of the app, the version number, and the year.
+     * The SwirldMain calls this to set the string that is shown when the user chooses "About" from the Swirlds menu in
+     * the upper-right corner of the window. It is recommended that this be a short string that includes the name of the
+     * app, the version number, and the year.
      *
-     * @param nodeId
-     * 		the ID of the node
-     * @param about
-     * 		wha should show in the "about" window from the menu
+     * @param nodeId the ID of the node
+     * @param about  wha should show in the "about" window from the menu
      */
     public static void setAbout(final long nodeId, final String about) {
         aboutStrings.put(nodeId, about);
@@ -134,11 +133,68 @@ public final class SwirldsGui {
     /**
      * Get the "about" string, or an empty string if none has been set.
      *
-     * @param nodeId
-     * 		the ID of the node
+     * @param nodeId the ID of the node
      * @return an "about" string
      */
     public static String getAbout(final long nodeId) {
         return aboutStrings.getOrDefault(nodeId, "");
+    }
+
+    /**
+     * Set a platform name, given the node ID.
+     *
+     * @param nodeId       the ID of the node
+     * @param platformName a platform name
+     */
+    public static void setPlatformName(final long nodeId, @NonNull final String platformName) {
+        platformNames.put(nodeId, platformName);
+    }
+
+    /**
+     * Get a platform name, given the node ID, or an empty string if none has been set.
+     *
+     * @param nodeId the ID of the node
+     * @return a platform name
+     */
+    @NonNull
+    public static String getPlatformName(final long nodeId) {
+        return platformNames.getOrDefault(nodeId, "");
+    }
+
+    /**
+     * Set the swirld ID for a node.
+     * @param nodeId the ID of the node
+     * @param swirldId the swirld ID
+     */
+    public static void setSwirldId(final long nodeId, @NonNull final byte[] swirldId) {
+        swirldIds.put(nodeId, swirldId);
+    }
+
+    /**
+     * Get the swirld ID for a node, or null if none is set.
+     * @param nodeId the ID of the node
+     * @return the swirld ID
+     */
+    @Nullable
+    public static byte[] getSwirldId(final long nodeId) {
+        return swirldIds.getOrDefault(nodeId, null);
+    }
+
+    /**
+     * Set the instance number for a node.
+     * @param nodeId the ID of the node
+     * @param instanceNumber the instance number
+     */
+    public static void setInstanceNumber(final long nodeId, final int instanceNumber) {
+        instanceNumbers.put(nodeId, instanceNumber);
+    }
+
+    /**
+     * Get the instance number for a node, or -1 if none is set.
+     * @param nodeId the ID of the node
+     * @return the instance number
+     */
+    public static int getInstanceNumber(final long nodeId) {
+        return instanceNumbers.getOrDefault(nodeId, -1);
     }
 }

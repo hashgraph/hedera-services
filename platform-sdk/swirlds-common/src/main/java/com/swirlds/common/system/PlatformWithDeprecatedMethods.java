@@ -29,17 +29,6 @@ import java.time.Instant;
 public interface PlatformWithDeprecatedMethods extends Platform {
 
     /**
-     * Get the ID of the current swirld. A given app can be used to create many different swirlds (also
-     * called networks, or ledgers, or shared worlds). This is a unique identifier for this particular
-     * swirld.
-     *
-     * @return a copy of the swirld ID
-     * @deprecated this is only used by GUI code, will be removed after inversion of control
-     */
-    @Deprecated
-    byte[] getSwirldId();
-
-    /**
      * Get the latest mutable state. This method is not thread safe. use at your own risk.
      *
      * @deprecated this workflow is not thread safe
