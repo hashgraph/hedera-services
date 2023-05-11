@@ -128,7 +128,7 @@ public class ChatterSimulationTests {
      *     <li>All nodes have fast intake queues again</li>
      * </ol>
      */
-    //    @Disabled("Not a test. Useful for observing behavior")
+    @Disabled("Not a test. Useful for observing behavior")
     @Test
     @DisplayName("Work In Progress - attempt to simulate a scenario that causes a non-zero duplicate event rate")
     void testInduceDuplicateEvents() {
