@@ -783,8 +783,9 @@ class SettingsTest {
     }
 
     /**
-     * Currently disabled until the Settings class gets rewritten to not use a singleton design pattern. There are tests
-     * that are run that modify these default values before this test is run, therefore resulting in this test failing.
+     * Currently disabled until the Settings class gets rewritten to not use a singleton
+     * design pattern. There are tests that are run that modify these default values
+     * before this test is run, therefore resulting in this test failing.
      */
     @Test
     @Disabled

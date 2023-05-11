@@ -18,15 +18,15 @@ package com.hedera.node.app.workflows.dispatcher;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.service.admin.FreezeService;
-import com.hedera.node.app.service.admin.ReadableSpecialFileStore;
-import com.hedera.node.app.service.admin.impl.ReadableSpecialFileStoreImpl;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
-import com.hedera.node.app.service.network.NetworkService;
-import com.hedera.node.app.service.network.ReadableRunningHashLeafStore;
-import com.hedera.node.app.service.network.impl.ReadableRunningHashLeafStoreImpl;
+import com.hedera.node.app.service.networkadmin.FreezeService;
+import com.hedera.node.app.service.networkadmin.NetworkService;
+import com.hedera.node.app.service.networkadmin.ReadableRunningHashLeafStore;
+import com.hedera.node.app.service.networkadmin.ReadableSpecialFileStore;
+import com.hedera.node.app.service.networkadmin.impl.ReadableRunningHashLeafStoreImpl;
+import com.hedera.node.app.service.networkadmin.impl.ReadableSpecialFileStoreImpl;
 import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStoreImpl;

@@ -101,7 +101,6 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.fchashmap.FCHashMapSettingsFactory;
 import com.swirlds.jasperdb.settings.JasperDbSettingsFactory;
 import com.swirlds.merkledb.settings.MerkleDbSettingsFactory;
-import com.swirlds.platform.gossip.chatter.ChatterSubSetting;
 import com.swirlds.platform.internal.SubSetting;
 import com.swirlds.platform.state.StateSettings;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
@@ -414,9 +413,6 @@ public class Settings {
      * Settings controlling MerkleDb.
      */
     private MerkleDbSettingsImpl merkleDb = new MerkleDbSettingsImpl();
-
-    /** All chatter related settings */
-    private ChatterSubSetting chatter = new ChatterSubSetting();
 
     private Settings() {}
 
@@ -1049,10 +1045,6 @@ public class Settings {
 
     public int getJVMPauseReportMs() {
         return JVMPauseReportMs;
-    }
-
-    public ChatterSubSetting getChatter() {
-        return chatter;
     }
 
     public boolean isGossipWithDifferentVersions() {
