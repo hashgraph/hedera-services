@@ -16,13 +16,12 @@
 
 package com.swirlds.virtual.merkle.reconnect;
 
-import static com.swirlds.common.utility.Units.BYTES_TO_BITS;
-import static com.swirlds.common.utility.Units.MEBIBYTES_TO_BYTES;
 import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
@@ -31,8 +30,8 @@ import com.swirlds.common.merkle.synchronization.settings.ReconnectSettingsFacto
 import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
 import com.swirlds.common.test.merkle.dummy.DummyMerkleInternal;
 import com.swirlds.common.test.merkle.util.MerkleTestUtils;
-import com.swirlds.jasperdb.settings.JasperDbSettings;
-import com.swirlds.jasperdb.settings.JasperDbSettingsFactory;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.virtual.merkle.TestKey;
 import com.swirlds.virtual.merkle.TestValue;
 import com.swirlds.virtualmap.VirtualMap;
@@ -61,37 +60,24 @@ import org.junit.jupiter.params.provider.MethodSource;
 @DisplayName("Virtual Map JPDB Reconnect Test")
 class VirtualMapJPDBReconnectTest extends VirtualMapJPDBReconnectTestBase {
 
-    private static JasperDbSettings originalSettings;
+    private static Configuration originalConfig;
 
     @BeforeAll
     static void beforeAll() {
-        originalSettings = JasperDbSettingsFactory.get();
-        JasperDbSettingsFactory.configure(new TestJasperDbSettings(originalSettings) {
-            @Override
-            public int getKeySetBloomFilterHashCount() {
-                return 10;
-            }
+        originalConfig = ConfigurationHolder.getInstance().get();
 
-            @Override
-            public long getKeySetBloomFilterSizeInBytes() {
-                return 2 * MEBIBYTES_TO_BYTES * BYTES_TO_BITS;
-            }
+        final Configuration config = new TestConfigBuilder()
+                .withValue("keySetHalfDiskHashMapSize", "10000")
+                .withValue("keySetHalfDiskHashMapBuffer", "1000")
+                .withValue("keySetBloomFilterSizeInBytes", "16777216")
+                .getOrCreateConfig();
 
-            @Override
-            public long getKeySetHalfDiskHashMapSize() {
-                return 10_000;
-            }
-
-            @Override
-            public int getKeySetHalfDiskHashMapBuffer() {
-                return 1_000;
-            }
-        });
+        ConfigurationHolder.getInstance().setConfiguration(config);
     }
 
     @AfterAll
     static void afterAll() {
-        JasperDbSettingsFactory.configure(originalSettings);
+        ConfigurationHolder.getInstance().setConfiguration(originalConfig);
     }
 
     static Stream<Arguments> provideSmallTreePermutations() {

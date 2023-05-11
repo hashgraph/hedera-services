@@ -100,7 +100,6 @@ import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.utility.PlatformVersion;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.fchashmap.FCHashMapSettingsFactory;
-import com.swirlds.jasperdb.settings.JasperDbSettingsFactory;
 import com.swirlds.merkledb.settings.MerkleDbSettingsFactory;
 import com.swirlds.platform.internal.SubSetting;
 import com.swirlds.platform.reconnect.ReconnectSettingsImpl;
@@ -419,10 +418,6 @@ public class Settings {
      */
     private VirtualMapSettingsImpl virtualMap = new VirtualMapSettingsImpl();
     /**
-     * Settings controlling JasperDB.
-     */
-    private JasperDbSettingsImpl jasperDb = new JasperDbSettingsImpl();
-    /**
      * Settings controlling MerkleDb.
      */
     private MerkleDbSettingsImpl merkleDb = new MerkleDbSettingsImpl();
@@ -451,7 +446,6 @@ public class Settings {
         ReconnectSettingsFactory.configure(getInstance().getReconnect());
         FCHashMapSettingsFactory.configure(getInstance().getFcHashMap());
         VirtualMapSettingsFactory.configure(getInstance().getVirtualMap());
-        JasperDbSettingsFactory.configure(getInstance().getJasperDb());
         MerkleDbSettingsFactory.configure(getInstance().getMerkleDb());
     }
 
@@ -961,10 +955,6 @@ public class Settings {
 
     public VirtualMapSettingsImpl getVirtualMap() {
         return virtualMap;
-    }
-
-    public JasperDbSettingsImpl getJasperDb() {
-        return jasperDb;
     }
 
     public MerkleDbSettingsImpl getMerkleDb() {

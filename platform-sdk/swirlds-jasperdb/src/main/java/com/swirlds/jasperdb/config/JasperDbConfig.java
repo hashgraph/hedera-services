@@ -134,7 +134,8 @@ public record JasperDbConfig(
         @ConfigProperty(defaultValue = "2147483648") long keySetBloomFilterSizeInBytes,
         @ConfigProperty(defaultValue = "1000000000") long keySetHalfDiskHashMapSize,
         @ConfigProperty(defaultValue = "1000000") int keySetHalfDiskHashMapBuffer,
-        @ConfigProperty(defaultValue = "false") boolean indexRebuildingEnforced) {
+        @ConfigProperty(defaultValue = "false") boolean indexRebuildingEnforced,
+        @ConfigProperty(defaultValue = "1048576") int leafRecordCacheSize) {
 
     public ConfigViolation maxNumberOfFilesInMergeValidation(final Configuration configuration) {
         final long maxNumberOfFilesInMerge =

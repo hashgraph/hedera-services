@@ -16,8 +16,8 @@
 
 package com.swirlds.jasperdb.files;
 
-import com.swirlds.jasperdb.settings.JasperDbSettings;
-import com.swirlds.jasperdb.settings.JasperDbSettingsFactory;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
+import com.swirlds.jasperdb.config.JasperDbConfig;
 import java.io.BufferedInputStream;
 import java.io.EOFException;
 import java.io.IOException;
@@ -40,11 +40,11 @@ import java.util.Objects;
 @SuppressWarnings("rawtypes")
 public final class DataFileIterator implements AutoCloseable {
     /**
-     * Since {@code com.swirlds.platform.Browser} populates settings, and it is loaded before
-     * any application classes that might instantiate a data source, the {@link JasperDbSettingsFactory}
-     * holder will have been configured by the time this static initializer runs.
+     * Since {@code com.swirlds.platform.Browser} populates configuration, and it is loaded before
+     * any application classes that might instantiate a data source, the {@link ConfigurationHolder}
+     * will have been configured by the time this static initializer runs.
      */
-    private static final JasperDbSettings settings = JasperDbSettingsFactory.get();
+    private final JasperDbConfig config = ConfigurationHolder.getConfigData(JasperDbConfig.class);
 
     /** Input stream this iterator is reading from */
     private final BufferedInputStream inputStream;
@@ -91,7 +91,7 @@ public final class DataFileIterator implements AutoCloseable {
         this.headerSize = dataItemSerializer.getHeaderSize();
         /* FUTURE WORK - https://github.com/swirlds/swirlds-platform/issues/3929 */
         this.inputStream = new BufferedInputStream(
-                Files.newInputStream(path, StandardOpenOption.READ), settings.getIteratorInputBufferBytes());
+                Files.newInputStream(path, StandardOpenOption.READ), config.iteratorInputBufferBytes());
     }
 
     /**
