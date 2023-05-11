@@ -22,7 +22,7 @@ import com.swirlds.common.metrics.extensions.CountPerSecond;
 import com.swirlds.common.sequence.Shiftable;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.time.Time;
-import com.swirlds.platform.gossip.chatter.ChatterSettings;
+import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.chatter.protocol.heartbeat.HeartbeatMessage;
 import com.swirlds.platform.gossip.chatter.protocol.heartbeat.HeartbeatSendReceive;
 import com.swirlds.platform.gossip.chatter.protocol.input.InputDelegate;
@@ -43,6 +43,7 @@ import com.swirlds.platform.gossip.chatter.protocol.processing.ProcessingTimeMes
 import com.swirlds.platform.gossip.chatter.protocol.processing.ProcessingTimeSendReceive;
 import com.swirlds.platform.state.signed.LoadableFromSignedState;
 import com.swirlds.platform.state.signed.SignedState;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -50,6 +51,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.BiConsumer;
 
 /**
@@ -65,7 +67,7 @@ public class ChatterCore<E extends ChatterEvent> implements Shiftable, LoadableF
 
     private final Class<E> eventClass;
     private final MessageHandler<E> prepareReceivedEvent;
-    private final ChatterSettings settings;
+    private final ChatterConfig config;
     private final BiConsumer<NodeId, Long> pingConsumer;
     private final MessageOutput<E> selfEventOutput;
     private final MessageOutput<E> otherEventOutput;
@@ -84,26 +86,29 @@ public class ChatterCore<E extends ChatterEvent> implements Shiftable, LoadableF
      * @param eventClass           the class of the type of event used
      * @param prepareReceivedEvent the first handler to be called when an event is received, this should do any
      *                             preparation work that might be needed by other handlers (such as hashing)
-     * @param settings             chatter settings
+     * @param config               chatter config
      * @param pingConsumer         consumer of the reported ping time for a given peer. accepts the ID of the peer and
      *                             the number of nanoseconds it took for the peer to respond
      * @param metrics              reference to the metrics-system
      */
     public ChatterCore(
-            final Time time,
-            final Class<E> eventClass,
-            final MessageHandler<E> prepareReceivedEvent,
-            final ChatterSettings settings,
-            final BiConsumer<NodeId, Long> pingConsumer,
-            final Metrics metrics) {
-        this.time = time;
-        this.eventClass = eventClass;
-        this.prepareReceivedEvent = prepareReceivedEvent;
-        this.settings = settings;
-        this.pingConsumer = pingConsumer;
-        this.selfEventOutput = new QueueOutputMain<>("selfEvent", settings.getSelfEventQueueCapacity(), metrics);
-        this.otherEventOutput = new QueueOutputMain<>("otherEvent", settings.getOtherEventQueueCapacity(), metrics);
-        this.hashOutput = new QueueOutputMain<>("descriptor", settings.getDescriptorQueueCapacity(), metrics);
+            @NonNull final Time time,
+            @NonNull final Class<E> eventClass,
+            @NonNull final MessageHandler<E> prepareReceivedEvent,
+            @NonNull final ChatterConfig config,
+            @NonNull final BiConsumer<NodeId, Long> pingConsumer,
+            @NonNull final Metrics metrics) {
+        Objects.requireNonNull(metrics);
+
+        this.time = Objects.requireNonNull(time);
+        this.eventClass = Objects.requireNonNull(eventClass);
+        this.prepareReceivedEvent = Objects.requireNonNull(prepareReceivedEvent);
+        this.config = Objects.requireNonNull(config);
+        this.pingConsumer = Objects.requireNonNull(pingConsumer);
+
+        this.selfEventOutput = new QueueOutputMain<>("selfEvent", config.selfEventQueueCapacity(), metrics);
+        this.otherEventOutput = new QueueOutputMain<>("otherEvent", config.otherEventQueueCapacity(), metrics);
+        this.hashOutput = new QueueOutputMain<>("descriptor", config.descriptorQueueCapacity(), metrics);
         this.peerInstances = new HashMap<>();
 
         this.msgsPerSecRead = new CountPerSecond(
@@ -129,13 +134,13 @@ public class ChatterCore<E extends ChatterEvent> implements Shiftable, LoadableF
      */
     public void newPeerInstance(final long peerId, final MessageHandler<E> eventHandler) {
 
-        final PeerGossipState state = new PeerGossipState(settings.getFutureGenerationLimit());
+        final PeerGossipState state = new PeerGossipState(config.futureGenerationLimit());
         final CommunicationState communicationState = new CommunicationState();
         final HeartbeatSendReceive heartbeat =
-                new HeartbeatSendReceive(time, peerId, pingConsumer, settings.getHeartbeatInterval());
+                new HeartbeatSendReceive(time, peerId, pingConsumer, config.heartbeatInterval());
 
         final ProcessingTimeSendReceive processingTimeSendReceive =
-                new ProcessingTimeSendReceive(time, settings.getProcessingTimeInterval(), selfProcessingTime::getNanos);
+                new ProcessingTimeSendReceive(time, config.processingTimeInterval(), selfProcessingTime::getNanos);
 
         final MessageProvider hashPeerInstance = hashOutput.createPeerInstance(
                 communicationState, d -> SendAction.SEND // always send hashes
@@ -149,7 +154,7 @@ public class ChatterCore<E extends ChatterEvent> implements Shiftable, LoadableF
                         new OtherEventDelay(
                                 heartbeat::getLastRoundTripNanos,
                                 processingTimeSendReceive::getPeerProcessingTime,
-                                settings.getOtherEventDelay())::getOtherEventDelay,
+                                config.otherEventDelay())::getOtherEventDelay,
                         state,
                         Instant::now));
         final PriorityOutputAggregator outputAggregator = new PriorityOutputAggregator(

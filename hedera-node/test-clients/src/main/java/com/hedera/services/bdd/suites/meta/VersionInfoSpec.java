@@ -50,7 +50,23 @@ public class VersionInfoSpec extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(discoversExpectedVersions());
+        return List.of(
+                discoversExpectedVersions()
+                //                appendsConfigVersionIfPresent()
+                );
+    }
+
+    private HapiSpec appendsConfigVersionIfPresent() {
+        return defaultHapiSpec("appendsConfigVersionIfPresent")
+                .given()
+                .when()
+                .then(
+                        getVersionInfo()
+                                .logged()
+                                .hasNoDegenerateSemvers()
+                                .hasServicesSemVerBuild("10") // by setting src/main/resources/bootstrap.properties
+                        // to this value before starting node
+                        );
     }
 
     private HapiSpec discoversExpectedVersions() {
