@@ -1734,7 +1734,18 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     private void spawnSyncCaller(final int callerNumber) {
         // create a caller that will run repeatedly to call random members other than selfId
         final SyncCaller syncCaller = new SyncCaller(
-                this, getAddressBook(), selfId, callerNumber, reconnectHelper, new DefaultSignedStateValidator());
+                platformContext,
+                getAddressBook(),
+                selfId,
+                callerNumber,
+                reconnectHelper,
+                new DefaultSignedStateValidator(),
+                simultaneousSyncThrottle,
+                syncManager,
+                sharedConnectionLocks,
+                eventTaskCreator,
+                this::checkPlatformStatus,
+                syncShadowgraphSynchronizer);
 
         /* the thread that repeatedly initiates syncs with other members */
         final Thread syncCallerThread = new ThreadConfiguration(threadManager)
@@ -1746,13 +1757,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 .build();
 
         syncCallerThread.start();
-    }
-
-    /**
-     * @return the SyncManager used by this platform
-     */
-    public SyncManagerImpl getSyncManager() {
-        return syncManager;
     }
 
     /**
@@ -1769,20 +1773,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      */
     public StateManagementComponent getStateManagementComponent() {
         return stateManagementComponent;
-    }
-
-    /**
-     * @return locks used to synchronize usage of outbound connections
-     */
-    public SharedConnectionLocks getSharedConnectionLocks() {
-        return sharedConnectionLocks;
-    }
-
-    /**
-     * @return the instance responsible for creating event tasks
-     */
-    public EventTaskCreator getEventTaskCreator() {
-        return eventTaskCreator;
     }
 
     /**
@@ -2032,19 +2022,5 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      */
     private boolean isLastEventBeforeRestart(final EventImpl event) {
         return event.isLastInRoundReceived() && swirldStateManager.isInFreezePeriod(event.getConsensusTimestamp());
-    }
-
-    /**
-     * @return the platform instance of the {@link ShadowGraphSynchronizer} used for sync
-     */
-    public ShadowGraphSynchronizer getSyncShadowGraphSynchronizer() {
-        return syncShadowgraphSynchronizer;
-    }
-
-    /**
-     * @return the instance that throttles simultaneous syncs
-     */
-    public SimultaneousSyncThrottle getSimultaneousSyncThrottle() {
-        return simultaneousSyncThrottle;
     }
 }
