@@ -19,6 +19,7 @@ package com.swirlds.platform.test.chatter;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.base.ArgumentUtils;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
@@ -27,9 +28,11 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.time.OSTime;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
-import com.swirlds.platform.gossip.chatter.ChatterSubSetting;
+import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
 import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -46,13 +49,18 @@ public class SimulatedChatterFactories implements SimulatedChatterFactory {
     @Override
     public SimulatedChatter build(
             final long selfId,
-            final Iterable<Long> nodeIds,
-            final GossipEventObserver eventTracker,
-            final Supplier<Instant> now) {
+            @NonNull final Iterable<Long> nodeIds,
+            @NonNull final GossipEventObserver eventTracker,
+            @Nullable final Supplier<Instant> now) {
+        ArgumentUtils.throwArgNull(nodeIds, "nodeIds");
+        ArgumentUtils.throwArgNull(eventTracker, "eventTracker");
+
         final Configuration configuration = ConfigurationBuilder.create()
                 .withConfigDataType(MetricsConfig.class)
+                .withConfigDataType(ChatterConfig.class)
                 .build();
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
+        final ChatterConfig chatterConfig = configuration.getConfigData(ChatterConfig.class);
 
         final MetricKeyRegistry registry = new MetricKeyRegistry();
         when(registry.register(any(), any(), any())).thenReturn(true);
@@ -61,7 +69,7 @@ public class SimulatedChatterFactories implements SimulatedChatterFactory {
                 OSTime.getInstance(),
                 ChatterEvent.class,
                 e -> {},
-                new ChatterSubSetting(),
+                chatterConfig,
                 (nodeId, ping) -> {},
                 new DefaultMetrics(
                         NodeId.create(selfId),

@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.consensus.impl.config;
 
-import com.hedera.node.app.spi.config.PropertyNames;
+import com.hedera.node.app.service.mono.context.properties.PropertyNames;
 import com.swirlds.config.api.ConfigProperty;
 
 public record ConsensusServiceConfig(

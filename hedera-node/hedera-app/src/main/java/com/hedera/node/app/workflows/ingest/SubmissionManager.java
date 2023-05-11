@@ -22,8 +22,8 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
+import com.hedera.node.app.service.mono.context.properties.Profile;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
-import com.hedera.node.app.spi.config.Profile;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.RecordCache;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -53,10 +53,10 @@ public class SubmissionManager {
     /**
      * Constructor of {@code SubmissionManager}
      *
-     * @param platform the {@link Platform} to which transactions will be submitted
-     * @param recordCache the {@link RecordCache} that tracks submitted transactions
+     * @param platform            the {@link Platform} to which transactions will be submitted
+     * @param recordCache         the {@link RecordCache} that tracks submitted transactions
      * @param nodeLocalProperties the {@link NodeLocalProperties} that keep local properties
-     * @param metrics metrics related to submissions
+     * @param metrics             metrics related to submissions
      */
     @Inject
     public SubmissionManager(
@@ -75,14 +75,13 @@ public class SubmissionManager {
     }
 
     /**
-     * Submit a transaction to the {@link Platform}. If the transaction is an unchecked submit,
-     * we ignored the given tx bytes and send in the other bytes.
+     * Submit a transaction to the {@link Platform}. If the transaction is an unchecked submit, we ignored the given tx
+     * bytes and send in the other bytes.
      *
-     * @param txBody the {@link TransactionBody} that should be submitted to the platform
-     * @param txBytes the bytes of the data that should be submitted (the full transaction bytes
-     *                as received from gRPC)
+     * @param txBody  the {@link TransactionBody} that should be submitted to the platform
+     * @param txBytes the bytes of the data that should be submitted (the full transaction bytes as received from gRPC)
      * @throws NullPointerException if one of the arguments is {@code null}
-     * @throws PreCheckException if the transaction could not be submitted
+     * @throws PreCheckException    if the transaction could not be submitted
      */
     public void submit(@NonNull final TransactionBody txBody, @NonNull final Bytes txBytes) throws PreCheckException {
         requireNonNull(txBody);

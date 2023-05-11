@@ -16,10 +16,9 @@
 
 package com.hedera.node.app.services;
 
-import com.hedera.node.app.service.admin.impl.AdminServiceModule;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceModule;
 import com.hedera.node.app.service.file.impl.FileServiceModule;
-import com.hedera.node.app.service.network.impl.NetworkServiceModule;
+import com.hedera.node.app.service.networkadmin.impl.NetworkAdminServiceModule;
 import com.hedera.node.app.service.schedule.impl.ScheduleServiceModule;
 import com.hedera.node.app.service.token.impl.TokenServiceModule;
 import com.hedera.node.app.service.util.impl.UtilServiceModule;
@@ -27,10 +26,9 @@ import dagger.Module;
 
 @Module(
         includes = {
-            AdminServiceModule.class,
             ConsensusServiceModule.class,
             FileServiceModule.class,
-            NetworkServiceModule.class,
+            NetworkAdminServiceModule.class,
             ScheduleServiceModule.class,
             TokenServiceModule.class,
             UtilServiceModule.class,
