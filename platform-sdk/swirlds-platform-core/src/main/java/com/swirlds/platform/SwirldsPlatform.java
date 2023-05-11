@@ -354,7 +354,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     /** Stores and passes pre-consensus events to {@link SwirldStateManager} for handling */
     private final PreConsensusEventHandler preConsensusEventHandler;
     /** Stores and processes consensus events including sending them to {@link SwirldStateManager} for handling */
-    private ConsensusRoundHandler consensusRoundHandler;
+    private final ConsensusRoundHandler consensusRoundHandler;
     /** Handles all interaction with {@link SwirldState} */
     private final SwirldStateManager swirldStateManager;
     /** Checks the validity of transactions and submits valid ones to the event transaction pool */
@@ -530,7 +530,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         this.shadowGraph = new ShadowGraph(syncMetrics, initialAddressBook.getSize());
 
-        this.consensusRoundHandler = null;
         this.swirldId = swirldId.clone();
         this.crypto = crypto;
 
@@ -656,12 +655,17 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                         .toString());
 
                 stateToLoad = loadedState.initialState;
-                consensusRoundHandler.loadDataFromSignedState(signedStateFromDisk, false);
+
             } else {
                 stateToLoad = buildGenesisState(this, initialAddressBook, appVersion, genesisStateBuilder);
 
                 // if we are not starting from a saved state, don't freeze on startup
                 startUpEventFrozenManager.setStartUpEventFrozenEndTime(null);
+            }
+
+            if (stateToLoad == null) {
+                // this should be impossible
+                throw new IllegalStateException("stateToLoad is null");
             }
 
             swirldStateManager = PlatformConstructor.swirldStateManager(
@@ -693,6 +697,10 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     freezeManager::freezeStarted,
                     stateManagementComponent::roundAppliedToState,
                     appVersion));
+
+            if (signedStateFromDisk != null) {
+                consensusRoundHandler.loadDataFromSignedState(signedStateFromDisk, false);
+            }
 
             final AddedEventMetrics addedEventMetrics = new AddedEventMetrics(this.selfId, metrics);
             final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
