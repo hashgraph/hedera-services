@@ -1,6 +1,6 @@
 # Consistency Testing Tool
 
-The purpose of the Consistency Testing Tool is to guarantee that transactions are handled exactly once, and always in 
+The purpose of the Consistency Testing Tool is to guarantee that transactions are handled exactly once, and always in
 the same order.
 
 ## Motivation

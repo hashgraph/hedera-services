@@ -102,6 +102,9 @@ public record ConsistencyTestingToolRound(long roundNumber, long currentState, L
         return Long.compare(this.roundNumber, other.roundNumber);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean equals(final @Nullable Object other) {
         if (other == null) {
@@ -112,7 +115,7 @@ public record ConsistencyTestingToolRound(long roundNumber, long currentState, L
             return true;
         }
 
-        if (other instanceof ConsistencyTestingToolRound otherRound) {
+        if (other instanceof final ConsistencyTestingToolRound otherRound) {
             return roundNumber == otherRound.roundNumber
                     && currentState == otherRound.currentState
                     && transactionsContents.equals(otherRound.transactionsContents);

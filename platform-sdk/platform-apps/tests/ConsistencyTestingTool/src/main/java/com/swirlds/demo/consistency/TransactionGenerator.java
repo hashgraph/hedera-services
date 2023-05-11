@@ -62,8 +62,8 @@ public class TransactionGenerator implements Startable {
         this.platform = Objects.requireNonNull(platform);
 
         // Each node in an N node network should create 1/N transactions per second.
-        final double tps =
-                (double) networkWideTransactionsPerSecond / platform.getAddressBook().getSize();
+        final double tps = (double) networkWideTransactionsPerSecond
+                / platform.getAddressBook().getSize();
 
         thread = new StoppableThreadConfiguration<>(getStaticThreadManager())
                 .setComponent("consistency-testing-tool")
