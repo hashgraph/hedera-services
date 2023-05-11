@@ -196,6 +196,8 @@ public class Browser {
         final ApplicationDefinition appDefinition =
                 ApplicationDefinitionLoader.load(configurationProperties, localNodesToStart);
 
+        ParameterProvider.setParameters(appDefinition.getAppParameters());
+
         // Load all SwirldMain instances for locally run nodes.
         final Map<Long, SwirldMain> appMains = loadSwirldMains(appDefinition, localNodesToStart);
 
@@ -668,8 +670,6 @@ public class Browser {
                 final SwirldsPlatform platform = new SwirldsPlatform(
                         // window index
                         ownHostIndex,
-                        // parameters from the app line of the config.txt file
-                        appDefinition.getAppParameters(),
                         // all key pairs and CSPRNG state for this member
                         crypto[i],
                         // the ID for this swirld (immutable since creation of this swirld)

@@ -38,7 +38,6 @@ import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.PlatformWithDeprecatedMethods;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldDualState;
@@ -46,6 +45,7 @@ import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.utility.ByteUtils;
+import com.swirlds.platform.ParameterProvider;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
@@ -138,7 +138,7 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
         throwIfImmutable();
 
         if (trigger == InitTrigger.GENESIS) {
-            parseArguments(((PlatformWithDeprecatedMethods) platform).getParameters());
+            parseArguments(ParameterProvider.getParameters());
         }
 
         this.selfId = platform.getSelfId().getId();

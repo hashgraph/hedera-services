@@ -43,7 +43,6 @@ import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.PlatformWithDeprecatedMethods;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldDualState;
@@ -79,14 +78,14 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
     private static final Logger logger = LogManager.getLogger(AddressBookTestingToolState.class);
 
     /** the suffix for the debug address book */
-    private static String DEBUG = "debug";
+    private static final String DEBUG = "debug";
 
     /** the suffix for the test address book */
     private static AddressBookTestingToolConfig testingToolConfig;
     /** the address book configuration */
     private static AddressBookConfig addressBookConfig;
     /** flag indicating if weighting behavior has been logged. */
-    private static AtomicBoolean logWeightingBehavior = new AtomicBoolean(true);
+    private static final AtomicBoolean logWeightingBehavior = new AtomicBoolean(true);
 
     private static class ClassVersion {
         public static final int ORIGINAL = 1;
@@ -155,10 +154,6 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         logger.info(STARTUP.getMarker(), "init called in State.");
         throwIfImmutable();
 
-        if (trigger == InitTrigger.GENESIS) {
-            parseArguments(((PlatformWithDeprecatedMethods) platform).getParameters());
-        }
-
         this.selfId = platform.getSelfId().getId();
     }
 
@@ -214,15 +209,6 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
     public void deserialize(@NonNull final SerializableDataInputStream in, final int version) throws IOException {
         Objects.requireNonNull(in, "the serializable data input stream cannot be null");
         runningSum = in.readLong();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    private void parseArguments(@NonNull final String[] args) {
-        if (args.length != 0) {
-            throw new IllegalArgumentException("Expected no arguments. See javadocs for details.");
-        }
     }
 
     /**

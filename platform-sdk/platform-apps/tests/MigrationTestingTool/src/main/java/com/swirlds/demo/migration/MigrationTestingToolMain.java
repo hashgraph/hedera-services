@@ -21,12 +21,12 @@ import static com.swirlds.common.utility.Units.NANOSECONDS_TO_SECONDS;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.PlatformWithDeprecatedMethods;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.fcqueue.FCQueueStatistics;
 import com.swirlds.logging.payloads.ApplicationFinishedPayload;
 import com.swirlds.merkle.map.MerkleMapMetrics;
+import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.gui.SwirldsGui;
 import java.security.SignatureException;
 import org.apache.logging.log4j.LogManager;
@@ -68,7 +68,7 @@ public class MigrationTestingToolMain implements SwirldMain {
     public void init(final Platform platform, final NodeId selfId) {
         this.platform = platform;
 
-        final String[] parameters = ((PlatformWithDeprecatedMethods) platform).getParameters();
+        final String[] parameters = ParameterProvider.getParameters();
         logger.info(MARKER, "Parsing arguments {}", (Object) parameters);
         seed = Long.parseLong(parameters[0]) + selfId.getId();
         maximumTransactionsPerNode = Integer.parseInt(parameters[1]);

@@ -42,7 +42,6 @@ import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.PlatformWithDeprecatedMethods;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldDualState;
@@ -94,6 +93,7 @@ import com.swirlds.merkle.map.test.lifecycle.EntityType;
 import com.swirlds.merkle.map.test.lifecycle.TransactionState;
 import com.swirlds.merkle.map.test.lifecycle.TransactionType;
 import com.swirlds.merkle.map.test.pta.MapKey;
+import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.Utilities;
 import com.swirlds.virtualmap.VirtualMap;
 import java.io.File;
@@ -1225,7 +1225,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
 
         // If parameter exists, load PayloadCfgSimple from top level json configuration file
         // Otherwise, load the default setting
-        final String[] parameters = ((PlatformWithDeprecatedMethods) platform).getParameters();
+        final String[] parameters = ParameterProvider.getParameters();
         if (parameters != null && parameters.length > 0) {
             final String jsonFileName = parameters[0];
             final PayloadCfgSimple payloadCfgSimple = PlatformTestingToolMain.getPayloadCfgSimple(jsonFileName);

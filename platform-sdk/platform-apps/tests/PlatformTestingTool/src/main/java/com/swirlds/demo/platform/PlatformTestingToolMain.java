@@ -82,6 +82,7 @@ import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkle.map.test.pta.MapKey;
 import com.swirlds.merkle.map.test.pta.TransactionRecord;
 import com.swirlds.platform.Browser;
+import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.gui.SwirldsGui;
 import com.swirlds.virtualmap.internal.merkle.VirtualLeafNode;
 import java.io.File;
@@ -547,7 +548,7 @@ public class PlatformTestingToolMain implements SwirldMain {
             final String myName = platform.getSelfAddress().getSelfName();
 
             String jsonFileName = null;
-            final String[] parameters = ((PlatformWithDeprecatedMethods) platform).getParameters();
+            final String[] parameters = ParameterProvider.getParameters();
             if (parameters != null && parameters.length > 0) {
                 jsonFileName = parameters[0];
             }

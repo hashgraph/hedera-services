@@ -50,14 +50,6 @@ public interface PlatformWithDeprecatedMethods extends Platform {
     void setSleepAfterSync(final long delay);
 
     /**
-     * Get command line arguments.
-     *
-     * @deprecated use configuration engine
-     */
-    @Deprecated(forRemoval = true)
-    String[] getParameters();
-
-    /**
      * Get the ID of the current swirld. A given app can be used to create many different swirlds (also
      * called networks, or ledgers, or shared worlds). This is a unique identifier for this particular
      * swirld.

@@ -272,8 +272,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     private final ChatterEventMapper chatterEventMapper;
     /** this is the Nth Platform running on this machine (N=winNum) */
     private final int instanceNumber;
-    /** parameters given to the app when it starts */
-    private final String[] parameters;
     /** The platforms freeze manager */
     private final FreezeManager freezeManager;
     /** is used for pausing event creation for a while at start up */
@@ -430,7 +428,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      * the browser gives the Platform what app to run. There can be multiple Platforms on one computer.
      *
      * @param instanceNumber           this is the Nth copy of the Platform running on this machine (N=instanceNumber)
-     * @param parameters               parameters given to the Platform at the start, for app to use
      * @param crypto                   an object holding all the public/private key pairs and the CSPRNG state for this
      *                                 member
      * @param swirldId                 the ID of the swirld being run
@@ -447,7 +444,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      */
     SwirldsPlatform(
             final int instanceNumber,
-            @NonNull final String[] parameters,
             @NonNull final Crypto crypto,
             @NonNull final byte[] swirldId,
             @NonNull final NodeId id,
@@ -490,7 +486,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         this.appVersion = appVersion;
 
         this.instanceNumber = instanceNumber;
-        this.parameters = parameters;
         // the memberId of the member running this Platform object
         this.selfId = id;
         // set here, then given to the state in run(). A copy of it is given to hashgraph.
@@ -619,18 +614,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         }
         logger.info(STARTUP.getMarker(), "initialize eventStreamManager");
 
-        final EventStreamManager<EventImpl> eventStreamManager = new EventStreamManager<>(
-                platformContext,
-                threadManager,
-                getSelfId(),
-                this,
-                eventStreamManagerName,
-                settings.isEnableEventStreaming(),
-                settings.getEventsLogDir(),
-                settings.getEventsLogPeriod(),
-                settings.getEventStreamQueueCapacity(),
-                this::isLastEventBeforeRestart);
-
         if (chatterConfig.useChatter()) {
             criticalQuorum = new CriticalQuorumImpl(
                     metrics, selfId.getId(), initialAddressBook, false, chatterConfig.criticalQuorumSoftening());
@@ -679,6 +662,19 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     PlatformConstructor.settingsProvider(),
                     freezeManager::isFreezeStarted,
                     stateToLoad);
+
+            final EventStreamManager<EventImpl> eventStreamManager = new EventStreamManager<>(
+                    platformContext,
+                    threadManager,
+                    getSelfId(),
+                    this,
+                    eventStreamManagerName,
+                    settings.isEnableEventStreaming(),
+                    settings.getEventsLogDir(),
+                    settings.getEventsLogPeriod(),
+                    settings.getEventStreamQueueCapacity(),
+                    event -> event.isLastInRoundReceived()
+                            && swirldStateManager.isInFreezePeriod(event.getConsensusTimestamp()));
 
             // SwirldStateManager will get a copy of the state loaded, that copy will become stateCons.
             // The original state will be saved in the SignedStateMgr and will be deleted when it becomes old
@@ -1933,14 +1929,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      * {@inheritDoc}
      */
     @Override
-    public String[] getParameters() {
-        return parameters;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public byte[] getSwirldId() {
         return swirldId.clone();
     }
@@ -2012,15 +2000,5 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         final ReservedSignedState wrapper = stateManagementComponent.getLatestSignedState(reason);
         return new AutoCloseableWrapper<>(
                 wrapper.isNull() ? null : (T) wrapper.get().getState().getSwirldState(), wrapper::close);
-    }
-
-    /**
-     * check whether the given event is the last event in its round, and the platform enters freeze period
-     *
-     * @param event a consensus event
-     * @return whether this event is the last event to be added before restart
-     */
-    private boolean isLastEventBeforeRestart(final EventImpl event) {
-        return event.isLastInRoundReceived() && swirldStateManager.isInFreezePeriod(event.getConsensusTimestamp());
     }
 }

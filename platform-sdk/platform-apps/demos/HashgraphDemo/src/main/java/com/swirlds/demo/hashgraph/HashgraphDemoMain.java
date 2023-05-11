@@ -39,6 +39,7 @@ import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.PlatformEvent;
 import com.swirlds.platform.Browser;
+import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.gui.SwirldsGui;
 import com.swirlds.platform.network.ExternalIpAddress;
 import com.swirlds.platform.network.IpAddressStatus;
@@ -393,7 +394,7 @@ public class HashgraphDemoMain implements SwirldMain {
     public void init(final Platform platform, final NodeId id) {
         this.platform = platform;
         this.selfId = id.getId();
-        final String[] parameters = ((PlatformWithDeprecatedMethods) platform).getParameters();
+        final String[] parameters = ParameterProvider.getParameters();
 
         SwirldsGui.setAbout(
                 platform.getSelfId().getId(),

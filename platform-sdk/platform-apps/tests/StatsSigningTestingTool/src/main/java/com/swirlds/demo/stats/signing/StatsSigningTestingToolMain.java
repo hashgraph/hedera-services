@@ -46,6 +46,7 @@ import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.demo.stats.signing.algorithms.ECSecP256K1Algorithm;
 import com.swirlds.demo.stats.signing.algorithms.X25519SigningAlgorithm;
 import com.swirlds.platform.Browser;
+import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.gui.SwirldsGui;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -162,7 +163,7 @@ public class StatsSigningTestingToolMain implements SwirldMain {
         this.platform = platform;
         selfId = id.getId();
         // parse the config.txt parameters, and allow optional _ as in 1_000_000
-        final String[] parameters = ((PlatformWithDeprecatedMethods) platform).getParameters();
+        final String[] parameters = ParameterProvider.getParameters();
         headless = (parameters[0].equals("1"));
         syncDelay = Integer.parseInt(parameters[2].replaceAll("_", ""));
         bytesPerTrans = Integer.parseInt(parameters[3].replaceAll("_", ""));

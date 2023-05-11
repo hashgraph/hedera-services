@@ -43,6 +43,7 @@ import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.platform.Browser;
+import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.gui.SwirldsGui;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -212,7 +213,7 @@ public class StatsDemoMain implements SwirldMain {
         this.platform = platform;
         selfId = id.getId();
         // parse the config.txt parameters, and allow optional _ as in 1_000_000
-        final String[] parameters = ((PlatformWithDeprecatedMethods) platform).getParameters();
+        final String[] parameters = ParameterProvider.getParameters();
         headless = (parameters[0].equals("1"));
         writePeriod = Integer.parseInt(parameters[1].replaceAll("_", ""));
         syncDelay = Integer.parseInt(parameters[2].replaceAll("_", ""));
