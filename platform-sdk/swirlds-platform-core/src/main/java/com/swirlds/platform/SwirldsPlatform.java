@@ -249,8 +249,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     private static final Logger logger = LogManager.getLogger(SwirldsPlatform.class);
     /** alert threshold for java app pause */
     private static final long PAUSE_ALERT_INTERVAL = 5000;
-    /** logging string prefix for hash stream operation logged events. */
-    private static final String HASH_STREAM_OPERATION_PREFIX = ">>> ";
     /**
      * the ID of the member running this. Since a node can be a main node or a mirror node, the ID is not a primitive
      * value
@@ -337,7 +335,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
     private final QueueThread<EventIntakeTask> intakeQueue;
     private final EventLinker eventLinker;
-    private SequenceCycle<EventIntakeTask> intakeCycle = null;
+    private final SequenceCycle<EventIntakeTask> intakeCycle;
     /**
      * Executes a sync with a remote node. Only used for sync, not chatter.
      */
@@ -802,6 +800,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 intakeCycle = new SequenceCycle<>(taskDispatcher::dispatchTask);
                 intakeHandler = intakeCycle;
             } else {
+                intakeCycle = null;
                 intakeHandler = taskDispatcher::dispatchTask;
             }
 
@@ -1052,9 +1051,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     void loadReconnectState(final SignedState signedState) {
         // the state was received, so now we load its data into different objects
         logger.info(
-                LogMarker.STATE_HASH.getMarker(),
-                "{}RECONNECT: loadReconnectState: reloading state",
-                HASH_STREAM_OPERATION_PREFIX);
+                LogMarker.STATE_HASH.getMarker(), "RECONNECT: loadReconnectState: reloading state");
         logger.debug(RECONNECT.getMarker(), "`loadReconnectState` : reloading state");
         try {
 
