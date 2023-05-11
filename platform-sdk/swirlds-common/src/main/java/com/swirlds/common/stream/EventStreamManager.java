@@ -229,6 +229,9 @@ public class EventStreamManager<T extends StreamAligned & Timestamped & RunningH
      * @return current size of working queue for calculating hash and runningHash
      */
     public int getHashQueueSize() {
+        if (hashQueueThread == null) {
+            return 0;
+        }
         return hashQueueThread.getQueue().size();
     }
 
