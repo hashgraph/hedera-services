@@ -30,7 +30,6 @@ import com.swirlds.common.threading.manager.ThreadManager;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.function.Predicate;
 import org.apache.logging.log4j.LogManager;
@@ -92,10 +91,6 @@ public class EventStreamManager<T extends StreamAligned & Timestamped & RunningH
      * 		a predicate which checks whether this event is the last event before restart
      * @param threadManager
      * 		responsible for managing thread lifecycles
-     * @throws NoSuchAlgorithmException
-     * 		is thrown when fails to get required MessageDigest instance
-     * @throws IOException
-     * 		is thrown when fails to create directory for event streaming
      */
     public EventStreamManager(
             final ThreadManager threadManager,
@@ -106,13 +101,16 @@ public class EventStreamManager<T extends StreamAligned & Timestamped & RunningH
             final String eventsLogDir,
             final long eventsLogPeriod,
             final int eventStreamQueueCapacity,
-            final Predicate<T> isLastEventInFreezeCheck)
-            throws NoSuchAlgorithmException, IOException {
+            final Predicate<T> isLastEventInFreezeCheck) {
 
         if (enableEventStreaming) {
             // the directory to which event stream files are written
             final String eventStreamDir = eventsLogDir + "/events_" + nodeName;
-            Files.createDirectories(Paths.get(eventStreamDir));
+            try {
+                Files.createDirectories(Paths.get(eventStreamDir));
+            } catch (final IOException e) {
+                throw new IllegalStateException("Can not create directory for event stream", e);
+            }
 
             streamFileWriter = new TimestampStreamFileWriter<>(
                     eventStreamDir,

@@ -16,6 +16,7 @@
 
 package com.hedera.test.factories.txns;
 
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -25,6 +26,7 @@ public class TokenUnfreezeFactory extends SignedTxnFactory<TokenUnfreezeFactory>
     private TokenUnfreezeFactory() {}
 
     private TokenID id;
+    private AccountID accountId;
 
     public static TokenUnfreezeFactory newSignedTokenUnfreeze() {
         return new TokenUnfreezeFactory();
@@ -32,6 +34,11 @@ public class TokenUnfreezeFactory extends SignedTxnFactory<TokenUnfreezeFactory>
 
     public TokenUnfreezeFactory unfreezing(TokenID id) {
         this.id = id;
+        return this;
+    }
+
+    public TokenUnfreezeFactory withAccount(AccountID accountId) {
+        this.accountId = accountId;
         return this;
     }
 
@@ -50,6 +57,9 @@ public class TokenUnfreezeFactory extends SignedTxnFactory<TokenUnfreezeFactory>
         var op = TokenUnfreezeAccountTransactionBody.newBuilder();
         if (id != null) {
             op.setToken(id);
+        }
+        if (accountId != null) {
+            op.setAccount(accountId);
         }
         txn.setTokenUnfreeze(op);
     }

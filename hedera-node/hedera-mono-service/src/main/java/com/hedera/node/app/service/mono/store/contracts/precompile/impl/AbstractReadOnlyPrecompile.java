@@ -30,6 +30,8 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public abstract class AbstractReadOnlyPrecompile implements Precompile {
+    private static long minimumGasCost = 100L;
+
     protected TokenID tokenId;
     protected final SyntheticTxnFactory syntheticTxnFactory;
     protected final WorldLedgers ledgers;
@@ -75,6 +77,6 @@ public abstract class AbstractReadOnlyPrecompile implements Precompile {
     @Override
     public long getGasRequirement(long blockTimestamp) {
         final var now = Timestamp.newBuilder().setSeconds(blockTimestamp).build();
-        return pricingUtils.computeViewFunctionGas(now, getMinimumFeeInTinybars(now));
+        return pricingUtils.computeViewFunctionGas(now, minimumGasCost);
     }
 }
