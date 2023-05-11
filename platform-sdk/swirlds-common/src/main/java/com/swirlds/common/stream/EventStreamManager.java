@@ -78,16 +78,15 @@ public class EventStreamManager<T extends StreamAligned & Timestamped & RunningH
 
     /**
      * @param platformContext          the platform context
+     * @param threadManager            responsible for managing thread lifecycles
      * @param selfId                   the id of this node
      * @param signer                   an object that can sign things
      * @param nodeName                 name of this node
      * @param enableEventStreaming     whether write event stream files or not
      * @param eventsLogDir             eventStream files will be generated in this directory
      * @param eventsLogPeriod          period of generating eventStream file
-     * @param eventStreamQueueCapacity capacity of the blockingQueue from which we take events and write to EventStream
-     *                                 files
      * @param isLastEventInFreezeCheck a predicate which checks whether this event is the last event before restart
-     * @param threadManager            responsible for managing thread lifecycles
+     *
      */
     public EventStreamManager(
             @NonNull final PlatformContext platformContext,
@@ -124,6 +123,7 @@ public class EventStreamManager<T extends StreamAligned & Timestamped & RunningH
                     .setNodeId(selfId.getId())
                     .setComponent("event-stream")
                     .setThreadName("write-queue")
+                    .setCapacity(eventStreamQueueCapacity)
                     .setForwardTo(streamFileWriter)
                     .build();
             writeQueueThread.start();

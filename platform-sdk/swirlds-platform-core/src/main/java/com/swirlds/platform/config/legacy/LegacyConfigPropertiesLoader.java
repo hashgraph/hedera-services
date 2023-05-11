@@ -47,6 +47,7 @@ public final class LegacyConfigPropertiesLoader {
     private static final String APP_PROPERTY_NAME = "app";
     private static final String ADDRESS_PROPERTY_NAME = "address";
     private static final String SWIRLD_PROPERTY_NAME = "swirld";
+    private static final String GENESIS_FREEZE_TIME_PROPERTY_NAME = "genesisfreezetime";
 
     public static final String ERROR_CONFIG_TXT_NOT_FOUND =
             "ERROR: Browser.startPlatforms called on non-existent config.txt";
@@ -114,6 +115,9 @@ public final class LegacyConfigPropertiesLoader {
                                 onError(ERROR_ADDRESS_NOT_ENOUGH_PARAMETERS);
                             }
                         }
+                        case GENESIS_FREEZE_TIME_PROPERTY_NAME -> {
+                            setGenesisFreezeTime(configurationProperties, lineParameters.length, pars[1]);
+                        }
                         default -> onError(ERROR_PROPERTY_NOT_KNOWN.formatted(pars[0]));
                     }
                 }
@@ -148,6 +152,14 @@ public final class LegacyConfigPropertiesLoader {
     private static void setSwirldName(
             final LegacyConfigProperties configurationProperties, final int paramLength, final String value) {
         handleParam(SWIRLD_PROPERTY_NAME, paramLength, () -> configurationProperties.setSwirldName(value));
+    }
+
+    private static void setGenesisFreezeTime(
+            final LegacyConfigProperties configProperties, final int paramLength, final String value) {
+        handleParam(
+                GENESIS_FREEZE_TIME_PROPERTY_NAME,
+                paramLength,
+                () -> configProperties.setGenesisFreezeTime(Long.parseLong(value)));
     }
 
     private static void onError(String message) {

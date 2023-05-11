@@ -24,7 +24,7 @@ import com.hedera.node.app.fees.MonoFeeAccumulator;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusHandlers;
 import com.hedera.node.app.service.contract.impl.handlers.ContractHandlers;
 import com.hedera.node.app.service.file.impl.handlers.FileHandlers;
-import com.hedera.node.app.service.network.impl.handlers.NetworkHandlers;
+import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkAdminHandlers;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleHandlers;
 import com.hedera.node.app.service.token.impl.handlers.TokenHandlers;
 import com.hedera.node.app.state.HederaState;
@@ -65,7 +65,7 @@ public interface QueryWorkflowModule {
     static QueryHandlers provideQueryHandlers(
             @NonNull final ConsensusHandlers consensusHandlers,
             @NonNull final FileHandlers fileHandlers,
-            @NonNull final NetworkHandlers networkHandlers,
+            @NonNull final NetworkAdminHandlers networkHandlers,
             @NonNull final ContractHandlers contractHandlers,
             @NonNull final ScheduleHandlers scheduleHandlers,
             @NonNull final TokenHandlers tokenHandlers) {
