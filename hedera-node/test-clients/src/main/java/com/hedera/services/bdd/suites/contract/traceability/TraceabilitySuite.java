@@ -4225,7 +4225,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                     .setGas(79000)
                                                     .setRecipientContract(
                                                             spec.registry().getContractId(PRECOMPILE_CALLER))
-                                                    .setGasUsed(5232)
+                                                    .setGasUsed(5330)
                                                     .setInput(encodeFunctionCall(
                                                             PRECOMPILE_CALLER,
                                                             "callSha256AndIsToken",
