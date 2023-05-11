@@ -7,7 +7,7 @@ import "./HederaTokenService.sol";
 contract MintNFTContract is HederaTokenService {
 
     function mintNonFungibleTokenWithAddress(address tokenAddress, bytes[] memory metadata) external {
-        (int response, uint64 newTotalSupply, int64[] memory serialNumbers) = HederaTokenService.mintToken(tokenAddress, 0, metadata);
+        (int response, int64 newTotalSupply, int64[] memory serialNumbers) = HederaTokenService.mintToken(tokenAddress, 0, metadata);
         if (response != HederaResponseCodes.SUCCESS) {
             revert ("Non Fungible mint failed!");
         }

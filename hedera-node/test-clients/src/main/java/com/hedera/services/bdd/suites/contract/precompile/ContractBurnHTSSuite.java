@@ -63,7 +63,6 @@ import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenType;
-import java.math.BigInteger;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -135,7 +134,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
                                         .gas(GAS_TO_OFFER))),
                         getTxnRecord(CREATION_TX).logged())
                 .when(
-                        contractCall(THE_BURN_CONTRACT, BURN_TOKEN_WITH_EVENT, BigInteger.ZERO, new long[0])
+                        contractCall(THE_BURN_CONTRACT, BURN_TOKEN_WITH_EVENT, 0L, new long[0])
                                 .payingWith(ALICE)
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
                                 .gas(GAS_TO_OFFER)
@@ -159,7 +158,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
                                                         .withTotalSupply(50))
                                                 .gasUsed(gasUsed))
                                         .newTotalSupply(50)),
-                        contractCall(THE_BURN_CONTRACT, BURN_TOKEN_WITH_EVENT, BigInteger.ONE, new long[0])
+                        contractCall(THE_BURN_CONTRACT, BURN_TOKEN_WITH_EVENT, 1L, new long[0])
                                 .payingWith(ALICE)
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
                                 .gas(GAS_TO_OFFER)
@@ -188,7 +187,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
                                         .newTotalSupply(49)),
                         newKeyNamed(CONTRACT_KEY).shape(DELEGATE_CONTRACT.signedWith(THE_BURN_CONTRACT)),
                         tokenUpdate(TOKEN).supplyKey(CONTRACT_KEY),
-                        contractCall(THE_BURN_CONTRACT, "burnToken", BigInteger.ONE, new long[0])
+                        contractCall(THE_BURN_CONTRACT, "burnToken", 1L, new long[0])
                                 .via("burn with contract key")
                                 .gas(GAS_TO_OFFER),
                         childRecordsCheck(
@@ -237,7 +236,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
                             final var serialNumbers = new long[] {1L};
                             allRunFor(
                                     spec,
-                                    contractCall(THE_BURN_CONTRACT, "burnToken", BigInteger.ZERO, serialNumbers)
+                                    contractCall(THE_BURN_CONTRACT, "burnToken", 0L, serialNumbers)
                                             .payingWith(ALICE)
                                             .alsoSigningWithFullPrefix(MULTI_KEY)
                                             .gas(GAS_TO_OFFER)
@@ -294,7 +293,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
                                 contractCall(
                                                 outerContract,
                                                 BURN_AFTER_NESTED_MINT_TX,
-                                                BigInteger.ONE,
+                                                1L,
                                                 HapiParserUtil.asHeadlongAddress(asAddress(
                                                         spec.registry().getTokenID(TOKEN))),
                                                 new long[0])
@@ -376,7 +375,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
                                                             spec.registry().getAccountID(ALICE))),
                                                     HapiParserUtil.asHeadlongAddress(asAddress(
                                                             spec.registry().getAccountID(bob))),
-                                                    BigInteger.ZERO,
+                                                    0L,
                                                     2L,
                                                     serialNumbers)
                                             .alsoSigningWithFullPrefix(ALICE, SUPPLY_KEY)

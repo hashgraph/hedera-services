@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity >=0.6.0 <0.9.0;
 
-import './hip-206/HederaTokenService.sol';
-import './hip-206/HederaResponseCodes.sol';
+import './HederaTokenService.sol';
+import './HederaResponseCodes.sol';
 
 contract WorkingHours is HederaTokenService {
 
@@ -78,7 +78,7 @@ contract WorkingHours is HederaTokenService {
             // burn it
             int64[] memory toBurn = new int64[](1);
             toBurn[0] = ticketNum;
-            (int burnResponse, uint64 newSupply) = HederaTokenService.burnToken(tokenAddress, 0, toBurn);
+            (int burnResponse, int64 newSupply) = HederaTokenService.burnToken(tokenAddress, 0, toBurn);
         }
         nextWorkTime = block.timestamp + WORK_INTERVAL;
     }

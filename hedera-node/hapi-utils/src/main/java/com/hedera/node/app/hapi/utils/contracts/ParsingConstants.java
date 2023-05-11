@@ -82,8 +82,8 @@ public final class ParsingConstants {
 
     public static final TupleType intAddressTuple = TupleType.parse("(int32,address)");
     public static final TupleType intPairTuple = TupleType.parse("(int32,int32)");
-    public static final TupleType burnReturnType = TupleType.parse("(int32,uint64)");
-    public static final TupleType mintReturnType = TupleType.parse("(int32,uint64,int64[])");
+    public static final TupleType burnReturnType = TupleType.parse("(int32,int64)");
+    public static final TupleType mintReturnType = TupleType.parse("(int32,int64,int64[])");
     public static final TupleType getFungibleTokenInfoType =
             TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + FUNGIBLE_TOKEN_INFO + ")");
     public static final TupleType getTokenInfoType = TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + TOKEN_INFO + ")");

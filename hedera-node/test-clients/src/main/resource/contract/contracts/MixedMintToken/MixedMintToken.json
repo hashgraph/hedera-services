@@ -1,6 +1,7 @@
 [
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "uint64",
         "name": "amount",
@@ -13,7 +14,8 @@
       }
     ],
     "name": "mintTokenCall",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "bool",
         "name": "success",
@@ -29,7 +31,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "uint64",
         "name": "amount",
@@ -42,7 +45,8 @@
       }
     ],
     "name": "mintTokenDelegateCall",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "bool",
         "name": "success",

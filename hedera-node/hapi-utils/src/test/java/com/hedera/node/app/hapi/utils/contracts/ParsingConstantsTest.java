@@ -63,9 +63,9 @@ class ParsingConstantsTest {
         assertEquals(stringTuple, TupleType.parse(STRING));
         assertEquals(notSpecifiedType, TupleType.parse(INT32));
         assertEquals(intBoolTuple, TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE));
-        assertEquals(burnReturnType, TupleType.parse("(int32,uint64)"));
+        assertEquals(burnReturnType, TupleType.parse("(int32,int64)"));
         assertEquals(intAddressTuple, TupleType.parse("(int32,address)"));
-        assertEquals(mintReturnType, TupleType.parse("(int32,uint64,int64[])"));
+        assertEquals(mintReturnType, TupleType.parse("(int32,int64,int64[])"));
         assertEquals(hapiAllowanceOfType, TupleType.parse("(int32,uint256)"));
         assertEquals(hapiGetApprovedType, TupleType.parse("(int32,bytes32)"));
         assertEquals(

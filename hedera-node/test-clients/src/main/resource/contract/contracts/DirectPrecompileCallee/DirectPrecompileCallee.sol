@@ -1,6 +1,6 @@
 pragma solidity ^0.8.0;
 
-import "./hip-206/IHederaTokenService.sol";
+import "./IHederaTokenService.sol";
 
 contract DirectPrecompileCallee {
     address HTS_ADDRESS = address(0x167);

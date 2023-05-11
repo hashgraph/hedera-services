@@ -167,7 +167,7 @@ public class ContractMintHTSSuite extends HapiSuite {
                         sourcing(() -> contractCreate(
                                 MINT_CONTRACT, HapiParserUtil.asHeadlongAddress(asAddress(fungible.get())))))
                 .when(
-                        contractCall(MINT_CONTRACT, MINT_FUNGIBLE_TOKEN_WITH_EVENT, BigInteger.valueOf(amount))
+                        contractCall(MINT_CONTRACT, MINT_FUNGIBLE_TOKEN_WITH_EVENT, amount)
                                 .via(FIRST_MINT_TXN)
                                 .gas(GAS_TO_OFFER)
                                 .payingWith(ACCOUNT)
@@ -316,7 +316,7 @@ public class ContractMintHTSSuite extends HapiSuite {
                         sourcing(() -> contractCreate(
                                 MINT_CONTRACT, HapiParserUtil.asHeadlongAddress(asAddress(fungible.get())))))
                 .when(
-                        contractCall(MINT_CONTRACT, MINT_FUNGIBLE_TOKEN_WITH_EVENT, BigInteger.valueOf(10))
+                        contractCall(MINT_CONTRACT, MINT_FUNGIBLE_TOKEN_WITH_EVENT, 10L)
                                 .via(FIRST_MINT_TXN)
                                 .gas(GAS_TO_OFFER)
                                 .payingWith(ACCOUNT)
@@ -472,7 +472,7 @@ public class ContractMintHTSSuite extends HapiSuite {
                                                                     .withStatus(SUCCESS)
                                                                     .withTotalSupply(1L)
                                                                     .withSerialNumbers(1L))
-                                                            .gas(3_837_920L)
+                                                            .gas(3_837_875L)
                                                             .amount(0L)
                                                             .functionParameters(functionParameters()
                                                                     .forFunction(
@@ -637,7 +637,7 @@ public class ContractMintHTSSuite extends HapiSuite {
                         .payingWith(ACCOUNT)
                         .gas(GAS_TO_OFFER)))
                 .then(
-                        contractCall(MINT_CONTRACT, MINT_FUNGIBLE_TOKEN, BigInteger.valueOf(amount))
+                        contractCall(MINT_CONTRACT, MINT_FUNGIBLE_TOKEN, amount)
                                 .via(baselineMintWithEnoughGas)
                                 .payingWith(ACCOUNT)
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
@@ -656,7 +656,7 @@ public class ContractMintHTSSuite extends HapiSuite {
                                     .getGasUsed();
                             expectedInsufficientGas.set(baselineGas - expectedPrecompileGas);
                         }),
-                        sourcing(() -> contractCall(MINT_CONTRACT, MINT_FUNGIBLE_TOKEN, BigInteger.valueOf(amount))
+                        sourcing(() -> contractCall(MINT_CONTRACT, MINT_FUNGIBLE_TOKEN, amount)
                                 .via(FIRST_MINT_TXN)
                                 .payingWith(ACCOUNT)
                                 .alsoSigningWithFullPrefix(MULTI_KEY)

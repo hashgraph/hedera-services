@@ -1,6 +1,7 @@
 [
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "associateDissociateContractAddress",
@@ -11,7 +12,8 @@
     "type": "constructor"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "sender",
@@ -29,7 +31,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "sender",
@@ -47,7 +50,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "sender",
@@ -65,7 +69,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "sender",
@@ -83,7 +88,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "sender",
@@ -101,7 +107,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "sender",

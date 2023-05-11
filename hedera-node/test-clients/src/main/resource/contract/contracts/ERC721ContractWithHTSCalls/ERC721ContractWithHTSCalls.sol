@@ -2,9 +2,9 @@
 pragma solidity ^0.8.0;
 
 import "./HederaTokenService.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
+import "./IERC721.sol";
+import "./IERC721Metadata.sol";
+import "./IERC721Enumerable.sol";
 
 contract ERC721ContractWithHTSCalls is HederaTokenService{
 

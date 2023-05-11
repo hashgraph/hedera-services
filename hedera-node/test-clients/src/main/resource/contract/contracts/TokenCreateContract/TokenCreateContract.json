@@ -1,8 +1,29 @@
 [
   {
+    "anonymous": false,
+    "inputs":
+    [
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes",
+        "name": "",
+        "type": "bytes"
+      }
+    ],
+    "name": "CallResponseEvent",
+    "type": "event"
+  },
+  {
     "inputs": [],
     "name": "createFrozenTokenWithDefaultKeys",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "address",
         "name": "createdTokenAddress",
@@ -13,7 +34,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "treasury",
@@ -30,13 +52,14 @@
         "type": "address"
       },
       {
-        "internalType": "uint32",
+        "internalType": "int64",
         "name": "autoRenewPeriod",
-        "type": "uint32"
+        "type": "int64"
       }
     ],
     "name": "createNFTTokenWithKeysAndExpiry",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "address",
         "name": "createdTokenAddress",
@@ -47,7 +70,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "contractIdAndFeeCollector",
@@ -59,13 +83,14 @@
         "type": "address"
       },
       {
-        "internalType": "uint32",
+        "internalType": "int64",
         "name": "autoRenewPeriod",
-        "type": "uint32"
+        "type": "int64"
       }
     ],
     "name": "createNonFungibleTokenThenQuery",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "address",
         "name": "createdTokenAddress",
@@ -76,7 +101,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "contractIdKey",
@@ -98,9 +124,9 @@
         "type": "address"
       },
       {
-        "internalType": "uint32",
+        "internalType": "int64",
         "name": "autoRenewPeriod",
-        "type": "uint32"
+        "type": "int64"
       },
       {
         "internalType": "bytes",
@@ -109,7 +135,8 @@
       }
     ],
     "name": "createNonFungibleTokenWithCustomFees",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "address",
         "name": "createdTokenAddress",
@@ -120,7 +147,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "contractIdKey",
@@ -142,9 +170,9 @@
         "type": "address"
       },
       {
-        "internalType": "uint32",
+        "internalType": "int64",
         "name": "autoRenewPeriod",
-        "type": "uint32"
+        "type": "int64"
       },
       {
         "internalType": "bytes",
@@ -153,7 +181,8 @@
       }
     ],
     "name": "createNonFungibleTokenWithInvalidRoyaltyFee",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "address",
         "name": "createdTokenAddress",
@@ -164,7 +193,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "bytes",
         "name": "ed25519AdminKey",
@@ -176,13 +206,14 @@
         "type": "address"
       },
       {
-        "internalType": "uint32",
+        "internalType": "int64",
         "name": "autoRenewPeriod",
-        "type": "uint32"
+        "type": "int64"
       }
     ],
     "name": "createTokenThenQueryAndTransfer",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "address",
         "name": "createdTokenAddress",
@@ -193,7 +224,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "bytes",
         "name": "ecdsaAdminKey",
@@ -215,13 +247,14 @@
         "type": "address"
       },
       {
-        "internalType": "uint32",
+        "internalType": "int64",
         "name": "autoRenewPeriod",
-        "type": "uint32"
+        "type": "int64"
       }
     ],
     "name": "createTokenWithAllCustomFeesAvailable",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "address",
         "name": "createdTokenAddress",
@@ -232,9 +265,10 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
-        "internalType": "uint8",
+        "internalType": "enum KeyHelper.KeyValueType",
         "name": "keyValueType",
         "type": "uint8"
       },
@@ -245,7 +279,8 @@
       }
     ],
     "name": "createTokenWithAllTypeKeys",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "address",
         "name": "createdTokenAddress",
@@ -256,11 +291,12 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
-        "internalType": "uint32",
+        "internalType": "int64",
         "name": "amount",
-        "type": "uint32"
+        "type": "int64"
       },
       {
         "internalType": "address",
@@ -274,7 +310,8 @@
       }
     ],
     "name": "createTokenWithAllTypesFixedFee",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "address",
         "name": "createdTokenAddress",
@@ -285,11 +322,12 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
-        "internalType": "uint32",
+        "internalType": "int64",
         "name": "amount",
-        "type": "uint32"
+        "type": "int64"
       },
       {
         "internalType": "address",
@@ -303,7 +341,8 @@
       }
     ],
     "name": "createTokenWithCorrectAndWrongTokenFixedFee",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "address",
         "name": "createdTokenAddress",
@@ -314,11 +353,12 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
-        "internalType": "uint32",
+        "internalType": "int64",
         "name": "amount",
-        "type": "uint32"
+        "type": "int64"
       },
       {
         "internalType": "address",
@@ -327,7 +367,8 @@
       }
     ],
     "name": "createTokenWithCurrentTokenFixedFee",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "address",
         "name": "createdTokenAddress",
@@ -338,19 +379,20 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
-        "internalType": "uint8",
+        "internalType": "enum KeyHelper.KeyType",
         "name": "firstKeyType",
         "type": "uint8"
       },
       {
-        "internalType": "uint8",
+        "internalType": "enum KeyHelper.KeyType",
         "name": "secondKeyType",
         "type": "uint8"
       },
       {
-        "internalType": "uint8",
+        "internalType": "enum KeyHelper.KeyValueType",
         "name": "keyValueType",
         "type": "uint8"
       },
@@ -361,7 +403,8 @@
       }
     ],
     "name": "createTokenWithCustomDuplexTypeKeys",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "address",
         "name": "createdTokenAddress",
@@ -372,14 +415,15 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
-        "internalType": "uint8",
+        "internalType": "enum KeyHelper.KeyType",
         "name": "keyType",
         "type": "uint8"
       },
       {
-        "internalType": "uint8",
+        "internalType": "enum KeyHelper.KeyValueType",
         "name": "keyValueType",
         "type": "uint8"
       },
@@ -390,7 +434,8 @@
       }
     ],
     "name": "createTokenWithCustomSingleTypeKeys",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "address",
         "name": "createdTokenAddress",
@@ -403,7 +448,8 @@
   {
     "inputs": [],
     "name": "createTokenWithDefaultExpiryAndEmptyKeys",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "address",
         "name": "createdTokenAddress",
@@ -416,7 +462,8 @@
   {
     "inputs": [],
     "name": "createTokenWithDefaultKeys",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "address",
         "name": "createdTokenAddress",
@@ -429,7 +476,8 @@
   {
     "inputs": [],
     "name": "createTokenWithDefaultKeysViaDelegateCall",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "address",
         "name": "createdTokenAddress",
@@ -440,20 +488,22 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "autoRenewAccount",
         "type": "address"
       },
       {
-        "internalType": "uint32",
+        "internalType": "int64",
         "name": "autoRenewPeriod",
-        "type": "uint32"
+        "type": "int64"
       }
     ],
     "name": "createTokenWithEmptyKeysArray",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "address",
         "name": "createdTokenAddress",
@@ -466,7 +516,8 @@
   {
     "inputs": [],
     "name": "createTokenWithEmptyTokenStruct",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "address",
         "name": "createdTokenAddress",
@@ -477,16 +528,17 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "tokenId",
         "type": "address"
       },
       {
-        "internalType": "uint32",
+        "internalType": "int64",
         "name": "amount",
-        "type": "uint32"
+        "type": "int64"
       },
       {
         "internalType": "address",
@@ -495,7 +547,8 @@
       }
     ],
     "name": "createTokenWithFixedFeeForTokenAndHbars",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "address",
         "name": "createdTokenAddress",
@@ -506,16 +559,17 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
-        "internalType": "uint32",
+        "internalType": "int64",
         "name": "numerator",
-        "type": "uint32"
+        "type": "int64"
       },
       {
-        "internalType": "uint32",
+        "internalType": "int64",
         "name": "denominator",
-        "type": "uint32"
+        "type": "int64"
       },
       {
         "internalType": "bool",
@@ -529,7 +583,8 @@
       }
     ],
     "name": "createTokenWithFractionalFee",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "address",
         "name": "createdTokenAddress",
@@ -540,26 +595,27 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
-        "internalType": "uint32",
+        "internalType": "int64",
         "name": "numerator",
-        "type": "uint32"
+        "type": "int64"
       },
       {
-        "internalType": "uint32",
+        "internalType": "int64",
         "name": "denominator",
-        "type": "uint32"
+        "type": "int64"
       },
       {
-        "internalType": "uint32",
+        "internalType": "int64",
         "name": "minimumAmount",
-        "type": "uint32"
+        "type": "int64"
       },
       {
-        "internalType": "uint32",
+        "internalType": "int64",
         "name": "maximumAmount",
-        "type": "uint32"
+        "type": "int64"
       },
       {
         "internalType": "bool",
@@ -573,7 +629,8 @@
       }
     ],
     "name": "createTokenWithFractionalFeeWithLimits",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "address",
         "name": "createdTokenAddress",
@@ -584,21 +641,22 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
-        "internalType": "uint32",
+        "internalType": "int64",
         "name": "amount",
-        "type": "uint32"
+        "type": "int64"
       },
       {
-        "internalType": "uint32",
+        "internalType": "int64",
         "name": "numerator",
-        "type": "uint32"
+        "type": "int64"
       },
       {
-        "internalType": "uint32",
+        "internalType": "int64",
         "name": "denominator",
-        "type": "uint32"
+        "type": "int64"
       },
       {
         "internalType": "bool",
@@ -617,7 +675,8 @@
       }
     ],
     "name": "createTokenWithHbarFixedFeeAndFractionalFee",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "address",
         "name": "createdTokenAddress",
@@ -628,11 +687,12 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
-        "internalType": "uint32",
+        "internalType": "int64",
         "name": "amount",
-        "type": "uint32"
+        "type": "int64"
       },
       {
         "internalType": "address",
@@ -641,7 +701,8 @@
       }
     ],
     "name": "createTokenWithHbarsFixedFee",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "address",
         "name": "createdTokenAddress",
@@ -654,7 +715,8 @@
   {
     "inputs": [],
     "name": "createTokenWithInheritedSupplyKey",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "address",
         "name": "createdTokenAddress",
@@ -665,20 +727,22 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "autoRenewAccount",
         "type": "address"
       },
       {
-        "internalType": "uint32",
+        "internalType": "int64",
         "name": "autoRenewPeriod",
-        "type": "uint32"
+        "type": "int64"
       }
     ],
     "name": "createTokenWithInvalidExpiry",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "address",
         "name": "createdTokenAddress",
@@ -689,7 +753,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "bytes",
         "name": "ecdsaAdminKey",
@@ -706,13 +771,14 @@
         "type": "address"
       },
       {
-        "internalType": "uint32",
+        "internalType": "int64",
         "name": "autoRenewPeriod",
-        "type": "uint32"
+        "type": "int64"
       }
     ],
     "name": "createTokenWithInvalidFixedFee",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "address",
         "name": "createdTokenAddress",
@@ -723,11 +789,12 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
-        "internalType": "uint32",
+        "internalType": "int64",
         "name": "amount",
-        "type": "uint32"
+        "type": "int64"
       },
       {
         "internalType": "address",
@@ -736,7 +803,8 @@
       }
     ],
     "name": "createTokenWithInvalidFlagsFixedFee",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "address",
         "name": "createdTokenAddress",
@@ -747,20 +815,22 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "autoRenewAccount",
         "type": "address"
       },
       {
-        "internalType": "uint32",
+        "internalType": "int64",
         "name": "autoRenewPeriod",
-        "type": "uint32"
+        "type": "int64"
       }
     ],
     "name": "createTokenWithKeyWithMultipleValues",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "address",
         "name": "createdTokenAddress",
@@ -771,7 +841,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "treasury",
@@ -803,9 +874,9 @@
         "type": "address"
       },
       {
-        "internalType": "uint32",
+        "internalType": "int64",
         "name": "autoRenewPeriod",
-        "type": "uint32"
+        "type": "int64"
       },
       {
         "internalType": "address",
@@ -814,7 +885,8 @@
       }
     ],
     "name": "createTokenWithKeysAndExpiry",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "address",
         "name": "createdTokenAddress",
@@ -825,7 +897,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "uint8",
         "name": "numberOfFixedFees",
@@ -837,19 +910,19 @@
         "type": "uint8"
       },
       {
-        "internalType": "uint32",
+        "internalType": "int64",
         "name": "amount",
-        "type": "uint32"
+        "type": "int64"
       },
       {
-        "internalType": "uint32",
+        "internalType": "int64",
         "name": "numerator",
-        "type": "uint32"
+        "type": "int64"
       },
       {
-        "internalType": "uint32",
+        "internalType": "int64",
         "name": "denominator",
-        "type": "uint32"
+        "type": "int64"
       },
       {
         "internalType": "bool",
@@ -868,7 +941,8 @@
       }
     ],
     "name": "createTokenWithNAmountHbarFixedFeesAndNAmountFractionalFees",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "address",
         "name": "createdTokenAddress",
@@ -879,11 +953,12 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
-        "internalType": "uint32",
+        "internalType": "int64",
         "name": "amount",
-        "type": "uint32"
+        "type": "int64"
       },
       {
         "internalType": "address",
@@ -897,7 +972,8 @@
       }
     ],
     "name": "createTokenWithTokenFixedFee",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "address",
         "name": "createdTokenAddress",
@@ -908,11 +984,12 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
-        "internalType": "uint32",
+        "internalType": "int64",
         "name": "amount",
-        "type": "uint32"
+        "type": "int64"
       },
       {
         "internalType": "address",
@@ -931,7 +1008,8 @@
       }
     ],
     "name": "createTokenWithTokenFixedFees",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "address",
         "name": "createdTokenAddress",
@@ -942,7 +1020,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "treasury",
@@ -954,17 +1033,181 @@
         "type": "address"
       },
       {
-        "internalType": "uint32",
+        "internalType": "int64",
         "name": "autoRenewPeriod",
-        "type": "uint32"
+        "type": "int64"
       }
     ],
     "name": "delegateCallCreate",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "address",
         "name": "createdTokenAddress",
         "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs":
+    [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "delegateTransferFrom",
+    "outputs":
+    [
+      {
+        "internalType": "int64",
+        "name": "responseCode",
+        "type": "int64"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs":
+    [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "serialNumber",
+        "type": "uint256"
+      }
+    ],
+    "name": "delegateTransferFromNFT",
+    "outputs":
+    [
+      {
+        "internalType": "int64",
+        "name": "responseCode",
+        "type": "int64"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs":
+    [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes",
+        "name": "encodedFunctionSelector",
+        "type": "bytes"
+      }
+    ],
+    "name": "redirectForToken",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs":
+    [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "transferFrom",
+    "outputs":
+    [
+      {
+        "internalType": "int64",
+        "name": "responseCode",
+        "type": "int64"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs":
+    [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "serialNumber",
+        "type": "uint256"
+      }
+    ],
+    "name": "transferFromNFT",
+    "outputs":
+    [
+      {
+        "internalType": "int64",
+        "name": "responseCode",
+        "type": "int64"
       }
     ],
     "stateMutability": "nonpayable",

@@ -1,6 +1,6 @@
 pragma solidity ^0.8.9;
 
-import "./hip-206/HederaTokenService.sol";
+import "./HederaTokenService.sol";
 
 contract InstantStorageHog is HederaTokenService {
     uint256[] private stuff;
@@ -17,10 +17,10 @@ contract InstantStorageHog is HederaTokenService {
         bytes[] memory metadata
     ) external returns (
         int responseCode,
-        uint64 newTotalSupply,
+        int64 newTotalSupply,
         int64[] memory serialNumbers
     ) {
-        return HederaTokenService.mintToken(token, uint64(0), metadata);
+        return HederaTokenService.mintToken(token, int64(0), metadata);
     }
 
     function transferNft(

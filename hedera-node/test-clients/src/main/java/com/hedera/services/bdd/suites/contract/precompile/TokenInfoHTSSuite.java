@@ -1107,6 +1107,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
                                                 asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN_NAME))),
                                         HapiParserUtil.asHeadlongAddress(
                                                 asAddress(spec.registry().getContractId(TOKEN_INFO_CONTRACT))))
+                                .gas(200_000)
                                 .via(UPDATE_AND_GET_TOKEN_KEYS_INFO_TXN)
                                 .alsoSigningWithFullPrefix(MULTI_KEY))))
                 .then(withOpContext((spec, opLog) -> allRunFor(

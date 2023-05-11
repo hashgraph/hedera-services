@@ -1,6 +1,7 @@
 [
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "token",
@@ -23,7 +24,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "token",
@@ -46,7 +48,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "token",
@@ -74,7 +77,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "token",

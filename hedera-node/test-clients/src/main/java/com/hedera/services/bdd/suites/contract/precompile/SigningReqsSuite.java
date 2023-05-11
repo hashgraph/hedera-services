@@ -25,7 +25,6 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.*;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
-import static com.hedera.services.bdd.suites.contract.precompile.WipeTokenAccountPrecompileSuite.*;
 import static com.hedera.services.bdd.suites.file.FileUpdateSuite.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
@@ -99,9 +98,7 @@ public class SigningReqsSuite extends HapiSuite {
                         cryptoCreateWithExposingId(autoRenew, arKey, autoRenewAlias),
                         cryptoCreateWithExposingId(feeCollector, fcKey, feeCollectorAlias),
                         uploadInitCode(MINIMAL_CREATIONS_CONTRACT),
-                        contractCreate(MINIMAL_CREATIONS_CONTRACT)
-                                .gas(GAS_TO_OFFER)
-                                .exposingNumTo(contractId::set))
+                        contractCreate(MINIMAL_CREATIONS_CONTRACT).gas(500_000L).exposingNumTo(contractId::set))
                 .when(
                         sourcing(() -> contractCall(
                                         MINIMAL_CREATIONS_CONTRACT,
@@ -110,7 +107,7 @@ public class SigningReqsSuite extends HapiSuite {
                                         THREE_MONTHS_IN_SECONDS,
                                         feeCollectorAlias.get())
                                 .via(FIRST_CREATE_TXN)
-                                .gas(10L * GAS_TO_OFFER)
+                                .gas(1_000_000)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
                                 .payingWith(CIVILIAN)
                                 .alsoSigningWithFullPrefix(autoRenew)
@@ -123,7 +120,7 @@ public class SigningReqsSuite extends HapiSuite {
                                         THREE_MONTHS_IN_SECONDS,
                                         feeCollectorAlias.get())
                                 .via(FIRST_CREATE_TXN)
-                                .gas(10L * GAS_TO_OFFER)
+                                .gas(1_000_000L)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
                                 .payingWith(CIVILIAN)
                                 .alsoSigningWithFullPrefix(autoRenew, feeCollector)
@@ -166,9 +163,7 @@ public class SigningReqsSuite extends HapiSuite {
                         cryptoCreateWithExposingId(autoRenew, arKey, autoRenewAlias),
                         cryptoCreateWithExposingId(feeCollector, fcKey, feeCollectorAlias),
                         uploadInitCode(MINIMAL_CREATIONS_CONTRACT),
-                        contractCreate(MINIMAL_CREATIONS_CONTRACT)
-                                .gas(GAS_TO_OFFER)
-                                .exposingNumTo(contractId::set))
+                        contractCreate(MINIMAL_CREATIONS_CONTRACT).gas(500_000L).exposingNumTo(contractId::set))
                 .when(
                         sourcing(() -> contractCall(
                                         MINIMAL_CREATIONS_CONTRACT,
@@ -177,7 +172,7 @@ public class SigningReqsSuite extends HapiSuite {
                                         THREE_MONTHS_IN_SECONDS,
                                         feeCollectorAlias.get())
                                 .via(FIRST_CREATE_TXN)
-                                .gas(10L * GAS_TO_OFFER)
+                                .gas(1_000_000L)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
                                 .payingWith(CIVILIAN)
                                 .alsoSigningWithFullPrefix(autoRenew)
@@ -190,7 +185,7 @@ public class SigningReqsSuite extends HapiSuite {
                                         THREE_MONTHS_IN_SECONDS,
                                         feeCollectorAlias.get())
                                 .via(FIRST_CREATE_TXN)
-                                .gas(10L * GAS_TO_OFFER)
+                                .gas(1_000_000L)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
                                 .payingWith(CIVILIAN)
                                 .alsoSigningWithFullPrefix(autoRenew, feeCollector)
@@ -225,7 +220,7 @@ public class SigningReqsSuite extends HapiSuite {
                         uploadInitCode(MINIMAL_CREATIONS_CONTRACT),
                         contractCreate(MINIMAL_CREATIONS_CONTRACT)
                                 .exposingNumTo(contractId::set)
-                                .gas(GAS_TO_OFFER),
+                                .gas(500_000L),
                         cryptoCreate(autoRenew)
                                 .keyShape(origKey.signedWith(sigs(ON, MINIMAL_CREATIONS_CONTRACT)))
                                 .exposingCreatedIdTo(id -> autoRenewMirrorAddr.set(idAsHeadlongAddress(id))))
@@ -237,7 +232,7 @@ public class SigningReqsSuite extends HapiSuite {
                                         autoRenewMirrorAddr.get(),
                                         THREE_MONTHS_IN_SECONDS)
                                 .via(FIRST_CREATE_TXN)
-                                .gas(10L * GAS_TO_OFFER)
+                                .gas(1_000_000L)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
                                 .payingWith(CIVILIAN)
                                 .refusingEthConversion()
@@ -260,7 +255,7 @@ public class SigningReqsSuite extends HapiSuite {
                                         autoRenewMirrorAddr.get(),
                                         THREE_MONTHS_IN_SECONDS)
                                 .via(SECOND_CREATE_TXN)
-                                .gas(10L * GAS_TO_OFFER)
+                                .gas(1_000_000L)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
                                 .payingWith(CIVILIAN)
                                 .refusingEthConversion()),
@@ -292,7 +287,7 @@ public class SigningReqsSuite extends HapiSuite {
                         uploadInitCode(MINIMAL_CREATIONS_CONTRACT),
                         contractCreate(MINIMAL_CREATIONS_CONTRACT)
                                 .exposingNumTo(contractId::set)
-                                .gas(GAS_TO_OFFER))
+                                .gas(500_000L))
                 .when(
                         // Fails without the auto-renew account's full-prefix signature
                         sourcing(() -> contractCall(
@@ -301,7 +296,7 @@ public class SigningReqsSuite extends HapiSuite {
                                         autoRenewAlias.get(),
                                         THREE_MONTHS_IN_SECONDS)
                                 .via(FIRST_CREATE_TXN)
-                                .gas(10L * GAS_TO_OFFER)
+                                .gas(1_000_000L)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
                                 .payingWith(CIVILIAN)
                                 .refusingEthConversion()
@@ -313,7 +308,7 @@ public class SigningReqsSuite extends HapiSuite {
                                         autoRenewAlias.get(),
                                         THREE_MONTHS_IN_SECONDS)
                                 .via(SECOND_CREATE_TXN)
-                                .gas(10L * GAS_TO_OFFER)
+                                .gas(1_000_000L)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
                                 .payingWith(CIVILIAN)
                                 .alsoSigningWithFullPrefix(arKey)
@@ -353,7 +348,7 @@ public class SigningReqsSuite extends HapiSuite {
                                 .exposingCreatedIdTo(id -> newTreasuryAliasAddr.set(idAsHeadlongAddress(id))),
                         cryptoCreate(CIVILIAN).balance(10L * ONE_HUNDRED_HBARS),
                         uploadInitCode(MINIMAL_CREATIONS_CONTRACT),
-                        contractCreate(MINIMAL_CREATIONS_CONTRACT).gas(GAS_TO_OFFER),
+                        contractCreate(MINIMAL_CREATIONS_CONTRACT).gas(500_000L),
                         tokenCreate(ft)
                                 .adminKey(CIVILIAN)
                                 .treasury(TOKEN_TREASURY)
@@ -364,7 +359,7 @@ public class SigningReqsSuite extends HapiSuite {
                                 tokenMirrorAddr.get(),
                                 newTreasuryAliasAddr.get())
                         .via(updateTxn)
-                        .gas(10L * GAS_TO_OFFER)
+                        .gas(1_000_000L)
                         .sending(DEFAULT_AMOUNT_TO_SEND)
                         .payingWith(CIVILIAN)
                         .refusingEthConversion()
@@ -399,7 +394,7 @@ public class SigningReqsSuite extends HapiSuite {
                                 .exposingCreatedIdTo(id -> newAutoRenewAliasAddr.set(idAsHeadlongAddress(id))),
                         cryptoCreate(CIVILIAN).balance(10L * ONE_HUNDRED_HBARS),
                         uploadInitCode(MINIMAL_CREATIONS_CONTRACT),
-                        contractCreate(MINIMAL_CREATIONS_CONTRACT).gas(GAS_TO_OFFER),
+                        contractCreate(MINIMAL_CREATIONS_CONTRACT).gas(500_000L),
                         tokenCreate(ft)
                                 .autoRenewAccount(TOKEN_TREASURY)
                                 .autoRenewPeriod(THREE_MONTHS_IN_SECONDS - 3600L)
@@ -413,7 +408,7 @@ public class SigningReqsSuite extends HapiSuite {
                                 newAutoRenewAliasAddr.get(),
                                 THREE_MONTHS_IN_SECONDS + 3600)
                         .via(updateTxn)
-                        .gas(10L * GAS_TO_OFFER)
+                        .gas(1_000_000L)
                         .sending(DEFAULT_AMOUNT_TO_SEND)
                         .payingWith(CIVILIAN)
                         .refusingEthConversion()

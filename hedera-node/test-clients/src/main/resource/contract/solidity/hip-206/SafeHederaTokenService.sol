@@ -12,16 +12,16 @@ abstract contract SafeHederaTokenService is HederaTokenService {
         require(responseCode == HederaResponseCodes.SUCCESS, "Safe crypto transfer failed!");
     }
 
-    function safeMintToken(address token, uint64 amount, bytes[] memory metadata) internal
-    returns (uint64 newTotalSupply, int[] memory serialNumbers) {
+    function safeMintToken(address token, int64 amount, bytes[] memory metadata) internal
+    returns (int64 newTotalSupply, int64[] memory serialNumbers) {
         int responseCode;
         (responseCode, newTotalSupply, serialNumbers) = HederaTokenService.mintToken(token, amount, metadata);
 
         require(responseCode == HederaResponseCodes.SUCCESS, "Safe mint failed!");
     }
 
-    function safeBurnToken(address token, uint64 amount, int64[] memory serialNumbers) internal
-    returns (uint64 newTotalSupply)
+    function safeBurnToken(address token, int64 amount, int64[] memory serialNumbers) internal
+    returns (int64 newTotalSupply)
     {
         int responseCode;
         (responseCode, newTotalSupply) = HederaTokenService.burnToken(token, amount, serialNumbers);

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.16;
+pragma solidity ^0.8.16;
 
-import "./hip-206/HederaTokenService.sol";
+import "./HederaTokenService.sol";
 
 /*
 * @dev Minimal contract that validates consensus times are still 

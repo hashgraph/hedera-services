@@ -2,7 +2,7 @@
 pragma solidity >=0.6.0 <0.9.0;
 pragma experimental ABIEncoderV2;
 
-import "./hip-206/IHederaTokenService.sol";
+import "./IHederaTokenService.sol";
 
 contract AutoCreationModes {
     event Log(string message);

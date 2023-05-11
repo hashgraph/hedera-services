@@ -2,7 +2,7 @@
 pragma solidity >=0.6.0 <0.9.0;
 pragma experimental ABIEncoderV2;
 
-import "./hip-206/HederaTokenService.sol";
+import "./HederaTokenService.sol";
 
 contract NonDelegateCryptoTransfer is HederaTokenService {
 

@@ -84,7 +84,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(TokenUpdatePrecompileSuite.class);
 
-    private static final long GAS_TO_OFFER = 4_000_000L;
+    private static final long GAS_TO_OFFER = 400_000L;
     private static final long AUTO_RENEW_PERIOD = 8_000_000L;
     private static final String ACCOUNT = "account";
     private static final String VANILLA_TOKEN = "TokenD";

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.6.12;
+pragma solidity ^0.8.12;
 pragma experimental ABIEncoderV2;
 
 import "./HederaTokenService.sol";
@@ -23,15 +23,15 @@ contract DelegateContract is HederaTokenService {
     }
 
 
-    function burnDelegateCall(address token, uint64 amount, int64[] memory serialNumbers) external {
-        (bool success, bytes memory result) = address(serviceContract).delegatecall(abi.encodeWithSignature("tokenBurn(address,uint64,int64[])", token, amount, serialNumbers));
+    function burnDelegateCall(address token, int64 amount, int64[] memory serialNumbers) external {
+        (bool success, bytes memory result) = address(serviceContract).delegatecall(abi.encodeWithSignature("tokenBurn(address,int64,int64[])", token, amount, serialNumbers));
         if (!success) {
             revert("Delegate burn call failed!");
         }
     }
 
-    function mintDelegateCall(address token, uint64 amount) external {
-        (bool success, bytes memory result) = address(serviceContract).delegatecall(abi.encodeWithSignature("tokenMint(address,uint64)", token, amount));
+    function mintDelegateCall(address token, int64 amount) external {
+        (bool success, bytes memory result) = address(serviceContract).delegatecall(abi.encodeWithSignature("tokenMint(address,int64)", token, amount));
         if (!success) {
             revert("Delegate mint call failed!");
         }

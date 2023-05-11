@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.6.12;
+pragma solidity ^0.8.12;
 pragma experimental ABIEncoderV2;
 
 import "./SafeHederaTokenService.sol";
@@ -32,13 +32,13 @@ contract SafeOperationsContract is SafeHederaTokenService {
     function safeTransferCrypto(IHederaTokenService.TokenTransferList[] memory tokenTransfers) external {
         SafeHederaTokenService.safeCryptoTransfer(tokenTransfers);
     }
-    function safeTokenMint(address token, uint64 amount, bytes[] memory metadata) external
-    returns (uint64 newTotalSupply, int[] memory serialNumbers)
+    function safeTokenMint(address token, int64 amount, bytes[] memory metadata) external
+    returns (int64 newTotalSupply, int64[] memory serialNumbers)
     {
         (newTotalSupply, serialNumbers) = SafeHederaTokenService.safeMintToken(token, amount, metadata);
     }
-    function safeTokenBurn(address token, uint64 amount, int64[] memory serialNumbers) external
-    returns (uint64 newTotalSupply)
+    function safeTokenBurn(address token, int64 amount, int64[] memory serialNumbers) external
+    returns (int64 newTotalSupply)
     {
         (newTotalSupply) = SafeHederaTokenService.safeBurnToken(token, amount, serialNumbers);
     }

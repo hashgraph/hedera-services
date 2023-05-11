@@ -5,7 +5,7 @@ pragma experimental ABIEncoderV2;
 import "./IHederaTokenService.sol";
 import "./HederaResponseCodes.sol";
 
-contract HelloWorldMint is HederaResponseCodes {
+contract HelloWorldMint {
     address constant precompileAddress = address(0x167);
 
     address tokenAddress;

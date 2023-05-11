@@ -1,10 +1,31 @@
 [
   {
-    "inputs": [
+    "anonymous": false,
+    "inputs":
+    [
       {
-        "internalType": "uint32",
+        "indexed": false,
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes",
+        "name": "",
+        "type": "bytes"
+      }
+    ],
+    "name": "CallResponseEvent",
+    "type": "event"
+  },
+  {
+    "inputs":
+    [
+      {
+        "internalType": "int64",
         "name": "feeAmount",
-        "type": "uint32"
+        "type": "int64"
       },
       {
         "internalType": "address",
@@ -28,7 +49,8 @@
       }
     ],
     "name": "createTokenWithHbarsFixedFeeAndTransferIt",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "address",
         "name": "createdTokenAddress",
@@ -39,48 +61,8 @@
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
-      }
-    ],
-    "name": "getTokenExpiryInfo",
-    "outputs": [
-      {
-        "internalType": "int256",
-        "name": "responseCode",
-        "type": "int256"
-      },
-      {
-        "components": [
-          {
-            "internalType": "uint32",
-            "name": "second",
-            "type": "uint32"
-          },
-          {
-            "internalType": "address",
-            "name": "autoRenewAccount",
-            "type": "address"
-          },
-          {
-            "internalType": "uint32",
-            "name": "autoRenewPeriod",
-            "type": "uint32"
-          }
-        ],
-        "internalType": "struct IHederaTokenService.Expiry",
-        "name": "expiryInfo",
-        "type": "tuple"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "token",
@@ -88,12 +70,23 @@
       },
       {
         "internalType": "address",
-        "name": "account",
+        "name": "from",
         "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
       }
     ],
-    "name": "grantTokenKyc",
-    "outputs": [
+    "name": "delegateTransferFrom",
+    "outputs":
+    [
       {
         "internalType": "int64",
         "name": "responseCode",
@@ -104,7 +97,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "token",
@@ -112,60 +106,23 @@
       },
       {
         "internalType": "address",
-        "name": "account",
-        "type": "address"
-      }
-    ],
-    "name": "isKyc",
-    "outputs": [
-      {
-        "internalType": "int64",
-        "name": "responseCode",
-        "type": "int64"
-      },
-      {
-        "internalType": "bool",
-        "name": "kycGranted",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
-      }
-    ],
-    "name": "pauseToken",
-    "outputs": [
-      {
-        "internalType": "int256",
-        "name": "responseCode",
-        "type": "int256"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "token",
+        "name": "from",
         "type": "address"
       },
       {
         "internalType": "address",
-        "name": "account",
+        "name": "to",
         "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "serialNumber",
+        "type": "uint256"
       }
     ],
-    "name": "revokeTokenKyc",
-    "outputs": [
+    "name": "delegateTransferFromNFT",
+    "outputs":
+    [
       {
         "internalType": "int64",
         "name": "responseCode",
@@ -176,60 +133,91 @@
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
-      }
-    ],
-    "name": "unpauseToken",
-    "outputs": [
-      {
-        "internalType": "int256",
-        "name": "responseCode",
-        "type": "int256"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "token",
         "type": "address"
       },
       {
-        "components": [
-          {
-            "internalType": "uint32",
-            "name": "second",
-            "type": "uint32"
-          },
-          {
-            "internalType": "address",
-            "name": "autoRenewAccount",
-            "type": "address"
-          },
-          {
-            "internalType": "uint32",
-            "name": "autoRenewPeriod",
-            "type": "uint32"
-          }
-        ],
-        "internalType": "struct IHederaTokenService.Expiry",
-        "name": "expiryInfo",
-        "type": "tuple"
+        "internalType": "bytes",
+        "name": "encodedFunctionSelector",
+        "type": "bytes"
       }
     ],
-    "name": "updateTokenExpiryInfo",
-    "outputs": [
+    "name": "redirectForToken",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs":
+    [
       {
-        "internalType": "int256",
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "transferFrom",
+    "outputs":
+    [
+      {
+        "internalType": "int64",
         "name": "responseCode",
-        "type": "int256"
+        "type": "int64"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs":
+    [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "serialNumber",
+        "type": "uint256"
+      }
+    ],
+    "name": "transferFromNFT",
+    "outputs":
+    [
+      {
+        "internalType": "int64",
+        "name": "responseCode",
+        "type": "int64"
       }
     ],
     "stateMutability": "nonpayable",

@@ -318,8 +318,8 @@ public class HTSPrecompileResult implements ContractCallResult {
 
         final Tuple result =
                 switch (functionType) {
-                    case HAPI_MINT -> Tuple.of(status.getNumber(), BigInteger.valueOf(totalSupply), serialNumbers);
-                    case HAPI_BURN -> Tuple.of(status.getNumber(), BigInteger.valueOf(totalSupply));
+                    case HAPI_MINT -> Tuple.of(status.getNumber(), totalSupply, serialNumbers);
+                    case HAPI_BURN -> Tuple.of(status.getNumber(), totalSupply);
                     case ERC_TOTAL_SUPPLY -> Tuple.of(BigInteger.valueOf(totalSupply));
                     case ERC_DECIMALS -> Tuple.of(decimals);
                     case ERC_BALANCE -> Tuple.of(BigInteger.valueOf(balance));

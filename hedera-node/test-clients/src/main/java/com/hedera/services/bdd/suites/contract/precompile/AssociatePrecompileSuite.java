@@ -443,7 +443,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
                             .getTransactionRecord(INVALID_SINGLE_ABI_CALL_TXN)
                             .getContractCallResult()
                             .getGasUsed();
-                    assertEquals(99011, gasUsed);
+                    assertEquals(99205, gasUsed);
                 }));
     }
 
