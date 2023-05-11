@@ -38,6 +38,10 @@ public class Wiring {
 		taskProcessors.put(def, taskProcessor);
 	}
 
+	public <T> void addModule(TaskProcessorDef<T> def, TaskModule<T> module) {
+		taskProcessors.put(def, module.getTaskProcessor());
+	}
+
 	@SuppressWarnings("unchecked")
 	public <T> InterruptableConsumer<T> getTaskSubmitter(TaskProcessorDef<T> def) {
 		final BlockingQueue<T> queue = (BlockingQueue<T>) queues.get(def);

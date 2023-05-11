@@ -40,15 +40,11 @@ public class Poc {
 			Thread.sleep(1000);
 			ts2.accept(String.format("%X", new Random().nextInt()));
 		};
-		InterruptableConsumer<String> tp2 = s->{
-			System.out.printf("I am TP2, I received '%s'%n", s);
-			Thread.sleep(1000);
-			ts1.accept(String.format("%X", new Random().nextInt()));
-		};
+		final Module2 module2 = new Module2(tp1);
 
 		// step 5: add task processors
 		wiring.addTaskProcessor(TP1, tp1);
-		wiring.addTaskProcessor(TP2, tp2);
+		wiring.addModule(TP2, module2);
 
 		// step 6: start
 		wiring.start();
