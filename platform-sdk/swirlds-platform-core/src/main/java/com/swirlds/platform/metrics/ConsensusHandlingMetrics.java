@@ -103,8 +103,6 @@ public class ConsensusHandlingMetrics {
                         "newSS",
                         List.of(
                                 Pair.of("getStateMicros", "average time to get the state to sign"),
-                                Pair.of("getStateDataMicros", "average time to get events and min gen info"),
-                                Pair.of("runningHashMicros", "average time spent waiting on the running hash future"),
                                 Pair.of(
                                         "newSSInstanceMicros",
                                         "average time spent creating the new signed state instance"),

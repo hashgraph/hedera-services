@@ -24,9 +24,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.node.app.service.mono.context.properties.EntityType;
+import com.hedera.node.app.service.mono.context.properties.Profile;
 import com.hedera.node.app.service.mono.context.properties.SupplierMapPropertySource;
 import com.hedera.node.app.service.mono.exceptions.UnparseablePropertyException;
-import com.hedera.node.app.spi.config.Profile;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.EnumSet;
 import java.util.List;
