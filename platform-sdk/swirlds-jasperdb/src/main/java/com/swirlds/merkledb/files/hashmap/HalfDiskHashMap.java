@@ -452,6 +452,7 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
                 while (processed < size) {
                     final ReadBucketResult<K> res = queue.poll();
                     if (res == null) {
+                        Thread.onSpinWait();
                         continue;
                     }
                     if (res.error != null) {
