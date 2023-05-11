@@ -18,26 +18,19 @@ package com.swirlds.common.system;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * A class that is used to uniquely identify a Swirlds Node.
- * <p>
- * * Use {@link #create(long)} to create a new NodeId object. This method will return an existing NodeId object if one *
- * already exists with the same ID number.
  *
  * @param id ID number unique within the network
  */
 public record NodeId(long id) implements Comparable<NodeId> {
 
-    /** the map of all NodeId objects created, indexed by ID number */
-    private static final ConcurrentHashMap<Long, NodeId> nodeIds = new ConcurrentHashMap<>();
-
     /** The first allowed Node ID. */
     public static final long LOWEST_NODE_NUMBER = 0L;
 
     /** the first NodeId record */
-    public static final NodeId FIRST_NODE_ID = NodeId.create(0L);
+    public static final NodeId FIRST_NODE_ID = new NodeId(LOWEST_NODE_NUMBER);
 
     /**
      * Constructs a NodeId object
@@ -62,7 +55,7 @@ public record NodeId(long id) implements Comparable<NodeId> {
      */
     @NonNull
     public static NodeId create(long id) {
-        return nodeIds.computeIfAbsent(id, NodeId::new);
+        return new NodeId(id);
     }
 
     /**

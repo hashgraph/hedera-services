@@ -642,7 +642,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
             // Queue thread that stores and handles signed states that need to be hashed and have signatures collected.
             final QueueThread<ReservedSignedState> stateHashSignQueueThread = PlatformConstructor.stateHashSignQueue(
-                    threadManager, selfId.getId(), stateManagementComponent::newSignedStateFromTransactions);
+                    threadManager, selfId.id(), stateManagementComponent::newSignedStateFromTransactions);
             stateHashSignQueueThread.start();
 
             final State stateToLoad;
@@ -686,7 +686,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             consensusRoundHandler = components.add(PlatformConstructor.consensusHandler(
                     platformContext,
                     threadManager,
-                    selfId.getId(),
+                    selfId.id(),
                     PlatformConstructor.settingsProvider(),
                     swirldStateManager,
                     new ConsensusHandlingMetrics(metrics, time),

@@ -50,6 +50,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
@@ -172,7 +173,7 @@ public class TransactionPool implements FastCopyable {
 
         /** If the startFreezeAfterMin is 0, we don't send freeze transaction */
         if (freezeConfig != null
-                && platform.getSelfId().equals(NodeId.FIRST_NODE_ID)
+                && Objects.equals(platform.getSelfId(), NodeId.FIRST_NODE_ID)
                 && freezeConfig.getStartFreezeAfterMin() > 0) {
             this.freezeConfig = freezeConfig;
             this.needToSubmitFreezeTx = true;
