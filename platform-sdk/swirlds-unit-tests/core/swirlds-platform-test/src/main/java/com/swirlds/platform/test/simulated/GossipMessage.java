@@ -27,10 +27,25 @@ import com.swirlds.common.io.SelfSerializable;
  */
 public record GossipMessage(SelfSerializable message, long senderId, Long recipientId) {
 
+    /**
+     * Create a gossip message with all nodes as recipients.
+     *
+     * @param message  the message to gossip
+     * @param senderId the of the sender
+     * @return the gossip message
+     */
     public static GossipMessage toAll(final SelfSerializable message, final long senderId) {
         return new GossipMessage(message, senderId, null);
     }
 
+    /**
+     * Create a gossip message with a single node recipient.
+     *
+     * @param message     the message to gossip
+     * @param senderId    the of the sender
+     * @param recipientId the recipient of the message
+     * @return the gossip message
+     */
     public static GossipMessage toPeer(final SelfSerializable message, final long senderId, final long recipientId) {
         return new GossipMessage(message, senderId, recipientId);
     }

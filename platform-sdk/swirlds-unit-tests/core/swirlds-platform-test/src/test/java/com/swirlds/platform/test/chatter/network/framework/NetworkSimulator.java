@@ -19,8 +19,8 @@ package com.swirlds.platform.test.chatter.network.framework;
 import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.common.utility.DurationUtils;
 import com.swirlds.platform.test.simulated.config.NetworkConfig;
-import java.time.Duration;
 import java.time.Instant;
+import java.util.Map.Entry;
 
 /**
  * Executes a simulated chatter network
@@ -40,32 +40,50 @@ public class NetworkSimulator {
 
         maybeUpdateNetworkConfig(network, params);
 
-        System.out.println("Beginning Simulation");
+        printFormattedMessage("Simulation Starting");
 
         while (DurationUtils.isLonger(params.simulationTime(), time.elapsed())) {
             advanceNetworkOneStep(network, params);
             maybeUpdateNetworkConfig(network, params);
         }
+
+        printFormattedMessage("Simulation Complete");
     }
 
+    private static void printFormattedMessage(final String msg) {
+        System.out.println("-----------------------------" + msg + "-----------------------------");
+    }
+
+    /**
+     * Update the network configuration, if it is time to do so.
+     *
+     * @param network the network to update
+     * @param params  the parameters of the network
+     */
     private static void maybeUpdateNetworkConfig(final Network<?> network, final NetworkSimulatorParams params) {
         final FakeTime time = params.time();
-        Instant lastConfigEffectiveTime = time.now().minusMillis(time.elapsed().toMillis());
-        Duration prevConfigDuration = Duration.ZERO;
 
-        for (final NetworkConfig config : params.networkConfigs()) {
-            final Instant configEffectiveTime = lastConfigEffectiveTime.plus(prevConfigDuration);
+        for (final Entry<Instant, NetworkConfig> entry : params.networkConfigs().entrySet()) {
+            final Instant configEffectiveTime = entry.getKey();
+            final NetworkConfig networkConfig = entry.getValue();
+
+            final Instant now = time.now();
+            final Instant lastTime = time.now().minus(params.simulationStep());
 
             // if this is the first time step activating this config, move to the next config and return
-            if ((time.now().isAfter(configEffectiveTime) || time.now().equals(configEffectiveTime))
-                    && time.now().minus(params.simulationStep()).isBefore(configEffectiveTime)) {
+            if ((now.isAfter(configEffectiveTime) || now.equals(configEffectiveTime))
+                    && lastTime.isBefore(configEffectiveTime)) {
 
-                System.out.println("Applying network configuration " + config.name() + " at " + time.elapsed()
-                        + " time into the test");
-                network.applyConfig(config);
+                System.out.printf(
+                        """
+                                Applying Network Configuration
+                                \tName: %s
+                                \tElapsed Time: %s
+                                """,
+                        networkConfig.name(), time.elapsed());
+                network.applyNetworkConfig(networkConfig);
                 return;
             }
-            prevConfigDuration = config.duration();
         }
     }
 
@@ -74,7 +92,7 @@ public class NetworkSimulator {
      *
      * @param network the network to prepare for test execution
      */
-    public static void preflight(final Network<?> network) {
+    private static void preflight(final Network<?> network) {
         // set communication state to allow chatter in all peers in all nodes
         network.enableChatter();
     }
@@ -85,7 +103,7 @@ public class NetworkSimulator {
      * @param network the network of nodes to advance one simulation step
      * @param params  defines the parameters of the simulation
      */
-    public static void advanceNetworkOneStep(final Network<?> network, final NetworkSimulatorParams params) {
+    private static void advanceNetworkOneStep(final Network<?> network, final NetworkSimulatorParams params) {
         network.forEachChatterInstance(chatterInstance -> {
             chatterInstance.maybeCreateEvent();
             chatterInstance.maybeHandleEvents();

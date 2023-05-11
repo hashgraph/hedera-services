@@ -21,39 +21,50 @@ import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.platform.test.simulated.NetworkLatency;
 import com.swirlds.platform.test.simulated.config.NetworkConfig;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Parameters for a network simulation
  *
- * @param time           the time instance to use to advance time during the test
- * @param networkConfigs configuration(s) for the network for a period of time. When a network config time effective
- *                       time elapses, the next network config is applied. Only nodes whose configuration changes need
- *                       to be supplied. The first number of node configurations in the first item defines the size of
- *                       the network.
- * @param networkLatency the network latency model
- * @param simulationTime the amount of time to simulate
- * @param simulationStep the step size of the fake clock
+ * @param time              the time instance to use to advance time during the test
+ * @param otherEventDelay   see {@link com.swirlds.platform.gossip.chatter.ChatterSubSetting#otherEventDelay}
+ * @param procTimeInterval  see {@link com.swirlds.platform.gossip.chatter.ChatterSubSetting#processingTimeInterval}
+ * @param heartbeatInterval see {@link com.swirlds.platform.gossip.chatter.ChatterSubSetting#heartbeatInterval}
+ * @param networkLatency    the network latency model
+ * @param simulationTime    the amount of time to simulate
+ * @param simulationStep    the step size of the fake clock
+ * @param networkConfigs    configuration(s) for the network for a period of time, keyed by the time at which they
+ *                          become effective. When a network config time effective time is reached, the next network
+ *                          config is applied. Only nodes whose configuration changes need to be supplied. The first
+ *                          number of node configurations in the first item defines the size of the network.
  */
 public record NetworkSimulatorParams(
         FakeTime time,
         Duration otherEventDelay,
         Duration procTimeInterval,
+        Duration heartbeatInterval,
         NetworkLatency networkLatency,
         Duration simulationTime,
         Duration simulationStep,
-        List<NetworkConfig> networkConfigs) {
+        TreeMap<Instant, NetworkConfig> networkConfigs,
+        Set<NodeId> nodeIds) {
 
     private static final Duration DEFAULT_SIMULATION_STEP = Duration.ofMillis(10);
     private static final Duration DEFAULT_NODE_LATENCY = Duration.ofMillis(50);
     private static final Duration DEFAULT_OTHER_EVENT_DELAY = Duration.ofMillis(20);
+    private static final Duration DEFAULT_HEARTBEAT_INTERVAL = Duration.ofMillis(10);
     private static final Duration DEFAULT_PROC_TIME_INTERVAL = Duration.ofMillis(10);
 
-    public Set<NodeId> nodeIds() {
-        return networkConfigs.get(0).nodeConfigs().keySet();
+    /**
+     * Returns the number of nodes in the network
+     */
+    public int numNodes() {
+        return nodeIds.size();
     }
 
     public static class NetworkSimulatorParamsBuilder {
@@ -61,6 +72,7 @@ public record NetworkSimulatorParams(
         FakeTime time;
         Duration otherEventDelay;
         Duration procTimeInterval;
+        Duration heartbeatInterval;
         NetworkLatency networkLatency;
         Duration simulationTime;
         Duration simulationStep;
@@ -94,6 +106,11 @@ public record NetworkSimulatorParams(
             return this;
         }
 
+        public NetworkSimulatorParamsBuilder heartbeatInterval(final Duration heartbeatInterval) {
+            this.heartbeatInterval = heartbeatInterval;
+            return this;
+        }
+
         public NetworkSimulatorParamsBuilder networkConfig(final NetworkConfig networkConfig) {
             this.networkConfigs.add(networkConfig);
             return this;
@@ -105,6 +122,7 @@ public record NetworkSimulatorParams(
             }
             time = time == null ? new FakeTime() : time;
             procTimeInterval = procTimeInterval == null ? DEFAULT_PROC_TIME_INTERVAL : procTimeInterval;
+            heartbeatInterval = heartbeatInterval == null ? DEFAULT_HEARTBEAT_INTERVAL : heartbeatInterval;
             otherEventDelay = otherEventDelay == null ? DEFAULT_OTHER_EVENT_DELAY : otherEventDelay;
             simulationStep = simulationStep == null ? DEFAULT_SIMULATION_STEP : simulationStep;
 
@@ -118,21 +136,23 @@ public record NetworkSimulatorParams(
                     nc -> simulationTimeInMillis.addAndGet(nc.duration().toMillis()));
             simulationTime = Duration.ofMillis(simulationTimeInMillis.get());
 
+            final TreeMap<Instant, NetworkConfig> networkConfigMap = new TreeMap<>();
+            Instant nextEffectiveTime = time.now();
+            for (final NetworkConfig networkConfig : networkConfigs) {
+                networkConfigMap.put(nextEffectiveTime, networkConfig);
+                nextEffectiveTime = nextEffectiveTime.plus(networkConfig.duration());
+            }
+
             return new NetworkSimulatorParams(
                     time,
                     otherEventDelay,
                     procTimeInterval,
+                    heartbeatInterval,
                     networkLatency,
                     simulationTime,
                     simulationStep,
-                    networkConfigs);
+                    networkConfigMap,
+                    networkConfigs.get(0).nodeConfigs().keySet());
         }
-    }
-
-    public int numNodes() {
-        if (networkConfigs == null || networkConfigs.isEmpty()) {
-            return 0;
-        }
-        return networkConfigs.get(0).getNumConfigs();
     }
 }

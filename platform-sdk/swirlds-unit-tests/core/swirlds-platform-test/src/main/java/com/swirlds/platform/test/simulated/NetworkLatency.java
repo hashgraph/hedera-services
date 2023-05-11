@@ -28,19 +28,12 @@ import java.util.Set;
 public class NetworkLatency {
     private final HashMap<Long, Latency> delays = new HashMap<>();
 
-    /**
-     * Create random latency mappings
-     *
-     * @param addressBook the address book with all the nodes in the network
-     * @param maxDelay    the maximum delay between 2 nodes
-     * @param random      source of randomness
-     */
     private NetworkLatency(final HashMap<Long, Latency> delays) {
         this.delays.putAll(delays);
     }
 
     /**
-     * Creates a {@link NetworkLatency} model where the latencies between all peers is constant.
+     * Creates a {@link NetworkLatency} model where the latencies between all peers are the same.
      *
      * @param nodeIds the nodeIds of all nodes in the network
      * @param latency the latency between each pair of peers
@@ -55,8 +48,7 @@ public class NetworkLatency {
     }
 
     /**
-     * Creates a hub-and-spoke {@link NetworkLatency} model with randomized latencies. The maximum latency possible
-     * between two peers is {@code maxDelay}.
+     * Creates a hub-and-spoke {@link NetworkLatency} model with randomized latencies.
      *
      * @param nodeIds  the nodeIds of all nodes in the network
      * @param maxDelay the maximum delay between 2 peers

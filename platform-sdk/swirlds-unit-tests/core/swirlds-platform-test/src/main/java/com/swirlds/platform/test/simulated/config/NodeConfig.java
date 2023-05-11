@@ -20,16 +20,10 @@ import com.swirlds.platform.test.simulated.Latency;
 import java.time.Duration;
 
 /**
- * Configuration for {@link com.swirlds.platform.test.simulated.SimulatedEventCreationNode}
+ * Configuration for a node in a network simulation.
  *
- * @param createEventEvery
- * 		create an event at this interval
- * @param customLatency
- * 		set the network latency for this node to this value
- * @param intakeQueueDelay
- * 		the amount of time an event sits in the intake queue before being processed.
- * @param customBandwidth
- * 		set the bandwidth for this node (in bytes/sec) to this value, or -1 for no bandwidth restriction
+ * @param createEventEvery create an event at this interval
+ * @param customLatency    set the network latency for this node to this value
+ * @param intakeQueueDelay the amount of time an event sits in the intake queue before being processed.
  */
-public record NodeConfig(
-        Duration createEventEvery, Latency customLatency, Duration intakeQueueDelay, long customBandwidth) {}
+public record NodeConfig(Duration createEventEvery, Latency customLatency, Duration intakeQueueDelay) {}

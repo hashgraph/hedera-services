@@ -68,11 +68,10 @@ public class ChatterInstance<T extends SimulatedChatterEvent> implements GossipM
     private final SimulatedEventCreator<T> newEventCreator;
     /** List of all peers in the network */
     private final List<Long> peerIds = new ArrayList<>();
-
     /**
-     * The first of N event pipeline components chained together like a linked list. Each event component passes the
-     * event to the next component when it is time to do so. This first component provided events as they are received
-     * via {@link #handleMessageFromWire(SelfSerializable, long)}
+     * The first of N event pipeline components chained together in a singly linked list. Each event component passes
+     * the event to the next component when it is time to do so. This first component provided events as they are
+     * received via {@link #handleMessageFromWire(SelfSerializable, long)}
      */
     private final SimulatedEventPipeline<T> eventPipeline;
 
@@ -193,7 +192,7 @@ public class ChatterInstance<T extends SimulatedChatterEvent> implements GossipM
     public void handleMessageFromWire(final SelfSerializable msg, final long fromPeer) {
         try {
             if (msg instanceof final SimulatedChatterEvent event) {
-                // Add a copy so that each node can set its own time received
+                // Create a copy so that each node sets its own time received
                 final SimulatedChatterEvent eventCopy = event.copy();
                 eventCopy.setTimeReceived(time.now());
                 core.getPeerInstance(fromPeer).inputHandler().handleMessage(eventCopy);

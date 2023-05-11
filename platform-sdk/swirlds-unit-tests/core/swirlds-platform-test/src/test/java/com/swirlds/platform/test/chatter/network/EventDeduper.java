@@ -18,35 +18,39 @@ package com.swirlds.platform.test.chatter.network;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
+import com.swirlds.platform.gossip.chatter.protocol.messages.EventDescriptor;
 import com.swirlds.platform.test.chatter.network.framework.AbstractSimulatedEventPipeline;
+import com.swirlds.platform.test.chatter.network.framework.SimulatedChatterEvent;
 import java.util.HashSet;
 import java.util.Set;
 
 /**
- * A pass through class for events that also keeps track of:
- * <ul>
- *     <li>the number of self events created</li>
- *     <li>the number of events received by each peer</li>
- *     <li>the number of duplicated events received</li>
- * </ul>
+ * An event pipeline component that drops duplicate events.
+ *
+ * @param <T> the type of event
  */
-public class EventDeduper extends AbstractSimulatedEventPipeline<CountingChatterEvent> {
+public class EventDeduper<T extends SimulatedChatterEvent> extends AbstractSimulatedEventPipeline<T> {
 
-    private final NodeId nodeId;
-    private final Set<Long> eventsReceived = new HashSet<>();
+    private final NodeId selfId;
+    private final Set<EventDescriptor> eventsReceived = new HashSet<>();
     private long numDiscarded = 0;
 
     public EventDeduper(final NodeId nodeId) {
-        this.nodeId = nodeId;
+        this.selfId = nodeId;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void addEvent(final CountingChatterEvent event) {
-        if (!eventsReceived.contains(event.getOrder())) {
-            eventsReceived.add(event.getOrder());
+    public void addEvent(final T event) {
+        if (event.getDescriptor().getCreator() == selfId.getId()) {
+            next.addEvent(event);
+            return;
+        }
+
+        if (!eventsReceived.contains(event.getDescriptor())) {
+            eventsReceived.add(event.getDescriptor());
             next.addEvent(event);
         } else {
             numDiscarded++;
@@ -57,7 +61,7 @@ public class EventDeduper extends AbstractSimulatedEventPipeline<CountingChatter
      * {@inheritDoc}
      */
     @Override
-    public void maybeHandleEvents(final ChatterCore<CountingChatterEvent> core) {
+    public void maybeHandleEvents(final ChatterCore<T> core) {
         // Do nothing, this class only passes along events this class has not already encountered
     }
 

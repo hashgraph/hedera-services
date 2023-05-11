@@ -41,7 +41,6 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
@@ -58,7 +57,7 @@ public class ChatterSimulationTests {
     private static final Duration SLOW_NODE_INTAKE_DELAY = Duration.ofMillis(100);
     private static final Duration FAST_NODE_INTAKE_DELAY = Duration.ofMillis(0);
 
-    @Disabled("This test currently fails due to a known bug")
+    @Disabled("This test currently fails due to a known bug, which is mimicked in the simulation")
     @Test
     @DisplayName(
             "Test that event processing time is always equal to the intake queue delay, and does not include orphan buffer wait time")
@@ -129,10 +128,10 @@ public class ChatterSimulationTests {
      *     <li>All nodes have fast intake queues again</li>
      * </ol>
      */
-    @Disabled("Not a test. Useful for observing behavior")
+    //    @Disabled("Not a test. Useful for observing behavior")
     @Test
     @DisplayName("Work In Progress - attempt to simulate a scenario that causes a non-zero duplicate event rate")
-    void testInduceHighDuplicateEventRate() {
+    void testInduceDuplicateEvents() {
         final FakeTime time = new FakeTime();
 
         // Three node network, all nodes have a fast intake queue
@@ -144,7 +143,7 @@ public class ChatterSimulationTests {
                 .build();
 
         final NetworkConfig initialNetworkConfig =
-                new NetworkConfig("Initial Phase - All Fast Intake Queues", PHASE_DURATION, initialConfigMap);
+                new NetworkConfig("Initial Phase - All Fast Intake Queues", Duration.ofMillis(100), initialConfigMap);
 
         // One node suddenly has a slow intake queue
         final NodeId slowNodeId = NodeId.createMain(0L);
@@ -183,6 +182,7 @@ public class ChatterSimulationTests {
 
         network.printNetworkState();
 
+        // This test is intended to cause duplicate events to be sent, so verify that happened
         final GossipEventTracker gossipEventTracker =
                 network.chatterInstance(slowNodeId).getPipelineComponent(GossipEventTracker.class);
         assertTrue(gossipEventTracker.getNumDuplicates() > 0);
@@ -195,12 +195,7 @@ public class ChatterSimulationTests {
      * @return the newly constructed network
      */
     private Network<CountingChatterEvent> createCountingEventNetwork(@NonNull final NetworkSimulatorParams params) {
-        // Create the network latency model
-        final NetworkConfig initialNetworkConfig = params.networkConfigs().get(0);
-        configureNetworkLatency(params.networkLatency(), initialNetworkConfig);
-
         // Create the gossip model
-        // FUTURE WORK: make the network latency used by gossip dynamic (i.e. reconfigurable during the test)
         final SimpleSimulatedGossip gossip =
                 new SimpleSimulatedGossip(params.numNodes(), params.networkLatency(), params.time());
 
@@ -208,54 +203,35 @@ public class ChatterSimulationTests {
         final Network<CountingChatterEvent> network = new Network<>(gossip);
 
         // Create the nodes and add them to the network
-        final AtomicLong eventCounter = new AtomicLong(0);
-        params.nodeIds().forEach((id) -> network.addNode(createCountingEventNode(id, params, eventCounter)));
+        params.nodeIds().forEach((id) -> network.addNode(createCountingEventNode(id, params)));
 
         return network;
-    }
-
-    /**
-     * Set up the network latency model with any custom latency configurations.
-     *
-     * @param latency       the network latency to update
-     * @param networkConfig the network configuration to apply to the network latency model
-     */
-    private void configureNetworkLatency(
-            @NonNull final NetworkLatency latency, @NonNull final NetworkConfig networkConfig) {
-        for (final Map.Entry<NodeId, NodeConfig> entry :
-                networkConfig.nodeConfigs().entrySet()) {
-            final NodeId nodeId = entry.getKey();
-            final NodeConfig nodeConfig = entry.getValue();
-            if (!nodeConfig.customLatency().isZero()) {
-                latency.setLatency(nodeId.getId(), nodeConfig.customLatency());
-            }
-        }
     }
 
     /**
      * Create a node that gossips {@link CountingChatterEvent}s with a chatter instance, delayable intake queue, and
      * counting event creator.
      *
-     * @param nodeId       the node id of the node to create
-     * @param params       the parameters of the network simulation
-     * @param eventCounter the event counter used across all nodes to assign events a monotonically increasing number
+     * @param nodeId the node id of the node to create
+     * @param params the parameters of the network simulation
      * @return the newly created node
      */
     private Node<CountingChatterEvent> createCountingEventNode(
-            final NodeId nodeId, final NetworkSimulatorParams params, final AtomicLong eventCounter) {
+            final NodeId nodeId, final NetworkSimulatorParams params) {
 
         // An event creator that creates events with a monotonically increasing event number across all nodes
-        final TimedEventCreator<CountingChatterEvent> eventCreator = new TimedEventCreator<>(
-                params.time(), () -> new CountingChatterEvent(nodeId.getId(), eventCounter.getAndIncrement()));
+        final TimedEventCreator<CountingChatterEvent> eventCreator =
+                new TimedEventCreator<>(params.time(), () -> new CountingChatterEvent(nodeId.getId()));
 
         // Keeps track of all events coming out of chatter and passes it straight to the intake queue
         final GossipEventTracker gossipRecorder = new GossipEventTracker(nodeId);
 
         // An intake queue that will delay events before sending them to the orphan buffer
-        final DelayableIntakeQueue<CountingChatterEvent> intakeQueue = new DelayableIntakeQueue<>(params.time());
+        final DelayableIntakeQueue<CountingChatterEvent> intakeQueue =
+                new DelayableIntakeQueue<>(nodeId, params.time());
 
         // Discards any duplicate events
-        final EventDeduper eventDeduper = new EventDeduper(nodeId);
+        final EventDeduper<CountingChatterEvent> eventDeduper = new EventDeduper<>(nodeId);
 
         // An orphan buffer that releases events once all prior events have been released
         final InOrderOrphanBuffer orphanBuffer = new InOrderOrphanBuffer(nodeId);
@@ -270,12 +246,9 @@ public class ChatterSimulationTests {
 
         return new NodeBuilder<CountingChatterEvent>()
                 .nodeId(nodeId)
-                .numNodes(params.numNodes())
-                .time(params.time())
+                .networkParams(params)
                 .eventClass(CountingChatterEvent.class)
                 .eventCreator(eventCreator)
-                .otherEventDelay(params.otherEventDelay())
-                .procTimeInterval(params.procTimeInterval())
                 .eventPipeline(pipeline)
                 .build();
     }

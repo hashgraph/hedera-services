@@ -25,7 +25,6 @@ import java.time.Duration;
 public class NodeConfigBuilder {
     private Duration createEventEvery = Duration.ofMillis(20);
     private Latency customLatency = new Latency(Duration.ZERO);
-    private long customBandwidth = -1;
     private Duration intakeQueueDelay = Duration.ZERO;
 
     private NodeConfigBuilder() {}
@@ -38,7 +37,6 @@ public class NodeConfigBuilder {
         final NodeConfigBuilder builder = builder();
         builder.setCustomLatency(config.customLatency());
         builder.setCreateEventEvery(config.createEventEvery());
-        builder.setCustomBandwidth(config.customBandwidth());
         builder.setIntakeQueueDelay(config.intakeQueueDelay());
         return builder;
     }
@@ -53,17 +51,12 @@ public class NodeConfigBuilder {
         return this;
     }
 
-    public NodeConfigBuilder setCustomBandwidth(final long customBandwidth) {
-        this.customBandwidth = customBandwidth;
-        return this;
-    }
-
     public NodeConfigBuilder setIntakeQueueDelay(final Duration intakeQueueDelay) {
         this.intakeQueueDelay = intakeQueueDelay;
         return this;
     }
 
     public NodeConfig build() {
-        return new NodeConfig(createEventEvery, customLatency, intakeQueueDelay, customBandwidth);
+        return new NodeConfig(createEventEvery, customLatency, intakeQueueDelay);
     }
 }

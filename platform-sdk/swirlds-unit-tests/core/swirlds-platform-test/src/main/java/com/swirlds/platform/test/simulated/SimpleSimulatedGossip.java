@@ -19,6 +19,8 @@ package com.swirlds.platform.test.simulated;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.time.Time;
+import com.swirlds.platform.test.simulated.config.NetworkConfig;
+import com.swirlds.platform.test.simulated.config.NodeConfig;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -186,6 +188,17 @@ public class SimpleSimulatedGossip {
         }
     }
 
+    public void applyConfig(final NetworkConfig nextConfig) {
+        for (final Map.Entry<NodeId, NodeConfig> entry :
+                nextConfig.nodeConfigs().entrySet()) {
+            final NodeId nodeId = entry.getKey();
+            final NodeConfig nodeConfig = entry.getValue();
+            if (!nodeConfig.customLatency().isZero()) {
+                latency.setLatency(nodeId.getId(), nodeConfig.customLatency());
+            }
+        }
+    }
+
     /**
      * Prints all the queues of messages to std out.
      */
@@ -232,6 +245,12 @@ public class SimpleSimulatedGossip {
         }
     }
 
+    /**
+     * A payload to gossip at a set time.
+     *
+     * @param gossipMessage the message to gossip
+     * @param arrivalTime   the time to send the message
+     */
     public record Payload(GossipMessage gossipMessage, Instant arrivalTime) {
 
         @Override

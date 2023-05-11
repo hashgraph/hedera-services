@@ -34,20 +34,30 @@ public class CountingChatterEvent implements SimulatedChatterEvent {
         public static final int ORIGINAL = 1;
     }
 
-    private final EventDescriptor descriptor;
+    /** The order number to assign to the next event */
+    private static long orderCounter = 0;
 
+    /** A unique description of this event */
+    private final EventDescriptor descriptor;
+    /** The creator of this event */
     private long creator;
+    /** The unique, monotonically increasing number assigned to each event across all nodes */
     private long order;
+    /** The time this event was received by a node. */
     private Instant timeReceived;
+
+    public CountingChatterEvent(final long creator) {
+        this(creator, orderCounter++);
+    }
 
     public CountingChatterEvent(final CountingChatterEvent countingChatterEvent) {
         this(countingChatterEvent.creator, countingChatterEvent.order);
     }
 
-    public CountingChatterEvent(final long creator, final long order) {
-        this.descriptor = new FakeEventDescriptor(creator, order);
+    private CountingChatterEvent(final long creator, final long order) {
         this.creator = creator;
         this.order = order;
+        this.descriptor = new CountingEventDescriptor(creator, order);
     }
 
     public long getOrder() {

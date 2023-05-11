@@ -31,7 +31,6 @@ public class EventDeduplication implements GossipEventValidator {
     private final EventIntakeMetrics stats;
 
     public EventDeduplication(final Predicate<EventDescriptor> isDuplicateCheck, final EventIntakeMetrics stats) {
-
         this(List.of(isDuplicateCheck), stats);
     }
 

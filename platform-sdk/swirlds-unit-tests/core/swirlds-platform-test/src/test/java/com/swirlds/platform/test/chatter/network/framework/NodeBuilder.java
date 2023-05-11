@@ -20,10 +20,8 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.platform.gossip.chatter.ChatterSubSetting;
 import com.swirlds.platform.test.chatter.network.NoOpSimulatedEventPipeline;
-import java.time.Duration;
 
 /**
  * Builds a node for a simulated chatter test.
@@ -33,11 +31,8 @@ import java.time.Duration;
 public class NodeBuilder<T extends SimulatedChatterEvent> {
 
     private NodeId nodeId;
-    private int numNodes;
-    private FakeTime time;
+    private NetworkSimulatorParams networkParams;
     private Class<T> eventClass;
-    private Duration otherEventDelay;
-    private Duration procTimeInterval;
     private SimulatedEventCreator<T> newEventCreator;
     private SimulatedEventPipeline<T> eventPipeline;
 
@@ -52,22 +47,13 @@ public class NodeBuilder<T extends SimulatedChatterEvent> {
     }
 
     /**
-     * Sets the number of nodes in the network
+     * Sets the network parameters. Several parameters are set at the network level that need to be applied to all
+     * nodes.
      *
      * @return {@code this}
      */
-    public NodeBuilder<T> numNodes(final int numNodes) {
-        this.numNodes = numNodes;
-        return this;
-    }
-
-    /**
-     * Sets the time instance used by the simulation
-     *
-     * @return {@code this}
-     */
-    public NodeBuilder<T> time(final FakeTime time) {
-        this.time = time;
+    public NodeBuilder<T> networkParams(final NetworkSimulatorParams networkParams) {
+        this.networkParams = networkParams;
         return this;
     }
 
@@ -102,26 +88,6 @@ public class NodeBuilder<T extends SimulatedChatterEvent> {
     }
 
     /**
-     * Sets the other event delay used to determine when to send a peer an event
-     *
-     * @return {@code this}
-     */
-    public NodeBuilder<T> otherEventDelay(final Duration otherEventDelay) {
-        this.otherEventDelay = otherEventDelay;
-        return this;
-    }
-
-    /**
-     * Sets the processing time message interval
-     *
-     * @return {@code this}
-     */
-    public NodeBuilder<T> procTimeInterval(final Duration procTimeInterval) {
-        this.procTimeInterval = procTimeInterval;
-        return this;
-    }
-
-    /**
      * Builds a new node.
      *
      * @return the new node
@@ -135,11 +101,18 @@ public class NodeBuilder<T extends SimulatedChatterEvent> {
         }
 
         final ChatterSubSetting settings = spy(ChatterSubSetting.class);
-        when(settings.getOtherEventDelay()).thenReturn(otherEventDelay);
-        when(settings.getProcessingTimeInterval()).thenReturn(procTimeInterval);
+        when(settings.getOtherEventDelay()).thenReturn(networkParams.otherEventDelay());
+        when(settings.getProcessingTimeInterval()).thenReturn(networkParams.procTimeInterval());
+        when(settings.getHeartbeatInterval()).thenReturn(networkParams.heartbeatInterval());
 
-        final ChatterInstance<T> chatterInstance =
-                new ChatterInstance<>(numNodes, nodeId, eventClass, time, settings, newEventCreator, eventPipeline);
+        final ChatterInstance<T> chatterInstance = new ChatterInstance<>(
+                networkParams.numNodes(),
+                nodeId,
+                eventClass,
+                networkParams.time(),
+                settings,
+                newEventCreator,
+                eventPipeline);
 
         return new Node<>(nodeId, chatterInstance);
     }

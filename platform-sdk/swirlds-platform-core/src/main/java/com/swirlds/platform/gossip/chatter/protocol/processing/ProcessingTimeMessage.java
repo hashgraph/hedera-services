@@ -68,6 +68,6 @@ public class ProcessingTimeMessage implements SelfSerializable {
 
     @Override
     public String toString() {
-        return "processing time: " + Duration.ofNanos(processingTimeInNanos).toMillis() + "ms";
+        return "ProcTimeMsg(" + Duration.ofNanos(processingTimeInNanos).toMillis() + "ms)";
     }
 }

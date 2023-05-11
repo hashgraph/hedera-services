@@ -119,17 +119,15 @@ public class Network<T extends SimulatedChatterEvent> {
      *
      * @param nextConfig the configuration to apply
      */
-    public void applyConfig(final NetworkConfig nextConfig) {
+    public void applyNetworkConfig(final NetworkConfig nextConfig) {
         Objects.requireNonNull(nextConfig);
         for (final Map.Entry<NodeId, NodeConfig> entry :
                 nextConfig.nodeConfigs().entrySet()) {
             final NodeId nodeId = entry.getKey();
             final NodeConfig nodeConfig = entry.getValue();
-
             chatterInstance(nodeId).applyNodeConfig(nodeConfig);
-
-            // FUTURE WORK: apply other updates
         }
+        gossip.applyConfig(nextConfig);
         currentConfiguration = nextConfig;
     }
 

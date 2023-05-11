@@ -20,8 +20,14 @@ import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
 import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
 import com.swirlds.platform.test.simulated.config.NodeConfig;
 
+/**
+ * An abstraction of a pipeline component that takes care of invoking the next component.
+ *
+ * @param <T> the type of event
+ */
 public abstract class AbstractSimulatedEventPipeline<T extends ChatterEvent> implements SimulatedEventPipeline<T> {
 
+    /** The next pipeline component */
     protected SimulatedEventPipeline<T> next;
 
     /**
@@ -31,6 +37,10 @@ public abstract class AbstractSimulatedEventPipeline<T extends ChatterEvent> imp
      */
     protected abstract void maybeHandleEvents(final ChatterCore<T> core);
 
+    /**
+     * Prints the status and/or current state of this event component and calls the next component in the pipeline.
+     * Useful for debugging.
+     */
     protected abstract void printCurrentState();
 
     /**
@@ -41,6 +51,9 @@ public abstract class AbstractSimulatedEventPipeline<T extends ChatterEvent> imp
         this.next = next;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public SimulatedEventPipeline<T> getNext() {
         return next;
@@ -72,7 +85,9 @@ public abstract class AbstractSimulatedEventPipeline<T extends ChatterEvent> imp
      * {@inheritDoc}
      */
     @Override
-    public void applyNodeConfig(final NodeConfig nodeConfig) {}
+    public void applyNodeConfig(final NodeConfig nodeConfig) {
+        // Override if needed
+    }
 
     /**
      * {@inheritDoc}

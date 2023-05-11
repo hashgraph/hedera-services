@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.test.chatter.network;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.time.Time;
 import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
 import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
@@ -36,15 +37,20 @@ import java.util.Queue;
 public class DelayableIntakeQueue<T extends SimulatedChatterEvent> extends AbstractSimulatedEventPipeline<T> {
 
     private static final Duration DEFAULT_DELAY = Duration.ZERO;
+    private final NodeId nodeId;
+    /** The instance of time used by the simulation */
     private final Time time;
+    /** The amount of time each event must wait in the queue */
     private Duration intakeQueueDelay;
+    /** The queue of intake tasks */
     private final Queue<IntakeQueueTask<T>> intakeQueue = new ArrayDeque<>();
 
-    public DelayableIntakeQueue(final Time time) {
-        this(time, DEFAULT_DELAY);
+    public DelayableIntakeQueue(final NodeId nodeId, final Time time) {
+        this(nodeId, time, DEFAULT_DELAY);
     }
 
-    public DelayableIntakeQueue(final Time time, final Duration intakeQueueDelay) {
+    public DelayableIntakeQueue(final NodeId nodeId, final Time time, final Duration intakeQueueDelay) {
+        this.nodeId = nodeId;
         this.time = time;
         this.intakeQueueDelay = intakeQueueDelay;
     }
@@ -55,6 +61,10 @@ public class DelayableIntakeQueue<T extends SimulatedChatterEvent> extends Abstr
     @Override
     public void applyNodeConfig(final NodeConfig nodeConfig) {
         this.intakeQueueDelay = nodeConfig.intakeQueueDelay();
+        // Update the delay for items currently in the queue
+        for (final IntakeQueueTask<T> task : intakeQueue) {
+            task.updateDelay(intakeQueueDelay);
+        }
     }
 
     /**
@@ -65,7 +75,7 @@ public class DelayableIntakeQueue<T extends SimulatedChatterEvent> extends Abstr
     @Override
     public void addEvent(final T event) {
         final Instant taskProcessTime = time.now().plusMillis(intakeQueueDelay.toMillis());
-        intakeQueue.add(new IntakeQueueTask<>(event, taskProcessTime));
+        intakeQueue.add(new IntakeQueueTask<>(event, time.now(), taskProcessTime));
     }
 
     /**
@@ -80,6 +90,11 @@ public class DelayableIntakeQueue<T extends SimulatedChatterEvent> extends Abstr
             if (!time.now().isBefore(task.eventProcessTime())) {
                 iterator.remove();
                 next.addEvent(task.event());
+            } else {
+                // Stop iterating through events once the first task is not processable.
+                // This maintains the order of tasks as they were added, in case the delay
+                // decreases during the simulation.
+                return;
             }
         }
     }
@@ -97,7 +112,37 @@ public class DelayableIntakeQueue<T extends SimulatedChatterEvent> extends Abstr
         System.out.println(sb);
     }
 
-    record IntakeQueueTask<T extends ChatterEvent>(T event, Instant eventProcessTime) {
+    /**
+     * A wrapper for events that sit in the intake queue.
+     *
+     * @param event            the event in the queue
+     * @param eventProcessTime the time at which the event may exit the queue
+     * @param <T>              the type of event
+     */
+    private static class IntakeQueueTask<T extends ChatterEvent> {
+
+        private final T event;
+        private final Instant insertionTime;
+        private Instant eventProcessTime;
+
+        public IntakeQueueTask(final T event, Instant insertionTime, Instant eventProcessTime) {
+            this.event = event;
+            this.insertionTime = insertionTime;
+            this.eventProcessTime = eventProcessTime;
+        }
+
+        public void updateDelay(final Duration delay) {
+            eventProcessTime = insertionTime.plus(delay);
+        }
+
+        public Instant eventProcessTime() {
+            return eventProcessTime;
+        }
+
+        public T event() {
+            return event;
+        }
+
         @Override
         public String toString() {
             return event + ", " + "process at: " + eventProcessTime;

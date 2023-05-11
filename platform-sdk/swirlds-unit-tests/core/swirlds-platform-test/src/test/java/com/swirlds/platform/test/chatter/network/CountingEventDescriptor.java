@@ -21,18 +21,24 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.platform.gossip.chatter.protocol.messages.EventDescriptor;
 import java.io.IOException;
+import java.util.Objects;
 
-public class FakeEventDescriptor implements EventDescriptor {
+/**
+ * A descriptor for a {@link CountingChatterEvent}
+ */
+public class CountingEventDescriptor implements EventDescriptor {
     private static final long CLASS_ID = 0x281cc80fd18964f0L;
 
     private static final class ClassVersion {
         public static final int ORIGINAL = 1;
     }
 
-    private long creator;
-    private long order;
+    /** The creator of the event */
+    private final long creator;
+    /** The unique order number of this event */
+    private final long order;
 
-    public FakeEventDescriptor(final long creator, final long order) {
+    public CountingEventDescriptor(final long creator, final long order) {
         this.creator = creator;
         this.order = order;
     }
@@ -77,5 +83,34 @@ public class FakeEventDescriptor implements EventDescriptor {
     @Override
     public String toString() {
         return "Desc(" + order + ", c:" + creator + ")";
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int hashCode() {
+        return Objects.hash(creator, order);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        final CountingEventDescriptor that = (CountingEventDescriptor) o;
+
+        if (this.hashCode() != that.hashCode()) {
+            return false;
+        }
+
+        return creator == that.creator && order == that.order;
     }
 }

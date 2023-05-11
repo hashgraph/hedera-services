@@ -21,11 +21,11 @@ import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
 import com.swirlds.platform.test.simulated.config.NodeConfig;
 
 /**
- * One component in an event processing pipeline. The first component in the pipeline is provided an event and can
- * decide when and if to pass that event on to the next component in the pipeline. These components can be used to track
- * events, create bottlenecks, etc.
+ * One component in an event processing pipeline. Components are linked together as a singly linked list. The first
+ * component in the pipeline is provided an event and can decide when and if to pass that event on to the next component
+ * in the pipeline. These components can be used to track events, create bottlenecks, etc.
  *
- * @param <T>
+ * @param <T> the type of event
  */
 public interface SimulatedEventPipeline<T extends ChatterEvent> extends NodeConfigurable {
 

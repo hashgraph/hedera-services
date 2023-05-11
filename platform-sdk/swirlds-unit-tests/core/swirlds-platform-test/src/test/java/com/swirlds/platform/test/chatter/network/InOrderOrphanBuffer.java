@@ -103,7 +103,7 @@ public class InOrderOrphanBuffer extends AbstractSimulatedEventPipeline<Counting
 
                 advanceLastLinked(event);
 
-                // Emit the event to chatter core
+                // Emit the event to chatter core, mimicking current intake thread behavior
                 if (isSelfEvent) {
                     core.eventCreated(event);
                 } else {

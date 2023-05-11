@@ -21,10 +21,11 @@ import java.time.Duration;
 import java.util.Map;
 
 /**
- * @param duration
- * 		the amount of time this list of configs will be in effect
- * @param nodeConfigs
- * 		configuration for nodes
+ * Configuration for a simulated network of nodes.
+ *
+ * @param name        a short description of this configuration
+ * @param duration    the amount of time this list of configs will be in effect
+ * @param nodeConfigs configurations for each node in the network
  */
 public record NetworkConfig(String name, Duration duration, Map<NodeId, NodeConfig> nodeConfigs) {
 

@@ -24,12 +24,21 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.function.Supplier;
 
+/**
+ * Creates events at a set interval.
+ *
+ * @param <T> the type of event to create
+ */
 public class TimedEventCreator<T extends SimulatedChatterEvent> implements SimulatedEventCreator<T> {
 
     private static final Duration DEFAULT_CREATION_INTERVAL = Duration.ofMillis(500);
+    /** The instance of time used by the simulation */
     private final Time time;
+    /** The amount of time to wait before creating the next event */
     private Duration createEvery;
+    /** A supplier of a new event */
     private final Supplier<T> newEventSupplier;
+    /** The time at which the next event should be created */
     private Instant nextEventCreation;
 
     public TimedEventCreator(final Time time, final Supplier<T> newEventSupplier) {
@@ -43,11 +52,17 @@ public class TimedEventCreator<T extends SimulatedChatterEvent> implements Simul
         nextEventCreation = time.now();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void applyNodeConfig(final NodeConfig nodeConfig) {
         createEvery = nodeConfig.createEventEvery();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public T maybeCreateEvent() {
         if (createEvery.isZero() || time.now().isBefore(nextEventCreation)) {
