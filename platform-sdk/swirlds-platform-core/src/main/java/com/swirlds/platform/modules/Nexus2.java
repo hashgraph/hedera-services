@@ -1,4 +1,5 @@
 package com.swirlds.platform.modules;
 
-public class Nexus2 {
+public interface Nexus2 {
+	String get();
 }
