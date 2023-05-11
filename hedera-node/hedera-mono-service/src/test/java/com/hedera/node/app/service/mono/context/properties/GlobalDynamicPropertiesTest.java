@@ -697,6 +697,7 @@ class GlobalDynamicPropertiesTest {
         given(properties.getIntProperty(LEDGER_MAX_AUTO_ASSOCIATIONS)).willReturn(i + 96);
         given(properties.getIntProperty(STAKING_SUM_OF_CONSENSUS_WEIGHTS)).willReturn(i + 97);
         given(properties.getIntProperty(CACHE_CRYPTO_TRANSFER_WARM_THREADS)).willReturn(i + 98);
+        given(properties.getIntProperty(CONFIG_VERSION)).willReturn(i + 99);
     }
 
     private Set<EntityType> typesFor(final int i) {

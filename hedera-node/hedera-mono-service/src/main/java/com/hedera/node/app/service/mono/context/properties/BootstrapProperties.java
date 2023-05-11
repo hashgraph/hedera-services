@@ -274,7 +274,7 @@ public final class BootstrapProperties implements PropertySource {
         return in;
     };
 
-    private static ThrowingStreamProvider fileStreamProvider = loc -> Files.newInputStream(Paths.get(loc));
+    private static final ThrowingStreamProvider fileStreamProvider = loc -> Files.newInputStream(Paths.get(loc));
 
     private final boolean logEnabled;
 
@@ -430,7 +430,8 @@ public final class BootstrapProperties implements PropertySource {
             STAKING_REWARD_HISTORY_NUM_STORED_PERIODS,
             STAKING_STARTUP_HELPER_RECOMPUTE,
             WORKFLOWS_ENABLED,
-            STAKING_SUM_OF_CONSENSUS_WEIGHTS);
+            STAKING_SUM_OF_CONSENSUS_WEIGHTS,
+            CONFIG_VERSION);
 
     static final Set<String> GLOBAL_DYNAMIC_PROPS = Set.of(
             ACCOUNTS_MAX_NUM,
@@ -817,5 +818,6 @@ public final class BootstrapProperties implements PropertySource {
             entry(VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB, AS_BOOLEAN),
             entry(ACCOUNTS_BLOCKLIST_ENABLED, AS_BOOLEAN),
             entry(ACCOUNTS_BLOCKLIST_RESOURCE, AS_STRING),
-            entry(CACHE_CRYPTO_TRANSFER_WARM_THREADS, AS_INT));
+            entry(CACHE_CRYPTO_TRANSFER_WARM_THREADS, AS_INT),
+            entry(CONFIG_VERSION, AS_INT));
 }

@@ -539,7 +539,8 @@ class BootstrapPropertiesTest {
             entry(ACCOUNTS_BLOCKLIST_ENABLED, true),
             entry(ACCOUNTS_BLOCKLIST_RESOURCE, "evm-addresses-blocklist.csv"),
             entry(STAKING_SUM_OF_CONSENSUS_WEIGHTS, 500),
-            entry(CACHE_CRYPTO_TRANSFER_WARM_THREADS, 30));
+            entry(CACHE_CRYPTO_TRANSFER_WARM_THREADS, 30),
+            entry(CONFIG_VERSION, 10));
 
     @Test
     void containsProperty() {

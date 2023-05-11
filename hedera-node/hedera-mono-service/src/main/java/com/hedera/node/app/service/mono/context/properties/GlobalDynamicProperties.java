@@ -298,6 +298,7 @@ public class GlobalDynamicProperties implements EvmProperties {
     private LegacyContractIdActivations legacyContractIdActivations;
     private int sumOfConsensusWeights;
     private int cacheWarmThreads;
+    private int configVersion;
 
     @Inject
     public GlobalDynamicProperties(final HederaNumbers hederaNums, @CompositeProps final PropertySource properties) {
