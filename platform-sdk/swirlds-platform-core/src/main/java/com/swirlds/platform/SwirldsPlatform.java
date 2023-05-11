@@ -158,6 +158,7 @@ import com.swirlds.platform.gossip.sync.SyncProtocolResponder;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.gossip.sync.protocol.PeerAgnosticSyncChecks;
 import com.swirlds.platform.gossip.sync.protocol.SyncProtocol;
+import com.swirlds.platform.gui.SwirldsGui;
 import com.swirlds.platform.heartbeats.HeartbeatProtocol;
 import com.swirlds.platform.intake.IntakeCycleStats;
 import com.swirlds.platform.internal.EventImpl;
@@ -844,6 +845,11 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                         Pair.of(preConsensusEventHandler, "preConsensusEventHandler"),
                         Pair.of(consensusRoundHandler, "consensusRoundHandler"),
                         Pair.of(swirldStateManager, "swirldStateManager")));
+
+        // To be removed once the GUI component is better integrated with the platform.
+        SwirldsGui.setShadowGraph(selfId.getId(), shadowGraph);
+        SwirldsGui.setStateManagementComponent(selfId.getId(), stateManagementComponent);
+        SwirldsGui.setConsensusReference(selfId.getId(), consensusRef);
     }
 
     /**
@@ -1707,29 +1713,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     }
 
     /**
-     * Get the shadow graph used by this platform
-     *
-     * @return the {@link ShadowGraph} used by this platform
-     */
-    public ShadowGraph getShadowGraph() {
-        return shadowGraph;
-    }
-
-    /**
-     * @return the signed state manager for this platform
-     */
-    public StateManagementComponent getStateManagementComponent() {
-        return stateManagementComponent;
-    }
-
-    /**
-     * @return the consensus object used by this platform
-     */
-    public Consensus getConsensus() {
-        return consensusRef.get();
-    }
-
-    /**
      * Checks the status of the platform and notifies the SwirldMain if there is a change in status
      */
     private void checkPlatformStatus() {
@@ -1797,6 +1780,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     /**
      * {@inheritDoc}
      */
+    @Deprecated(forRemoval = true)
     @Override
     public PlatformEvent[] getAllEvents() {
         // There is currently a race condition that can cause an exception if event order changes at
@@ -1865,6 +1849,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     /**
      * {@inheritDoc}
      */
+    @Deprecated(forRemoval = true)
     @Override
     public <T extends SwirldState> T getState() {
         return (T) swirldStateManager.getCurrentSwirldState();
@@ -1873,6 +1858,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     /**
      * {@inheritDoc}
      */
+    @Deprecated(forRemoval = true)
     @Override
     public void releaseState() {
         swirldStateManager.releaseCurrentSwirldState();
