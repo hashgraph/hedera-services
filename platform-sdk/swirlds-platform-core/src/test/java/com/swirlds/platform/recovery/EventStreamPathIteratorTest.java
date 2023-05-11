@@ -20,8 +20,7 @@ import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.utility.CompareTo.isLessThan;
 import static com.swirlds.platform.recovery.RecoveryTestUtils.generateRandomEvents;
 import static com.swirlds.platform.recovery.RecoveryTestUtils.writeRandomEventStream;
-import static com.swirlds.platform.recovery.internal.EventStreamBound.NO_ROUND;
-import static com.swirlds.platform.recovery.internal.EventStreamBound.NO_TIMESTAMP;
+import static com.swirlds.platform.recovery.internal.EventStreamLowerBound.UNBOUNDED;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -30,8 +29,10 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.recovery.internal.EventStreamBound;
+import com.swirlds.platform.recovery.internal.EventStreamLowerBound;
 import com.swirlds.platform.recovery.internal.EventStreamPathIterator;
+import com.swirlds.platform.recovery.internal.EventStreamRoundLowerBound;
+import com.swirlds.platform.recovery.internal.EventStreamTimestampLowerBound;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
@@ -42,7 +43,9 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Random;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -65,7 +68,7 @@ class EventStreamPathIteratorTest {
 
         writeRandomEventStream(random, directory, secondsPerFile, events);
 
-        final Iterator<Path> iterator = new EventStreamPathIterator(directory, EventStreamBound.UNBOUNDED);
+        final Iterator<Path> iterator = new EventStreamPathIterator(directory, UNBOUNDED);
 
         final List<Path> files = new ArrayList<>();
         iterator.forEachRemaining(files::add);
@@ -110,8 +113,8 @@ class EventStreamPathIteratorTest {
 
         writeRandomEventStream(random, directory, secondsPerFile, events);
 
-        final Iterator<Path> iterator = new EventStreamPathIterator(
-                directory, EventStreamBound.create().setRound(startingRound).build());
+        final Iterator<Path> iterator =
+                new EventStreamPathIterator(directory, new EventStreamRoundLowerBound(startingRound));
 
         final List<Path> files = new ArrayList<>();
         iterator.forEachRemaining(files::add);
@@ -159,9 +162,7 @@ class EventStreamPathIteratorTest {
 
         assertThrows(
                 NoSuchElementException.class,
-                () -> new EventStreamPathIterator(
-                        directory,
-                        EventStreamBound.create().setRound(requestedRound).build()),
+                () -> new EventStreamPathIterator(directory, new EventStreamRoundLowerBound(requestedRound)),
                 "should not be able to find the file for the given round");
 
         FileUtils.deleteDirectory(directory);
@@ -190,25 +191,30 @@ class EventStreamPathIteratorTest {
         final Instant start = events.get(0).getConsensusTimestamp();
         final Instant end = events.get(events.size() - 1).getConsensusTimestamp();
 
-        // round only bound test
-        testEventStreamBound(NO_ROUND, NO_TIMESTAMP, expectedFileCount, directory);
-        testEventStreamBound(firstRound, NO_TIMESTAMP, expectedFileCount, directory);
-        testEventStreamBound(firstRound + 75, NO_TIMESTAMP, expectedFileCount / 4, directory);
-        testEventStreamBound(firstRound + 50, NO_TIMESTAMP, expectedFileCount / 2, directory);
-        testEventStreamBound(firstRound + 200, NO_TIMESTAMP, 0, directory);
+        // unbounded test
+        testEventStreamBound(UNBOUNDED, expectedFileCount, directory);
+
+        // round tests
+        testEventStreamBound(new EventStreamRoundLowerBound(firstRound), expectedFileCount, directory);
+        testEventStreamBound(new EventStreamRoundLowerBound(firstRound + 75), expectedFileCount / 4, directory);
+        testEventStreamBound(new EventStreamRoundLowerBound(firstRound + 50), expectedFileCount / 2, directory);
+        testEventStreamBound(new EventStreamRoundLowerBound(firstRound + 200), 0, directory);
+
+        // timestamp tests
         final long longStart = start.toEpochMilli();
         final long longEnd = end.toEpochMilli();
         final long longHalfDuration = (longEnd - longStart) / 2;
         final long longQuarterDuration = longHalfDuration / 2;
-
-        // timestamp only bound test
         TemporalAmount halfDuration = Duration.ofMillis(longHalfDuration);
         TemporalAmount quarterDuration = Duration.ofMillis(longQuarterDuration);
-        testEventStreamBound(NO_ROUND, start, expectedFileCount, directory);
-        testEventStreamBound(NO_ROUND, start.plus(halfDuration), expectedFileCount / 2, directory);
+        testEventStreamBound(new EventStreamTimestampLowerBound(start), expectedFileCount, directory);
         testEventStreamBound(
-                NO_ROUND, start.plus(halfDuration).plus(quarterDuration), expectedFileCount / 4, directory);
-        testEventStreamBound(NO_ROUND, end.plus(quarterDuration), 0, directory);
+                new EventStreamTimestampLowerBound(start.plus(halfDuration)), expectedFileCount / 2, directory);
+        testEventStreamBound(
+                new EventStreamTimestampLowerBound(start.plus(halfDuration).plus(quarterDuration)),
+                expectedFileCount / 4,
+                directory);
+        testEventStreamBound(new EventStreamTimestampLowerBound(end.plus(quarterDuration)), 0, directory);
 
         FileUtils.deleteDirectory(directory);
     }
@@ -216,24 +222,21 @@ class EventStreamPathIteratorTest {
     /**
      * Test that the iterator returns the correct number of files when given a bound
      *
-     * @param firstRound        the first round to request
-     * @param startTime         the start time to request
+     * @param lowerBound        the lower bound
      * @param expectedFileCount the expected number of files
      * @param directory         the directory to search
      */
-    private void testEventStreamBound(long firstRound, Instant startTime, long expectedFileCount, Path directory)
+    private void testEventStreamBound(
+            @NonNull final EventStreamLowerBound lowerBound, long expectedFileCount, @NonNull final Path directory)
             throws IOException {
-        EventStreamBound bound = EventStreamBound.create()
-                .setRound(firstRound)
-                .setTimestamp(startTime)
-                .build();
+        Objects.requireNonNull(lowerBound, "lowerBound must not be null");
+        Objects.requireNonNull(directory, "directory must not be null");
 
-        final Iterator<Path> iterator = new EventStreamPathIterator(directory, bound);
+        final Iterator<Path> iterator = new EventStreamPathIterator(directory, lowerBound);
 
         final List<Path> files = new ArrayList<>();
         iterator.forEachRemaining(files::add);
 
-        // There should be roughly half the total files
         assertTrue(
                 files.size() >= expectedFileCount - 2 && files.size() <= expectedFileCount + 2,
                 "unexpected number of files");

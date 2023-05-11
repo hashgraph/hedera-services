@@ -64,7 +64,7 @@ public class EventStreamMultiFileIterator implements IOIterator<DetailedConsensu
      * @throws NoSuchElementException if an event prior to or matching the bound can't be found
      */
     public EventStreamMultiFileIterator(
-            @NonNull final Iterator<Path> fileIterator, @NonNull final EventStreamBound bound) throws IOException {
+            @NonNull final Iterator<Path> fileIterator, @NonNull final EventStreamLowerBound bound) throws IOException {
         Objects.requireNonNull(bound, "the lower bound must not be null");
         this.fileIterator = Objects.requireNonNull(fileIterator, "the file iterator must not be null");
         this.startHash = null;
@@ -84,8 +84,8 @@ public class EventStreamMultiFileIterator implements IOIterator<DetailedConsensu
      * @throws IOException            if there is a problem reading the event stream
      * @throws NoSuchElementException if an event prior to or matching the bound can't be found
      */
-    public EventStreamMultiFileIterator(@NonNull final Path eventStreamDirectory, @NonNull final EventStreamBound bound)
-            throws IOException {
+    public EventStreamMultiFileIterator(
+            @NonNull final Path eventStreamDirectory, @NonNull final EventStreamLowerBound bound) throws IOException {
         this(new EventStreamPathIterator(eventStreamDirectory, bound), bound);
     }
 

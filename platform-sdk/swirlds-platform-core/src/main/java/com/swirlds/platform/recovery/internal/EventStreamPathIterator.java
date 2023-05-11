@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.recovery.internal;
 
+import static com.swirlds.platform.recovery.internal.EventStreamLowerBound.UNBOUNDED;
+
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.system.events.DetailedConsensusEvent;
 import com.swirlds.common.utility.BinarySearch;
@@ -53,7 +55,7 @@ public class EventStreamPathIterator implements Iterator<Path> {
      * @throws IOException
      * 		if there is a problem reading files
      */
-    public EventStreamPathIterator(@NonNull final Path eventStreamDirectory, @NonNull final EventStreamBound bound)
+    public EventStreamPathIterator(@NonNull final Path eventStreamDirectory, @NonNull final EventStreamLowerBound bound)
             throws IOException {
         Objects.requireNonNull(eventStreamDirectory, "the event stream directory must not be null");
         Objects.requireNonNull(bound, "the lower bound must not be null");
@@ -71,18 +73,18 @@ public class EventStreamPathIterator implements Iterator<Path> {
         }
 
         final DetailedConsensusEvent firstEvent = getFirstEventInEventStreamFile(eventStreamFiles.get(0));
-        if (bound.isUnbounded() || bound.compareTo(firstEvent) == 0) {
+        if (bound == UNBOUNDED || bound.compareTo(firstEvent) == 0) {
             // We are attempting to get events from the beginning of the event stream.
             iterator = eventStreamFiles.iterator();
         } else {
-            final EventStreamBound usedBound;
-            if (bound.hasRound()) {
+            final EventStreamLowerBound usedBound;
+            if (bound instanceof final EventStreamRoundLowerBound roundBound) {
                 // Since we are only checking the first event in each file, if the first event is of the desired round,
                 // we can't be sure that there are not events of the same round at the end of the previous file.
                 // Therefore, we need to start at the previous round to capture all events of the desired round.
-                final long round = bound.getRound();
+                final long round = roundBound.getRound();
                 final long usedRound = round == FIRST_ROUND_AVAILABLE ? FIRST_ROUND_AVAILABLE : round - 1;
-                usedBound = new EventStreamBound(usedRound, bound.getTimestamp());
+                usedBound = new EventStreamRoundLowerBound(usedRound);
             } else {
                 usedBound = bound;
             }

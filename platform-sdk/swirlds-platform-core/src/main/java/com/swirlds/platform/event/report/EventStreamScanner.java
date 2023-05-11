@@ -26,7 +26,7 @@ import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.system.events.DetailedConsensusEvent;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.units.TimeUnit;
-import com.swirlds.platform.recovery.internal.EventStreamBound;
+import com.swirlds.platform.recovery.internal.EventStreamLowerBound;
 import com.swirlds.platform.recovery.internal.EventStreamMultiFileIterator;
 import com.swirlds.platform.recovery.internal.MultiFileRunningHashIterator;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -70,7 +70,7 @@ public class EventStreamScanner {
 
     public EventStreamScanner(
             @NonNull final Path eventStreamDirectory,
-            @NonNull final EventStreamBound lowerBound,
+            @NonNull final EventStreamLowerBound lowerBound,
             @NonNull final Duration reportPeriod,
             final boolean enableProgressReport)
             throws IOException {

@@ -22,8 +22,9 @@ import com.swirlds.cli.commands.EventStreamCommand;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.platform.event.report.EventStreamScanner;
-import com.swirlds.platform.recovery.internal.EventStreamBound;
-import com.swirlds.platform.recovery.internal.EventStreamBound.BoundBuilder;
+import com.swirlds.platform.recovery.internal.EventStreamLowerBound;
+import com.swirlds.platform.recovery.internal.EventStreamRoundLowerBound;
+import com.swirlds.platform.recovery.internal.EventStreamTimestampLowerBound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -49,8 +50,11 @@ public final class EventStreamInfoCommand extends AbstractCommand {
     /** the directory containing the event stream files */
     private Path eventStreamDirectory;
 
-    /** the builder for the event stream bound */
-    private final BoundBuilder boundBuilder = EventStreamBound.create();
+    /** the timestamp of the lower bound */
+    private Instant timestampBound = Instant.MIN;
+
+    /** the round of the lower bound */
+    private long roundBound = -1;
 
     /** the default temporal granularity of the data report, in seconds */
     private long granularityInSeconds = 10;
@@ -64,7 +68,7 @@ public final class EventStreamInfoCommand extends AbstractCommand {
             names = {"-f", "--first-round"},
             description = "The first round to be considered in the event stream.")
     private void setFirstRound(final long firstRound) {
-        boundBuilder.setRound(firstRound);
+        roundBound = firstRound;
     }
 
     @CommandLine.Option(
@@ -75,10 +79,10 @@ public final class EventStreamInfoCommand extends AbstractCommand {
         Objects.requireNonNull(timestamp, "timestamp must not be null");
         try {
             // the format used by log4j2
-            boundBuilder.setTimestamp(formatter.parse(timestamp, Instant::from));
+            timestampBound = formatter.parse(timestamp, Instant::from);
         } catch (final DateTimeParseException e) {
             // the format used by Instant.toString()
-            boundBuilder.setTimestamp(Instant.parse(timestamp));
+            timestampBound = Instant.parse(timestamp);
         }
     }
 
@@ -97,10 +101,19 @@ public final class EventStreamInfoCommand extends AbstractCommand {
     @Override
     public Integer call() throws Exception {
         setupConstructableRegistry();
-        final EventStreamBound bound = boundBuilder.build();
-        if (bound.hasRound() && bound.hasTimestamp()) {
+        if (roundBound > 0 && !Instant.MIN.equals(timestampBound)) {
             throw buildParameterException("Cannot set both round and timestamp");
         }
+
+        final EventStreamLowerBound bound;
+        if (roundBound > 0) {
+            bound = new EventStreamRoundLowerBound(roundBound);
+        } else if (!Instant.MIN.equals(timestampBound)) {
+            bound = new EventStreamTimestampLowerBound(timestampBound);
+        } else {
+            bound = EventStreamLowerBound.UNBOUNDED;
+        }
+
         System.out.println(
                 new EventStreamScanner(eventStreamDirectory, bound, Duration.ofSeconds(granularityInSeconds), true)
                         .createReport());
