@@ -64,6 +64,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_SYSTEM_ENTI
 import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_THROTTLE_DEF_JSON_RESOURCE;
 import static com.hedera.node.app.spi.config.PropertyNames.CACHE_CRYPTO_TRANSFER_WARM_THREADS;
 import static com.hedera.node.app.spi.config.PropertyNames.CACHE_RECORDS_TTL;
+import static com.hedera.node.app.spi.config.PropertyNames.CONFIG_VERSION;
 import static com.hedera.node.app.spi.config.PropertyNames.CONSENSUS_HANDLE_MAX_FOLLOWING_RECORDS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONSENSUS_HANDLE_MAX_PRECEDING_RECORDS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONSENSUS_MESSAGE_MAX_BYTES_ALLOWED;
