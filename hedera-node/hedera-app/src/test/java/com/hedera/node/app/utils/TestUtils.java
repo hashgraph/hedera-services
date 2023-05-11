@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.utils;
 
-import com.hedera.node.config.testfixtures.HederaTestConfigProvider;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
@@ -46,7 +46,7 @@ public class TestUtils {
 
     public static Metrics metrics() {
         final MetricsConfig metricsConfig =
-                new HederaTestConfigProvider().getOrCreateConfig().getConfigData(MetricsConfig.class);
+                new HederaTestConfigBuilder().getOrCreateConfig().getConfigData(MetricsConfig.class);
 
         return new DefaultMetrics(
                 NodeId.createMain(DEFAULT_NODE_ID),

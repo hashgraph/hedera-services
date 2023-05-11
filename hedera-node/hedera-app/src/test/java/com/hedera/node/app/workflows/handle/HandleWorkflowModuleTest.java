@@ -19,8 +19,6 @@ package com.hedera.node.app.workflows.handle;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.node.app.service.admin.impl.handlers.AdminHandlers;
-import com.hedera.node.app.service.admin.impl.handlers.FreezeHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusHandlers;
@@ -41,8 +39,9 @@ import com.hedera.node.app.service.file.impl.handlers.FileHandlers;
 import com.hedera.node.app.service.file.impl.handlers.FileSystemDeleteHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileSystemUndeleteHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileUpdateHandler;
-import com.hedera.node.app.service.network.impl.handlers.NetworkHandlers;
-import com.hedera.node.app.service.network.impl.handlers.NetworkUncheckedSubmitHandler;
+import com.hedera.node.app.service.networkadmin.impl.handlers.FreezeHandler;
+import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkAdminHandlers;
+import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkUncheckedSubmitHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleCreateHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleDeleteHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleHandlers;
@@ -82,16 +81,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class HandleWorkflowModuleTest {
     @Mock
-    private AdminHandlers adminComponent;
+    private NetworkAdminHandlers networkAdminHandlers;
 
     @Mock
     private ConsensusHandlers consensusHandlers;
 
     @Mock
     private FileHandlers fileHandlers;
-
-    @Mock
-    private NetworkHandlers networkHandlers;
 
     @Mock
     private ContractHandlers contractHandlers;
@@ -270,8 +266,8 @@ class HandleWorkflowModuleTest {
         given(fileHandlers.fileAppendHandler()).willReturn(fileAppendHandler);
         given(fileHandlers.fileSystemDeleteHandler()).willReturn(fileSystemDeleteHandler);
         given(fileHandlers.fileSystemUndeleteHandler()).willReturn(fileSystemUndeleteHandler);
-        given(adminComponent.freezeHandler()).willReturn(freezeHandler);
-        given(networkHandlers.networkUncheckedSubmitHandler()).willReturn(networkUncheckedSubmitHandler);
+        given(networkAdminHandlers.freezeHandler()).willReturn(freezeHandler);
+        given(networkAdminHandlers.networkUncheckedSubmitHandler()).willReturn(networkUncheckedSubmitHandler);
         given(scheduleHandlers.scheduleCreateHandler()).willReturn(scheduleCreateHandler);
         given(scheduleHandlers.scheduleSignHandler()).willReturn(scheduleSignHandler);
         given(scheduleHandlers.scheduleDeleteHandler()).willReturn(scheduleDeleteHandler);
@@ -293,10 +289,9 @@ class HandleWorkflowModuleTest {
         given(utilHandlers.prngHandler()).willReturn(utilPrngHandler);
 
         final var handlers = HandlersModule.provideTransactionHandlers(
-                adminComponent,
+                networkAdminHandlers,
                 consensusHandlers,
                 fileHandlers,
-                networkHandlers,
                 contractHandlers,
                 scheduleHandlers,
                 tokenHandlers,
