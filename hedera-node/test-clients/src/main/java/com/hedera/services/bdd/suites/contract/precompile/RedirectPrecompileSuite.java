@@ -96,7 +96,8 @@ public class RedirectPrecompileSuite extends HapiSuite {
                                 .contractCallResult(resultWith()
                                         .contractCallResult(htsPrecompileResult()
                                                 .forFunction(ParsingConstants.FunctionType.ERC_BALANCE)
-                                                .withBalance(totalSupply)))));
+                                                .withBalance(totalSupply))
+                                        .gasUsed(100L))));
     }
 
     private HapiSpec redirectToInvalidToken() {
@@ -125,7 +126,11 @@ public class RedirectPrecompileSuite extends HapiSuite {
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                 .gas(1_000_000))))
                 .then(childRecordsCheck(
-                        TXN, CONTRACT_REVERT_EXECUTED, recordWith().status(INVALID_TOKEN_ID)));
+                        TXN,
+                        CONTRACT_REVERT_EXECUTED,
+                        recordWith()
+                                .status(INVALID_TOKEN_ID)
+                                .contractCallResult(resultWith().gasUsed(100L))));
     }
 
     @Override
