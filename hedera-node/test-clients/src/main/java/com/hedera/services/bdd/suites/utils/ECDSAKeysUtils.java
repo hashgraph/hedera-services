@@ -24,6 +24,8 @@ import com.hedera.services.bdd.spec.keys.SigControl;
 import java.util.stream.IntStream;
 
 public class ECDSAKeysUtils {
+    private ECDSAKeysUtils() {}
+
     public static HapiSpecOperation[] onlyEcdsaKeys(int numDistinctEcdsaKeys) {
         return IntStream.range(0, numDistinctEcdsaKeys)
                 .mapToObj(i -> newKeyNamed("Fuzz#" + i).shape(SigControl.SECP256K1_ON))

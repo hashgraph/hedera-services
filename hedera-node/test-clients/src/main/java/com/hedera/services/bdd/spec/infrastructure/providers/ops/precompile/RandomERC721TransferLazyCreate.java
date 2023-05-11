@@ -30,7 +30,6 @@ import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractCall;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
 import java.util.Optional;
 
@@ -40,8 +39,6 @@ public class RandomERC721TransferLazyCreate implements OpProvider {
     private static final String TRANSFER_FROM_ACCOUNT_TXN = "transferFromAccountTxn";
     private static final String TRANSFER_FROM = "transferFrom";
     private final EntityNameProvider<Key> keys;
-
-    ResponseCodeEnum[] OUTCOMES = {SUCCESS, CONTRACT_REVERT_EXECUTED};
 
     public RandomERC721TransferLazyCreate(HapiSpecRegistry registry, EntityNameProvider<Key> keys) {
         this.registry = registry;
@@ -75,6 +72,6 @@ public class RandomERC721TransferLazyCreate implements OpProvider {
                 .via(TRANSFER_FROM_ACCOUNT_TXN)
                 .gas(GAS_TO_OFFER)
                 .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-                .hasKnownStatusFrom(OUTCOMES);
+                .hasKnownStatusFrom(SUCCESS, CONTRACT_REVERT_EXECUTED);
     }
 }
