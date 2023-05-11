@@ -17,8 +17,6 @@
 package com.swirlds.common.system;
 
 import com.swirlds.common.system.events.PlatformEvent;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.time.Instant;
 
 /**
  * Platform methods that have been deprecated.
@@ -56,12 +54,4 @@ public interface PlatformWithDeprecatedMethods extends Platform {
      */
     @Deprecated(forRemoval = true)
     PlatformEvent[] getAllEvents();
-
-    /**
-     * @return consensusTimestamp of the last signed state
-     * @deprecated this method doesn't belong in the platform
-     */
-    @Deprecated(forRemoval = true)
-    @Nullable
-    Instant getLastSignedStateTimestamp();
 }

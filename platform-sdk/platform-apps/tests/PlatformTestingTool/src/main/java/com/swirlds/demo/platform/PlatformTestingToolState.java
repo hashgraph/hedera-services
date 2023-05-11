@@ -1388,11 +1388,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     public void rebuildExpectedMapFromState(final Instant consensusTimestamp, final boolean isRestart) {
         // rebuild ExpectedMap
         logger.info(LOGM_DEMO_INFO, "Start Rebuilding ExpectedMap");
-        long timestampMilliseconds = 0;
-        if (consensusTimestamp != null) {
-            timestampMilliseconds = consensusTimestamp.toEpochMilli();
-        }
-        this.expectedFCMFamily.rebuildExpectedMap(getStateMap(), isRestart, timestampMilliseconds);
+        this.expectedFCMFamily.rebuildExpectedMap(getStateMap(), isRestart, 0);
         logger.info(LOGM_DEMO_INFO, "Finish Rebuilding ExpectedMap [ size = {} ]", () -> expectedFCMFamily
                 .getExpectedMap()
                 .size());

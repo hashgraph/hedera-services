@@ -1866,21 +1866,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      * {@inheritDoc}
      */
     @Override
-    @Nullable
-    public Instant getLastSignedStateTimestamp() {
-        try (final ReservedSignedState wrapper =
-                stateManagementComponent.getLatestImmutableState("SwirldsPlatform.getLastSignedStateTimestamp()")) {
-            if (wrapper.isNotNull()) {
-                return wrapper.get().getConsensusTimestamp();
-            }
-        }
-        return null;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public <T extends SwirldState> T getState() {
         return (T) swirldStateManager.getCurrentSwirldState();
     }
