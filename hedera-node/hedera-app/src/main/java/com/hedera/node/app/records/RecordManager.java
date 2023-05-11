@@ -18,6 +18,7 @@ package com.hedera.node.app.records;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
+import com.hedera.node.app.spi.records.SingleTransactionRecord;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import javax.inject.Inject;

@@ -16,12 +16,14 @@
 
 package com.hedera.node.app.meta;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.records.SingleTransactionRecordBuilder;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.spi.config.GlobalDynamicConfig;
+import com.hedera.node.app.spi.records.SingleTransactionRecord;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -145,13 +147,13 @@ public class MonoHandleContext implements HandleContext {
 
     @Override
     @NonNull
-    public TransactionResult dispatchPrecedingTransaction(@NonNull TransactionBody txBody) throws HandleException {
+    public SingleTransactionRecord dispatchPrecedingTransaction(@NonNull TransactionBody txBody, @NonNull AccountID creator) throws HandleException {
         throw new UnsupportedOperationException("Not yet implemented!");
     }
 
     @Override
     @NonNull
-    public TransactionResult dispatchChildTransaction(@NonNull TransactionBody txBody) throws HandleException {
+    public SingleTransactionRecord dispatchChildTransaction(@NonNull TransactionBody txBody, @NonNull AccountID creator) throws HandleException {
         throw new UnsupportedOperationException("Not yet implemented!");
     }
 

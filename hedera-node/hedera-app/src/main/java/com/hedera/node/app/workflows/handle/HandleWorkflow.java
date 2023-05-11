@@ -21,19 +21,26 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BOD
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_EXPIRED;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.clock.SystemClock;
+import com.hedera.node.app.records.RecordManager;
+import com.hedera.node.app.spi.records.SingleTransactionRecord;
+import com.hedera.node.app.records.SingleTransactionRecordBuilder;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.TransactionChecker;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Future;
 import javax.inject.Inject;
@@ -50,18 +57,25 @@ public class HandleWorkflow {
     private static final long SIGNATURE_VERIFICATION_TIMEOUT_MS = 3000L;
 
     private final SystemClock systemClock;
+    private final TemporaryPreHandleWorkflow preHandleWorkflow;
     private final TransactionChecker transactionChecker;
     private final TransactionDispatcher dispatcher;
+    private final RecordManager recordManager;
 
     @Inject
     public HandleWorkflow(
             @NonNull final SystemClock systemClock,
+            @NonNull final TemporaryPreHandleWorkflow preHandleWorkflow,
             @NonNull final TransactionChecker transactionChecker,
-            @NonNull final TransactionDispatcher dispatcher) {
+            @NonNull final TransactionDispatcher dispatcher,
+            @NonNull final RecordManager recordManager) {
         this.systemClock = requireNonNull(systemClock, "The supplied argument 'systemClock' cannot be null");
+        this.preHandleWorkflow =
+                requireNonNull(preHandleWorkflow, "The supplied argument 'preHandleWorkflow' cannot be null");
         this.transactionChecker =
                 requireNonNull(transactionChecker, "The supplied argument 'transactionChecker' cannot be null");
         this.dispatcher = requireNonNull(dispatcher, "The supplied argument 'dispatcher' cannot be null");
+        this.recordManager = requireNonNull(recordManager, "The supplied argument 'recordManager' cannot be null");
     }
 
     /**
@@ -72,10 +86,11 @@ public class HandleWorkflow {
      */
     public void handleRound(@NonNull final HederaState state, @NonNull final Round round) {
         // handle each transaction in the round
-        round.forEachTransaction(txn -> handleTransaction(state, txn));
+        round.forEachTransaction(txn -> handlePlatformTransaction(state, txn));
     }
 
-    private void handleTransaction(@NonNull final HederaState state, @NonNull final ConsensusTransaction platformTxn) {
+    private void handlePlatformTransaction(
+            @NonNull final HederaState state, @NonNull final ConsensusTransaction platformTxn) {
         // skip system transactions
         if (platformTxn.isSystem()) {
             return;
@@ -85,27 +100,50 @@ public class HandleWorkflow {
         final Instant consensusTimestamp = platformTxn.getConsensusTimestamp();
         systemClock.advance(consensusTimestamp);
 
-        //        try {
-        //            final var context = prepareHandleContext(state, platformTxn, consensusTimestamp);
-        //            dispatcher.dispatchHandle(context);
-        //            finalizeTransaction(context);
-        //            commitState(context);
-        //            writeRecord(context);
-        //            updateReceipt(context);
-        //        } catch (HandleException e) {
-        //            writeFailureRecord(e);
-        //            updateFailureReceipt(e);
-        //        } catch (Throwable e) {
-        //            LOG.error("An unexpected exception was thrown during handle", e);
-        //            updateFatalErrorReceipt(platformTxn);
-        //        }
+        final var recordBuilder = new SingleTransactionRecordBuilder();
+        try {
+            final var context = prepareHandleContext(state, platformTxn, consensusTimestamp);
+            dispatcher.dispatchHandle(context);
+
+            // TODO: Finalize transaction
+
+            // TODO: Commit state
+
+            recordManager.recordTransaction(recordBuilder.build());
+        } catch (HandleException e) {
+            recordBuilder.status(e.getStatus());
+            recordManager.recordTransaction(recordBuilder.build());
+        } catch (Throwable e) {
+            LOG.error("An unexpected exception was thrown during handle", e);
+            // TODO; Updated receipt
+        }
 
         // TODO: handle long scheduled transactions
 
         // TODO: handle system tasks
     }
 
-    private HandleContextImpl prepareHandleContext(
+    private SingleTransactionRecord handleTransaction(@NonNull final HederaState state, @NonNull final TransactionBody txBody) {
+        final var recordBuilder = new SingleTransactionRecordBuilder();
+        try {
+            final var context = prepareHandleContext(state, platformTxn, consensusTimestamp);
+            dispatcher.dispatchHandle(context);
+
+            // TODO: Finalize transaction
+
+            // TODO: Commit state
+
+            recordManager.recordTransaction(recordBuilder.build());
+        } catch (HandleException e) {
+            recordBuilder.status(e.getStatus());
+            recordManager.recordTransaction(recordBuilder.build());
+        } catch (Throwable e) {
+            LOG.error("An unexpected exception was thrown during handle", e);
+            // TODO; Updated receipt
+        }
+    }
+
+    private StackableHandleContext prepareHandleContext(
             @NonNull final HederaState state,
             @NonNull final ConsensusTransaction platformTxn,
             @NonNull final Instant consensusTimestamp)
@@ -114,34 +152,33 @@ public class HandleWorkflow {
         // We do not know how long transactions are kept in memory. Clearing metadata to avoid keeping it for too long.
         platformTxn.setMetadata(null);
 
-        PreHandleResult preHandleResult;
-        final List<Future<Object>> signatureVerifications;
-        //        if (preHandleStillValid(metadata)) {
-        //            final var previousResult = (PreHandleResult) metadata;
-        //            if (previousResult.isDueDiligenceFailure()) {
-        //                final var fee = calculateNetworkFee();
-        //                final var cryptoTransfer = createPenaltyPayment(fee);
-        //                return new HandleContextImpl();
-        //            }
-        //
-        //            if (previousResult.status() == OK) {
-        //                preHandleResult = addMissingSignatures(previousResult);
-        //            } else {
-        //                preHandleResult = preHandleWorkflow.preHandleTransaction(creator, storeFactory, platformTxn);
-        //            }
-        //        } else {
-        //            preHandleResult = preHandleWorkflow.preHandleTransaction(creator, storeFactory, platformTxn);
-        //        }
-        //
-        //        if (preHandleResult.status() != OK) {
-        //            throw new PreCheckException(preHandleResult.status());
-        //        }
-        //
-        //
-        //
-        //        if (! checkSignature(preHandleResult.payerVerification())) {
-        //            return new HandleContextImpl();
-        //        }
+//        PreHandleResult preHandleResult;
+//        if (preHandleStillValid(metadata)) {
+//            final var previousResult = (PreHandleResult) metadata;
+//            if (previousResult.isDueDiligenceFailure()) {
+//                final var fee = calculateNetworkFee();
+//                final var cryptoTransfer = createPenaltyPayment(fee);
+//                return new HandleContextImpl();
+//            }
+//
+//            if (previousResult.status() == OK) {
+//                preHandleResult = addMissingSignatures(previousResult);
+//            } else {
+//                preHandleResult = preHandleWorkflow.preHandleTransaction(creator, storeFactory, platformTxn);
+//            }
+//        } else {
+//            preHandleResult = preHandleWorkflow.preHandleTransaction(creator, storeFactory, platformTxn);
+//        }
+//
+//        if (preHandleResult.status() != OK) {
+//            throw new PreCheckException(preHandleResult.status());
+//        }
+//
+//
+//
+//        if (! checkSignature(preHandleResult.payerVerification())) {
+//            return new HandleContextImpl();
+//        }
 
         throw new UnsupportedOperationException("Not implemented yet");
     }
@@ -189,5 +226,22 @@ public class HandleWorkflow {
         //
         //        }
 
+    }
+
+    public class TemporaryPreHandleWorkflow {
+        private PreHandleResult preHandleTransaction(
+                @NonNull final AccountID creator,
+                @NonNull final ReadableStoreFactory storeFactory,
+                @NonNull final ReadableAccountStore accountStore,
+                @NonNull final Transaction platformTx) {
+            throw new UnsupportedOperationException("Not implemented yet");
+        }
+        private PreHandleResult preHandleTransaction(
+                @NonNull final AccountID creator,
+                @NonNull final ReadableStoreFactory storeFactory,
+                @NonNull final ReadableAccountStore accountStore,
+                @NonNull final com.swirlds.common.system.transaction.Transaction platformTx) {
+            throw new UnsupportedOperationException("Not implemented yet");
+        }
     }
 }

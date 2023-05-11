@@ -80,7 +80,7 @@ public class AdaptedMonoTransitionRunner extends TransitionRunner {
             final var context =
                     new MonoHandleContext(txBody, ids, expiryValidator, attributeValidator, txnCtx, recordBuilder);
             try {
-                dispatcher.dispatchHandle(context);
+                dispatcher.dispatchHandle(context, s -> {});
                 txnCtx.setStatus(SUCCESS);
             } catch (final HandleException e) {
                 super.resolveFailure(PbjConverter.fromPbj(e.getStatus()), accessor, e);

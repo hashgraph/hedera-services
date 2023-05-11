@@ -285,7 +285,7 @@ public class TransactionChecker {
      * @throws PreCheckException if validation fails
      * @throws NullPointerException if any of the parameters is {@code null}
      */
-    private void checkTransactionBody(@NonNull final TransactionBody txBody) throws PreCheckException {
+    public void checkTransactionBody(@NonNull final TransactionBody txBody) throws PreCheckException {
         // The transaction MUST have been sent to *this* node
         if (!nodeAccount.equals(txBody.nodeAccountID())) {
             throw new PreCheckException(INVALID_NODE_ACCOUNT);

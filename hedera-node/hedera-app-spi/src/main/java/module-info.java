@@ -17,4 +17,5 @@ module com.hedera.node.app.spi {
     exports com.hedera.node.app.spi.config.converter;
     exports com.hedera.node.app.spi.config.types;
     exports com.hedera.node.app.spi.signatures;
+    exports com.hedera.node.app.spi.records;
 }

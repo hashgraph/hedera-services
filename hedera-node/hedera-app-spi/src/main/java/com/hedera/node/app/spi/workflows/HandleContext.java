@@ -16,13 +16,14 @@
 
 package com.hedera.node.app.spi.workflows;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.hapi.node.transaction.TransactionReceipt;
-import com.hedera.node.app.spi.config.GlobalDynamicConfig;
+import com.hedera.node.app.spi.records.SingleTransactionRecord;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -51,15 +52,12 @@ public interface HandleContext {
     TransactionBody body();
 
     /**
-     * Returns the {@link GlobalDynamicConfig} for the node.
+     * Returns the current {@link Configuration} for the node.
      *
-     * <p>This is a temporary solution. In the final version, {@link com.swirlds.config.api.Configuration} will be
-     * provided.
-     *
-     * @return the {@code GlobalDynamicConfig}
+     * @return the {@code Configuration}
      */
     @NonNull
-    GlobalDynamicConfig config();
+    Configuration config();
 
     /**
      * Returns the next entity number, for use by handlers that create entities.
@@ -96,6 +94,7 @@ public interface HandleContext {
      *
      * @param key the key to get the verification for
      * @return the verification for the given key, or {@code null} if no such key was provided during pre-handle
+     * @throws NullPointerException if {@code key} is {@code null}
      */
     @Nullable
     SignatureVerification verificationFor(@NonNull Key key);
@@ -115,7 +114,7 @@ public interface HandleContext {
     /**
      * Return a writable store given the store's interface. This gives write access to the store.
      *
-     * <p>This method is limited to
+     * <p>This method is limited to stores that are part of the transaction's service.
      *
      * @param storeInterface The store interface to find and create a store for
      * @param <T> Interface class for a Store
@@ -149,13 +148,13 @@ public interface HandleContext {
      * (either by storing state or by calling a child transaction).
      *
      * @param txBody the {@link TransactionBody} of the transaction to dispatch
-     * @return the {@link TransactionResult} of the transaction, if successful
+     * @param creator the {@link AccountID} of the transaction creator
+     * @return the {@link SingleTransactionRecord} of the transaction, if successful
      * @throws NullPointerException if {@code txBody} is {@code null}
-     * @throws HandleException if the transaction fails
      * @throws IllegalStateException if the current transaction has already introduced state changes
      */
     @NonNull
-    TransactionResult dispatchPrecedingTransaction(@NonNull TransactionBody txBody) throws HandleException;
+    SingleTransactionRecord dispatchPrecedingTransaction(@NonNull TransactionBody txBody, @NonNull AccountID creator);
 
     /**
      * Dispatches a child transaction.
@@ -171,12 +170,12 @@ public interface HandleContext {
      * transaction will also be rolled back if the child transaction is rolled back.
      *
      * @param txBody the {@link TransactionBody} of the child transaction to dispatch
-     * @return the {@link TransactionResult} of the child transaction, if successful
+     * @param creator the {@link AccountID} of the transaction creator
+     * @return the {@link SingleTransactionRecord} of the child transaction, if successful
      * @throws NullPointerException if {@code txBody} is {@code null}
-     * @throws HandleException if the transaction fails
      */
     @NonNull
-    TransactionResult dispatchChildTransaction(@NonNull TransactionBody txBody) throws HandleException;
+    SingleTransactionRecord dispatchChildTransaction(@NonNull TransactionBody txBody, @NonNull AccountID creator);
 
     /**
      * Returns the current {@link TransactionStack}.
@@ -196,13 +195,12 @@ public interface HandleContext {
      */
     interface TransactionStack {
         /**
-         * Returns the {@link TransactionResult} of the last child transaction.
-         *
-         * @return the {@code TransactionResult} of the last child transaction
-         * @throws IllegalStateException if the transaction stack is empty
+         * Sets a savepoint.
+         * <p>
+         * This method will add a new entry to the transaction stack. A subsequent rollback will roll back all
+         * state changes that were introduced after the savepoint was set.
          */
-        @NonNull
-        TransactionResult peek();
+        void setSavepoint();
 
         /**
          * Rolls back the last child transaction.
@@ -216,38 +214,17 @@ public interface HandleContext {
         /**
          * Rolls back the last {@code depth} child transactions.
          *
-         * @param depth the number of child transactions to roll back
+         * @param level the number of child transactions to roll back
          * @throws IllegalArgumentException if {@code depth} is less than {@code 1}
          * @throws IllegalStateException if the transaction stack contains fewer elements than {@code depth}
          */
-        void rollback(int depth);
-    }
-
-    /**
-     * The result of a dispatched and successfully executed transaction.
-     */
-    interface TransactionResult {
-        /**
-         * Returns the {@link TransactionBody} of the transaction.
-         *
-         * @return the {@code TransactionBody} of the transaction
-         */
-        @NonNull
-        TransactionBody txBody();
+        void rollback(int level);
 
         /**
-         * Returns the consensus time of the transaction.
+         * Returns the depth of the transaction stack.
          *
-         * @return the consensus time of the transaction
+         * @return the depth of the transaction stack
          */
-        @NonNull
-        Instant consensusTime();
-
-        /**
-         * Returns the {@link TransactionReceipt} of the transaction.
-         *
-         * @return the {@code TransactionReceipt} of the transaction
-         */
-        TransactionReceipt receipt();
+        int depth();
     }
 }

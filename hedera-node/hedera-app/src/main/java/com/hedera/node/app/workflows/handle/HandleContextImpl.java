@@ -18,10 +18,11 @@ package com.hedera.node.app.workflows.handle;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.records.SingleTransactionRecordBuilder;
-import com.hedera.node.app.spi.config.GlobalDynamicConfig;
+import com.hedera.node.app.spi.records.SingleTransactionRecord;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -30,38 +31,59 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
+import com.hedera.node.app.workflows.handle.stack.TransactionStackEntry;
+import com.hedera.node.app.workflows.handle.stack.TransactionStackImpl;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.Map;
 
 public class HandleContextImpl implements HandleContext {
 
-    private final Instant consensusNow;
+    private final HandleContextManager manager;
     private final TransactionBody txBody;
-    private final ReadableStoreFactory readableStoreFactory;
-    private final WritableStoreFactory writableStoreFactory;
+    private final String serviceScope;
+    private final Map<Key, SignatureVerification> signatureVerifications;
+
     private final SingleTransactionRecordBuilder recordBuilder;
+    private final TransactionStackImpl stack;
+
+    private ReadableStoreFactory readableStoreFactory;
+    private WritableStoreFactory writableStoreFactory;
+
+
 
     public HandleContextImpl(
-            @NonNull final HederaState state,
-            @NonNull final String serviceScope,
+            @NonNull final HandleContextManager manager,
             @NonNull final TransactionBody txBody,
+            @NonNull final String serviceScope,
+            @NonNull final Map<Key, SignatureVerification> signatureVerifications,
+            @NonNull final SingleTransactionRecordBuilder recordBuilder,
+            @NonNull final HederaState state,
             @NonNull final Instant consensusNow,
-            @NonNull final SingleTransactionRecordBuilder recordBuilder) {
-        requireNonNull(state, "The argument 'state' must not be null");
-        requireNonNull(serviceScope, "The argument 'serviceScope' must not be null");
-        this.txBody = requireNonNull(txBody, "The argument 'txBody' must not be null");
-        this.consensusNow = requireNonNull(consensusNow, "The argument 'consensusNow' must not be null");
-        this.recordBuilder = requireNonNull(recordBuilder, "The argument 'recordBuilder' must not be null");
+            @NonNull final Configuration config,
+            @NonNull final ExpiryValidator expiryValidator,
+            @NonNull final AttributeValidator attributeValidator) {
+        this.manager = requireNonNull(manager, "manager must not be null");
+        this.txBody = requireNonNull(txBody, "txBody must not be null");
+        this.serviceScope = requireNonNull(serviceScope, "serviceScope must not be null");
+        this.signatureVerifications = requireNonNull(signatureVerifications, "signatureVerifications must not be null");
+        this.recordBuilder = requireNonNull(recordBuilder, "recordBuilder must not be null");
 
-        this.readableStoreFactory = new ReadableStoreFactory(state);
-        this.writableStoreFactory = new WritableStoreFactory(state, serviceScope);
+        final var stackEntry = new TransactionStackEntry(
+                requireNonNull(state, "state must not be null"),
+                requireNonNull(consensusNow, "consensusNow must not be null"),
+                requireNonNull(config, "config must not be null"),
+                requireNonNull(attributeValidator, "attributeValidator must not be null"),
+                requireNonNull(expiryValidator, "expiryValidator must not be null"));
+        this.stack = new TransactionStackImpl(stackEntry);
     }
 
     @Override
     @NonNull
     public Instant consensusNow() {
-        return consensusNow;
+        return stack.peek().consensusNow();
     }
 
     @Override
@@ -72,69 +94,105 @@ public class HandleContextImpl implements HandleContext {
 
     @Override
     @NonNull
-    public GlobalDynamicConfig config() {
-        throw new UnsupportedOperationException("Not implemented yet");
+    public Configuration config() {
+        return stack.peek().config();
     }
 
     @Override
     public long newEntityNum() {
-        throw new UnsupportedOperationException("Not implemented yet");
+        return stack.peek().newEntityNum();
     }
 
     @Override
     @NonNull
     public AttributeValidator attributeValidator() {
-        throw new UnsupportedOperationException("Not implemented yet");
+        return stack.peek().attributeValidator();
     }
 
     @Override
     @NonNull
     public ExpiryValidator expiryValidator() {
-        throw new UnsupportedOperationException("Not implemented yet");
+        return stack.peek().expiryValidator();
     }
 
     @Override
     @Nullable
     public SignatureVerification verificationFor(@NonNull Key key) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        requireNonNull(key, "key must not be null");
+        return signatureVerifications.get(key);
     }
 
     @Override
     @NonNull
     public <C> C readableStore(@NonNull Class<C> storeInterface) {
-        return readableStoreFactory.getStore(storeInterface);
+        requireNonNull(storeInterface, "storeInterface must not be null");
+        return stack.peek().readableStore(storeInterface);
     }
 
     @Override
     @NonNull
     public <C> C writableStore(@NonNull Class<C> storeInterface) {
-        return writableStoreFactory.getStore(storeInterface);
+        requireNonNull(storeInterface, "storeInterface must not be null");
+        return stack.peek().writableStore(storeInterface, serviceScope);
     }
+
+//    @NonNull
+//    public <C> C readableStore(@NonNull final Class<C> storeInterface) {
+//        requireNonNull(storeInterface, "storeInterface must not be null");
+//        if (readableStoreFactory == null) {
+//            readableStoreFactory = new ReadableStoreFactory(state);
+//        }
+//        return readableStoreFactory.getStore(storeInterface);
+//    }
+//
+//    @NonNull
+//    public <C> C writableStore(@NonNull final Class<C> storeInterface, @NonNull final String serviceScope) {
+//        requireNonNull(storeInterface, "storeInterface must not be null");
+//        requireNonNull(serviceScope, "serviceScope must not be null");
+//        if (writableStoreFactory == null) {
+//            writableStoreFactory = new WritableStoreFactory(state);
+//        }
+//        return writableStoreFactory.getStore(storeInterface, serviceScope);
+//    }
+
 
     @Override
     @NonNull
-    public <T> T recordBuilder(@NonNull Class<T> singleTransactionRecordBuilderClass) {
-        if (!singleTransactionRecordBuilderClass.isInstance(recordBuilder)) {
+    public <T> T recordBuilder(@NonNull Class<T> recordBuilderClass) {
+        requireNonNull(recordBuilderClass, "singleTransactionRecordBuilderClass must not be null");
+        if (!recordBuilderClass.isInstance(recordBuilder)) {
             throw new IllegalArgumentException("Not a valid record builder class");
         }
-        return singleTransactionRecordBuilderClass.cast(recordBuilder);
+        return recordBuilderClass.cast(recordBuilder);
     }
 
     @Override
     @NonNull
-    public TransactionResult dispatchPrecedingTransaction(@NonNull TransactionBody txBody) throws HandleException {
-        throw new UnsupportedOperationException("Not implemented yet");
+    public SingleTransactionRecord dispatchPrecedingTransaction(
+            @NonNull final TransactionBody txBody,
+            @NonNull final AccountID creator)
+            throws HandleException {
+        requireNonNull(txBody, "txBody must not be null");
+        requireNonNull(creator, "creator must not be null");
+
+        return manager.dispatchPrecedingTransaction(txBody, creator);
     }
 
     @Override
     @NonNull
-    public TransactionResult dispatchChildTransaction(@NonNull TransactionBody txBody) throws HandleException {
-        throw new UnsupportedOperationException("Not implemented yet");
+    public SingleTransactionRecord dispatchChildTransaction(
+            @NonNull final TransactionBody txBody,
+            @NonNull final AccountID creator)
+            throws HandleException {
+        requireNonNull(txBody, "txBody must not be null");
+        requireNonNull(creator, "creator must not be null");
+
+        return manager.dispatchChildTransaction(txBody, creator);
     }
 
-    @Override
     @NonNull
+    @Override
     public TransactionStack transactionStack() {
-        throw new UnsupportedOperationException("Not implemented yet");
+        return stack;
     }
 }

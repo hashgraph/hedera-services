@@ -59,7 +59,7 @@ public class WritableStoreFactory {
      *
      * @param state the {@link HederaState} to use
      */
-    public WritableStoreFactory(@NonNull final HederaState state, @NonNull final String serviceName) {
+    public WritableStoreFactory(@NonNull final HederaState state) {
         requireNonNull(state, "The argument 'state' cannot be null!");
         requireNonNull(serviceName, "The argument 'serviceName' cannot be null!");
 
@@ -74,14 +74,15 @@ public class WritableStoreFactory {
     /**
      * Create a new store given the store's interface. This gives read and write access to the store.
      *
-     * @param storeInterface The store interface to find and create a store for
      * @param <C> Interface class for a Store
+     * @param storeInterface The store interface to find and create a store for
+     * @param serviceScope
      * @return An implementation of the provided store interface
      * @throws IllegalArgumentException if the storeInterface class provided is unknown to the app
      * @throws NullPointerException if {@code storeInterface} is {@code null}
      */
     @NonNull
-    public <C> C getStore(@NonNull final Class<C> storeInterface) throws IllegalArgumentException {
+    public <C> C getStore(@NonNull final Class<C> storeInterface, String serviceScope) throws IllegalArgumentException {
         requireNonNull(storeInterface, "The supplied argument 'storeInterface' cannot be null!");
         final var store = stores.computeIfAbsent(storeInterface, this::createStore);
         return storeInterface.cast(store);
