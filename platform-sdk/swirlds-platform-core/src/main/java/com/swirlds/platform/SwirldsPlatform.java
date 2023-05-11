@@ -219,7 +219,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -236,7 +235,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -256,7 +254,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      */
     private final NodeId selfId;
     /** tell which pairs of members should establish connections */
-    final NetworkTopology topology;
+    private final NetworkTopology topology;
     /**
      * This object is responsible for rate limiting reconnect attempts (in the role of sender)
      */
@@ -323,7 +321,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     /** a long name including (app, swirld, member id, member self name) */
     private final String platformName;
     /** is used for calculating runningHash of all consensus events and writing consensus events to file */
-    private EventStreamManager<EventImpl> eventStreamManager;
+    private final EventStreamManager<EventImpl> eventStreamManager;
     /**
      * True if this node started from genesis.
      */
@@ -359,11 +357,11 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      */
     private ShadowGraphSynchronizer syncShadowgraphSynchronizer;
     /** Stores and passes pre-consensus events to {@link SwirldStateManager} for handling */
-    private PreConsensusEventHandler preConsensusEventHandler;
+    private final PreConsensusEventHandler preConsensusEventHandler;
     /** Stores and processes consensus events including sending them to {@link SwirldStateManager} for handling */
-    private ConsensusRoundHandler consensusRoundHandler;
+    private final ConsensusRoundHandler consensusRoundHandler;
     /** Handles all interaction with {@link SwirldState} */
-    private SwirldStateManager swirldStateManager;
+    private final SwirldStateManager swirldStateManager;
     /** Checks the validity of transactions and submits valid ones to the event transaction pool */
     private final SwirldTransactionSubmitter transactionSubmitter;
     /** clears all pipelines to prepare for a reconnect */
@@ -538,7 +536,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         this.shadowGraph = new ShadowGraph(syncMetrics, initialAddressBook.getSize());
 
-        this.consensusRoundHandler = null;
         this.swirldId = swirldId.clone();
         this.crypto = crypto;
 
@@ -614,13 +611,24 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             logger.info(STARTUP.getMarker(), "startUpEventFrozenEndTime: {}", () -> startUpEventFrozenEndTime);
         }
 
-        // initializes EventStreamManager instance
         final Address address = getSelfAddress();
+        final String eventStreamManagerName;
         if (address.getMemo() != null && !address.getMemo().isEmpty()) {
-            initEventStreamManager(address.getMemo());
+            eventStreamManagerName = address.getMemo();
         } else {
-            initEventStreamManager(String.valueOf(selfId));
+            eventStreamManagerName = String.valueOf(selfId);
         }
+        logger.info(STARTUP.getMarker(), "initialize eventStreamManager");
+        eventStreamManager = new EventStreamManager<>(
+                threadManager,
+                getSelfId(),
+                this,
+                eventStreamManagerName,
+                settings.isEnableEventStreaming(),
+                settings.getEventsLogDir(),
+                settings.getEventsLogPeriod(),
+                settings.getEventStreamQueueCapacity(),
+                this::isLastEventBeforeRestart);
 
         if (chatterConfig.useChatter()) {
             criticalQuorum = new CriticalQuorumImpl(initialAddressBook, false, chatterConfig.criticalQuorumSoftening());
@@ -632,7 +640,66 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         try (loadedState.signedStateFromDisk) {
             final SignedState signedStateFromDisk = loadedState.signedStateFromDisk.getNullable();
 
-            buildEventHandlers(signedStateFromDisk, loadedState.initialState, genesisStateBuilder);
+            // Queue thread that stores and handles signed states that need to be hashed and have signatures collected.
+            final QueueThread<ReservedSignedState> stateHashSignQueueThread = PlatformConstructor.stateHashSignQueue(
+                    threadManager, selfId.getId(), stateManagementComponent::newSignedStateFromTransactions);
+            stateHashSignQueueThread.start();
+
+            final State stateToLoad;
+            if (signedStateFromDisk != null) {
+                logger.debug(STARTUP.getMarker(), () -> new SavedStateLoadedPayload(
+                                signedStateFromDisk.getRound(),
+                                signedStateFromDisk.getConsensusTimestamp(),
+                                startUpEventFrozenManager.getStartUpEventFrozenEndTime())
+                        .toString());
+
+                stateToLoad = loadedState.initialState;
+
+            } else {
+                stateToLoad = buildGenesisState(this, initialAddressBook, appVersion, genesisStateBuilder);
+
+                // if we are not starting from a saved state, don't freeze on startup
+                startUpEventFrozenManager.setStartUpEventFrozenEndTime(null);
+            }
+
+            if (stateToLoad == null) {
+                // this should be impossible
+                throw new IllegalStateException("stateToLoad is null");
+            }
+
+            swirldStateManager = PlatformConstructor.swirldStateManager(
+                    platformContext,
+                    initialAddressBook,
+                    selfId,
+                    preConsensusSystemTransactionManager,
+                    postConsensusSystemTransactionManager,
+                    metrics,
+                    PlatformConstructor.settingsProvider(),
+                    freezeManager::isFreezeStarted,
+                    stateToLoad);
+
+            // SwirldStateManager will get a copy of the state loaded, that copy will become stateCons.
+            // The original state will be saved in the SignedStateMgr and will be deleted when it becomes old
+
+            preConsensusEventHandler = components.add(PlatformConstructor.preConsensusEventHandler(
+                    threadManager, selfId, swirldStateManager, consensusMetrics));
+            consensusRoundHandler = components.add(PlatformConstructor.consensusHandler(
+                    platformContext,
+                    threadManager,
+                    selfId.getId(),
+                    PlatformConstructor.settingsProvider(),
+                    swirldStateManager,
+                    new ConsensusHandlingMetrics(metrics, time),
+                    eventStreamManager,
+                    stateHashSignQueueThread,
+                    preConsensusEventWriter::waitUntilDurable,
+                    freezeManager::freezeStarted,
+                    stateManagementComponent::roundAppliedToState,
+                    appVersion));
+
+            if (signedStateFromDisk != null) {
+                consensusRoundHandler.loadDataFromSignedState(signedStateFromDisk, false);
+            }
 
             final AddedEventMetrics addedEventMetrics = new AddedEventMetrics(this.selfId, metrics);
             final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
@@ -1158,72 +1225,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         final PreConsensusEventWriter syncWriter = new SyncPreConsensusEventWriter(platformContext, fileManager);
 
         return new AsyncPreConsensusEventWriter(platformContext, threadManager, syncWriter);
-    }
-
-    /**
-     * Build all the classes required for events and transactions to flow through the system
-     */
-    private void buildEventHandlers(
-            @Nullable final SignedState signedStateFromDisk,
-            @Nullable final State initialState,
-            @NonNull final Supplier<SwirldState> genesisStateBuilder) {
-
-        // Queue thread that stores and handles signed states that need to be hashed and have signatures collected.
-        final QueueThread<ReservedSignedState> stateHashSignQueueThread = PlatformConstructor.stateHashSignQueue(
-                threadManager, selfId.getId(), stateManagementComponent::newSignedStateFromTransactions);
-        stateHashSignQueueThread.start();
-
-        if (signedStateFromDisk != null) {
-            logger.debug(STARTUP.getMarker(), () -> new SavedStateLoadedPayload(
-                            signedStateFromDisk.getRound(),
-                            signedStateFromDisk.getConsensusTimestamp(),
-                            startUpEventFrozenManager.getStartUpEventFrozenEndTime())
-                    .toString());
-
-            buildEventHandlersFromState(initialState, stateHashSignQueueThread);
-
-            consensusRoundHandler.loadDataFromSignedState(signedStateFromDisk, false);
-        } else {
-            final State state = buildGenesisState(this, initialAddressBook, appVersion, genesisStateBuilder);
-            buildEventHandlersFromState(state, stateHashSignQueueThread);
-
-            // if we are not starting from a saved state, don't freeze on startup
-            startUpEventFrozenManager.setStartUpEventFrozenEndTime(null);
-        }
-    }
-
-    private void buildEventHandlersFromState(
-            final State state, final QueueThread<ReservedSignedState> stateHashSignQueueThread) {
-
-        swirldStateManager = PlatformConstructor.swirldStateManager(
-                platformContext,
-                initialAddressBook,
-                selfId,
-                preConsensusSystemTransactionManager,
-                postConsensusSystemTransactionManager,
-                metrics,
-                PlatformConstructor.settingsProvider(),
-                freezeManager::isFreezeStarted,
-                state);
-
-        // SwirldStateManager will get a copy of the state loaded, that copy will become stateCons.
-        // The original state will be saved in the SignedStateMgr and will be deleted when it becomes old
-
-        preConsensusEventHandler = components.add(PlatformConstructor.preConsensusEventHandler(
-                threadManager, selfId, swirldStateManager, consensusMetrics));
-        consensusRoundHandler = components.add(PlatformConstructor.consensusHandler(
-                platformContext,
-                threadManager,
-                selfId.getId(),
-                PlatformConstructor.settingsProvider(),
-                swirldStateManager,
-                new ConsensusHandlingMetrics(metrics, time),
-                eventStreamManager,
-                stateHashSignQueueThread,
-                preConsensusEventWriter::waitUntilDurable,
-                freezeManager::freezeStarted,
-                stateManagementComponent::roundAppliedToState,
-                appVersion));
     }
 
     /**
@@ -2112,33 +2113,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      */
     StartUpEventFrozenManager getStartUpEventFrozenManager() {
         return startUpEventFrozenManager;
-    }
-
-    /**
-     * Initializes EventStreamManager instance, which will start threads for calculating RunningHash, and writing event
-     * stream files when event streaming is enabled
-     *
-     * @param name name of this node
-     */
-    void initEventStreamManager(final String name) {
-        try {
-            logger.info(STARTUP.getMarker(), "initialize eventStreamManager");
-            eventStreamManager = new EventStreamManager<>(
-                    threadManager,
-                    getSelfId(),
-                    this,
-                    name,
-                    settings.isEnableEventStreaming(),
-                    settings.getEventsLogDir(),
-                    settings.getEventsLogPeriod(),
-                    settings.getEventStreamQueueCapacity(),
-                    this::isLastEventBeforeRestart);
-        } catch (final NoSuchAlgorithmException | IOException e) {
-            logger.error(
-                    EXCEPTION.getMarker(),
-                    "Fail to initialize eventStreamHelper. Exception: {}",
-                    ExceptionUtils.getStackTrace(e));
-        }
     }
 
     /**
