@@ -852,21 +852,12 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         clearAllPipelines = new LoggingClearables(
                 RECONNECT.getMarker(),
                 List.of(
-                        Pair.of(getIntakeQueue(), "intakeQueue"),
-                        Pair.of(getEventMapper(), "eventMapper"),
-                        Pair.of(getShadowGraph(), "shadowGraph"),
+                        Pair.of(intakeQueue, "intakeQueue"),
+                        Pair.of(eventMapper, "eventMapper"),
+                        Pair.of(shadowGraph, "shadowGraph"),
                         Pair.of(preConsensusEventHandler, "preConsensusEventHandler"),
                         Pair.of(consensusRoundHandler, "consensusRoundHandler"),
                         Pair.of(swirldStateManager, "swirldStateManager")));
-    }
-
-    /**
-     * Check if the platform was started from genesis.
-     *
-     * @return true if the platform was started from genesis, false if it was started from a saved state
-     */
-    public boolean isStartedFromGenesis() {
-        return startedFromGenesis;
     }
 
     /**
@@ -1130,7 +1121,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             // thread. after a reconnect, it needs to load the minimum generation from a state on a different thread,
             // so the intake thread is paused before the data is loaded and unpaused after. this ensures that the
             // thread will get the up-to-date data loaded
-            new PauseAndLoad(getIntakeQueue(), eventLinker).loadFromSignedState(signedState);
+            new PauseAndLoad(intakeQueue, eventLinker).loadFromSignedState(signedState);
 
             consensusRoundHandler.loadDataFromSignedState(signedState, true);
 
@@ -1259,7 +1250,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         final ParallelExecutor shadowgraphExecutor = PlatformConstructor.parallelExecutor(threadManager);
         shadowgraphExecutor.start();
         syncShadowgraphSynchronizer = new ShadowGraphSynchronizer(
-                getShadowGraph(),
+                shadowGraph,
                 getAddressBook().getSize(),
                 syncMetrics,
                 consensusRef::get,
@@ -1429,7 +1420,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             final ParallelExecutor shadowgraphExecutor = PlatformConstructor.parallelExecutor(threadManager);
             shadowgraphExecutor.start();
             final ShadowGraphSynchronizer chatterSynchronizer = new ShadowGraphSynchronizer(
-                    getShadowGraph(),
+                    shadowGraph,
                     getAddressBook().getSize(),
                     syncMetrics,
                     consensusRef::get,
@@ -1521,7 +1512,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 CryptographyHolder.get(),
                 OSTime.getInstance());
 
-        if (isStartedFromGenesis()) {
+        if (startedFromGenesis) {
             // if we are starting from genesis, we will create a genesis event, which is the only event that will
             // ever be created without an other-parent
             chatterEventCreator.createGenesisEvent();
@@ -1539,13 +1530,13 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 List.of(
                         // chatter event creator needs to be cleared first, because it sends event to intake
                         Pair.of(eventCreatorThread, "eventCreatorThread"),
-                        Pair.of(getIntakeQueue(), "intakeQueue"),
+                        Pair.of(intakeQueue, "intakeQueue"),
                         // eventLinker is not thread safe, so the intake thread needs to be paused while its being
                         // cleared
-                        Pair.of(new PauseAndClear(getIntakeQueue(), eventLinker), "eventLinker"),
+                        Pair.of(new PauseAndClear(intakeQueue, eventLinker), "eventLinker"),
                         Pair.of(eventMapper, "eventMapper"),
                         Pair.of(chatterEventMapper, "chatterEventMapper"),
-                        Pair.of(getShadowGraph(), "shadowGraph"),
+                        Pair.of(shadowGraph, "shadowGraph"),
                         Pair.of(preConsensusEventHandler, "preConsensusEventHandler"),
                         Pair.of(consensusRoundHandler, "consensusRoundHandler"),
                         Pair.of(swirldStateManager, "swirldStateManager")));
@@ -1767,20 +1758,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     }
 
     /**
-     * Get the {@link EventMapper} for this platform.
-     */
-    public EventMapper getEventMapper() {
-        return eventMapper;
-    }
-
-    /**
-     * Get the event intake queue for this platform.
-     */
-    public QueueThread<EventIntakeTask> getIntakeQueue() {
-        return intakeQueue;
-    }
-
-    /**
      * @return the consensus object used by this platform
      */
     public Consensus getConsensus() {
@@ -1790,7 +1767,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     /**
      * Checks the status of the platform and notifies the SwirldMain if there is a change in status
      */
-    public void checkPlatformStatus() {
+    private void checkPlatformStatus() {
         final int numNodes = initialAddressBook.getSize();
 
         synchronized (currentPlatformStatus) {
