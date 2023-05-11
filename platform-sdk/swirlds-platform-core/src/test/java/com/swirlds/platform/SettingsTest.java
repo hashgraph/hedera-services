@@ -118,7 +118,6 @@ import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.settings.ParsingUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.config.AddressBookConfig;
-import com.swirlds.platform.gossip.chatter.ChatterSubSetting;
 import com.swirlds.platform.state.StateSettings;
 import com.swirlds.test.framework.TestTypeTags;
 import com.swirlds.test.framework.config.TestConfigBuilder;
@@ -780,61 +779,6 @@ class SettingsTest {
         Assertions.assertEquals(
                 Path.of("data", "saved", "badSwirldsTmp").toString(),
                 temporaryFileConfig.getTemporaryFilePath(configuration.getConfigData(StateConfig.class)));
-    }
-
-    /**
-     * Currently disabled until the Settings class gets rewritten to not use a singleton
-     * design pattern. There are tests that are run that modify these default values
-     * before this test is run, therefore resulting in this test failing.
-     */
-    @Test
-    @Disabled
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @DisplayName("Checks that default chatter sub-settings are retrieved correctly")
-    public void checkGetDefaultChatterSubSettings() {
-        // given
-        final ChatterSubSetting chatterSubSetting = Settings.getInstance().getChatter();
-
-        // then
-        Assertions.assertFalse(chatterSubSetting.isChatterUsed());
-        Assertions.assertEquals(50, chatterSubSetting.getAttemptedChatterEventPerSecond());
-        Assertions.assertEquals(0.5, chatterSubSetting.getChatteringCreationThreshold());
-        Assertions.assertEquals(20, chatterSubSetting.getChatterIntakeThrottle());
-        Assertions.assertEquals(Duration.ofMillis(500), chatterSubSetting.getOtherEventDelay());
-        Assertions.assertEquals(1500, chatterSubSetting.getSelfEventQueueCapacity());
-        Assertions.assertEquals(45000, chatterSubSetting.getOtherEventQueueCapacity());
-        Assertions.assertEquals(45000, chatterSubSetting.getDescriptorQueueCapacity());
-        Assertions.assertEquals(Duration.ofMillis(100), chatterSubSetting.getProcessingTimeInterval());
-        Assertions.assertEquals(Duration.ofSeconds(1), chatterSubSetting.getHeartbeatInterval());
-        Assertions.assertEquals(100000, chatterSubSetting.getFutureGenerationLimit());
-    }
-
-    @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @DisplayName("Checks that loaded chatter sub-settings are retrieved correctly")
-    public void checkGetLoadedChatterSubSettings() {
-        // given
-        final Settings settings = Settings.getInstance();
-        final File settingsFile =
-                new File(SettingsTest.class.getResource("settings13.txt").getFile());
-        Assertions.assertTrue(settingsFile.exists());
-
-        // when
-        settings.loadSettings(settingsFile);
-        final ChatterSubSetting chatterSubSetting = Settings.getInstance().getChatter();
-
-        // then
-        Assertions.assertTrue(chatterSubSetting.isChatterUsed());
-        Assertions.assertEquals(60, chatterSubSetting.getAttemptedChatterEventPerSecond());
-        Assertions.assertEquals(0.75, chatterSubSetting.getChatteringCreationThreshold());
-        Assertions.assertEquals(30, chatterSubSetting.getChatterIntakeThrottle());
-        Assertions.assertEquals(ParsingUtils.parseDuration("600millis"), chatterSubSetting.getOtherEventDelay());
-        Assertions.assertEquals(2000, chatterSubSetting.getSelfEventQueueCapacity());
-        Assertions.assertEquals(50000, chatterSubSetting.getOtherEventQueueCapacity());
-        Assertions.assertEquals(50000, chatterSubSetting.getDescriptorQueueCapacity());
-        Assertions.assertEquals(ParsingUtils.parseDuration("200millis"), chatterSubSetting.getProcessingTimeInterval());
-        Assertions.assertEquals(ParsingUtils.parseDuration("2secs"), chatterSubSetting.getHeartbeatInterval());
-        Assertions.assertEquals(150000, chatterSubSetting.getFutureGenerationLimit());
     }
 
     private String readValueFromFile(Path settingsPath, String propertyName) throws IOException {
