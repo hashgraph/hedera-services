@@ -30,6 +30,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -52,10 +53,11 @@ public class EventMapper implements EventAddedObserver, SelfEventStorage, Cleara
     /**
      * Constructor
      *
-     * @param selfId this node's {@link NodeId}
+     * @param metrics the {@link Metrics} object to use
+     * @param selfId  this node's {@link NodeId}
      */
-    public EventMapper(@NonNull final Metrics metrics, final NodeId selfId) {
-        this.selfId = selfId;
+    public EventMapper(@NonNull final Metrics metrics, @NonNull final NodeId selfId) {
+        this.selfId = Objects.requireNonNull(selfId);
         mappings = new HashMap<>();
 
         metrics.getOrCreate(new FunctionGauge.Config<>(

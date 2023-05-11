@@ -140,7 +140,8 @@ public class DefaultStateManagementComponent implements StateManagementComponent
 
     private static final RunningAverageMetric.Config AVG_ROUND_SUPERMAJORITY_CONFIG = new RunningAverageMetric.Config(
                     PLATFORM_CATEGORY, "roundSup")
-            .withDescription("latest round with state signed by a supermajority");
+            .withDescription("latest round with state signed by a supermajority")
+            .withUnit("round");
 
     /**
      * @param platformContext                    the platform context
@@ -180,23 +181,23 @@ public class DefaultStateManagementComponent implements StateManagementComponent
             @NonNull final PreConsensusEventWriter preConsensusEventWriter,
             @NonNull final Supplier<PlatformStatus> getPlatformStatus) {
 
-        Objects.requireNonNull(platformContext, "context");
-        Objects.requireNonNull(threadManager, "threadManager");
-        Objects.requireNonNull(addressBook, "addressBook");
-        Objects.requireNonNull(signer, "signer");
-        Objects.requireNonNull(mainClassName, "mainClassName");
-        Objects.requireNonNull(selfId, "selfId");
-        Objects.requireNonNull(swirldName, "swirldName");
-        Objects.requireNonNull(prioritySystemTransactionSubmitter, "prioritySystemTransactionSubmitter");
-        Objects.requireNonNull(stateToDiskEventConsumer, "stateToDiskEventConsumer");
-        Objects.requireNonNull(newLatestCompleteStateConsumer, "newLatestCompleteStateConsumer");
-        Objects.requireNonNull(stateLacksSignaturesConsumer, "stateLacksSignaturesConsumer");
-        Objects.requireNonNull(stateHasEnoughSignaturesConsumer, "stateHasEnoughSignaturesConsumer");
-        Objects.requireNonNull(issConsumer, "issConsumer");
-        Objects.requireNonNull(haltRequestedConsumer, "haltRequestedConsumer");
-        Objects.requireNonNull(fatalErrorConsumer, "fatalErrorConsumer");
-        Objects.requireNonNull(preConsensusEventWriter, "preConsensusEventWriter");
-        Objects.requireNonNull(getPlatformStatus, "getPlatformStatus");
+        Objects.requireNonNull(platformContext);
+        Objects.requireNonNull(threadManager);
+        Objects.requireNonNull(addressBook);
+        Objects.requireNonNull(signer);
+        Objects.requireNonNull(mainClassName);
+        Objects.requireNonNull(selfId);
+        Objects.requireNonNull(swirldName);
+        Objects.requireNonNull(prioritySystemTransactionSubmitter);
+        Objects.requireNonNull(stateToDiskEventConsumer);
+        Objects.requireNonNull(newLatestCompleteStateConsumer);
+        Objects.requireNonNull(stateLacksSignaturesConsumer);
+        Objects.requireNonNull(stateHasEnoughSignaturesConsumer);
+        Objects.requireNonNull(issConsumer);
+        Objects.requireNonNull(haltRequestedConsumer);
+        Objects.requireNonNull(fatalErrorConsumer);
+        Objects.requireNonNull(preConsensusEventWriter);
+        Objects.requireNonNull(getPlatformStatus);
 
         this.signer = signer;
         this.signatureTransmitter = new SignatureTransmitter(prioritySystemTransactionSubmitter, getPlatformStatus);

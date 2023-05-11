@@ -537,7 +537,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         startUpEventFrozenManager = new StartUpEventFrozenManager(metrics, Instant::now);
         freezeManager = new FreezeManager(this::checkPlatformStatus);
         FreezeMetrics.registerFreezeMetrics(metrics, freezeManager, startUpEventFrozenManager);
-        EventCounter.registerMetrics(metrics);
+        EventCounter.registerEventCounterMetrics(metrics);
 
         // Manually wire components for now.
         final ManualWiring wiring = new ManualWiring(platformContext, threadManager, getAddressBook(), freezeManager);

@@ -29,9 +29,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Controls simultaneous syncs:
- * - prevents 2 simultaneous syncs from occurring with the same member
- * - prevents too many inbound syncs occurring at the same time
+ * Controls simultaneous syncs: - prevents 2 simultaneous syncs from occurring with the same member - prevents too many
+ * inbound syncs occurring at the same time
  */
 public class SimultaneousSyncThrottle {
     /** number of listener threads currently in a sync */
@@ -53,6 +52,12 @@ public class SimultaneousSyncThrottle {
             .withDescription("avg number of simultaneous listening syncs happening at any given time")
             .withFormat(FORMAT_9_6);
 
+    /**
+     * Construct a new SimultaneousSyncThrottle
+     *
+     * @param metrics          the metrics engine
+     * @param maxListenerSyncs the maximum number of listener syncs that can happen at the same time
+     */
     public SimultaneousSyncThrottle(@NonNull final Metrics metrics, final int maxListenerSyncs) {
         this.maxListenerSyncs = maxListenerSyncs;
         simSyncThrottleLock = new ConcurrentHashMap<>();
@@ -69,12 +74,10 @@ public class SimultaneousSyncThrottle {
      * Try to acquire the lock for syncing with the given node. The lock will be acquired if no syncs are ongoing with
      * that node.
      *
-     * @param nodeId
-     * 		the ID of the node we wish to sync with
-     * @param isOutbound
-     * 		is the sync initiated by this platform
+     * @param nodeId     the ID of the node we wish to sync with
+     * @param isOutbound is the sync initiated by this platform
      * @return an Autocloseable lock that provides information on whether the lock was acquired or not, and unlocks if
-     * 		previously locked on close()
+     * previously locked on close()
      */
     public MaybeLocked trySync(final long nodeId, final boolean isOutbound) {
         // if trying to do an inbound sync, check the max value

@@ -21,6 +21,7 @@ import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 
 /**
  * Used for creating freeze metrics.
@@ -40,6 +41,9 @@ public final class FreezeMetrics {
             @NonNull final Metrics metrics,
             @NonNull final FreezeManager freezeManager,
             @NonNull final StartUpEventFrozenManager startUpEventFrozenManager) {
+
+        Objects.requireNonNull(freezeManager);
+        Objects.requireNonNull(startUpEventFrozenManager);
 
         metrics.getOrCreate(new FunctionGauge.Config<>(
                         INTERNAL_CATEGORY,
