@@ -32,15 +32,17 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.common.test.merkle.util.PairedStreams;
-import com.swirlds.platform.Connection;
-import com.swirlds.platform.SocketConnection;
 import com.swirlds.platform.metrics.ReconnectMetrics;
+import com.swirlds.platform.network.Connection;
+import com.swirlds.platform.network.SocketConnection;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.State;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
 import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.test.framework.TestTypeTags;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.IOException;
 import java.security.PublicKey;
 import java.util.ArrayList;
@@ -112,7 +114,6 @@ final class ReconnectTest {
                     .setSigningNodeIds(nodeIds)
                     .build();
 
-            signedState.reserve();
             final MerkleCryptography cryptography = MerkleCryptoFactory.getInstance();
             cryptography.digestSync(signedState.getState().getPlatformState());
             cryptography.digestSync(signedState.getState());
@@ -124,12 +125,11 @@ final class ReconnectTest {
 
             final Thread thread = new Thread(() -> {
                 try {
-                    signedState.reserve();
                     final ReconnectTeacher sender = buildSender(
-                            signedState,
+                            signedState.reserve("test"),
                             new DummyConnection(pairedStreams.getTeacherInput(), pairedStreams.getTeacherOutput()),
                             reconnectMetrics);
-                    sender.execute();
+                    sender.execute(signedState);
                 } catch (final IOException ex) {
                     ex.printStackTrace();
                 }
@@ -138,7 +138,6 @@ final class ReconnectTest {
             thread.start();
             receiver.execute(mock(SignedStateValidator.class));
             thread.join();
-            signedState.release();
         }
     }
 
@@ -155,7 +154,9 @@ final class ReconnectTest {
     }
 
     private ReconnectTeacher buildSender(
-            final SignedState signedState, final SocketConnection connection, final ReconnectMetrics reconnectMetrics)
+            final ReservedSignedState signedState,
+            final SocketConnection connection,
+            final ReconnectMetrics reconnectMetrics)
             throws IOException {
 
         final long selfId = 0;
@@ -164,7 +165,6 @@ final class ReconnectTest {
         return new ReconnectTeacher(
                 getStaticThreadManager(),
                 connection,
-                signedState,
                 RECONNECT_SOCKET_TIMEOUT,
                 selfId,
                 otherId,
@@ -177,6 +177,12 @@ final class ReconnectTest {
         final AddressBook addressBook = buildAddressBook(5);
 
         return new ReconnectLearner(
-                getStaticThreadManager(), connection, addressBook, state, RECONNECT_SOCKET_TIMEOUT, reconnectMetrics);
+                TestPlatformContextBuilder.create().build(),
+                getStaticThreadManager(),
+                connection,
+                addressBook,
+                state,
+                RECONNECT_SOCKET_TIMEOUT,
+                reconnectMetrics);
     }
 }

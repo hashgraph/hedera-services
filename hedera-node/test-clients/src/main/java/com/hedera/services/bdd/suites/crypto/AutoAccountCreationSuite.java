@@ -35,6 +35,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.isEndOfStakingPeriodRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createDefaultContract;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -80,6 +81,7 @@ import static com.hederahashgraph.api.proto.java.TokenSupplyType.FINITE;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -568,7 +570,10 @@ public class AutoAccountCreationSuite extends HapiSuite {
     private HapiSpec canAutoCreateWithFungibleTokenTransfersToAlias() {
         final var initialTokenSupply = 1000;
         final var sameTokenXfer = "sameTokenXfer";
-        final long transferFee = 1163019L;
+        // The expected fee for two token transfers to a receiver with no auto-creation;
+        // note it is approximate because the fee will vary slightly with the size of
+        // the sig map, depending on the lengths of the public key prefixes required
+        final long approxTransferFee = 1163019L;
 
         return defaultHapiSpec("canAutoCreateWithFungibleTokenTransfersToAlias")
                 .given(
@@ -633,7 +638,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                             final var payer = spec.registry().getAccountID(CIVILIAN);
                             final var parent = lookup.getResponseRecord();
                             final var child = lookup.getChildRecord(0);
-                            assertAliasBalanceAndFeeInChildRecord(parent, child, sponsor, payer, 0L, transferFee);
+                            assertAliasBalanceAndFeeInChildRecord(parent, child, sponsor, payer, 0L, approxTransferFee);
                         }))
                 .then(
                         /* --- transfer another token to created alias */
@@ -1144,7 +1149,10 @@ public class AutoAccountCreationSuite extends HapiSuite {
                             final var sponsor = spec.registry().getAccountID(SPONSOR);
                             final var payer = spec.registry().getAccountID(PAYER);
                             final var parent = lookup.getResponseRecord();
-                            final var child = lookup.getChildRecord(0);
+                            var child = lookup.getChildRecord(0);
+                            if (isEndOfStakingPeriodRecord(child)) {
+                                child = lookup.getChildRecord(1);
+                            }
                             assertAliasBalanceAndFeeInChildRecord(
                                     parent, child, sponsor, payer, ONE_HUNDRED_HBARS + ONE_HBAR, transferFee);
                             creationTime.set(child.getConsensusTimestamp().getSeconds());
@@ -1168,7 +1176,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
             final AccountID sponsor,
             final AccountID defaultPayer,
             final long newAccountFunding,
-            final long transferFee) {
+            final long approxTransferFee) {
         long receivedBalance = 0;
         long creationFeeSplit = 0;
         long payerBalWithAutoCreationFee = 0;
@@ -1197,8 +1205,19 @@ public class AutoAccountCreationSuite extends HapiSuite {
             }
         }
         assertEquals(newAccountFunding, receivedBalance, "Transferred incorrect amount to alias");
-        assertEquals(
-                creationFeeSplit - transferFee, child.getTransactionFee(), "Child record did not specify deducted fee");
+        // The charged auto-creation fee is the total fee collected minus the transfer fee; but
+        // recall the transfer fee can vary a bit based on the size of the sig map, so we'll enforce
+        // just approximate equality with the fee in the child record
+        final var approxAutoCreationFee = creationFeeSplit - approxTransferFee;
+        final var recordFee = child.getTransactionFee();
+        // A single extra byte in the signature map will cost just ~40 tinybar more, so allowing
+        // a delta of 1000 tinybar is sufficient to stabilize this test indefinitely
+        final var permissibleDelta = 1000L;
+        final var observedDelta = Math.abs(approxAutoCreationFee - recordFee);
+        assertTrue(
+                observedDelta <= permissibleDelta,
+                "Child record did not specify the auto-creation fee (expected ~" + approxAutoCreationFee + " but was "
+                        + recordFee + ")");
         assertEquals(0, payerBalWithAutoCreationFee, "Auto creation fee is deducted from payer");
     }
 

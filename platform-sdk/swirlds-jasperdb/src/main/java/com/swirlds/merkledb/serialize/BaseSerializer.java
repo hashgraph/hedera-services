@@ -44,6 +44,18 @@ public interface BaseSerializer<T> {
     int getSerializedSize();
 
     /**
+     * For variable sized data items get the typical number of bytes an item takes when serialized.
+     *
+     * @return Either for fixed size same as getSerializedSize() or an estimated typical size
+     */
+    default int getTypicalSerializedSize() {
+        if (isVariableSize()) {
+            throw new IllegalStateException("Variable sized implementations have to override this method");
+        }
+        return getSerializedSize();
+    }
+
+    /**
      * Serialize a data item including header to the byte buffer returning the size of the data
      * written. Serialization format must be identical to {@link #deserialize(ByteBuffer, long)}.
      *

@@ -1572,6 +1572,7 @@ class ERC20PrecompilesTest {
                         .setCryptoTransfer(cryptoTransferTransactionBody)
                         .build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
+        given(mockSynthBodyBuilder.getCryptoTransferBuilder()).willReturn(CryptoTransferTransactionBody.newBuilder());
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.serviceFee()).willReturn(1L);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))

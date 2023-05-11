@@ -35,11 +35,15 @@ import com.hedera.node.app.HederaApp;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.service.mono.state.migration.StateChildIndices;
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
+import com.swirlds.common.context.DefaultPlatformContext;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.crypto.SerializablePublicKey;
 import com.swirlds.common.crypto.engine.CryptoEngine;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
@@ -147,6 +151,7 @@ class StateLifecyclesTest extends ResponsibleVMapUser {
 
     private static HederaApp createApp(final Platform platform) {
         return DaggerHederaApp.builder()
+                .initTrigger(InitTrigger.GENESIS)
                 .initialHash(new Hash())
                 .platform(platform)
                 .crypto(CryptographyHolder.get())
@@ -161,9 +166,13 @@ class StateLifecyclesTest extends ResponsibleVMapUser {
     }
 
     private static SignedState loadSignedState(final String path) throws IOException {
-        final var signedPair = SignedStateFileReader.readStateFile(Paths.get(path));
+        final PlatformContext platformContext = new DefaultPlatformContext(
+                ConfigurationHolder.getInstance().get(), new NoOpMetrics(), CryptographyHolder.get());
+        final var signedPair = SignedStateFileReader.readStateFile(platformContext, Paths.get(path));
         // Because it's possible we are loading old data, we cannot check equivalence of the hash.
-        Assertions.assertNotNull(signedPair.signedState());
-        return signedPair.signedState();
+        try (var reservedSignedState = signedPair.reservedSignedState()) {
+            Assertions.assertNotNull(reservedSignedState.get());
+            return reservedSignedState.get();
+        }
     }
 }

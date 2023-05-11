@@ -17,16 +17,14 @@
 package com.hedera.node.app;
 
 import static com.hedera.node.app.service.mono.ServicesState.EMPTY_HASH;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_FIRST_USER_ENTITY;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static com.hedera.node.app.service.mono.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
-import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_FIRST_USER_ENTITY;
-import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.grpc.GrpcServiceBuilder;
-import com.hedera.node.app.service.admin.FreezeService;
-import com.hedera.node.app.service.admin.impl.FreezeServiceImpl;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import com.hedera.node.app.service.contract.ContractService;
@@ -47,8 +45,10 @@ import com.hedera.node.app.service.mono.state.submerkle.SequenceNumber;
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.NamedDigestFactory;
-import com.hedera.node.app.service.network.NetworkService;
-import com.hedera.node.app.service.network.impl.NetworkServiceImpl;
+import com.hedera.node.app.service.networkadmin.FreezeService;
+import com.hedera.node.app.service.networkadmin.NetworkService;
+import com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl;
+import com.hedera.node.app.service.networkadmin.impl.NetworkServiceImpl;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
 import com.hedera.node.app.service.token.TokenService;
@@ -97,13 +97,35 @@ import java.util.concurrent.CountDownLatch;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/*
+ ****************        ****************************************************************************************
+ **********                    **********                                                                       *
+ *******                          *******                                                                       *
+ *****                              *****                                                                       *
+ ****                                ****      ___           ___           ___           ___           ___      *
+ **         HHHH          HHHH         **     /\  \         /\  \         /\  \         /\  \         /\  \     *
+ **         HHHH          HHHH         **    /::\  \       /::\  \       /::\  \       /::\  \       /::\  \    *
+ *          HHHHHHHHHHHHHHHHHH          *   /:/\:\  \     /:/\:\  \     /:/\:\  \     /:/\:\  \     /:/\:\  \   *
+            HHHHHHHHHHHHHHHHHH             /::\~\:\  \   /:/  \:\__\   /::\~\:\  \   /::\~\:\  \   /::\~\:\  \  *
+            HHHH          HHHH            /:/\:\ \:\__\ /:/__/ \:|__| /:/\:\ \:\__\ /:/\:\ \:\__\ /:/\:\ \:\__\ *
+            HHHHHHHHHHHHHHHHHH            \:\~\:\ \/__/ \:\  \ /:/  / \:\~\:\ \/__/ \/_|::\/:/  / \/__\:\/:/  / *
+ *          HHHHHHHHHHHHHHHHHH          *  \:\ \:\__\    \:\  /:/  /   \:\ \:\__\      |:|::/  /       \::/  /  *
+ **         HHHH          HHHH         **   \:\ \/__/     \:\/:/  /     \:\ \/__/      |:|\/__/        /:/  /   *
+ ***        HHHH          HHHH        ***    \:\__\        \::/__/       \:\__\        |:|  |         /:/  /    *
+ ****                                ****     \/__/         ~~            \/__/         \|__|         \/__/     *
+ ******                            ******                                                                       *
+ *********                      *********                                                                       *
+ ************                ************                                                                       *
+ ****************        ****************************************************************************************
+*/
+
 /**
  * Represents the Hedera Consensus Node.
  *
  * <p>This is the main entry point for the Hedera Consensus Node. It contains initialization logic for the
- * node, including its state. It constructs some artifacts for gluing the mono-service with the modular
- * service infrastructure. It constructs the Dagger dependency tree, and manages the gRPC server, and in all
- * other ways, controls execution of the node. If you want to understand our system, this is a great place to start!
+ * node, including its state. It constructs some artifacts for gluing the mono-service with the modular service
+ * infrastructure. It constructs the Dagger dependency tree, and manages the gRPC server, and in all other ways,
+ * controls execution of the node. If you want to understand our system, this is a great place to start!
  */
 public final class Hedera implements SwirldMain {
     private static final Logger logger = LogManager.getLogger(Hedera.class);
@@ -113,8 +135,8 @@ public final class Hedera implements SwirldMain {
     /**
      * Defines the registration information for a service.
      *
-     * @param name The name of the service.
-     * @param service The service implementation itself.
+     * @param name     The name of the service.
+     * @param service  The service implementation itself.
      * @param registry The {@link MerkleSchemaRegistry} with which the service registers its schemas.
      */
     private record ServiceRegistration(
@@ -134,9 +156,9 @@ public final class Hedera implements SwirldMain {
     private StateChildrenProvider stateChildren;
 
     /**
-     * Dependencies managed by Dagger. Set during state initialization. The mono-service requires this object,
-     * but none of the rest of the system (and particularly the modular implementation) uses it directly. Rather,
-     * it is created and used to initialize the system, and more concrete dependencies are used from there.
+     * Dependencies managed by Dagger. Set during state initialization. The mono-service requires this object, but none
+     * of the rest of the system (and particularly the modular implementation) uses it directly. Rather, it is created
+     * and used to initialize the system, and more concrete dependencies are used from there.
      */
     private HederaApp daggerApp;
 
@@ -150,7 +172,7 @@ public final class Hedera implements SwirldMain {
      * Create a new Hedera instance.
      *
      * @param constructableRegistry The registry to use during the deserialization process
-     * @param bootstrapProps The bootstrap properties
+     * @param bootstrapProps        The bootstrap properties
      */
     Hedera(
             @NonNull final ConstructableRegistry constructableRegistry,
@@ -179,16 +201,15 @@ public final class Hedera implements SwirldMain {
             logger.debug("Register MerkleHederaState with ConstructableRegistry");
             constructableRegistry.registerConstructable(
                     new ClassConstructorPair(MerkleHederaState.class, this::newState));
-        } catch (ConstructableRegistryException e) {
+        } catch (final ConstructableRegistryException e) {
             logger.error("Failed to register MerkleHederaState with ConstructableRegistry", e);
             throw new RuntimeException(e);
         }
     }
 
     /**
-     * Create all service implementations and register their schemas. Return these as a map of
-     * service name to {@link ServiceRegistration}. Later, when we migrate, we will use this map
-     * to migrate each service to its latest schema.
+     * Create all service implementations and register their schemas. Return these as a map of service name to {@link
+     * ServiceRegistration}. Later, when we migrate, we will use this map to migrate each service to its latest schema.
      */
     private Map<String, ServiceRegistration> createServicesRegistry(
             @NonNull final ConstructableRegistry constructableRegistry, @Nullable final Path storageDir) {
@@ -217,10 +238,9 @@ public final class Hedera implements SwirldMain {
 
     /**
      * {@inheritDoc}
-     *
-     * Called immediately after the constructor to get the version of this software.
-     * In an upgrade scenario, this version will be greater than the one in the saved
-     * state.
+     * <p>
+     * Called immediately after the constructor to get the version of this software. In an upgrade scenario, this
+     * version will be greater than the one in the saved state.
      *
      * @return The software version.
      */
@@ -238,10 +258,9 @@ public final class Hedera implements SwirldMain {
 
     /**
      * {@inheritDoc}
-     *
-     * Called by the platform <b>ONLY</b> during genesis (that is, if there is no saved state). However,
-     * it is also called indirectly by {@link ConstructableRegistry} due to registration in this class'
-     * constructor.
+     * <p>
+     * Called by the platform <b>ONLY</b> during genesis (that is, if there is no saved state). However, it is also
+     * called indirectly by {@link ConstructableRegistry} due to registration in this class' constructor.
      *
      * @return A new {@link SwirldState} instance.
      */
@@ -259,8 +278,8 @@ public final class Hedera implements SwirldMain {
     =================================================================================================================*/
 
     /**
-     * Invoked by the platform when the state should be initialized. This happens <b>BEFORE</b>
-     * {@link #init(Platform, NodeId)} and after {@link #newState()}.
+     * Invoked by the platform when the state should be initialized. This happens <b>BEFORE</b> {@link #init(Platform,
+     * NodeId)} and after {@link #newState()}.
      */
     private void onStateInitialized(
             @NonNull final MerkleHederaState state,
@@ -323,10 +342,10 @@ public final class Hedera implements SwirldMain {
 
     /**
      * {@inheritDoc}
-     *
-     * Called <b>AFTER</b> init and migrate have been called on the state (either the new state
-     * created from {@link #newState()} or an instance of {@link MerkleHederaState} created by
-     * the platform and loaded from the saved state).
+     * <p>
+     * Called <b>AFTER</b> init and migrate have been called on the state (either the new state created from {@link
+     * #newState()} or an instance of {@link MerkleHederaState} created by the platform and loaded from the saved
+     * state).
      */
     @Override
     public void init(@NonNull final Platform platform, @NonNull final NodeId nodeId) {
@@ -423,7 +442,7 @@ public final class Hedera implements SwirldMain {
 
     /**
      * {@inheritDoc}
-     *
+     * <p>
      * Called by the platform after <b>ALL</b> initialization to start the gRPC servers and begin operation.
      */
     @Override
@@ -492,6 +511,7 @@ public final class Hedera implements SwirldMain {
     private void onHandleConsensusRound(
             @NonNull final Round round, @NonNull final SwirldDualState dualState, @NonNull final HederaState state) {
         // TBD: The handle workflow should be created by dagger and just be something we can delegate to here.
+        daggerApp.mutableState().set(state);
         daggerApp.dualStateAccessor().setDualState(dualState);
         daggerApp.workingStateAccessor().setHederaState(state);
         daggerApp.logic().incorporateConsensus(round);
@@ -531,7 +551,7 @@ public final class Hedera implements SwirldMain {
         createSpecialGenesisChildren(state, platform.getAddressBook(), seqStart);
 
         // Now that we have the state created, we are ready to create the dependency graph with Dagger
-        initializeDagger(state);
+        initializeDagger(state, InitTrigger.GENESIS);
 
         // Store the version in state (ideally this would move to be something that is done when the
         // network service runs its schema migration)
@@ -562,11 +582,10 @@ public final class Hedera implements SwirldMain {
      * Create the special children of the root node that are needed for genesis.
      *
      * <p>It would be good to see if we can break this logic up and have it be part of the individual
-     * modules. For example, it would be good if the first Schema version in NetworkServices would
-     * put this genesis state into place. However, for to that work, we need to make some information
-     * available at migration, such as the initial sequence number and the address book. We either
-     * have to make that information globally available to services, or we need to have Dagger injection for
-     * schemas to provide ad-hoc dependencies.
+     * modules. For example, it would be good if the first Schema version in NetworkServices would put this genesis
+     * state into place. However, for to that work, we need to make some information available at migration, such as the
+     * initial sequence number and the address book. We either have to make that information globally available to
+     * services, or we need to have Dagger injection for schemas to provide ad-hoc dependencies.
      */
     private void createSpecialGenesisChildren(
             @NonNull final MerkleHederaState state, @NonNull final AddressBook addressBook, final long seqStart) {
@@ -605,8 +624,8 @@ public final class Hedera implements SwirldMain {
             final BootstrapProperties bootstrapProperties,
             final WritableKVState<EntityNum, MerkleStakingInfo> stakingInfos) {
         final var numberOfNodes = addressBook.getSize();
-        long maxStakePerNode = bootstrapProperties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT) / numberOfNodes;
-        long minStakePerNode = maxStakePerNode / 2;
+        final long maxStakePerNode = bootstrapProperties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT) / numberOfNodes;
+        final long minStakePerNode = maxStakePerNode / 2;
         for (int i = 0; i < numberOfNodes; i++) {
             final var nodeNum = EntityNum.fromLong(addressBook.getAddress(i).getId());
             final var info = new MerkleStakingInfo(bootstrapProperties);
@@ -637,7 +656,7 @@ public final class Hedera implements SwirldMain {
         }
 
         // Now that we have the state created, we are ready to create the all the dagger dependencies
-        initializeDagger(state);
+        initializeDagger(state, InitTrigger.RESTART);
 
         // We may still want to change the address book without an upgrade. But note
         // that without a dynamic address book, this MUST be a no-op during reconnect.
@@ -688,7 +707,7 @@ public final class Hedera implements SwirldMain {
     *
     =================================================================================================================*/
 
-    private void initializeDagger(@NonNull final MerkleHederaState state) {
+    private void initializeDagger(@NonNull final MerkleHederaState state, @NonNull final InitTrigger trigger) {
         logger.debug("Initializing dagger");
         final var selfId = platform.getSelfId().getId();
         if (daggerApp == null) {
@@ -699,6 +718,7 @@ public final class Hedera implements SwirldMain {
                     stateChildren.runningHashLeaf().getRunningHash().getHash();
             // Fully qualified so as to not confuse javadoc
             daggerApp = com.hedera.node.app.DaggerHederaApp.builder()
+                    .initTrigger(trigger)
                     .staticAccountMemo(nodeAddress.getMemo())
                     .bootstrapProps(bootstrapProps)
                     .initialHash(initialHash)
@@ -711,7 +731,7 @@ public final class Hedera implements SwirldMain {
         }
     }
 
-    private void updateDualState(SwirldDualState dualState) {
+    private void updateDualState(final SwirldDualState dualState) {
         daggerApp.dualStateAccessor().setDualState(dualState);
         logger.info(
                 "Dual state includes freeze time={} and last frozen={}",
@@ -719,11 +739,11 @@ public final class Hedera implements SwirldMain {
                 dualState.getLastFrozenTime());
     }
 
-    private boolean isUpgrade(SerializableSemVers deployedVersion, SoftwareVersion deserializedVersion) {
+    private boolean isUpgrade(final SerializableSemVers deployedVersion, final SoftwareVersion deserializedVersion) {
         return deployedVersion.isAfter(deserializedVersion);
     }
 
-    private boolean isDowngrade(SerializableSemVers deployedVersion, SoftwareVersion deserializedVersion) {
+    private boolean isDowngrade(final SerializableSemVers deployedVersion, final SoftwareVersion deserializedVersion) {
         return deployedVersion.isBefore(deserializedVersion);
     }
 

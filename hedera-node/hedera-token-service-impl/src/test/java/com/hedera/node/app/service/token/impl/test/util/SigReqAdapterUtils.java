@@ -73,9 +73,9 @@ import static com.hedera.test.factories.txns.SignedTxnFactory.TREASURY_PAYER;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.AccountCryptoAllowance;
 import com.hedera.hapi.node.state.token.AccountFungibleTokenAllowance;
-import com.hedera.hapi.node.state.token.AccountTokenAllowance;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -83,8 +83,9 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
-import com.hedera.node.app.service.token.impl.ReadableAccountStore;
-import com.hedera.node.app.service.token.impl.ReadableTokenStore;
+import com.hedera.node.app.service.token.ReadableTokenStore;
+import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
+import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -101,20 +102,18 @@ public class SigReqAdapterUtils {
     private static final String ACCOUNTS_KEY = "ACCOUNTS";
 
     private static AccountCryptoAllowance cryptoAllowances = AccountCryptoAllowance.newBuilder()
-            .accountNum(DEFAULT_PAYER.getAccountNum())
+            .spenderNum(DEFAULT_PAYER.getAccountNum())
             .amount(500L)
             .build();
     private static AccountFungibleTokenAllowance fungibleTokenAllowances = AccountFungibleTokenAllowance.newBuilder()
-            .tokenAllowanceKey(AccountTokenAllowance.newBuilder()
-                    .tokenNum(KNOWN_TOKEN_NO_SPECIAL_KEYS.getTokenNum())
-                    .accountNum(DEFAULT_PAYER.getAccountNum())
-                    .build())
+            .tokenNum(KNOWN_TOKEN_NO_SPECIAL_KEYS.getTokenNum())
+            .spenderNum(DEFAULT_PAYER.getAccountNum())
             .amount(10_000L)
             .build();
 
-    private static AccountTokenAllowance nftAllowances = AccountTokenAllowance.newBuilder()
+    private static AccountApprovalForAllAllowance nftAllowances = AccountApprovalForAllAllowance.newBuilder()
             .tokenNum(KNOWN_TOKEN_WITH_WIPE.getTokenNum())
-            .accountNum(DEFAULT_PAYER.getAccountNum())
+            .spenderNum(DEFAULT_PAYER.getAccountNum())
             .build();
 
     /**
@@ -140,10 +139,10 @@ public class SigReqAdapterUtils {
                 .forEach(id -> destination.put(EntityNum.fromLong(id.tokenNum()), asToken(source.get(fromPbj(id)))));
         final var wrappedState = new MapReadableKVState<>("TOKENS", destination);
         final var state = new StateKeyAdapter<>(wrappedState, Function.identity());
-        return new ReadableTokenStore(mockStates(Map.of(TOKENS_KEY, state)));
+        return new ReadableTokenStoreImpl(mockStates(Map.of(TOKENS_KEY, state)));
     }
 
-    public static ReadableAccountStore wellKnownAccountStoreAt() {
+    public static ReadableAccountStoreImpl wellKnownAccountStoreAt() {
         final var destination = new HashMap<EntityNumVirtualKey, Account>();
         destination.put(
                 EntityNumVirtualKey.fromLong(FIRST_TOKEN_SENDER.getAccountNum()),
@@ -219,7 +218,7 @@ public class SigReqAdapterUtils {
                 EntityNumVirtualKey.fromLong(FROM_OVERLAP_PAYER.getAccountNum()),
                 toPbjAccount(FROM_OVERLAP_PAYER.getAccountNum(), FROM_OVERLAP_PAYER_KT.asPbjKey(), DEFAULT_BALANCE));
         final var wrappedState = new MapReadableKVState<>(ACCOUNTS_KEY, destination);
-        return new ReadableAccountStore(
+        return new ReadableAccountStoreImpl(
                 mockStates(Map.of(ACCOUNTS_KEY, wrappedState, ALIASES_KEY, wellKnownAliasState())));
     }
 
@@ -239,7 +238,7 @@ public class SigReqAdapterUtils {
             boolean receiverSigRequired,
             List<AccountCryptoAllowance> cryptoAllowances,
             List<AccountFungibleTokenAllowance> fungibleTokenAllowances,
-            List<AccountTokenAllowance> nftTokenAllowances) {
+            List<AccountApprovalForAllAllowance> nftTokenAllowances) {
         return new Account(
                 number,
                 Bytes.EMPTY,
@@ -271,7 +270,8 @@ public class SigReqAdapterUtils {
                 nftTokenAllowances,
                 fungibleTokenAllowances,
                 2,
-                false);
+                false,
+                null);
     }
 
     @SuppressWarnings("java:S1604")

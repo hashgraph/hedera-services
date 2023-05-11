@@ -19,18 +19,19 @@ package com.swirlds.platform.test.event.preconsensus;
 import static com.swirlds.platform.test.event.preconsensus.AsyncPreConsensusEventWriterTests.buildGraphGenerator;
 import static com.swirlds.platform.test.event.preconsensus.AsyncPreConsensusEventWriterTests.verifyStream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.context.internal.DefaultPlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.test.RandomUtils;
-import com.swirlds.common.test.metrics.NoOpMetrics;
 import com.swirlds.common.time.OSTime;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventFile;
@@ -46,13 +47,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
-import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -125,6 +123,7 @@ class SyncPreConsensusEventWriterTests {
         final PreConsensusEventWriter writer = new SyncPreConsensusEventWriter(platformContext, fileManager);
 
         writer.start();
+        writer.beginStreamingNewEvents();
 
         long minimumGenerationNonAncient = 0;
         final Iterator<EventImpl> iterator = events.iterator();
@@ -146,140 +145,8 @@ class SyncPreConsensusEventWriterTests {
             writer.writeEvent(event);
         }
 
-        writer.requestFlush(events.get(events.size() - 1));
+        writer.requestFlush();
 
-        assertTrue(writer.waitUntilDurable(events.get(events.size() - 1), Duration.ofSeconds(1)));
-        assertTrue(writer.isEventDurable(events.get(events.size() - 1)));
-
-        verifyStream(events, platformContext, 0);
-
-        writer.stop();
-    }
-
-    @Test
-    @DisplayName("Multiple Flushes Test")
-    void multipleFlushesTest() throws IOException, InterruptedException {
-        final Random random = RandomUtils.getRandomPrintSeed();
-
-        final int numEvents = 1_000;
-        final int generationsUntilAncient = random.nextInt(50, 100);
-
-        final StandardGraphGenerator generator = buildGraphGenerator(random);
-        final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
-
-        final List<EventImpl> events = new LinkedList<>();
-        final List<Integer> flushIndexes = new LinkedList<>();
-        final Set<EventImpl> flushSet = new HashSet<>();
-        for (int i = 0; i < numEvents; i++) {
-            final EventImpl event = generator.generateEvent().convertToEventImpl();
-            events.add(event);
-            sequencer.assignStreamSequenceNumber(event);
-            if (i % 100 == 0) {
-                flushIndexes.add(i);
-                flushSet.add(event);
-            }
-        }
-
-        final PlatformContext platformContext = buildContext();
-
-        final PreConsensusEventFileManager fileManager =
-                new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), 0);
-
-        final PreConsensusEventWriter writer = new SyncPreConsensusEventWriter(platformContext, fileManager);
-
-        for (final int flushIndex : flushIndexes) {
-            writer.requestFlush(events.get(flushIndex));
-        }
-
-        writer.start();
-
-        long minimumGenerationNonAncient = 0;
-        final Iterator<EventImpl> iterator = events.iterator();
-        while (iterator.hasNext()) {
-            final EventImpl event = iterator.next();
-            minimumGenerationNonAncient =
-                    Math.max(minimumGenerationNonAncient, event.getGeneration() - generationsUntilAncient);
-            writer.setMinimumGenerationNonAncient(minimumGenerationNonAncient);
-
-            writer.writeEvent(event);
-
-            if (event.getGeneration() < minimumGenerationNonAncient) {
-                // Although it's not common, it's actually possible that the generator will generate
-                // an event that is ancient (since it isn't aware of what we consider to be ancient)
-                iterator.remove();
-            } else if (flushSet.contains(event)) {
-                assertTrue(writer.isEventDurable(event));
-            }
-        }
-
-        writer.requestFlush(events.get(events.size() - 1));
-        assertTrue(writer.waitUntilDurable(events.get(events.size() - 1), Duration.ofSeconds(1)));
-        assertTrue(writer.isEventDurable(events.get(events.size() - 1)));
-
-        verifyStream(events, platformContext, 0);
-
-        writer.stop();
-    }
-
-    @Test
-    @DisplayName("Out Of Order Flushes Test")
-    void outOfOrderFlushesTest() throws IOException, InterruptedException {
-        final Random random = RandomUtils.getRandomPrintSeed();
-
-        final int numEvents = 1_000;
-        final int generationsUntilAncient = random.nextInt(50, 100);
-
-        final StandardGraphGenerator generator = buildGraphGenerator(random);
-        final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
-
-        final List<EventImpl> events = new LinkedList<>();
-        final List<Integer> flushIndexes = new LinkedList<>();
-        final Set<EventImpl> flushSet = new HashSet<>();
-        for (int i = 0; i < numEvents; i++) {
-            final EventImpl event = generator.generateEvent().convertToEventImpl();
-            events.add(event);
-            sequencer.assignStreamSequenceNumber(event);
-            if (i % 100 == 0) {
-                flushIndexes.add(i);
-                flushSet.add(event);
-            }
-        }
-
-        Collections.shuffle(flushIndexes, random);
-
-        final PlatformContext platformContext = buildContext();
-
-        final PreConsensusEventFileManager fileManager =
-                new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), 0);
-
-        final PreConsensusEventWriter writer = new SyncPreConsensusEventWriter(platformContext, fileManager);
-
-        for (final int flushIndex : flushIndexes) {
-            writer.requestFlush(events.get(flushIndex));
-        }
-
-        writer.start();
-
-        long minimumGenerationNonAncient = 0;
-        final Iterator<EventImpl> iterator = events.iterator();
-        while (iterator.hasNext()) {
-            final EventImpl event = iterator.next();
-            minimumGenerationNonAncient =
-                    Math.max(minimumGenerationNonAncient, event.getGeneration() - generationsUntilAncient);
-            writer.setMinimumGenerationNonAncient(minimumGenerationNonAncient);
-
-            writer.writeEvent(event);
-
-            if (event.getGeneration() < minimumGenerationNonAncient) {
-                // Although it's not common, it's actually possible that the generator will generate
-                // an event that is ancient (since it isn't aware of what we consider to be ancient)
-                iterator.remove();
-            } else if (flushSet.contains(event)) {
-                assertTrue(writer.isEventDurable(event));
-            }
-        }
-
-        writer.requestFlush(events.get(events.size() - 1));
         assertTrue(writer.waitUntilDurable(events.get(events.size() - 1), Duration.ofSeconds(1)));
         assertTrue(writer.isEventDurable(events.get(events.size() - 1)));
 
@@ -312,6 +179,7 @@ class SyncPreConsensusEventWriterTests {
         final PreConsensusEventWriter writer = new SyncPreConsensusEventWriter(platformContext, fileManager);
 
         writer.start();
+        writer.beginStreamingNewEvents();
 
         long minimumGenerationNonAncient = 0;
         final Iterator<EventImpl> iterator = events.iterator();
@@ -367,6 +235,7 @@ class SyncPreConsensusEventWriterTests {
         final PreConsensusEventWriter writer = new SyncPreConsensusEventWriter(platformContext, fileManager);
 
         writer.start();
+        writer.beginStreamingNewEvents();
 
         long minimumGenerationNonAncient = 0;
         final Iterator<EventImpl> iterator = events.iterator();
@@ -402,7 +271,7 @@ class SyncPreConsensusEventWriterTests {
         writer.writeEvent(ancientEvent);
         assertEquals(EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER, ancientEvent.getStreamSequenceNumber());
 
-        writer.requestFlush(events.get(events.size() - 1));
+        writer.requestFlush();
 
         assertTrue(writer.waitUntilDurable(events.get(events.size() - 1), Duration.ofSeconds(1)));
         assertTrue(writer.isEventDurable(events.get(events.size() - 1)));
@@ -439,6 +308,7 @@ class SyncPreConsensusEventWriterTests {
         final PreConsensusEventWriter writer = new SyncPreConsensusEventWriter(platformContext, fileManager);
 
         writer.start();
+        writer.beginStreamingNewEvents();
 
         for (final EventImpl event : events) {
             sequencer.assignStreamSequenceNumber(event);
@@ -455,5 +325,57 @@ class SyncPreConsensusEventWriterTests {
             final PreConsensusEventFile file = it.next();
             assertEquals(0, file.minimumGeneration());
         }
+    }
+
+    @Test
+    @DisplayName("beginStreamingEvents() Test")
+    void beginStreamingEventsTest() throws IOException, InterruptedException {
+        final Random random = RandomUtils.getRandomPrintSeed();
+
+        final int numEvents = 1_000;
+        final int generationsUntilAncient = random.nextInt(50, 100);
+
+        final StandardGraphGenerator generator = buildGraphGenerator(random);
+
+        final List<EventImpl> events = new LinkedList<>();
+        for (int i = 0; i < numEvents; i++) {
+            events.add(generator.generateEvent().convertToEventImpl());
+        }
+
+        final PlatformContext platformContext = buildContext();
+
+        final PreConsensusEventFileManager fileManager =
+                new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), 0);
+
+        final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
+        final PreConsensusEventWriter writer = new SyncPreConsensusEventWriter(platformContext, fileManager);
+
+        writer.start();
+
+        // We intentionally do not call writer.beginStreamingNewEvents(). This should cause all events
+        // passed into the writer to be more or less ignored.
+
+        long minimumGenerationNonAncient = 0;
+        for (EventImpl event : events) {
+            sequencer.assignStreamSequenceNumber(event);
+
+            minimumGenerationNonAncient =
+                    Math.max(minimumGenerationNonAncient, event.getGeneration() - generationsUntilAncient);
+            writer.setMinimumGenerationNonAncient(minimumGenerationNonAncient);
+
+            writer.writeEvent(event);
+        }
+
+        writer.requestFlush();
+
+        assertTrue(writer.waitUntilDurable(events.get(events.size() - 1), Duration.ofSeconds(1)));
+        assertTrue(writer.isEventDurable(events.get(events.size() - 1)));
+
+        // We shouldn't find any events in the stream.
+        assertFalse(() -> fileManager
+                .getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION)
+                .hasNext());
+
+        writer.stop();
     }
 }

@@ -19,67 +19,61 @@ package com.hedera.node.app.workflows.dispatcher;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.consensus.ConsensusCreateTopicTransactionBody;
 import com.hedera.hapi.node.consensus.ConsensusDeleteTopicTransactionBody;
 import com.hedera.hapi.node.consensus.ConsensusUpdateTopicTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.admin.impl.ReadableSpecialFileStore;
-import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
-import com.hedera.node.app.service.token.CryptoSignatureWaivers;
-import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
-import com.hedera.node.app.service.token.impl.ReadableAccountStore;
-import com.hedera.node.app.service.token.impl.ReadableTokenStore;
+import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.service.util.impl.config.PrngConfig;
+import com.hedera.node.app.service.util.records.PrngRecordBuilder;
 import com.hedera.node.app.spi.meta.HandleContext;
-import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * A {@code TransactionDispatcher} provides functionality to forward pre-check, pre-handle, and
- * handle-transaction requests to the appropriate handler
+ * A {@code TransactionDispatcher} provides functionality to forward pre-check, pre-handle, and handle-transaction
+ * requests to the appropriate handler
  *
  * <p>For handle, mostly just supports the limited form of the Consensus Service handlers
- * described in https://github.com/hashgraph/hedera-services/issues/4945, while still trying to
- * make a bit of progress toward the general implementation.
+ * described in https://github.com/hashgraph/hedera-services/issues/4945, while still trying to make a bit of progress
+ * toward the general implementation.
  */
 @Singleton
 public class TransactionDispatcher {
     public static final String TYPE_NOT_SUPPORTED = "This transaction type is not supported";
     private final HandleContext handleContext;
     private final TransactionHandlers handlers;
-    private final CryptoSignatureWaivers cryptoSignatureWaivers;
     private final GlobalDynamicProperties dynamicProperties;
 
     /**
      * Creates a {@code TransactionDispatcher}.
      *
-     * @param handleContext     the context of the handle workflow
-     * @param handlers          the handlers for all transaction types
-     * @param accountNumbers    the account numbers of the system
+     * @param handleContext the context of the handle workflow
+     * @param handlers the handlers for all transaction types
      * @param dynamicProperties the dynamic properties of the system
      */
     @Inject
     public TransactionDispatcher(
             @NonNull final HandleContext handleContext,
             @NonNull final TransactionHandlers handlers,
-            @NonNull final HederaAccountNumbers accountNumbers,
             @NonNull final GlobalDynamicProperties dynamicProperties) {
         this.handlers = requireNonNull(handlers);
         this.handleContext = requireNonNull(handleContext);
         this.dynamicProperties = requireNonNull(dynamicProperties);
-        this.cryptoSignatureWaivers = new CryptoSignatureWaiversImpl(requireNonNull(accountNumbers));
     }
 
     /**
@@ -87,8 +81,7 @@ public class TransactionDispatcher {
      *
      * <p>This will not be final signature of the dispatch method, since as per
      * <a href="https://github.com/hashgraph/hedera-services/issues/4945">issue #4945</a>, we are currently
-     * just adapting the last step of mono-service "workflow"; and only for
-     * Consensus Service transactions.
+     * just adapting the last step of mono-service "workflow"; and only for Consensus Service transactions.
      *
      * @param function the type of the consensus service transaction
      * @param txn the consensus transaction to be handled
@@ -110,15 +103,19 @@ public class TransactionDispatcher {
                     txn, writableStoreFactory.createTopicStore());
             case TOKEN_GRANT_KYC_TO_ACCOUNT -> dispatchTokenGrantKycToAccount(
                     txn, writableStoreFactory.createTokenRelStore());
+            case TOKEN_REVOKE_KYC_FROM_ACCOUNT -> dispatchTokenRevokeKycFromAccount(
+                    txn, writableStoreFactory.createTokenRelStore());
             case TOKEN_PAUSE -> dispatchTokenPause(txn, writableStoreFactory.createTokenStore());
             case TOKEN_UNPAUSE -> dispatchTokenUnpause(txn, writableStoreFactory.createTokenStore());
+            case CRYPTO_CREATE -> dispatchCryptoCreate(txn, writableStoreFactory.createAccountStore());
+            case UTIL_PRNG -> dispatchPrng(txn);
             default -> throw new IllegalArgumentException(TYPE_NOT_SUPPORTED);
         }
     }
 
     /**
-     * Dispatch a pre-handle request. It is forwarded to the correct handler, which takes care of
-     * the specific functionality
+     * Dispatch a pre-handle request. It is forwarded to the correct handler, which takes care of the specific
+     * functionality
      *
      * @param context the context of the pre-handle workflow
      * @throws NullPointerException if one of the arguments is {@code null}
@@ -127,102 +124,81 @@ public class TransactionDispatcher {
     public void dispatchPreHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context, "The supplied argument 'context' cannot be null!");
 
-        final var txBody = context.body();
-        switch (txBody.data().kind()) {
-            case CONSENSUS_CREATE_TOPIC -> handlers.consensusCreateTopicHandler()
-                    .preHandle(context);
-            case CONSENSUS_UPDATE_TOPIC -> handlers.consensusUpdateTopicHandler()
-                    .preHandle(context, context.createStore(ReadableTopicStore.class));
-            case CONSENSUS_DELETE_TOPIC -> handlers.consensusDeleteTopicHandler()
-                    .preHandle(context, context.createStore(ReadableTopicStore.class));
-            case CONSENSUS_SUBMIT_MESSAGE -> handlers.consensusSubmitMessageHandler()
-                    .preHandle(context, context.createStore(ReadableTopicStore.class));
+        try {
+            final var handler = getHandler(context.body());
+            handler.preHandle(context);
+        } catch (UnsupportedOperationException ex) {
+            throw new PreCheckException(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
+        }
+    }
 
-            case CONTRACT_CREATE_INSTANCE -> handlers.contractCreateHandler().preHandle(context);
-            case CONTRACT_UPDATE_INSTANCE -> handlers.contractUpdateHandler().preHandle(context);
-            case CONTRACT_CALL -> handlers.contractCallHandler().preHandle(context);
-            case CONTRACT_DELETE_INSTANCE -> handlers.contractDeleteHandler().preHandle(context);
-            case ETHEREUM_TRANSACTION -> handlers.etherumTransactionHandler().preHandle(context);
+    @NonNull
+    private TransactionHandler getHandler(@NonNull final TransactionBody txBody) {
+        return switch (txBody.data().kind()) {
+            case CONSENSUS_CREATE_TOPIC -> handlers.consensusCreateTopicHandler();
+            case CONSENSUS_UPDATE_TOPIC -> handlers.consensusUpdateTopicHandler();
+            case CONSENSUS_DELETE_TOPIC -> handlers.consensusDeleteTopicHandler();
+            case CONSENSUS_SUBMIT_MESSAGE -> handlers.consensusSubmitMessageHandler();
 
-            case CRYPTO_CREATE_ACCOUNT -> handlers.cryptoCreateHandler().preHandle(context);
-            case CRYPTO_UPDATE_ACCOUNT -> handlers.cryptoUpdateHandler().preHandle(context, cryptoSignatureWaivers);
-            case CRYPTO_TRANSFER -> handlers.cryptoTransferHandler()
-                    .preHandle(
-                            context,
-                            context.createStore(ReadableAccountStore.class),
-                            context.createStore(ReadableTokenStore.class));
-            case CRYPTO_DELETE -> handlers.cryptoDeleteHandler().preHandle(context);
-            case CRYPTO_APPROVE_ALLOWANCE -> handlers.cryptoApproveAllowanceHandler()
-                    .preHandle(context);
-            case CRYPTO_DELETE_ALLOWANCE -> handlers.cryptoDeleteAllowanceHandler()
-                    .preHandle(context);
-            case CRYPTO_ADD_LIVE_HASH -> handlers.cryptoAddLiveHashHandler().preHandle(context);
-            case CRYPTO_DELETE_LIVE_HASH -> handlers.cryptoDeleteLiveHashHandler()
-                    .preHandle(context);
+            case CONTRACT_CREATE_INSTANCE -> handlers.contractCreateHandler();
+            case CONTRACT_UPDATE_INSTANCE -> handlers.contractUpdateHandler();
+            case CONTRACT_CALL -> handlers.contractCallHandler();
+            case CONTRACT_DELETE_INSTANCE -> handlers.contractDeleteHandler();
+            case ETHEREUM_TRANSACTION -> handlers.etherumTransactionHandler();
 
-            case FILE_CREATE -> handlers.fileCreateHandler().preHandle(context);
-            case FILE_UPDATE -> handlers.fileUpdateHandler().preHandle(context);
-            case FILE_DELETE -> handlers.fileDeleteHandler().preHandle(context);
-            case FILE_APPEND -> handlers.fileAppendHandler().preHandle(context);
+            case CRYPTO_CREATE_ACCOUNT -> handlers.cryptoCreateHandler();
+            case CRYPTO_UPDATE_ACCOUNT -> handlers.cryptoUpdateHandler();
+            case CRYPTO_TRANSFER -> handlers.cryptoTransferHandler();
+            case CRYPTO_DELETE -> handlers.cryptoDeleteHandler();
+            case CRYPTO_APPROVE_ALLOWANCE -> handlers.cryptoApproveAllowanceHandler();
+            case CRYPTO_DELETE_ALLOWANCE -> handlers.cryptoDeleteAllowanceHandler();
+            case CRYPTO_ADD_LIVE_HASH -> handlers.cryptoAddLiveHashHandler();
+            case CRYPTO_DELETE_LIVE_HASH -> handlers.cryptoDeleteLiveHashHandler();
 
-            case FREEZE -> handlers.freezeHandler()
-                    .preHandle(context, context.createStore(ReadableSpecialFileStore.class));
+            case FILE_CREATE -> handlers.fileCreateHandler();
+            case FILE_UPDATE -> handlers.fileUpdateHandler();
+            case FILE_DELETE -> handlers.fileDeleteHandler();
+            case FILE_APPEND -> handlers.fileAppendHandler();
 
-            case UNCHECKED_SUBMIT -> handlers.networkUncheckedSubmitHandler().preHandle(context);
+            case FREEZE -> handlers.freezeHandler();
 
-            case SCHEDULE_CREATE -> handlers.scheduleCreateHandler().preHandle(context, this::dispatchPreHandle);
-            case SCHEDULE_SIGN -> handlers.scheduleSignHandler()
-                    .preHandle(context, context.createStore(ReadableScheduleStore.class), this::dispatchPreHandle);
-            case SCHEDULE_DELETE -> handlers.scheduleDeleteHandler()
-                    .preHandle(context, context.createStore(ReadableScheduleStore.class));
-            case TOKEN_CREATION -> handlers.tokenCreateHandler().preHandle(context);
-            case TOKEN_UPDATE -> handlers.tokenUpdateHandler()
-                    .preHandle(context, context.createStore(ReadableTokenStore.class));
-            case TOKEN_MINT -> handlers.tokenMintHandler()
-                    .preHandle(context, context.createStore(ReadableTokenStore.class));
-            case TOKEN_BURN -> handlers.tokenBurnHandler()
-                    .preHandle(context, context.createStore(ReadableTokenStore.class));
-            case TOKEN_DELETION -> handlers.tokenDeleteHandler()
-                    .preHandle(context, context.createStore(ReadableTokenStore.class));
-            case TOKEN_WIPE -> handlers.tokenAccountWipeHandler()
-                    .preHandle(context, context.createStore(ReadableTokenStore.class));
-            case TOKEN_FREEZE -> handlers.tokenFreezeAccountHandler()
-                    .preHandle(context, context.createStore(ReadableTokenStore.class));
-            case TOKEN_UNFREEZE -> handlers.tokenUnfreezeAccountHandler()
-                    .preHandle(context, context.createStore(ReadableTokenStore.class));
-            case TOKEN_GRANT_KYC -> handlers.tokenGrantKycToAccountHandler()
-                    .preHandle(context, context.createStore(ReadableTokenStore.class));
-            case TOKEN_REVOKE_KYC -> handlers.tokenRevokeKycFromAccountHandler()
-                    .preHandle(context, context.createStore(ReadableTokenStore.class));
-            case TOKEN_ASSOCIATE -> handlers.tokenAssociateToAccountHandler().preHandle(context);
-            case TOKEN_DISSOCIATE -> handlers.tokenDissociateFromAccountHandler()
-                    .preHandle(context);
-            case TOKEN_FEE_SCHEDULE_UPDATE -> handlers.tokenFeeScheduleUpdateHandler()
-                    .preHandle(context, context.createStore(ReadableTokenStore.class));
-            case TOKEN_PAUSE -> handlers.tokenPauseHandler()
-                    .preHandle(context, context.createStore(ReadableTokenStore.class));
-            case TOKEN_UNPAUSE -> handlers.tokenUnpauseHandler()
-                    .preHandle(context, context.createStore(ReadableTokenStore.class));
+            case UNCHECKED_SUBMIT -> handlers.networkUncheckedSubmitHandler();
 
-            case UTIL_PRNG -> handlers.utilPrngHandler().preHandle(context);
+            case SCHEDULE_CREATE -> handlers.scheduleCreateHandler();
+            case SCHEDULE_SIGN -> handlers.scheduleSignHandler();
+            case SCHEDULE_DELETE -> handlers.scheduleDeleteHandler();
 
-            case SYSTEM_DELETE -> {
-                switch (txBody.systemDeleteOrThrow().id().kind()) {
-                    case CONTRACT_ID -> handlers.contractSystemDeleteHandler().preHandle(context);
-                    case FILE_ID -> handlers.fileSystemDeleteHandler().preHandle(context);
-                    case UNSET -> throw new IllegalArgumentException("SystemDelete without IdCase");
-                }
-            }
-            case SYSTEM_UNDELETE -> {
-                switch (txBody.systemUndeleteOrThrow().id().kind()) {
-                    case CONTRACT_ID -> handlers.contractSystemUndeleteHandler().preHandle(context);
-                    case FILE_ID -> handlers.fileSystemUndeleteHandler().preHandle(context);
-                    case UNSET -> throw new IllegalArgumentException("SystemUndelete without IdCase");
-                }
-            }
+            case TOKEN_CREATION -> handlers.tokenCreateHandler();
+            case TOKEN_UPDATE -> handlers.tokenUpdateHandler();
+            case TOKEN_MINT -> handlers.tokenMintHandler();
+            case TOKEN_BURN -> handlers.tokenBurnHandler();
+            case TOKEN_DELETION -> handlers.tokenDeleteHandler();
+            case TOKEN_WIPE -> handlers.tokenAccountWipeHandler();
+            case TOKEN_FREEZE -> handlers.tokenFreezeAccountHandler();
+            case TOKEN_UNFREEZE -> handlers.tokenUnfreezeAccountHandler();
+            case TOKEN_GRANT_KYC -> handlers.tokenGrantKycToAccountHandler();
+            case TOKEN_REVOKE_KYC -> handlers.tokenRevokeKycFromAccountHandler();
+            case TOKEN_ASSOCIATE -> handlers.tokenAssociateToAccountHandler();
+            case TOKEN_DISSOCIATE -> handlers.tokenDissociateFromAccountHandler();
+            case TOKEN_FEE_SCHEDULE_UPDATE -> handlers.tokenFeeScheduleUpdateHandler();
+            case TOKEN_PAUSE -> handlers.tokenPauseHandler();
+            case TOKEN_UNPAUSE -> handlers.tokenUnpauseHandler();
+
+            case UTIL_PRNG -> handlers.utilPrngHandler();
+
+            case SYSTEM_DELETE -> switch (txBody.systemDeleteOrThrow().id().kind()) {
+                case CONTRACT_ID -> handlers.contractSystemDeleteHandler();
+                case FILE_ID -> handlers.fileSystemDeleteHandler();
+                default -> throw new UnsupportedOperationException("SystemDelete without IdCase");
+            };
+            case SYSTEM_UNDELETE -> switch (txBody.systemUndeleteOrThrow().id().kind()) {
+                case CONTRACT_ID -> handlers.contractSystemUndeleteHandler();
+                case FILE_ID -> handlers.fileSystemUndeleteHandler();
+                default -> throw new UnsupportedOperationException("SystemUndelete without IdCase");
+            };
 
             default -> throw new UnsupportedOperationException(TYPE_NOT_SUPPORTED);
-        }
+        };
     }
 
     // TODO: In all the below methods, commit will be called in workflow or some other place
@@ -236,9 +212,8 @@ public class TransactionDispatcher {
     }
 
     /**
-     * A temporary hook to isolate logic that we expect to move to a workflow, but
-     * is currently needed when running with facility implementations that are adapters
-     * for either {@code mono-service} logic or integration tests.
+     * A temporary hook to isolate logic that we expect to move to a workflow, but is currently needed when running with
+     * facility implementations that are adapters for either {@code mono-service} logic or integration tests.
      *
      * @param topicStore the topic store used for the update
      */
@@ -255,9 +230,8 @@ public class TransactionDispatcher {
     }
 
     /**
-     * A temporary hook to isolate logic that we expect to move to a workflow, but
-     * is currently needed when running with facility implementations that are adapters
-     * for either {@code mono-service} logic or integration tests.
+     * A temporary hook to isolate logic that we expect to move to a workflow, but is currently needed when running with
+     * facility implementations that are adapters for either {@code mono-service} logic or integration tests.
      *
      * @param topicStore the topic store used for the update
      */
@@ -281,9 +255,8 @@ public class TransactionDispatcher {
     }
 
     /**
-     * A temporary hook to isolate logic that we expect to move to a workflow, but
-     * is currently needed when running with facility implementations that are adapters
-     * for either {@code mono-service} logic or integration tests.
+     * A temporary hook to isolate logic that we expect to move to a workflow, but is currently needed when running with
+     * facility implementations that are adapters for either {@code mono-service} logic or integration tests.
      *
      * @param recordBuilder the completed record builder for the creation
      * @param topicStore the topic store used for the creation
@@ -309,9 +282,8 @@ public class TransactionDispatcher {
     }
 
     /**
-     * A temporary hook to isolate logic that we expect to move to a workflow, but
-     * is currently needed when running with facility implementations that are adapters
-     * for either {@code mono-service} logic or integration tests.
+     * A temporary hook to isolate logic that we expect to move to a workflow, but is currently needed when running with
+     * facility implementations that are adapters for either {@code mono-service} logic or integration tests.
      *
      * @param recordBuilder the completed record builder for the message submission
      * @param topicStore the topic store used for the message submission
@@ -329,14 +301,50 @@ public class TransactionDispatcher {
      * @param tokenRelStore the token relation store
      */
     private void dispatchTokenGrantKycToAccount(
-            TransactionBody tokenGrantKyc, WritableTokenRelationStore tokenRelStore) {
+            @NonNull final TransactionBody tokenGrantKyc, @NonNull final WritableTokenRelationStore tokenRelStore) {
         final var handler = handlers.tokenGrantKycToAccountHandler();
         handler.handle(tokenGrantKyc, tokenRelStore);
-        tokenRelStore.commit();
+        finishTokenGrantKycToAccount(tokenRelStore);
+    }
+
+    /**
+     * A temporary hook to isolate logic that we expect to move to a workflow, but
+     * is currently needed when running with facility implementations that are adapters
+     * for either {@code mono-service} logic or integration tests.
+     *
+     * @param tokenRelStore the token rel store used for the message submission
+     */
+    protected void finishTokenGrantKycToAccount(@NonNull final WritableTokenRelationStore tokenRelStore) {
+        // No-op by default
+    }
+
+    /**
+     * Dispatches the token revoke KYC transaction to the appropriate handler.
+     *
+     * @param tokenRevokeKyc the token revoke KYC transaction
+     * @param tokenRelStore the token relation store
+     */
+    private void dispatchTokenRevokeKycFromAccount(
+            @NonNull TransactionBody tokenRevokeKyc, @NonNull WritableTokenRelationStore tokenRelStore) {
+        final var handler = handlers.tokenRevokeKycFromAccountHandler();
+        handler.handle(tokenRevokeKyc, tokenRelStore);
+        finishTokenRevokeKycFromAccount(tokenRelStore);
+    }
+
+    /**
+     * A temporary hook to isolate logic that we expect to move to a workflow, but
+     * is currently needed when running with facility implementations that are adapters
+     * for either {@code mono-service} logic or integration tests.
+     *
+     * @param tokenRelStore the token rel store used for the message submission
+     */
+    protected void finishTokenRevokeKycFromAccount(@NonNull final WritableTokenRelationStore tokenRelStore) {
+        // No-op by default
     }
 
     /**
      * Dispatches the token unpause transaction to the appropriate handler.
+     *
      * @param tokenUnpause the token unpause transaction
      * @param tokenStore the token store
      */
@@ -344,11 +352,12 @@ public class TransactionDispatcher {
             @NonNull final TransactionBody tokenUnpause, @NonNull final WritableTokenStore tokenStore) {
         final var handler = handlers.tokenUnpauseHandler();
         handler.handle(tokenUnpause, tokenStore);
-        tokenStore.commit();
+        finishTokenUnPause(tokenStore);
     }
 
     /**
      * Dispatches the token pause transaction to the appropriate handler.
+     *
      * @param tokenPause the token pause transaction
      * @param tokenStore the token store
      */
@@ -356,6 +365,80 @@ public class TransactionDispatcher {
             @NonNull final TransactionBody tokenPause, @NonNull final WritableTokenStore tokenStore) {
         final var handler = handlers.tokenPauseHandler();
         handler.handle(tokenPause, tokenStore);
-        tokenStore.commit();
+        finishTokenPause(tokenStore);
+    }
+
+    /**
+     * A temporary hook to isolate logic that we expect to move to a workflow, but
+     * is currently needed when running with facility implementations that are adapters
+     * for either {@code mono-service} logic or integration tests.
+     *
+     * @param tokenStore the token store
+     */
+    protected void finishTokenPause(@NonNull final WritableTokenStore tokenStore) {
+        // No-op by default
+    }
+
+    /**
+     * A temporary hook to isolate logic that we expect to move to a workflow, but
+     * is currently needed when running with facility implementations that are adapters
+     * for either {@code mono-service} logic or integration tests.
+     *
+     * @param tokenStore the token store
+     */
+    protected void finishTokenUnPause(@NonNull final WritableTokenStore tokenStore) {
+        // No-op by default
+    }
+
+    /**
+     * Dispatches the util prng transaction to the appropriate handler.
+     * @param utilPrng the util prng transaction body
+     */
+    private void dispatchPrng(@NonNull final TransactionBody utilPrng) {
+        final var handler = handlers.utilPrngHandler();
+        final var recordBuilder = handler.newRecordBuilder();
+        handler.handle(
+                handleContext,
+                utilPrng.utilPrng(),
+                new PrngConfig(dynamicProperties.isUtilPrngEnabled()),
+                recordBuilder);
+        finishUtilPrng(recordBuilder);
+    }
+
+    /**
+     * A temporary hook to isolate logic that we expect to move to a workflow, but
+     * is currently needed when running with facility implementations that are adapters
+     * for either {@code mono-service} logic or integration tests.
+     *
+     * @param recordBuilder the record builder
+     */
+    protected void finishUtilPrng(@NonNull final PrngRecordBuilder recordBuilder) {
+        // No-op by default
+    }
+
+    /**
+     * Dispatches the crypto create transaction to the appropriate handler.
+     * @param cryptoCreate the crypto create transaction body
+     * @param accountStore the writable account store
+     */
+    private void dispatchCryptoCreate(
+            @NonNull final TransactionBody cryptoCreate, @NonNull final WritableAccountStore accountStore) {
+        final var handler = handlers.cryptoCreateHandler();
+        final var recordBuilder = handler.newRecordBuilder();
+        handler.handle(handleContext, cryptoCreate, accountStore, recordBuilder);
+        finishCryptoCreate(recordBuilder, accountStore);
+    }
+
+    /**
+     * A temporary hook to isolate logic that we expect to move to a workflow, but
+     * is currently needed when running with facility implementations that are adapters
+     * for either {@code mono-service} logic or integration tests.
+     *
+     * @param recordBuilder the completed record builder for the creation
+     * @param accountStore the account store used for the creation
+     */
+    protected void finishCryptoCreate(
+            @NonNull final CryptoCreateRecordBuilder recordBuilder, @NonNull final WritableAccountStore accountStore) {
+        // No-op by default
     }
 }

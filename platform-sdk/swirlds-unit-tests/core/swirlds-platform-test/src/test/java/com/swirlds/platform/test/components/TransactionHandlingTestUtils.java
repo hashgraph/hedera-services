@@ -19,6 +19,7 @@ package com.swirlds.platform.test.components;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.crypto.CryptographyHolder;
+import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.system.transaction.internal.SystemTransaction;
@@ -49,6 +50,7 @@ public final class TransactionHandlingTestUtils {
 
         return new EventImpl(
                 new BaseEventHashedData(
+                        new BasicSoftwareVersion(1),
                         0,
                         0L,
                         0L,

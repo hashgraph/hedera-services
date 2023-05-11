@@ -17,7 +17,6 @@
 plugins {
   id("com.hedera.hashgraph.conventions")
   id("com.hedera.hashgraph.shadow-jar")
-  id("org.gradle.java-test-fixtures")
 }
 
 description = "Hedera Services Command-Line Clients"
@@ -33,6 +32,7 @@ configurations.all {
 }
 
 dependencies {
+  implementation(project(mapOf("path" to ":hedera-node:hapi-utils")))
   compileOnly(libs.spotbugs.annotations)
   implementation(libs.bundles.swirlds)
   implementation(project(":hedera-node:hedera-mono-service"))
