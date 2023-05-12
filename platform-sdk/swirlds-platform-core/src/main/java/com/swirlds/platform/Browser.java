@@ -75,7 +75,6 @@ import com.swirlds.logging.payloads.NodeAddressMismatchPayload;
 import com.swirlds.logging.payloads.NodeStartPayload;
 import com.swirlds.p2p.portforwarding.PortForwarder;
 import com.swirlds.p2p.portforwarding.PortMapping;
-import com.swirlds.platform.chatter.config.ChatterConfig;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.config.ConfigMappings;
 import com.swirlds.platform.config.ThreadConfig;
@@ -85,6 +84,8 @@ import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.crypto.CryptoConstants;
 import com.swirlds.platform.dispatch.DispatchConfiguration;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventStreamConfig;
+import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
+import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.gui.internal.InfoApp;
 import com.swirlds.platform.gui.internal.InfoMember;
 import com.swirlds.platform.gui.internal.InfoSwirld;
@@ -93,8 +94,10 @@ import com.swirlds.platform.health.OSHealthChecker;
 import com.swirlds.platform.health.clock.OSClockSpeedSourceChecker;
 import com.swirlds.platform.health.entropy.OSEntropyChecker;
 import com.swirlds.platform.health.filesystem.OSFileSystemChecker;
+import com.swirlds.platform.network.Network;
 import com.swirlds.platform.reconnect.emergency.EmergencySignedStateValidator;
 import com.swirlds.platform.state.EmergencyRecoveryManager;
+import com.swirlds.platform.state.address.AddressBookInitializer;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SavedStateInfo;
 import com.swirlds.platform.state.signed.SignedStateFileUtils;
@@ -103,6 +106,7 @@ import com.swirlds.platform.swirldapp.SwirldAppLoader;
 import com.swirlds.platform.system.Shutdown;
 import com.swirlds.platform.system.SystemExitReason;
 import com.swirlds.platform.system.SystemUtils;
+import com.swirlds.platform.uptime.UptimeConfig;
 import com.swirlds.platform.util.BootstrapUtils;
 import com.swirlds.platform.util.MetricsDocUtils;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
@@ -216,7 +220,9 @@ public class Browser {
                 .withConfigDataType(PrometheusConfig.class)
                 .withConfigDataType(OSHealthCheckConfig.class)
                 .withConfigDataType(WiringConfig.class)
-                .withConfigDataType(PreConsensusEventStreamConfig.class);
+                .withConfigDataType(PreConsensusEventStreamConfig.class)
+                .withConfigDataType(SyncConfig.class)
+                .withConfigDataType(UptimeConfig.class);
 
         // Assume all locally run instances provide the same configuration definitions to the configuration builder.
         if (appMains.size() > 0) {

@@ -23,6 +23,7 @@ import static com.swirlds.logging.LogMarker.ERROR;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.JASPER_DB;
 
+import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
@@ -606,6 +607,12 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
         return this.validLeafPathRange.getMaxValidKey();
     }
 
+    @Override
+    public long estimatedSize(final long dirtyInternals, final long dirtyLeaves) {
+        return dirtyInternals * (Long.BYTES + DigestType.SHA_384.digestLength())
+                + dirtyLeaves * pathToHashKeyValue.getSerializer().getTypicalSerializedSize();
+    }
+
     /**
      * Save a batch of data to data store.
      * <p>
@@ -1109,7 +1116,8 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
     @Override
     public void copyStatisticsFrom(final VirtualDataSource<K, V> that) {
         if (!(that instanceof VirtualDataSourceJasperDB)) {
-            throw new IllegalArgumentException("can only copy statistics from VirtualDataSourceJasperDB");
+            logger.warn(JASPER_DB.getMarker(), "Can only copy statistics from VirtualDataSourceJasperDB");
+            return;
         }
         this.statistics = ((VirtualDataSourceJasperDB<?, ?>) that).statistics;
     }

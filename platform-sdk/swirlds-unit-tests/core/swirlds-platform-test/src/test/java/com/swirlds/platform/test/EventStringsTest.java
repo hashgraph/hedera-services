@@ -19,6 +19,7 @@ package com.swirlds.platform.test;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
@@ -49,7 +50,14 @@ class EventStringsTest {
         final long opGen = 10;
 
         BaseEventHashedData hashedData = new BaseEventHashedData(
-                id, spGen, opGen, new Hash(), new Hash(), Instant.now(), new ConsensusTransactionImpl[0]);
+                new BasicSoftwareVersion(1),
+                id,
+                spGen,
+                opGen,
+                new Hash(),
+                new Hash(),
+                Instant.now(),
+                new ConsensusTransactionImpl[0]);
         hashedData.setHash(new Hash());
         BaseEventUnhashedData unhashedData = new BaseEventUnhashedData(opId, new byte[0]);
         printAssert(

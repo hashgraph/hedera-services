@@ -30,15 +30,17 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEvent;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.components.EventCreationRules;
 import com.swirlds.platform.eventhandling.EventTransactionPool;
+import com.swirlds.platform.gossip.FallenBehindManagerImpl;
+import com.swirlds.platform.gossip.sync.SyncManagerImpl;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.network.RandomGraph;
-import com.swirlds.platform.reconnect.FallenBehindManagerImpl;
 import com.swirlds.platform.state.SwirldStateManager;
 import java.util.List;
 import org.junit.jupiter.api.MethodOrderer;
@@ -83,7 +85,7 @@ public class SyncManagerTest {
             freezeManager = mock(FreezeManager.class);
             startUpEventFrozenManager = mock(StartUpEventFrozenManager.class);
             hashgraph = new DummyHashgraph();
-            eventTransactionPool = spy(EventTransactionPool.class);
+            eventTransactionPool = spy(new EventTransactionPool(new NoOpMetrics(), null, null));
 
             this.swirldStateManager = swirldStateManager;
 
@@ -112,6 +114,7 @@ public class SyncManagerTest {
 
             eventQueue = new DummyEventQueue(hashgraph);
             syncManager = new SyncManagerImpl(
+                    new NoOpMetrics(),
                     eventQueue,
                     connectionGraph,
                     nodeId,

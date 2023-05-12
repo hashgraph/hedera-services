@@ -17,8 +17,8 @@
 package com.hedera.node.app.service.mono;
 
 import static com.hedera.node.app.service.mono.ServicesState.EMPTY_HASH;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_LOG_DIR;
 import static com.hedera.node.app.service.mono.utils.SleepingPause.SLEEPING_PAUSE;
-import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_LOG_DIR;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -44,6 +44,7 @@ import com.hedera.node.app.service.mono.ledger.accounts.staking.StakeStartupHelp
 import com.hedera.node.app.service.mono.ledger.backing.BackingAccounts;
 import com.hedera.node.app.service.mono.sigs.EventExpansion;
 import com.hedera.node.app.service.mono.state.DualStateAccessor;
+import com.hedera.node.app.service.mono.state.exports.ExportingRecoveredStateListener;
 import com.hedera.node.app.service.mono.state.exports.ServicesSignedStateListener;
 import com.hedera.node.app.service.mono.state.exports.SignedStateBalancesExporter;
 import com.hedera.node.app.service.mono.state.exports.ToStringAccountsExporter;
@@ -157,6 +158,9 @@ class ServicesAppTest {
         // Since we gave InitTrigger.EVENT_STREAM_RECOVERY, the record stream manager
         // should be instantiated with a recovery writer
         assertNotNull(subject.recordStreamManager().getRecoveryRecordsWriter());
+        final var maybeRecoveredStateListener = subject.maybeNewRecoveredStateListener();
+        assertTrue(maybeRecoveredStateListener.isPresent());
+        assertThat(maybeRecoveredStateListener.get(), instanceOf(ExportingRecoveredStateListener.class));
         assertThat(subject.globalDynamicProperties(), instanceOf(GlobalDynamicProperties.class));
         assertThat(subject.grpc(), instanceOf(NettyGrpcServerManager.class));
         assertThat(subject.platformStatus(), instanceOf(CurrentPlatformStatus.class));

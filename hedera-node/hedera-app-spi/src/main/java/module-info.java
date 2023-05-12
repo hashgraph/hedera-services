@@ -12,10 +12,8 @@ module com.hedera.node.app.spi {
     exports com.hedera.node.app.spi.meta;
     exports com.hedera.node.app.spi.numbers;
     exports com.hedera.node.app.spi.workflows;
-    exports com.hedera.node.app.spi.config;
     exports com.hedera.node.app.spi.records;
+    exports com.hedera.node.app.spi.signatures;
     exports com.hedera.node.app.spi.validation;
     exports com.hedera.node.app.spi.info;
-    exports com.hedera.node.app.spi.config.converter;
-    exports com.hedera.node.app.spi.config.types;
 }

@@ -22,7 +22,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
@@ -32,9 +31,9 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.common.test.merkle.util.PairedStreams;
-import com.swirlds.platform.Connection;
-import com.swirlds.platform.SocketConnection;
 import com.swirlds.platform.metrics.ReconnectMetrics;
+import com.swirlds.platform.network.Connection;
+import com.swirlds.platform.network.SocketConnection;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -71,7 +70,8 @@ final class ReconnectTest {
     static void setUp() throws ConstructableRegistryException {
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
         registry.registerConstructables("com.swirlds.common");
-        registry.registerConstructable(new ClassConstructorPair(State.class, State::new));
+        registry.registerConstructables("com.swirlds.platform.state");
+        registry.registerConstructables("com.swirlds.platform.state.signed");
     }
 
     @Test

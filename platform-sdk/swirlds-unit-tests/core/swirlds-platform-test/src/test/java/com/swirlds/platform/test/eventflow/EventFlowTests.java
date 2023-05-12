@@ -30,6 +30,7 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Round;
@@ -192,7 +193,10 @@ class EventFlowTests {
      */
     void testPostConsensusHandleEpochUpdate(
             final Long seed, final int numNodes, final int numEvents, final SwirldState origSwirldState) {
-        final State state = getInitialState(origSwirldState, null);
+
+        final AddressBook addressBook = new RandomAddressBookGenerator().build();
+
+        final State state = getInitialState(origSwirldState, null, addressBook);
         final Random random = RandomUtils.initRandom(seed);
         final Hash nextEpochHash = RandomUtils.randomHash(random);
 
@@ -588,7 +592,8 @@ class EventFlowTests {
                 .when(eventStreamManager)
                 .addEvents(anyList());
 
-        final State state = getInitialState(swirldState, initialState);
+        final AddressBook addressBook = new RandomAddressBookGenerator().build();
+        final State state = getInitialState(swirldState, initialState, addressBook);
 
         systemTransactionTracker = new SystemTransactionTracker();
         signedStateTracker = new ArrayBlockingQueue<>(100);
@@ -604,6 +609,8 @@ class EventFlowTests {
                         .build();
 
         swirldStateManager = new SwirldStateManagerImpl(
+                TestPlatformContextBuilder.create().build(),
+                addressBook,
                 selfNodeId,
                 preConsensusSystemTransactionManager,
                 postConsensusSystemTransactionManager,
@@ -616,7 +623,7 @@ class EventFlowTests {
                 TestPlatformContextBuilder.create().build();
 
         preConsensusEventHandler = new PreConsensusEventHandler(
-                getStaticThreadManager(), selfNodeId, swirldStateManager, consensusMetrics);
+                new NoOpMetrics(), getStaticThreadManager(), selfNodeId, swirldStateManager, consensusMetrics);
         consensusEventHandler = new ConsensusRoundHandler(
                 platformContext,
                 getStaticThreadManager(),
@@ -632,7 +639,8 @@ class EventFlowTests {
                 SoftwareVersion.NO_VERSION);
     }
 
-    private State getInitialState(final SwirldState swirldState, final State initialState) {
+    private State getInitialState(
+            final SwirldState swirldState, final State initialState, final AddressBook addressBook) {
         final State state;
         if (initialState == null) {
             state = new State();
@@ -640,6 +648,7 @@ class EventFlowTests {
             final PlatformState platformState = new PlatformState();
             platformState.setPlatformData(new PlatformData());
             state.setPlatformState(platformState);
+            state.getPlatformState().setAddressBook(addressBook);
         } else {
             state = initialState;
         }

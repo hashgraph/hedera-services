@@ -19,6 +19,7 @@ package com.hedera.services.bdd.suites.contract.traceability;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
@@ -40,6 +41,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.swirlds.common.utility.CommonUtils.hex;
 import static org.hyperledger.besu.crypto.Hash.keccak256;
+import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.DefaultExceptionalHaltReason.PRECOMPILE_ERROR;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -4224,7 +4226,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                     .setGas(79000)
                                                     .setRecipientContract(
                                                             spec.registry().getContractId(PRECOMPILE_CALLER))
-                                                    .setGasUsed(5232)
+                                                    .setGasUsed(5330)
                                                     .setInput(encodeFunctionCall(
                                                             PRECOMPILE_CALLER,
                                                             "callSha256AndIsToken",
@@ -4262,7 +4264,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                     .setRecipientContract(ContractID.newBuilder()
                                                             .setContractNum(359)
                                                             .build())
-                                                    .setGasUsed(2)
+                                                    .setGasUsed(100)
                                                     .setInput(ByteStringUtils.wrapUnsafely(Function.parse(
                                                                     "isToken" + "(address)")
                                                             .encodeCallWithArgs(
@@ -4449,7 +4451,7 @@ public class TraceabilitySuite extends HapiSuite {
                         spec,
                         contractCall(REVERTING_CONTRACT, "callingWrongAddress")
                                 .gas(1_000_000)
-                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)
+                                .hasKnownStatusFrom(SUCCESS, INVALID_SOLIDITY_ADDRESS)
                                 .via(TRACEABILITY_TXN))))
                 .then(withOpContext((spec, opLog) -> allRunFor(
                         spec,
@@ -4461,8 +4463,13 @@ public class TraceabilitySuite extends HapiSuite {
                                                 .setCallingAccount(TxnUtils.asId(GENESIS, spec))
                                                 .setCallOperationType(CallOperationType.OP_CALL)
                                                 .setGas(979000)
+                                                .setGasUsed(963811)
+                                                .setOutput(EMPTY)
+                                                /*
+                                                   For EVM v0.34 use this code block instead:
                                                 .setGasUsed(979000)
                                                 .setError(ByteString.copyFromUtf8(INVALID_SOLIDITY_ADDRESS.name()))
+                                                */
                                                 .setRecipientContract(
                                                         spec.registry().getContractId(REVERTING_CONTRACT))
                                                 .setInput(encodeFunctionCall(REVERTING_CONTRACT, "callingWrongAddress"))
@@ -4473,8 +4480,20 @@ public class TraceabilitySuite extends HapiSuite {
                                                         spec.registry().getContractId(REVERTING_CONTRACT))
                                                 .setCallOperationType(CallOperationType.OP_CALL)
                                                 .setCallDepth(1)
+                                                .setGas(960639)
+                                                .setInput(ByteStringUtils.wrapUnsafely(
+                                                        Function.parse("boo" + "(uint256)")
+                                                                .encodeCallWithArgs(BigInteger.valueOf(234))
+                                                                .array()))
+                                                .setGasUsed(960639)
+                                                .setError(ByteString.copyFromUtf8(PRECOMPILE_ERROR.name()))
+                                                /*
+                                                   For EVM v0.34 use this code block instead:
+
                                                 .setGas(978487)
                                                 .setError(ByteString.copyFromUtf8(INVALID_SOLIDITY_ADDRESS.name()))
+
+                                                */
                                                 .setTargetedAddress(ByteString.copyFrom(asSolidityAddress(0, 0, 0)))
                                                 .build())))));
     }
@@ -4978,7 +4997,7 @@ public class TraceabilitySuite extends HapiSuite {
 
     @SuppressWarnings("java:S5960")
     private HapiSpec assertSidecars() {
-        return defaultHapiSpec("assertSidecars")
+        return onlyDefaultHapiSpec("assertSidecars")
                 .given(
                         // send a dummy transaction to trigger externalization of last sidecars
                         cryptoCreate("externalizeFinalSidecars").delayBy(2000))

@@ -58,6 +58,31 @@ public class AsyncPreConsensusEventWriter implements PreConsensusEventWriter {
     private final BlockingQueueInserter<EventImpl> eventInserter;
 
     /**
+     * This class is used as a flag to indicate where in the queue events start being new (as opposed to being
+     * events from the preconsensus event stream on disk).
+     */
+    private static class BeginStreamingNewEvents {}
+
+    private static final BeginStreamingNewEvents BEGIN_STREAMING_NEW_EVENTS = new BeginStreamingNewEvents();
+
+    /**
+     * Used to push the BeginStreamingNewEvents flag onto the handle queue.
+     */
+    private final BlockingQueueInserter<BeginStreamingNewEvents> beginStreamingNewEventsInserter;
+
+    /**
+     * This class is used as a flag to indicate that the handle thread should flush the writer.
+     */
+    private static class FlushRequested {}
+
+    private static final FlushRequested FLUSH_REQUESTED = new FlushRequested();
+
+    /**
+     * Used to push the FlushRequested flag onto the handle queue.
+     */
+    private final BlockingQueueInserter<FlushRequested> flushRequestedInserter;
+
+    /**
      * Create a new AsyncPreConsensusEventWriter.
      *
      * @param platformContext the platform context
@@ -82,10 +107,14 @@ public class AsyncPreConsensusEventWriter implements PreConsensusEventWriter {
                 .setCapacity(config.writeQueueCapacity())
                 .addHandler(Long.class, this::setMinimumGenerationNonAncientHandler)
                 .addHandler(EventImpl.class, this::addEventHandler)
+                .addHandler(BeginStreamingNewEvents.class, this::beginStreamingNewEventsHandler)
+                .addHandler(FlushRequested.class, this::flushRequestedHandler)
                 .build();
 
         minimumGenerationNonAncientInserter = handleThread.getInserter(Long.class);
         eventInserter = handleThread.getInserter(EventImpl.class);
+        beginStreamingNewEventsInserter = handleThread.getInserter(BeginStreamingNewEvents.class);
+        flushRequestedInserter = handleThread.getInserter(FlushRequested.class);
     }
 
     /**
@@ -110,12 +139,28 @@ public class AsyncPreConsensusEventWriter implements PreConsensusEventWriter {
      * {@inheritDoc}
      */
     @Override
+    public void beginStreamingNewEvents() throws InterruptedException {
+        beginStreamingNewEventsInserter.put(BEGIN_STREAMING_NEW_EVENTS);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void writeEvent(@NonNull final EventImpl event) throws InterruptedException {
         if (event.getStreamSequenceNumber() == EventImpl.NO_STREAM_SEQUENCE_NUMBER
                 || event.getStreamSequenceNumber() == EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
             throw new IllegalStateException("Event must have a valid stream sequence number");
         }
         eventInserter.put(event);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void requestFlush() throws InterruptedException {
+        flushRequestedInserter.put(FLUSH_REQUESTED);
     }
 
     /**
@@ -160,14 +205,6 @@ public class AsyncPreConsensusEventWriter implements PreConsensusEventWriter {
     }
 
     /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void requestFlush(@NonNull final EventImpl event) {
-        writer.requestFlush(event);
-    }
-
-    /**
      * Pass a minimum generation non-ancient to the wrapped writer.
      */
     private void setMinimumGenerationNonAncientHandler(@NonNull final Long minimumGenerationNonAncient) {
@@ -194,6 +231,35 @@ public class AsyncPreConsensusEventWriter implements PreConsensusEventWriter {
             // Unless we do something silly like wrapping an asynchronous writer inside another asynchronous writer,
             // this should never throw an InterruptedException.
             logger.error(EXCEPTION.getMarker(), "interrupted while attempting to call addEvent on writer", e);
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    /**
+     * Notify the wrapped writer that we are now streaming new events.
+     */
+    private void beginStreamingNewEventsHandler(@NonNull final BeginStreamingNewEvents beginStreamingNewEvents) {
+        try {
+            writer.beginStreamingNewEvents();
+        } catch (final InterruptedException e) {
+            // Unless we do something silly like wrapping an asynchronous writer inside another asynchronous writer,
+            // this should never throw an InterruptedException.
+            logger.error(
+                    EXCEPTION.getMarker(), "interrupted while attempting to call beginStreamingNewEvents on writer", e);
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    /**
+     * Notify the wrapped writer that it should flush.
+     */
+    private void flushRequestedHandler(@NonNull final FlushRequested flushRequested) {
+        try {
+            writer.requestFlush();
+        } catch (final InterruptedException e) {
+            // Unless we do something silly like wrapping an asynchronous writer inside another asynchronous writer,
+            // this should never throw an InterruptedException.
+            logger.error(EXCEPTION.getMarker(), "interrupted while attempting to call flush on writer", e);
             Thread.currentThread().interrupt();
         }
     }

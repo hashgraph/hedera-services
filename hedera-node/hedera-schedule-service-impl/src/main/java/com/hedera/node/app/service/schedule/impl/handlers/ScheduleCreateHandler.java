@@ -33,19 +33,13 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * HederaFunctionality#SCHEDULE_CREATE}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#SCHEDULE_CREATE}.
  */
 @Singleton
 public class ScheduleCreateHandler extends AbstractScheduleHandler implements TransactionHandler {
 
     // @todo('6249') This constructor should be removed and the @Inject annotation added to the remaining constructor
     @Inject
-    public ScheduleCreateHandler() {
-        // Exists for injection
-        super(null);
-    }
-
     public ScheduleCreateHandler(@NonNull final PreHandleDispatcher dispatcher) {
         super(dispatcher);
     }

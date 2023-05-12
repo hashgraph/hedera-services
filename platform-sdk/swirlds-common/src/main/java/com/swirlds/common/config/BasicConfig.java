@@ -19,6 +19,7 @@ package com.swirlds.common.config;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import java.nio.file.Path;
+import java.time.Duration;
 
 /**
  * Basic configuration data record. This record contains all general config properties that can not be defined for a
@@ -182,6 +183,12 @@ import java.nio.file.Path;
  * 		maximum number of simultaneous outgoing syncs initiated by me
  * @param logPath
  * 		path to log4j2.xml (which might not exist)
+ * @param hangingThreadDuration
+ *      the length of time a gossip thread is allowed to wait when it is asked to shutdown.
+ *      If a gossip thread takes longer than this period to shut down, then an error message is written to the log.
+ * @param genesisFreezeTime
+ *      If this node starts from genesis, this value is used as the freeze time. This feature is deprecated and
+ *      planned for removal in a future platform version.
  */
 @ConfigData
 public record BasicConfig(
@@ -251,4 +258,6 @@ public record BasicConfig(
         @ConfigProperty(value = "socketIpTos", defaultValue = "-1") int socketIpTos,
         @ConfigProperty(value = "maxIncomingSyncsInc", defaultValue = "1") int maxIncomingSyncsInc,
         @ConfigProperty(value = "maxOutgoingSyncs", defaultValue = "2") int maxOutgoingSyncs,
-        @ConfigProperty(value = "logPath", defaultValue = "log4j2.xml") Path logPath) {}
+        @ConfigProperty(value = "logPath", defaultValue = "log4j2.xml") Path logPath,
+        @ConfigProperty(value = "hangingThreadDuration", defaultValue = "60s") Duration hangingThreadDuration,
+        @ConfigProperty(value = "genesisFreezeTime", defaultValue = "0") long genesisFreezeTime) {}

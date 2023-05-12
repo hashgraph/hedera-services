@@ -26,6 +26,7 @@ import static com.swirlds.merkledb.KeyRange.INVALID_KEY_RANGE;
 import static com.swirlds.merkledb.MerkleDb.MERKLEDB_COMPONENT;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
+import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
@@ -950,6 +951,21 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
         }
     }
 
+    @Override
+    public long estimatedSize(final long dirtyInternals, final long dirtyLeaves) {
+        // Deleted leaves count is ignored, as deleted leaves aren't flushed to data source
+        final long estimatedInternalsSize = dirtyInternals
+                * (Long.BYTES // path
+                        + DigestType.SHA_384.digestLength()); // hash
+        final long estimatedLeavesSize = dirtyLeaves
+                * (Long.BYTES // path
+                        + DigestType.SHA_384.digestLength() // hash
+                        + tableConfig.getKeySerializer().getTypicalSerializedSize() // key
+                        + tableConfig.getValueSerializer().getTypicalSerializedSize()); // value
+        final long estimatedTotalSize = estimatedInternalsSize + estimatedLeavesSize;
+        return estimatedTotalSize;
+    }
+
     /** toString for debugging */
     @Override
     public String toString() {
@@ -1072,7 +1088,8 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     @Override
     public void copyStatisticsFrom(final VirtualDataSource<K, V> that) {
         if (!(that instanceof MerkleDbDataSource<?, ?> thatDataSource)) {
-            throw new IllegalArgumentException("can only copy statistics from MerkleDbDataSource");
+            logger.warn(MERKLE_DB.getMarker(), "Can only copy statistics from MerkleDbDataSource");
+            return;
         }
         statistics = thatDataSource.statistics;
     }
@@ -1140,7 +1157,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
         } catch (final InterruptedException e) {
             logger.warn(EXCEPTION.getMarker(), "[{}] Interrupted while waiting on executors to shutdown", tableName, e);
             Thread.currentThread().interrupt();
-            throw new IOException("Interrupted while waiting for merge to finish.", e);
+            throw new IOException("Interrupted while waiting for shutdown to finish.", e);
         }
     }
 
@@ -1342,18 +1359,18 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                 /* Filter nothing during a full merge */
                 filesToMergeFilter = dataFileReaders -> dataFileReaders;
                 isLargeMerge = true;
-                logger.info(MERKLE_DB.getMarker(), "[{}] Starting Large Merge", tableName);
+                logger.debug(MERKLE_DB.getMarker(), "[{}] Starting Large Merge", tableName);
             } else if (isTimeForMediumMerge(now)) {
                 lastMediumMerge = now;
                 filesToMergeFilter = DataFileCommon.newestFilesSmallerThan(
                         settings.getMediumMergeCutoffMb(), settings.getMaxNumberOfFilesInMerge());
                 isMediumMerge = true;
-                logger.info(MERKLE_DB.getMarker(), "[{}] Starting Medium Merge", tableName);
+                logger.debug(MERKLE_DB.getMarker(), "[{}] Starting Medium Merge", tableName);
             } else {
                 filesToMergeFilter = DataFileCommon.newestFilesSmallerThan(
                         settings.getSmallMergeCutoffMb(), settings.getMaxNumberOfFilesInMerge());
                 isSmallMerge = true;
-                logger.info(MERKLE_DB.getMarker(), "[{}] Starting Small Merge", tableName);
+                logger.debug(MERKLE_DB.getMarker(), "[{}] Starting Small Merge", tableName);
             }
 
             // we need to merge disk files for internal hashes if they exist and pathToHashKeyValue
@@ -1437,7 +1454,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
             updateFileStats();
             // update off-heap usage statistic
             updateOffHeapStats();
-            logger.info(MERKLE_DB.getMarker(), "[{}] Finished Small Merge", tableName);
+            logger.debug(MERKLE_DB.getMarker(), "[{}] Finished Merge", tableName);
             return true;
         } catch (final InterruptedException | ClosedByInterruptException e) {
             logger.info(MERKLE_DB.getMarker(), "Interrupted while merging, this is allowed.");

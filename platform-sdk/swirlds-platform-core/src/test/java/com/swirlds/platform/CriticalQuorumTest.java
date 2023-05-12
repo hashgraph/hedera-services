@@ -20,6 +20,8 @@ import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
@@ -31,6 +33,7 @@ import com.swirlds.platform.components.CriticalQuorumImpl;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -58,7 +61,7 @@ class CriticalQuorumTest {
         }
 
         public CriticalQuorum getCriticalQuorum() {
-            return new CriticalQuorumImpl(addressBook);
+            return new CriticalQuorumImpl(new NoOpMetrics(), 0, addressBook);
         }
 
         @Override
@@ -71,8 +74,8 @@ class CriticalQuorumTest {
      * Build an event containing just the data required for this test.
      */
     private static EventImpl buildSimpleEvent(final long creatorId, final long roundCreated) {
-        final BaseEventHashedData baseEventHashedData =
-                new BaseEventHashedData(creatorId, 0, 0, (byte[]) null, null, null, null);
+        final BaseEventHashedData baseEventHashedData = new BaseEventHashedData(
+                new BasicSoftwareVersion(1), creatorId, 0, 0, (byte[]) null, null, Instant.now(), null);
 
         final BaseEventUnhashedData baseEventUnhashedData = new BaseEventUnhashedData();
 
