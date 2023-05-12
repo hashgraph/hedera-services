@@ -17,8 +17,6 @@
 package com.hedera.node.app.state.merkle;
 
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.service.admin.FreezeService;
-import com.hedera.node.app.service.admin.impl.FreezeServiceImpl;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import com.hedera.node.app.service.contract.ContractService;
@@ -56,8 +54,10 @@ import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualVa
 import com.hedera.node.app.service.mono.state.virtual.temporal.SecondSinceEpocVirtualKey;
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.service.network.NetworkService;
-import com.hedera.node.app.service.network.impl.NetworkServiceImpl;
+import com.hedera.node.app.service.networkadmin.FreezeService;
+import com.hedera.node.app.service.networkadmin.NetworkService;
+import com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl;
+import com.hedera.node.app.service.networkadmin.impl.NetworkServiceImpl;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
 import com.hedera.node.app.service.token.TokenService;

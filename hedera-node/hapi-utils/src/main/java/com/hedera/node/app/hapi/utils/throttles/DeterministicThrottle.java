@@ -237,7 +237,7 @@ public class DeterministicThrottle implements CongestibleThrottle {
         }
     }
 
-    BucketThrottle delegate() {
+    public BucketThrottle delegate() {
         return delegate;
     }
 

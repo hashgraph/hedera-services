@@ -34,13 +34,13 @@ dependencies {
   annotationProcessor(libs.dagger.compiler)
 
   implementation(project(":hedera-node:hedera-app-spi"))
+  implementation(project(":hedera-node:hedera-config"))
   implementation(project(":hedera-node:hedera-mono-service"))
   implementation(project(":hedera-node:hapi-utils"))
   implementation(project(":hedera-node:hapi-fees"))
-  implementation(project(":hedera-node:hedera-admin-service-impl"))
+  implementation(project(":hedera-node:hedera-networkadmin-service-impl"))
   implementation(project(":hedera-node:hedera-consensus-service-impl"))
   implementation(project(":hedera-node:hedera-file-service-impl"))
-  implementation(project(":hedera-node:hedera-network-service-impl"))
   implementation(project(":hedera-node:hedera-schedule-service-impl"))
   implementation(project(":hedera-node:hedera-smart-contract-service-impl"))
   implementation(project(":hedera-node:hedera-token-service-impl"))
@@ -62,6 +62,7 @@ dependencies {
   itestImplementation(testLibs.bundles.mockito)
   itestCompileOnly(libs.spotbugs.annotations)
 
+  testImplementation(testFixtures(project(":hedera-node:hedera-config")))
   testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
   testImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
   testImplementation(testLibs.classgraph)

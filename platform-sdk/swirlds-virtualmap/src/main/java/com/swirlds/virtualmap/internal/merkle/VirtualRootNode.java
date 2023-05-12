@@ -1217,7 +1217,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
 
         // Current statistics can only be registered when the node boots, requiring statistics
         // objects to be passed from version to version of the state.
-        dataSource.copyStatisticsFrom(((VirtualRootNode<K, V>) originalNode).dataSource);
+        dataSource.copyStatisticsFrom(originalMap.dataSource);
         statistics = originalMap.statistics;
     }
 

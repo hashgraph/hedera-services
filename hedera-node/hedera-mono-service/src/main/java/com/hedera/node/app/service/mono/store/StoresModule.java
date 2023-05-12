@@ -16,10 +16,10 @@
 
 package com.hedera.node.app.service.mono.store;
 
-import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_STORE_ON_DISK;
-import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_NFTS_USE_TREASURY_WILD_CARDS;
-import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE;
-import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_STORE_RELS_ON_DISK;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_STORE_ON_DISK;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_NFTS_USE_TREASURY_WILD_CARDS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_STORE_RELS_ON_DISK;
 
 import com.hedera.node.app.service.mono.config.AccountNumbers;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;

@@ -73,16 +73,20 @@ public class AccountBalanceSigningUtils {
             System.out.println("Generated signature file: " + signatureFileDestination);
 
             return true;
-        } catch (final SignatureException | IOException e) {
-            System.err.println("Failed to sign file " + streamFileToSign.getFileName() + ". Exception: " + e);
+        } catch (final SignatureException | InvalidKeyException | IOException e) {
+            System.err.printf(
+                    "signAccountBalanceFile :: Failed to sign file [%s] with exception : [%s]%n", streamFileToSign, e);
             return false;
-        } catch (final InvalidKeyException | NoSuchAlgorithmException | NoSuchProviderException e) {
-            System.err.println("Irrecoverable error encountered: " + e);
-            throw new RuntimeException("Irrecoverable error encountered", e);
+        } catch (final NoSuchAlgorithmException | NoSuchProviderException e) {
+            System.err.printf(
+                    "signAccountBalanceFile :: Irrecoverable error encountered when signing [%s] with exception : [%s]%n",
+                    streamFileToSign, e);
+            throw new RuntimeException("signAccountBalanceFile :: Irrecoverable error encountered", e);
         }
     }
 
-    private static void generateSigBalanceFile(final File filePath, final byte[] signature, final byte[] fileHash) {
+    private static void generateSigBalanceFile(final File filePath, final byte[] signature, final byte[] fileHash)
+            throws IOException {
         try (final BufferedOutputStream output = new BufferedOutputStream(new FileOutputStream(filePath))) {
             output.write(TYPE_FILE_HASH);
             output.write(fileHash);
@@ -91,8 +95,10 @@ public class AccountBalanceSigningUtils {
             output.write(signature);
             output.flush();
         } catch (final IOException e) {
-            System.err.println("generateSigBalanceFile :: Fail to generate signature file for " + filePath
-                    + " with exception :" + e);
+            System.err.printf(
+                    "generateSigBalanceFile :: Failed to generate signature file [%s] with exception : [%s]%n",
+                    filePath.getAbsolutePath(), e);
+            throw e;
         }
     }
 }
