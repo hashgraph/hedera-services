@@ -441,4 +441,34 @@ public class TransactionDispatcher {
             @NonNull final CryptoCreateRecordBuilder recordBuilder, @NonNull final WritableAccountStore accountStore) {
         // No-op by default
     }
+
+    /**
+     * Dispatches the token fee schedule update transaction to the appropriate handler.
+     *
+     * @param feeScheduleUpdate the token fee schedule update transaction
+     * @param tokenStore the token store
+     */
+    private void dispatchTokenFeeScheduleUpdate(
+            @NonNull final TransactionBody feeScheduleUpdate,
+            @NonNull final WritableTokenStore tokenStore) {
+        requireNonNull(feeScheduleUpdate);
+        requireNonNull(tokenStore);
+
+        final var handler = handlers.tokenFeeScheduleUpdateHandler();
+        handler.handle(handleContext, feeScheduleUpdate, tokenStore);
+        tokenStore.commit();
+    }
+
+    /**
+     * A temporary hook to isolate logic that we expect to move to a workflow, but
+     * is currently needed when running with facility implementations that are adapters
+     * for either {@code mono-service} logic or integration tests.
+     *
+     * @param recordBuilder the completed record builder for the creation
+     * @param tokenStore the token store used for the creation
+     */
+    protected void finishTokenCreate(
+            @NonNull final TokenCreateRecordBuilder recordBuilder, @NonNull final WritableTokenStore tokenStore) {
+        // No-op by default
+    }
 }

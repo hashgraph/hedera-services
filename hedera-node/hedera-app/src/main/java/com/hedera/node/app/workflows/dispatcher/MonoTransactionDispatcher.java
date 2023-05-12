@@ -141,4 +141,17 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
             sideEffectsTracker.trackRandomBytes(PbjConverter.asBytes(recordBuilder.getPrngBytes()));
         }
     }
+
+    protected void finishTokenCreate(
+            @NonNull final TokenCreateRecordBuilder recordBuilder, @NonNull final WritableTokenStore tokenStore) {
+        // If token can't be created, due to the usage of a price regime, throw an exception
+        if (!usageLimits.areCreatableTokens(1)) {
+            throw new HandleException(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
+        }
+
+        // Adapt the record builder outcome for mono-service
+        txnCtx.setCreated(PbjConverter.fromPbj(
+                TokenID.newBuilder().tokenNum(recordBuilder.getCreatedToken()).build()));
+        accountStore.commit();
+    }
 }

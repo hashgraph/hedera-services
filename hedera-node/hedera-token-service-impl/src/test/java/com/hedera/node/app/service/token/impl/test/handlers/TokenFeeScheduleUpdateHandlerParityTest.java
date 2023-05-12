@@ -36,17 +36,31 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenFeeScheduleUpdateHandler;
+import com.hedera.node.app.service.token.impl.validators.CustomFeesValidator;
+import com.hedera.node.app.service.token.impl.validators.TokenTypeValidator;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.config.ConfigProvider;
 import java.util.Collections;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class TokenFeeScheduleUpdateHandlerParityTest extends ParityTestBase {
-
-    private final TokenFeeScheduleUpdateHandler subject = new TokenFeeScheduleUpdateHandler();
+    private TokenFeeScheduleUpdateHandler subject;
+    private ConfigProvider configProvider;
+    private CustomFeesValidator customFeeValidator;
+    private TokenTypeValidator tokenTypeValidator;
+    @BeforeEach
+    void setUp() {
+        customFeeValidator = new CustomFeesValidator();
+        tokenTypeValidator = new TokenTypeValidator();
+        configProvider = new ConfigProviderImpl();
+        subject = new TokenFeeScheduleUpdateHandler(configProvider, customFeeValidator, tokenTypeValidator);
+    }
 
     @Test
     void tokenFeeScheduleUpdateNonExistingToken() throws PreCheckException {
