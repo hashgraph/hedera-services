@@ -13,8 +13,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
- * Provides indirect state management within a {@link Scope} so a contract can make
- * atomic changes within an EVM frame across the parts of system state it does not "own".
+ * Manages state access and mutation within a {@link Scope}.
+ *
+ * <p>This lets an EVM smart contract make atomic changes scoped to a message frame, even though
+ * these changes involve state that it cannot mutate directly via the {@code ContractService}'s
+ * {@code WritableStates}.
  */
 public interface Dispatch {
      // --- (SECTION I) Read-only methods that reflects all changes up to and including the current {@link Session}
