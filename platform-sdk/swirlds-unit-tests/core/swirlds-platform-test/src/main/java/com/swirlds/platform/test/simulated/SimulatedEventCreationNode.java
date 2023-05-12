@@ -99,7 +99,7 @@ public class SimulatedEventCreationNode implements GossipMessageHandler {
         this.nodeId = Objects.requireNonNull(nodeId, "the node ID is null");
         this.eventByHash = Objects.requireNonNull(eventByHash, "the event by hash function is null");
         this.config = Objects.requireNonNull(config);
-        
+
         final ChatterConfig chatterConfig =
                 new TestConfigBuilder().getOrCreateConfig().getConfigData(ChatterConfig.class);
         criticalQuorum = new CriticalQuorumImpl(
