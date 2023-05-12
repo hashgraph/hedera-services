@@ -547,8 +547,8 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         final var receiver = convertLeftPaddedAddressToAccountId(decodedArguments.get(2), aliasResolver, exists);
         final var amount = (long) decodedArguments.get(3);
 
-        if (amount <= 0) {
-            throw new IllegalArgumentException("Amount must be positive");
+        if (amount < 0) {
+            throw new IllegalArgumentException("Amount must be non-negative");
         }
 
         final var tokenTransferWrappers = Collections.singletonList(new TokenTransferWrapper(

@@ -750,7 +750,6 @@ public class LeakyContractTestsSuite extends HapiSuite {
 
     private HapiSpec transferFailsWithIncorrectAmounts() {
         final var transferTokenWithNegativeAmountTxn = "transferTokenWithNegativeAmountTxn";
-        final var transferTokenWithZeroAmountTxn = "transferTokenWithZeroAmountTxn";
         final var contract = TOKEN_TRANSFER_CONTRACT;
 
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
@@ -794,25 +793,11 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                     .payingWith(ACCOUNT)
                                     .gas(GAS_TO_OFFER)
                                     .via(transferTokenWithNegativeAmountTxn)
-                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                            // Call tokenTransfer with a zero amount
-                            contractCall(
-                                            contract,
-                                            TRANSFER_TOKEN_PUBLIC,
-                                            HapiParserUtil.asHeadlongAddress(
-                                                    asAddress(spec.registry().getTokenID(VANILLA_TOKEN))),
-                                            sender,
-                                            receiver1,
-                                            0L)
-                                    .payingWith(ACCOUNT)
-                                    .gas(GAS_TO_OFFER)
-                                    .via(transferTokenWithZeroAmountTxn)
                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED));
                 }))
                 .then(
                         // Confirm the transactions succeeded
-                        childRecordsCheck(transferTokenWithNegativeAmountTxn, CONTRACT_REVERT_EXECUTED),
-                        childRecordsCheck(transferTokenWithZeroAmountTxn, CONTRACT_REVERT_EXECUTED));
+                        childRecordsCheck(transferTokenWithNegativeAmountTxn, CONTRACT_REVERT_EXECUTED));
     }
 
     HapiSpec payerCannotOverSendValue() {
