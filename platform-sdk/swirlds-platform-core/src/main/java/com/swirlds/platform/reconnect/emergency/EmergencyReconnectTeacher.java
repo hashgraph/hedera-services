@@ -30,6 +30,7 @@ import com.swirlds.platform.state.signed.SignedStateFinder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -42,6 +43,7 @@ public class EmergencyReconnectTeacher {
     private final int reconnectSocketTimeout;
     private final ReconnectMetrics reconnectMetrics;
     private final ThreadManager threadManager;
+    private final Supplier<Boolean> requestToStopTeaching;
 
     /**
      * @param threadManager          responsible for managing thread lifecycles
@@ -53,10 +55,12 @@ public class EmergencyReconnectTeacher {
             final ThreadManager threadManager,
             final SignedStateFinder stateFinder,
             final int reconnectSocketTimeout,
+            final Supplier<Boolean> requestToStopTeaching,
             final ReconnectMetrics reconnectMetrics) {
         this.threadManager = threadManager;
         this.stateFinder = stateFinder;
         this.reconnectSocketTimeout = reconnectSocketTimeout;
+        this.requestToStopTeaching = requestToStopTeaching;
         this.reconnectMetrics = reconnectMetrics;
     }
 
@@ -104,6 +108,7 @@ public class EmergencyReconnectTeacher {
                                     connection.getSelfId().getId(),
                                     connection.getOtherId().getId(),
                                     reservedState.get().getRound(),
+                                    requestToStopTeaching,
                                     reconnectMetrics)
                             .execute(reservedState.get());
                 } else {

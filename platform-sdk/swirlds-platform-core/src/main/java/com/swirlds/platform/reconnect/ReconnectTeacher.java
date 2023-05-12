@@ -34,6 +34,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.net.SocketException;
 import java.util.Objects;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -62,6 +63,8 @@ public class ReconnectTeacher {
 
     private final ThreadManager threadManager;
 
+    private final Supplier<Boolean> requestToStopTeaching;
+
     /**
      * @param threadManager          responsible for managing thread lifecycles
      * @param connection             the connection to be used for the reconnect
@@ -78,6 +81,7 @@ public class ReconnectTeacher {
             final long selfId,
             final long otherId,
             final long lastRoundReceived,
+            final Supplier<Boolean> requestToStopTeaching,
             @NonNull final ReconnectMetrics statistics) {
 
         this.threadManager = Objects.requireNonNull(threadManager);
@@ -87,6 +91,7 @@ public class ReconnectTeacher {
         this.selfId = selfId;
         this.otherId = otherId;
         this.lastRoundReceived = lastRoundReceived;
+        this.requestToStopTeaching = requestToStopTeaching;
         this.statistics = Objects.requireNonNull(statistics);
     }
 
@@ -199,7 +204,8 @@ public class ReconnectTeacher {
                 new MerkleDataInputStream(connection.getDis()),
                 new MerkleDataOutputStream(connection.getDos()),
                 signedState.getState(),
-                connection::disconnect);
+                connection::disconnect,
+                requestToStopTeaching);
 
         synchronizer.synchronize();
         connection.getDos().flush();

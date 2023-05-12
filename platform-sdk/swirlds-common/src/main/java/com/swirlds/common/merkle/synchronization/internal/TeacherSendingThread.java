@@ -30,6 +30,7 @@ import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -56,6 +57,7 @@ public class TeacherSendingThread<T> {
     private final AsyncOutputStream<Lesson<T>> out;
     private final Queue<TeacherSubtree> subtrees;
     private final TeacherTreeView<T> view;
+    private final Supplier<Boolean> requestToStopTeaching;
     private final AtomicBoolean senderIsFinished;
 
     /**
@@ -80,6 +82,7 @@ public class TeacherSendingThread<T> {
             final AsyncOutputStream<Lesson<T>> out,
             final Queue<TeacherSubtree> subtrees,
             final TeacherTreeView<T> view,
+            final Supplier<Boolean> requestToStopTeaching,
             final AtomicBoolean senderIsFinished) {
 
         this.workGroup = workGroup;
@@ -87,6 +90,7 @@ public class TeacherSendingThread<T> {
         this.out = out;
         this.subtrees = subtrees;
         this.view = view;
+        this.requestToStopTeaching = requestToStopTeaching;
         this.senderIsFinished = senderIsFinished;
     }
 
@@ -174,6 +178,12 @@ public class TeacherSendingThread<T> {
             out.sendAsync(buildDataLesson(view.getRoot()));
 
             while (view.areThereNodesToHandle()) {
+                if (requestToStopTeaching.get()) {
+                    logger.info(
+                            RECONNECT.getMarker(),
+                            "Teacher's sending thread is requested to stop teaching (fallen behind?)");
+                    break;
+                }
                 final T node = view.getNextNodeToHandle();
                 sendLesson(node);
             }

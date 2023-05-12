@@ -36,6 +36,7 @@ import com.swirlds.common.threading.pool.StandardWorkGroup;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -78,6 +79,8 @@ public class TeachingSynchronizer {
      */
     private final ThreadManager threadManager;
 
+    private final Supplier<Boolean> requestToStopTeaching;
+
     /**
      * Create a new teaching synchronizer.
      *
@@ -101,7 +104,8 @@ public class TeachingSynchronizer {
             final MerkleDataInputStream in,
             final MerkleDataOutputStream out,
             final MerkleNode root,
-            final Runnable breakConnection) {
+            final Runnable breakConnection,
+            final Supplier<Boolean> requestToStopTeaching) {
 
         this.threadManager = threadManager;
         inputStream = in;
@@ -111,6 +115,7 @@ public class TeachingSynchronizer {
         subtrees.add(new TeacherSubtree(root));
 
         this.breakConnection = breakConnection;
+        this.requestToStopTeaching = requestToStopTeaching;
     }
 
     /**
@@ -153,7 +158,8 @@ public class TeachingSynchronizer {
 
         final AtomicBoolean senderIsFinished = new AtomicBoolean(false);
 
-        new TeacherSendingThread<T>(workGroup, in, out, subtrees, view, senderIsFinished).start();
+        new TeacherSendingThread<T>(workGroup, in, out, subtrees, view, requestToStopTeaching, senderIsFinished)
+                .start();
         new TeacherReceivingThread<>(workGroup, in, view, senderIsFinished).start();
 
         workGroup.waitForTermination();

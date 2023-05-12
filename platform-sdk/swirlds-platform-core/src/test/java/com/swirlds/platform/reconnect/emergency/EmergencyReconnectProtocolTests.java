@@ -38,6 +38,7 @@ import com.swirlds.platform.state.EmergencyRecoveryFile;
 import com.swirlds.platform.state.EmergencyRecoveryManager;
 import com.swirlds.platform.state.signed.SignedStateFinder;
 import com.swirlds.platform.state.signed.SignedStateManager;
+import com.swirlds.platform.sync.FallenBehindManager;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.stream.Stream;
@@ -94,6 +95,9 @@ public class EmergencyReconnectProtocolTests {
         final ReconnectController reconnectController = mock(ReconnectController.class);
         when(reconnectController.acquireLearnerPermit()).thenReturn(initiateParams.getsPermit);
 
+        final FallenBehindManager fallenBehindManager = mock(FallenBehindManager.class);
+        when(fallenBehindManager.hasFallenBehind()).thenReturn(false);
+
         final EmergencyReconnectProtocol protocol = new EmergencyReconnectProtocol(
                 getStaticThreadManager(),
                 mock(NotificationEngine.class),
@@ -103,7 +107,8 @@ public class EmergencyReconnectProtocolTests {
                 mock(SignedStateManager.class),
                 100,
                 mock(ReconnectMetrics.class),
-                reconnectController);
+                reconnectController,
+                fallenBehindManager);
 
         assertEquals(initiateParams.shouldInitiate, protocol.shouldInitiate(), "unexpected initiation result");
     }
@@ -115,6 +120,9 @@ public class EmergencyReconnectProtocolTests {
         final ReconnectThrottle teacherThrottle = mock(ReconnectThrottle.class);
         when(teacherThrottle.initiateReconnect(anyLong())).thenReturn(!teacherIsThrottled);
 
+        final FallenBehindManager fallenBehindManager = mock(FallenBehindManager.class);
+        when(fallenBehindManager.hasFallenBehind()).thenReturn(false);
+
         final EmergencyReconnectProtocol protocol = new EmergencyReconnectProtocol(
                 getStaticThreadManager(),
                 mock(NotificationEngine.class),
@@ -124,7 +132,8 @@ public class EmergencyReconnectProtocolTests {
                 mock(SignedStateManager.class),
                 100,
                 mock(ReconnectMetrics.class),
-                mock(ReconnectController.class));
+                mock(ReconnectController.class),
+                fallenBehindManager);
 
         assertEquals(!teacherIsThrottled, protocol.shouldAccept(), "unexpected protocol acceptance");
     }
@@ -141,6 +150,9 @@ public class EmergencyReconnectProtocolTests {
         final ReconnectController reconnectController =
                 new ReconnectController(getStaticThreadManager(), mock(ReconnectHelper.class), () -> {});
 
+        final FallenBehindManager fallenBehindManager = mock(FallenBehindManager.class);
+        when(fallenBehindManager.hasFallenBehind()).thenReturn(false);
+
         final EmergencyReconnectProtocol protocol = new EmergencyReconnectProtocol(
                 getStaticThreadManager(),
                 mock(NotificationEngine.class),
@@ -150,7 +162,8 @@ public class EmergencyReconnectProtocolTests {
                 mock(SignedStateFinder.class),
                 100,
                 mock(ReconnectMetrics.class),
-                reconnectController);
+                reconnectController,
+                fallenBehindManager);
 
         // the ReconnectController must be running in order to provide permits
         getStaticThreadManager()
@@ -187,6 +200,9 @@ public class EmergencyReconnectProtocolTests {
         reconnectSettings.minimumTimeBetweenReconnects = Duration.ZERO;
         final ReconnectThrottle teacherThrottle = new ReconnectThrottle(reconnectSettings);
 
+        final FallenBehindManager fallenBehindManager = mock(FallenBehindManager.class);
+        when(fallenBehindManager.hasFallenBehind()).thenReturn(false);
+
         final EmergencyReconnectProtocol protocol = new EmergencyReconnectProtocol(
                 getStaticThreadManager(),
                 mock(NotificationEngine.class),
@@ -196,7 +212,8 @@ public class EmergencyReconnectProtocolTests {
                 mock(SignedStateFinder.class),
                 100,
                 mock(ReconnectMetrics.class),
-                mock(ReconnectController.class));
+                mock(ReconnectController.class),
+                fallenBehindManager);
 
         assertTrue(protocol.shouldAccept(), "expected protocol to accept initiation");
 

@@ -31,6 +31,7 @@ import com.swirlds.platform.reconnect.ReconnectController;
 import com.swirlds.platform.reconnect.ReconnectThrottle;
 import com.swirlds.platform.state.EmergencyRecoveryManager;
 import com.swirlds.platform.state.signed.SignedStateFinder;
+import com.swirlds.platform.sync.FallenBehindManager;
 import java.io.IOException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -50,6 +51,7 @@ public class EmergencyReconnectProtocol implements Protocol {
     private InitiatedBy initiatedBy = InitiatedBy.NO_ONE;
     private final ThreadManager threadManager;
     private final NotificationEngine notificationEngine;
+    private final FallenBehindManager fallenBehindManager;
 
     /**
      * @param threadManager
@@ -78,7 +80,8 @@ public class EmergencyReconnectProtocol implements Protocol {
             final SignedStateFinder stateFinder,
             final int reconnectSocketTimeout,
             final ReconnectMetrics reconnectMetrics,
-            final ReconnectController reconnectController) {
+            final ReconnectController reconnectController,
+            final FallenBehindManager fallenBehindManager) {
         this.threadManager = threadManager;
         this.notificationEngine = notificationEngine;
         this.peerId = peerId;
@@ -88,6 +91,7 @@ public class EmergencyReconnectProtocol implements Protocol {
         this.reconnectSocketTimeout = reconnectSocketTimeout;
         this.reconnectMetrics = reconnectMetrics;
         this.reconnectController = reconnectController;
+        this.fallenBehindManager = fallenBehindManager;
     }
 
     @Override
@@ -145,7 +149,12 @@ public class EmergencyReconnectProtocol implements Protocol {
 
     private void teacher(final Connection connection) {
         try {
-            new EmergencyReconnectTeacher(threadManager, stateFinder, reconnectSocketTimeout, reconnectMetrics)
+            new EmergencyReconnectTeacher(
+                            threadManager,
+                            stateFinder,
+                            reconnectSocketTimeout,
+                            fallenBehindManager::hasFallenBehind,
+                            reconnectMetrics)
                     .execute(connection);
         } finally {
             teacherThrottle.reconnectAttemptFinished();

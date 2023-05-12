@@ -179,7 +179,7 @@ public class ReconnectProtocol implements Protocol {
                 case PEER -> teacher(connection);
                 case SELF -> learner(connection);
                 default -> throw new NetworkProtocolException(
-                        "runProtocol() called but it is unclear who the teacher and who the learner" + " is");
+                        "runProtocol() called but it is unclear who the teacher and who the learner is");
             }
         } finally {
             initiatedBy = InitiatedBy.NO_ONE;
@@ -211,6 +211,7 @@ public class ReconnectProtocol implements Protocol {
                             connection.getSelfId().getId(),
                             connection.getOtherId().getId(),
                             state.get().getRound(),
+                            fallenBehindManager::hasFallenBehind,
                             reconnectMetrics)
                     .execute(state.get());
         } finally {

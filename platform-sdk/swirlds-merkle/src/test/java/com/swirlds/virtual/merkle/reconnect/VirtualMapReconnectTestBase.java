@@ -45,6 +45,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 
@@ -77,6 +78,7 @@ public abstract class VirtualMapReconnectTestBase {
     protected VirtualMap<TestKey, TestValue> learnerMap;
     protected BrokenBuilder teacherBuilder;
     protected BrokenBuilder learnerBuilder;
+    protected Supplier<Boolean> requestTeacherToStop;
 
     protected abstract VirtualDataSourceBuilder<TestKey, TestValue> createBuilder() throws IOException;
 
@@ -89,6 +91,7 @@ public abstract class VirtualMapReconnectTestBase {
         learnerBuilder = createBrokenBuilder(dataSourceBuilder);
         teacherMap = new VirtualMap<>("Teacher", teacherBuilder);
         learnerMap = new VirtualMap<>("Learner", learnerBuilder);
+        requestTeacherToStop = () -> false; // don't interrupt teaching by default
     }
 
     @BeforeAll
@@ -205,7 +208,7 @@ public abstract class VirtualMapReconnectTestBase {
 
                 try {
                     final MerkleNode node = MerkleTestUtils.hashAndTestSynchronization(
-                            learnerTree, failureExpected ? brokenTeacherTree : teacherTree);
+                            learnerTree, failureExpected ? brokenTeacherTree : teacherTree, requestTeacherToStop);
                     node.release();
                     assertFalse(failureExpected, "We should only succeed on the last try");
                 } catch (Exception e) {

@@ -25,6 +25,7 @@ import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.unidirectional.NetworkProtocolResponder;
 import com.swirlds.platform.state.signed.ReservedSignedState;
+import com.swirlds.platform.sync.FallenBehindManager;
 import java.io.IOException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -46,6 +47,8 @@ public class ReconnectProtocolResponder implements NetworkProtocolResponder {
     private final ReconnectMetrics stats;
     private final ThreadManager threadManager;
 
+    private final FallenBehindManager fallenBehindManager;
+
     /**
      * @param threadManager responsible for managing thread lifecycles
      * @param latestSignedStateProvider a function that provides the latest signed state, either
@@ -60,11 +63,13 @@ public class ReconnectProtocolResponder implements NetworkProtocolResponder {
             final LatestSignedStateProvider latestSignedStateProvider,
             final ReconnectSettings settings,
             final ReconnectThrottle reconnectThrottle,
+            final FallenBehindManager fallenBehindManager,
             final ReconnectMetrics stats) {
         this.threadManager = threadManager;
         this.latestSignedStateProvider = latestSignedStateProvider;
         this.settings = settings;
         this.reconnectThrottle = reconnectThrottle;
+        this.fallenBehindManager = fallenBehindManager;
         this.stats = stats;
     }
 
@@ -122,6 +127,7 @@ public class ReconnectProtocolResponder implements NetworkProtocolResponder {
                                 connection.getSelfId().getId(),
                                 connection.getOtherId().getId(),
                                 state.get().getRound(),
+                                fallenBehindManager::hasFallenBehind,
                                 stats)
                         .execute(state.get());
             } finally {
