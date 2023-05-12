@@ -113,16 +113,15 @@ class TopologyTest {
     @ParameterizedTest
     @MethodSource("fullyConnected")
     void testFullyConnectedUnidirectionalTopology(final int numNodes, final int numNeighbors, final long ignoredSeed) {
-        final NodeId negativeId = NodeId.createMain(-1);
-        final NodeId outOfBoundsId = NodeId.createMain(numNodes);
+        final NodeId outOfBoundsId = new NodeId(numNodes);
 
         for (int thisNode = 0; thisNode < numNodes; thisNode++) {
-            final NodeId thisNodeId = NodeId.createMain(thisNode);
+            final NodeId thisNodeId = new NodeId(thisNode);
             final NetworkTopology topology = new StaticTopology(thisNodeId, numNodes, numNeighbors);
             final List<NodeId> neighbors = topology.getNeighbors();
             final List<NodeId> expected = IntStream.range(0, numNodes)
                     .filter(i -> i != thisNodeId.getIdAsInt())
-                    .mapToObj(NodeId::createMain)
+                    .mapToObj(NodeId::new)
                     .toList();
             assertEquals(expected, neighbors, "all should be neighbors except me");
             for (final NodeId neighbor : neighbors) {
@@ -132,7 +131,6 @@ class TopologyTest {
             assertFalse(topology.shouldConnectTo(thisNodeId), "I should not connect to myself");
             assertFalse(topology.shouldConnectToMe(thisNodeId), "I should not connect to myself");
 
-            assertFalse(topology.shouldConnectToMe(negativeId), "negative values should return to false");
             assertFalse(topology.shouldConnectToMe(outOfBoundsId), "values >=numNodes should return to false");
 
             testRandomGraphWithSets(topology.getConnectionGraph(), numNodes, numNeighbors);

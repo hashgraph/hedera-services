@@ -79,7 +79,7 @@ public class SimpleSimulatedGossip {
      */
     public void gossipEvent(final GossipEvent event) {
         for (int i = 0; i < numNodes; i++) {
-            if (nodes[i].getNodeId().getId() != event.getHashedData().getCreatorId()) {
+            if (nodes[i].getNodeId().id() != event.getHashedData().getCreatorId()) {
                 final Duration delay = latency.getLatency(event.getHashedData().getCreatorId(), i);
                 queues.get(i).add(new Payload(event, time.now().plus(delay)));
             }

@@ -592,7 +592,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     }
 
     public synchronized void setPayloadConfig(final FCMConfig fcmConfig) {
-        expectedFCMFamily.setNodeId(platform.getSelfId().getId());
+        expectedFCMFamily.setNodeId(platform.getSelfId().id());
         expectedFCMFamily.setFcmConfig(fcmConfig);
         expectedFCMFamily.setWeightedNodeNum(platform.getAddressBook().getNumberWithWeight());
 
@@ -615,7 +615,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
 
     void initControlStructures(final Action<Long, ControlAction> action) {
         this.controlQuorum = new QuorumTriggeredAction<>(
-                () -> platform.getSelfId().getId(),
+                () -> platform.getSelfId().id(),
                 platform.getAddressBook()::getSize,
                 platform.getAddressBook()::getNumberWithWeight,
                 action);
@@ -698,7 +698,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
             }
         }
         SyntheticBottleneckConfig.getActiveConfig()
-                .throttleIfNeeded(platform.getSelfId().getId());
+                .throttleIfNeeded(platform.getSelfId().id());
     }
 
     /**
@@ -816,7 +816,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
                 serialize(
                         expectedFCMFamily.getExpectedMap(),
                         new File(STORAGE_DIRECTORY),
-                        createExpectedMapName(platform.getSelfId().getId(), timestamp),
+                        createExpectedMapName(platform.getSelfId().id(), timestamp),
                         false);
                 TransactionSubmitter.setForcePauseCanSubmitMore(new AtomicBoolean(false));
                 logger.info(LOGM_DEMO_INFO, "handling SAVE_EXPECTED_MAP");
@@ -1068,7 +1068,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
                     TESTING_EXCEPTIONS_ACCEPTABLE_RECONNECT.getMarker(),
                     "handleConsensusRound Interrupted [ nodeId = {}, round = {} ]. "
                             + "This should happen only during a reconnect",
-                    platform.getSelfId().getId(),
+                    platform.getSelfId().id(),
                     roundNum);
             Thread.currentThread().interrupt();
         } catch (final ExecutionException e) {
@@ -1234,7 +1234,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
             setConfig(new PayloadCfgSimple());
         }
 
-        expectedFCMFamily.setNodeId(platform.getSelfId().getId());
+        expectedFCMFamily.setNodeId(platform.getSelfId().id());
         expectedFCMFamily.setWeightedNodeNum(platform.getAddressBook().getNumberWithWeight());
 
         // initialize data structures used for FCQueue transaction records expiration

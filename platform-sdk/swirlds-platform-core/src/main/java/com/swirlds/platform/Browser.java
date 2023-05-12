@@ -624,7 +624,7 @@ public class Browser {
                         + " - " + address.getSelfName()
                         + " - " + infoSwirld.name
                         + " - " + infoSwirld.app.name;
-                final NodeId nodeId = NodeId.createMain(i);
+                final NodeId nodeId = new NodeId(i);
 
                 final PlatformContext platformContext =
                         new DefaultPlatformContext(nodeId, metricsProvider, configuration);
@@ -693,7 +693,7 @@ public class Browser {
                 appMain.init(platform, nodeId);
 
                 final Thread appThread = new ThreadConfiguration(getStaticThreadManager())
-                        .setNodeId(nodeId.getId())
+                        .setNodeId(nodeId.id())
                         .setComponent("app")
                         .setThreadName("appMain")
                         .setRunnable(appMain)
