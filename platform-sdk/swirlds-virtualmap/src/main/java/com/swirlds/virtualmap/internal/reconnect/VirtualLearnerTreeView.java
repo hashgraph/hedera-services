@@ -164,10 +164,6 @@ public final class VirtualLearnerTreeView<K extends VirtualKey, V extends Virtua
 
         // Make sure the path is valid for the original state
         checkValidNode(originalChild, originalState);
-
-        // Get the original record (which may be in cache or on disk) to get the hash. We should look at optimizing
-        // this in the future, so we don't read the whole record if we don't have to (for example, we could use
-        // the loadLeafHash method).
         final Hash hash = originalRecords.findHash(originalChild);
 
         // The hash must have been specified by this point. The original tree was hashed before
