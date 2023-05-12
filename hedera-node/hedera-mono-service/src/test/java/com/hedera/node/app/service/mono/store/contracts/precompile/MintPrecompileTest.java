@@ -42,8 +42,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTes
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.recipientAddress;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.timestamp;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.MintPrecompile.decodeMint;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.MintPrecompile.decodeMintV2;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.MintPrecompile.getMintWrapper;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -97,6 +96,7 @@ import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateU
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.MintPrecompile;
+import com.hedera.node.app.service.mono.store.contracts.precompile.impl.SystemContractAbis;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hedera.node.app.service.mono.txns.token.MintLogic;
@@ -524,7 +524,9 @@ class MintPrecompileTest {
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
         doCallRealMethod().when(frame).setExceptionalHaltReason(any());
-        mintPrecompile.when(() -> decodeMint(pretendArguments)).thenReturn(fungibleMintAmountOversize);
+        mintPrecompile
+                .when(() -> getMintWrapper(pretendArguments, SystemContractAbis.MINT_TOKEN_V1))
+                .thenReturn(fungibleMintAmountOversize);
         givenIfDelegateCall();
         // when:
         final var result = subject.computePrecompile(pretendArguments, frame);
@@ -546,7 +548,9 @@ class MintPrecompileTest {
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        mintPrecompile.when(() -> decodeMint(pretendArguments)).thenReturn(fungibleMintMaxAmount);
+        mintPrecompile
+                .when(() -> getMintWrapper(pretendArguments, SystemContractAbis.MINT_TOKEN_V1))
+                .thenReturn(fungibleMintMaxAmount);
         given(syntheticTxnFactory.createMint(fungibleMintMaxAmount)).willReturn(mockSynthBodyBuilder);
         given(encoder.encodeMintSuccess(anyLong(), any())).willReturn(fungibleSuccessResultWithLongMaxValueSupply);
         given(worldUpdater.aliases()).willReturn(aliases);
@@ -582,7 +586,9 @@ class MintPrecompileTest {
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        mintPrecompile.when(() -> decodeMint(any())).thenReturn(fungibleMint);
+        mintPrecompile
+                .when(() -> getMintWrapper(any(), eq(SystemContractAbis.MINT_TOKEN_V1)))
+                .thenReturn(fungibleMint);
         given(syntheticTxnFactory.createMint(any()))
                 .willReturn(TransactionBody.newBuilder().setTokenMint(TokenMintTransactionBody.newBuilder()));
         given(feeCalculator.computeFee(any(), any(), any(), any()))
@@ -602,7 +608,7 @@ class MintPrecompileTest {
     @Test
     void decodeFungibleMintInput() {
         mintPrecompile.close();
-        final var decodedInput = decodeMint(FUNGIBLE_MINT_INPUT);
+        final var decodedInput = getMintWrapper(FUNGIBLE_MINT_INPUT, SystemContractAbis.MINT_TOKEN_V1);
 
         assertTrue(decodedInput.tokenType().getTokenNum() > 0);
         assertEquals(15, decodedInput.amount());
@@ -612,7 +618,7 @@ class MintPrecompileTest {
     @Test
     void decodeFungibleMintInputV2() {
         mintPrecompile.close();
-        final var decodedInput = decodeMintV2(FUNGIBLE_MINT_INPUT_V2);
+        final var decodedInput = getMintWrapper(FUNGIBLE_MINT_INPUT_V2, SystemContractAbis.MINT_TOKEN_V2);
 
         assertTrue(decodedInput.tokenType().getTokenNum() > 0);
         assertEquals(15, decodedInput.amount());
@@ -622,7 +628,7 @@ class MintPrecompileTest {
     @Test
     void decodeNonFungibleMintInput() {
         mintPrecompile.close();
-        final var decodedInput = decodeMint(NON_FUNGIBLE_MINT_INPUT);
+        final var decodedInput = getMintWrapper(NON_FUNGIBLE_MINT_INPUT, SystemContractAbis.MINT_TOKEN_V1);
         final var metadata1 = ByteString.copyFrom("NFT metadata test1".getBytes());
         final var metadata2 = ByteString.copyFrom("NFT metadata test2".getBytes());
         final List<ByteString> metadata = Arrays.asList(metadata1, metadata2);
@@ -635,7 +641,7 @@ class MintPrecompileTest {
     @Test
     void decodeFungibleMintZeroInputV2() {
         mintPrecompile.close();
-        final var decodedInput = decodeMintV2(ZERO_FUNGIBLE_MINT_INPUT_V2);
+        final var decodedInput = getMintWrapper(ZERO_FUNGIBLE_MINT_INPUT_V2, SystemContractAbis.MINT_TOKEN_V2);
         final List<ByteString> metadata = new ArrayList<>();
 
         assertTrue(decodedInput.tokenType().getTokenNum() > 0);
@@ -646,7 +652,7 @@ class MintPrecompileTest {
     @Test
     void decodeFungibleMintZeroInput() {
         mintPrecompile.close();
-        final var decodedInput = decodeMint(ZERO_FUNGIBLE_MINT_INPUT);
+        final var decodedInput = getMintWrapper(ZERO_FUNGIBLE_MINT_INPUT, SystemContractAbis.MINT_TOKEN_V1);
         final var metadata = new ArrayList<>();
 
         assertTrue(decodedInput.tokenType().getTokenNum() > 0);
@@ -657,7 +663,7 @@ class MintPrecompileTest {
     @Test
     void decodeNonFungibleMintInputV2() {
         mintPrecompile.close();
-        final var decodedInput = decodeMintV2(NON_FUNGIBLE_MINT_INPUT_V2);
+        final var decodedInput = getMintWrapper(NON_FUNGIBLE_MINT_INPUT_V2, SystemContractAbis.MINT_TOKEN_V2);
         final var metadata1 = ByteString.copyFrom("NFT metadata test1".getBytes());
         final var metadata2 = ByteString.copyFrom("NFT metadata test2".getBytes());
         final List<ByteString> metadata = Arrays.asList(metadata1, metadata2);
@@ -669,14 +675,18 @@ class MintPrecompileTest {
 
     private Bytes givenNonFungibleFrameContext() {
         final Bytes pretendArguments = givenFrameContext();
-        mintPrecompile.when(() -> decodeMint(pretendArguments)).thenReturn(nftMint);
+        mintPrecompile
+                .when(() -> getMintWrapper(pretendArguments, SystemContractAbis.MINT_TOKEN_V1))
+                .thenReturn(nftMint);
         given(syntheticTxnFactory.createMint(nftMint)).willReturn(mockSynthBodyBuilder);
         return pretendArguments;
     }
 
     private Bytes givenFungibleFrameContext() {
         final Bytes pretendArguments = givenFrameContext();
-        mintPrecompile.when(() -> decodeMint(pretendArguments)).thenReturn(fungibleMint);
+        mintPrecompile
+                .when(() -> getMintWrapper(pretendArguments, SystemContractAbis.MINT_TOKEN_V1))
+                .thenReturn(fungibleMint);
         given(syntheticTxnFactory.createMint(fungibleMint)).willReturn(mockSynthBodyBuilder);
         return pretendArguments;
     }
