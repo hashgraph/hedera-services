@@ -11,6 +11,7 @@ module com.hedera.node.app.service.file.impl {
     requires org.apache.commons.lang3;
     requires org.apache.logging.log4j;
     requires com.swirlds.config;
+    requires com.hedera.node.config;
 
     provides com.hedera.node.app.service.file.FileService with
             FileServiceImpl;
@@ -18,7 +19,6 @@ module com.hedera.node.app.service.file.impl {
     exports com.hedera.node.app.service.file.impl.handlers;
     exports com.hedera.node.app.service.file.impl.codec;
     exports com.hedera.node.app.service.file.impl.records;
-    exports com.hedera.node.app.service.file.impl.config;
     exports com.hedera.node.app.service.file.impl;
     exports com.hedera.node.app.service.file.impl.base;
     exports com.hedera.node.app.service.file.impl.utils;

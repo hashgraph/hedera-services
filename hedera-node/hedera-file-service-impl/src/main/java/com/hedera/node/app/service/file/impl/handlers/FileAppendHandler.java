@@ -30,13 +30,14 @@ import com.hedera.hapi.node.file.FileAppendTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
-import com.hedera.node.app.service.file.impl.config.FileServiceConfig;
 import com.hedera.node.app.service.file.impl.records.UpdateFileRecordBuilder;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
+import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.config.data.FilesConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
@@ -93,13 +94,14 @@ public class FileAppendHandler implements TransactionHandler {
     public void handle(
             @NonNull final FileAppendTransactionBody op,
             @NonNull final WritableFileStoreImpl fileStore,
-            @NonNull final FileServiceConfig fileServiceConfig) {
+            @NonNull HandleContext context) {
         requireNonNull(op);
         requireNonNull(fileStore);
-        requireNonNull(fileServiceConfig);
+        requireNonNull(context);
 
         final var target = op.fileID();
         final var data = op.contents();
+        final var fileServiceConfig = context.getConfiguration().getConfigData(FilesConfig.class);
         if (data == null || data.length() <= 0) {
             logger.info("FileAppend: No data to append");
         }

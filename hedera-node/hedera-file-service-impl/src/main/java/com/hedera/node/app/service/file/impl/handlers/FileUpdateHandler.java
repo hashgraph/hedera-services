@@ -33,7 +33,6 @@ import com.hedera.node.app.service.file.FileMetadata;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
-import com.hedera.node.app.service.file.impl.config.FileServiceConfig;
 import com.hedera.node.app.service.file.impl.records.UpdateFileRecordBuilder;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.validation.AttributeValidator;
@@ -41,6 +40,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.config.data.FilesConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -92,16 +92,17 @@ public class FileUpdateHandler implements TransactionHandler {
     public void handle(
             @NonNull final HandleContext handleContext,
             @NonNull final FileUpdateTransactionBody fileUpdate,
-            @NonNull final WritableFileStoreImpl fileStore,
-            @NonNull final FileServiceConfig fileServiceConfig) {
+            @NonNull final WritableFileStoreImpl fileStore) {
 
         requireNonNull(handleContext);
         requireNonNull(fileUpdate);
         requireNonNull(fileStore);
-        requireNonNull(fileServiceConfig);
 
         final var maybeFile = requireNonNull(fileStore)
                 .get(fileUpdate.fileIDOrElse(FileID.DEFAULT).fileNum());
+
+        final var fileServiceConfig = handleContext.getConfiguration().getConfigData(FilesConfig.class);
+
         if (maybeFile.isEmpty()) throw new HandleException(INVALID_FILE_ID);
 
         final var file = maybeFile.get();
@@ -131,7 +132,7 @@ public class FileUpdateHandler implements TransactionHandler {
     private void resolveMutableBuilderAttributes(
             @NonNull final FileUpdateTransactionBody op,
             @NonNull final File.Builder builder,
-            @NonNull final FileServiceConfig fileServiceConfig,
+            @NonNull final FilesConfig fileServiceConfig,
             @NonNull final File file) {
         if (op.hasKeys()) {
             builder.keys(op.keys());
@@ -140,7 +141,7 @@ public class FileUpdateHandler implements TransactionHandler {
         }
         var contentLength = op.contents().length();
         if (contentLength > 0) {
-            if (contentLength > fileServiceConfig.maxSizeKB() * 1024L) {
+            if (contentLength > fileServiceConfig.maxSizeKb() * 1024L) {
                 throw new HandleException(MAX_FILE_SIZE_EXCEEDED);
             }
             builder.contents(op.contents());

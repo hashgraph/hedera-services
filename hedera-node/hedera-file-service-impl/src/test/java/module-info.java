@@ -13,4 +13,6 @@ open module com.hedera.node.app.service.file.impl.test {
     requires com.swirlds.common;
     requires org.apache.commons.lang3;
     requires com.github.spotbugs.annotations;
+    requires com.hedera.node.config;
+    requires com.swirlds.config;
 }

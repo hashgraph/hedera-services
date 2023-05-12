@@ -28,7 +28,6 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.file.FileCreateTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
-import com.hedera.node.app.service.file.impl.config.FileServiceConfig;
 import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.spi.meta.HandleContext;
@@ -37,6 +36,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.config.data.FilesConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -84,23 +84,22 @@ public class FileCreateHandler implements TransactionHandler {
     public void handle(
             @NonNull final HandleContext handleContext,
             @NonNull final FileCreateTransactionBody fileCreateTransactionBody,
-            @NonNull final FileServiceConfig fileServiceConfig,
             @NonNull final CreateFileRecordBuilder recordBuilder,
             @NonNull final WritableFileStoreImpl fileStore) {
         requireNonNull(handleContext);
         requireNonNull(fileCreateTransactionBody);
-        requireNonNull(fileServiceConfig);
         requireNonNull(recordBuilder);
         requireNonNull(fileStore);
 
         final var builder = new File.Builder();
+        final var fileServiceConfig = handleContext.getConfiguration().getConfigData(FilesConfig.class);
 
         if (fileCreateTransactionBody.hasKeys()) {
             builder.keys(fileCreateTransactionBody.keys());
         }
 
         /* Validate if the current file can be created */
-        if (fileStore.sizeOfState() >= fileServiceConfig.maxNum()) {
+        if (fileStore.sizeOfState() >= fileServiceConfig.maxNumber()) {
             throw new HandleException(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
         }
 

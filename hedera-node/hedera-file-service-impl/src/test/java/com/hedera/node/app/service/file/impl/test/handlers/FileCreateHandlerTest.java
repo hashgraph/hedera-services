@@ -29,6 +29,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -42,7 +43,6 @@ import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
-import com.hedera.node.app.service.file.impl.config.FileServiceConfig;
 import com.hedera.node.app.service.file.impl.handlers.FileCreateHandler;
 import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
 import com.hedera.node.app.service.mono.utils.EntityNum;
@@ -54,7 +54,9 @@ import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.config.data.FilesConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -80,6 +82,9 @@ class FileCreateHandlerTest extends FileHandlerTestBase {
     @Mock
     private ExpiryValidator expiryValidator;
 
+    @Mock
+    private Configuration configuration;
+
     //    @Mock
     //    private LongSupplier consensusSecondNow;
     //
@@ -87,7 +92,7 @@ class FileCreateHandlerTest extends FileHandlerTestBase {
     //    private GlobalDynamicProperties dynamicProperties;
 
     private CreateFileRecordBuilder recordBuilder;
-    private FileServiceConfig config;
+    private FilesConfig config;
 
     private WritableFileStoreImpl fileStore;
     private FileCreateHandler subject;
@@ -115,8 +120,10 @@ class FileCreateHandlerTest extends FileHandlerTestBase {
     void setUp() {
         subject = new FileCreateHandler();
         fileStore = new WritableFileStoreImpl(writableStates);
-        config = new FileServiceConfig(1000000L, 1024, 8000001L, 2592000L);
+        config = new FilesConfig(101L, 121L, 112L, 111L, 122L, 102L, 123L, 1000000L, 1024);
         recordBuilder = new CreateFileRecordBuilder();
+        lenient().when(handleContext.getConfiguration()).thenReturn(configuration);
+        lenient().when(configuration.getConfigData(any())).thenReturn(config);
     }
 
     @Test
@@ -191,7 +198,7 @@ class FileCreateHandlerTest extends FileHandlerTestBase {
                 .willReturn(new ExpiryMeta(expirationTime, NA, NA));
         given(handleContext.newEntityNumSupplier()).willReturn(() -> 1_234L);
 
-        subject.handle(handleContext, op, config, recordBuilder, fileStore);
+        subject.handle(handleContext, op, recordBuilder, fileStore);
 
         final var createdFile = fileStore.get(1_234L);
         assertTrue(createdFile.isPresent());
@@ -219,7 +226,7 @@ class FileCreateHandlerTest extends FileHandlerTestBase {
                 .willReturn(new ExpiryMeta(1_234_567L, NA, NA));
         given(handleContext.newEntityNumSupplier()).willReturn(() -> 1_234L);
 
-        subject.handle(handleContext, op, config, recordBuilder, fileStore);
+        subject.handle(handleContext, op, recordBuilder, fileStore);
 
         final var createdFile = fileStore.get(1_234L);
         assertTrue(createdFile.isPresent());
@@ -244,8 +251,8 @@ class FileCreateHandlerTest extends FileHandlerTestBase {
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any()))
                 .willThrow(new HandleException(ResponseCodeEnum.INVALID_EXPIRATION_TIME));
 
-        final var failure = assertThrows(
-                HandleException.class, () -> subject.handle(handleContext, op, config, recordBuilder, fileStore));
+        final var failure =
+                assertThrows(HandleException.class, () -> subject.handle(handleContext, op, recordBuilder, fileStore));
         assertEquals(ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE, failure.getStatus());
     }
 
@@ -264,7 +271,7 @@ class FileCreateHandlerTest extends FileHandlerTestBase {
                 .when(validator)
                 .validateMemo(op.memo());
 
-        assertThrows(HandleException.class, () -> subject.handle(handleContext, op, config, recordBuilder, fileStore));
+        assertThrows(HandleException.class, () -> subject.handle(handleContext, op, recordBuilder, fileStore));
         assertTrue(fileStore.get(1234L).isEmpty());
     }
 
@@ -279,10 +286,11 @@ class FileCreateHandlerTest extends FileHandlerTestBase {
         final var fileStore = new WritableFileStoreImpl(writableStates);
         assertEquals(1, fileStore.sizeOfState());
 
-        config = new FileServiceConfig(1, 1, 1, 1);
+        config = new FilesConfig(1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1);
+        given(configuration.getConfigData(any())).willReturn(config);
 
-        final var msg = assertThrows(
-                HandleException.class, () -> subject.handle(handleContext, op, config, recordBuilder, fileStore));
+        final var msg =
+                assertThrows(HandleException.class, () -> subject.handle(handleContext, op, recordBuilder, fileStore));
         assertEquals(ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED, msg.getStatus());
         assertEquals(0, this.fileStore.modifiedFiles().size());
     }

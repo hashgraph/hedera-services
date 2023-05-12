@@ -25,9 +25,9 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.file.FileAppendTransactionBody;
 import com.hedera.node.app.service.file.FileMetadata;
 import com.hedera.node.app.service.file.ReadableFileStore;
-import com.hedera.node.app.service.file.impl.config.FileServiceConfig;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.config.data.FilesConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -38,14 +38,14 @@ import org.apache.logging.log4j.Logger;
 public class FileUtils {
     private static final Logger logger = LogManager.getLogger(FileUtils.class);
 
-    public static void validateContent(@NonNull byte[] content, @NonNull FileServiceConfig fileServiceConfig) {
+    public static void validateContent(@NonNull byte[] content, @NonNull FilesConfig fileServiceConfig) {
         var contentLength = content.length;
 
         if (contentLength <= 0) {
             throw new HandleException(FILE_CONTENT_EMPTY);
         }
 
-        if (contentLength > fileServiceConfig.maxSizeKB() * 1024L) {
+        if (contentLength > fileServiceConfig.maxSizeKb() * 1024L) {
             throw new HandleException(MAX_FILE_SIZE_EXCEEDED);
         }
     }

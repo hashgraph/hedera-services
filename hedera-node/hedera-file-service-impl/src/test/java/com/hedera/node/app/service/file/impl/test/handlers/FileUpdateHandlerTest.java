@@ -24,8 +24,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.lenient;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -34,7 +36,6 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.file.FileUpdateTransactionBody;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.file.impl.config.FileServiceConfig;
 import com.hedera.node.app.service.file.impl.handlers.FileUpdateHandler;
 import com.hedera.node.app.service.file.impl.records.UpdateFileRecordBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -43,7 +44,10 @@ import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.config.data.FilesConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -76,9 +80,19 @@ class FileUpdateHandlerTest extends FileHandlerTestBase {
     @Mock
     private AttributeValidator attributeValidator;
 
-    private FileUpdateHandler subject = new FileUpdateHandler();
+    @Mock
+    private Configuration configuration;
 
-    private FileServiceConfig config = new FileServiceConfig(1000000L, 1024, 8000001L, 2592000L);
+    private FileUpdateHandler subject;
+    private FilesConfig config;
+
+    @BeforeEach
+    void setUp() {
+        subject = new FileUpdateHandler();
+        config = new FilesConfig(101L, 121L, 112L, 111L, 122L, 102L, 123L, 1000000L, 1024);
+        lenient().when(handleContext.getConfiguration()).thenReturn(configuration);
+        lenient().when(configuration.getConfigData(any())).thenReturn(config);
+    }
 
     @Test
     void returnsExpectedRecordBuilderType() {
@@ -90,7 +104,7 @@ class FileUpdateHandlerTest extends FileHandlerTestBase {
         final var op = OP_BUILDER.build();
 
         // expect:
-        assertFailsWith(INVALID_FILE_ID, () -> subject.handle(handleContext, op, writableStore, config));
+        assertFailsWith(INVALID_FILE_ID, () -> subject.handle(handleContext, op, writableStore));
     }
 
     @Test
@@ -101,7 +115,7 @@ class FileUpdateHandlerTest extends FileHandlerTestBase {
         final var op = OP_BUILDER.fileID(wellKnownId()).build();
 
         // expect:
-        assertFailsWith(FILE_DELETED, () -> subject.handle(handleContext, op, writableStore, config));
+        assertFailsWith(FILE_DELETED, () -> subject.handle(handleContext, op, writableStore));
     }
 
     @Test
@@ -113,7 +127,7 @@ class FileUpdateHandlerTest extends FileHandlerTestBase {
                 OP_BUILDER.fileID(wellKnownId()).memo("Please mind the vase").build();
 
         // expect:
-        assertFailsWith(ResponseCodeEnum.UNAUTHORIZED, () -> subject.handle(handleContext, op, writableStore, config));
+        assertFailsWith(ResponseCodeEnum.UNAUTHORIZED, () -> subject.handle(handleContext, op, writableStore));
     }
 
     @Test
@@ -124,7 +138,7 @@ class FileUpdateHandlerTest extends FileHandlerTestBase {
         final var op = OP_BUILDER.fileID(wellKnownId()).keys(anotherKeys).build();
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
 
-        subject.handle(handleContext, op, writableStore, config);
+        subject.handle(handleContext, op, writableStore);
 
         final var newFile = writableFileState.get(fileEntityNum);
         final var expectedKey = anotherKeys;
@@ -144,7 +158,7 @@ class FileUpdateHandlerTest extends FileHandlerTestBase {
                 .validateMemo(op.memo());
 
         // expect:
-        assertFailsWith(ResponseCodeEnum.MEMO_TOO_LONG, () -> subject.handle(handleContext, op, writableStore, config));
+        assertFailsWith(ResponseCodeEnum.MEMO_TOO_LONG, () -> subject.handle(handleContext, op, writableStore));
     }
 
     @Test
@@ -155,7 +169,7 @@ class FileUpdateHandlerTest extends FileHandlerTestBase {
 
         final var op = OP_BUILDER.fileID(wellKnownId()).memo(newMemo).build();
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
-        subject.handle(handleContext, op, writableStore, config);
+        subject.handle(handleContext, op, writableStore);
 
         final var newFile = writableFileState.get(fileEntityNum);
         assertEquals(newMemo, newFile.memo());
@@ -174,8 +188,7 @@ class FileUpdateHandlerTest extends FileHandlerTestBase {
 
         // expect:
         assertFailsWith(
-                ResponseCodeEnum.MAX_FILE_SIZE_EXCEEDED,
-                () -> subject.handle(handleContext, op, writableStore, config));
+                ResponseCodeEnum.MAX_FILE_SIZE_EXCEEDED, () -> subject.handle(handleContext, op, writableStore));
     }
 
     @Test
@@ -189,7 +202,7 @@ class FileUpdateHandlerTest extends FileHandlerTestBase {
                 .build();
 
         // expect:
-        subject.handle(handleContext, op, writableStore, config);
+        subject.handle(handleContext, op, writableStore);
 
         final var updatedFile = writableFileState.get(fileEntityNum);
         assertEquals(file.contents(), updatedFile.contents());
@@ -203,7 +216,7 @@ class FileUpdateHandlerTest extends FileHandlerTestBase {
 
         final var op = OP_BUILDER.fileID(wellKnownId()).contents(newContent).build();
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
-        subject.handle(handleContext, op, writableStore, config);
+        subject.handle(handleContext, op, writableStore);
 
         final var newFile = writableFileState.get(fileEntityNum);
         assertEquals(newContent, newFile.contents());
@@ -215,7 +228,7 @@ class FileUpdateHandlerTest extends FileHandlerTestBase {
 
         final var expiry = Timestamp.newBuilder().seconds(1_234_568L).build();
         final var op = OP_BUILDER.fileID(wellKnownId()).expirationTime(expiry).build();
-        subject.handle(handleContext, op, writableStore, config);
+        subject.handle(handleContext, op, writableStore);
 
         final var newFile = writableFileState.get(fileEntityNum);
         assertEquals(1_234_568L, newFile.expirationTime());
@@ -227,7 +240,7 @@ class FileUpdateHandlerTest extends FileHandlerTestBase {
 
         final var expiry = Timestamp.newBuilder().seconds(1_234_566L).build();
         final var op = OP_BUILDER.fileID(wellKnownId()).expirationTime(expiry).build();
-        subject.handle(handleContext, op, writableStore, config);
+        subject.handle(handleContext, op, writableStore);
 
         final var newFile = writableFileState.get(fileEntityNum);
         assertEquals(1_234_567L, newFile.expirationTime());
@@ -240,7 +253,7 @@ class FileUpdateHandlerTest extends FileHandlerTestBase {
         // No-op
         final var op = OP_BUILDER.fileID(wellKnownId()).build();
 
-        subject.handle(handleContext, op, writableStore, config);
+        subject.handle(handleContext, op, writableStore);
 
         final var newFile = writableFileState.get(fileEntityNum);
         assertEquals(file, newFile);

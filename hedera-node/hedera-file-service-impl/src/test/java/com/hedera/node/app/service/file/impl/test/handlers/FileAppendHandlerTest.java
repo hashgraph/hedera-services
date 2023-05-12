@@ -22,6 +22,8 @@ import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -29,7 +31,6 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.file.FileAppendTransactionBody;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.file.impl.config.FileServiceConfig;
 import com.hedera.node.app.service.file.impl.handlers.FileAppendHandler;
 import com.hedera.node.app.service.file.impl.records.UpdateFileRecordBuilder;
 import com.hedera.node.app.spi.meta.HandleContext;
@@ -37,8 +38,11 @@ import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.config.data.FilesConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
 import org.apache.commons.lang3.ArrayUtils;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -68,9 +72,19 @@ class FileAppendHandlerTest extends FileHandlerTestBase {
     @Mock
     private AttributeValidator attributeValidator;
 
-    private FileAppendHandler subject = new FileAppendHandler();
+    @Mock
+    private Configuration configuration;
 
-    private FileServiceConfig config = new FileServiceConfig(1000000L, 1024, 8000001L, 2592000L);
+    private FileAppendHandler subject;
+    private FilesConfig config;
+
+    @BeforeEach
+    void setUp() {
+        subject = new FileAppendHandler();
+        config = new FilesConfig(101L, 121L, 112L, 111L, 122L, 102L, 123L, 1000000L, 1024);
+        lenient().when(handleContext.getConfiguration()).thenReturn(configuration);
+        lenient().when(configuration.getConfigData(any())).thenReturn(config);
+    }
 
     @Test
     void returnsExpectedRecordBuilderType() {
@@ -82,7 +96,7 @@ class FileAppendHandlerTest extends FileHandlerTestBase {
         final var op = OP_BUILDER.build();
 
         // expect:
-        assertFailsWith(INVALID_FILE_ID, () -> subject.handle(op, writableStore, config));
+        assertFailsWith(INVALID_FILE_ID, () -> subject.handle(op, writableStore, handleContext));
     }
 
     @Test
@@ -93,7 +107,7 @@ class FileAppendHandlerTest extends FileHandlerTestBase {
         final var op = OP_BUILDER.fileID(wellKnownId()).build();
 
         // expect:
-        assertFailsWith(FILE_DELETED, () -> subject.handle(op, writableStore, config));
+        assertFailsWith(FILE_DELETED, () -> subject.handle(op, writableStore, handleContext));
     }
 
     @Test
@@ -107,7 +121,8 @@ class FileAppendHandlerTest extends FileHandlerTestBase {
                 .build();
 
         // expect:
-        assertFailsWith(ResponseCodeEnum.MAX_FILE_SIZE_EXCEEDED, () -> subject.handle(op, writableStore, config));
+        assertFailsWith(
+                ResponseCodeEnum.MAX_FILE_SIZE_EXCEEDED, () -> subject.handle(op, writableStore, handleContext));
     }
 
     @Test
@@ -121,7 +136,7 @@ class FileAppendHandlerTest extends FileHandlerTestBase {
                 .build();
 
         // expect:
-        subject.handle(op, writableStore, config);
+        subject.handle(op, writableStore, handleContext);
 
         final var appendedFile = writableFileState.get(fileEntityNum);
         assertEquals(file.contents(), appendedFile.contents());
@@ -139,7 +154,7 @@ class FileAppendHandlerTest extends FileHandlerTestBase {
         final var op =
                 OP_BUILDER.fileID(wellKnownId()).contents(bytesNewContent).build();
 
-        subject.handle(op, writableStore, config);
+        subject.handle(op, writableStore, handleContext);
 
         final var appendedFile = writableFileState.get(fileEntityNum);
         assertEquals(bytesNewContentExpected, appendedFile.contents());
@@ -152,7 +167,7 @@ class FileAppendHandlerTest extends FileHandlerTestBase {
         // No-op
         final var op = OP_BUILDER.fileID(wellKnownId()).build();
 
-        subject.handle(op, writableStore, config);
+        subject.handle(op, writableStore, handleContext);
 
         final var appendedFile = writableFileState.get(fileEntityNum);
         assertEquals(file, appendedFile);
