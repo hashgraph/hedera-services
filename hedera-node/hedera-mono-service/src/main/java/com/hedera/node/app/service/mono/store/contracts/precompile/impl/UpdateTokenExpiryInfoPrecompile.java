@@ -16,22 +16,14 @@
 
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
-import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.BYTES32;
-import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.EXPIRY;
-import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.EXPIRY_V2;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.EXPIRY_DECODER;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeTokenExpiry;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.removeBrackets;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.AbstractTokenUpdatePrecompile.UpdateType.UPDATE_TOKEN_EXPIRY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 
-import com.esaulpaugh.headlong.abi.ABIType;
-import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
-import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
@@ -44,6 +36,7 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.utils.KeyActi
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
@@ -51,16 +44,6 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class UpdateTokenExpiryInfoPrecompile extends AbstractTokenUpdatePrecompile {
     private final int functionId;
-    private static final Function TOKEN_UPDATE_EXPIRY_INFO_FUNCTION =
-            new Function("updateTokenExpiryInfo(address," + EXPIRY + ")");
-    private static final Bytes TOKEN_UPDATE_EXPIRY_INFO_SELECTOR =
-            Bytes.wrap(TOKEN_UPDATE_EXPIRY_INFO_FUNCTION.selector());
-    private static final ABIType<Tuple> TOKEN_UPDATE_EXPIRY_INFO_DECODER =
-            TypeFactory.create("(" + removeBrackets(BYTES32) + "," + EXPIRY_DECODER + ")");
-    private static final Function TOKEN_UPDATE_EXPIRY_INFO_FUNCTION_V2 =
-            new Function("updateTokenExpiryInfo(address," + EXPIRY_V2 + ")");
-    private static final Bytes TOKEN_UPDATE_EXPIRY_INFO_SELECTOR_V2 =
-            Bytes.wrap(TOKEN_UPDATE_EXPIRY_INFO_FUNCTION_V2.selector());
     private TokenUpdateExpiryInfoWrapper updateExpiryInfoOp;
 
     public UpdateTokenExpiryInfoPrecompile(
@@ -87,11 +70,15 @@ public class UpdateTokenExpiryInfoPrecompile extends AbstractTokenUpdatePrecompi
 
     @Override
     public Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
-        updateExpiryInfoOp = switch (functionId) {
-            case AbiConstants.ABI_ID_UPDATE_TOKEN_EXPIRY_INFO -> decodeUpdateTokenExpiryInfo(input, aliasResolver);
-            case AbiConstants.ABI_ID_UPDATE_TOKEN_EXPIRY_INFO_V2 -> decodeUpdateTokenExpiryInfoV2(input, aliasResolver);
-            default -> null;};
+        final var updateExpiryInfoAbi =
+                switch (functionId) {
+                    case AbiConstants.ABI_ID_UPDATE_TOKEN_EXPIRY_INFO -> SystemContractAbis.UPDATE_TOKEN_EXPIRY_INFO_V1;
+                    case AbiConstants.ABI_ID_UPDATE_TOKEN_EXPIRY_INFO_V2 -> SystemContractAbis
+                            .UPDATE_TOKEN_EXPIRY_INFO_V2;
+                    default -> throw new IllegalArgumentException("invalid selector to updateExpiryInfo precompile");
+                };
 
+        updateExpiryInfoOp = getTokenUpdateExpiryInfoWrapper(input, aliasResolver, updateExpiryInfoAbi);
         transactionBody = syntheticTxnFactory.createTokenUpdateExpiryInfo(updateExpiryInfoOp);
         return transactionBody;
     }
@@ -105,20 +92,9 @@ public class UpdateTokenExpiryInfoPrecompile extends AbstractTokenUpdatePrecompi
         super.run(frame);
     }
 
-    public static TokenUpdateExpiryInfoWrapper decodeUpdateTokenExpiryInfo(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        return getTokenUpdateExpiryInfoWrapper(input, aliasResolver, TOKEN_UPDATE_EXPIRY_INFO_SELECTOR);
-    }
-
-    public static TokenUpdateExpiryInfoWrapper decodeUpdateTokenExpiryInfoV2(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        return getTokenUpdateExpiryInfoWrapper(input, aliasResolver, TOKEN_UPDATE_EXPIRY_INFO_SELECTOR_V2);
-    }
-
-    private static TokenUpdateExpiryInfoWrapper getTokenUpdateExpiryInfoWrapper(
-            Bytes input, UnaryOperator<byte[]> aliasResolver, Bytes tokenUpdateExpiryInfoSelector) {
-        final Tuple decodedArguments =
-                decodeFunctionCall(input, tokenUpdateExpiryInfoSelector, TOKEN_UPDATE_EXPIRY_INFO_DECODER);
+    public static TokenUpdateExpiryInfoWrapper getTokenUpdateExpiryInfoWrapper(
+            Bytes input, UnaryOperator<byte[]> aliasResolver, @NonNull final SystemContractAbis abi) {
+        final Tuple decodedArguments = decodeFunctionCall(input, abi.selector, abi.decoder);
 
         final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
         final Tuple tokenExpiryStruct = decodedArguments.get(1);
