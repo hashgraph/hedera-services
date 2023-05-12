@@ -61,7 +61,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         final var topicStore = context.createStore(ReadableTopicStore.class);
 
         // The topic ID must be present on the transaction and the topic must exist.
-        final var topic = topicStore.getTopicMetadata(op.topicID());
+        final var topic = topicStore.getTopic(op.topicID());
         mustExist(topic, INVALID_TOPIC_ID);
 
         // Extending the expiry is the *only* update operation permitted without an admin key. So if that is the
@@ -75,7 +75,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
 
         // If the transaction is setting a new admin key, then the transaction must also be signed by that new key
         if (op.hasAdminKey()) {
-            context.requireKey(op.adminKeyOrThrow());
+            context.requireKeyOrThrow(op.adminKeyOrThrow(), UNAUTHORIZED);
         }
 
         // If the transaction is setting a new account for auto-renewals, then that account must also

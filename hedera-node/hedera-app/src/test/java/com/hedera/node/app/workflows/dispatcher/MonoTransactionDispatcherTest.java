@@ -538,7 +538,7 @@ class MonoTransactionDispatcherTest {
 
         doAnswer(invocation -> {
                     final var builder = (SubmitMessageRecordBuilder) invocation.getArguments()[3];
-                    builder.setNewTopicMetadata(newRunningHash, 2, 3L);
+                    builder.setNewTopic(newRunningHash, 2, 3L);
                     return null;
                 })
                 .when(consensusSubmitMessageHandler)

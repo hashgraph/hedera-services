@@ -19,23 +19,19 @@ package com.hedera.node.app.service.consensus.impl.test.handlers;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.CUSTOM_PAYER_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.EXISTING_TOPIC;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
+import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
-import com.hedera.node.app.service.consensus.TopicMetadata;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import java.time.Instant;
-import java.util.Optional;
-import java.util.OptionalLong;
-import org.assertj.core.api.Assertions;
 
 public final class ConsensusTestUtils {
 
@@ -67,25 +63,15 @@ public final class ConsensusTestUtils {
     }
 
     static void assertPayer(Key expected, PreHandleContext context) {
-        Assertions.assertThat(context.payerKey()).isEqualTo(expected);
+        assertThat(context.payerKey()).isEqualTo(expected);
     }
 
-    static void mockTopicLookup(Key adminKey, Key submitKey, ReadableTopicStore topicStore) throws PreCheckException {
-        given(topicStore.getTopicMetadata(notNull()))
-                .willReturn(newTopicMeta(adminKey != null ? adminKey : null, submitKey != null ? submitKey : null));
+    static void mockTopicLookup(Key adminKey, Key submitKey, ReadableTopicStore topicStore) {
+        given(topicStore.getTopic(notNull()))
+                .willReturn(newTopic(adminKey != null ? adminKey : null, submitKey != null ? submitKey : null));
     }
 
-    static TopicMetadata newTopicMeta(Key admin, Key submit) {
-        return new TopicMetadata(
-                Optional.of(Instant.now() + ""),
-                admin,
-                submit,
-                -1L,
-                OptionalLong.of(1234567L),
-                null,
-                -1,
-                null,
-                EXISTING_TOPIC.getTopicNum(),
-                false);
+    static Topic newTopic(Key admin, Key submit) {
+        return new Topic(EXISTING_TOPIC.getTopicNum(), -1L, 0L, -1L, 1234567L, false, null, "memo", admin, submit);
     }
 }

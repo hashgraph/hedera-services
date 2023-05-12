@@ -31,6 +31,7 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.base.ResponseType;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.consensus.ConsensusGetTopicInfoQuery;
 import com.hedera.hapi.node.consensus.ConsensusGetTopicInfoResponse;
@@ -42,7 +43,6 @@ import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 import javax.inject.Inject;
@@ -97,11 +97,13 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
         final ConsensusGetTopicInfoQuery op = query.consensusGetTopicInfoOrThrow();
         if (op.hasTopicID()) {
             // The topic must exist
-            final var topic = topicStore.getTopicMetadata(op.topicID());
+            final var topic = topicStore.getTopic(op.topicID());
             mustExist(topic, INVALID_TOPIC_ID);
-            if (topic.isDeleted()) {
+            if (topic.deleted()) {
                 throw new PreCheckException(INVALID_TOPIC_ID);
             }
+        } else {
+            throw new PreCheckException(INVALID_TOPIC_ID);
         }
     }
 
@@ -134,21 +136,20 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
      */
     private Optional<ConsensusTopicInfo> infoForTopic(
             @NonNull final TopicID topicID, @NonNull final ReadableTopicStore topicStore) {
-        final var meta = topicStore.getTopicMetadata(topicID);
+        final var meta = topicStore.getTopic(topicID);
         if (meta == null) {
             return Optional.empty();
         } else {
             final var info = ConsensusTopicInfo.newBuilder();
-            meta.memo().ifPresent(info::memo);
-            info.runningHash(Bytes.wrap(meta.runningHash()));
+            info.memo(meta.memo());
+            info.runningHash(meta.runningHash());
             info.sequenceNumber(meta.sequenceNumber());
-            info.expirationTime(meta.expirationTimestamp());
+            info.expirationTime(Timestamp.newBuilder().seconds(meta.expiry()).build());
             if (!isEmpty(meta.adminKey())) info.adminKey(meta.adminKey());
             if (!isEmpty(meta.submitKey())) info.submitKey(meta.submitKey());
-            info.autoRenewPeriod(Duration.newBuilder().seconds(meta.autoRenewDurationSeconds()));
-            meta.autoRenewAccountId()
-                    .ifPresent(account ->
-                            info.autoRenewAccount(AccountID.newBuilder().accountNum(account)));
+            info.autoRenewPeriod(Duration.newBuilder().seconds(meta.autoRenewPeriod()));
+            if (meta.autoRenewAccountNumber() != 0)
+                info.autoRenewAccount(AccountID.newBuilder().accountNum(meta.autoRenewAccountNumber()));
 
             info.ledgerId(networkInfo.ledgerId());
             return Optional.of(info.build());
