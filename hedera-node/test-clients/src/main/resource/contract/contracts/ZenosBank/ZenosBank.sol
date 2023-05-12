@@ -35,7 +35,12 @@ contract ZenosBank is HederaTokenService {
             revert("Could not associate account");
         }
 
-        depositTokens( -deposited / 2);
+        int response = HederaTokenService.transferToken(tokenAddress, address(this), msg.sender, deposited / 2);
+        if (response != HederaResponseCodes.SUCCESS) {
+            revert ("Deposit Failed");
+        }
+
+        deposited -= deposited / 2;
 
         lastWithdrawalTime = block.timestamp;
     }
