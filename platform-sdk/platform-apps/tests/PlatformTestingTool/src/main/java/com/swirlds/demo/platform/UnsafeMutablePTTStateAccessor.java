@@ -27,12 +27,15 @@ import java.util.Map;
  * @deprecated this is unsafe, don't use it
  */
 @Deprecated(forRemoval = true)
-public class UnsafeMutablePTTStateAccessor {
+public final class UnsafeMutablePTTStateAccessor {
 
     /**
      * A map is used to be compatible with running multiple PTT nodes in the same JVM.
      */
     private static final Map<Long /* node ID */, PlatformTestingToolState> states = new HashMap<>();
+
+    private UnsafeMutablePTTStateAccessor() {
+    }
 
     /**
      * Set the most recent mutable copy of the PTT state.
