@@ -55,8 +55,6 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.Label;
 import java.awt.TextField;
-import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
 import java.awt.geom.Rectangle2D;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -428,9 +426,7 @@ public class HashgraphDemoMain implements SwirldMain {
         eventLimit = new TextField(parameters.length <= p ? "" : parameters[p].trim(), 5);
         p++;
 
-        slowCheckbox.addItemListener(new ItemListener() {
-            public void itemStateChanged(final ItemEvent e) {}
-        });
+        slowCheckbox.addItemListener(e -> {});
 
         final GridBagConstraints constr = new GridBagConstraints();
         constr.fill = GridBagConstraints.NONE; // don't stretch components

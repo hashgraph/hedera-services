@@ -159,13 +159,11 @@ public class StatsSigningTestingToolMain implements SwirldMain {
             return;
         }
 
-        final long syncDelay;
         this.platform = platform;
         selfId = id.getId();
         // parse the config.txt parameters, and allow optional _ as in 1_000_000
         final String[] parameters = ParameterProvider.getParameters();
         headless = (parameters[0].equals("1"));
-        syncDelay = Integer.parseInt(parameters[2].replaceAll("_", ""));
         bytesPerTrans = Integer.parseInt(parameters[3].replaceAll("_", ""));
         transPerEventMax = Integer.parseInt(parameters[4].replaceAll("_", ""));
         transPerSecToCreate = Integer.parseInt(parameters[5].replaceAll("_", ""));
