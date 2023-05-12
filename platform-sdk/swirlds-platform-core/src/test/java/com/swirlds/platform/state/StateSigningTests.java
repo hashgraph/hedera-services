@@ -33,6 +33,7 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
@@ -305,7 +306,7 @@ class StateSigningTests {
         // Remove a node from the address book
         final long nodeRemovedFromAddressBook = nodes.get(0).getId();
         final long weightRemovedFromAddressBook = nodes.get(0).getWeight();
-        signedState.getAddressBook().remove(nodeRemovedFromAddressBook);
+        signedState.getAddressBook().remove(new NodeId(nodeRemovedFromAddressBook));
 
         // Tamper with a node's signature
         final long weightWithModifiedSignature = nodes.get(1).getWeight();
@@ -460,7 +461,7 @@ class StateSigningTests {
                 .build();
 
         // set node to zero weight
-        final long nodeWithZeroWeight = addressBook.getId(0);
+        final NodeId nodeWithZeroWeight = addressBook.getNodeId(0);
         addressBook.updateWeight(nodeWithZeroWeight, 0);
 
         final SignedState signedState = new RandomSignedStateGenerator(random)

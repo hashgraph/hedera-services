@@ -31,6 +31,7 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.utility.FileUtils;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.Address;
@@ -372,8 +373,8 @@ class AddressBookInitializerTest {
                         .get()
                         .add(configAddressBook
                                 .get()
-                                .getAddress(0)
-                                .copySetId(configAddressBook.get().getNextNodeId())));
+                                .getAddress(new NodeId(0))
+                                .copySetNodeId(configAddressBook.get().getNextNodeId())));
                 break;
             case 7:
                 stub.thenAnswer(foo -> copyWithWeightChanges(configAddressBook.get(), 7));

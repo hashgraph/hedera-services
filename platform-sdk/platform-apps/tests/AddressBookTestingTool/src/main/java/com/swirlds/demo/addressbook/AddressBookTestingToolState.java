@@ -42,6 +42,7 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.system.InitTrigger;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.PlatformWithDeprecatedMethods;
 import com.swirlds.common.system.Round;
@@ -278,7 +279,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
             logger.info(STARTUP.getMarker(), "Weighting Behavior 1: updating all nodes to have 10 weight.");
         }
         for (int i = 0; i < addressBook.getSize(); i++) {
-            addressBook.updateWeight(i, 10);
+            addressBook.updateWeight(new NodeId(i), 10);
         }
         return addressBook;
     }
@@ -297,7 +298,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
                     "Weighting Behavior 2: updating all nodes to have weight equal to their nodeId.");
         }
         for (int i = 0; i < addressBook.getSize(); i++) {
-            addressBook.updateWeight(i, i);
+            addressBook.updateWeight(new NodeId(i), i);
         }
         return addressBook;
     }
@@ -654,7 +655,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         Objects.requireNonNull(addressBookString, "addressBookString must not be null");
         return AddressBookUtils.parseAddressBookConfigText(
                 addressBookString,
-                id -> id,
+                NodeId::new,
                 ip -> {
                     try {
                         return Network.isOwn(ip);

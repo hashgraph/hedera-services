@@ -46,7 +46,7 @@ public class AddressBookMetadata {
         numMembers = m;
         names = new String[m];
         for (int i = 0; i < m; i++) {
-            names[i] = addressBook.getAddress(i).getNickname();
+            names[i] = addressBook.getAddress(addressBook.getNodeId(i)).getNickname();
         }
 
         // fix corner cases missed by the formulas here
