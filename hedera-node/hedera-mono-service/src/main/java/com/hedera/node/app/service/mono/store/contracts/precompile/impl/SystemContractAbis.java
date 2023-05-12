@@ -163,12 +163,21 @@ public enum SystemContractAbis {
      */
     public static long toLongSafely(@NonNull final Object bigNumeric) {
         if (bigNumeric instanceof BigInteger big) {
-            if (big.compareTo(LONG_MIN) < 0 || big.compareTo(LONG_MAX) > 0)
-                throw new IllegalArgumentException("uint64 out of range for Java.long");
-            return big.longValue();
+            try {
+                return big.longValueExact();
+            } catch (final ArithmeticException ex) {
+                throw new IllegalArgumentException(
+                        "uint64 out of range for Java.long (0x%s)".formatted(big.toString(16)));
+            }
         } else if (bigNumeric instanceof Long big) {
             return big;
-        } else return (long) bigNumeric;
+        } else if (bigNumeric instanceof Integer big) {
+            return big;
+        } else if (bigNumeric instanceof Short big) {
+            return big;
+        } else if (bigNumeric instanceof Byte big) {
+            return big;
+        } else throw new IllegalArgumentException("unknown (non Number) type returned from EVM decoder");
     }
 
     private static final BigInteger LONG_MIN = BigInteger.valueOf(Long.MIN_VALUE);

@@ -18,6 +18,7 @@ package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.SystemContractAbis;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.math.BigInteger;
 import java.util.EnumSet;
 import java.util.HexFormat;
 import java.util.List;
@@ -27,6 +28,8 @@ import org.assertj.core.api.junit.jupiter.SoftAssertionsExtension;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 @ExtendWith(SoftAssertionsExtension.class)
 class SystemContractAbisTest {
@@ -44,6 +47,80 @@ class SystemContractAbisTest {
                 .toList();
         softly.assertThat(allAbiConstants).containsAll(allKnownABISelectors);
     }
+
+    @ParameterizedTest
+    @CsvSource(
+            textBlock =
+                    """
+        0, 0,
+        10, 10
+        100, 100
+        255, 255
+        256, 256
+        257, 257
+        1000, 1000
+        10000, 10000
+        32767, 32767
+        32768, 32768
+        32769, 32769
+        100000, 100000
+        1000000000, 1000000000
+        2147483647, 2147483647
+        2147483648, 2147483648
+        4294967295, 4294967295
+        4294967296, 4294967296
+        10000000000, 10000000000
+        281474976710655, 281474976710655
+        281474976710656, 281474976710656
+        9223372036854775807, 9223372036854775807
+        9223372036854775808, 0
+        9223372036854775809, 0
+        9999999999999999999999, 0
+        """)
+    void toLongSafelyTest(@NonNull final BigInteger actualBI, final long expectedBI) {
+
+        for (final var actual : List.of(actualBI, actualBI.negate())) {
+            var expected = actual.compareTo(BigInteger.ZERO) >= 0 ? expectedBI : -expectedBI;
+
+            if (actual.compareTo(MIN_LONG) >= 0 && actual.compareTo(MAX_LONG) <= 0) {
+
+                if (actual.compareTo(MIN_LONG) == 0) expected = Long.MIN_VALUE;
+
+                softly.assertThat(SystemContractAbis.toLongSafely(actual)).isEqualTo(expected);
+
+                final Long actualL = actual.longValueExact();
+                softly.assertThat(SystemContractAbis.toLongSafely(actualL)).isEqualTo(expected);
+
+                if (actual.compareTo(MIN_INT) >= 0 && actual.compareTo(MAX_INT) <= 0) {
+                    final Integer actualI = actual.intValueExact();
+                    softly.assertThat(SystemContractAbis.toLongSafely(actualI)).isEqualTo(expected);
+                }
+
+                if (actual.compareTo(MIN_SHORT) >= 0 && actual.compareTo(MAX_SHORT) <= 0) {
+                    final Short actualS = actual.shortValueExact();
+                    softly.assertThat(SystemContractAbis.toLongSafely(actualS)).isEqualTo(expected);
+                }
+
+                if (actual.compareTo(MIN_BYTE) >= 0 && actual.compareTo(MAX_BYTE) <= 0) {
+                    final Byte actualB = actual.byteValueExact();
+                    softly.assertThat(SystemContractAbis.toLongSafely(actualB)).isEqualTo(expected);
+                }
+            } else {
+                softly.assertThatExceptionOfType(IllegalArgumentException.class)
+                        .isThrownBy(() -> SystemContractAbis.toLongSafely(actual))
+                        .withMessageContaining(actual.toString(16));
+            }
+        }
+    }
+
+    static final BigInteger MAX_LONG = BigInteger.valueOf(Long.MAX_VALUE);
+    static final BigInteger MAX_INT = BigInteger.valueOf(Integer.MAX_VALUE);
+    static final BigInteger MAX_SHORT = BigInteger.valueOf(Short.MAX_VALUE);
+    static final BigInteger MAX_BYTE = BigInteger.valueOf(Byte.MAX_VALUE);
+    static final BigInteger MIN_LONG = BigInteger.valueOf(Long.MIN_VALUE);
+    static final BigInteger MIN_INT = BigInteger.valueOf(Integer.MIN_VALUE);
+    static final BigInteger MIN_SHORT = BigInteger.valueOf(Short.MIN_VALUE);
+    static final BigInteger MIN_BYTE = BigInteger.valueOf(Byte.MIN_VALUE);
 
     // From `mono/store/contracts/precompile/AbiConstants.java` via emacs:
     final List<Integer> allAbiConstants = List.of(
