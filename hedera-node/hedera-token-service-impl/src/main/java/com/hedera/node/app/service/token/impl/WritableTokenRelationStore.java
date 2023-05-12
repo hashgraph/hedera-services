@@ -35,7 +35,7 @@ import java.util.Set;
  * <p>This class is not exported from the module. It is an internal implementation detail.
  * This class is not complete, it will be extended with other methods like remove, update etc.,
  */
-public class WritableTokenRelationStore extends ReadableTokenRelationStoreImpl{
+public class WritableTokenRelationStore extends ReadableTokenRelationStoreImpl {
     /** The underlying data storage class that holds the token data. */
     private final WritableKVState<EntityNumPair, TokenRelation> tokenRelState;
 

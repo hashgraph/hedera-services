@@ -36,12 +36,10 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.config.TokenServiceConfig;
 import com.hedera.node.app.service.token.impl.validators.CustomFeesValidator;
-import com.hedera.node.app.service.token.impl.validators.TokenTypeValidator;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hedera.node.config.ConfigProvider;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -52,17 +50,11 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
-    private final ConfigProvider configProvider;
     private final CustomFeesValidator customFeesValidator;
-    private final TokenTypeValidator tokenTypeValidator;
+
     @Inject
-    public TokenFeeScheduleUpdateHandler(
-            @NonNull final ConfigProvider configProvider,
-            @NonNull final CustomFeesValidator customFeesValidator,
-            @NonNull final TokenTypeValidator tokenTypeValidator) {
-        this.configProvider = configProvider;
+    public TokenFeeScheduleUpdateHandler(@NonNull final CustomFeesValidator customFeesValidator) {
         this.customFeesValidator = customFeesValidator;
-        this.tokenTypeValidator = tokenTypeValidator;
     }
 
     /**
@@ -91,7 +83,8 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
     /**
      * {@inheritDoc}
      */
-    public void handle(@NonNull final HandleContext context,
+    public void handle(
+            @NonNull final HandleContext context,
             @NonNull final TransactionBody txn,
             @NonNull final WritableTokenStore tokenStore) {
         requireNonNull(context);
@@ -99,7 +92,7 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
         requireNonNull(tokenStore);
 
         // get the latest configuration
-        final var config = configProvider.getConfiguration().getConfigData(TokenServiceConfig.class);
+        final var config = context.getConfiguration().getConfigData(TokenServiceConfig.class);
         var op = txn.tokenFeeScheduleUpdateOrThrow();
 
         // validate checks in handle
@@ -109,9 +102,9 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
         final var readableTokenRelsStore = context.createReadableStore(ReadableTokenRelationStore.class);
 
         // validate custom fees before committing
-        customFeesValidator.validateForFeeScheduleUpdate(token, readableAccountStore,
-                readableTokenRelsStore, tokenStore, op.customFees());
-        //set the custom fees on token
+        customFeesValidator.validateForFeeScheduleUpdate(
+                token, readableAccountStore, readableTokenRelsStore, tokenStore, op.customFees());
+        // set the custom fees on token
         final var copy = token.copyBuilder().customFees(op.customFees());
         // add token to the modifications map
         tokenStore.put(copy.build());
@@ -125,9 +118,8 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
      * @param config the token service config
      * @return the token
      */
-    private Token validateSemantics(TokenFeeScheduleUpdateTransactionBody op,
-            WritableTokenStore tokenStore,
-            TokenServiceConfig config) {
+    private Token validateSemantics(
+            TokenFeeScheduleUpdateTransactionBody op, WritableTokenStore tokenStore, TokenServiceConfig config) {
         var token = tokenStore.get(op.tokenIdOrElse(TokenID.DEFAULT).tokenNum());
         validateTrue(token.isPresent(), INVALID_TOKEN_ID);
         validateTrue(token.get().hasFeeScheduleKey(), TOKEN_HAS_NO_FEE_SCHEDULE_KEY);
@@ -136,9 +128,8 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
     }
 
     private void pureChecks(@NonNull final TokenFeeScheduleUpdateTransactionBody op) throws PreCheckException {
-        if(!op.hasTokenId()){
+        if (!op.hasTokenId()) {
             throw new PreCheckException(INVALID_TOKEN_ID);
         }
     }
-
 }

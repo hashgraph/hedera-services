@@ -449,8 +449,7 @@ public class TransactionDispatcher {
      * @param tokenStore the token store
      */
     private void dispatchTokenFeeScheduleUpdate(
-            @NonNull final TransactionBody feeScheduleUpdate,
-            @NonNull final WritableTokenStore tokenStore) {
+            @NonNull final TransactionBody feeScheduleUpdate, @NonNull final WritableTokenStore tokenStore) {
         requireNonNull(feeScheduleUpdate);
         requireNonNull(tokenStore);
 
@@ -464,11 +463,9 @@ public class TransactionDispatcher {
      * is currently needed when running with facility implementations that are adapters
      * for either {@code mono-service} logic or integration tests.
      *
-     * @param recordBuilder the completed record builder for the creation
      * @param tokenStore the token store used for the creation
      */
-    protected void finishTokenCreate(
-            @NonNull final TokenCreateRecordBuilder recordBuilder, @NonNull final WritableTokenStore tokenStore) {
+    protected void finishTokenCreate(@NonNull final WritableTokenStore tokenStore) {
         // No-op by default
     }
 }
