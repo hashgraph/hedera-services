@@ -96,7 +96,7 @@ public class ChatterSimulationTests {
         // Step 4: Verify outcome
         // Assert that all processing time messages are equal to the configured intake queue delay.
         // Time spent in the orphan buffer should not be included.
-        AtomicBoolean nonZeroProcTimeSent = new AtomicBoolean(false);
+        final AtomicBoolean nonZeroProcTimeSent = new AtomicBoolean(false);
         for (final NodeId id : network.nodeIds()) {
             network.gossip().getSentBy(id, ProcessingTimeMessage.class).forEach(procMsg -> {
                 if (procMsg.getProcessingTimeInNanos() > 0) {
