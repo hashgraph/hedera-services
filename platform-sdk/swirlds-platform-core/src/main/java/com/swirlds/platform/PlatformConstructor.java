@@ -185,6 +185,7 @@ final class PlatformConstructor {
     /**
      * Constructs a new {@link PreConsensusEventHandler}.
      *
+     * @param metrics            the metrics engine
      * @param threadManager      responsible for creating and managing threads
      * @param selfId             this node's id
      * @param swirldStateManager the instance of {@link SwirldStateManager}
@@ -192,12 +193,13 @@ final class PlatformConstructor {
      * @return the newly constructed instance of {@link PreConsensusEventHandler}
      */
     static PreConsensusEventHandler preConsensusEventHandler(
+            @NonNull final Metrics metrics,
             final ThreadManager threadManager,
             final NodeId selfId,
             final SwirldStateManager swirldStateManager,
             final ConsensusMetrics consensusMetrics) {
 
-        return new PreConsensusEventHandler(threadManager, selfId, swirldStateManager, consensusMetrics);
+        return new PreConsensusEventHandler(metrics, threadManager, selfId, swirldStateManager, consensusMetrics);
     }
 
     /**

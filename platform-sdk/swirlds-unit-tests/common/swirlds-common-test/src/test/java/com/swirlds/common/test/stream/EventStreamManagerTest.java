@@ -32,6 +32,7 @@ import com.swirlds.common.stream.MultiStream;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.test.RandomUtils;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -62,6 +63,7 @@ class EventStreamManagerTest {
     @BeforeAll
     static void init() throws Exception {
         disableStreamingInstance = new EventStreamManager<>(
+                TestPlatformContextBuilder.create().build(),
                 getStaticThreadManager(),
                 selfId,
                 mock(Signer.class),
@@ -73,6 +75,7 @@ class EventStreamManagerTest {
                 EventStreamManagerTest::isFreezeEvent);
 
         enableStreamingInstance = new EventStreamManager<>(
+                TestPlatformContextBuilder.create().build(),
                 getStaticThreadManager(),
                 selfId,
                 mock(Signer.class),
