@@ -134,7 +134,7 @@ public class UniqueTokenValue implements VirtualValue {
         return copy;
     }
 
-    // Keep it in sync with serializeTo()
+    // Keep it in sync with serializeTo() and getTypicalSerializedSize()
     int getSerializedSize() {
         return Long.BYTES // owner account num
                 + Long.BYTES // spender account num
@@ -145,6 +145,11 @@ public class UniqueTokenValue implements VirtualValue {
                 + Long.BYTES // prev NFT serial num
                 + Long.BYTES // next NFT token num
                 + Long.BYTES; // next NFT serial num
+    }
+
+    // Keep it in sync with getSerializedSize() and serializeTo()
+    static int getTypicalSerializedSize() {
+        return Long.BYTES * 7 + MAX_METADATA_BYTES / 2;
     }
 
     // Keep it in sync with getSerializedSize()

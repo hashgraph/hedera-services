@@ -40,6 +40,7 @@ import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.internal.ObjectStreamIterator;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.FileInputStream;
@@ -180,8 +181,9 @@ public final class RecoveryTestUtils {
             throws NoSuchAlgorithmException, IOException {
 
         final EventStreamManager<EventImpl> eventEventStreamManager = new EventStreamManager<>(
+                TestPlatformContextBuilder.create().build(),
                 getStaticThreadManager(),
-                new NodeId(false, 0),
+                new NodeId(0L),
                 x -> randomSignature(random),
                 "test",
                 true,

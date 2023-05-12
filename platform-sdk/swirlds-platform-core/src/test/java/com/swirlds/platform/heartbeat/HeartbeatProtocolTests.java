@@ -52,7 +52,7 @@ class HeartbeatProtocolTests {
 
     @BeforeEach
     void setup() {
-        peerId = new NodeId(false, 1);
+        peerId = new NodeId(1);
         heartbeatPeriod = Duration.ofMillis(1000);
         networkMetrics = mock(NetworkMetrics.class);
         time = new FakeTime();

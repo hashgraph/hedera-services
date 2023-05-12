@@ -295,7 +295,7 @@ public class SwirldMenu extends JPanel {
                             (platform == null
                                             ? ""
                                             : SwirldsGui.getAbout(
-                                                    platform.getSelfId().getId())) + "\n\n"
+                                                    platform.getSelfId().id())) + "\n\n"
                                     + PlatformVersion.locateOrDefault().license(), // message
                             "About this app", // title
                             JOptionPane.DEFAULT_OPTION, // optionType

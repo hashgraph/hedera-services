@@ -53,6 +53,11 @@ public class IterableContractMerkleDbValueSerializer implements ValueSerializer<
         return VARIABLE_DATA_SIZE;
     }
 
+    // FUTURE WORK: mark it as @Override after migration to platform 0.39
+    public int getTypicalSerializedSize() {
+        return IterableContractValue.getTypicalSerializedSize();
+    }
+
     // Value serialization
 
     @Override
