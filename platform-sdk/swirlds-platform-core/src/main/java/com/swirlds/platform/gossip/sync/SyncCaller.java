@@ -80,15 +80,19 @@ public class SyncCaller implements Runnable {
      * The platform instantiates this, and gives it the self ID number, plus other info that will be useful to it. The
      * platform can then create a thread to call run(). It will then repeatedly initiate syncs with others.
      *
-     * @param platformContext          the platform context
-     * @param addressBook              the address book listing who can be called
-     * @param selfId                   the ID number for self /** ID number for this caller thread (0 is the first
-     *                                 created by this platform, 1 next, etc)
-     * @param callerNumber             0 for the first caller thread created by this platform, 1 for the next, etc
-     * @param simultaneousSyncThrottle the throttle to use to limit the number of simultaneous syncs
-     * @param syncManager              the sync manager
-     * @param sharedConnectionLocks    the shared connection locks
-     * @param eventTaskCreator         responsible for scheduling the creation of events
+     * @param platformContext             the platform context
+     * @param addressBook                 the address book listing who can be called
+     * @param selfId                      the ID number for self /** ID number for this caller thread (0 is the first
+     *                                    created by this platform, 1 next, etc)
+     * @param callerNumber                0 for the first caller thread created by this platform, 1 for the next, etc
+     * @param reconnectHelper             assists with the reconnect workflow
+     * @param signedStateValidator        validates states received via reconnect
+     * @param simultaneousSyncThrottle    the throttle to use to limit the number of simultaneous syncs
+     * @param syncManager                 the sync manager
+     * @param sharedConnectionLocks       the shared connection locks
+     * @param eventTaskCreator            responsible for scheduling the creation of events
+     * @param updatePlatformStatus        calling this method causes the platform to re-evaluate its status
+     * @param syncShadowgraphSynchronizer the shadowgraph synchronizer
      */
     public SyncCaller(
             @NonNull final PlatformContext platformContext,
