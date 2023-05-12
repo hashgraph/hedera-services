@@ -31,6 +31,8 @@ dependencies {
   annotationProcessor(libs.dagger.compiler)
   api(project(":hedera-node:hedera-smart-contract-service"))
   implementation(project(":hedera-node:hedera-mono-service"))
+  api(libs.besu.evm)
+  api(libs.besu.datatypes)
   implementation(libs.bundles.di)
 
   implementation(libs.swirlds.virtualmap)
