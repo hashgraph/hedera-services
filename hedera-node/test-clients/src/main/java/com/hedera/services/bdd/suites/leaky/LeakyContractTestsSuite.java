@@ -275,6 +275,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 whitelistNegativeCases(),
                 requiresTopLevelSignatureOrApprovalDependingOnControllingProperty(),
                 transferWorksWithTopLevelSignatures(),
+                transferFailsWithIncorrectAmounts(),
                 transferDontWorkWithoutTopLevelSignatures(),
                 transferErc20TokenFromContractWithApproval(),
                 transferErc20TokenFromErc721TokenFails());
@@ -741,6 +742,74 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         getAccountBalance(RECEIVER_2).hasTokenBalance(VANILLA_TOKEN, 5L),
                         getAccountInfo(ACCOUNT).hasOwnedNfts(1),
                         getAccountBalance(ACCOUNT).hasTokenBalance(VANILLA_TOKEN, 485L));
+    }
+
+    private HapiSpec transferFailsWithIncorrectAmounts() {
+        final var transferTokenWithNegativeAmountTxn = "transferTokenWithNegativeAmountTxn";
+        final var transferTokenWithZeroAmountTxn = "transferTokenWithZeroAmountTxn";
+        final var contract = "TokenTransferContract";
+
+        final AtomicReference<AccountID> accountID = new AtomicReference<>();
+        final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
+        final AtomicReference<TokenID> vanillaNftID = new AtomicReference<>();
+        return propertyPreservingHapiSpec("transferWorksWithTopLevelSignatures")
+                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS)
+                .given(
+                        overriding(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CRYPTO_TRANSFER),
+                        newKeyNamed(SUPPLY_KEY),
+                        cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(RECEIVER),
+                        tokenCreate(VANILLA_TOKEN)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(TOKEN_TREASURY)
+                                .supplyKey(SUPPLY_KEY)
+                                .initialSupply(1_000)
+                                .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
+                        tokenAssociate(ACCOUNT, VANILLA_TOKEN),
+                        tokenAssociate(RECEIVER, VANILLA_TOKEN),
+                        cryptoTransfer(moving(500, VANILLA_TOKEN).between(TOKEN_TREASURY, ACCOUNT)),
+                        uploadInitCode(contract),
+                        contractCreate(contract))
+                .when(withOpContext((spec, opLog) -> {
+                    final var receiver1 =
+                            asHeadlongAddress(asAddress(spec.registry().getAccountID(RECEIVER)));
+                    final var sender =
+                            asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT)));
+
+                    allRunFor(
+                            spec,
+                            // Call tokenTransfer with a negative amount
+                            contractCall(
+                                            contract,
+                                            "transferTokenPublic",
+                                            HapiParserUtil.asHeadlongAddress(
+                                                    asAddress(spec.registry().getTokenID(VANILLA_TOKEN))),
+                                            sender,
+                                            receiver1,
+                                            -1L)
+                                    .payingWith(ACCOUNT)
+                                    .gas(GAS_TO_OFFER)
+                                    .via(transferTokenWithNegativeAmountTxn)
+                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                            // Call tokenTransfer with a zero amount
+                            contractCall(
+                                            contract,
+                                            "transferTokenPublic",
+                                            HapiParserUtil.asHeadlongAddress(
+                                                    asAddress(spec.registry().getTokenID(VANILLA_TOKEN))),
+                                            sender,
+                                            receiver1,
+                                            0L)
+                                    .payingWith(ACCOUNT)
+                                    .gas(GAS_TO_OFFER)
+                                    .via(transferTokenWithZeroAmountTxn)
+                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED));
+                }))
+                .then(
+                        // Confirm the transactions succeeded
+                        childRecordsCheck(transferTokenWithNegativeAmountTxn, CONTRACT_REVERT_EXECUTED),
+                        childRecordsCheck(transferTokenWithZeroAmountTxn, CONTRACT_REVERT_EXECUTED));
     }
 
     HapiSpec payerCannotOverSendValue() {
