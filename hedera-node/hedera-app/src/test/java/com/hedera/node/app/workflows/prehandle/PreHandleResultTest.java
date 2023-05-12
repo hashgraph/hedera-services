@@ -111,8 +111,15 @@ final class PreHandleResultTest implements Scenarios {
             assertThat(result.payer()).isNull();
             assertThat(result.txInfo()).isNull();
             assertThat(result.verificationResults()).isNull();
-            assertThat(result.verificationFor(1234)).isNull();
-            assertThat(result.verificationFor(Key.DEFAULT)).isNull();
+            assertThat(result.verificationFor(ALICE.account()))
+                    .succeedsWithin(1, TimeUnit.SECONDS)
+                    .extracting(SignatureVerification::passed)
+                    .isEqualTo(false);
+            ;
+            assertThat(result.verificationFor(Key.DEFAULT))
+                    .succeedsWithin(1, TimeUnit.SECONDS)
+                    .extracting(SignatureVerification::passed)
+                    .isEqualTo(false);
         }
 
         @Test
@@ -129,8 +136,15 @@ final class PreHandleResultTest implements Scenarios {
             assertThat(result.payer()).isEqualTo(nodeAccountId);
             assertThat(result.txInfo()).isSameAs(txInfo);
             assertThat(result.verificationResults()).isNull();
-            assertThat(result.verificationFor(1234)).isNull();
-            assertThat(result.verificationFor(Key.DEFAULT)).isNull();
+            assertThat(result.verificationFor(ALICE.account()))
+                    .succeedsWithin(1, TimeUnit.SECONDS)
+                    .extracting(SignatureVerification::passed)
+                    .isEqualTo(false);
+            ;
+            assertThat(result.verificationFor(Key.DEFAULT))
+                    .succeedsWithin(1, TimeUnit.SECONDS)
+                    .extracting(SignatureVerification::passed)
+                    .isEqualTo(false);
         }
 
         @Test
@@ -146,8 +160,15 @@ final class PreHandleResultTest implements Scenarios {
             assertThat(result.payer()).isEqualTo(payer);
             assertThat(result.txInfo()).isSameAs(txInfo);
             assertThat(result.verificationResults()).isNull();
-            assertThat(result.verificationFor(1234)).isNull();
-            assertThat(result.verificationFor(Key.DEFAULT)).isNull();
+            assertThat(result.verificationFor(ALICE.account()))
+                    .succeedsWithin(1, TimeUnit.SECONDS)
+                    .extracting(SignatureVerification::passed)
+                    .isEqualTo(false);
+            ;
+            assertThat(result.verificationFor(Key.DEFAULT))
+                    .succeedsWithin(1, TimeUnit.SECONDS)
+                    .extracting(SignatureVerification::passed)
+                    .isEqualTo(false);
         }
     }
 
@@ -160,19 +181,23 @@ final class PreHandleResultTest implements Scenarios {
     @ExtendWith(MockitoExtension.class)
     final class FindingSignatureVerificationWithCryptoKeyTests {
         @Test
-        @DisplayName("Null key throws exception")
+        @DisplayName("Null key or account throws exception")
         @SuppressWarnings("DataFlowIssue")
         void nullKeyThrowsException() {
             final var result = PreHandleResult.unknownFailure();
-            assertThatThrownBy(() -> result.verificationFor(null)).isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> result.verificationFor((Key) null)).isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> result.verificationFor((Account) null)).isInstanceOf(NullPointerException.class);
         }
 
         @ParameterizedTest
         @MethodSource("provideCompoundKeys")
-        @DisplayName("If there are no verification results, then no result is found")
+        @DisplayName("If there are no verification results, then the result is failed")
         void noVerificationResults(@NonNull final Key key) {
             final var result = PreHandleResult.unknownFailure();
-            assertThat(result.verificationFor(key)).isNull();
+            assertThat(result.verificationFor(key))
+                    .succeedsWithin(1, TimeUnit.SECONDS)
+                    .extracting(SignatureVerification::passed)
+                    .isEqualTo(false);
         }
 
         @Test
@@ -191,7 +216,7 @@ final class PreHandleResultTest implements Scenarios {
 
         @Test
         @DisplayName("If the key is a cryptographic key not in the results then null returned")
-        void cryptoKeyIsMissing(@Mock SignatureVerificationFuture verificationFuture) {
+        void cryptoKeyIsMissing() {
             final var aliceKey = ALICE.keyInfo().publicKey(); // ECDSA
             final var aliceFuture = mock(SignatureVerificationFuture.class);
             final var bobKey = BOB.keyInfo().publicKey(); // ED25519
@@ -200,7 +225,10 @@ final class PreHandleResultTest implements Scenarios {
             final var result = preHandle(verificationResults);
 
             // ERIN is another ECDSA key, but one that is not in the verification results
-            assertThat(result.verificationFor(ERIN.keyInfo().publicKey())).isNull();
+            assertThat(result.verificationFor(ERIN.keyInfo().publicKey()))
+                    .succeedsWithin(1, TimeUnit.SECONDS)
+                    .extracting(SignatureVerification::passed)
+                    .isEqualTo(false);
         }
 
         /** A provider that supplies basic cryptographic keys */
@@ -1146,8 +1174,11 @@ final class PreHandleResultTest implements Scenarios {
             final var hollowAccount = ERIN.account();
             // When we pre-handle the transaction
             final var result = preHandle(emptyMap());
-            // Then we find the verification result is null
-            assertThat(result.verificationFor(hollowAccount.accountNumber())).isNull();
+            // Then we find the verification result is failed
+            assertThat(result.verificationFor(hollowAccount))
+                    .succeedsWithin(1, TimeUnit.SECONDS)
+                    .extracting(SignatureVerification::passed)
+                    .isEqualTo(false);
         }
 
         /** If there are verifications but none for this hollow account, then we get no result */
@@ -1162,8 +1193,11 @@ final class PreHandleResultTest implements Scenarios {
                     CAROL.keyInfo().publicKey(), goodFuture(CAROL.keyInfo().publicKey(), CAROL.account()));
             // When we pre-handle the transaction
             final var result = preHandle(verificationResults);
-            // Then we find the verification result is null
-            assertThat(result.verificationFor(hollowAccount.accountNumber())).isNull();
+            // Then we find the verification result is failed
+            assertThat(result.verificationFor(hollowAccount))
+                    .succeedsWithin(1, TimeUnit.SECONDS)
+                    .extracting(SignatureVerification::passed)
+                    .isEqualTo(false);
         }
 
         @ParameterizedTest
@@ -1182,8 +1216,8 @@ final class PreHandleResultTest implements Scenarios {
                                     : badFuture(ERIN.keyInfo().publicKey(), ERIN.account()));
             // When we pre-handle the transaction
             final var result = preHandle(verificationResults);
-            // Then we find the verification result is null
-            assertThat(result.verificationFor(hollowAccount.accountNumber()))
+            // Then we find the verification result is as expected
+            assertThat(result.verificationFor(hollowAccount))
                     .succeedsWithin(1, TimeUnit.SECONDS)
                     .extracting(SignatureVerification::passed)
                     .isEqualTo(passes);

@@ -17,6 +17,7 @@
 package com.hedera.node.app.meta;
 
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.components.StoreComponent;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
@@ -27,7 +28,6 @@ import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.function.LongSupplier;
@@ -113,15 +113,15 @@ public class MonoHandleContext implements HandleContext {
         return readableStoreFactory.createStore(storeInterface);
     }
 
-    @Nullable
+    @NonNull
     @Override
     public SignatureVerification verificationFor(@NonNull Key key) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
-    @Nullable
+    @NonNull
     @Override
-    public SignatureVerification verificationFor(long hollowAccountNumber) {
+    public SignatureVerification verificationFor(@NonNull Account hollowAccount) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 }

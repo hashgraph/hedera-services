@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.spi;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
@@ -46,6 +48,7 @@ public class HapiUtils {
      * @return {@code true} if the account is a hollow account, {@code false} otherwise.
      */
     public static boolean isHollow(@NonNull final Account account) {
+        requireNonNull(account);
         return (account.accountNumber() > 1000
                 && account.keyOrElse(EMPTY_KEY_LIST).equals(EMPTY_KEY_LIST)
                 && account.alias() != null

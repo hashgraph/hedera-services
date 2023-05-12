@@ -501,8 +501,7 @@ public final class Hedera implements SwirldMain {
     private void onPreHandle(@NonNull final Event event, @NonNull final HederaState state) {
         // For now, we will delegate pre-handle to the mono-service. But this needs to be moved to
         // use the Pre-Handle workflow instead.
-        final var nodeSelfId = PbjConverter.toPbj(daggerApp.nodeInfo().selfAccount());
-        daggerApp.adaptedMonoEventExpansion().expand(event, nodeSelfId, state);
+        daggerApp.adaptedMonoEventExpansion().expand(event, state, daggerApp.nodeInfo());
     }
 
     /**

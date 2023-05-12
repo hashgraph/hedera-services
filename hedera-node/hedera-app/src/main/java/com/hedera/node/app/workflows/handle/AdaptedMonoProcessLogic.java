@@ -63,7 +63,7 @@ public class AdaptedMonoProcessLogic implements ProcessLogic {
         monoProcessLogic.incorporateConsensusTxn(platformTxn, submittingMember);
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
+    @NonNull
     private SwirldsTxnAccessor adaptForMono(final ConsensusTransaction platformTxn, final PreHandleResult phr) {
         try {
             final var accessor = PlatformTxnAccessor.from(platformTxn.getContents());
@@ -103,6 +103,7 @@ public class AdaptedMonoProcessLogic implements ProcessLogic {
         }
     }
 
+    @NonNull
     private List<TransactionSignature> extract(@Nullable final Collection<SignatureVerificationFuture> map) {
         if (map == null) return Collections.emptyList();
         return map.stream()
@@ -111,6 +112,7 @@ public class AdaptedMonoProcessLogic implements ProcessLogic {
                 .toList();
     }
 
+    @NonNull
     private JKey mapToJKey(@NonNull final Key key) {
         try {
             return JKey.mapKey(key);

@@ -17,7 +17,6 @@
 package com.hedera.node.app.workflows.prehandle;
 
 import com.hedera.hapi.node.base.SignatureMap;
-import com.hedera.node.app.config.internal.VersionedConfigImpl;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.sigs.sourcing.PojoSigMapPubKeyToSigBytes;
 import com.hedera.node.app.service.mono.sigs.sourcing.PubKeyToSigBytes;
@@ -28,10 +27,8 @@ import com.hedera.node.app.signature.SignaturePreparer;
 import com.hedera.node.app.signature.SignatureVerifier;
 import com.hedera.node.app.signature.impl.SignatureExpanderImpl;
 import com.hedera.node.app.signature.impl.SignatureVerifierImpl;
-import com.hedera.node.app.spi.config.ConfigProvider;
 import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
 import com.hedera.node.app.workflows.handle.AdaptedMonoProcessLogic;
-import com.swirlds.config.api.ConfigurationBuilder;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -57,17 +54,6 @@ public interface PreHandleWorkflowModule {
 
     @Binds
     SignatureExpander bindSignatureExpander(SignatureExpanderImpl signatureExpander);
-
-    // FUTURE: This should be updated to use the new config module and real config loading when possible
-    @Provides
-    static ConfigProvider provideConfigProvider() {
-        return () -> {
-            final var config = ConfigurationBuilder.create()
-                    .withConfigDataType(PreHandleConfig.class)
-                    .build();
-            return new VersionedConfigImpl(config, 0);
-        };
-    }
 
     @Binds
     ProcessLogic bindProcessLogic(AdaptedMonoProcessLogic processLogic);

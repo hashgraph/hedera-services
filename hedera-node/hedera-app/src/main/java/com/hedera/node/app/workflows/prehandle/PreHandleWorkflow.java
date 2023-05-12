@@ -21,7 +21,7 @@ import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Iterator;
+import java.util.stream.Stream;
 
 /** A workflow to pre-handle transactions. */
 public interface PreHandleWorkflow {
@@ -31,11 +31,11 @@ public interface PreHandleWorkflow {
      *
      * @param readableStoreFactory the {@link ReadableStoreFactory} that is used for looking up stores
      * @param creator The {@link AccountID} of the node that created these transactions
-     * @param transactions An {@link Iterator} over all transactions to pre-handle
+     * @param transactions An {@link Stream} over all transactions to pre-handle
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     void preHandle(
             @NonNull final ReadableStoreFactory readableStoreFactory,
             @NonNull final AccountID creator,
-            @NonNull final Iterator<Transaction> transactions);
+            @NonNull final Stream<Transaction> transactions);
 }

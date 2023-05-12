@@ -170,12 +170,9 @@ public final class SignatureVerificationFutureImpl implements SignatureVerificat
     @Override
     public SignatureVerification get(long timeout, TimeUnit unit)
             throws InterruptedException, ExecutionException, TimeoutException {
-        var time = System.currentTimeMillis();
-        var millisRemaining = unit.toMillis(timeout);
+        final var deadline = System.currentTimeMillis() + unit.toMillis(timeout);
         while (txSig.getFuture() == null) {
-            final var now = System.currentTimeMillis();
-            millisRemaining -= (now - time);
-            if (millisRemaining <= 0) {
+            if (System.currentTimeMillis() > deadline) {
                 // If there was no time left, then TimeoutException
                 throw new TimeoutException("Timed out waiting for signature verification to complete");
             } else {
@@ -186,7 +183,9 @@ public final class SignatureVerificationFutureImpl implements SignatureVerificat
                 Thread.sleep(1);
             }
         }
-        txSig.getFuture().get(millisRemaining, TimeUnit.MILLISECONDS); // Wait for the future to complete
+
+        // Wait for the future to complete
+        txSig.getFuture().get(deadline - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
         return new SignatureVerificationImpl(key, hollowAccount, txSig.getSignatureStatus() == VALID);
     }
 }

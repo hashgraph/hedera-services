@@ -23,6 +23,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
 
 import com.hedera.node.app.AppTestBase;
+import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.mono.context.properties.GlobalStaticProperties;
 import com.hedera.node.app.service.mono.sigs.EventExpansion;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
@@ -57,6 +58,9 @@ class AdaptedMonoEventExpansionTest extends AppTestBase {
 
     @Mock
     private MerkleHederaState state;
+
+    @Mock
+    private NodeInfo nodeInfo;
 
     private AdaptedMonoEventExpansion subject;
 
@@ -108,6 +112,6 @@ class AdaptedMonoEventExpansionTest extends AppTestBase {
                 .given(event)
                 .forEachTransaction(any());
 
-        assertDoesNotThrow(() -> subject.expand(event, nodeSelfAccountId, state));
+        assertDoesNotThrow(() -> subject.expand(event, state, nodeInfo));
     }
 }

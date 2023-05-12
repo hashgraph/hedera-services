@@ -25,13 +25,12 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.ThresholdKey;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.workflows.TransactionInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
@@ -96,7 +95,7 @@ public record PreHandleResult(
      * <p>If the key is a cryptographic key (i.e. a basic key like ED25519 or ECDSA_SECP256K1), and the cryptographic
      * key was in the signature map of the transaction, then a {@link Future} will be returned that will yield the
      * {@link SignatureVerification} for that key. If there was no such cryptographic key in the signature map, then
-     * {@code null} is returned.
+     * a completed, failed future is returned.
      *
      * <p>If the key is a key list, then a {@link Future} will be returned that aggregates the results of each key in
      * the key list, possibly nested.
@@ -105,75 +104,69 @@ public record PreHandleResult(
      * in the threshold key, possibly nested, based on the threshold for that key.
      *
      * @param key The key to check on the verification results for.
-     * @return A {@link Future} that will yield the {@link SignatureVerification} for the given key, or {@code null}
-     *        if there was no such cryptographic key in the signature map. {@link KeyList} and {@link ThresholdKey}
-     *        keys will never return null, but will return a future that aggregates the results of the keys in the
-     *        list or threshold.
+     * @return A {@link Future} that will yield the {@link SignatureVerification} for the given key.
      */
-    @Nullable
+    @NonNull
     public Future<SignatureVerification> verificationFor(@NonNull final Key key) {
         requireNonNull(key);
-        if (verificationResults == null) return null;
+        if (verificationResults == null) return failedVerificationFuture(key);
         return switch (key.key().kind()) {
-            case ED25519, ECDSA_SECP256K1 -> verificationResults.get(key);
+            case ED25519, ECDSA_SECP256K1 -> {
+                final var result = verificationResults.get(key);
+                yield result == null ? failedVerificationFuture(key) : result;
+            }
             case KEY_LIST -> {
                 final var keys = key.keyListOrThrow().keysOrElse(emptyList());
-                yield keys.isEmpty() ? completedFuture(failedVerification(key)) : verificationFor(key, keys, 0);
+                yield verificationFor(key, keys, 0);
             }
             case THRESHOLD_KEY -> {
                 final var thresholdKey = key.thresholdKeyOrThrow();
                 final var keyList = thresholdKey.keysOrElse(KeyList.DEFAULT);
                 final var keys = keyList.keysOrElse(emptyList());
-                final var threshold = Math.min(thresholdKey.threshold(), keys.size());
-                yield keys.isEmpty()
-                        ? completedFuture(failedVerification(key))
-                        : verificationFor(key, keys, keys.size() - threshold);
+                final var threshold = thresholdKey.threshold();
+                final var clampedThreshold = Math.min(Math.max(1, threshold), keys.size());
+                yield verificationFor(key, keys, keys.size() - clampedThreshold);
             }
-            case CONTRACT_ID, DELEGATABLE_CONTRACT_ID, ECDSA_384, RSA_3072, UNSET -> completedFuture(
-                    failedVerification(key));
+            case CONTRACT_ID, DELEGATABLE_CONTRACT_ID, ECDSA_384, RSA_3072, UNSET -> failedVerificationFuture(key);
         };
     }
 
+    /**
+     * Utility method that converts the keys into a list of {@link Future<SignatureVerification>} and then aggregates
+     * them into a single {@link Future<SignatureVerification>}.
+     *
+     * @param key The key that is being verified.
+     * @param keys The sub-keys of the key being verified
+     * @param numCanFail The number of sub-keys that can fail verification before the key itself does
+     * @return A {@link Future<SignatureVerification>}
+     */
+    @NonNull
     private Future<SignatureVerification> verificationFor(
             @NonNull final Key key, @NonNull final List<Key> keys, final int numCanFail) {
-        if (numCanFail < 0) return completedFuture(failedVerification(key));
-
-        int numFailed = 0;
-        final var futures = new ArrayList<Future<SignatureVerification>>();
-        for (final var subKey : keys) {
-            final var future = verificationFor(subKey);
-            if (future == null) {
-                numFailed++;
-                if (numFailed > numCanFail) {
-                    return completedFuture(failedVerification(subKey));
-                }
-            } else {
-                futures.add(future);
-            }
-        }
-
-        return futures.isEmpty()
-                ? completedFuture(failedVerification(key))
-                : new CompoundSignatureVerificationFuture(key, null, futures, numCanFail - numFailed);
+        // If there are no keys, then we always fail. There must be at least one key in a key list or threshold key
+        // for it to be a valid key and to pass any form of verification.
+        if (keys.isEmpty() || numCanFail < 0) return failedVerificationFuture(key);
+        final var futures = keys.stream().map(this::verificationFor).toList();
+        return new CompoundSignatureVerificationFuture(key, null, futures, numCanFail);
     }
 
     /**
-     * Look for a {@link SignatureVerification} that applies to the given hollow account number. If, during pre-handle,
-     * we did not attempt to verify the signature of the given account, then this will return null.
-     * @param hollowAccountNum The account number of the hollow account that was verified during pre-handle signature
-     *                         verification.
-     * @return The {@link SignatureVerification} for the given hollow account number, or null if it was not verified.
+     * Look for a {@link SignatureVerification} that applies to the given hollow account.
+     * @param hollowAccount The hollow account to lookup verification for.
+     * @return The {@link SignatureVerification} for the given hollow account.
      */
-    @Nullable
-    public Future<SignatureVerification> verificationFor(final long hollowAccountNum) {
-        if (verificationResults == null) return null;
-        for (final var result : verificationResults.values()) {
-            final var account = result.hollowAccount();
-            if (account != null && account.accountNumber() == hollowAccountNum) {
-                return result;
+    @NonNull
+    public Future<SignatureVerification> verificationFor(@NonNull final Account hollowAccount) {
+        requireNonNull(hollowAccount);
+        if (verificationResults != null) {
+            for (final var result : verificationResults.values()) {
+                final var account = result.hollowAccount();
+                if (account != null && account.accountNumber() == hollowAccount.accountNumber()) {
+                    return result;
+                }
             }
         }
-        return null;
+        return failedVerificationFuture(hollowAccount);
     }
 
     /**
@@ -184,6 +177,7 @@ public record PreHandleResult(
      *
      * @return A new {@link PreHandleResult} with the given parameters.
      */
+    @NonNull
     public static PreHandleResult unknownFailure() {
         return new PreHandleResult(null, null, Status.UNKNOWN_FAILURE, UNKNOWN, null, null, null);
     }
@@ -199,6 +193,7 @@ public record PreHandleResult(
      * @param txInfo The transaction info, if available.
      * @return A new {@link PreHandleResult} with the given parameters.
      */
+    @NonNull
     public static PreHandleResult nodeDueDiligenceFailure(
             @NonNull final AccountID node,
             @NonNull final ResponseCodeEnum responseCode,
@@ -217,6 +212,7 @@ public record PreHandleResult(
      *                            are used as the key of this map.
      * @return A new {@link PreHandleResult} with the given parameters.
      */
+    @NonNull
     public static PreHandleResult preHandleFailure(
             @NonNull final AccountID payer,
             @Nullable final Key payerKey,
@@ -228,8 +224,9 @@ public record PreHandleResult(
     }
 
     /** Convenience method to create a SignatureVerification that failed */
-    private static SignatureVerification failedVerification(final Key key) {
-        return new SignatureVerification() {
+    @NonNull
+    private static Future<SignatureVerification> failedVerificationFuture(@NonNull final Key key) {
+        return completedFuture(new SignatureVerification() {
             @NonNull
             @Override
             public Key key() {
@@ -240,6 +237,29 @@ public record PreHandleResult(
             public boolean passed() {
                 return false;
             }
-        };
+        });
+    }
+
+    /** Convenience method to create a SignatureVerification for a hollow account that failed */
+    @NonNull
+    private static Future<SignatureVerification> failedVerificationFuture(@NonNull final Account hollowAccount) {
+        return completedFuture(new SignatureVerification() {
+            @Nullable
+            @Override
+            public Key key() {
+                return null;
+            }
+
+            @NonNull
+            @Override
+            public Account hollowAccount() {
+                return hollowAccount;
+            }
+
+            @Override
+            public boolean passed() {
+                return false;
+            }
+        });
     }
 }

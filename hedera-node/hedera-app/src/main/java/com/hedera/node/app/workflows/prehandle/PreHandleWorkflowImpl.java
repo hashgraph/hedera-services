@@ -33,7 +33,6 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.signature.ExpandedSignaturePair;
 import com.hedera.node.app.signature.SignatureExpander;
 import com.hedera.node.app.signature.SignatureVerifier;
-import com.hedera.node.app.spi.config.ConfigProvider;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -45,14 +44,9 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Iterator;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -77,25 +71,10 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     private final SignatureExpander signatureExpander;
     /** Verifies signatures */
     private final SignatureVerifier signatureVerifier;
-    /**
-     * The {@link ExecutorService} to use for submitting tasks for transaction pre-handling.
-     *
-     * <p>Each transaction is handled in a separate thread. The {@link ExecutorService} is used to buffer up these
-     * tasks and manage a set of threads that will handle the tasks. In the future when the hashgraph platform has
-     * a resource manager, we will use that instead. By supplying this executor service, the code that constructs this
-     * object can control the number of threads that are used to handle transactions. This is useful for testing and
-     * for proper configuration.
-     */
-    private final ExecutorService exe;
-    /** Provides configuration for this pre handle workflow. */
-    private final ConfigProvider configProvider;
 
     /**
      * Creates a new instance of {@code PreHandleWorkflowImpl}.
      *
-     * @param exe the {@link ExecutorService} for managing submission of pre-handle tasks. This service should be
-     *            configured with a maximum number of threads, and with a maximum blocking queue length. This way,
-     *            back-pressure can be applied to the hashgraph platform if the event intake rate is too high.
      * @param dispatcher the {@link TransactionDispatcher} for invoking the {@link TransactionHandler} for each
      *                   transaction.
      * @param transactionChecker the {@link TransactionChecker} for parsing and verifying the transaction
@@ -104,14 +83,10 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
      */
     @Inject
     public PreHandleWorkflowImpl(
-            @NonNull final ConfigProvider configProvider,
-            @NonNull final ExecutorService exe,
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final TransactionChecker transactionChecker,
             @NonNull final SignatureVerifier signatureVerifier,
             @NonNull final SignatureExpander signatureExpander) {
-        this.configProvider = requireNonNull(configProvider);
-        this.exe = requireNonNull(exe);
         this.dispatcher = requireNonNull(dispatcher);
         this.transactionChecker = requireNonNull(transactionChecker);
         this.signatureVerifier = requireNonNull(signatureVerifier);
@@ -123,7 +98,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     public void preHandle(
             @NonNull final ReadableStoreFactory readableStoreFactory,
             @NonNull final AccountID creator,
-            @NonNull final Iterator<Transaction> transactions) {
+            @NonNull final Stream<Transaction> transactions) {
 
         requireNonNull(readableStoreFactory);
         requireNonNull(creator);
@@ -132,42 +107,19 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         // Used for looking up payer account information.
         final var accountStore = readableStoreFactory.createStore(ReadableAccountStore.class);
 
-        // Using the executor service, submit a task for each transaction in the event.
-        final var tasks = new ArrayList<WorkItem>(1000); // Some arbitrary number
-        while (transactions.hasNext()) {
-            // Skip platform (system) transactions.
-            final var platformTx = transactions.next();
-            if (platformTx.isSystem()) continue;
-
-            // Submit the task to the executor service and put the resulting Future as the metadata on the transaction
-            final var future =
-                    exe.submit(() -> preHandleTransaction(creator, readableStoreFactory, accountStore, platformTx));
-            tasks.add(new WorkItem(platformTx, future));
-        }
-
-        // Waits for all the background threads to complete their work and stores the resulting PreHandleResult
-        // as the transaction's metadata.
-        for (final var task : tasks) {
+        // In parallel, we will pre-handle each transaction.
+        transactions.parallel().forEach(tx -> {
+            if (tx.isSystem()) return;
             try {
-                // FUTURE: Enhance this so the timeout duration is a configuration property (and then update the
-                // unit tests, so they use a much shorter configuration, so test execution is faster).
-                final var config = configProvider.getConfiguration().getConfigData(PreHandleConfig.class);
-                final var timeout = config.timeout();
-                final var result = task.future.get(timeout.toMillis(), TimeUnit.MILLISECONDS);
-                task.platformTx.setMetadata(result);
-            } catch (InterruptedException e) {
-                // The thread should only ever be interrupted during shutdown, so we can just log the error.
-                logger.error("Interrupted while waiting for a transaction to be pre handled.", e);
-                Thread.currentThread().interrupt();
-                task.platformTx.setMetadata(unknownFailure());
-            } catch (ExecutionException e) {
-                logger.error("Unexpected error while pre handling a transaction!", e);
-                task.platformTx.setMetadata(unknownFailure());
-            } catch (TimeoutException e) {
-                logger.error("Timed out while waiting for a transaction to be pre handled!", e);
-                task.platformTx.setMetadata(unknownFailure());
+                tx.setMetadata(preHandleTransaction(creator, readableStoreFactory, accountStore, tx));
+            } catch (final Throwable unexpectedException) {
+                // If some random exception happened, then we should not charge the node for it. Instead,
+                // we will just record the exception and try again during handle. Then if we fail again
+                // at handle, then we will throw away the transaction (hopefully, deterministically!)
+                logger.error("Unexpected error while pre handling a transaction!", unexpectedException);
+                tx.setMetadata(unknownFailure());
             }
-        }
+        });
     }
 
     // For each transaction, we will use a background thread to parse the transaction, validate it, lookup the
@@ -188,12 +140,6 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             // The node SHOULD have verified the transaction before it was submitted to the network.
             // Since it didn't, it has failed in its due diligence and will be charged accordingly.
             return nodeDueDiligenceFailure(creator, preCheck.responseCode(), null);
-        } catch (Throwable th) {
-            // If some random exception happened, then we should not charge the node for it. Instead,
-            // we will just record the exception and try again during handle. Then if we fail again
-            // at handle, then we will throw away the transaction (hopefully, deterministically!)
-            logger.error("Unexpected error while parsing and checking a transaction!", th);
-            return unknownFailure();
         }
 
         // 2. Get Payer Account

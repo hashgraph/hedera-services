@@ -17,12 +17,12 @@
 package com.hedera.node.app.spi.meta;
 
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.function.LongSupplier;
 
@@ -83,19 +83,19 @@ public interface HandleContext {
      * @param key the key to get the verification for
      * @return the verification for the given key, or {@code null} if no known key or signature at pre-handle
      */
-    @Nullable
+    @NonNull
     SignatureVerification verificationFor(@NonNull final Key key);
 
     /**
      * Gets the {@link SignatureVerification} for the given hollow account. If the alias for the hollow account was
-     * not provided during pre-handle, then there will be no corresponding {@link SignatureVerification}. If the alias
+     * not provided during pre-handle, then the returned {@link SignatureVerification} will be failed. If the alias
      * was provided during pre-handle, then the corresponding {@link SignatureVerification} will be returned with the
      * result of that verification operation. If during signature verification a key was extracted then it will be made
      * available in the {@link SignatureVerification}.
      *
-     * @param hollowAccountNumber the hollow account number to get the verification for
-     * @return the verification for the given key, or {@code null} if no known key or signature at pre-handle
+     * @param hollowAccount the hollow account to get the verification for
+     * @return the verification for the given hollow account.
      */
-    @Nullable
-    SignatureVerification verificationFor(final long hollowAccountNumber);
+    @NonNull
+    SignatureVerification verificationFor(@NonNull final Account hollowAccount);
 }

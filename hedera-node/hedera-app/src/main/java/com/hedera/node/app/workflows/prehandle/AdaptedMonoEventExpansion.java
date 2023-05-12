@@ -17,9 +17,10 @@
 package com.hedera.node.app.workflows.prehandle;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.hapi.node.base.AccountID;
+import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.mono.context.StateChildrenProvider;
 import com.hedera.node.app.service.mono.context.properties.GlobalStaticProperties;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.sigs.EventExpansion;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.node.app.state.HederaState;
@@ -52,7 +53,7 @@ public class AdaptedMonoEventExpansion {
         this.staticProperties = Objects.requireNonNull(staticProperties);
     }
 
-    public void expand(final Event event, @NonNull final AccountID selfNodeId, final HederaState state) {
+    public void expand(final Event event, final HederaState state, final NodeInfo nodeInfo) {
         final var typesForWorkflows = staticProperties.workflowsEnabled();
         final List<Transaction> forWorkflows = new ArrayList<>();
         event.forEachTransaction(txn -> {
@@ -69,7 +70,8 @@ public class AdaptedMonoEventExpansion {
         });
         if (!forWorkflows.isEmpty()) {
             final var readableStoreFactory = new ReadableStoreFactory(state);
-            preHandleWorkflow.preHandle(readableStoreFactory, selfNodeId, forWorkflows.iterator());
+            final var creatorAccountID = PbjConverter.toPbj(nodeInfo.accountOf(event.getCreatorId()));
+            preHandleWorkflow.preHandle(readableStoreFactory, creatorAccountID, forWorkflows.stream());
         }
     }
 }

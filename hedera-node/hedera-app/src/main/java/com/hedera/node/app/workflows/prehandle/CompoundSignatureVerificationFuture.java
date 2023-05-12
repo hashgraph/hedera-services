@@ -132,13 +132,16 @@ final class CompoundSignatureVerificationFuture implements SignatureVerification
 
         // Try to cancel each underlying future (I go ahead and try canceling all of them, even if one fails).
         // If the underlying Future doesn't exist, then we just skip it. Best effort.
+        var wasAbleToCancelAll = true;
         for (final var future : futures) {
-            future.cancel(mayInterruptIfRunning);
+            if (!future.isDone() && !future.cancel(mayInterruptIfRunning)) {
+                wasAbleToCancelAll = false;
+            }
         }
 
         // Record that we have had "canceled" called already, so we don't do it again, and so that "done" is right.
         canceled = true;
-        return true;
+        return wasAbleToCancelAll;
     }
 
     /** {@inheritDoc} */
@@ -178,9 +181,10 @@ final class CompoundSignatureVerificationFuture implements SignatureVerification
      */
     @Override
     public SignatureVerification get() throws InterruptedException, ExecutionException {
+        int failCount = 0;
         for (final var future : futures) {
             final var verification = future.get();
-            if (!verification.passed()) {
+            if (!verification.passed() && (failCount++ >= numCanFail)) {
                 return new SignatureVerificationImpl(key, hollowAccount, false);
             }
         }
@@ -198,19 +202,17 @@ final class CompoundSignatureVerificationFuture implements SignatureVerification
     @Override
     public SignatureVerification get(final long timeout, final TimeUnit unit)
             throws InterruptedException, ExecutionException, TimeoutException {
-        var millisRemaining = unit.toMillis(timeout);
         int failCount = 0;
+        final var deadline = System.currentTimeMillis() + unit.toMillis(timeout);
         for (final var future : futures) {
             // We know the maximum number of millis we can wait, so we block for at most that long. If it takes
             // longer, the future we delegate to here will throw. If it takes less, we recompute how much is
             // remaining on the next iteration.
-            final var beforeWaiting = System.currentTimeMillis();
-            final var verification = future.get(millisRemaining, TimeUnit.MILLISECONDS);
+            final var now = System.currentTimeMillis();
+            final var verification = future.get(deadline - now, TimeUnit.MILLISECONDS);
             if (!verification.passed() && (failCount++ >= numCanFail)) {
                 return new SignatureVerificationImpl(key, hollowAccount, false);
             }
-            // Figure out how many milliseconds we still have remaining before timing out
-            millisRemaining -= System.currentTimeMillis() - beforeWaiting;
         }
 
         return new SignatureVerificationImpl(key, hollowAccount, true);

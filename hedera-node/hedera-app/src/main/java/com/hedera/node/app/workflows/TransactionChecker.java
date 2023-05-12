@@ -145,6 +145,7 @@ public class TransactionChecker {
      * @return The parsed {@link TransactionInfo}
      * @throws PreCheckException If parsing fails or any of the checks fail.
      */
+    @NonNull
     public TransactionInfo parseAndCheck(@NonNull final Bytes buffer) throws PreCheckException {
         final var tx = parse(buffer);
         return check(tx);
@@ -161,6 +162,7 @@ public class TransactionChecker {
      * @throws PreCheckException if the data is not valid
      * @throws NullPointerException if one of the arguments is {@code null}
      */
+    @NonNull
     public Transaction parse(@NonNull final Bytes buffer) throws PreCheckException {
         // Fail fast if there are too many transaction bytes
         if (buffer.length() > maxSignedTxnSize) {
@@ -204,6 +206,7 @@ public class TransactionChecker {
      * @throws PreCheckException if the data is not valid
      * @throws NullPointerException if one of the arguments is {@code null}
      */
+    @NonNull
     public TransactionInfo check(@NonNull final Transaction tx) throws PreCheckException {
 
         // NOTE: Since we've already parsed the transaction, we assume that the transaction was not too many
@@ -415,6 +418,7 @@ public class TransactionChecker {
      * @param timestamp the {@code Timestamp} that should be converted
      * @return the resulting {@code Instant}
      */
+    @NonNull
     private Instant toInstant(final Timestamp timestamp) {
         return Instant.ofEpochSecond(
                 clamp(timestamp.seconds(), Instant.MIN.getEpochSecond(), Instant.MAX.getEpochSecond()),
@@ -451,6 +455,7 @@ public class TransactionChecker {
      * @return The parsed message.
      * @throws PreCheckException if the data is malformed or contains unknown fields.
      */
+    @NonNull
     private <T extends Record> T parseStrict(
             @NonNull ReadableSequentialData data, Codec<T> codec, ResponseCodeEnum parseErrorCode)
             throws PreCheckException {
@@ -509,6 +514,7 @@ public class TransactionChecker {
      * @param sigPairs The list of signature pairs to sort. Cannot be null.
      * @return the sorted list of signature pairs
      */
+    @NonNull
     private List<SignaturePair> sort(@NonNull final List<SignaturePair> sigPairs) {
         final var sortedList = new ArrayList<>(sigPairs);
         sortedList.sort((s1, s2) -> {
