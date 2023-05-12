@@ -33,7 +33,7 @@ import java.util.Objects;
  * @param currentState         The app state after handling the round
  * @param transactionsContents A list of transactions which were included in the round
  */
-public record ConsistencyTestingToolRound(long roundNumber, long currentState, List<Long> transactionsContents)
+public record ConsistencyTestingToolRound(long roundNumber, long currentState, @NonNull List<Long> transactionsContents)
         implements Comparable<ConsistencyTestingToolRound> {
 
     private static final String ROUND_NUMBER_STRING = "Round Number: ";
