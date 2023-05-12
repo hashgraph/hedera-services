@@ -16,25 +16,35 @@
 
 package com.hedera.node.app.workflows.handle;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static org.junit.jupiter.api.Assertions.*;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-import com.google.protobuf.ByteString;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.Transaction;
+import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.logic.StandardProcessLogic;
 import com.hedera.node.app.service.mono.utils.accessors.SwirldsTxnAccessor;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
+import com.hedera.node.app.signature.SignatureVerificationFuture;
+import com.hedera.node.app.signature.impl.SignatureVerificationFutureImpl;
+import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
-import com.hederahashgraph.api.proto.java.Transaction;
+import com.hedera.node.app.workflows.prehandle.PreHandleResult.Status;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,7 +54,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class AdaptedMonoProcessLogicTest {
+class AdaptedMonoProcessLogicTest extends AppTestBase implements Scenarios {
     @Mock
     private StandardProcessLogic monoProcessLogic;
 
@@ -78,18 +88,24 @@ class AdaptedMonoProcessLogicTest {
         final ArgumentCaptor<SwirldsTxnAccessor> captor = ArgumentCaptor.forClass(SwirldsTxnAccessor.class);
 
         final var noopTxn = Transaction.newBuilder().build();
-        final var cryptoSigs = List.of(signature);
         final var meta = new PreHandleResult(
-                null, null, null, ResponseCodeEnum.OK, PAYER_KEY, OTHER_PARTY_KEYS, cryptoSigs, null);
+                // payer, status, responseCode, txInfo, payerFuture, nonPayerFutures, nonPayerHollowFutures, innerResult
+                ALICE.accountID(),
+                PAYER_KEY_PBJ,
+                Status.SO_FAR_SO_GOOD,
+                OK,
+                null,
+                verificationResults(PAYER_KEY_PBJ),
+                null);
 
         given(platformTxn.getMetadata()).willReturn(meta);
-        given(platformTxn.getContents()).willReturn(noopTxn.toByteArray());
+        given(platformTxn.getContents()).willReturn(asByteArray(noopTxn));
 
         subject.incorporateConsensusTxn(platformTxn, 1L);
 
         verify(platformTxn).setMetadata(captor.capture());
         final var accessor = captor.getValue();
-        assertEquals(OK, accessor.getExpandedSigStatus());
+        assertEquals(com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK, accessor.getExpandedSigStatus());
         assertNotNull(accessor.getLinkedRefs());
         final var sigMeta = accessor.getSigMeta();
         assertTrue(sigMeta.couldRationalizePayer());
@@ -102,17 +118,26 @@ class AdaptedMonoProcessLogicTest {
 
         final var noopTxn = Transaction.newBuilder().build();
         final var cryptoSigs = List.of(signature);
+        // TODO OTHER_PARTY_KEYS? cryptoSigs?
         final var meta = new PreHandleResult(
-                null, null, null, ResponseCodeEnum.INVALID_ACCOUNT_ID, PAYER_KEY, OTHER_PARTY_KEYS, cryptoSigs, null);
+                ALICE.accountID(),
+                PAYER_KEY_PBJ,
+                Status.NODE_DUE_DILIGENCE_FAILURE,
+                INVALID_ACCOUNT_ID,
+                null,
+                verificationResults(PAYER_KEY_PBJ),
+                null);
 
         given(platformTxn.getMetadata()).willReturn(meta);
-        given(platformTxn.getContents()).willReturn(noopTxn.toByteArray());
+        given(platformTxn.getContents()).willReturn(asByteArray(noopTxn));
 
         subject.incorporateConsensusTxn(platformTxn, 1L);
 
         verify(platformTxn).setMetadata(captor.capture());
         final var accessor = captor.getValue();
-        assertEquals(INVALID_ACCOUNT_ID, accessor.getExpandedSigStatus());
+        assertEquals(
+                com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID,
+                accessor.getExpandedSigStatus());
         assertNotNull(accessor.getLinkedRefs());
         final var sigMeta = accessor.getSigMeta();
         assertTrue(sigMeta.couldRationalizePayer());
@@ -124,18 +149,25 @@ class AdaptedMonoProcessLogicTest {
         final ArgumentCaptor<SwirldsTxnAccessor> captor = ArgumentCaptor.forClass(SwirldsTxnAccessor.class);
 
         final var noopTxn = Transaction.newBuilder().build();
-        final var cryptoSigs = List.of(signature);
         final var meta = new PreHandleResult(
-                null, null, null, ResponseCodeEnum.INVALID_ACCOUNT_ID, null, OTHER_PARTY_KEYS, cryptoSigs, null);
+                ALICE.accountID(),
+                null,
+                Status.NODE_DUE_DILIGENCE_FAILURE,
+                INVALID_ACCOUNT_ID,
+                null,
+                verificationResults(PAYER_KEY_PBJ),
+                null);
 
         given(platformTxn.getMetadata()).willReturn(meta);
-        given(platformTxn.getContents()).willReturn(noopTxn.toByteArray());
+        given(platformTxn.getContents()).willReturn(asByteArray(noopTxn));
 
         subject.incorporateConsensusTxn(platformTxn, 1L);
 
         verify(platformTxn).setMetadata(captor.capture());
         final var accessor = captor.getValue();
-        assertEquals(INVALID_ACCOUNT_ID, accessor.getExpandedSigStatus());
+        assertEquals(
+                com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID,
+                accessor.getExpandedSigStatus());
         assertNotNull(accessor.getLinkedRefs());
         final var sigMeta = accessor.getSigMeta();
         assertFalse(sigMeta.couldRationalizePayer());
@@ -147,20 +179,27 @@ class AdaptedMonoProcessLogicTest {
         final ArgumentCaptor<SwirldsTxnAccessor> captor = ArgumentCaptor.forClass(SwirldsTxnAccessor.class);
 
         final var nonsenseTxn = Transaction.newBuilder()
-                .setSignedTransactionBytes(ByteString.copyFrom("NONSENSE".getBytes()))
+                .signedTransactionBytes(Bytes.wrap("NONSENSE"))
                 .build();
-        final var cryptoSigs = List.of(signature);
         final var meta = new PreHandleResult(
-                null, null, null, ResponseCodeEnum.INVALID_ACCOUNT_ID, null, OTHER_PARTY_KEYS, cryptoSigs, null);
+                ALICE.accountID(), null, Status.NODE_DUE_DILIGENCE_FAILURE, INVALID_ACCOUNT_ID, null, Map.of(), null);
 
         given(platformTxn.getMetadata()).willReturn(meta);
-        given(platformTxn.getContents()).willReturn(nonsenseTxn.toByteArray());
+        given(platformTxn.getContents()).willReturn(asByteArray(nonsenseTxn));
 
         assertThrows(IllegalStateException.class, () -> subject.incorporateConsensusTxn(platformTxn, 1L));
     }
 
     private static final JKey PAYER_KEY = new JEd25519Key("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes());
+    private static final Key PAYER_KEY_PBJ = Key.newBuilder()
+            .ed25519(Bytes.wrap("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+            .build();
     private static final Set<HederaKey> OTHER_PARTY_KEYS = Set.of(
             new JEd25519Key("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".getBytes()),
             new JEd25519Key("cccccccccccccccccccccccccccccccc".getBytes()));
+
+    private static Map<Key, SignatureVerificationFuture> verificationResults(Key key) {
+        final var txSig = new TransactionSignature(new byte[3], 0, 1, 1, 1, 2, 1);
+        return Map.of(key, new SignatureVerificationFutureImpl(key, null, txSig));
+    }
 }
