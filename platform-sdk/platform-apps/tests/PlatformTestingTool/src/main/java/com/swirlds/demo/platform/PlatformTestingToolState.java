@@ -652,7 +652,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         final PlatformTestingToolState mutableCopy = new PlatformTestingToolState(this);
 
         if (platform != null) {
-            UnsafeMutablePTTStateAccessor.setMutableState(platform.getSelfId().id(), this);
+            UnsafeMutablePTTStateAccessor.setMutableState(platform.getSelfId().id(), mutableCopy);
         }
 
         return mutableCopy;
