@@ -34,6 +34,7 @@ import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
+import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.SettingsProvider;
@@ -184,6 +185,9 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
                         .get()
                         .getConfigData(ThreadConfig.class)
                         .logStackTracePauseDuration())
+                .setMetricsConfiguration(
+                        new QueueThreadMetricsConfiguration(platformContext.getMetrics())
+                )
                 .setQueue(queue)
                 .build();
 
