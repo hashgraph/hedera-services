@@ -210,7 +210,7 @@ public final class VirtualTeacherTreeView<K extends VirtualKey, V extends Virtua
         checkValidLeaf(leaf, reconnectState);
         final VirtualLeafRecord<K, V> leafRecord = records.findLeafRecord(leaf, false);
         assert leafRecord != null : "Unexpected null leaf record at path=" + leaf;
-        out.writeSerializable(leafRecord, true);
+        out.writeSerializable(leafRecord, false);
     }
 
     /**

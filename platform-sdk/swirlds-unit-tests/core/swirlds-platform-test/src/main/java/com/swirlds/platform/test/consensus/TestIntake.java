@@ -110,7 +110,7 @@ public class TestIntake implements ConsensusRoundObserver, StaleEventObserver, L
         final EventObserverDispatcher dispatcher =
                 new EventObserverDispatcher(new ShadowGraphEventObserver(shadowGraph), this);
         intake = new EventIntake(
-                NodeId.createMain(0), // only used for logging
+                new NodeId(0L), // only used for logging
                 linker,
                 this::getConsensus,
                 ab,

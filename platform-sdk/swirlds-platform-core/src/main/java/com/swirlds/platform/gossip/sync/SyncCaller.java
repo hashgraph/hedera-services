@@ -197,8 +197,10 @@ public class SyncCaller implements Runnable {
 
                 // self is the only member, so create an event for just this one transaction,
                 // and immediately put it into the hashgraph. No syncing is needed.
+
                 eventTaskCreator.createEvent(
-                        selfId.getId() /*selfId assumed to be main*/); // otherID (so self will count as the
+                        selfId.id() /*selfId assumed to be main*/); // otherID (so self will count as the
+
                 // "other")
                 Thread.sleep(50);
                 // selfId assumed to be main
@@ -229,7 +231,7 @@ public class SyncCaller implements Runnable {
                     }
 
                     try (final MaybeLockedResource<ConnectionManager> resource =
-                            sharedConnectionLocks.tryLockConnection(NodeId.createMain(otherId))) {
+                            sharedConnectionLocks.tryLockConnection(new NodeId(otherId))) {
                         if (!resource.isLockAcquired()) {
                             continue;
                         }
@@ -341,7 +343,7 @@ public class SyncCaller implements Runnable {
         for (final Long neighborId : reconnectNeighbors) {
             // try to get the lock, it should be available if we have fallen behind
             try (final MaybeLockedResource<ConnectionManager> resource =
-                    sharedConnectionLocks.tryLockConnection(NodeId.createMain(neighborId))) {
+                    sharedConnectionLocks.tryLockConnection(new NodeId(neighborId))) {
                 if (!resource.isLockAcquired()) {
                     peerInfo.addPeerInfo(neighborId, "failed to acquire lock, blocked by heartbeat thread");
                     continue;

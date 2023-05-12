@@ -141,7 +141,7 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
             parseArguments(ParameterProvider.getParameters());
         }
 
-        this.selfId = platform.getSelfId().getId();
+        this.selfId = platform.getSelfId().id();
     }
 
     /**

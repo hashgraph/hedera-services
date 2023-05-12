@@ -209,7 +209,7 @@ public class StatsDemoMain implements SwirldMain {
     public void init(final Platform platform, final NodeId id) {
 
         this.platform = platform;
-        selfId = id.getId();
+        selfId = id.id();
         // parse the config.txt parameters, and allow optional _ as in 1_000_000
         final String[] parameters = ParameterProvider.getParameters();
         headless = (parameters[0].equals("1"));
@@ -225,7 +225,7 @@ public class StatsDemoMain implements SwirldMain {
             console = createConsole(platform, true);
         }
         SwirldsGui.setAbout(
-                platform.getSelfId().getId(),
+                platform.getSelfId().id(),
                 "Stats Demo v. 1.2\nThis writes statistics to a log file,"
                         + " such as the number of transactions per second.");
     }

@@ -131,7 +131,7 @@ public class NodeToSend {
     }
 
     /**
-     * Wait for a resonse from the learner. Will return immediately if a response has already been received or
+     * Wait for a response from the learner. Will return immediately if a response has already been received or
      * if an ancestor has received a positive response. May sleep a short period if neither are true.
      * There is no guarantee that a response will have been received when this method returns.
      */
@@ -141,7 +141,7 @@ public class NodeToSend {
         }
 
         final long currentTime = System.currentTimeMillis();
-        if (currentTime > unconditionalSendTimeMilliseconds) {
+        if (currentTime >= unconditionalSendTimeMilliseconds) {
             return;
         }
 

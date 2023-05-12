@@ -78,9 +78,9 @@ public class HelloSwirldDemoMain implements SwirldMain {
         platform.getNotificationEngine().register(PlatformStatusChangeListener.class, this::platformStatusChange);
 
         this.platform = (SwirldsPlatform) platform;
-        this.selfId = id.getId();
+        this.selfId = id.id();
         this.console = createConsole(platform, true); // create the window, make it visible
-        SwirldsGui.setAbout(platform.getSelfId().getId(), "Hello Swirld v. 1.0\n");
+        SwirldsGui.setAbout(platform.getSelfId().id(), "Hello Swirld v. 1.0\n");
     }
 
     @Override

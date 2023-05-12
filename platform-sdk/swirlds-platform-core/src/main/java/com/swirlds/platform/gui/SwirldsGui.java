@@ -72,8 +72,8 @@ public final class SwirldsGui {
         }
 
         final AddressBook addressBook = platform.getAddressBook();
-        final long selfId = platform.getSelfId().getId();
-        final int winNum = SwirldsGui.getInstanceNumber(platform.getSelfId().getId());
+        final long selfId = platform.getSelfId().id();
+        final int winNum = SwirldsGui.getInstanceNumber(platform.getSelfId().id());
 
         final Rectangle winRect = winRect(addressBook, winNum);
         // if SwirldMain calls createConsole, this remembers the window created
@@ -98,8 +98,8 @@ public final class SwirldsGui {
         }
 
         final AddressBook addressBook = platform.getAddressBook();
-        final long selfId = platform.getSelfId().getId();
-        final int winNum = SwirldsGui.getInstanceNumber(platform.getSelfId().getId());
+        final long selfId = platform.getSelfId().id();
+        final int winNum = SwirldsGui.getInstanceNumber(platform.getSelfId().id());
 
         final Rectangle winRect = winRect(addressBook, winNum);
 

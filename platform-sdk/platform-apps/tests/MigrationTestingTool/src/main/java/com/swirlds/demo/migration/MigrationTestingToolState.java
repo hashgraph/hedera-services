@@ -221,7 +221,7 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
                 .preferDiskBasedIndexes(false);
 
         setVirtualMap(new VirtualMap<>("virtualMap", jasperDbBuilder));
-        selfId = platform.getSelfId().getId();
+        selfId = platform.getSelfId().id();
     }
 
     /**
@@ -242,7 +242,7 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
         if (virtualMap != null) {
             logger.info(MARKER, "VirtualMap initialized with {} values", virtualMap.size());
         }
-        selfId = platform.getSelfId().getId();
+        selfId = platform.getSelfId().id();
 
         if (trigger == InitTrigger.GENESIS) {
             logger.error(MARKER, "InitTrigger was {} when expecting RESTART or RECONNECT", trigger);

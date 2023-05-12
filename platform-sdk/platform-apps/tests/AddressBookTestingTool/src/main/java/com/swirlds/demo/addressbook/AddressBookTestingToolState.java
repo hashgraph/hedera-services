@@ -154,7 +154,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         logger.info(STARTUP.getMarker(), "init called in State.");
         throwIfImmutable();
 
-        this.selfId = platform.getSelfId().getId();
+        this.selfId = platform.getSelfId().id();
     }
 
     /**

@@ -48,7 +48,7 @@ class TransactionHandlerTest {
             () -> new NullPointerException("intentionally thrown"),
             () -> new RuntimeException("intentionally thrown"));
 
-    private final NodeId selfId = new NodeId(false, 0L);
+    private final NodeId selfId = new NodeId(0L);
 
     private final State state = mock(State.class);
     private final SwirldState swirldState = mock(SwirldState.class);
