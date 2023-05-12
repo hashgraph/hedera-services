@@ -31,7 +31,6 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.utility.FileUtils;
-import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.Address;
@@ -373,7 +372,7 @@ class AddressBookInitializerTest {
                         .get()
                         .add(configAddressBook
                                 .get()
-                                .getAddress(new NodeId(0))
+                                .getAddress(configAddressBook.get().getNodeId(0))
                                 .copySetNodeId(configAddressBook.get().getNextNodeId())));
                 break;
             case 7:
@@ -394,7 +393,7 @@ class AddressBookInitializerTest {
     @NonNull
     private AddressBook getRandomAddressBook() {
         return new RandomAddressBookGenerator()
-                .setSequentialIds(true)
+                .setSequentialIds(false)
                 .setSize(5)
                 .setCustomWeightGenerator(i -> i)
                 .build();

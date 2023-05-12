@@ -49,6 +49,7 @@ import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState;
+import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.address.AddressBookUtils;
 import com.swirlds.common.system.events.ConsensusEvent;
@@ -278,8 +279,8 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         if (logWeightingBehavior.get()) {
             logger.info(STARTUP.getMarker(), "Weighting Behavior 1: updating all nodes to have 10 weight.");
         }
-        for (int i = 0; i < addressBook.getSize(); i++) {
-            addressBook.updateWeight(new NodeId(i), 10);
+        for (Address address : addressBook) {
+            addressBook.updateWeight(address.getNodeId(), 10);
         }
         return addressBook;
     }
@@ -297,8 +298,8 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
                     STARTUP.getMarker(),
                     "Weighting Behavior 2: updating all nodes to have weight equal to their nodeId.");
         }
-        for (int i = 0; i < addressBook.getSize(); i++) {
-            addressBook.updateWeight(new NodeId(i), i);
+        for (Address address : addressBook) {
+            addressBook.updateWeight(address.getNodeId(), address.getNodeId().id());
         }
         return addressBook;
     }
