@@ -40,6 +40,7 @@ import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.stats.AverageAndMax;
 import com.swirlds.platform.stats.AverageStat;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 import org.apache.logging.log4j.LogManager;
@@ -81,13 +82,13 @@ public class PreConsensusEventHandler implements PreConsensusEventObserver, Clea
      */
     public PreConsensusEventHandler(
             @NonNull final Metrics metrics,
-            final ThreadManager threadManager,
-            final NodeId selfId,
-            final SwirldStateManager swirldStateManager,
-            final ConsensusMetrics consensusMetrics) {
-        this.selfId = selfId;
-        this.swirldStateManager = swirldStateManager;
-        this.consensusMetrics = consensusMetrics;
+            @NonNull final ThreadManager threadManager,
+            @NonNull final NodeId selfId,
+            @NonNull final SwirldStateManager swirldStateManager,
+            @NonNull final ConsensusMetrics consensusMetrics) {
+        this.selfId = Objects.requireNonNull(selfId);
+        this.swirldStateManager = Objects.requireNonNull(swirldStateManager);
+        this.consensusMetrics = Objects.requireNonNull(consensusMetrics);
         final BlockingQueue<EventImpl> queue = new PriorityBlockingQueue<>(
                 INITIAL_PRE_CONS_EVENT_QUEUE_CAPACITY, EventUtils::consensusPriorityComparator);
 

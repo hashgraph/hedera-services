@@ -515,7 +515,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         startUpEventFrozenManager = new StartUpEventFrozenManager(metrics, Instant::now);
         freezeManager = new FreezeManager(this::checkPlatformStatus);
         FreezeMetrics.registerFreezeMetrics(metrics, freezeManager, startUpEventFrozenManager);
-        EventCounter.registerMetrics(metrics);
+        EventCounter.registerEventCounterMetrics(metrics);
 
         // Manually wire components for now.
         final ManualWiring wiring = new ManualWiring(platformContext, threadManager, getAddressBook(), freezeManager);
@@ -597,6 +597,18 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         }
         logger.info(STARTUP.getMarker(), "initialize eventStreamManager");
 
+        final EventStreamManager<EventImpl> eventStreamManager = new EventStreamManager<>(
+                platformContext,
+                threadManager,
+                getSelfId(),
+                this,
+                eventStreamManagerName,
+                settings.isEnableEventStreaming(),
+                settings.getEventsLogDir(),
+                settings.getEventsLogPeriod(),
+                settings.getEventStreamQueueCapacity(),
+                this::isLastEventBeforeRestart);
+
         if (chatterConfig.useChatter()) {
             criticalQuorum = new CriticalQuorumImpl(
                     metrics, selfId.getId(), initialAddressBook, false, chatterConfig.criticalQuorumSoftening());
@@ -645,19 +657,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     PlatformConstructor.settingsProvider(),
                     freezeManager::isFreezeStarted,
                     stateToLoad);
-
-            final EventStreamManager<EventImpl> eventStreamManager = new EventStreamManager<>(
-                    platformContext,
-                    threadManager,
-                    getSelfId(),
-                    this,
-                    eventStreamManagerName,
-                    settings.isEnableEventStreaming(),
-                    settings.getEventsLogDir(),
-                    settings.getEventsLogPeriod(),
-                    settings.getEventStreamQueueCapacity(),
-                    event -> event.isLastInRoundReceived()
-                            && swirldStateManager.isInFreezePeriod(event.getConsensusTimestamp()));
 
             // SwirldStateManager will get a copy of the state loaded, that copy will become stateCons.
             // The original state will be saved in the SignedStateMgr and will be deleted when it becomes old
@@ -1050,8 +1049,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      */
     void loadReconnectState(final SignedState signedState) {
         // the state was received, so now we load its data into different objects
-        logger.info(
-                LogMarker.STATE_HASH.getMarker(), "RECONNECT: loadReconnectState: reloading state");
+        logger.info(LogMarker.STATE_HASH.getMarker(), "RECONNECT: loadReconnectState: reloading state");
         logger.debug(RECONNECT.getMarker(), "`loadReconnectState` : reloading state");
         try {
 
@@ -1881,5 +1879,15 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         final ReservedSignedState wrapper = stateManagementComponent.getLatestSignedState(reason);
         return new AutoCloseableWrapper<>(
                 wrapper.isNull() ? null : (T) wrapper.get().getState().getSwirldState(), wrapper::close);
+    }
+
+    /**
+     * check whether the given event is the last event in its round, and the platform enters freeze period
+     *
+     * @param event a consensus event
+     * @return whether this event is the last event to be added before restart
+     */
+    private boolean isLastEventBeforeRestart(final EventImpl event) {
+        return event.isLastInRoundReceived() && swirldStateManager.isInFreezePeriod(event.getConsensusTimestamp());
     }
 }

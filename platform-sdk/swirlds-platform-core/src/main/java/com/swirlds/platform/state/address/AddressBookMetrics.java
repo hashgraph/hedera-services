@@ -31,6 +31,13 @@ public final class AddressBookMetrics {
 
     private AddressBookMetrics() {}
 
+    /**
+     * Register the metrics for the address book.
+     *
+     * @param metrics     the metrics engine
+     * @param addressBook the address book to register metrics for
+     * @param selfId      the ID of the node
+     */
     public static void registerAddressBookMetrics(
             @NonNull final Metrics metrics, @NonNull final AddressBook addressBook, @NonNull final NodeId selfId) {
 

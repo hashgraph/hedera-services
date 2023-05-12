@@ -28,8 +28,8 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class EventCounter {
     /**
-     * Number of events currently in memory, for all instantiated Platforms put together. This is only used
-     * for an internal statistic, not for any of the algorithms.
+     * Number of events currently in memory, for all instantiated Platforms put together. This is only used for an
+     * internal statistic, not for any of the algorithms.
      */
     private static final AtomicLong numEventsInMemory = new AtomicLong(0);
 
@@ -61,7 +61,12 @@ public class EventCounter {
         numEventsInMemory.decrementAndGet();
     }
 
-    public static void registerMetrics(@NonNull final Metrics metrics) {
+    /**
+     * Provide the metrics instance to the event counter.
+     *
+     * @param metrics the metrics engine
+     */
+    public static void registerEventCounterMetrics(@NonNull final Metrics metrics) {
         final RunningAverageMetric avgEventsInMem = metrics.getOrCreate(AVG_EVENTS_IN_MEM_CONFIG);
         metrics.addUpdater(() -> avgEventsInMem.update(getNumEventsInMemory()));
     }

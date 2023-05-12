@@ -29,6 +29,7 @@ import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -74,6 +75,7 @@ public class CriticalQuorumImpl implements CriticalQuorum {
      * Construct a critical quorum
      *
      * @param metrics             the metrics engine
+     * @param selfId              the ID of this node
      * @param addressBook         the source address book
      * @param considerBothParents true if both parents should be checked for critical quorum and false for just the self
      *                            parent
@@ -82,12 +84,12 @@ public class CriticalQuorumImpl implements CriticalQuorum {
      */
     public CriticalQuorumImpl(
             @NonNull final Metrics metrics,
-            @NonNull final long selfId,
-            final AddressBook addressBook,
+            final long selfId,
+            @NonNull final AddressBook addressBook,
             final boolean considerBothParents,
             final int thresholdSoftening) {
 
-        this.addressBook = addressBook;
+        this.addressBook = Objects.requireNonNull(addressBook);
         this.considerBothParents = considerBothParents;
         this.thresholdSoftening = thresholdSoftening;
 
@@ -112,7 +114,8 @@ public class CriticalQuorumImpl implements CriticalQuorum {
      * @param selfId      the id of this node
      * @param addressBook the source address book
      */
-    public CriticalQuorumImpl(@NonNull final Metrics metrics, final long selfId, final AddressBook addressBook) {
+    public CriticalQuorumImpl(
+            @NonNull final Metrics metrics, final long selfId, @NonNull final AddressBook addressBook) {
         this(metrics, selfId, addressBook, DEFAULT_BOTH_PARENTS, DEFAULT_THRESHOLD_SOFTENING);
     }
 

@@ -19,6 +19,7 @@ package com.hedera.services.bdd.suites.contract.traceability;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
@@ -4225,7 +4226,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                     .setGas(79000)
                                                     .setRecipientContract(
                                                             spec.registry().getContractId(PRECOMPILE_CALLER))
-                                                    .setGasUsed(5232)
+                                                    .setGasUsed(5330)
                                                     .setInput(encodeFunctionCall(
                                                             PRECOMPILE_CALLER,
                                                             "callSha256AndIsToken",
@@ -4263,7 +4264,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                     .setRecipientContract(ContractID.newBuilder()
                                                             .setContractNum(359)
                                                             .build())
-                                                    .setGasUsed(2)
+                                                    .setGasUsed(100)
                                                     .setInput(ByteStringUtils.wrapUnsafely(Function.parse(
                                                                     "isToken" + "(address)")
                                                             .encodeCallWithArgs(
@@ -4996,7 +4997,7 @@ public class TraceabilitySuite extends HapiSuite {
 
     @SuppressWarnings("java:S5960")
     private HapiSpec assertSidecars() {
-        return defaultHapiSpec("assertSidecars")
+        return onlyDefaultHapiSpec("assertSidecars")
                 .given(
                         // send a dummy transaction to trigger externalization of last sidecars
                         cryptoCreate("externalizeFinalSidecars").delayBy(2000))

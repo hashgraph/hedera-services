@@ -85,7 +85,7 @@ public class SyncManagerTest {
             freezeManager = mock(FreezeManager.class);
             startUpEventFrozenManager = mock(StartUpEventFrozenManager.class);
             hashgraph = new DummyHashgraph();
-            eventTransactionPool = spy(EventTransactionPool.class);
+            eventTransactionPool = spy(new EventTransactionPool(new NoOpMetrics(), null, null));
 
             this.swirldStateManager = swirldStateManager;
 
