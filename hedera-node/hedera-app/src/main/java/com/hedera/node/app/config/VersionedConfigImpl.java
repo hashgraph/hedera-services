@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.config.internal;
+package com.hedera.node.app.config;
 
 import com.hedera.node.config.VersionedConfiguration;
 import com.swirlds.config.api.Configuration;

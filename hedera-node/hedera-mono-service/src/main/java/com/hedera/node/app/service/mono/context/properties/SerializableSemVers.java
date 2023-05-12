@@ -41,9 +41,10 @@ public class SerializableSemVers implements SoftwareVersion {
             .thenComparingInt(SemanticVersion::getMinor)
             .thenComparingInt(SemanticVersion::getPatch)
             .thenComparingInt(semver -> alphaNumberOf(semver.getPre()))
-            // We never deploy versions with `build` parts to prod envs, so
-            // just give precedence to the version that doesn't have one
-            .thenComparingInt(semver -> semver.getBuild().isBlank() ? 1 : 0);
+            // Whenever there is a need for doing an upgrade with config-only changes,
+            // we set the build portion on semver. This is needed to trigger platform
+            // upgrade code, which is otherwise not triggered for config-only changes.
+            .thenComparing(SemanticVersion::getBuild);
     public static final Comparator<SerializableSemVers> FULL_COMPARATOR = Comparator.comparing(
                     SerializableSemVers::getServices, SEM_VER_COMPARATOR)
             .thenComparing(SerializableSemVers::getProto, SEM_VER_COMPARATOR);
@@ -87,20 +88,41 @@ public class SerializableSemVers implements SoftwareVersion {
         return RELEASE_027_VERSION;
     }
 
+    // The software version can be null here because we use deserializedVersion as null
+    // on genesis initialization.
     public boolean isAfter(@Nullable final SoftwareVersion other) {
         return compareTo(other) > 0;
     }
 
+    // The software version can be null here because we use deserializedVersion as null
+    // on genesis initialization.
     public boolean isBefore(@Nullable final SoftwareVersion other) {
         return compareTo(other) < 0;
     }
 
+    // The software version can be null here because we use deserializedVersion as null
+    // on genesis initialization.
     public boolean hasMigrationRecordsFrom(@Nullable final SoftwareVersion other) {
         return isNonPatchUpgradeFrom(other) || (this.isAfter(other) && currentVersionHasPatchMigrationRecords);
     }
 
+    public boolean isNonConfigUpgrade(@Nullable final SoftwareVersion other) {
+        // The software version can be null here because we use deserializedVersion as null
+        // on genesis initialization.
+        if (other == null) {
+            return true;
+        }
+        if (other instanceof SerializableSemVers that) {
+            return this.isAfter(that) && haveDifferentNonBuildVersions(this, that);
+        } else {
+            throw new IllegalArgumentException("Version " + this + IS_INCOMPARABLE_MSG + other);
+        }
+    }
+
     @VisibleForTesting
     boolean isNonPatchUpgradeFrom(@Nullable final SoftwareVersion other) {
+        // The software version can be null here because we use deserializedVersion as null
+        // on genesis initialization.
         if (other == null) {
             return true;
         }
@@ -114,6 +136,13 @@ public class SerializableSemVers implements SoftwareVersion {
     private boolean haveDifferentMajorAndMinorVersions(
             @NonNull final SerializableSemVers a, @NonNull final SerializableSemVers b) {
         return a.services.getMajor() != b.services.getMajor() || a.services.getMinor() != b.services.getMinor();
+    }
+
+    private boolean haveDifferentNonBuildVersions(
+            @NonNull final SerializableSemVers a, @NonNull final SerializableSemVers b) {
+        return haveDifferentMajorAndMinorVersions(a, b)
+                || a.services.getPatch() != b.services.getPatch()
+                || !a.services.getPre().equals(b.services.getPre());
     }
 
     @Override
