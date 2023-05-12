@@ -1034,6 +1034,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
     private void setAllChildren() {
         given(addressBook.getSize()).willReturn(1);
         given(addressBook.getAddress(0)).willReturn(address);
+        given(address.getMemo()).willReturn("memo");
         given(address.getId()).willReturn(0L);
         given(bootstrapProperties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT)).willReturn(3_000_000_000L);
         given(bootstrapProperties.getIntProperty(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS))
