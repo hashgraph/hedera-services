@@ -160,14 +160,14 @@ public interface Dispatch {
      * @param amount the amount to transfer
      * @param fromEntityNumber the number of the entity to transfer from
      * @param toEntityNumber the number of the entity to transfer to
-     * @param nonCryptographicSignatureVerification the {@link VerificationStrategy} to use
+     * @param strategy the {@link VerificationStrategy} to use
      * @return the result of the transfer attempt
      */
     ResponseCodeEnum transferValue(
             long amount,
             long fromEntityNumber,
             long toEntityNumber,
-            VerificationStrategy nonCryptographicSignatureVerification);
+            @NonNull VerificationStrategy strategy);
 
     /**
      * Links the given {@code evmAddress} to the given {@code entityNumber} as an alias.
