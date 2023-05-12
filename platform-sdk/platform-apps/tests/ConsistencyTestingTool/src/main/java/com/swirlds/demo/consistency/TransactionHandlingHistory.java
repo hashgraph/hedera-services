@@ -103,7 +103,7 @@ public class TransactionHandlingHistory {
         try {
             this.writer = new BufferedWriter(new FileWriter(logFilePath.toFile(), true));
         } catch (final IOException e) {
-            throw new RuntimeException("Failed to open writer for transaction handling history", e);
+            throw new UncheckedIOException("Failed to open writer for transaction handling history", e);
         }
     }
 
