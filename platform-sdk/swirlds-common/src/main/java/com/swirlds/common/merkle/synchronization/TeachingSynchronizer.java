@@ -36,7 +36,7 @@ import com.swirlds.common.threading.pool.StandardWorkGroup;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Supplier;
+import java.util.function.BooleanSupplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -79,7 +79,11 @@ public class TeachingSynchronizer {
      */
     private final ThreadManager threadManager;
 
-    private final Supplier<Boolean> requestToStopTeaching;
+    /**
+     * A mechanism to check if teaching should be stopped, e.g. when the teacher itself has
+     * fallen behind network.
+     */
+    private final BooleanSupplier requestToStopTeaching;
 
     /**
      * Create a new teaching synchronizer.
@@ -98,6 +102,8 @@ public class TeachingSynchronizer {
      * 		if there is a thread stuck on a blocking IO
      * 		operation that will never finish due to a
      * 		failure.
+     * @param requestToStopTeaching
+     *      a function to check periodically if teaching should be stopped
      */
     public TeachingSynchronizer(
             final ThreadManager threadManager,
@@ -105,7 +111,7 @@ public class TeachingSynchronizer {
             final MerkleDataOutputStream out,
             final MerkleNode root,
             final Runnable breakConnection,
-            final Supplier<Boolean> requestToStopTeaching) {
+            final BooleanSupplier requestToStopTeaching) {
 
         this.threadManager = threadManager;
         inputStream = in;

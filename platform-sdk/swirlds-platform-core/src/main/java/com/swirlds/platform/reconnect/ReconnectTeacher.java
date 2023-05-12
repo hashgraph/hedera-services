@@ -34,7 +34,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.net.SocketException;
 import java.util.Objects;
-import java.util.function.Supplier;
+import java.util.function.BooleanSupplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -63,7 +63,11 @@ public class ReconnectTeacher {
 
     private final ThreadManager threadManager;
 
-    private final Supplier<Boolean> requestToStopTeaching;
+    /**
+     * A function to check periodically if teaching should be stopped, e.g. when the
+     * teacher has fallen behind.
+     */
+    private final BooleanSupplier requestToStopTeaching;
 
     /**
      * @param threadManager          responsible for managing thread lifecycles
@@ -81,7 +85,7 @@ public class ReconnectTeacher {
             final long selfId,
             final long otherId,
             final long lastRoundReceived,
-            final Supplier<Boolean> requestToStopTeaching,
+            final BooleanSupplier requestToStopTeaching,
             @NonNull final ReconnectMetrics statistics) {
 
         this.threadManager = Objects.requireNonNull(threadManager);

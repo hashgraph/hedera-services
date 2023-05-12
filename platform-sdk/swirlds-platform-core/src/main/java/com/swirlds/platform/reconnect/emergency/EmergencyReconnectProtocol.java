@@ -70,6 +70,8 @@ public class EmergencyReconnectProtocol implements Protocol {
      * 		tracks reconnect metrics
      * @param reconnectController
      * 		controls reconnecting as a learner
+     * @param fallenBehindManager
+     *      maintains this node's behind status
      */
     public EmergencyReconnectProtocol(
             final ThreadManager threadManager,

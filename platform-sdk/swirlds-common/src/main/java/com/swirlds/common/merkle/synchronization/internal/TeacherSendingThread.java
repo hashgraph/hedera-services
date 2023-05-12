@@ -30,7 +30,7 @@ import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Supplier;
+import java.util.function.BooleanSupplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -57,7 +57,7 @@ public class TeacherSendingThread<T> {
     private final AsyncOutputStream<Lesson<T>> out;
     private final Queue<TeacherSubtree> subtrees;
     private final TeacherTreeView<T> view;
-    private final Supplier<Boolean> requestToStopTeaching;
+    private final BooleanSupplier requestToStopTeaching;
     private final AtomicBoolean senderIsFinished;
 
     /**
@@ -73,6 +73,9 @@ public class TeacherSendingThread<T> {
      * 		a queue containing roots of subtrees to send, may have more roots added by this class
      * @param view
      * 		an object that interfaces with the subtree
+     * @param requestToStopTeaching
+     *      a function to check periodically if teaching should be stopped, e.g. because of the
+     *      teacher has fallen behind network
      * @param senderIsFinished
      * 		set to true when this thread has finished
      */
@@ -82,7 +85,7 @@ public class TeacherSendingThread<T> {
             final AsyncOutputStream<Lesson<T>> out,
             final Queue<TeacherSubtree> subtrees,
             final TeacherTreeView<T> view,
-            final Supplier<Boolean> requestToStopTeaching,
+            final BooleanSupplier requestToStopTeaching,
             final AtomicBoolean senderIsFinished) {
 
         this.workGroup = workGroup;
@@ -178,7 +181,7 @@ public class TeacherSendingThread<T> {
             out.sendAsync(buildDataLesson(view.getRoot()));
 
             while (view.areThereNodesToHandle()) {
-                if (requestToStopTeaching.get()) {
+                if (requestToStopTeaching.getAsBoolean()) {
                     logger.info(
                             RECONNECT.getMarker(),
                             "Teacher's sending thread is requested to stop teaching (fallen behind?)");

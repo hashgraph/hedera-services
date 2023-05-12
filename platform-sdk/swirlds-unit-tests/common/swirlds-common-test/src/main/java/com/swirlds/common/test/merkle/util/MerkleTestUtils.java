@@ -50,7 +50,7 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Supplier;
+import java.util.function.BooleanSupplier;
 
 /**
  * Utility methods for testing merkle trees.
@@ -982,7 +982,7 @@ public final class MerkleTestUtils {
             final MerkleNode startingTree,
             final MerkleNode desiredTree,
             final int latencyMilliseconds,
-            final Supplier<Boolean> requestToStopTeaching)
+            final BooleanSupplier requestToStopTeaching)
             throws Exception {
         try (PairedStreams streams = new PairedStreams()) {
 
@@ -1174,7 +1174,7 @@ public final class MerkleTestUtils {
     }
 
     public static <T extends MerkleNode> T hashAndTestSynchronization(
-            final MerkleNode startingTree, final MerkleNode desiredTree, final Supplier<Boolean> requestTeacherToStop)
+            final MerkleNode startingTree, final MerkleNode desiredTree, final BooleanSupplier requestTeacherToStop)
             throws Exception {
         System.out.println("------------");
         System.out.println("starting: " + startingTree);

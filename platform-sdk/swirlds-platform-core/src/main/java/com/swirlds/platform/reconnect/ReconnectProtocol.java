@@ -57,6 +57,7 @@ public class ReconnectProtocol implements Protocol {
      * @param reconnectSocketTimeout  the socket timeout to use when executing a reconnect
      * @param reconnectMetrics        tracks reconnect metrics
      * @param reconnectController     controls reconnecting as a learner
+     * @param fallenBehindManager     maintains this node's behind status
      */
     public ReconnectProtocol(
             final ThreadManager threadManager,

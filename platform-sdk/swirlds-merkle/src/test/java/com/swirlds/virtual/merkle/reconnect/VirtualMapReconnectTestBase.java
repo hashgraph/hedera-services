@@ -44,8 +44,8 @@ import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.function.BooleanSupplier;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 
@@ -78,7 +78,7 @@ public abstract class VirtualMapReconnectTestBase {
     protected VirtualMap<TestKey, TestValue> learnerMap;
     protected BrokenBuilder teacherBuilder;
     protected BrokenBuilder learnerBuilder;
-    protected Supplier<Boolean> requestTeacherToStop;
+    protected BooleanSupplier requestTeacherToStop;
 
     protected abstract VirtualDataSourceBuilder<TestKey, TestValue> createBuilder() throws IOException;
 
