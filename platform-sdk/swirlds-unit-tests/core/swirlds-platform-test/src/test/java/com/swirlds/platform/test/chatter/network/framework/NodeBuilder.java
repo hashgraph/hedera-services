@@ -16,12 +16,10 @@
 
 package com.swirlds.platform.test.chatter.network.framework;
 
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
-
 import com.swirlds.common.system.NodeId;
-import com.swirlds.platform.gossip.chatter.ChatterSubSetting;
+import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.test.chatter.network.NoOpSimulatedEventPipeline;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 
 /**
  * Builds a node for a simulated chatter test.
@@ -100,17 +98,17 @@ public class NodeBuilder<T extends SimulatedChatterEvent> {
             eventPipeline = new NoOpSimulatedEventPipeline<>();
         }
 
-        final ChatterSubSetting settings = spy(ChatterSubSetting.class);
-        when(settings.getOtherEventDelay()).thenReturn(networkParams.otherEventDelay());
-        when(settings.getProcessingTimeInterval()).thenReturn(networkParams.procTimeInterval());
-        when(settings.getHeartbeatInterval()).thenReturn(networkParams.heartbeatInterval());
+        final TestConfigBuilder configBuilder = new TestConfigBuilder()
+                .withValue("chatter.otherEventDelay", networkParams.otherEventDelay())
+                .withValue("chatter.processingTimeInterval", networkParams.procTimeInterval())
+                .withValue("chatter.heartbeatInterval", networkParams.heartbeatInterval());
 
         final ChatterInstance<T> chatterInstance = new ChatterInstance<>(
                 networkParams.numNodes(),
                 nodeId,
                 eventClass,
                 networkParams.time(),
-                settings,
+                configBuilder.getOrCreateConfig().getConfigData(ChatterConfig.class),
                 newEventCreator,
                 eventPipeline);
 
