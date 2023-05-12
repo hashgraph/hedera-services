@@ -16,9 +16,12 @@
 
 package com.swirlds.platform.gossip.sync;
 
+import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
 import static com.swirlds.logging.LogMarker.FREEZE;
 import static com.swirlds.logging.LogMarker.SYNC;
 
+import com.swirlds.common.metrics.FunctionGauge;
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
@@ -30,6 +33,7 @@ import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.gossip.shadowgraph.SyncResult;
 import com.swirlds.platform.gossip.shadowgraph.SyncUtils;
 import com.swirlds.platform.network.RandomGraph;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
@@ -45,8 +49,8 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
     private static final Logger logger = LogManager.getLogger(SyncManagerImpl.class);
 
     /**
-     * When looking for a neighbor to call, this is the maximum number of neighbors we query before just selecting
-     * one if a suitable neighbor is not found yet.
+     * When looking for a neighbor to call, this is the maximum number of neighbors we query before just selecting one
+     * if a suitable neighbor is not found yet.
      */
     private static final int MAXIMUM_NEIGHBORS_TO_QUERY = 10;
 
@@ -75,16 +79,14 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
     /**
      * Creates a new SyncManager
      *
-     * @param intakeQueue
-     * 		the event intake queue
-     * @param connectionGraph
-     * 		The platforms connection graph.
-     * @param selfId
-     * 		The ID of the platform.
-     * @param eventCreationRules
-     * 		Contains a list of rules for checking whether this node should create an event or not
+     * @param metrics            the metrics engine
+     * @param intakeQueue        the event intake queue
+     * @param connectionGraph    The platforms connection graph.
+     * @param selfId             The ID of the platform.
+     * @param eventCreationRules Contains a list of rules for checking whether this node should create an event or not
      */
     public SyncManagerImpl(
+            @NonNull final Metrics metrics,
             final BlockingQueue<EventIntakeTask> intakeQueue,
             final RandomGraph connectionGraph,
             final NodeId selfId,
@@ -103,6 +105,14 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
         this.addressBook = addressBook;
 
         this.fallenBehindManager = fallenBehindManager;
+
+        metrics.getOrCreate(
+                new FunctionGauge.Config<>(INTERNAL_CATEGORY, "hasFallenBehind", Object.class, this::hasFallenBehind)
+                        .withDescription("has this node fallen behind?"));
+        metrics.getOrCreate(new FunctionGauge.Config<>(
+                        INTERNAL_CATEGORY, "numReportFallenBehind", Integer.class, this::numReportedFallenBehind)
+                .withDescription("the number of nodes that have fallen behind")
+                .withUnit("count"));
     }
 
     /**
@@ -179,8 +189,7 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
     /**
      * Observers halt requested dispatches. Causes gossip to permanently stop (until node reboot).
      *
-     * @param reason
-     * 		the reason why gossip is being stopped
+     * @param reason the reason why gossip is being stopped
      */
     public void haltRequestedObserver(final String reason) {
         gossipHalted.set(true);
@@ -190,14 +199,10 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
     /**
      * Called by SyncUtils after a successful sync to check whether it should create an event or not
      *
-     * @param otherId
-     * 		the ID of the node we synced with
-     * @param oneNodeFallenBehind
-     * 		true if one of the nodes in the sync has fallen behind
-     * @param eventsRead
-     * 		the number of events read during the sync
-     * @param eventsWritten
-     * 		the number of events written during the sync
+     * @param otherId             the ID of the node we synced with
+     * @param oneNodeFallenBehind true if one of the nodes in the sync has fallen behind
+     * @param eventsRead          the number of events read during the sync
+     * @param eventsWritten       the number of events written during the sync
      * @return true if an event should be created, false otherwise
      */
     @Override
@@ -209,8 +214,7 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
     /**
      * Called by {@link SyncUtils} after a successful sync to check whether it should create an event or not
      *
-     * @param info
-     * 		information about the sync
+     * @param info information about the sync
      * @return true if an event should be created, false otherwise
      */
     @Override
