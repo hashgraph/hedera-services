@@ -120,11 +120,15 @@ public enum SystemContractAbis {
 
     @NonNull
     String nameFrom(@NonNull final String s) {
-        return s.split("[(]", 2)[0];
+        // signature must look like `fooMethod(arg1,arg2,arg3)` so this just pulls out that
+        // part before the first `(`
+        return s.substring(0, s.indexOf('('));
     }
 
     @NonNull
     String addressToUint(@NonNull final String s) {
+        // for some reason the decoder library doesn't accept the Solidity type `address` and
+        // requires the equivalent `bytes32` instead
         return s.replace("address", "bytes32");
     }
 
@@ -135,11 +139,17 @@ public enum SystemContractAbis {
 
     @NonNull
     String stripName(@NonNull final String s) {
+        // signature must look like `fooMethod(arg1,arg2,arg3)` so this just trims off
+        // the `fooMethod` at the beginning
         return s.substring(s.indexOf('('));
     }
 
     @NonNull
     String to8CharHexString(@NonNull final Bytes bytes) {
+        // `Bytes` has a bunch of "toHex"-ish routines - but not one that can be asked to cough
+        // up a _fixed-width_ hex value.  So you've got to pad it yourself.  And the way it is
+        // done here is to glue the hex digits onto the back of 8 `0`s and then just take the last
+        // 8 characters of that.
         final var shortHex = "00000000" + bytes.toUnprefixedHexString();
         return "0x" + shortHex.substring(shortHex.length() - 8);
     }

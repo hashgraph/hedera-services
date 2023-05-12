@@ -88,7 +88,6 @@ public class BurnPrecompile extends AbstractWritePrecompile {
                     default -> throw new IllegalArgumentException("invalid selector to burn precompile");
                 };
         burnOp = getBurnWrapper(input, burnAbi);
-        if (burnOp == null) throw new IllegalArgumentException("unable to create burn wrapper from decoded input");
         transactionBody = syntheticTxnFactory.createBurn(burnOp);
         return transactionBody;
     }

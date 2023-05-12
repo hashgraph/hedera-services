@@ -39,10 +39,11 @@ class SystemContractAbisTest {
     void confirmAllSelectorsKnown() {
         final var allKnownABISelectors = EnumSet.allOf(SystemContractAbis.class).stream()
                 .map(SystemContractAbis::selectorAsHex)
-                .map(s -> s.substring(2))
+                .map(s -> s.substring(2)) // lose the `0x`
                 .map(HexFormat::fromHexDigits)
                 .toList();
         softly.assertThat(allAbiConstants).containsAll(allKnownABISelectors);
+        softly.assertThat(listAllSystemContractAbis()).isEmpty();
     }
 
     // From `mono/store/contracts/precompile/AbiConstants.java` via emacs:
