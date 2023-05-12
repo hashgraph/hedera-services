@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.exceptions;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
@@ -31,8 +32,7 @@ class InvalidTransactionExceptionTest {
     void canBuildRevertingExceptionWithDetail() {
         final var reason = "I don't like it!";
         final var frameReason = Bytes.of(reason.getBytes());
-        final var revertingEx =
-                new InvalidTransactionException(reason, INVALID_ALLOWANCE_OWNER_ID, true);
+        final var revertingEx = new InvalidTransactionException(reason, INVALID_ALLOWANCE_OWNER_ID, true);
 
         assertTrue(revertingEx.isReverting());
         assertEquals(frameReason, revertingEx.getRevertReason());

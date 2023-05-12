@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.accounts;
 
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.isRecoveredEvmAddress;
 import static com.swirlds.common.utility.CommonUtils.hex;
+import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
@@ -31,7 +33,9 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hederahashgraph.api.proto.java.Key;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -54,10 +58,8 @@ import org.hyperledger.besu.datatypes.Address;
 public class AliasManager extends HederaEvmContractAliases implements ContractAliases {
     private static final Logger log = LogManager.getLogger(AliasManager.class);
 
-    private static final String NON_TRANSACTIONAL_MSG =
-            "Base alias manager does not buffer changes";
-    public static final UnaryOperator<byte[]> ADDRESS_RECOVERY_FN =
-            EthSigsUtils::recoverAddressFromPubKey;
+    private static final String NON_TRANSACTIONAL_MSG = "Base alias manager does not buffer changes";
+    public static final UnaryOperator<byte[]> ADDRESS_RECOVERY_FN = EthSigsUtils::recoverAddressFromPubKey;
 
     private final Supplier<Map<ByteString, EntityNum>> aliases;
 
@@ -118,9 +120,7 @@ public class AliasManager extends HederaEvmContractAliases implements ContractAl
     }
 
     boolean maybeLinkEvmAddress(
-            @Nullable final JKey key,
-            final EntityNum num,
-            final UnaryOperator<byte[]> addressRecovery) {
+            @Nullable final JKey key, final EntityNum num, final UnaryOperator<byte[]> addressRecovery) {
         final var evmAddress = tryAddressRecovery(key, addressRecovery);
         if (isRecoveredEvmAddress(evmAddress)) {
             link(ByteStringUtils.wrapUnsafely(evmAddress), num);
@@ -131,8 +131,7 @@ public class AliasManager extends HederaEvmContractAliases implements ContractAl
     }
 
     @Nullable
-    public static byte[] tryAddressRecovery(
-            @Nullable final JKey key, final UnaryOperator<byte[]> addressRecovery) {
+    public static byte[] tryAddressRecovery(@Nullable final JKey key, final UnaryOperator<byte[]> addressRecovery) {
         if (key != null && key.hasECDSAsecp256k1Key()) {
             // Only compressed keys are stored at the moment
             final var keyBytes = key.getECDSASecp256k1Key();
@@ -163,43 +162,40 @@ public class AliasManager extends HederaEvmContractAliases implements ContractAl
      * @param observer an observer to be called with each traversed account
      */
     public void rebuildAliasesMap(
-            final AccountStorageAdapter accounts,
-            final BiConsumer<EntityNum, HederaAccount> observer) {
+            final AccountStorageAdapter accounts, final BiConsumer<EntityNum, HederaAccount> observer) {
         final var numCreate2Aliases = new AtomicInteger();
         final var numEOAliases = new AtomicInteger();
         final var workingAliases = curAliases();
         workingAliases.clear();
-        accounts.forEach(
-                (k, v) -> {
-                    final var alias = v.getAlias();
-                    observer.accept(k, v);
-                    if (!alias.isEmpty()) {
-                        workingAliases.put(alias, k);
-                        if (v.isSmartContract()) {
-                            numCreate2Aliases.getAndIncrement();
-                        }
-                        if (alias.size() > EVM_ADDRESS_LEN) {
-                            try {
-                                final Key key = Key.parseFrom(v.getAlias());
-                                final JKey jKey = JKey.mapKey(key);
-                                if (maybeLinkEvmAddress(jKey, EntityNum.fromInt(v.number()))) {
-                                    numEOAliases.incrementAndGet();
-                                }
-                            } catch (final InvalidProtocolBufferException
-                                    | DecoderException
-                                    | IllegalArgumentException ignore) {
-                                // any expected exception means no eth mapping
-                            }
-                        }
-
-                        if (alias.size() == EVM_ADDRESS_LEN) {
+        accounts.forEach((k, v) -> {
+            final var alias = v.getAlias();
+            observer.accept(k, v);
+            if (!alias.isEmpty()) {
+                workingAliases.put(alias, k);
+                if (v.isSmartContract()) {
+                    numCreate2Aliases.getAndIncrement();
+                }
+                if (alias.size() > EVM_ADDRESS_LEN) {
+                    try {
+                        final Key key = Key.parseFrom(v.getAlias());
+                        final JKey jKey = JKey.mapKey(key);
+                        if (maybeLinkEvmAddress(jKey, EntityNum.fromInt(v.number()))) {
                             numEOAliases.incrementAndGet();
                         }
+                    } catch (final InvalidProtocolBufferException
+                            | DecoderException
+                            | IllegalArgumentException ignore) {
+                        // any expected exception means no eth mapping
                     }
-                });
+                }
+
+                if (alias.size() == EVM_ADDRESS_LEN) {
+                    numEOAliases.incrementAndGet();
+                }
+            }
+        });
         log.info(
-                "Rebuild complete, re-mapped {} aliases ({} from CREATE2, {} externally owned"
-                        + " accounts)",
+                "Rebuild complete, re-mapped {} aliases ({} from CREATE2, {} externally owned" + " accounts)",
                 workingAliases::size,
                 numCreate2Aliases::get,
                 numEOAliases::get);
@@ -263,9 +259,22 @@ public class AliasManager extends HederaEvmContractAliases implements ContractAl
             final Key key = Key.parseFrom(alias);
             final JKey jKey = JKey.mapKey(key);
             return tryAddressRecovery(jKey, ADDRESS_RECOVERY_FN);
-        } catch (InvalidProtocolBufferException
-                | DecoderException
-                | IllegalArgumentException ignore) {
+        } catch (InvalidProtocolBufferException | DecoderException | IllegalArgumentException ignore) {
+            // any expected exception means no eth mapping
+            return null;
+        }
+    }
+
+    @Nullable
+    public static byte[] keyAliasToEVMAddress(@NonNull final Bytes alias) {
+        requireNonNull(alias);
+        try {
+            final var ret = new byte[Math.toIntExact(alias.length())];
+            alias.getBytes(0, ret);
+            final Key key = Key.parseFrom(ret);
+            final JKey jKey = JKey.mapKey(key);
+            return tryAddressRecovery(jKey, ADDRESS_RECOVERY_FN);
+        } catch (InvalidProtocolBufferException | DecoderException | IllegalArgumentException ignore) {
             // any expected exception means no eth mapping
             return null;
         }

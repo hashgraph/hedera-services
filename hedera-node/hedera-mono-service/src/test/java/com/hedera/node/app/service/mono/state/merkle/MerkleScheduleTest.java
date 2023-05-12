@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.merkle;
 
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asTimestamp;
@@ -98,11 +99,10 @@ public class MerkleScheduleTest {
 
     @Test
     void recognizesMissingFunction() {
-        final var noneBodyBytes =
-                parentTxn.toBuilder()
-                        .setScheduleCreate(ScheduleCreateTransactionBody.getDefaultInstance())
-                        .build()
-                        .toByteArray();
+        final var noneBodyBytes = parentTxn.toBuilder()
+                .setScheduleCreate(ScheduleCreateTransactionBody.getDefaultInstance())
+                .build()
+                .toByteArray();
 
         subject = MerkleSchedule.from(noneBodyBytes, expiry);
 
@@ -130,11 +130,8 @@ public class MerkleScheduleTest {
     @Test
     void factoryTranslatesImpossibleParseError() {
         final var bytes = "NONSENSE".getBytes();
-        final var iae =
-                assertThrows(IllegalArgumentException.class, () -> MerkleSchedule.from(bytes, 0L));
-        assertEquals(
-                "Argument bodyBytes=0x4e4f4e53454e5345 was not a TransactionBody!",
-                iae.getMessage());
+        final var iae = assertThrows(IllegalArgumentException.class, () -> MerkleSchedule.from(bytes, 0L));
+        assertEquals("Argument bodyBytes=0x4e4f4e53454e5345 was not a TransactionBody!", iae.getMessage());
     }
 
     @Test
@@ -201,19 +198,14 @@ public class MerkleScheduleTest {
 
     @Test
     void nonessentialFieldsDontAffectIdentity() {
-        final var diffBodyBytes =
-                parentTxn.toBuilder()
-                        .setTransactionID(
-                                parentTxn.getTransactionID().toBuilder()
-                                        .setAccountID(otherPayer.toGrpcAccountId())
-                                        .setTransactionValidStart(
-                                                MiscUtils.asTimestamp(
-                                                        otherSchedulingTXValidStart.toJava())))
-                        .setScheduleCreate(
-                                parentTxn.getScheduleCreate().toBuilder()
-                                        .setPayerAccountID(otherPayer.toGrpcAccountId()))
-                        .build()
-                        .toByteArray();
+        final var diffBodyBytes = parentTxn.toBuilder()
+                .setTransactionID(parentTxn.getTransactionID().toBuilder()
+                        .setAccountID(otherPayer.toGrpcAccountId())
+                        .setTransactionValidStart(MiscUtils.asTimestamp(otherSchedulingTXValidStart.toJava())))
+                .setScheduleCreate(
+                        parentTxn.getScheduleCreate().toBuilder().setPayerAccountID(otherPayer.toGrpcAccountId()))
+                .build()
+                .toByteArray();
         final var other = MerkleSchedule.from(diffBodyBytes, expiry + 1);
         other.markExecuted(resolutionTime);
         other.markDeleted(resolutionTime);
@@ -225,13 +217,11 @@ public class MerkleScheduleTest {
 
     @Test
     void differentAdminKeysNotIdentical() {
-        final var bodyBytesDiffAdminKey =
-                parentTxn.toBuilder()
-                        .setScheduleCreate(
-                                parentTxn.getScheduleCreate().toBuilder()
-                                        .setAdminKey(MiscUtils.asKeyUnchecked(otherAdminKey)))
-                        .build()
-                        .toByteArray();
+        final var bodyBytesDiffAdminKey = parentTxn.toBuilder()
+                .setScheduleCreate(
+                        parentTxn.getScheduleCreate().toBuilder().setAdminKey(MiscUtils.asKeyUnchecked(otherAdminKey)))
+                .build()
+                .toByteArray();
         final var other = MerkleSchedule.from(bodyBytesDiffAdminKey, expiry);
 
         assertNotEquals(subject, other);
@@ -240,12 +230,10 @@ public class MerkleScheduleTest {
 
     @Test
     void differentMemosNotIdentical() {
-        final var bodyBytesDiffMemo =
-                parentTxn.toBuilder()
-                        .setScheduleCreate(
-                                parentTxn.getScheduleCreate().toBuilder().setMemo(otherEntityMemo))
-                        .build()
-                        .toByteArray();
+        final var bodyBytesDiffMemo = parentTxn.toBuilder()
+                .setScheduleCreate(parentTxn.getScheduleCreate().toBuilder().setMemo(otherEntityMemo))
+                .build()
+                .toByteArray();
         final var other = MerkleSchedule.from(bodyBytesDiffMemo, expiry);
 
         assertNotEquals(subject, other);
@@ -254,15 +242,11 @@ public class MerkleScheduleTest {
 
     @Test
     void differentScheduledTxnNotIdentical() {
-        final var bodyBytesDiffScheduledTxn =
-                parentTxn.toBuilder()
-                        .setScheduleCreate(
-                                parentTxn.getScheduleCreate().toBuilder()
-                                        .setScheduledTransactionBody(
-                                                scheduledTxn.toBuilder()
-                                                        .setMemo("Slightly different!")))
-                        .build()
-                        .toByteArray();
+        final var bodyBytesDiffScheduledTxn = parentTxn.toBuilder()
+                .setScheduleCreate(parentTxn.getScheduleCreate().toBuilder()
+                        .setScheduledTransactionBody(scheduledTxn.toBuilder().setMemo("Slightly different!")))
+                .build()
+                .toByteArray();
         final var other = MerkleSchedule.from(bodyBytesDiffScheduledTxn, expiry);
 
         assertNotEquals(subject, other);
@@ -276,42 +260,41 @@ public class MerkleScheduleTest {
         subject.witnessValidSignature(tpk);
         subject.markDeleted(resolutionTime);
 
-        final var expected =
-                "MerkleSchedule{"
-                        + "number=123456 <-> 0.0.123456, "
-                        + "scheduledTxn="
-                        + scheduledTxn
-                        + ", "
-                        + "expiry="
-                        + expiry
-                        + ", "
-                        + "executed="
-                        + false
-                        + ", "
-                        + "deleted="
-                        + true
-                        + ", "
-                        + "memo="
-                        + entityMemo
-                        + ", "
-                        + "payer="
-                        + payer.toAbbrevString()
-                        + ", "
-                        + "schedulingAccount="
-                        + schedulingAccount
-                        + ", "
-                        + "schedulingTXValidStart="
-                        + schedulingTXValidStart
-                        + ", "
-                        + "signatories=["
-                        + signatoriesToString()
-                        + "], "
-                        + "adminKey="
-                        + describe(adminKey)
-                        + ", "
-                        + "resolutionTime="
-                        + RichInstant.fromJava(resolutionTime).toString()
-                        + "}";
+        final var expected = "MerkleSchedule{"
+                + "number=123456 <-> 0.0.123456, "
+                + "scheduledTxn="
+                + scheduledTxn
+                + ", "
+                + "expiry="
+                + expiry
+                + ", "
+                + "executed="
+                + false
+                + ", "
+                + "deleted="
+                + true
+                + ", "
+                + "memo="
+                + entityMemo
+                + ", "
+                + "payer="
+                + payer.toAbbrevString()
+                + ", "
+                + "schedulingAccount="
+                + schedulingAccount
+                + ", "
+                + "schedulingTXValidStart="
+                + schedulingTXValidStart
+                + ", "
+                + "signatories=["
+                + signatoriesToString()
+                + "], "
+                + "adminKey="
+                + describe(adminKey)
+                + ", "
+                + "resolutionTime="
+                + RichInstant.fromJava(resolutionTime).toString()
+                + "}";
 
         assertEquals(expected, subject.toString());
     }
@@ -370,58 +353,47 @@ public class MerkleScheduleTest {
 
     private static final long fee = 123L;
     private static final String scheduledTxnMemo = "Wait for me!";
-    private static final TransactionID parentTransactionId =
-            TransactionID.newBuilder()
-                    .setTransactionValidStart(
-                            MiscUtils.asTimestamp(schedulingTXValidStart.toJava()))
-                    .setAccountID(schedulingAccount.toGrpcAccountId())
-                    .build();
-    private static final SchedulableTransactionBody scheduledTxn =
-            SchedulableTransactionBody.newBuilder()
-                    .setTransactionFee(fee)
-                    .setMemo(scheduledTxnMemo)
-                    .setCryptoDelete(
-                            CryptoDeleteTransactionBody.newBuilder()
-                                    .setDeleteAccountID(IdUtils.asAccount("0.0.2"))
-                                    .setTransferAccountID(IdUtils.asAccount("0.0.75231")))
-                    .build();
+    private static final TransactionID parentTransactionId = TransactionID.newBuilder()
+            .setTransactionValidStart(MiscUtils.asTimestamp(schedulingTXValidStart.toJava()))
+            .setAccountID(schedulingAccount.toGrpcAccountId())
+            .build();
+    private static final SchedulableTransactionBody scheduledTxn = SchedulableTransactionBody.newBuilder()
+            .setTransactionFee(fee)
+            .setMemo(scheduledTxnMemo)
+            .setCryptoDelete(CryptoDeleteTransactionBody.newBuilder()
+                    .setDeleteAccountID(IdUtils.asAccount("0.0.2"))
+                    .setTransferAccountID(IdUtils.asAccount("0.0.75231")))
+            .build();
 
     private static final TransactionBody ordinaryVersionOfScheduledTxn =
             MiscUtils.asOrdinary(scheduledTxn, parentTransactionId);
 
-    private static final ScheduleCreateTransactionBody creation =
-            ScheduleCreateTransactionBody.newBuilder()
-                    .setAdminKey(MiscUtils.asKeyUnchecked(adminKey))
-                    .setPayerAccountID(payer.toGrpcAccountId())
-                    .setMemo(entityMemo)
-                    .setScheduledTransactionBody(scheduledTxn)
-                    .build();
-    private static final TransactionBody parentTxn =
-            TransactionBody.newBuilder()
-                    .setTransactionID(parentTransactionId)
-                    .setScheduleCreate(creation)
-                    .build();
+    private static final ScheduleCreateTransactionBody creation = ScheduleCreateTransactionBody.newBuilder()
+            .setAdminKey(MiscUtils.asKeyUnchecked(adminKey))
+            .setPayerAccountID(payer.toGrpcAccountId())
+            .setMemo(entityMemo)
+            .setScheduledTransactionBody(scheduledTxn)
+            .build();
+    private static final TransactionBody parentTxn = TransactionBody.newBuilder()
+            .setTransactionID(parentTransactionId)
+            .setScheduleCreate(creation)
+            .build();
     private static final byte[] bodyBytes = parentTxn.toByteArray();
 
     private static Transaction expectedSignedTxn() {
-        final var expectedId =
-                TransactionID.newBuilder()
-                        .setAccountID(schedulingAccount.toGrpcAccountId())
-                        .setTransactionValidStart(asTimestamp(schedulingTXValidStart.toJava()))
-                        .setScheduled(true);
+        final var expectedId = TransactionID.newBuilder()
+                .setAccountID(schedulingAccount.toGrpcAccountId())
+                .setTransactionValidStart(asTimestamp(schedulingTXValidStart.toJava()))
+                .setScheduled(true);
         return Transaction.newBuilder()
-                .setSignedTransactionBytes(
-                        SignedTransaction.newBuilder()
-                                .setBodyBytes(
-                                        TransactionBody.newBuilder()
-                                                .mergeFrom(
-                                                        MiscUtils.asOrdinary(
-                                                                scheduledTxn, parentTransactionId))
-                                                .setTransactionID(expectedId)
-                                                .build()
-                                                .toByteString())
+                .setSignedTransactionBytes(SignedTransaction.newBuilder()
+                        .setBodyBytes(TransactionBody.newBuilder()
+                                .mergeFrom(MiscUtils.asOrdinary(scheduledTxn, parentTransactionId))
+                                .setTransactionID(expectedId)
                                 .build()
                                 .toByteString())
+                        .build()
+                        .toByteString())
                 .build();
     }
 }

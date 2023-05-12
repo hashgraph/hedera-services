@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.stats;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -34,20 +35,23 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ExecutionTimeTrackerTest {
-    private final TransactionID aTxnId =
-            TransactionID.newBuilder()
-                    .setTransactionValidStart(Timestamp.newBuilder().setSeconds(1_234_567L))
-                    .setAccountID(IdUtils.asAccount("0.0.2"))
-                    .build();
-    private final TransactionID bTxnId =
-            TransactionID.newBuilder()
-                    .setTransactionValidStart(Timestamp.newBuilder().setSeconds(1_234_567L))
-                    .setAccountID(IdUtils.asAccount("0.0.3"))
-                    .build();
+    private final TransactionID aTxnId = TransactionID.newBuilder()
+            .setTransactionValidStart(Timestamp.newBuilder().setSeconds(1_234_567L))
+            .setAccountID(IdUtils.asAccount("0.0.2"))
+            .build();
+    private final TransactionID bTxnId = TransactionID.newBuilder()
+            .setTransactionValidStart(Timestamp.newBuilder().setSeconds(1_234_567L))
+            .setAccountID(IdUtils.asAccount("0.0.3"))
+            .build();
 
-    @Mock private NodeLocalProperties nodeLocalProperties;
-    @Mock private TransactionContext txnCtx;
-    @Mock private SignedTxnAccessor accessor;
+    @Mock
+    private NodeLocalProperties nodeLocalProperties;
+
+    @Mock
+    private TransactionContext txnCtx;
+
+    @Mock
+    private SignedTxnAccessor accessor;
 
     private ExecutionTimeTracker subject;
 

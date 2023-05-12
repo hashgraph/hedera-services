@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.interceptors;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -37,7 +38,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class TokensCommitInterceptorTest {
-    @Mock private UsageLimits usageLimits;
+    @Mock
+    private UsageLimits usageLimits;
 
     private TokensCommitInterceptor subject;
 
@@ -81,15 +83,12 @@ class TokensCommitInterceptorTest {
         assertDoesNotThrow(subject::postCommit);
     }
 
-    private EntityChangeSet<TokenID, MerkleToken, TokenProperty> pendingChanges(
-            final boolean includeCreation) {
-        final EntityChangeSet<TokenID, MerkleToken, TokenProperty> pendingChanges =
-                new EntityChangeSet<>();
+    private EntityChangeSet<TokenID, MerkleToken, TokenProperty> pendingChanges(final boolean includeCreation) {
+        final EntityChangeSet<TokenID, MerkleToken, TokenProperty> pendingChanges = new EntityChangeSet<>();
         if (includeCreation) {
             pendingChanges.include(TokenID.newBuilder().setTokenNum(1234).build(), null, Map.of());
         }
-        pendingChanges.include(
-                TokenID.newBuilder().setTokenNum(1235).build(), new MerkleToken(), Map.of());
+        pendingChanges.include(TokenID.newBuilder().setTokenNum(1235).build(), new MerkleToken(), Map.of());
         return pendingChanges;
     }
 }

@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.factories.txns;
 
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenFreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -24,6 +26,7 @@ public class TokenFreezeFactory extends SignedTxnFactory<TokenFreezeFactory> {
     private TokenFreezeFactory() {}
 
     private TokenID id;
+    private AccountID accountId;
 
     public static TokenFreezeFactory newSignedTokenFreeze() {
         return new TokenFreezeFactory();
@@ -31,6 +34,11 @@ public class TokenFreezeFactory extends SignedTxnFactory<TokenFreezeFactory> {
 
     public TokenFreezeFactory freezing(TokenID id) {
         this.id = id;
+        return this;
+    }
+
+    public TokenFreezeFactory withAccount(AccountID accountId) {
+        this.accountId = accountId;
         return this;
     }
 
@@ -46,7 +54,7 @@ public class TokenFreezeFactory extends SignedTxnFactory<TokenFreezeFactory> {
 
     @Override
     protected void customizeTxn(TransactionBody.Builder txn) {
-        var op = TokenFreezeAccountTransactionBody.newBuilder().setToken(id);
+        var op = TokenFreezeAccountTransactionBody.newBuilder().setToken(id).setAccount(accountId);
         txn.setTokenFreeze(op);
     }
 }

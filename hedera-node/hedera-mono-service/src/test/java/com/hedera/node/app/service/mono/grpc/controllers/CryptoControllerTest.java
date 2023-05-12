@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.grpc.controllers;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAddLiveHash;
@@ -68,9 +69,7 @@ class CryptoControllerTest {
         txnResponseHelper = mock(TxnResponseHelper.class);
         queryResponseHelper = mock(QueryResponseHelper.class);
 
-        subject =
-                new CryptoController(
-                        metaAnswers, cryptoAnswers, txnResponseHelper, queryResponseHelper);
+        subject = new CryptoController(metaAnswers, cryptoAnswers, txnResponseHelper, queryResponseHelper);
     }
 
     @Test

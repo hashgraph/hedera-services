@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.exceptions;
 
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
@@ -23,7 +24,6 @@ public class InsufficientFundsException extends IllegalArgumentException {
     }
 
     public static String messageFor(Object id, long amount) {
-        return String.format(
-                "%s balance cannot be adjusted by %d!", EntityIdUtils.readableId(id), amount);
+        return String.format("%s balance cannot be adjusted by %d!", EntityIdUtils.readableId(id), amount);
     }
 }

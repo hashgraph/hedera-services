@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.consensus.txns;
 
 import static com.hedera.test.utils.IdUtils.asTopic;
@@ -23,6 +24,7 @@ import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.FeeComponents;
@@ -45,15 +47,14 @@ class TopicResourceUsageTestBase {
     protected StateView view;
     protected MerkleMap<EntityNum, MerkleTopic> topics;
     protected TopicID topicId = asTopic("0.0.1234");
-    protected SigValueObj sigValueObj =
-            new SigValueObj(totalSigCount, payerAcctSigCount, signatureSize);
+    protected SigValueObj sigValueObj = new SigValueObj(totalSigCount, payerAcctSigCount, signatureSize);
     protected NodeLocalProperties nodeProps;
 
     void setup() throws Throwable {
         topics = mock(MerkleMap.class);
         nodeProps = mock(NodeLocalProperties.class);
         final MutableStateChildren children = new MutableStateChildren();
-        children.setTopics(topics);
+        children.setTopics(MerkleMapLike.from(topics));
         view = new StateView(null, children, null);
     }
 
@@ -63,33 +64,22 @@ class TopicResourceUsageTestBase {
     }
 
     protected void checkNetworkFee(final FeeData feeData, final int extraBpt, final int extraRbh) {
-        checkFeeComponents(
-                feeData.getNetworkdata(),
-                baseBpt + extraBpt,
-                totalSigCount,
-                baseNetworkRbh + extraRbh,
-                0);
+        checkFeeComponents(feeData.getNetworkdata(), baseBpt + extraBpt, totalSigCount, baseNetworkRbh + extraRbh, 0);
     }
 
     protected void checkNodeFee(final FeeData feeData, final int extraBpt) {
-        checkFeeComponents(
-                feeData.getNodedata(), baseBpt + extraBpt, payerAcctSigCount, 0, nodeBpr);
+        checkFeeComponents(feeData.getNodedata(), baseBpt + extraBpt, payerAcctSigCount, 0, nodeBpr);
     }
 
     protected void checkFeeComponents(
-            final FeeComponents actual,
-            final int bpt,
-            final int vpt,
-            final int rbh,
-            final int bpr) {
-        final FeeComponents expected =
-                FeeComponents.newBuilder()
-                        .setConstant(1)
-                        .setBpt(bpt)
-                        .setVpt(vpt)
-                        .setRbh(rbh)
-                        .setBpr(bpr)
-                        .build(); // other components are always 0 for topic transactions
+            final FeeComponents actual, final int bpt, final int vpt, final int rbh, final int bpr) {
+        final FeeComponents expected = FeeComponents.newBuilder()
+                .setConstant(1)
+                .setBpt(bpt)
+                .setVpt(vpt)
+                .setRbh(rbh)
+                .setBpr(bpr)
+                .build(); // other components are always 0 for topic transactions
         assertEquals(expected, actual);
     }
 }

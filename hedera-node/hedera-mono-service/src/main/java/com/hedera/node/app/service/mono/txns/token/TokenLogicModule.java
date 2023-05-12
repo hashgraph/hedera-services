@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.token;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
@@ -49,16 +50,14 @@ public final class TokenLogicModule {
     @Provides
     @IntoMap
     @FunctionKey(TokenCreate)
-    public static List<TransitionLogic> provideTokenCreateLogic(
-            final TokenCreateTransitionLogic tokenCreateLogic) {
+    public static List<TransitionLogic> provideTokenCreateLogic(final TokenCreateTransitionLogic tokenCreateLogic) {
         return List.of(tokenCreateLogic);
     }
 
     @Provides
     @IntoMap
     @FunctionKey(TokenUpdate)
-    public static List<TransitionLogic> provideTokenUpdateLogic(
-            final TokenUpdateTransitionLogic tokenUpdateLogic) {
+    public static List<TransitionLogic> provideTokenUpdateLogic(final TokenUpdateTransitionLogic tokenUpdateLogic) {
         return List.of(tokenUpdateLogic);
     }
 
@@ -73,8 +72,7 @@ public final class TokenLogicModule {
     @Provides
     @IntoMap
     @FunctionKey(TokenFreezeAccount)
-    public static List<TransitionLogic> provideTokenFreezeLogic(
-            final TokenFreezeTransitionLogic tokenFreezeLogic) {
+    public static List<TransitionLogic> provideTokenFreezeLogic(final TokenFreezeTransitionLogic tokenFreezeLogic) {
         return List.of(tokenFreezeLogic);
     }
 
@@ -89,80 +87,70 @@ public final class TokenLogicModule {
     @Provides
     @IntoMap
     @FunctionKey(TokenGrantKycToAccount)
-    public static List<TransitionLogic> provideTokenGrantLogic(
-            final TokenGrantKycTransitionLogic tokenGrantLogic) {
+    public static List<TransitionLogic> provideTokenGrantLogic(final TokenGrantKycTransitionLogic tokenGrantLogic) {
         return List.of(tokenGrantLogic);
     }
 
     @Provides
     @IntoMap
     @FunctionKey(TokenRevokeKycFromAccount)
-    public static List<TransitionLogic> provideTokenRevokeLogic(
-            final TokenRevokeKycTransitionLogic tokenRevokeLogic) {
+    public static List<TransitionLogic> provideTokenRevokeLogic(final TokenRevokeKycTransitionLogic tokenRevokeLogic) {
         return List.of(tokenRevokeLogic);
     }
 
     @Provides
     @IntoMap
     @FunctionKey(TokenDelete)
-    public static List<TransitionLogic> provideTokenDeleteLogic(
-            final TokenDeleteTransitionLogic tokenDeleteLogic) {
+    public static List<TransitionLogic> provideTokenDeleteLogic(final TokenDeleteTransitionLogic tokenDeleteLogic) {
         return List.of(tokenDeleteLogic);
     }
 
     @Provides
     @IntoMap
     @FunctionKey(TokenMint)
-    public static List<TransitionLogic> provideTokenMintLogic(
-            final TokenMintTransitionLogic tokenMintLogic) {
+    public static List<TransitionLogic> provideTokenMintLogic(final TokenMintTransitionLogic tokenMintLogic) {
         return List.of(tokenMintLogic);
     }
 
     @Provides
     @IntoMap
     @FunctionKey(TokenBurn)
-    public static List<TransitionLogic> provideTokenBurnLogic(
-            final TokenBurnTransitionLogic tokenBurnLogic) {
+    public static List<TransitionLogic> provideTokenBurnLogic(final TokenBurnTransitionLogic tokenBurnLogic) {
         return List.of(tokenBurnLogic);
     }
 
     @Provides
     @IntoMap
     @FunctionKey(TokenAccountWipe)
-    public static List<TransitionLogic> provideTokenWipeLogic(
-            final TokenWipeTransitionLogic tokenWipeLogic) {
+    public static List<TransitionLogic> provideTokenWipeLogic(final TokenWipeTransitionLogic tokenWipeLogic) {
         return List.of(tokenWipeLogic);
     }
 
     @Provides
     @IntoMap
     @FunctionKey(TokenAssociateToAccount)
-    public static List<TransitionLogic> provideTokenAssocLogic(
-            final TokenAssociateTransitionLogic tokenAssocLogic) {
+    public static List<TransitionLogic> provideTokenAssocLogic(final TokenAssociateTransitionLogic tokenAssocLogic) {
         return List.of(tokenAssocLogic);
     }
 
     @Provides
     @IntoMap
     @FunctionKey(TokenDissociateFromAccount)
-    public static List<TransitionLogic> provideTokenDissocLogic(
-            final TokenDissociateTransitionLogic tokenDissocLogic) {
+    public static List<TransitionLogic> provideTokenDissocLogic(final TokenDissociateTransitionLogic tokenDissocLogic) {
         return List.of(tokenDissocLogic);
     }
 
     @Provides
     @IntoMap
     @FunctionKey(TokenPause)
-    public static List<TransitionLogic> provideTokenPauseLogic(
-            TokenPauseTransitionLogic tokenPauseLogic) {
+    public static List<TransitionLogic> provideTokenPauseLogic(TokenPauseTransitionLogic tokenPauseLogic) {
         return List.of(tokenPauseLogic);
     }
 
     @Provides
     @IntoMap
     @FunctionKey(TokenUnpause)
-    public static List<TransitionLogic> provideTokenUnpauseLogic(
-            TokenUnpauseTransitionLogic tokenUnpauseLogic) {
+    public static List<TransitionLogic> provideTokenUnpauseLogic(TokenUnpauseTransitionLogic tokenUnpauseLogic) {
         return List.of(tokenUnpauseLogic);
     }
 

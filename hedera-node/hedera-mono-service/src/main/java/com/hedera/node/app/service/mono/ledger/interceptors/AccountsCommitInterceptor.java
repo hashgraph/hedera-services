@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.interceptors;
 
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
@@ -36,11 +37,13 @@ import java.util.Map;
  * side-effects of a transaction on the {@code accounts} ledger, including (for example) approved
  * allowances and new aliases.
  */
-public class AccountsCommitInterceptor
-        implements CommitInterceptor<AccountID, HederaAccount, AccountProperty> {
+public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, HederaAccount, AccountProperty> {
     private int numNewAccounts;
     private int numNewContracts;
-    @Nullable private final AccountUsageTracking usageTracking;
+
+    @Nullable
+    private final AccountUsageTracking usageTracking;
+
     private final SideEffectsTracker sideEffectsTracker;
 
     public AccountsCommitInterceptor(
@@ -60,8 +63,7 @@ public class AccountsCommitInterceptor
      * @throws IllegalStateException if these changes are invalid
      */
     @Override
-    public void preview(
-            final EntityChangeSet<AccountID, HederaAccount, AccountProperty> pendingChanges) {
+    public void preview(final EntityChangeSet<AccountID, HederaAccount, AccountProperty> pendingChanges) {
         numNewAccounts = 0;
         numNewContracts = 0;
         if (pendingChanges.size() == 0) {
@@ -104,16 +106,14 @@ public class AccountsCommitInterceptor
         if (accountChanges.containsKey(AccountProperty.BALANCE)) {
             final long newBalance = (long) accountChanges.get(AccountProperty.BALANCE);
             if (newBalance < 0) {
-                throw new IllegalStateException(
-                        "Cannot set "
-                                + ((merkleAccount == null)
-                                        ? "<N/A>"
-                                        : merkleAccount.getEntityNum().toIdString())
-                                + " balance to "
-                                + newBalance);
+                throw new IllegalStateException("Cannot set "
+                        + ((merkleAccount == null)
+                                ? "<N/A>"
+                                : merkleAccount.getEntityNum().toIdString())
+                        + " balance to "
+                        + newBalance);
             }
-            final long adjustment =
-                    (merkleAccount != null) ? newBalance - merkleAccount.getBalance() : newBalance;
+            final long adjustment = (merkleAccount != null) ? newBalance - merkleAccount.getBalance() : newBalance;
             sideEffectsTracker.trackHbarChange(accountNum, adjustment);
         }
     }

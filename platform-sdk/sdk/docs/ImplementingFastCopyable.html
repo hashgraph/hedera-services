@@ -1,0 +1,187 @@
+<!--
+  ~ Copyright 2016-2022 Hedera Hashgraph, LLC
+  ~
+  ~ This software is the confidential and proprietary information of
+  ~ Hedera Hashgraph, LLC. ("Confidential Information"). You shall not
+  ~ disclose such Confidential Information and shall use it only in
+  ~ accordance with the terms of the license agreement you entered into
+  ~ with Hedera Hashgraph.
+  ~
+  ~ HEDERA HASHGRAPH MAKES NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF
+  ~ THE SOFTWARE, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+  ~ TO THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+  ~ PARTICULAR PURPOSE, OR NON-INFRINGEMENT. HEDERA HASHGRAPH SHALL NOT BE LIABLE FOR
+  ~ ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, MODIFYING OR
+  ~ DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
+  -->
+
+<html>
+<head>
+	<style>
+		pre {
+			font-family: "Courier 10 Pitch", Courier, monospace;
+			margin-bottom: 1.6em;
+			max-width: 100%;
+			overflow: auto;
+			background-color: #efefef;
+		}
+	</style>
+</head>
+<body>
+
+<h1>How to implement a new FastCopyable container class</h1>
+
+A number of interesting issues arise when implementing a new FastCopyable class. One important issue is how to handle a
+container class which will contain many other objects. That scenario can be illustrated with a simple example.<p>
+
+	Suppose there is a class <b><code>AddressBook</code></b>, which contains the following fields:
+<p>
+
+<pre>
+public class AddressBook implements FastCopyable {
+    private int numMembers;
+    private ImmutableAddress[] birthAddress;
+    private Address[] currAddress;
+    private int[] score;
+    
+    ...
+}
+</pre>
+
+The integer <b><code>numMembers</code></b> is the number of people currently stored in the address book. Each of them
+has a birth address, a current address, and a score, all stored in parallel arrays. The <b><code>Address</code></b>
+class is defined elsewhere, and has getters and setters. The <b><code>ImmutableAddress</code></b> class is also defined
+elsewhere, and has getters, but no setters. It is immutable, so its contents never change after it is instantiated.<p>
+
+	Updating the current address of the person in position 5 might be done like this:
+<p>
+
+<pre>
+addressBook.getCurrAddress(5).setStreet("Main");
+</pre>
+
+Updating a person's birth address street will be slower, because the birth address is immutable, so an entirely new
+address must be created:<p>
+
+<pre>
+addressBook.setBirthAddress(5,new ImmutableAddress(123,"Main","Pittsburgh","PA",15213)
+</pre>
+
+
+The <b><code>AddressBook</code></b> class implements <b><code>FastCopyable</code></b>, so it must implement a <b><code>copy()</code></b>
+method that returns a fast copy of itself. In addition, it might have several getters and setters for its variables. The
+class and its copy/get/set methods can be implemented several different ways, with different degrees of optimization.
+
+
+<h2>No optimization: basic implementation</h2>
+
+Write the <b><code>AddressBook.copy()</code></b> method so that it instantiates a new <b><code>AddressBook</code></b>
+object, copies <b><code>numMembers</code></b> from the original, makes a shallow copy of all 3 arrays, and walks through
+the <b><code>currAddress</code></b> array in the copy and replaces each <b><code>Address</code></b> object with a copy
+of that object. <p>
+
+	If the <b><code>Address</code></b> class implements <b><code>FastCopyable</code></b>, then it can make a fast copy,
+	using the <b><code>Address.copy()</code></b> method. Otherwise, it will have to make a deep copy.
+<p>
+
+	Fortunately, there is no need to spend any time making copies of the objects in the <b><code>birthAddress</code></b>
+	array. They are immutable, so a shallow copy of the array is safe.
+<p>
+
+	In this case, the getters and setters can all be implemented in the obvious way. It is only in the optimized cases
+	that anything special needs to be done for them.
+
+<h2>Optimization 1: avoid mutables</h2>
+The <b><code>AddressBook.copy()</code></b> method is fast when its fields include only primitives and immutable objects.
+It is slower when it contains arrays or collections of primitives and immutable objects. Slower still are arrays or
+collections of mutable FastCopyable objects. And the slowest is arrays or collections of mutable objects that aren't
+FastCopyable. So the simplest optimization is to minimize the use of the slower things. Make everything either a
+primitive or an immutable object. Or an array or collection of primitives and immutable objects. In some cases, it may
+seem like the objects in an array need to be mutable, because they have one field that changes frequently. But perhaps
+that field can be moved into a separate array of its own, and then the remaining object could be made immutable. That
+kind of refactoring can make a large difference in speed, because it also allows optimizations 2 and 3.
+
+<h2>Optimization 2: copy on first write</h2>
+If <b><code>AddressBook</code></b> can be written to only contain primitives and arrays and collections of immutable
+objects, then a further optimization can be done. Create a new class <b><code>AddressBookData</code></b>, which is
+visible only within the package and not visible to the user. Put all of the arrays and data in it, and let <b><code>AddressBook</code></b>
+have only a single variable, which is a reference to an <b><code>AddressBookData</code></b>. In other words, let the <b><code>AddressBook</code></b>
+object be a handle pointing to the real object, which is of class <b><code>AddressBookData</code></b>. In addition, add
+an integer reference count variable to <b><code>AddressBookData</code></b>, which remembers how many handles have been
+created that point to it.<p>
+
+	Now, the <b><code>AddressBook.copy()</code></b> method can be made much faster. It instantiates a new <b><code>AddressBook</code></b>
+	handle containing the same reference as the original, and it increments the reference counter in the referenced
+	<b><code>AddressBookData</code></b> object. No arrays need to be copied, not even with shallow copies. And the
+	getters are still very fast for reads. When a setter method of <b><code>AddressBook</code></b> is called, it first
+	checks the reference counter. If it is 1, then the setter simply makes the requested change. If it is greater than
+	1, then it instantiates a new <b><code>AddressBookData</code></b> object, and makes shallow copies of all the arrays
+	and collections, and initializes its reference counter to 1, while decrementing the original reference counter.
+<p>
+
+	Whenever code inside <b><code>AddressBook</code></b> needs to change something in
+	<b><code>AddressBookData</code></b>, it first performs that check to see if the reference counter is 1, and makes
+	copies if it is not. In many cases, this is easiest to accomplish by having it call one of its own setters, so those
+	checks only have to be written in the setters.
+<p>
+
+	This is a powerful optimization. It ensures very fast copies, reads, and writes, except for the first write after a
+	copy. But this optimization is only possible if all of the arrays and collections contain only primitives or
+	immutable objects.
+
+<h2>Optimization 3: wrap mutables</h2>
+Perhaps the <b><code>AddressBook</code></b> needs to modify current addresses internally, so it cannot limit itself to
+immutable addresses. But suppose its users do not need to modify the current addresses returned by its getters. In that
+case, the current address could still be a mutable <b><code>Address</code></b>, but the getter method <b><code>AddressBook.getCurrAddress</code></b>
+could return an object of class <b><code>ImmutableAddress</code></b>, which it instantiates and wraps around the
+<b><code>Address</code></b> object at the time it is called. Then, every <b><code>Address</code></b> method other than
+the setters will be replicated in <b><code>ImmutableAddress</code></b>, and each method in the latter will simply call
+the corresponding method in the former. Of course, it will be necessary to look through the code to ensure that none of
+the methods change the address as a side effect. But in general, it should be possible to make the <b><code>ImmutableAddress</code></b>
+object act like an immutable version of <b><code>Address</code></b>.<p>
+
+	After these changes, optimization 2 can be applied. As before, it checks the reference counter before each write. If
+	the counter is more than 1, then it makes the required copy, including shallow copies of all the arrays. But there
+	is one additional step beyond optimization 2. In the new object, for each array or collection of mutables, such as
+	the <b><code>AddressBookData.currAddress</code></b> array in this example, it must take each element of the array
+	and replace it with a copy of itself. If the object is a FastCopyable, then a fast copy is sufficient. Otherwise, it
+	will need to be a deep copy.
+<p>
+
+	So, if <b><code>Address</code></b> implements <b><code>FastCopyable</code></b>, then this approach only slightly
+	slows down <b><code>AddressBook</code></b>. But if <b><code>Address</code></b> is large, mutable, and not
+	implementing <b><code>FastCopyable</code></b>, then it will slow it down considerably. Fortunately, this slowdown
+	only occurs during the first write after a copy, but not on subsequent writes, and not on reads.
+
+<h2>Optimization 4: return mutables</h2>
+In some cases, the user will actually need to be able to modify objects returned by getters. In the example, there may
+be some reason that the caller of <b><code>AddressBook.getCurrAddress</code></b> actually needs to modify the returned
+object, so it needs to return an <b><code>Address</code></b> rather than an <b><code>ImmutableAddress</code></b>. In
+that case, we can apply optimization 3, but without the immutable wrappers, and with one additional change. Each getter
+in <b><code>AddressBook</code></b> that returns a mutable object, must do the same check of the reference counter that
+is required for the setters.<p>
+
+	So, with this optimization, if the user calls a getter that returns an immutable, then the operation happens as
+	before. If the user calls a getter that returns a mutable, or calls a setter that modifies an array inside <b><code>AddressBook</code></b>,
+	then the getter or setter will first check the reference count, and make the appropriate copies if it is greater
+	than 1. After making those copies, it will then execute the getter or setter. That same check will also be made
+	before any mutables are modified by code internal to <b><code>AddressBook</code></b> itself.
+<p>
+
+	This optimization means that the first call to any getter or setter of mutables after a copy will result in shallow
+	copies of everything. But after that, all getters and setters will be very fast, until the next time a copy is made.
+
+<h2>Summary</h2>
+
+Any class can be modified to implement FastCopyable. The simplest approach is to make the <b><code>copy</code></b>
+method somewhat slow, by forcing it to make shallow copies of all arrays and collections, and to make fast copies of all
+FastCopyables in those arrays and collections, and to make deep copies of any mutable object that isn't a FastCopyable.
+<p>
+
+	This process can be made faster by using handles and reference counters. It can be made faster still by wrapping
+	returned mutables inside immutables. And it can be made fastest by avoiding mutables entirely.
+
+<p>
+	<a href="index.html">Back</a>
+</p>
+</body>

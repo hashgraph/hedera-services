@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
@@ -56,14 +57,26 @@ class TransitionRunnerTest {
     private final Transaction mockTxn = Transaction.getDefaultInstance();
     private final TransactionBody mockBody = TransactionBody.getDefaultInstance();
 
-    @Mock private EntityIdSource ids;
-    @Mock private TxnAccessor accessor;
-    @Mock private TransitionLogic logic;
-    @Mock private TransactionContext txnCtx;
-    @Mock private TransitionLogicLookup lookup;
+    @Mock
+    private EntityIdSource ids;
 
-    @LoggingTarget private LogCaptor logCaptor;
-    @LoggingSubject private TransitionRunner subject;
+    @Mock
+    private TxnAccessor accessor;
+
+    @Mock
+    private TransitionLogic logic;
+
+    @Mock
+    private TransactionContext txnCtx;
+
+    @Mock
+    private TransitionLogicLookup lookup;
+
+    @LoggingTarget
+    private LogCaptor logCaptor;
+
+    @LoggingSubject
+    private TransitionRunner subject;
 
     @BeforeEach
     void setUp() {
@@ -81,9 +94,7 @@ class TransitionRunnerTest {
         final var result = subject.tryTransition(accessor);
 
         // then:
-        assertThat(
-                logCaptor.warnLogs(),
-                contains("Transaction w/o applicable transition logic at consensus ::"));
+        assertThat(logCaptor.warnLogs(), contains("Transaction w/o applicable transition logic at consensus ::"));
         verify(txnCtx).setStatus(FAIL_INVALID);
         assertFalse(result);
     }
@@ -138,11 +149,9 @@ class TransitionRunnerTest {
         verify(txnCtx).setStatus(FAIL_INVALID);
         assertThat(
                 logCaptor.warnLogs(),
-                contains(
-                        startsWith(
-                                "Avoidable failure while handling"
-                                    + " com.hedera.node.app.service.evm.exceptions.InvalidTransactionException:"
-                                    + " Yikes!")));
+                contains(startsWith("Avoidable failure while handling"
+                        + " com.hedera.node.app.service.evm.exceptions.InvalidTransactionException:"
+                        + " Yikes!")));
         assertTrue(result);
     }
 

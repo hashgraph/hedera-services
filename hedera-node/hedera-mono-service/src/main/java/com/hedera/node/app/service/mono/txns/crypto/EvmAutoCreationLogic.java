@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.crypto;
 
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.EVM_ADDRESS_LEN;
@@ -54,18 +55,14 @@ public class EvmAutoCreationLogic extends AbstractAutoCreationLogic {
     @Override
     protected void trackAlias(final ByteString alias, final AccountID newId) {
         if (alias.size() != EVM_ADDRESS_LEN) {
-            throw new UnsupportedOperationException(
-                    "Stacked alias manager cannot link aliases with size != 20.");
+            throw new UnsupportedOperationException("Stacked alias manager cannot link aliases with size != 20.");
         }
-        contractAliases.link(
-                Address.wrap(Bytes.of(alias.toByteArray())),
-                EntityIdUtils.asTypedEvmAddress(newId));
+        contractAliases.link(Address.wrap(Bytes.of(alias.toByteArray())), EntityIdUtils.asTypedEvmAddress(newId));
     }
 
     @Override
     public boolean reclaimPendingAliases() {
-        throw new IllegalStateException(
-                "Aliases should not be reclaimed through AutoCreationLogic in the EVM!");
+        throw new IllegalStateException("Aliases should not be reclaimed through AutoCreationLogic in the EVM!");
     }
 
     @Override

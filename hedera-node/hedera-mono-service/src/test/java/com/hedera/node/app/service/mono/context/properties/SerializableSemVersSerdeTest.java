@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context.properties;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -43,8 +44,7 @@ public class SerializableSemVersSerdeTest extends SelfSerializableDataTest<Seria
         return Optional.of(SerializableSemVersSerdeTest::assertEqualVersions);
     }
 
-    public static void assertEqualVersions(
-            final SerializableSemVers a, final SerializableSemVers b) {
+    public static void assertEqualVersions(final SerializableSemVers a, final SerializableSemVers b) {
         assertEquals(a.getProto(), b.getProto(), "protobuf semvers are unequal");
         assertEquals(a.getServices(), b.getServices(), "Services semvers are unequal");
     }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
@@ -29,6 +30,8 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public abstract class AbstractReadOnlyPrecompile implements Precompile {
+    private static long minimumGasCost = 100L;
+
     protected TokenID tokenId;
     protected final SyntheticTxnFactory syntheticTxnFactory;
     protected final WorldLedgers ledgers;
@@ -52,8 +55,7 @@ public abstract class AbstractReadOnlyPrecompile implements Precompile {
     }
 
     @Override
-    public TransactionBody.Builder body(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         return syntheticTxnFactory.createTransactionCall(1L, input);
     }
 
@@ -75,6 +77,6 @@ public abstract class AbstractReadOnlyPrecompile implements Precompile {
     @Override
     public long getGasRequirement(long blockTimestamp) {
         final var now = Timestamp.newBuilder().setSeconds(blockTimestamp).build();
-        return pricingUtils.computeViewFunctionGas(now, getMinimumFeeInTinybars(now));
+        return pricingUtils.computeViewFunctionGas(now, minimumGasCost);
     }
 }

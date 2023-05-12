@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.logic;
 
 import static com.hedera.node.app.service.mono.state.logic.NetworkUtilization.STAND_IN_CRYPTO_TRANSFER;
@@ -40,19 +41,26 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class NetworkUtilizationTest {
     private final Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 890);
 
-    @Mock private TransactionContext txnCtx;
-    @Mock private MultiplierSources multiplierSources;
-    @Mock private TxnChargingPolicyAgent chargingPolicyAgent;
-    @Mock private FunctionalityThrottling handleThrottling;
-    @Mock private TxnAccessor accessor;
+    @Mock
+    private TransactionContext txnCtx;
+
+    @Mock
+    private MultiplierSources multiplierSources;
+
+    @Mock
+    private TxnChargingPolicyAgent chargingPolicyAgent;
+
+    @Mock
+    private FunctionalityThrottling handleThrottling;
+
+    @Mock
+    private TxnAccessor accessor;
 
     private NetworkUtilization subject;
 
     @BeforeEach
     void setUp() {
-        subject =
-                new NetworkUtilization(
-                        txnCtx, multiplierSources, chargingPolicyAgent, handleThrottling);
+        subject = new NetworkUtilization(txnCtx, multiplierSources, chargingPolicyAgent, handleThrottling);
     }
 
     @Test

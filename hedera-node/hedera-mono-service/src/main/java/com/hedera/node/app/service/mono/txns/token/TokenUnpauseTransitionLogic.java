@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.token;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
@@ -33,8 +34,7 @@ public class TokenUnpauseTransitionLogic implements TransitionLogic {
     private final UnpauseLogic unpauseLogic;
 
     @Inject
-    public TokenUnpauseTransitionLogic(
-            final TransactionContext txnCtx, final UnpauseLogic unpauseLogic) {
+    public TokenUnpauseTransitionLogic(final TransactionContext txnCtx, final UnpauseLogic unpauseLogic) {
         this.txnCtx = txnCtx;
         this.unpauseLogic = unpauseLogic;
     }

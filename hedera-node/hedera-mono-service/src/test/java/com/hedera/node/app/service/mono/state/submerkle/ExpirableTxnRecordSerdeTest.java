@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.submerkle;
 
 import static com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord.RELEASE_0260_VERSION;
@@ -44,7 +45,8 @@ public class ExpirableTxnRecordSerdeTest extends SelfSerializableDataTest<Expira
 
     @Override
     protected ExpirableTxnRecord getExpectedObject(final int version, final int testCaseNo) {
-        final var seeded = SeededPropertySource.forSerdeTest(version, testCaseNo).nextRecord();
+        final var seeded =
+                SeededPropertySource.forSerdeTest(version, testCaseNo).nextRecord();
         if (version < RELEASE_0260_VERSION) {
             // Ethereum hash added in release 0.26
             seeded.setEthereumHash(ExpirableTxnRecord.MISSING_ETHEREUM_HASH);

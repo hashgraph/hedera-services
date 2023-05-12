@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.charging;
 
 import static com.hedera.node.app.service.mono.txns.diligence.DuplicateClassification.BELIEVED_UNIQUE;
@@ -74,10 +75,9 @@ public class TxnChargingPolicyAgent {
         final var now = txnCtx.consensusTime();
         var fees = feeCalc.computeFee(accessor, txnCtx.activePayerKey(), currentView.get(), now);
         final var recentHistory = txnHistories.get(accessor.getTxnId());
-        var duplicity =
-                (recentHistory == null)
-                        ? BELIEVED_UNIQUE
-                        : recentHistory.currentDuplicityFor(txnCtx.submittingSwirldsMember());
+        var duplicity = (recentHistory == null)
+                ? BELIEVED_UNIQUE
+                : recentHistory.currentDuplicityFor(txnCtx.submittingSwirldsMember());
 
         if (nodeDiligenceScreen.nodeIgnoredDueDiligence(duplicity)) {
             chargingPolicy.applyForIgnoredDueDiligence(fees);

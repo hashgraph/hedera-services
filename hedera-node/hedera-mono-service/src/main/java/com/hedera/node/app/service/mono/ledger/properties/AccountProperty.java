@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.properties;
 
 import com.google.protobuf.ByteString;
@@ -76,17 +77,11 @@ public enum AccountProperty implements BeanProperty<HederaAccount> {
                     a.setBalance(((Number) v).longValue());
                 } catch (ClassCastException cce) {
                     throw new IllegalArgumentException(
-                            "Wrong argument type! Argument needs to be of type int or long. Actual"
-                                    + " value: "
-                                    + v,
+                            "Wrong argument type! Argument needs to be of type int or long. Actual" + " value: " + v,
                             cce);
                 } catch (NegativeAccountBalanceException nabe) {
                     throw new IllegalArgumentException(
-                            "Argument 'v="
-                                    + v
-                                    + "' would cause account 'a="
-                                    + a
-                                    + "' to have a negative balance!",
+                            "Argument 'v=" + v + "' would cause account 'a=" + a + "' to have a negative balance!",
                             nabe);
                 }
             };

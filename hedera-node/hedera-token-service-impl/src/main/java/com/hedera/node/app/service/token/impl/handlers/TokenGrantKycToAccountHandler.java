@@ -13,51 +13,68 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl.handlers;
 
-import com.hedera.node.app.spi.meta.TransactionMetadata;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static java.util.Objects.requireNonNull;
+
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.token.TokenGrantKycTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.token.ReadableTokenStore;
+import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#TokenGrantKycToAccount}.
+ * HederaFunctionality#TOKEN_GRANT_KYC_TO_ACCOUNT}.
  */
+@Singleton
 public class TokenGrantKycToAccountHandler implements TransactionHandler {
+    @Inject
+    public TokenGrantKycToAccountHandler() {
+        // Exists for injection
+    }
 
-    /**
-     * This method is called during the pre-handle workflow.
-     *
-     * <p>Typically, this method validates the {@link TransactionBody} semantically, gathers all
-     * required keys, warms the cache, and creates the {@link TransactionMetadata} that is used in
-     * the handle stage.
-     *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
-     *
-     * @param txBody the {@link TransactionBody} with the transaction data
-     * @param payer the {@link AccountID} of the payer
-     * @return the {@link TransactionMetadata} with all information that needs to be passed to
-     *     {@link #handle(TransactionMetadata)}
-     * @throws NullPointerException if one of the arguments is {@code null}
-     */
-    public TransactionMetadata preHandle(
-            @NonNull final TransactionBody txBody, @NonNull final AccountID payer) {
-        throw new UnsupportedOperationException("Not implemented");
+    @Override
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
+        requireNonNull(context);
+        final var op = context.body().tokenGrantKycOrThrow();
+        final var tokenStore = context.createStore(ReadableTokenStore.class);
+        final var tokenMeta = tokenStore.getTokenMeta(op.tokenOrElse(TokenID.DEFAULT));
+        if (tokenMeta == null) throw new PreCheckException(INVALID_TOKEN_ID);
+        if (tokenMeta.hasKycKey()) {
+            context.requireKey(tokenMeta.kycKey());
+        }
     }
 
     /**
      * This method is called during the handle workflow. It executes the actual transaction.
      *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
-     *
-     * @param metadata the {@link TransactionMetadata} that was generated during pre-handle.
+     * @param txnBody the {@link TokenGrantKycTransactionBody} of the active transaction
+     * @param tokenRelStore the {@link WritableTokenRelationStore} for the active transaction
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void handle(@NonNull final TransactionMetadata metadata) {
-        throw new UnsupportedOperationException("Not implemented");
+    public void handle(@NonNull final TransactionBody txnBody, @NonNull WritableTokenRelationStore tokenRelStore) {
+        requireNonNull(txnBody);
+        requireNonNull(tokenRelStore);
+
+        final var op = txnBody.tokenGrantKycOrThrow();
+
+        final var targetTokenId = op.tokenOrThrow();
+        final var targetAccountId = op.accountOrThrow();
+        final var tokenRelation =
+                tokenRelStore.getForModify(targetTokenId.tokenNum(), targetAccountId.accountNumOrThrow());
+
+        final var tokenRelBuilder = tokenRelation.orElseThrow().copyBuilder();
+        tokenRelBuilder.kycGranted(true);
+        tokenRelStore.put(tokenRelBuilder.build());
     }
 }

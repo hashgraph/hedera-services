@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.INT;
@@ -39,12 +40,9 @@ import javax.inject.Provider;
 import org.apache.tuweni.bytes.Bytes;
 
 public class MultiAssociatePrecompile extends AbstractAssociatePrecompile {
-    private static final Function ASSOCIATE_TOKENS_FUNCTION =
-            new Function("associateTokens(address,address[])", INT);
-    private static final Bytes ASSOCIATE_TOKENS_SELECTOR =
-            Bytes.wrap(ASSOCIATE_TOKENS_FUNCTION.selector());
-    private static final ABIType<Tuple> ASSOCIATE_TOKENS_DECODER =
-            TypeFactory.create("(bytes32,bytes32[])");
+    private static final Function ASSOCIATE_TOKENS_FUNCTION = new Function("associateTokens(address,address[])", INT);
+    private static final Bytes ASSOCIATE_TOKENS_SELECTOR = Bytes.wrap(ASSOCIATE_TOKENS_FUNCTION.selector());
+    private static final ABIType<Tuple> ASSOCIATE_TOKENS_DECODER = TypeFactory.create("(bytes32,bytes32[])");
 
     public MultiAssociatePrecompile(
             final WorldLedgers ledgers,
@@ -67,8 +65,7 @@ public class MultiAssociatePrecompile extends AbstractAssociatePrecompile {
     }
 
     @Override
-    public TransactionBody.Builder body(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         associateOp = decodeMultipleAssociations(input, aliasResolver);
         transactionBody = syntheticTxnFactory.createAssociate(associateOp);
         return transactionBody;
@@ -79,13 +76,10 @@ public class MultiAssociatePrecompile extends AbstractAssociatePrecompile {
         return pricingUtils.computeGasRequirement(blockTimestamp, this, transactionBody);
     }
 
-    public static Association decodeMultipleAssociations(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        final Tuple decodedArguments =
-                decodeFunctionCall(input, ASSOCIATE_TOKENS_SELECTOR, ASSOCIATE_TOKENS_DECODER);
+    public static Association decodeMultipleAssociations(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        final Tuple decodedArguments = decodeFunctionCall(input, ASSOCIATE_TOKENS_SELECTOR, ASSOCIATE_TOKENS_DECODER);
 
-        final var accountID =
-                convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
+        final var accountID = convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
         final var tokenIDs = decodeTokenIDsFromBytesArray(decodedArguments.get(1));
 
         return Association.multiAssociation(accountID, tokenIDs);

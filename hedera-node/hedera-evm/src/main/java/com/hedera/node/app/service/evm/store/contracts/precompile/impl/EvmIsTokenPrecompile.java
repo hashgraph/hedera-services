@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.decodeFunctionCall;
@@ -32,8 +33,7 @@ public interface EvmIsTokenPrecompile {
     ABIType<Tuple> IS_TOKEN_DECODER = TypeFactory.create(BYTES32);
 
     public static TokenInfoWrapper<byte[]> decodeIsToken(final Bytes input) {
-        final Tuple decodedArguments =
-                decodeFunctionCall(input, IS_TOKEN_FUNCTION_SELECTOR, IS_TOKEN_DECODER);
+        final Tuple decodedArguments = decodeFunctionCall(input, IS_TOKEN_FUNCTION_SELECTOR, IS_TOKEN_DECODER);
 
         return TokenInfoWrapper.forToken(decodedArguments.get(0));
     }

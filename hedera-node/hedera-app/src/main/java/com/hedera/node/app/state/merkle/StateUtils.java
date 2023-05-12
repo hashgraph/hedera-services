@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,19 +13,48 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.state.merkle;
 
 import static com.swirlds.common.utility.CommonUtils.getNormalisedStringBytes;
 
-import com.hederahashgraph.api.proto.java.SemanticVersion;
+import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
+import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.utility.NonCryptographicHashing;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Objects;
 
 /** Utility class for working with states. */
 public final class StateUtils {
     /** Prevent instantiation */
     private StateUtils() {}
+
+    public static <T> int writeToStream(
+            @NonNull final OutputStream out, @NonNull final Codec<T> codec, @NonNull final T object)
+            throws IOException {
+        final var byteStream = new ByteArrayOutputStream();
+        codec.write(object, new WritableStreamingData(byteStream));
+
+        final var stream = new WritableStreamingData(out);
+        stream.writeInt(byteStream.size());
+        stream.writeBytes(byteStream.toByteArray());
+        return byteStream.size();
+    }
+
+    @NonNull
+    public static <T> T readFromStream(@NonNull final InputStream in, @NonNull final Codec<T> codec)
+            throws IOException {
+        final var stream = new ReadableStreamingData(in);
+        final var size = stream.readInt();
+        stream.limit(size + Integer.BYTES); // +4 for the size
+        return codec.parse(stream);
+    }
 
     /**
      * Verifies the service name meets all the validation requirements.
@@ -36,7 +65,7 @@ public final class StateUtils {
      * @throws IllegalArgumentException if any other validation criteria fails
      */
     @NonNull
-    public static String validateServiceName(@NonNull final String serviceName) {
+    static String validateServiceName(@NonNull final String serviceName) {
         if (Objects.requireNonNull(serviceName).isEmpty()) {
             throw new IllegalArgumentException("The service name must have characters");
         }
@@ -53,7 +82,7 @@ public final class StateUtils {
      * @throws IllegalArgumentException if any other validation criteria fails
      */
     @NonNull
-    public static String validateStateKey(@NonNull final String stateKey) {
+    static String validateStateKey(@NonNull final String stateKey) {
         if (Objects.requireNonNull(stateKey).isEmpty()) {
             throw new IllegalArgumentException("The state key must have characters");
         }
@@ -70,7 +99,7 @@ public final class StateUtils {
      * @throws IllegalArgumentException if any other validation criteria fails
      */
     @NonNull
-    public static String validateIdentifier(@NonNull final String stateKey) {
+    static String validateIdentifier(@NonNull final String stateKey) {
         if (Objects.requireNonNull(stateKey).isEmpty()) {
             throw new IllegalArgumentException("The identifier must have characters");
         }
@@ -78,8 +107,7 @@ public final class StateUtils {
         for (int i = 0; i < stateKey.length(); i++) {
             final var c = stateKey.charAt(i);
             if (!isAsciiUnderscoreOrDash(c) && !isAsciiLetter(c) && !isAsciiNumber(c)) {
-                throw new IllegalArgumentException(
-                        "Illegal character '" + c + "' at position " + i);
+                throw new IllegalArgumentException("Illegal character '" + c + "' at position " + i);
             }
         }
 
@@ -93,8 +121,7 @@ public final class StateUtils {
      * @param stateKey The state key
      * @return The computed label
      */
-    public static String computeLabel(
-            @NonNull final String serviceName, @NonNull final String stateKey) {
+    public static String computeLabel(@NonNull final String serviceName, @NonNull final String stateKey) {
         return Objects.requireNonNull(serviceName) + "." + Objects.requireNonNull(stateKey);
     }
 
@@ -104,8 +131,7 @@ public final class StateUtils {
      * @param extra An extra string to bake into the class id
      * @return the class id
      */
-    public static long computeClassId(
-            @NonNull final StateMetadata<?, ?> md, @NonNull final String extra) {
+    static long computeClassId(@NonNull final StateMetadata<?, ?> md, @NonNull final String extra) {
         final var def = md.stateDefinition();
         return computeClassId(md.serviceName(), def.stateKey(), md.schema().getVersion(), extra);
     }
@@ -116,7 +142,7 @@ public final class StateUtils {
      * @param extra An extra string to bake into the class id
      * @return the class id
      */
-    public static long computeClassId(
+    static long computeClassId(
             @NonNull final String serviceName,
             @NonNull final String stateKey,
             @NonNull final SemanticVersion version,
@@ -124,8 +150,7 @@ public final class StateUtils {
         // NOTE: Once this is live on any network, the formula used to generate this key can NEVER
         // BE CHANGED or you won't ever be able to deserialize an exising state! If we get away from
         // this formula, we will need to hardcode known classId that had been previously generated.
-        final var ver =
-                "v" + version.getMajor() + "." + version.getMinor() + "." + version.getPatch();
+        final var ver = "v" + version.major() + "." + version.minor() + "." + version.patch();
         return hashString(serviceName + ":" + stateKey + ":" + ver + ":" + extra);
     }
 
@@ -161,9 +186,7 @@ public final class StateUtils {
         // There may be 0 <= N <= 7 remaining bytes. Process these bytes
         final int numRemainingBytes = bytes.length - (numBlocks * 8);
         if (numRemainingBytes > 0) {
-            for (int shift = numRemainingBytes * 8, i = (numBlocks * 8);
-                    i < bytes.length;
-                    i++, shift -= 8) {
+            for (int shift = numRemainingBytes * 8, i = (numBlocks * 8); i < bytes.length; i++, shift -= 8) {
                 hash ^= ((long) bytes[i] << shift);
             }
             hash = NonCryptographicHashing.hash64(hash);

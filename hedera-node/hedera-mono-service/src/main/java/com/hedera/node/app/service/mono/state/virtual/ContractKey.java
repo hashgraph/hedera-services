@@ -13,18 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual;
 
 import static com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils.deserializeUint256Key;
 import static com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils.serializePackedBytes;
 import static com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils.serializePackedBytesToBuffer;
-import static com.swirlds.common.utility.NonCryptographicHashing.hash32;
 
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
@@ -38,12 +37,11 @@ import org.apache.tuweni.units.bigints.UInt256;
  * <p>We only store the number part of the contract ID as the ideas ia there will be a virtual
  * merkle tree for each shard and realm.
  */
-public final class ContractKey implements VirtualKey<ContractKey> {
+public final class ContractKey implements VirtualKey {
     /** The shifts required to deserialize a big-endian contractId with leading zeros omitted */
     private static final int[] BIT_SHIFTS = {0, 8, 16, 24, 32, 40, 48, 56};
     /** The estimated average size for a contract key when serialized */
-    public static final int ESTIMATED_AVERAGE_SIZE =
-            20; // assume 50% full typically, max size is (1 + 8 + 32)
+    public static final int ESTIMATED_AVERAGE_SIZE = 20; // assume 50% full typically, max size is (1 + 8 + 32)
     /** this is the number part of the contract address */
     private long contractId;
     /** number of the least significant bytes in contractId that contain ones. Max is 8 */
@@ -54,7 +52,7 @@ public final class ContractKey implements VirtualKey<ContractKey> {
     private byte uint256KeyNonZeroBytes;
 
     static final long RUNTIME_CONSTRUCTABLE_ID = 0xb2c0a1f733950abdL;
-    static final int MERKLE_VERSION = 1;
+    public static final int MERKLE_VERSION = 1;
 
     public ContractKey() {
         // there has to be a default constructor for deserialize
@@ -111,8 +109,7 @@ public final class ContractKey implements VirtualKey<ContractKey> {
 
     public void setKey(final int[] uint256Key) {
         if (uint256Key == null || uint256Key.length != 8) {
-            throw new IllegalArgumentException(
-                    "The key cannot be null and the key's packed int array size must be 8");
+            throw new IllegalArgumentException("The key cannot be null and the key's packed int array size must be 8");
         }
         this.uint256Key = uint256Key;
         this.uint256KeyNonZeroBytes = KeyPackingUtils.computeNonZeroBytes(uint256Key);
@@ -134,7 +131,7 @@ public final class ContractKey implements VirtualKey<ContractKey> {
     /** Special hash to make sure we get good distribution. */
     @Override
     public int hashCode() {
-        return hash32(
+        return (int) stableHash64(
                 contractId,
                 uint256Key[7],
                 uint256Key[6],
@@ -164,26 +161,34 @@ public final class ContractKey implements VirtualKey<ContractKey> {
 
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
-        serializeReturningByteWritten(out);
+        serializeReturningBytesWritten(out);
     }
 
-    public int serializeReturningByteWritten(final SerializableDataOutputStream out)
-            throws IOException {
+    public int serializeReturningBytesWritten(final SerializableDataOutputStream out) throws IOException {
         out.write(getContractIdNonZeroBytesAndUint256KeyNonZeroBytes());
         for (int b = contractIdNonZeroBytes - 1; b >= 0; b--) {
             out.write((byte) (contractId >> (b * 8)));
         }
         serializePackedBytes(uint256Key, uint256KeyNonZeroBytes, out);
-        return 1 + contractIdNonZeroBytes + uint256KeyNonZeroBytes;
+        return 1 // total non-zero bytes count
+                + contractIdNonZeroBytes // non-zero contractId bytes
+                + uint256KeyNonZeroBytes; // non-zero uint256Key bytes
     }
 
     @Override
-    public void serialize(final ByteBuffer byteBuffer) throws IOException {
-        byteBuffer.put(getContractIdNonZeroBytesAndUint256KeyNonZeroBytes());
+    public void serialize(final ByteBuffer buffer) throws IOException {
+        serializeReturningBytesWritten(buffer);
+    }
+
+    public int serializeReturningBytesWritten(final ByteBuffer buffer) {
+        buffer.put(getContractIdNonZeroBytesAndUint256KeyNonZeroBytes());
         for (int b = contractIdNonZeroBytes - 1; b >= 0; b--) {
-            byteBuffer.put((byte) (contractId >> (b * 8)));
+            buffer.put((byte) (contractId >> (b * 8)));
         }
-        serializePackedBytesToBuffer(uint256Key, uint256KeyNonZeroBytes, byteBuffer);
+        serializePackedBytesToBuffer(uint256Key, uint256KeyNonZeroBytes, buffer);
+        return 1 // total non-zero bytes count
+                + contractIdNonZeroBytes // non-zero contractId bytes
+                + uint256KeyNonZeroBytes; // non-zero uint256Key bytes
     }
 
     @Override
@@ -191,12 +196,8 @@ public final class ContractKey implements VirtualKey<ContractKey> {
         final byte packedSize = in.readByte();
         this.contractIdNonZeroBytes = getContractIdNonZeroBytesFromPacked(packedSize);
         this.uint256KeyNonZeroBytes = getUint256KeyNonZeroBytesFromPacked(packedSize);
-        this.contractId =
-                deserializeContractID(
-                        contractIdNonZeroBytes, in, SerializableDataInputStream::readByte);
-        this.uint256Key =
-                deserializeUint256Key(
-                        uint256KeyNonZeroBytes, in, SerializableDataInputStream::readByte);
+        this.contractId = deserializeContractID(contractIdNonZeroBytes, in, SerializableDataInputStream::readByte);
+        this.uint256Key = deserializeUint256Key(uint256KeyNonZeroBytes, in, SerializableDataInputStream::readByte);
     }
 
     @Override
@@ -222,9 +223,7 @@ public final class ContractKey implements VirtualKey<ContractKey> {
     public static int readKeySize(final ByteBuffer buf) {
         final byte packedSize = buf.get();
         buf.position(buf.position() - 1); // move position back, like we never read anything
-        return 1
-                + getContractIdNonZeroBytesFromPacked(packedSize)
-                + getUint256KeyNonZeroBytesFromPacked(packedSize);
+        return 1 + getContractIdNonZeroBytesFromPacked(packedSize) + getUint256KeyNonZeroBytesFromPacked(packedSize);
     }
 
     // =================================================================================================================
@@ -241,15 +240,11 @@ public final class ContractKey implements VirtualKey<ContractKey> {
      * @throws IOException If there was a problem reading
      */
     static <D> long deserializeContractID(
-            final byte contractIdNonZeroBytes,
-            final D dataSource,
-            final KeyPackingUtils.ByteReaderFunction<D> reader)
+            final byte contractIdNonZeroBytes, final D dataSource, final KeyPackingUtils.ByteReaderFunction<D> reader)
             throws IOException {
         long contractId = 0;
         /* Bytes are encountered in order of significance (big-endian) */
-        for (int byteI = 0, shiftI = contractIdNonZeroBytes - 1;
-                byteI < contractIdNonZeroBytes;
-                byteI++, shiftI--) {
+        for (int byteI = 0, shiftI = contractIdNonZeroBytes - 1; byteI < contractIdNonZeroBytes; byteI++, shiftI--) {
             contractId |= ((long) reader.read(dataSource) & 255) << BIT_SHIFTS[shiftI];
         }
         return contractId;
@@ -271,8 +266,7 @@ public final class ContractKey implements VirtualKey<ContractKey> {
                 contractIdNonZeroBytes == 0 ? (byte) 0 : (byte) (contractIdNonZeroBytes - 1);
         final byte uint256KeyNonZeroBytesMinusOne =
                 uint256KeyNonZeroBytes == 0 ? (byte) 0 : (byte) (uint256KeyNonZeroBytes - 1);
-        return (byte)
-                ((contractIdNonZeroBytesMinusOne << 5) | uint256KeyNonZeroBytesMinusOne & 0xff);
+        return (byte) ((contractIdNonZeroBytesMinusOne << 5) | uint256KeyNonZeroBytesMinusOne & 0xff);
     }
 
     /**
@@ -317,19 +311,44 @@ public final class ContractKey implements VirtualKey<ContractKey> {
     }
 
     @Override
-    public int compareTo(@NonNull final ContractKey that) {
-        if (this == that) {
-            return 0;
-        }
-        final var order = Long.compare(this.contractId, that.contractId);
-        if (order != 0) {
-            return order;
-        }
-        return Arrays.compare(uint256Key, that.uint256Key);
-    }
-
-    @Override
     public int getMinimumSupportedVersion() {
         return 1;
+    }
+
+    /**
+     * An unchanging, UNTOUCHABLE implementation of {@code hashCode()} to reduce hash collisions.
+     *
+     * @param x0 the first long to hash
+     * @param x1 the second long to hash
+     * @param x2 the third long to hash
+     * @param x3 the fourth long to hash
+     * @param x4 the fifth long to hash
+     * @param x5 the sixth long to hash
+     * @param x6 the seventh long to hash
+     * @param x7 the eighth long to hash
+     * @param x8 the ninth long to hash
+     * @return a near-optimal non-cryptographic hash of the given longs
+     */
+    private static long stableHash64(long x0, long x1, long x2, long x3, long x4, long x5, long x6, long x7, long x8) {
+        return stablePerm64(stablePerm64(stablePerm64(stablePerm64(stablePerm64(stablePerm64(
+                                                        stablePerm64(stablePerm64(stablePerm64(x0) ^ x1) ^ x2) ^ x3)
+                                                ^ x4)
+                                        ^ x5)
+                                ^ x6)
+                        ^ x7)
+                ^ x8);
+    }
+
+    private static long stablePerm64(long x) {
+        x += x << 30;
+        x ^= x >>> 27;
+        x += x << 16;
+        x ^= x >>> 20;
+        x += x << 5;
+        x ^= x >>> 18;
+        x += x << 10;
+        x ^= x >>> 24;
+        x += x << 30;
+        return x;
     }
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context.init;
 
 import static org.mockito.Mockito.verify;
@@ -27,11 +28,20 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ServicesInitFlowTest {
-    @Mock private StateInitializationFlow stateFlow;
-    @Mock private StoreInitializationFlow storeFlow;
-    @Mock private EntitiesInitializationFlow entitiesFlow;
-    @Mock private ServicesState activeState;
-    @Mock private BootstrapProperties bootstrapProperties;
+    @Mock
+    private StateInitializationFlow stateFlow;
+
+    @Mock
+    private StoreInitializationFlow storeFlow;
+
+    @Mock
+    private EntitiesInitializationFlow entitiesFlow;
+
+    @Mock
+    private ServicesState activeState;
+
+    @Mock
+    private BootstrapProperties bootstrapProperties;
 
     private ServicesInitFlow subject;
 

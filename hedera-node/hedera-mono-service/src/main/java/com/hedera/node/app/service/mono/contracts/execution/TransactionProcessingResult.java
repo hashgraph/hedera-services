@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.execution;
 
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
@@ -98,16 +99,7 @@ public class TransactionProcessingResult extends HederaEvmTransactionProcessingR
             final Optional<ExceptionalHaltReason> haltReason,
             final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges,
             final List<SolidityAction> actions) {
-        super(
-                status,
-                logs,
-                gasUsed,
-                sbhRefund,
-                gasPrice,
-                output,
-                recipient,
-                revertReason,
-                haltReason);
+        super(status, logs, gasUsed, sbhRefund, gasPrice, output, recipient, revertReason, haltReason);
         this.stateChanges = stateChanges;
         this.actions = actions;
     }

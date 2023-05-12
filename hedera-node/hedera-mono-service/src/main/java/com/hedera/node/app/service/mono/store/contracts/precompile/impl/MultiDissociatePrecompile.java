@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.INT;
@@ -39,12 +40,9 @@ import javax.inject.Provider;
 import org.apache.tuweni.bytes.Bytes;
 
 public class MultiDissociatePrecompile extends AbstractDissociatePrecompile {
-    private static final Function DISSOCIATE_TOKENS_FUNCTION =
-            new Function("dissociateTokens(address,address[])", INT);
-    private static final Bytes DISSOCIATE_TOKENS_SELECTOR =
-            Bytes.wrap(DISSOCIATE_TOKENS_FUNCTION.selector());
-    private static final ABIType<Tuple> DISSOCIATE_TOKENS_DECODER =
-            TypeFactory.create("(bytes32,bytes32[])");
+    private static final Function DISSOCIATE_TOKENS_FUNCTION = new Function("dissociateTokens(address,address[])", INT);
+    private static final Bytes DISSOCIATE_TOKENS_SELECTOR = Bytes.wrap(DISSOCIATE_TOKENS_FUNCTION.selector());
+    private static final ABIType<Tuple> DISSOCIATE_TOKENS_DECODER = TypeFactory.create("(bytes32,bytes32[])");
 
     public MultiDissociatePrecompile(
             final WorldLedgers ledgers,
@@ -67,8 +65,7 @@ public class MultiDissociatePrecompile extends AbstractDissociatePrecompile {
     }
 
     @Override
-    public TransactionBody.Builder body(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         dissociateOp = decodeMultipleDissociations(input, aliasResolver);
         transactionBody = syntheticTxnFactory.createDissociate(dissociateOp);
         return transactionBody;
@@ -81,11 +78,9 @@ public class MultiDissociatePrecompile extends AbstractDissociatePrecompile {
 
     public static Dissociation decodeMultipleDissociations(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        final Tuple decodedArguments =
-                decodeFunctionCall(input, DISSOCIATE_TOKENS_SELECTOR, DISSOCIATE_TOKENS_DECODER);
+        final Tuple decodedArguments = decodeFunctionCall(input, DISSOCIATE_TOKENS_SELECTOR, DISSOCIATE_TOKENS_DECODER);
 
-        final var accountID =
-                convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
+        final var accountID = convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
         final var tokenIDs = decodeTokenIDsFromBytesArray(decodedArguments.get(1));
 
         return Dissociation.multiDissociation(accountID, tokenIDs);

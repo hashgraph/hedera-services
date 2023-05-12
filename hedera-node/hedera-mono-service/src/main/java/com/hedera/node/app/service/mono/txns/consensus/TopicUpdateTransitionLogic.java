@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.consensus;
 
 import static com.hedera.node.app.service.mono.state.submerkle.RichInstant.fromGrpc;
@@ -32,6 +33,7 @@ import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.ledger.HederaLedger;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
@@ -43,7 +45,6 @@ import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.merkle.map.MerkleMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -61,13 +62,13 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
     private final OptionValidator validator;
     private final SigImpactHistorian sigImpactHistorian;
     private final TransactionContext transactionContext;
-    private final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics;
+    private final Supplier<MerkleMapLike<EntityNum, MerkleTopic>> topics;
     private final Supplier<AccountStorageAdapter> accounts;
 
     @Inject
     public TopicUpdateTransitionLogic(
             final Supplier<AccountStorageAdapter> accounts,
-            final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
+            final Supplier<MerkleMapLike<EntityNum, MerkleTopic>> topics,
             final OptionValidator validator,
             final TransactionContext transactionContext,
             final HederaLedger ledger,
@@ -173,8 +174,7 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
         }
 
         var richNewExpiry = fromGrpc(newExpiry);
-        if (topic.hasExpirationTimestamp()
-                && topic.getExpirationTimestamp().isAfter(richNewExpiry)) {
+        if (topic.hasExpirationTimestamp() && topic.getExpirationTimestamp().isAfter(richNewExpiry)) {
             transactionContext.setStatus(EXPIRATION_REDUCTION_NOT_ALLOWED);
             return false;
         }
@@ -188,8 +188,7 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
         }
     }
 
-    private boolean canApplyNewAutoRenewAccount(
-            ConsensusUpdateTopicTransactionBody op, MerkleTopic topic) {
+    private boolean canApplyNewAutoRenewAccount(ConsensusUpdateTopicTransactionBody op, MerkleTopic topic) {
         if (!op.hasAutoRenewAccount()) {
             return true;
         }
@@ -218,8 +217,7 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
         return true;
     }
 
-    private void applyNewAutoRenewAccount(
-            ConsensusUpdateTopicTransactionBody op, MerkleTopic topic) {
+    private void applyNewAutoRenewAccount(ConsensusUpdateTopicTransactionBody op, MerkleTopic topic) {
         if (op.hasAutoRenewAccount()) {
             if (designatesAccountRemoval(op.getAutoRenewAccount())) {
                 topic.setAutoRenewAccountId(null);
@@ -229,8 +227,7 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
         }
     }
 
-    private void applyNewAutoRenewPeriod(
-            ConsensusUpdateTopicTransactionBody op, MerkleTopic topic) {
+    private void applyNewAutoRenewPeriod(ConsensusUpdateTopicTransactionBody op, MerkleTopic topic) {
         if (op.hasAutoRenewPeriod()) {
             topic.setAutoRenewDurationSeconds(op.getAutoRenewPeriod().getSeconds());
         }
@@ -264,8 +261,7 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
         return true;
     }
 
-    private boolean applyNewSubmitKey(final ConsensusUpdateTopicTransactionBody op)
-            throws DecoderException {
+    private boolean applyNewSubmitKey(final ConsensusUpdateTopicTransactionBody op) throws DecoderException {
         var newSubmitKey = op.getSubmitKey();
         if (!validator.hasGoodEncoding(newSubmitKey)) {
             transactionContext.setStatus(BAD_ENCODING);
@@ -276,9 +272,7 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
     }
 
     private boolean applyNewAdminKey(
-            final ConsensusUpdateTopicTransactionBody op,
-            final TopicID topicId,
-            final MerkleTopic topic)
+            final ConsensusUpdateTopicTransactionBody op, final TopicID topicId, final MerkleTopic topic)
             throws DecoderException {
         var newAdminKey = op.getAdminKey();
         if (!validator.hasGoodEncoding(newAdminKey)) {

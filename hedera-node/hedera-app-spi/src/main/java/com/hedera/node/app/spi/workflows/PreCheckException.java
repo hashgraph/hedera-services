@@ -13,16 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi.workflows;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Thrown if the request itself is bad. The protobuf decoded correctly, but it failed one or more of
- * the ingestion pipeline pre-checks.
+ * Thrown if the request itself is bad. The protobuf decoded correctly, but it failed one or more of the ingestion
+ * pipeline pre-checks.
  */
 public class PreCheckException extends Exception {
     private final ResponseCodeEnum responseCode;

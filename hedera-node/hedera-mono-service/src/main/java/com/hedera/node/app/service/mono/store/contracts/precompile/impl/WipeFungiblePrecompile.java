@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.INT;
@@ -46,14 +47,10 @@ public class WipeFungiblePrecompile extends AbstractWipePrecompile {
             new Function("wipeTokenAccount(address,address,uint32)", INT);
     private static final Function WIPE_TOKEN_ACCOUNT_FUNCTION_V2 =
             new Function("wipeTokenAccount(address,address,int64)", INT);
-    private static final Bytes WIPE_TOKEN_ACCOUNT_SELECTOR =
-            Bytes.wrap(WIPE_TOKEN_ACCOUNT_FUNCTION.selector());
-    private static final Bytes WIPE_TOKEN_ACCOUNT_SELECTOR_V2 =
-            Bytes.wrap(WIPE_TOKEN_ACCOUNT_FUNCTION_V2.selector());
-    private static final ABIType<Tuple> WIPE_TOKEN_ACCOUNT_DECODER =
-            TypeFactory.create("(bytes32,bytes32,uint32)");
-    private static final ABIType<Tuple> WIPE_TOKEN_ACCOUNT_DECODER_V2 =
-            TypeFactory.create("(bytes32,bytes32,int64)");
+    private static final Bytes WIPE_TOKEN_ACCOUNT_SELECTOR = Bytes.wrap(WIPE_TOKEN_ACCOUNT_FUNCTION.selector());
+    private static final Bytes WIPE_TOKEN_ACCOUNT_SELECTOR_V2 = Bytes.wrap(WIPE_TOKEN_ACCOUNT_FUNCTION_V2.selector());
+    private static final ABIType<Tuple> WIPE_TOKEN_ACCOUNT_DECODER = TypeFactory.create("(bytes32,bytes32,uint32)");
+    private static final ABIType<Tuple> WIPE_TOKEN_ACCOUNT_DECODER_V2 = TypeFactory.create("(bytes32,bytes32,int64)");
 
     public WipeFungiblePrecompile(
             final WorldLedgers ledgers,
@@ -64,52 +61,32 @@ public class WipeFungiblePrecompile extends AbstractWipePrecompile {
             final InfrastructureFactory infrastructureFactory,
             final PrecompilePricingUtils pricingUtils,
             final int functionId) {
-        super(
-                ledgers,
-                aliases,
-                sigsVerifier,
-                sideEffects,
-                syntheticTxnFactory,
-                infrastructureFactory,
-                pricingUtils);
+        super(ledgers, aliases, sigsVerifier, sideEffects, syntheticTxnFactory, infrastructureFactory, pricingUtils);
         this.functionId = functionId;
     }
 
     @Override
-    public TransactionBody.Builder body(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        wipeOp =
-                switch (functionId) {
-                    case AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE -> decodeWipe(
-                            input, aliasResolver);
-                    case AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE_V2 -> decodeWipeV2(
-                            input, aliasResolver);
-                    default -> null;
-                };
+    public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        wipeOp = switch (functionId) {
+            case AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE -> decodeWipe(input, aliasResolver);
+            case AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE_V2 -> decodeWipeV2(input, aliasResolver);
+            default -> null;};
         transactionBody = syntheticTxnFactory.createWipe(wipeOp);
         return transactionBody;
     }
 
     @Override
     public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
-        Objects.requireNonNull(
-                wipeOp, "`body` method should be called before `getMinimumFeeInTinybars`");
+        Objects.requireNonNull(wipeOp, "`body` method should be called before `getMinimumFeeInTinybars`");
         return pricingUtils.getMinimumPriceInTinybars(WIPE_FUNGIBLE, consensusTime);
     }
 
-    public static WipeWrapper decodeWipe(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        return getWipeWrapper(
-                input, aliasResolver, WIPE_TOKEN_ACCOUNT_SELECTOR, WIPE_TOKEN_ACCOUNT_DECODER);
+    public static WipeWrapper decodeWipe(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        return getWipeWrapper(input, aliasResolver, WIPE_TOKEN_ACCOUNT_SELECTOR, WIPE_TOKEN_ACCOUNT_DECODER);
     }
 
-    public static WipeWrapper decodeWipeV2(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        return getWipeWrapper(
-                input,
-                aliasResolver,
-                WIPE_TOKEN_ACCOUNT_SELECTOR_V2,
-                WIPE_TOKEN_ACCOUNT_DECODER_V2);
+    public static WipeWrapper decodeWipeV2(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        return getWipeWrapper(input, aliasResolver, WIPE_TOKEN_ACCOUNT_SELECTOR_V2, WIPE_TOKEN_ACCOUNT_DECODER_V2);
     }
 
     private static WipeWrapper getWipeWrapper(
@@ -117,12 +94,10 @@ public class WipeFungiblePrecompile extends AbstractWipePrecompile {
             final UnaryOperator<byte[]> aliasResolver,
             final Bytes wipeTokenAccountSelector,
             final ABIType<Tuple> wipeTokenAccountDecoder) {
-        final Tuple decodedArguments =
-                decodeFunctionCall(input, wipeTokenAccountSelector, wipeTokenAccountDecoder);
+        final Tuple decodedArguments = decodeFunctionCall(input, wipeTokenAccountSelector, wipeTokenAccountDecoder);
 
         final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
-        final var accountID =
-                convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
+        final var accountID = convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
         final var fungibleAmount = (long) decodedArguments.get(2);
 
         return WipeWrapper.forFungible(tokenID, accountID, fungibleAmount);

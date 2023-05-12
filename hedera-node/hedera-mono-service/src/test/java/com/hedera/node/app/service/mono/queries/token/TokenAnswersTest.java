@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.token;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -38,8 +39,7 @@ class TokenAnswersTest {
     @Test
     void getsQueryBalance() {
         // given:
-        final TokenAnswers subject =
-                new TokenAnswers(tokenInfo, nftInfo, tokenNftsInfo, accountNftInfos);
+        final TokenAnswers subject = new TokenAnswers(tokenInfo, nftInfo, tokenNftsInfo, accountNftInfos);
 
         // expect:
         assertSame(tokenInfo, subject.getTokenInfo());

@@ -13,34 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-plugins {
-    id("com.hedera.hashgraph.conventions")
-}
+
+plugins { id("com.hedera.hashgraph.conventions") }
 
 description = "Hedera Services API Utilities"
 
 configurations.all {
-    exclude("javax.annotation", "javax.annotation-api")
+  exclude("javax.annotation", "javax.annotation-api")
 
-    exclude("io.grpc", "grpc-core")
-    exclude("io.grpc", "grpc-context")
-    exclude("io.grpc", "grpc-api")
-    exclude("io.grpc", "grpc-testing")
+  exclude("io.grpc", "grpc-core")
+  exclude("io.grpc", "grpc-context")
+  exclude("io.grpc", "grpc-api")
+  exclude("io.grpc", "grpc-testing")
 }
 
 dependencies {
-    annotationProcessor(libs.dagger.compiler)
+  annotationProcessor(libs.dagger.compiler)
 
-    api(project(":hedera-node:hedera-evm"))
+  api(project(":hedera-node:hedera-evm"))
 
-    implementation(libs.jackson)
-    implementation(libs.bundles.bouncycastle)
-    implementation(libs.bundles.logging)
-    implementation(libs.headlong)
-    implementation(libs.commons.codec)
-    implementation(libs.jna)
-    implementation(libs.javax.inject)
-    implementation(libs.dagger.api)
+  implementation(libs.jackson)
+  implementation(libs.bundles.bouncycastle)
+  implementation(libs.bundles.logging)
+  implementation(libs.headlong)
+  implementation(libs.commons.codec)
+  implementation(libs.jna)
+  implementation(libs.javax.inject)
+  implementation(libs.dagger.api)
 
-    testImplementation(testLibs.bundles.testing)
+  testImplementation(testLibs.bundles.testing)
 }

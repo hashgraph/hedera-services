@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.properties;
 
 import static com.hedera.node.app.service.mono.ledger.properties.TestAccountProperty.FLAG;
@@ -33,12 +34,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ChangeSummaryManagerTest {
-    private static final ChangeSummaryManager<TestAccount, TestAccountProperty> subject =
-            new ChangeSummaryManager<>();
-    private static final EnumMap<TestAccountProperty, Object> changes =
-            new EnumMap<>(TestAccountProperty.class);
+    private static final ChangeSummaryManager<TestAccount, TestAccountProperty> subject = new ChangeSummaryManager<>();
+    private static final EnumMap<TestAccountProperty, Object> changes = new EnumMap<>(TestAccountProperty.class);
 
-    @Mock private PropertyChangeObserver<Long, TestAccountProperty> observer;
+    @Mock
+    private PropertyChangeObserver<Long, TestAccountProperty> observer;
 
     @BeforeEach
     void setup() {

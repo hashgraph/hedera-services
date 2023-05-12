@@ -13,12 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context.properties;
 
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.DEV_DEFAULT_LISTENING_NODE_ACCOUNT;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.DEV_ONLY_DEFAULT_NODE_LISTENS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.GRPC_PORT;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.GRPC_TLS_PORT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.GRPC_WORKFLOWS_PORT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.GRPC_WORKFLOWS_TLS_PORT;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_ACCOUNTS_EXPORT_PATH;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_EXPORT_ACCOUNTS_ON_STARTUP;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_PREFETCH_CODE_CACHE_TTL_SECS;
@@ -61,10 +64,13 @@ import javax.inject.Singleton;
 
 @Singleton
 public class NodeLocalProperties {
+
     private final PropertySource properties;
 
     private int port;
     private int tlsPort;
+    private int workflowsPort;
+    private int workflowsTlsPort;
     private long hapiOpStatsUpdateIntervalMs;
     private long entityUtilStatsUpdateIntervalMs;
     private long throttleUtilStatsUpdateIntervalMs;
@@ -103,7 +109,7 @@ public class NodeLocalProperties {
     private String sidecarDir;
 
     @Inject
-    public NodeLocalProperties(@CompositeProps PropertySource properties) {
+    public NodeLocalProperties(@CompositeProps final PropertySource properties) {
         this.properties = properties;
 
         reload();
@@ -112,13 +118,12 @@ public class NodeLocalProperties {
     public void reload() {
         port = properties.getIntProperty(GRPC_PORT);
         tlsPort = properties.getIntProperty(GRPC_TLS_PORT);
+        workflowsPort = properties.getIntProperty(GRPC_WORKFLOWS_PORT);
+        workflowsTlsPort = properties.getIntProperty(GRPC_WORKFLOWS_TLS_PORT);
         activeProfile = properties.getProfileProperty(HEDERA_PROFILES_ACTIVE);
-        hapiOpStatsUpdateIntervalMs =
-                properties.getLongProperty(STATS_HAPI_OPS_SPEEDOMETER_UPDATE_INTERVAL_MS);
-        statsSpeedometerHalfLifeSecs =
-                properties.getDoubleProperty(STATS_SPEEDOMETER_HALF_LIFE_SECS);
-        statsRunningAvgHalfLifeSecs =
-                properties.getDoubleProperty(STATS_RUNNING_AVG_HALF_LIFE_SECS);
+        hapiOpStatsUpdateIntervalMs = properties.getLongProperty(STATS_HAPI_OPS_SPEEDOMETER_UPDATE_INTERVAL_MS);
+        statsSpeedometerHalfLifeSecs = properties.getDoubleProperty(STATS_SPEEDOMETER_HALF_LIFE_SECS);
+        statsRunningAvgHalfLifeSecs = properties.getDoubleProperty(STATS_RUNNING_AVG_HALF_LIFE_SECS);
         recordLogDir = properties.getStringProperty(HEDERA_RECORD_STREAM_LOG_DIR);
         sidecarDir = properties.getStringProperty(HEDERA_RECORD_STREAM_SIDE_CAR_DIR);
         recordLogPeriod = properties.getLongProperty(HEDERA_RECORD_STREAM_LOG_PERIOD);
@@ -130,8 +135,7 @@ public class NodeLocalProperties {
         nettyTlsKeyPath = properties.getStringProperty(NETTY_TLS_KEY_PATH);
         nettyProdKeepAliveTimeout = properties.getLongProperty(NETTY_PROD_KEEP_ALIVE_TIMEOUT);
         nettyMaxConnectionAge = properties.getLongProperty(NETTY_PROD_MAX_CONNECTION_AGE);
-        nettyMaxConnectionAgeGrace =
-                properties.getLongProperty(NETTY_PROD_MAX_CONNECTION_AGE_GRACE);
+        nettyMaxConnectionAgeGrace = properties.getLongProperty(NETTY_PROD_MAX_CONNECTION_AGE_GRACE);
         nettyMaxConnectionIdle = properties.getLongProperty(NETTY_PROD_MAX_CONNECTION_IDLE);
         nettyMaxConcurrentCalls = properties.getIntProperty(NETTY_PROD_MAX_CONCURRENT_CALLS);
         nettyFlowControlWindow = properties.getIntProperty(NETTY_PROD_FLOW_CONTROL_WINDOW);
@@ -150,10 +154,8 @@ public class NodeLocalProperties {
         prefetchCodeCacheTtlSecs = properties.getIntProperty(HEDERA_PREFETCH_CODE_CACHE_TTL_SECS);
         consThrottlesToSample = properties.getStringsProperty(STATS_CONS_THROTTLES_TO_SAMPLE);
         hapiThrottlesToSample = properties.getStringsProperty(STATS_HAPI_THROTTLES_TO_SAMPLE);
-        entityUtilStatsUpdateIntervalMs =
-                properties.getLongProperty(STATS_ENTITY_UTILS_GAUGE_UPDATE_INTERVAL_MS);
-        throttleUtilStatsUpdateIntervalMs =
-                properties.getLongProperty(STATS_THROTTLE_UTILS_GAUGE_UPDATE_INTERVAL_MS);
+        entityUtilStatsUpdateIntervalMs = properties.getLongProperty(STATS_ENTITY_UTILS_GAUGE_UPDATE_INTERVAL_MS);
+        throttleUtilStatsUpdateIntervalMs = properties.getLongProperty(STATS_THROTTLE_UTILS_GAUGE_UPDATE_INTERVAL_MS);
     }
 
     public int port() {
@@ -162,6 +164,14 @@ public class NodeLocalProperties {
 
     public int tlsPort() {
         return tlsPort;
+    }
+
+    public int workflowsPort() {
+        return workflowsPort;
+    }
+
+    public int workflowsTlsPort() {
+        return workflowsTlsPort;
     }
 
     public Profile activeProfile() {

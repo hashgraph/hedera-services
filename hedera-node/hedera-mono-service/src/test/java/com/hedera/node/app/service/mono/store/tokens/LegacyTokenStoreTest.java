@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.tokens;
 
 import static com.hedera.node.app.service.mono.ledger.BalanceChange.changingNftOwnership;
@@ -45,7 +46,8 @@ class LegacyTokenStoreTest {
     @Test
     void adaptsBehaviorToFungibleType() {
         // setup:
-        final var aa = AccountAmount.newBuilder().setAccountID(a).setAmount(delta).build();
+        final var aa =
+                AccountAmount.newBuilder().setAccountID(a).setAmount(delta).build();
         final var fungibleChange = BalanceChange.changingFtUnits(t, t.asGrpcToken(), aa, payer);
         // and:
         final var hybridSubject = Mockito.mock(TokenStore.class);
@@ -65,8 +67,7 @@ class LegacyTokenStoreTest {
     @Test
     void adaptsBehaviorToNonfungibleType() {
         // setup:
-        final var nftChange =
-                changingNftOwnership(t, t.asGrpcToken(), nftXfer(a, b, serialNo), payer);
+        final var nftChange = changingNftOwnership(t, t.asGrpcToken(), nftXfer(a, b, serialNo), payer);
         // and:
         final var hybridSubject = Mockito.mock(TokenStore.class);
 

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.models;
 
 import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
@@ -25,14 +26,17 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Comparator;
 
 public record NftId(long shard, long realm, long num, long serialNo) implements Comparable<NftId> {
-    private static final Comparator<NftId> NATURAL_ORDER =
-            Comparator.comparingLong(NftId::num)
-                    .thenComparingLong(NftId::serialNo)
-                    .thenComparingLong(NftId::shard)
-                    .thenComparingLong(NftId::realm);
+    private static final Comparator<NftId> NATURAL_ORDER = Comparator.comparingLong(NftId::num)
+            .thenComparingLong(NftId::serialNo)
+            .thenComparingLong(NftId::shard)
+            .thenComparingLong(NftId::realm);
 
     public TokenID tokenId() {
-        return TokenID.newBuilder().setShardNum(shard).setRealmNum(realm).setTokenNum(num).build();
+        return TokenID.newBuilder()
+                .setShardNum(shard)
+                .setRealmNum(realm)
+                .setTokenNum(num)
+                .build();
     }
 
     public static NftId withDefaultShardRealm(final long num, final long serialNo) {
@@ -44,8 +48,7 @@ public record NftId(long shard, long realm, long num, long serialNo) implements 
     }
 
     public static NftId fromGrpc(final TokenID tokenId, final long serialNo) {
-        return new NftId(
-                tokenId.getShardNum(), tokenId.getRealmNum(), tokenId.getTokenNum(), serialNo);
+        return new NftId(tokenId.getShardNum(), tokenId.getRealmNum(), tokenId.getTokenNum(), serialNo);
     }
 
     public EntityNumPair asEntityNumPair() {

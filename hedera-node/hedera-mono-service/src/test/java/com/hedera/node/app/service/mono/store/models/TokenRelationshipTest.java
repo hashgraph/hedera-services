@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.models;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
@@ -95,17 +96,16 @@ class TokenRelationshipTest {
     @Test
     void toStringAsExpected() {
         // given:
-        final var desired =
-                "TokenRelationship{notYetPersisted=true, account=Account{id=1.0.4321, expiry=0,"
-                    + " balance=0, deleted=false, ownedNfts=0, alreadyUsedAutoAssociations=0,"
-                    + " maxAutoAssociations=0, alias=, cryptoAllowances=null,"
-                    + " fungibleTokenAllowances=null, approveForAllNfts=null, numAssociations=3,"
-                    + " numPositiveBalances=0, ethereumNonce=0}, token=Token{id=0.0.1234,"
-                    + " type=null, deleted=false, autoRemoved=false, treasury=null,"
-                    + " autoRenewAccount=null, kycKey=<N/A>, freezeKey=<N/A>,"
-                    + " frozenByDefault=false, supplyKey=<N/A>, currentSerialNumber=0,"
-                    + " pauseKey=<N/A>, paused=false}, balance=1234, balanceChange=0, frozen=false,"
-                    + " kycGranted=false, isAutomaticAssociation=false}";
+        final var desired = "TokenRelationship{notYetPersisted=true, account=Account{id=1.0.4321, expiry=0,"
+                + " balance=0, deleted=false, ownedNfts=0, alreadyUsedAutoAssociations=0,"
+                + " maxAutoAssociations=0, alias=, cryptoAllowances=null,"
+                + " fungibleTokenAllowances=null, approveForAllNfts=null, numAssociations=3,"
+                + " numPositiveBalances=0, ethereumNonce=0}, token=Token{id=0.0.1234,"
+                + " type=null, deleted=false, autoRemoved=false, treasury=null,"
+                + " autoRenewAccount=null, kycKey=<N/A>, freezeKey=<N/A>,"
+                + " frozenByDefault=false, supplyKey=<N/A>, currentSerialNumber=0,"
+                + " pauseKey=<N/A>, paused=false}, balance=1234, balanceChange=0, frozen=false,"
+                + " kycGranted=false, isAutomaticAssociation=false}";
 
         // expect:
         assertEquals(desired, subject.toString());

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.grpc.marshalling;
 
 import static com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
@@ -73,38 +74,57 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ImpliedTransfersMarshalTest {
-    private final Map<ByteString, EntityNum> mockAliases =
-            Map.of(ByteString.copyFromUtf8("A"), EntityNum.fromLong(1L));
+    private final Map<ByteString, EntityNum> mockAliases = Map.of(ByteString.copyFromUtf8("A"), EntityNum.fromLong(1L));
 
     private CryptoTransferTransactionBody op;
 
-    @Mock private FeeAssessor feeAssessor;
-    @Mock private CustomFeeSchedules customFeeSchedules;
-    @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private PureTransferSemanticChecks xferChecks;
-    @Mock private BalanceChangeManager.ChangeManagerFactory changeManagerFactory;
-    @Mock private Function<CustomFeeSchedules, CustomSchedulesManager> customSchedulesFactory;
-    @Mock private BalanceChangeManager changeManager;
-    @Mock private CustomSchedulesManager schedulesManager;
-    @Mock private AliasManager aliasManager;
-    @Mock private AliasResolver aliasResolver;
-    @Mock private Predicate<CryptoTransferTransactionBody> aliasCheck;
+    @Mock
+    private FeeAssessor feeAssessor;
+
+    @Mock
+    private CustomFeeSchedules customFeeSchedules;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
+
+    @Mock
+    private PureTransferSemanticChecks xferChecks;
+
+    @Mock
+    private BalanceChangeManager.ChangeManagerFactory changeManagerFactory;
+
+    @Mock
+    private Function<CustomFeeSchedules, CustomSchedulesManager> customSchedulesFactory;
+
+    @Mock
+    private BalanceChangeManager changeManager;
+
+    @Mock
+    private CustomSchedulesManager schedulesManager;
+
+    @Mock
+    private AliasManager aliasManager;
+
+    @Mock
+    private AliasResolver aliasResolver;
+
+    @Mock
+    private Predicate<CryptoTransferTransactionBody> aliasCheck;
 
     private ImpliedTransfersMarshal subject;
 
     @BeforeEach
     void setUp() {
-        subject =
-                new ImpliedTransfersMarshal(
-                        feeAssessor,
-                        aliasManager,
-                        customFeeSchedules,
-                        () -> aliasResolver,
-                        dynamicProperties,
-                        xferChecks,
-                        aliasCheck,
-                        changeManagerFactory,
-                        customSchedulesFactory);
+        subject = new ImpliedTransfersMarshal(
+                feeAssessor,
+                aliasManager,
+                customFeeSchedules,
+                () -> aliasResolver,
+                dynamicProperties,
+                xferChecks,
+                aliasCheck,
+                changeManagerFactory,
+                customSchedulesFactory);
     }
 
     @Test
@@ -113,10 +133,8 @@ class ImpliedTransfersMarshalTest {
         final var token2 = EntityNum.fromLong(1011L);
         final var account1 = asAccount("0.0.1001");
         final var account2 = asAccount("0.0.1002");
-        ImpliedTransfersMarshal.TokenAndAccountID one =
-                new ImpliedTransfersMarshal.TokenAndAccountID(token1, account1);
-        ImpliedTransfersMarshal.TokenAndAccountID two =
-                new ImpliedTransfersMarshal.TokenAndAccountID(token2, account1);
+        ImpliedTransfersMarshal.TokenAndAccountID one = new ImpliedTransfersMarshal.TokenAndAccountID(token1, account1);
+        ImpliedTransfersMarshal.TokenAndAccountID two = new ImpliedTransfersMarshal.TokenAndAccountID(token2, account1);
         ImpliedTransfersMarshal.TokenAndAccountID three =
                 new ImpliedTransfersMarshal.TokenAndAccountID(token1, account2);
         assertEquals(one, one);
@@ -138,8 +156,7 @@ class ImpliedTransfersMarshalTest {
         given(aliasResolver.resolutions()).willReturn(mockAliases);
 
         final var expectedMeta =
-                new ImpliedTransfersMeta(
-                        propsWithAutoCreation, INVALID_ACCOUNT_ID, NO_CUSTOM_FEE_META, mockAliases);
+                new ImpliedTransfersMeta(propsWithAutoCreation, INVALID_ACCOUNT_ID, NO_CUSTOM_FEE_META, mockAliases);
 
         final var result = subject.unmarshalFromGrpc(op, payer);
 
@@ -157,8 +174,7 @@ class ImpliedTransfersMarshalTest {
         given(aliasResolver.resolutions()).willReturn(mockAliases);
 
         final var expectedMeta =
-                new ImpliedTransfersMeta(
-                        propsWithAutoCreation, INVALID_ALIAS_KEY, NO_CUSTOM_FEE_META, mockAliases);
+                new ImpliedTransfersMeta(propsWithAutoCreation, INVALID_ALIAS_KEY, NO_CUSTOM_FEE_META, mockAliases);
 
         final var result = subject.unmarshalFromGrpc(op, payer);
 
@@ -175,8 +191,7 @@ class ImpliedTransfersMarshalTest {
         given(aliasResolver.perceivedAutoCreations()).willReturn(1);
 
         final var expectedMeta =
-                new ImpliedTransfersMeta(
-                        propsNoAutoCreation, NOT_SUPPORTED, NO_CUSTOM_FEE_META, NO_ALIASES);
+                new ImpliedTransfersMeta(propsNoAutoCreation, NOT_SUPPORTED, NO_CUSTOM_FEE_META, NO_ALIASES);
 
         final var result = subject.unmarshalFromGrpc(op, payer);
 
@@ -193,8 +208,7 @@ class ImpliedTransfersMarshalTest {
         given(aliasResolver.perceivedAutoCreations()).willReturn(1);
 
         final var expectedMeta =
-                new ImpliedTransfersMeta(
-                        propsWithLazyCreation, NOT_SUPPORTED, NO_CUSTOM_FEE_META, NO_ALIASES);
+                new ImpliedTransfersMeta(propsWithLazyCreation, NOT_SUPPORTED, NO_CUSTOM_FEE_META, NO_ALIASES);
 
         final var result = subject.unmarshalFromGrpc(op, payer);
 
@@ -211,8 +225,7 @@ class ImpliedTransfersMarshalTest {
         given(aliasResolver.perceivedLazyCreations()).willReturn(1);
 
         final var expectedMeta =
-                new ImpliedTransfersMeta(
-                        propsNoAutoCreation, NOT_SUPPORTED, NO_CUSTOM_FEE_META, NO_ALIASES);
+                new ImpliedTransfersMeta(propsNoAutoCreation, NOT_SUPPORTED, NO_CUSTOM_FEE_META, NO_ALIASES);
 
         final var result = subject.unmarshalFromGrpc(op, payer);
 
@@ -224,12 +237,8 @@ class ImpliedTransfersMarshalTest {
         setupHbarOnlyFixture();
         setupPropsWithAutoAndLazyCreation(true, false);
 
-        final var expectedMeta =
-                new ImpliedTransfersMeta(
-                        propsWithAutoCreation,
-                        TRANSFER_LIST_SIZE_LIMIT_EXCEEDED,
-                        Collections.emptyList(),
-                        NO_ALIASES);
+        final var expectedMeta = new ImpliedTransfersMeta(
+                propsWithAutoCreation, TRANSFER_LIST_SIZE_LIMIT_EXCEEDED, Collections.emptyList(), NO_ALIASES);
 
         givenValidity(TRANSFER_LIST_SIZE_LIMIT_EXCEEDED, propsWithAutoCreation);
 
@@ -250,8 +259,7 @@ class ImpliedTransfersMarshalTest {
         final var expectedChanges = expNonFeeChanges(false);
         // and:
         final var expectedMeta =
-                new ImpliedTransfersMeta(
-                        propsWithAutoCreation, OK, Collections.emptyList(), mockAliases, 1);
+                new ImpliedTransfersMeta(propsWithAutoCreation, OK, Collections.emptyList(), mockAliases, 1);
 
         givenValidity(OK, propsWithAutoCreation);
 
@@ -275,8 +283,7 @@ class ImpliedTransfersMarshalTest {
         final var expectedChanges = expNonFeeChanges(false);
         // and:
         final var expectedMeta =
-                new ImpliedTransfersMeta(
-                        propsWithLazyCreation, OK, Collections.emptyList(), mockAliases, 0, 1);
+                new ImpliedTransfersMeta(propsWithLazyCreation, OK, Collections.emptyList(), mockAliases, 0, 1);
 
         givenValidity(OK, propsWithLazyCreation);
 
@@ -301,13 +308,7 @@ class ImpliedTransfersMarshalTest {
         final var expectedChanges = expNonFeeChanges(false);
         // and:
         final var expectedMeta =
-                new ImpliedTransfersMeta(
-                        propsWithAutoAndLazyCreation,
-                        OK,
-                        Collections.emptyList(),
-                        mockAliases,
-                        1,
-                        1);
+                new ImpliedTransfersMeta(propsWithAutoAndLazyCreation, OK, Collections.emptyList(), mockAliases, 1, 1);
 
         givenValidity(OK, propsWithAutoAndLazyCreation);
 
@@ -323,24 +324,21 @@ class ImpliedTransfersMarshalTest {
     void hasAliasInChanges() {
         Key aliasA = KeyFactory.getDefaultInstance().newEd25519();
         Key aliasB = KeyFactory.getDefaultInstance().newEd25519();
-        AccountID a =
-                AccountID.newBuilder()
-                        .setShardNum(0)
-                        .setRealmNum(0)
-                        .setAccountNum(9_999L)
-                        .setAlias(aliasA.toByteString())
-                        .build();
+        AccountID a = AccountID.newBuilder()
+                .setShardNum(0)
+                .setRealmNum(0)
+                .setAccountNum(9_999L)
+                .setAlias(aliasA.toByteString())
+                .build();
         AccountID validAliasAccount =
                 AccountID.newBuilder().setAlias(aliasB.toByteString()).build();
         setupPropsWithAutoAndLazyCreation(true, false);
 
-        final var builder =
-                CryptoTransferTransactionBody.newBuilder()
-                        .setTransfers(
-                                TransferList.newBuilder()
-                                        .addAccountAmounts(adjustFrom(a, -100))
-                                        .addAccountAmounts(adjustFrom(validAliasAccount, 100))
-                                        .build());
+        final var builder = CryptoTransferTransactionBody.newBuilder()
+                .setTransfers(TransferList.newBuilder()
+                        .addAccountAmounts(adjustFrom(a, -100))
+                        .addAccountAmounts(adjustFrom(validAliasAccount, 100))
+                        .build());
         op = builder.build();
 
         final List<BalanceChange> expectedChanges = new ArrayList<>();
@@ -348,8 +346,7 @@ class ImpliedTransfersMarshalTest {
         expectedChanges.add(changingHbar(adjustFrom(validAliasAccount, +100), payer));
 
         final var expectedMeta =
-                new ImpliedTransfersMeta(
-                        propsWithAutoCreation, OK, Collections.emptyList(), NO_ALIASES);
+                new ImpliedTransfersMeta(propsWithAutoCreation, OK, Collections.emptyList(), NO_ALIASES);
 
         givenValidity(OK, propsWithAutoCreation);
 
@@ -368,56 +365,47 @@ class ImpliedTransfersMarshalTest {
         final var account2 = asAccount("0.0.1002");
         final var account3 = asAccount("0.0.1003");
         final var token1 = asToken("0.0.1010");
-        final var aa1 =
-                AccountAmount.newBuilder()
-                        .setAccountID(account1)
-                        .setAmount(-100)
-                        .setIsApproval(true)
-                        .build();
-        final var aa2 =
-                AccountAmount.newBuilder()
-                        .setAccountID(account2)
-                        .setAmount(100)
-                        .setIsApproval(true)
-                        .build();
-        final var aa3 =
-                AccountAmount.newBuilder()
-                        .setAccountID(account1)
-                        .setAmount(-100)
-                        .setIsApproval(false)
-                        .build();
-        final var aa4 =
-                AccountAmount.newBuilder()
-                        .setAccountID(account2)
-                        .setAmount(100)
-                        .setIsApproval(false)
-                        .build();
-        final var aa5 =
-                AccountAmount.newBuilder()
-                        .setAccountID(account3)
-                        .setAmount(-50)
-                        .setIsApproval(true)
-                        .build();
-        final var aa6 =
-                AccountAmount.newBuilder()
-                        .setAccountID(account1)
-                        .setAmount(50)
-                        .setIsApproval(true)
-                        .build();
+        final var aa1 = AccountAmount.newBuilder()
+                .setAccountID(account1)
+                .setAmount(-100)
+                .setIsApproval(true)
+                .build();
+        final var aa2 = AccountAmount.newBuilder()
+                .setAccountID(account2)
+                .setAmount(100)
+                .setIsApproval(true)
+                .build();
+        final var aa3 = AccountAmount.newBuilder()
+                .setAccountID(account1)
+                .setAmount(-100)
+                .setIsApproval(false)
+                .build();
+        final var aa4 = AccountAmount.newBuilder()
+                .setAccountID(account2)
+                .setAmount(100)
+                .setIsApproval(false)
+                .build();
+        final var aa5 = AccountAmount.newBuilder()
+                .setAccountID(account3)
+                .setAmount(-50)
+                .setIsApproval(true)
+                .build();
+        final var aa6 = AccountAmount.newBuilder()
+                .setAccountID(account1)
+                .setAmount(50)
+                .setIsApproval(true)
+                .build();
         setupPropsWithAutoAndLazyCreation(true, false);
 
-        final var builder =
-                CryptoTransferTransactionBody.newBuilder()
-                        .setTransfers(
-                                TransferList.newBuilder()
-                                        .addAllAccountAmounts(List.of(aa1, aa2, aa3, aa4, aa5, aa6))
-                                        .build())
-                        .addTokenTransfers(
-                                TokenTransferList.newBuilder()
-                                        .setToken(token1)
-                                        .setExpectedDecimals(UInt32Value.of(1))
-                                        .addAllTransfers(List.of(aa1, aa2, aa3, aa4, aa5, aa6))
-                                        .build());
+        final var builder = CryptoTransferTransactionBody.newBuilder()
+                .setTransfers(TransferList.newBuilder()
+                        .addAllAccountAmounts(List.of(aa1, aa2, aa3, aa4, aa5, aa6))
+                        .build())
+                .addTokenTransfers(TokenTransferList.newBuilder()
+                        .setToken(token1)
+                        .setExpectedDecimals(UInt32Value.of(1))
+                        .addAllTransfers(List.of(aa1, aa2, aa3, aa4, aa5, aa6))
+                        .build());
         op = builder.build();
         final var bc1 = changingHbar(aa1, payer);
         bc1.aggregateUnits(-50);
@@ -478,8 +466,7 @@ class ImpliedTransfersMarshalTest {
         // and:
         final var nonFeeChanges = expNonFeeChanges(true);
         // and:
-        final var expectedMeta =
-                new ImpliedTransfersMeta(propsWithAutoCreation, OK, mockFinalMeta, NO_ALIASES);
+        final var expectedMeta = new ImpliedTransfersMeta(propsWithAutoCreation, OK, mockFinalMeta, NO_ALIASES);
 
         givenValidity(OK, propsWithAutoCreation);
         // and:
@@ -489,21 +476,11 @@ class ImpliedTransfersMarshalTest {
                 .willReturn(aTrigger)
                 .willReturn(bTrigger)
                 .willReturn(null);
-        given(
-                        feeAssessor.assess(
-                                eq(aTrigger),
-                                eq(schedulesManager),
-                                eq(changeManager),
-                                anyList(),
-                                eq(propsWithAutoCreation)))
+        given(feeAssessor.assess(
+                        eq(aTrigger), eq(schedulesManager), eq(changeManager), anyList(), eq(propsWithAutoCreation)))
                 .willReturn(OK);
-        given(
-                        feeAssessor.assess(
-                                eq(bTrigger),
-                                eq(schedulesManager),
-                                eq(changeManager),
-                                anyList(),
-                                eq(propsWithAutoCreation)))
+        given(feeAssessor.assess(
+                        eq(bTrigger), eq(schedulesManager), eq(changeManager), anyList(), eq(propsWithAutoCreation)))
                 .willReturn(OK);
         // and:
         given(schedulesManager.metaUsed()).willReturn(mockFinalMeta);
@@ -518,7 +495,8 @@ class ImpliedTransfersMarshalTest {
         assertTrue(result.getAllBalanceChanges().get(3).hasExpectedDecimals());
         assertEquals(2, result.getAllBalanceChanges().get(3).getExpectedDecimals());
         assertEquals(
-                anotherId.getTokenNum(), result.getAllBalanceChanges().get(3).getToken().num());
+                anotherId.getTokenNum(),
+                result.getAllBalanceChanges().get(3).getToken().num());
         assertFalse(result.getAllBalanceChanges().get(4).hasExpectedDecimals());
         assertEquals(
                 result.getAllBalanceChanges().get(3).getToken(),
@@ -533,12 +511,8 @@ class ImpliedTransfersMarshalTest {
         // and:
         final var nonFeeChanges = expNonFeeChanges(true);
         // and:
-        final var expectedMeta =
-                new ImpliedTransfersMeta(
-                        propsWithAutoCreation,
-                        CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH,
-                        mockFinalMeta,
-                        NO_ALIASES);
+        final var expectedMeta = new ImpliedTransfersMeta(
+                propsWithAutoCreation, CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH, mockFinalMeta, NO_ALIASES);
 
         givenValidity(OK, propsWithAutoCreation);
         // and:
@@ -548,13 +522,8 @@ class ImpliedTransfersMarshalTest {
                 .willReturn(aTrigger)
                 .willReturn(bTrigger)
                 .willReturn(null);
-        given(
-                        feeAssessor.assess(
-                                eq(aTrigger),
-                                eq(schedulesManager),
-                                eq(changeManager),
-                                anyList(),
-                                eq(propsWithAutoCreation)))
+        given(feeAssessor.assess(
+                        eq(aTrigger), eq(schedulesManager), eq(changeManager), anyList(), eq(propsWithAutoCreation)))
                 .willReturn(CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH);
         // and:
         given(schedulesManager.metaUsed()).willReturn(mockFinalMeta);
@@ -593,35 +562,23 @@ class ImpliedTransfersMarshalTest {
     }
 
     private void setupFixtureOp(boolean incTokens) {
-        var hbarAdjusts =
-                TransferList.newBuilder()
-                        .addAccountAmounts(adjustFrom(a, -100))
-                        .addAccountAmounts(adjustFrom(b, 50))
-                        .addAccountAmounts(adjustFrom(c, 50))
-                        .build();
+        var hbarAdjusts = TransferList.newBuilder()
+                .addAccountAmounts(adjustFrom(a, -100))
+                .addAccountAmounts(adjustFrom(b, 50))
+                .addAccountAmounts(adjustFrom(c, 50))
+                .build();
         final var builder = CryptoTransferTransactionBody.newBuilder().setTransfers(hbarAdjusts);
         if (incTokens) {
-            builder.addTokenTransfers(
-                            TokenTransferList.newBuilder()
-                                    .setToken(anotherId)
-                                    .setExpectedDecimals(UInt32Value.of(2))
-                                    .addAllTransfers(
-                                            List.of(
-                                                    adjustFrom(a, -50),
-                                                    adjustFrom(b, 25),
-                                                    adjustFrom(c, 25))))
-                    .addTokenTransfers(
-                            TokenTransferList.newBuilder()
-                                    .setToken(anId)
-                                    .addAllTransfers(
-                                            List.of(adjustFrom(b, -100), adjustFrom(c, 100))))
-                    .addTokenTransfers(
-                            TokenTransferList.newBuilder()
-                                    .setToken(yetAnotherId)
-                                    .addAllNftTransfers(
-                                            List.of(
-                                                    nftXfer(a, b, serialNumberA),
-                                                    nftXfer(a, b, serialNumberB))));
+            builder.addTokenTransfers(TokenTransferList.newBuilder()
+                            .setToken(anotherId)
+                            .setExpectedDecimals(UInt32Value.of(2))
+                            .addAllTransfers(List.of(adjustFrom(a, -50), adjustFrom(b, 25), adjustFrom(c, 25))))
+                    .addTokenTransfers(TokenTransferList.newBuilder()
+                            .setToken(anId)
+                            .addAllTransfers(List.of(adjustFrom(b, -100), adjustFrom(c, 100))))
+                    .addTokenTransfers(TokenTransferList.newBuilder()
+                            .setToken(yetAnotherId)
+                            .addAllNftTransfers(List.of(nftXfer(a, b, serialNumberA), nftXfer(a, b, serialNumberB))));
         }
         op = builder.build();
     }
@@ -632,8 +589,7 @@ class ImpliedTransfersMarshalTest {
         ans.add(changingHbar(adjustFrom(bModel, +50), payer));
         ans.add(changingHbar(adjustFrom(cModel, +50), payer));
         if (incTokens) {
-            final var adjustOne =
-                    tokenAdjust(aAccount, Id.fromGrpcToken(anotherId), -50, payer, false, false);
+            final var adjustOne = tokenAdjust(aAccount, Id.fromGrpcToken(anotherId), -50, payer, false, false);
             adjustOne.setExpectedDecimals(2);
 
             ans.add(adjustOne);
@@ -641,18 +597,10 @@ class ImpliedTransfersMarshalTest {
             ans.add(tokenAdjust(cAccount, Id.fromGrpcToken(anotherId), 25, payer, false, false));
             ans.add(tokenAdjust(bAccount, Id.fromGrpcToken(anId), -100, payer, false, false));
             ans.add(tokenAdjust(cAccount, Id.fromGrpcToken(anId), 100, payer, false, false));
-            ans.add(
-                    changingNftOwnership(
-                            Id.fromGrpcToken(yetAnotherId),
-                            yetAnotherId,
-                            nftXfer(a, b, serialNumberA),
-                            payer));
-            ans.add(
-                    changingNftOwnership(
-                            Id.fromGrpcToken(yetAnotherId),
-                            yetAnotherId,
-                            nftXfer(a, b, serialNumberB),
-                            payer));
+            ans.add(changingNftOwnership(
+                    Id.fromGrpcToken(yetAnotherId), yetAnotherId, nftXfer(a, b, serialNumberA), payer));
+            ans.add(changingNftOwnership(
+                    Id.fromGrpcToken(yetAnotherId), yetAnotherId, nftXfer(a, b, serialNumberB), payer));
         }
         return ans;
     }
@@ -664,28 +612,26 @@ class ImpliedTransfersMarshalTest {
     private final int maxBalanceChanges = 20;
     private final boolean areNftsEnabled = true;
     private boolean areAllowancesEnabled = true;
-    private final ImpliedTransfersMeta.ValidationProps propsWithAutoCreation =
-            new ImpliedTransfersMeta.ValidationProps(
-                    maxExplicitHbarAdjusts,
-                    maxExplicitTokenAdjusts,
-                    maxExplicitOwnershipChanges,
-                    maxFeeNesting,
-                    maxBalanceChanges,
-                    areNftsEnabled,
-                    true,
-                    false,
-                    areAllowancesEnabled);
-    private final ImpliedTransfersMeta.ValidationProps propsNoAutoCreation =
-            new ImpliedTransfersMeta.ValidationProps(
-                    maxExplicitHbarAdjusts,
-                    maxExplicitTokenAdjusts,
-                    maxExplicitOwnershipChanges,
-                    maxFeeNesting,
-                    maxBalanceChanges,
-                    areNftsEnabled,
-                    false,
-                    false,
-                    areAllowancesEnabled);
+    private final ImpliedTransfersMeta.ValidationProps propsWithAutoCreation = new ImpliedTransfersMeta.ValidationProps(
+            maxExplicitHbarAdjusts,
+            maxExplicitTokenAdjusts,
+            maxExplicitOwnershipChanges,
+            maxFeeNesting,
+            maxBalanceChanges,
+            areNftsEnabled,
+            true,
+            false,
+            areAllowancesEnabled);
+    private final ImpliedTransfersMeta.ValidationProps propsNoAutoCreation = new ImpliedTransfersMeta.ValidationProps(
+            maxExplicitHbarAdjusts,
+            maxExplicitTokenAdjusts,
+            maxExplicitOwnershipChanges,
+            maxFeeNesting,
+            maxBalanceChanges,
+            areNftsEnabled,
+            false,
+            false,
+            areAllowancesEnabled);
 
     private final ImpliedTransfersMeta.ValidationProps propsWithAutoAndLazyCreation =
             new ImpliedTransfersMeta.ValidationProps(
@@ -699,17 +645,16 @@ class ImpliedTransfersMarshalTest {
                     true,
                     areAllowancesEnabled);
 
-    private final ImpliedTransfersMeta.ValidationProps propsWithLazyCreation =
-            new ImpliedTransfersMeta.ValidationProps(
-                    maxExplicitHbarAdjusts,
-                    maxExplicitTokenAdjusts,
-                    maxExplicitOwnershipChanges,
-                    maxFeeNesting,
-                    maxBalanceChanges,
-                    areNftsEnabled,
-                    false,
-                    true,
-                    areAllowancesEnabled);
+    private final ImpliedTransfersMeta.ValidationProps propsWithLazyCreation = new ImpliedTransfersMeta.ValidationProps(
+            maxExplicitHbarAdjusts,
+            maxExplicitTokenAdjusts,
+            maxExplicitOwnershipChanges,
+            maxFeeNesting,
+            maxBalanceChanges,
+            areNftsEnabled,
+            false,
+            true,
+            areAllowancesEnabled);
 
     private final AccountID aModel = asAccount("1.2.3");
     private final AccountID bModel = asAccount("2.3.4");
@@ -727,8 +672,7 @@ class ImpliedTransfersMarshalTest {
     private final AccountID c = asAccount("3.4.5");
     private final AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 
-    private final BalanceChange aTrigger =
-            BalanceChange.tokenCustomFeeAdjust(aAccount, Id.fromGrpcToken(anId), -1);
+    private final BalanceChange aTrigger = BalanceChange.tokenCustomFeeAdjust(aAccount, Id.fromGrpcToken(anId), -1);
     private final BalanceChange bTrigger =
             BalanceChange.tokenCustomFeeAdjust(bAccount, Id.fromGrpcToken(anotherId), -2);
 

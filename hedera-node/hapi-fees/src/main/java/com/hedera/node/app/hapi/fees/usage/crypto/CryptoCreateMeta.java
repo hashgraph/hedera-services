@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage.crypto;
 
 import static com.hedera.node.app.hapi.fees.usage.TxnUsage.keySizeIfPresent;
@@ -42,11 +43,7 @@ public class CryptoCreateMeta {
 
     private long getCryptoCreateTxnBaseSize(final CryptoCreateTransactionBody op) {
         long variableBytes = op.getMemoBytes().size();
-        variableBytes +=
-                keySizeIfPresent(
-                        op,
-                        CryptoCreateTransactionBody::hasKey,
-                        CryptoCreateTransactionBody::getKey);
+        variableBytes += keySizeIfPresent(op, CryptoCreateTransactionBody::hasKey, CryptoCreateTransactionBody::getKey);
         if (op.hasProxyAccountID()) {
             variableBytes += BASIC_ENTITY_ID_SIZE;
         }
@@ -84,8 +81,7 @@ public class CryptoCreateMeta {
             return this;
         }
 
-        public CryptoCreateMeta.Builder maxAutomaticAssociations(
-                final int maxAutomaticAssociations) {
+        public CryptoCreateMeta.Builder maxAutomaticAssociations(final int maxAutomaticAssociations) {
             this.maxAutomaticAssociations = maxAutomaticAssociations;
             return this;
         }

@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.migration;
 
 import static com.hedera.node.app.service.mono.state.migration.QueryableRecords.NO_QUERYABLE_RECORDS;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.forEach;
 
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerklePayerRecords;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
@@ -47,22 +49,20 @@ import java.util.function.BiConsumer;
  */
 public class RecordsStorageAdapter {
     private final boolean accountsOnDisk;
-    private final @Nullable MerkleMap<EntityNum, MerkleAccount> legacyAccounts;
-    private final @Nullable MerkleMap<EntityNum, MerklePayerRecords> payerRecords;
+    private final @Nullable MerkleMapLike<EntityNum, MerkleAccount> legacyAccounts;
+    private final @Nullable MerkleMapLike<EntityNum, MerklePayerRecords> payerRecords;
 
-    public static RecordsStorageAdapter fromLegacy(
-            final MerkleMap<EntityNum, MerkleAccount> accounts) {
+    public static RecordsStorageAdapter fromLegacy(final MerkleMapLike<EntityNum, MerkleAccount> accounts) {
         return new RecordsStorageAdapter(accounts, null);
     }
 
-    public static RecordsStorageAdapter fromDedicated(
-            final MerkleMap<EntityNum, MerklePayerRecords> payerRecords) {
+    public static RecordsStorageAdapter fromDedicated(final MerkleMapLike<EntityNum, MerklePayerRecords> payerRecords) {
         return new RecordsStorageAdapter(null, payerRecords);
     }
 
     private RecordsStorageAdapter(
-            @Nullable final MerkleMap<EntityNum, MerkleAccount> accounts,
-            @Nullable final MerkleMap<EntityNum, MerklePayerRecords> payerRecords) {
+            @Nullable final MerkleMapLike<EntityNum, MerkleAccount> accounts,
+            @Nullable final MerkleMapLike<EntityNum, MerklePayerRecords> payerRecords) {
         if (accounts != null) {
             this.accountsOnDisk = false;
             this.legacyAccounts = accounts;
@@ -118,15 +118,12 @@ public class RecordsStorageAdapter {
     public QueryableRecords getReadOnlyPayerRecords(final EntityNum payerNum) {
         if (accountsOnDisk) {
             final var payerRecordsView = payerRecords.get(payerNum);
-            return (payerRecordsView == null)
-                    ? NO_QUERYABLE_RECORDS
-                    : payerRecordsView.asQueryableRecords();
+            return (payerRecordsView == null) ? NO_QUERYABLE_RECORDS : payerRecordsView.asQueryableRecords();
         } else {
             final var payerAccountView = legacyAccounts.get(payerNum);
             return (payerAccountView == null)
                     ? NO_QUERYABLE_RECORDS
-                    : new QueryableRecords(
-                            payerAccountView.numRecords(), payerAccountView.recordIterator());
+                    : new QueryableRecords(payerAccountView.numRecords(), payerAccountView.recordIterator());
         }
     }
 
@@ -134,12 +131,9 @@ public class RecordsStorageAdapter {
         if (accountsOnDisk) {
             forEach(
                     payerRecords,
-                    (payerNum, accountRecords) ->
-                            observer.accept(payerNum, accountRecords.readOnlyQueue()));
+                    (payerNum, accountRecords) -> observer.accept(payerNum, accountRecords.readOnlyQueue()));
         } else {
-            forEach(
-                    legacyAccounts,
-                    (payerNum, account) -> observer.accept(payerNum, account.records()));
+            forEach(legacyAccounts, (payerNum, account) -> observer.accept(payerNum, account.records()));
         }
     }
 }

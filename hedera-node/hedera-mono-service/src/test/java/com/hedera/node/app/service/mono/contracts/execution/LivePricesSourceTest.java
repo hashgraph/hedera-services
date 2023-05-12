@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.execution;
 
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getTinybarsFromTinyCents;
@@ -44,22 +45,30 @@ class LivePricesSourceTest {
     private static final Timestamp timeNow = MiscUtils.asTimestamp(now);
     private static final long gasPriceTinybars = 123;
     private static final long sbhPriceTinybars = 456;
-    private static final FeeComponents servicePrices =
-            FeeComponents.newBuilder()
-                    .setGas(gasPriceTinybars * 1000)
-                    .setSbh(sbhPriceTinybars * 1000)
-                    .build();
+    private static final FeeComponents servicePrices = FeeComponents.newBuilder()
+            .setGas(gasPriceTinybars * 1000)
+            .setSbh(sbhPriceTinybars * 1000)
+            .build();
     private static final FeeData providerPrices =
             FeeData.newBuilder().setServicedata(servicePrices).build();
     private static final ExchangeRate activeRate =
             ExchangeRate.newBuilder().setHbarEquiv(1).setCentEquiv(12).build();
     private static final long reasonableMultiplier = 7;
 
-    @Mock private HbarCentExchange exchange;
-    @Mock private UsagePricesProvider usagePrices;
-    @Mock private MultiplierSources multiplierSources;
-    @Mock private TransactionContext txnCtx;
-    @Mock private TxnAccessor accessor;
+    @Mock
+    private HbarCentExchange exchange;
+
+    @Mock
+    private UsagePricesProvider usagePrices;
+
+    @Mock
+    private MultiplierSources multiplierSources;
+
+    @Mock
+    private TransactionContext txnCtx;
+
+    @Mock
+    private TxnAccessor accessor;
 
     private LivePricesSource subject;
 
@@ -72,8 +81,7 @@ class LivePricesSourceTest {
     void getsExpectedGasPriceWithReasonableMultiplier() {
         givenCollabsWithMultiplier(reasonableMultiplier);
 
-        final var expected =
-                getTinybarsFromTinyCents(activeRate, gasPriceTinybars) * reasonableMultiplier;
+        final var expected = getTinybarsFromTinyCents(activeRate, gasPriceTinybars) * reasonableMultiplier;
 
         assertEquals(expected, subject.currentGasPrice(now, ContractCall));
     }

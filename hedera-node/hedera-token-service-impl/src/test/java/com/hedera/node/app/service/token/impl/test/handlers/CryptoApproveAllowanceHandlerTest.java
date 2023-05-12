@@ -13,159 +13,147 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl.test.handlers;
 
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hedera.test.utils.IdUtils.asToken;
-import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_DELEGATING_SPENDER;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static org.junit.jupiter.api.Assertions.*;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_DELEGATING_SPENDER;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
-import com.google.protobuf.BoolValue;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.token.CryptoApproveAllowanceTransactionBody;
+import com.hedera.hapi.node.token.NftAllowance;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
+import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.handlers.CryptoApproveAllowanceHandler;
-import com.hedera.node.app.spi.key.HederaKey;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoAllowance;
-import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
-import com.hederahashgraph.api.proto.java.NftAllowance;
-import com.hederahashgraph.api.proto.java.TokenAllowance;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
 class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
-    private final TokenID nft = asToken("0.0.56789");
-    private final TokenID token = asToken("0.0.6789");
-    private final AccountID spender = asAccount("0.0.12345");
-    private final AccountID delegatingSpender = asAccount("0.0.1234567");
-    private final AccountID owner = asAccount("0.0.123456");
-    private final HederaKey ownerKey = asHederaKey(A_COMPLEX_KEY).get();
+    @Mock
+    private Account ownerAccount;
 
-    @Mock private MerkleAccount ownerAccount;
-
-    private final CryptoAllowance cryptoAllowance =
-            CryptoAllowance.newBuilder().setSpender(spender).setOwner(owner).setAmount(10L).build();
-    private final TokenAllowance tokenAllowance =
-            TokenAllowance.newBuilder()
-                    .setSpender(spender)
-                    .setAmount(10L)
-                    .setTokenId(token)
-                    .setOwner(owner)
-                    .build();
-
-    private final NftAllowance nftAllowance =
-            NftAllowance.newBuilder()
-                    .setSpender(spender)
-                    .setOwner(owner)
-                    .setTokenId(nft)
-                    .setApprovedForAll(BoolValue.of(true))
-                    .addAllSerialNumbers(List.of(1L, 2L))
-                    .build();
-    private final NftAllowance nftAllowanceWithDelegatingSpender =
-            NftAllowance.newBuilder()
-                    .setSpender(spender)
-                    .setOwner(owner)
-                    .setTokenId(nft)
-                    .setApprovedForAll(BoolValue.of(false))
-                    .addAllSerialNumbers(List.of(1L, 2L))
-                    .setDelegatingSpender(delegatingSpender)
-                    .build();
+    private final NftAllowance nftAllowance = NftAllowance.newBuilder()
+            .spender(spender)
+            .owner(owner)
+            .tokenId(nft)
+            .approvedForAll(Boolean.TRUE)
+            .serialNumbers(List.of(1L, 2L))
+            .build();
+    private final NftAllowance nftAllowanceWithDelegatingSpender = NftAllowance.newBuilder()
+            .spender(spender)
+            .owner(owner)
+            .tokenId(nft)
+            .approvedForAll(Boolean.FALSE)
+            .serialNumbers(List.of(1L, 2L))
+            .delegatingSpender(delegatingSpender)
+            .build();
 
     private CryptoApproveAllowanceHandler subject = new CryptoApproveAllowanceHandler();
 
-    @Test
-    void cryptoApproveAllowanceVanilla() {
-        given(accounts.get(owner.getAccountNum())).willReturn(ownerAccount);
-        given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
-
-        final var txn = cryptoApproveAllowanceTransaction(payer, false);
-        final var meta = subject.preHandle(txn, payer, store);
-        basicMetaAssertions(meta, 3, false, OK);
-        assertEquals(payerKey, meta.payerKey());
-        assertIterableEquals(List.of(ownerKey, ownerKey, ownerKey), meta.requiredNonPayerKeys());
+    @BeforeEach
+    public void setUp() {
+        super.setUp();
+        readableAccounts = emptyReadableAccountStateBuilder()
+                .value(EntityNumVirtualKey.fromLong(owner.accountNum()), ownerAccount)
+                .value(EntityNumVirtualKey.fromLong(accountNum), account)
+                .value(EntityNumVirtualKey.fromLong(delegatingSpender.accountNum()), account)
+                .build();
+        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        readableStore = new ReadableAccountStoreImpl(readableStates);
     }
 
     @Test
-    void cryptoApproveAllowanceFailsWithInvalidOwner() {
-        given(accounts.get(owner.getAccountNum())).willReturn(null);
+    void cryptoApproveAllowanceVanilla() throws PreCheckException {
+        given(ownerAccount.key()).willReturn(ownerKey);
 
-        final var txn = cryptoApproveAllowanceTransaction(payer, false);
-        final var meta = subject.preHandle(txn, payer, store);
-        basicMetaAssertions(meta, 0, true, INVALID_ALLOWANCE_OWNER_ID);
-        assertEquals(payerKey, meta.payerKey());
-        assertIterableEquals(List.of(), meta.requiredNonPayerKeys());
+        final var txn = cryptoApproveAllowanceTransaction(id, false);
+        final var context = new FakePreHandleContext(readableStore, txn);
+        subject.preHandle(context);
+        basicMetaAssertions(context, 1);
+        assertEquals(key, context.payerKey());
+        assertThat(context.requiredNonPayerKeys()).containsExactlyInAnyOrder(ownerKey);
     }
 
     @Test
-    void cryptoApproveAllowanceDoesntAddIfOwnerSameAsPayer() {
-        given(accounts.get(owner.getAccountNum())).willReturn(ownerAccount);
-        given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
+    void cryptoApproveAllowanceFailsWithInvalidOwner() throws PreCheckException {
+        readableAccounts = emptyReadableAccountStateBuilder()
+                .value(EntityNumVirtualKey.fromLong(accountNum), account)
+                .build();
+        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        readableStore = new ReadableAccountStoreImpl(readableStates);
+
+        final var txn = cryptoApproveAllowanceTransaction(id, false);
+        final var context = new FakePreHandleContext(readableStore, txn);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ALLOWANCE_OWNER_ID);
+    }
+
+    @Test
+    void cryptoApproveAllowanceDoesntAddIfOwnerSameAsPayer() throws PreCheckException {
+        given(ownerAccount.key()).willReturn(ownerKey);
 
         final var txn = cryptoApproveAllowanceTransaction(owner, false);
-        final var meta = subject.preHandle(txn, owner, store);
-        basicMetaAssertions(meta, 0, false, OK);
-        assertEquals(ownerKey, meta.payerKey());
-        assertIterableEquals(List.of(), meta.requiredNonPayerKeys());
+        final var context = new FakePreHandleContext(readableStore, txn);
+        subject.preHandle(context);
+        basicMetaAssertions(context, 0);
+        assertEquals(ownerKey, context.payerKey());
+        assertThat(context.requiredNonPayerKeys()).isEmpty();
     }
 
     @Test
-    void cryptoApproveAllowanceAddsDelegatingSpender() {
-        given(accounts.get(owner.getAccountNum())).willReturn(ownerAccount);
-        given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
-        given(accounts.get(delegatingSpender.getAccountNum())).willReturn(payerAccount);
+    void cryptoApproveAllowanceAddsDelegatingSpender() throws PreCheckException {
+        given(ownerAccount.key()).willReturn(ownerKey);
 
-        final var txn = cryptoApproveAllowanceTransaction(payer, true);
-        final var meta = subject.preHandle(txn, payer, store);
-        basicMetaAssertions(meta, 3, false, OK);
-        assertEquals(payerKey, meta.payerKey());
-        assertIterableEquals(List.of(ownerKey, ownerKey, payerKey), meta.requiredNonPayerKeys());
+        final var txn = cryptoApproveAllowanceTransaction(id, true);
+        final var context = new FakePreHandleContext(readableStore, txn);
+        subject.preHandle(context);
+        basicMetaAssertions(context, 1);
+        assertEquals(key, context.payerKey());
+        assertThat(context.requiredNonPayerKeys()).containsExactlyInAnyOrder(ownerKey);
     }
 
     @Test
-    void cryptoApproveAllowanceFailsIfDelegatingSpenderMissing() {
-        given(accounts.get(owner.getAccountNum())).willReturn(ownerAccount);
-        given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
-        given(accounts.get(delegatingSpender.getAccountNum())).willReturn(null);
+    void cryptoApproveAllowanceFailsIfDelegatingSpenderMissing() throws PreCheckException {
+        readableAccounts = emptyReadableAccountStateBuilder()
+                .value(EntityNumVirtualKey.fromLong(accountNum), account)
+                .value(EntityNumVirtualKey.fromLong(owner.accountNum()), ownerAccount)
+                .build();
+        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        readableStore = new ReadableAccountStoreImpl(readableStates);
+        given(ownerAccount.key()).willReturn(ownerKey);
 
-        final var txn = cryptoApproveAllowanceTransaction(payer, true);
-        final var meta = subject.preHandle(txn, payer, store);
-        assertEquals(payerKey, meta.payerKey());
-        basicMetaAssertions(meta, 2, true, INVALID_DELEGATING_SPENDER);
-        assertIterableEquals(List.of(ownerKey, ownerKey), meta.requiredNonPayerKeys());
+        final var txn = cryptoApproveAllowanceTransaction(id, true);
+        final var context = new FakePreHandleContext(readableStore, txn);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_DELEGATING_SPENDER);
     }
 
     @Test
     void handleNotImplemented() {
-        assertThrows(UnsupportedOperationException.class, () -> subject.handle(metaToHandle));
+        assertThrows(UnsupportedOperationException.class, () -> subject.handle());
     }
 
     private TransactionBody cryptoApproveAllowanceTransaction(
             final AccountID id, final boolean isWithDelegatingSpender) {
-        final var transactionID =
-                TransactionID.newBuilder()
-                        .setAccountID(id)
-                        .setTransactionValidStart(consensusTimestamp);
-        final var allowanceTxnBody =
-                CryptoApproveAllowanceTransactionBody.newBuilder()
-                        .addCryptoAllowances(cryptoAllowance)
-                        .addTokenAllowances(tokenAllowance)
-                        .addNftAllowances(
-                                isWithDelegatingSpender
-                                        ? nftAllowanceWithDelegatingSpender
-                                        : nftAllowance)
-                        .build();
+        final var transactionID = TransactionID.newBuilder().accountID(id).transactionValidStart(consensusTimestamp);
+        final var allowanceTxnBody = CryptoApproveAllowanceTransactionBody.newBuilder()
+                .cryptoAllowances(cryptoAllowance)
+                .tokenAllowances(tokenAllowance)
+                .nftAllowances(isWithDelegatingSpender ? nftAllowanceWithDelegatingSpender : nftAllowance)
+                .build();
         return TransactionBody.newBuilder()
-                .setTransactionID(transactionID)
-                .setCryptoApproveAllowance(allowanceTxnBody)
+                .transactionID(transactionID)
+                .cryptoApproveAllowance(allowanceTxnBody)
                 .build();
     }
 }

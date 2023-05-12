@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.merkle;
 
 /*
@@ -44,9 +45,9 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.exceptions.MutabilityException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
@@ -63,10 +64,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<EntityNum>, MerkleLeaf {
+
     private static final Logger log = LogManager.getLogger(MerkleStakingInfo.class);
 
     static final int RELEASE_0270_VERSION = 1;
-    static final int CURRENT_VERSION = RELEASE_0270_VERSION;
+    static final int RELEASE_0371_VERSION = 2;
+    public static final int CURRENT_VERSION = RELEASE_0371_VERSION;
     static final long RUNTIME_CONSTRUCTABLE_ID = 0xb8b383ccd3caed5bL;
 
     private int number;
@@ -81,7 +84,15 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
     private long unclaimedStakeRewardStart;
     private long stake;
     private long[] rewardSumHistory;
-    @Nullable private byte[] historyHash;
+    // The consensus weight of this node in the network. This is computed based on the stake of this node
+    // at midnight UTC of the current day. If the stake of this node is less than minStake, then the
+    // weight is 0. Sum of all weights of nodes in the network should be less than 500.
+    // If the stake of this node A is greater than minStake,
+    // then A's weight is computed as (node A stake * 500/ total stake of all nodes).
+    private int weight;
+
+    @Nullable
+    private byte[] historyHash;
 
     public MerkleStakingInfo() {
         // RuntimeConstructable
@@ -106,6 +117,7 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
         this.rewardSumHistory = that.rewardSumHistory;
         this.historyHash = that.historyHash;
         this.unclaimedStakeRewardStart = that.unclaimedStakeRewardStart;
+        this.weight = that.weight;
     }
 
     /**
@@ -155,6 +167,12 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
         }
     }
 
+    /**
+     * Clamps the stake value. If the stake is less than minStake, then it is set to 0. If the stake
+     * is greater than maxStake, then it is set to maxStake. Otherwise, it is set to the given
+     * value.
+     * @return the clamped stake value
+     */
     public long reviewElectionsAndRecomputeStakes() {
         final var totalStake = stakeToReward + stakeToNotReward;
         if (totalStake > maxStake) {
@@ -169,9 +187,7 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
     }
 
     public long updateRewardSumHistory(
-            final long perHbarRate,
-            final long maxPerHbarRate,
-            final boolean requireMinStakeToReward) {
+            final long perHbarRate, final long maxPerHbarRate, final boolean requireMinStakeToReward) {
         assertMutableRewardSumHistory();
         rewardSumHistory = Arrays.copyOf(rewardSumHistory, rewardSumHistory.length);
         final var droppedRewardSum = rewardSumHistory[rewardSumHistory.length - 1];
@@ -188,8 +204,7 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
         // for this staking period, unless its effective stake was less than minStake, and hence
         // zero here (note
         // the active condition will only be checked in a later release)
-        final var rewardableStake =
-                requireMinStakeToReward ? Math.min(stakeRewardStart, stake) : stakeRewardStart;
+        final var rewardableStake = requireMinStakeToReward ? Math.min(stakeRewardStart, stake) : stakeRewardStart;
         if (rewardableStake > 0) {
             perHbarRateThisNode = perHbarRate;
             // But if the node had more the maximum stakeRewardStart, "down-scale" its reward rate
@@ -200,19 +215,16 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
             // arbitrary-precision
             // arithmetic because there is no inherent bound on (maxStake * perHbarRateThisNode)
             if (stakeRewardStart > maxStake) {
-                perHbarRateThisNode =
-                        BigInteger.valueOf(perHbarRateThisNode)
-                                .multiply(BigInteger.valueOf(maxStake))
-                                .divide(BigInteger.valueOf(stakeRewardStart))
-                                .longValueExact();
+                perHbarRateThisNode = BigInteger.valueOf(perHbarRateThisNode)
+                        .multiply(BigInteger.valueOf(maxStake))
+                        .divide(BigInteger.valueOf(stakeRewardStart))
+                        .longValueExact();
             }
         }
         perHbarRateThisNode = Math.min(perHbarRateThisNode, maxPerHbarRate);
         rewardSumHistory[0] += perHbarRateThisNode;
 
-        log.info(
-                "   > Non-zero reward sum history is now {}",
-                () -> readableNonZeroHistory(rewardSumHistory));
+        log.info("   > Non-zero reward sum history is now {}", () -> readableNonZeroHistory(rewardSumHistory));
         // reset the historyHash
         historyHash = null;
         return perHbarRateThisNode;
@@ -315,6 +327,15 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
         this.rewardSumHistory = rewardSumHistory;
     }
 
+    public int getWeight() {
+        return weight;
+    }
+
+    public void setWeight(final int weight) {
+        assertMutable("weight");
+        this.weight = weight;
+    }
+
     @Override
     public MerkleStakingInfo copy() {
         setImmutable(true);
@@ -322,8 +343,7 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
     }
 
     @Override
-    public void deserialize(final SerializableDataInputStream in, final int version)
-            throws IOException {
+    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         number = in.readInt();
         minStake = in.readLong();
         maxStake = in.readLong();
@@ -332,6 +352,9 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
         stakeRewardStart = in.readLong();
         unclaimedStakeRewardStart = in.readLong();
         stake = in.readLong();
+        if (version >= RELEASE_0371_VERSION) {
+            weight = in.readInt();
+        }
         rewardSumHistory = in.readLongArray(Integer.MAX_VALUE);
     }
 
@@ -379,7 +402,8 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
                 && this.stakeRewardStart == that.stakeRewardStart
                 && this.unclaimedStakeRewardStart == that.unclaimedStakeRewardStart
                 && this.stake == that.stake
-                && Arrays.equals(this.rewardSumHistory, that.rewardSumHistory);
+                && Arrays.equals(this.rewardSumHistory, that.rewardSumHistory)
+                && this.weight == that.weight;
     }
 
     @Override
@@ -392,7 +416,8 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
                 stakeRewardStart,
                 unclaimedStakeRewardStart,
                 stake,
-                Arrays.hashCode(rewardSumHistory));
+                Arrays.hashCode(rewardSumHistory),
+                weight);
     }
 
     @Override
@@ -407,6 +432,7 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
                 .add("unclaimedStakeRewardStart", unclaimedStakeRewardStart)
                 .add("stake", stake)
                 .add("rewardSumHistory", rewardSumHistory)
+                .add("weight", weight)
                 .toString();
     }
 
@@ -432,8 +458,7 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
     // Internal helpers
     private void assertMutable(final String proximalField) {
         if (isImmutable()) {
-            throw new MutabilityException(
-                    "Cannot set " + proximalField + " on an immutable StakingInfo!");
+            throw new MutabilityException("Cannot set " + proximalField + " on an immutable StakingInfo!");
         }
     }
 
@@ -441,8 +466,7 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
         assertMutable("rewardSumHistory");
     }
 
-    private void serializeNonHistoryData(final SerializableDataOutputStream out)
-            throws IOException {
+    private void serializeNonHistoryData(final SerializableDataOutputStream out) throws IOException {
         out.writeInt(number);
         out.writeLong(minStake);
         out.writeLong(maxStake);
@@ -451,6 +475,7 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
         out.writeLong(stakeRewardStart);
         out.writeLong(unclaimedStakeRewardStart);
         out.writeLong(stake);
+        out.writeInt(weight);
     }
 
     private void ensureHistoryHashIsKnown() {
@@ -469,9 +494,7 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
             }
         }
         return Arrays.toString(
-                (firstZero == -1)
-                        ? rewardSumHistory
-                        : Arrays.copyOfRange(rewardSumHistory, 0, firstZero));
+                (firstZero == -1) ? rewardSumHistory : Arrays.copyOfRange(rewardSumHistory, 0, firstZero));
     }
 
     @VisibleForTesting
@@ -483,7 +506,8 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
             final long stakeRewardStart,
             final long unclaimedStakeRewardStart,
             final long stake,
-            final long[] rewardSumHistory) {
+            final long[] rewardSumHistory,
+            final int weight) {
         this.minStake = minStake;
         this.maxStake = maxStake;
         this.stakeToReward = stakeToReward;
@@ -492,6 +516,7 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
         this.unclaimedStakeRewardStart = unclaimedStakeRewardStart;
         this.stake = stake;
         this.rewardSumHistory = rewardSumHistory;
+        this.weight = weight;
     }
 
     @Nullable

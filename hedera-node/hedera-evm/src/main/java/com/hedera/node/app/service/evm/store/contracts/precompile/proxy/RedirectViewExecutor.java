@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.store.contracts.precompile.proxy;
 
 import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_ERC_ALLOWANCE;
@@ -91,8 +92,7 @@ public class RedirectViewExecutor {
         }
     }
 
-    private Bytes answerGiven(
-            final int selector, final Address token, final boolean isFungibleToken) {
+    private Bytes answerGiven(final int selector, final Address token, final boolean isFungibleToken) {
         if (selector == ABI_ID_ERC_NAME) {
             final var name = tokenAccessor.nameOf(token);
             return evmEncoder.encodeName(name);
@@ -101,26 +101,23 @@ public class RedirectViewExecutor {
             return evmEncoder.encodeSymbol(symbol);
         } else if (selector == ABI_ID_ERC_ALLOWANCE) {
             final var wrapper = EvmAllowancePrecompile.decodeTokenAllowance(input);
-            final var allowance =
-                    tokenAccessor.staticAllowanceOf(
-                            addressFromBytes(wrapper.owner()),
-                            addressFromBytes(wrapper.spender()),
-                            addressFromBytes(wrapper.token()));
+            final var allowance = tokenAccessor.staticAllowanceOf(
+                    addressFromBytes(wrapper.owner()),
+                    addressFromBytes(wrapper.spender()),
+                    addressFromBytes(wrapper.token()));
             return evmEncoder.encodeAllowance(allowance);
         } else if (selector == ABI_ID_ERC_GET_APPROVED) {
             final var wrapper = EvmGetApprovedPrecompile.decodeGetApproved(input);
             final var spender =
-                    tokenAccessor.staticApprovedSpenderOf(
-                            addressFromBytes(wrapper.token()), wrapper.serialNo());
+                    tokenAccessor.staticApprovedSpenderOf(addressFromBytes(wrapper.token()), wrapper.serialNo());
             final var priorityAddress = tokenAccessor.canonicalAddress(spender);
             return evmEncoder.encodeGetApproved(priorityAddress);
         } else if (selector == ABI_ID_ERC_IS_APPROVED_FOR_ALL) {
             final var wrapper = EvmIsApprovedForAllPrecompile.decodeIsApprovedForAll(input);
-            final var isOperator =
-                    tokenAccessor.staticIsOperator(
-                            addressFromBytes(wrapper.owner()),
-                            addressFromBytes(wrapper.operator()),
-                            addressFromBytes(wrapper.token()));
+            final var isOperator = tokenAccessor.staticIsOperator(
+                    addressFromBytes(wrapper.owner()),
+                    addressFromBytes(wrapper.operator()),
+                    addressFromBytes(wrapper.token()));
             return evmEncoder.encodeIsApprovedForAll(isOperator);
         } else if (selector == ABI_ID_ERC_DECIMALS) {
             validateTrue(isFungibleToken, INVALID_TOKEN_ID);

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.migration;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -38,18 +39,12 @@ class UniqueTokenAdapterTest {
 
     @BeforeEach
     void setUp() {
-        merkleSubject =
-                new UniqueTokenAdapter(
-                        new MerkleUniqueToken(
-                                EntityId.fromNum(123L),
-                                "hello".getBytes(),
-                                RichInstant.MISSING_INSTANT));
+        merkleSubject = new UniqueTokenAdapter(
+                new MerkleUniqueToken(EntityId.fromNum(123L), "hello".getBytes(), RichInstant.MISSING_INSTANT));
         merkleSubject.setSpender(EntityId.fromNum(456L));
 
-        virtualSubject =
-                new UniqueTokenAdapter(
-                        new UniqueTokenValue(
-                                123L, 456L, "hello".getBytes(), RichInstant.MISSING_INSTANT));
+        virtualSubject = new UniqueTokenAdapter(
+                new UniqueTokenValue(123L, 456L, "hello".getBytes(), RichInstant.MISSING_INSTANT));
     }
 
     @Test
@@ -119,11 +114,9 @@ class UniqueTokenAdapterTest {
 
     @Test
     void testEqualsForSameTypes() {
-        final var uniqueToken =
-                new UniqueTokenValue(123L, 456L, "hello".getBytes(), RichInstant.MISSING_INSTANT);
+        final var uniqueToken = new UniqueTokenValue(123L, 456L, "hello".getBytes(), RichInstant.MISSING_INSTANT);
         final var merkleUniqueToken =
-                new MerkleUniqueToken(
-                        EntityId.fromNum(123L), "hello".getBytes(), RichInstant.MISSING_INSTANT);
+                new MerkleUniqueToken(EntityId.fromNum(123L), "hello".getBytes(), RichInstant.MISSING_INSTANT);
         merkleUniqueToken.setSpender(EntityId.fromNum(456L));
 
         assertEquals(UniqueTokenAdapter.wrap(uniqueToken), virtualSubject);
@@ -138,8 +131,7 @@ class UniqueTokenAdapterTest {
 
     @Test
     void testEqualsFalseForNullComparisons() {
-        assertNotEquals(
-                virtualSubject, null); // NOSONAR: explicitly test virtualSubject.equals(null)
+        assertNotEquals(virtualSubject, null); // NOSONAR: explicitly test virtualSubject.equals(null)
         assertNotEquals(merkleSubject, null); // NOSONAR: explicitly test merkleSubject.equals(null)
     }
 
@@ -154,33 +146,23 @@ class UniqueTokenAdapterTest {
         assertNotEquals(
                 virtualSubject,
                 UniqueTokenAdapter.wrap(
-                        new UniqueTokenValue(
-                                1L, 456L, "hello".getBytes(), RichInstant.MISSING_INSTANT)));
+                        new UniqueTokenValue(1L, 456L, "hello".getBytes(), RichInstant.MISSING_INSTANT)));
 
         assertNotEquals(
                 virtualSubject,
                 UniqueTokenAdapter.wrap(
-                        new UniqueTokenValue(
-                                123L, 4L, "hello".getBytes(), RichInstant.MISSING_INSTANT)));
+                        new UniqueTokenValue(123L, 4L, "hello".getBytes(), RichInstant.MISSING_INSTANT)));
 
         assertNotEquals(
                 virtualSubject,
-                UniqueTokenAdapter.wrap(
-                        new UniqueTokenValue(
-                                123L, 456L, "h".getBytes(), RichInstant.MISSING_INSTANT)));
+                UniqueTokenAdapter.wrap(new UniqueTokenValue(123L, 456L, "h".getBytes(), RichInstant.MISSING_INSTANT)));
 
         assertNotEquals(
                 virtualSubject,
-                UniqueTokenAdapter.wrap(
-                        new UniqueTokenValue(
-                                123L, 456L, "hello".getBytes(), new RichInstant(3, 4))));
+                UniqueTokenAdapter.wrap(new UniqueTokenValue(123L, 456L, "hello".getBytes(), new RichInstant(3, 4))));
 
-        final UniqueTokenAdapter merkleValue =
-                UniqueTokenAdapter.wrap(
-                        new MerkleUniqueToken(
-                                EntityId.fromNum(123L),
-                                "hello".getBytes(),
-                                RichInstant.MISSING_INSTANT));
+        final UniqueTokenAdapter merkleValue = UniqueTokenAdapter.wrap(
+                new MerkleUniqueToken(EntityId.fromNum(123L), "hello".getBytes(), RichInstant.MISSING_INSTANT));
 
         merkleValue.setSpender(EntityId.fromNum(456L));
 

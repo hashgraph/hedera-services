@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.submerkle;
 
 import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
@@ -69,8 +70,7 @@ public class CurrencyAdjustments implements SelfSerializable {
     @Override
     public void deserialize(SerializableDataInputStream in, int version) throws IOException {
         if (version < RELEASE_0240_VERSION) {
-            final var accountIds =
-                    in.readSerializableList(MAX_NUM_ADJUSTMENTS, true, EntityId::new);
+            final var accountIds = in.readSerializableList(MAX_NUM_ADJUSTMENTS, true, EntityId::new);
             accountNums = accountIds.stream().mapToLong(EntityId::num).toArray();
         } else {
             accountNums = in.readLongArray(MAX_NUM_ADJUSTMENTS);
@@ -142,8 +142,7 @@ public class CurrencyAdjustments implements SelfSerializable {
                 .build();
     }
 
-    public static CurrencyAdjustments fromChanges(
-            final long[] balanceChanges, final long[] changedAccounts) {
+    public static CurrencyAdjustments fromChanges(final long[] balanceChanges, final long[] changedAccounts) {
         final var n = balanceChanges.length;
         final var m = changedAccounts.length;
 

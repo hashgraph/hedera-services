@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage.file;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -31,13 +32,12 @@ class ExtantFileContextTest {
     @Test
     void buildsAsExpected() {
         // given:
-        final var subject =
-                ExtantFileContext.newBuilder()
-                        .setCurrentExpiry(expiry)
-                        .setCurrentMemo(memo)
-                        .setCurrentWacl(wacl)
-                        .setCurrentSize(size)
-                        .build();
+        final var subject = ExtantFileContext.newBuilder()
+                .setCurrentExpiry(expiry)
+                .setCurrentMemo(memo)
+                .setCurrentWacl(wacl)
+                .setCurrentSize(size)
+                .build();
 
         // expect:
         assertEquals(memo, subject.currentMemo());
@@ -49,11 +49,10 @@ class ExtantFileContextTest {
     @Test
     void rejectsIncompleteContext() {
         // given:
-        final var builder =
-                ExtantFileContext.newBuilder()
-                        .setCurrentExpiry(expiry)
-                        .setCurrentMemo(memo)
-                        .setCurrentWacl(wacl);
+        final var builder = ExtantFileContext.newBuilder()
+                .setCurrentExpiry(expiry)
+                .setCurrentMemo(memo)
+                .setCurrentWacl(wacl);
 
         // expect:
         assertThrows(IllegalStateException.class, builder::build);

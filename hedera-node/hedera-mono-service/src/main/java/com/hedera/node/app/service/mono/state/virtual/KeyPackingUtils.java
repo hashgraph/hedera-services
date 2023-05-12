@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual;
 
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -78,16 +79,14 @@ public class KeyPackingUtils {
         return (byte) Math.ceil((Long.SIZE - Long.numberOfLeadingZeros(num)) / 8D);
     }
 
-    static void serializePackedBytes(
-            final int[] packed, final byte numNonZero, final SerializableDataOutputStream out)
+    static void serializePackedBytes(final int[] packed, final byte numNonZero, final SerializableDataOutputStream out)
             throws IOException {
         for (int b = numNonZero - 1; b >= 0; b--) {
             out.write(extractByte(packed, b));
         }
     }
 
-    static void serializePackedBytesToBuffer(
-            final int[] packed, final byte numNonZero, final ByteBuffer out) {
+    static void serializePackedBytesToBuffer(final int[] packed, final byte numNonZero, final ByteBuffer out) {
         for (int b = numNonZero - 1; b >= 0; b--) {
             out.put(extractByte(packed, b));
         }
@@ -125,9 +124,7 @@ public class KeyPackingUtils {
      * @throws IOException If there was a problem reading
      */
     public static <D> int[] deserializeUint256Key(
-            final byte uint256KeyNonZeroBytes,
-            final D dataSource,
-            final ByteReaderFunction<D> reader)
+            final byte uint256KeyNonZeroBytes, final D dataSource, final ByteReaderFunction<D> reader)
             throws IOException {
         final int[] uint256 = new int[8];
         for (int i = 7; i >= 0; i--) {
@@ -150,9 +147,7 @@ public class KeyPackingUtils {
     }
 
     public static void serializePossiblyMissingKey(
-            final @Nullable int[] key,
-            final byte nonZeroBytes,
-            final SerializableDataOutputStream out)
+            final @Nullable int[] key, final byte nonZeroBytes, final SerializableDataOutputStream out)
             throws IOException {
         if (key == null) {
             out.write(MISSING_KEY_SENTINEL);
@@ -164,11 +159,7 @@ public class KeyPackingUtils {
 
     public static String readableContractStorageKey(final int[] packedEvmKey) {
         return Optional.ofNullable(packedEvmKey)
-                .map(
-                        k ->
-                                Arrays.stream(k)
-                                        .mapToObj(Integer::toHexString)
-                                        .collect(Collectors.joining("")))
+                .map(k -> Arrays.stream(k).mapToObj(Integer::toHexString).collect(Collectors.joining("")))
                 .orElse("<N/A>");
     }
 

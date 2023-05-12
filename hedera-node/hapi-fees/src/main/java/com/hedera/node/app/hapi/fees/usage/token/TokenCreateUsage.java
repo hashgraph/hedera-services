@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage.token;
 
 import static com.hedera.node.app.hapi.fees.usage.EstimatorUtils.MAX_ENTITY_LIFETIME;
@@ -33,8 +34,7 @@ public class TokenCreateUsage extends TokenTxnUsage<TokenCreateUsage> {
         super(tokenCreationOp, usageEstimator);
     }
 
-    public static TokenCreateUsage newEstimate(
-            TransactionBody tokenCreationOp, TxnUsageEstimator usageEstimator) {
+    public static TokenCreateUsage newEstimate(TransactionBody tokenCreationOp, TxnUsageEstimator usageEstimator) {
         return new TokenCreateUsage(tokenCreationOp, usageEstimator);
     }
 
@@ -47,33 +47,26 @@ public class TokenCreateUsage extends TokenTxnUsage<TokenCreateUsage> {
         int baseSize = TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS.getTokenTxnBaseSize(op);
         var opTokenCreation = this.op.getTokenCreation();
 
-        var lifetime =
-                opTokenCreation.hasAutoRenewAccount()
-                        ? opTokenCreation.getAutoRenewPeriod().getSeconds()
-                        : ESTIMATOR_UTILS.relativeLifetime(
-                                this.op, opTokenCreation.getExpiry().getSeconds());
+        var lifetime = opTokenCreation.hasAutoRenewAccount()
+                ? opTokenCreation.getAutoRenewPeriod().getSeconds()
+                : ESTIMATOR_UTILS.relativeLifetime(
+                        this.op, opTokenCreation.getExpiry().getSeconds());
         lifetime = Math.min(lifetime, MAX_ENTITY_LIFETIME);
 
         usageEstimator.addBpt(baseSize);
-        final var feeSchedulesSize =
-                opTokenCreation.getCustomFeesCount() > 0
-                        ? tokenOpsUsage.bytesNeededToRepr(opTokenCreation.getCustomFeesList())
-                        : 0;
+        final var feeSchedulesSize = opTokenCreation.getCustomFeesCount() > 0
+                ? tokenOpsUsage.bytesNeededToRepr(opTokenCreation.getCustomFeesList())
+                : 0;
         usageEstimator.addRbs((baseSize + feeSchedulesSize) * lifetime);
         addNetworkRecordRb(BASIC_ENTITY_ID_SIZE);
         addTokenTransfersRecordRb(1, opTokenCreation.getInitialSupply() > 0 ? 1 : 0, 0);
 
         SubType chosenType;
-        final var usesCustomFees =
-                opTokenCreation.hasFeeScheduleKey() || opTokenCreation.getCustomFeesCount() > 0;
+        final var usesCustomFees = opTokenCreation.hasFeeScheduleKey() || opTokenCreation.getCustomFeesCount() > 0;
         if (opTokenCreation.getTokenType() == NON_FUNGIBLE_UNIQUE) {
-            chosenType =
-                    usesCustomFees
-                            ? TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES
-                            : TOKEN_NON_FUNGIBLE_UNIQUE;
+            chosenType = usesCustomFees ? TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES : TOKEN_NON_FUNGIBLE_UNIQUE;
         } else {
-            chosenType =
-                    usesCustomFees ? TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES : TOKEN_FUNGIBLE_COMMON;
+            chosenType = usesCustomFees ? TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES : TOKEN_FUNGIBLE_COMMON;
         }
         return usageEstimator.get(chosenType);
     }

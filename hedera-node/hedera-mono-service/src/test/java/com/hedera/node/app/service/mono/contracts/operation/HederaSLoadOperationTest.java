@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.operation;
 
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS;
@@ -55,20 +56,26 @@ class HederaSLoadOperationTest {
 
     HederaSLoadOperation subject;
 
-    @Mock GasCalculator gasCalculator;
+    @Mock
+    GasCalculator gasCalculator;
 
-    @Mock MessageFrame messageFrame;
+    @Mock
+    MessageFrame messageFrame;
 
-    @Mock EVM evm;
+    @Mock
+    EVM evm;
 
-    @Mock HederaStackedWorldStateUpdater worldUpdater;
+    @Mock
+    HederaStackedWorldStateUpdater worldUpdater;
 
-    @Mock EvmAccount evmAccount;
+    @Mock
+    EvmAccount evmAccount;
 
     final Bytes keyBytesMock = Bytes.of(1, 2, 3, 4);
     final Bytes valueBytesMock = Bytes.of(4, 3, 2, 1);
 
-    @Mock private GlobalDynamicProperties dynamicProperties;
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
 
     @BeforeEach
     void setUp() {
@@ -98,8 +105,7 @@ class HederaSLoadOperationTest {
         givenAdditionalContext(keyBytesMock, valueBytesMock);
         given(messageFrame.warmUpStorage(any(), any())).willReturn(true);
         given(messageFrame.getRemainingGas()).willReturn(300L);
-        given(dynamicProperties.enabledSidecars())
-                .willReturn(EnumSet.of(SidecarType.CONTRACT_STATE_CHANGE));
+        given(dynamicProperties.enabledSidecars()).willReturn(EnumSet.of(SidecarType.CONTRACT_STATE_CHANGE));
         final var frameStack = new ArrayDeque<MessageFrame>();
         frameStack.add(messageFrame);
         given(messageFrame.getMessageFrameStack()).willReturn(frameStack);
@@ -130,8 +136,7 @@ class HederaSLoadOperationTest {
         given(messageFrame.getRemainingGas()).willReturn(300L);
         given(messageFrame.getRemainingGas()).willReturn(0L);
 
-        final var expectedHaltResult =
-                new Operation.OperationResult(30L, ExceptionalHaltReason.INSUFFICIENT_GAS);
+        final var expectedHaltResult = new Operation.OperationResult(30L, ExceptionalHaltReason.INSUFFICIENT_GAS);
 
         final var haltResult = subject.execute(messageFrame, evm);
 
@@ -153,8 +158,7 @@ class HederaSLoadOperationTest {
         givenAdditionalContext(keyBytesMock, valueBytesMock);
         given(messageFrame.warmUpStorage(any(), any())).willReturn(true);
         given(messageFrame.getRemainingGas()).willReturn(300L);
-        given(dynamicProperties.enabledSidecars())
-                .willReturn(EnumSet.of(SidecarType.CONTRACT_STATE_CHANGE));
+        given(dynamicProperties.enabledSidecars()).willReturn(EnumSet.of(SidecarType.CONTRACT_STATE_CHANGE));
         var frameStack = new ArrayDeque<MessageFrame>();
         frameStack.add(messageFrame);
 

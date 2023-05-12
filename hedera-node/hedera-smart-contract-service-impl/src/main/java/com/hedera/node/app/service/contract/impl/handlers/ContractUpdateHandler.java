@@ -13,62 +13,48 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.contract.impl.handlers;
 
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.spi.AccountKeyLookup;
-import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.contract.ContractUpdateTransactionBody;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#ContractUpdate}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#CONTRACT_UPDATE}.
  */
+@Singleton
 public class ContractUpdateHandler implements TransactionHandler {
+    @Inject
+    public ContractUpdateHandler() {
+        // Exists for injection
+    }
 
-    /**
-     * This method is called during the pre-handle workflow.
-     *
-     * <p>Typically, this method validates the {@link TransactionBody} semantically, gathers all
-     * required keys, warms the cache, and creates the {@link TransactionMetadata} that is used in
-     * the handle stage.
-     *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
-     *
-     * @param txBody the {@link TransactionBody} with the transaction data
-     * @param payer the {@link AccountID} of the payer
-     * @return the {@link TransactionMetadata} with all information that needs to be passed to
-     *     {@link #handle(TransactionMetadata)}
-     * @throws NullPointerException if one of the arguments is {@code null}
-     */
-    public TransactionMetadata preHandle(
-            @NonNull final TransactionBody txBody,
-            @NonNull final AccountID payer,
-            @NonNull final AccountKeyLookup keyLookup) {
-        final var op = txBody.getContractUpdateInstance();
-        final var meta =
-                new SigTransactionMetadataBuilder(keyLookup).txnBody(txBody).payerKeyFor(payer);
+    @Override
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
+        requireNonNull(context);
+        final var op = context.body().contractUpdateInstanceOrThrow();
 
         if (isAdminSigRequired(op)) {
-            meta.addNonPayerKey(op.getContractID());
+            context.requireKeyOrThrow(op.contractIDOrElse(ContractID.DEFAULT), INVALID_CONTRACT_ID);
         }
         if (hasCryptoAdminKey(op)) {
-            final var key = asHederaKey(op.getAdminKey());
-            key.ifPresent(meta::addToReqNonPayerKeys);
+            context.requireKey(op.adminKeyOrThrow());
         }
-        if (op.hasAutoRenewAccountId()
-                && !op.getAutoRenewAccountId().equals(AccountID.getDefaultInstance())) {
-            meta.addNonPayerKey(op.getAutoRenewAccountId(), INVALID_AUTORENEW_ACCOUNT);
+        if (op.hasAutoRenewAccountId() && !op.autoRenewAccountIdOrThrow().equals(AccountID.DEFAULT)) {
+            context.requireKeyOrThrow(op.autoRenewAccountIdOrThrow(), INVALID_AUTORENEW_ACCOUNT);
         }
-        return meta.build();
     }
 
     private boolean isAdminSigRequired(final ContractUpdateTransactionBody op) {
@@ -77,11 +63,11 @@ public class ContractUpdateHandler implements TransactionHandler {
                 || op.hasProxyAccountID()
                 || op.hasAutoRenewPeriod()
                 || op.hasFileID()
-                || op.getMemo().length() > 0;
+                || op.memoOrElse("").length() > 0;
     }
 
     private boolean hasCryptoAdminKey(final ContractUpdateTransactionBody op) {
-        return op.hasAdminKey() && !op.getAdminKey().hasContractID();
+        return op.hasAdminKey() && !op.adminKeyOrThrow().hasContractID();
     }
 
     /**
@@ -90,10 +76,9 @@ public class ContractUpdateHandler implements TransactionHandler {
      * <p>Please note: the method signature is just a placeholder which is most likely going to
      * change.
      *
-     * @param metadata the {@link TransactionMetadata} that was generated during pre-handle.
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void handle(@NonNull final TransactionMetadata metadata) {
+    public void handle() {
         throw new UnsupportedOperationException("Not implemented");
     }
 }

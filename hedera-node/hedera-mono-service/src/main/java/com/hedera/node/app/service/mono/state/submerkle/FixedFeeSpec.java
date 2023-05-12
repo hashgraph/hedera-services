@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.submerkle;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
@@ -47,14 +48,10 @@ public class FixedFeeSpec {
     }
 
     public void validateAndFinalizeWith(
-            final Token provisionalToken,
-            final Account feeCollector,
-            final TypedTokenStore tokenStore) {
+            final Token provisionalToken, final Account feeCollector, final TypedTokenStore tokenStore) {
         if (tokenDenomination != null) {
             if (tokenDenomination.num() == 0L) {
-                validateTrue(
-                        provisionalToken.isFungibleCommon(),
-                        CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON);
+                validateTrue(provisionalToken.isFungibleCommon(), CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON);
                 tokenDenomination.setNum(provisionalToken.getId().num());
                 usedDenomWildcard = true;
             } else {
@@ -69,16 +66,11 @@ public class FixedFeeSpec {
         }
     }
 
-    private void validateExplicitlyDenominatedWith(
-            final Account feeCollector, final TypedTokenStore tokenStore) {
+    private void validateExplicitlyDenominatedWith(final Account feeCollector, final TypedTokenStore tokenStore) {
         final var denomId = tokenDenomination.asId();
-        final var denomToken =
-                tokenStore.loadTokenOrFailWith(denomId, INVALID_TOKEN_ID_IN_CUSTOM_FEES);
-        validateTrue(
-                denomToken.isFungibleCommon(), CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON);
-        validateTrue(
-                tokenStore.hasAssociation(denomToken, feeCollector),
-                TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
+        final var denomToken = tokenStore.loadTokenOrFailWith(denomId, INVALID_TOKEN_ID_IN_CUSTOM_FEES);
+        validateTrue(denomToken.isFungibleCommon(), CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON);
+        validateTrue(tokenStore.hasAssociation(denomToken, feeCollector), TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
     }
 
     public static FixedFeeSpec fromGrpc(FixedFee fixedFee) {
@@ -129,9 +121,7 @@ public class FixedFeeSpec {
     public String toString() {
         return MoreObjects.toStringHelper(FixedFeeSpec.class)
                 .add("unitsToCollect", unitsToCollect)
-                .add(
-                        "tokenDenomination",
-                        tokenDenomination == null ? "ℏ" : tokenDenomination.toAbbrevString())
+                .add("tokenDenomination", tokenDenomination == null ? "ℏ" : tokenDenomination.toAbbrevString())
                 .toString();
     }
 }

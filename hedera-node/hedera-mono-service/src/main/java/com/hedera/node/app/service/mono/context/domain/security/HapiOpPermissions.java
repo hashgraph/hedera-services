@@ -13,12 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context.domain.security;
 
 import static com.hedera.node.app.service.mono.context.domain.security.PermissionFileUtils.legacyKeys;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -34,10 +36,8 @@ import org.apache.logging.log4j.Logger;
 public class HapiOpPermissions {
     private static final Logger log = LogManager.getLogger(HapiOpPermissions.class);
 
-    static final String MISSING_OP_TPL =
-            "Ignoring key '%s', which does not correspond to a known Hedera operation!";
-    static final String UNPARSEABLE_RANGE_TPL =
-            "Ignoring entry for supported op %s---cannot interpret range '%s'!";
+    static final String MISSING_OP_TPL = "Ignoring key '%s', which does not correspond to a known Hedera operation!";
+    static final String UNPARSEABLE_RANGE_TPL = "Ignoring entry for supported op %s---cannot interpret range '%s'!";
 
     private final HederaAccountNumbers accountNums;
 
@@ -50,8 +50,7 @@ public class HapiOpPermissions {
             new EnumMap<>(HederaFunctionality.class);
 
     public void reloadFrom(ServicesConfigurationList config) {
-        EnumMap<HederaFunctionality, PermissionedAccountsRange> newPerms =
-                new EnumMap<>(HederaFunctionality.class);
+        EnumMap<HederaFunctionality, PermissionedAccountsRange> newPerms = new EnumMap<>(HederaFunctionality.class);
         for (var permission : config.getNameValueList()) {
             var opName = permission.getName();
             if (legacyKeys.containsKey(opName)) {
@@ -76,9 +75,15 @@ public class HapiOpPermissions {
         }
 
         PermissionedAccountsRange range;
-        return (range = permissions.get(function)) != null && range.contains(num)
-                ? OK
-                : NOT_SUPPORTED;
+        return (range = permissions.get(function)) != null && range.contains(num) ? OK : NOT_SUPPORTED;
+    }
+
+    public com.hedera.hapi.node.base.ResponseCodeEnum permissibilityOf2(
+            com.hedera.hapi.node.base.HederaFunctionality function, com.hedera.hapi.node.base.AccountID givenPayer) {
+
+        final var response = permissibilityOf(PbjConverter.fromPbj(function), PbjConverter.fromPbj(givenPayer));
+
+        return PbjConverter.toPbj(response);
     }
 
     EnumMap<HederaFunctionality, PermissionedAccountsRange> getPermissions() {

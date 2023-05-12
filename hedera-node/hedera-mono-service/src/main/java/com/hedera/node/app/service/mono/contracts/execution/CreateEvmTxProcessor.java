@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.execution;
 
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -29,7 +30,6 @@ import javax.inject.Provider;
 import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.evm.code.CodeFactory;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -56,14 +56,7 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
             final Map<String, Provider<ContractCreationProcessor>> ccps,
             final AliasManager aliasManager,
             final InHandleBlockMetaSource blockMetaSource) {
-        super(
-                worldState,
-                livePricesSource,
-                globalDynamicProperties,
-                gasCalculator,
-                mcps,
-                ccps,
-                blockMetaSource);
+        super(worldState, livePricesSource, globalDynamicProperties, gasCalculator, mcps, ccps, blockMetaSource);
         this.codeCache = codeCache;
         this.aliasManager = aliasManager;
     }
@@ -78,18 +71,7 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
         final long gasPrice = gasPriceTinyBarsGiven(consensusTime, false);
 
         return super.execute(
-                sender,
-                receiver,
-                gasPrice,
-                providedGasLimit,
-                value,
-                code,
-                true,
-                false,
-                receiver,
-                null,
-                0,
-                null);
+                sender, receiver, gasPrice, providedGasLimit, value, code, true, false, receiver, null, 0, null);
     }
 
     public TransactionProcessingResult executeEth(
@@ -126,10 +108,7 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 
     @Override
     protected MessageFrame buildInitialFrame(
-            final MessageFrame.Builder commonInitialFrame,
-            final Address to,
-            final Bytes payload,
-            final long value) {
+            final MessageFrame.Builder commonInitialFrame, final Address to, final Bytes payload, final long value) {
         codeCache.invalidate(to);
 
         return commonInitialFrame
@@ -137,7 +116,7 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
                 .address(to)
                 .contract(to)
                 .inputData(Bytes.EMPTY)
-                .code(CodeFactory.createCode(payload, Hash.hash(payload), 0, false))
+                .code(CodeFactory.createCode(payload, 0, false))
                 .build();
     }
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.logic;
 
 import static com.hedera.node.app.service.mono.txns.diligence.DuplicateClassification.BELIEVED_UNIQUE;
@@ -64,13 +65,20 @@ class AwareNodeDiligenceScreenTest {
 
     private SignedTxnAccessor accessor;
 
-    @Mock private TransactionContext txnCtx;
-    @Mock private OptionValidator validator;
-    @Mock private BackingStore<AccountID, HederaAccount> backingAccounts;
+    @Mock
+    private TransactionContext txnCtx;
 
-    @LoggingTarget private LogCaptor logCaptor;
+    @Mock
+    private OptionValidator validator;
 
-    @LoggingSubject private AwareNodeDiligenceScreen subject;
+    @Mock
+    private BackingStore<AccountID, HederaAccount> backingAccounts;
+
+    @LoggingTarget
+    private LogCaptor logCaptor;
+
+    @LoggingSubject
+    private AwareNodeDiligenceScreen subject;
 
     @BeforeEach
     void setUp() {
@@ -98,10 +106,8 @@ class AwareNodeDiligenceScreenTest {
         verify(txnCtx).setStatus(INVALID_NODE_ACCOUNT);
         assertThat(
                 logCaptor.warnLogs(),
-                contains(
-                        Matchers.startsWith(
-                                "Node 0.0.3 (member #2) submitted a txn w/ missing node account"
-                                        + " 0.0.3")));
+                contains(Matchers.startsWith(
+                        "Node 0.0.3 (member #2) submitted a txn w/ missing node account" + " 0.0.3")));
     }
 
     @Test
@@ -115,10 +121,8 @@ class AwareNodeDiligenceScreenTest {
         verify(txnCtx).setStatus(INVALID_NODE_ACCOUNT);
         assertThat(
                 logCaptor.warnLogs(),
-                contains(
-                        Matchers.startsWith(
-                                "Node 0.0.4 (member #2) submitted a txn meant for node account"
-                                        + " 0.0.3")));
+                contains(Matchers.startsWith(
+                        "Node 0.0.4 (member #2) submitted a txn meant for node account" + " 0.0.3")));
     }
 
     @Test
@@ -225,8 +229,7 @@ class AwareNodeDiligenceScreenTest {
         verify(txnCtx).setStatus(PAYER_ACCOUNT_DELETED);
     }
 
-    private void givenHandleCtx(
-            final AccountID submittingNodeAccount, final AccountID designatedNodeAccount)
+    private void givenHandleCtx(final AccountID submittingNodeAccount, final AccountID designatedNodeAccount)
             throws InvalidProtocolBufferException {
         given(txnCtx.submittingNodeAccount()).willReturn(submittingNodeAccount);
         accessor = accessorWith(designatedNodeAccount);
@@ -237,22 +240,19 @@ class AwareNodeDiligenceScreenTest {
             throws InvalidProtocolBufferException {
         final var transactionId = TransactionID.newBuilder().setAccountID(payerAccountId);
 
-        final var bodyBytes =
-                TransactionBody.newBuilder()
-                        .setMemo(PRETEND_MEMO)
-                        .setTransactionValidDuration(validDuration)
-                        .setNodeAccountID(designatedNodeAccount)
-                        .setTransactionID(transactionId)
+        final var bodyBytes = TransactionBody.newBuilder()
+                .setMemo(PRETEND_MEMO)
+                .setTransactionValidDuration(validDuration)
+                .setNodeAccountID(designatedNodeAccount)
+                .setTransactionID(transactionId)
+                .build()
+                .toByteString();
+        final var signedTxn = Transaction.newBuilder()
+                .setSignedTransactionBytes(SignedTransaction.newBuilder()
+                        .setBodyBytes(bodyBytes)
                         .build()
-                        .toByteString();
-        final var signedTxn =
-                Transaction.newBuilder()
-                        .setSignedTransactionBytes(
-                                SignedTransaction.newBuilder()
-                                        .setBodyBytes(bodyBytes)
-                                        .build()
-                                        .toByteString())
-                        .build();
+                        .toByteString())
+                .build();
         return SignedTxnAccessor.from(signedTxn.toByteArray(), signedTxn);
     }
 

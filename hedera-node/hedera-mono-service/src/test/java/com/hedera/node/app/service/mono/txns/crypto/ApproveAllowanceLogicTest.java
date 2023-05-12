@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.crypto;
 
 import static com.hedera.node.app.service.mono.store.models.Id.fromGrpcAccount;
@@ -68,9 +69,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ApproveAllowanceLogicTest {
-    @Mock private AccountStore accountStore;
-    @Mock private TypedTokenStore tokenStore;
-    @Mock private GlobalDynamicProperties dynamicProperties;
+    @Mock
+    private AccountStore accountStore;
+
+    @Mock
+    private TypedTokenStore tokenStore;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
 
     private TransactionBody cryptoApproveAllowanceTxn;
     private CryptoApproveAllowanceTransactionBody op;
@@ -90,27 +96,24 @@ class ApproveAllowanceLogicTest {
     private static final Instant consensusTime = Instant.now();
     private final Token token1Model = new Token(Id.fromGrpcToken(token1));
     private final Token token2Model = new Token(Id.fromGrpcToken(token2));
-    private final CryptoAllowance cryptoAllowance1 =
-            CryptoAllowance.newBuilder()
-                    .setSpender(spender1)
-                    .setOwner(ownerId)
-                    .setAmount(10L)
-                    .build();
-    private final TokenAllowance tokenAllowance1 =
-            TokenAllowance.newBuilder()
-                    .setSpender(spender1)
-                    .setAmount(10L)
-                    .setTokenId(token1)
-                    .setOwner(ownerId)
-                    .build();
-    private final NftAllowance nftAllowance1 =
-            NftAllowance.newBuilder()
-                    .setSpender(spender1)
-                    .setOwner(ownerId)
-                    .setTokenId(token2)
-                    .setApprovedForAll(BoolValue.of(true))
-                    .addAllSerialNumbers(List.of(serial1, serial2))
-                    .build();
+    private final CryptoAllowance cryptoAllowance1 = CryptoAllowance.newBuilder()
+            .setSpender(spender1)
+            .setOwner(ownerId)
+            .setAmount(10L)
+            .build();
+    private final TokenAllowance tokenAllowance1 = TokenAllowance.newBuilder()
+            .setSpender(spender1)
+            .setAmount(10L)
+            .setTokenId(token1)
+            .setOwner(ownerId)
+            .build();
+    private final NftAllowance nftAllowance1 = NftAllowance.newBuilder()
+            .setSpender(spender1)
+            .setOwner(ownerId)
+            .setTokenId(token2)
+            .setApprovedForAll(BoolValue.of(true))
+            .addAllSerialNumbers(List.of(serial1, serial2))
+            .build();
     private List<CryptoAllowance> cryptoAllowances = new ArrayList<>();
     private List<TokenAllowance> tokenAllowances = new ArrayList<>();
     private List<NftAllowance> nftAllowances = new ArrayList<>();
@@ -215,13 +218,11 @@ class ApproveAllowanceLogicTest {
 
         givenValidTxnCtx();
 
-        Executable approveAllowance =
-                () ->
-                        subject.approveAllowance(
-                                op.getCryptoAllowancesList(),
-                                op.getTokenAllowancesList(),
-                                op.getNftAllowancesList(),
-                                fromGrpcAccount(payerId).asGrpcAccount());
+        Executable approveAllowance = () -> subject.approveAllowance(
+                op.getCryptoAllowancesList(),
+                op.getTokenAllowancesList(),
+                op.getNftAllowancesList(),
+                fromGrpcAccount(payerId).asGrpcAccount());
 
         var exception = assertThrows(InvalidTransactionException.class, approveAllowance);
         assertEquals(MAX_ALLOWANCES_EXCEEDED, exception.getResponseCode());
@@ -234,12 +235,10 @@ class ApproveAllowanceLogicTest {
 
     @Test
     void emptyAllowancesInStateTransitionWorks() {
-        cryptoApproveAllowanceTxn =
-                TransactionBody.newBuilder()
-                        .setTransactionID(ourTxnId())
-                        .setCryptoApproveAllowance(
-                                CryptoApproveAllowanceTransactionBody.newBuilder())
-                        .build();
+        cryptoApproveAllowanceTxn = TransactionBody.newBuilder()
+                .setTransactionID(ourTxnId())
+                .setCryptoApproveAllowance(CryptoApproveAllowanceTransactionBody.newBuilder())
+                .build();
 
         given(accountStore.loadAccount(payerAccount.getId())).willReturn(payerAccount);
         op = cryptoApproveAllowanceTxn.getCryptoApproveAllowance();
@@ -312,21 +311,19 @@ class ApproveAllowanceLogicTest {
 
     @Test
     void checkIfApproveForAllIsSet() {
-        final NftAllowance nftAllowance =
-                NftAllowance.newBuilder()
-                        .setSpender(spender1)
-                        .setOwner(ownerId)
-                        .setTokenId(token2)
-                        .addAllSerialNumbers(List.of(serial1))
-                        .build();
-        final NftAllowance nftAllowance1 =
-                NftAllowance.newBuilder()
-                        .setSpender(spender1)
-                        .setOwner(ownerId)
-                        .setTokenId(token2)
-                        .setApprovedForAll(BoolValue.of(false))
-                        .addAllSerialNumbers(List.of(serial1))
-                        .build();
+        final NftAllowance nftAllowance = NftAllowance.newBuilder()
+                .setSpender(spender1)
+                .setOwner(ownerId)
+                .setTokenId(token2)
+                .addAllSerialNumbers(List.of(serial1))
+                .build();
+        final NftAllowance nftAllowance1 = NftAllowance.newBuilder()
+                .setSpender(spender1)
+                .setOwner(ownerId)
+                .setTokenId(token2)
+                .setApprovedForAll(BoolValue.of(false))
+                .addAllSerialNumbers(List.of(serial1))
+                .build();
         nftAllowances.add(nftAllowance);
         nftAllowances.add(nftAllowance1);
 
@@ -366,25 +363,14 @@ class ApproveAllowanceLogicTest {
                 20,
                 ownerAccount
                         .getFungibleTokenAllowances()
-                        .get(
-                                FcTokenAllowanceId.from(
-                                        EntityNum.fromTokenId(token1),
-                                        EntityNum.fromAccountId(spender1)))
+                        .get(FcTokenAllowanceId.from(EntityNum.fromTokenId(token1), EntityNum.fromAccountId(spender1)))
                         .intValue());
-        assertTrue(
-                ownerAccount
-                        .getApprovedForAllNftsAllowances()
-                        .contains(
-                                FcTokenAllowanceId.from(
-                                        EntityNum.fromTokenId(token1),
-                                        EntityNum.fromAccountId(spender1))));
-        assertTrue(
-                ownerAccount
-                        .getApprovedForAllNftsAllowances()
-                        .contains(
-                                FcTokenAllowanceId.from(
-                                        EntityNum.fromTokenId(token1),
-                                        EntityNum.fromAccountId(spender1))));
+        assertTrue(ownerAccount
+                .getApprovedForAllNftsAllowances()
+                .contains(FcTokenAllowanceId.from(EntityNum.fromTokenId(token1), EntityNum.fromAccountId(spender1))));
+        assertTrue(ownerAccount
+                .getApprovedForAllNftsAllowances()
+                .contains(FcTokenAllowanceId.from(EntityNum.fromTokenId(token1), EntityNum.fromAccountId(spender1))));
 
         given(accountStore.loadAccount(payerAccount.getId())).willReturn(payerAccount);
         given(accountStore.loadAccountOrFailWith(ownerAccount.getId(), INVALID_ALLOWANCE_OWNER_ID))
@@ -412,25 +398,14 @@ class ApproveAllowanceLogicTest {
                 10,
                 ownerAccount
                         .getFungibleTokenAllowances()
-                        .get(
-                                FcTokenAllowanceId.from(
-                                        EntityNum.fromTokenId(token1),
-                                        EntityNum.fromAccountId(spender1)))
+                        .get(FcTokenAllowanceId.from(EntityNum.fromTokenId(token1), EntityNum.fromAccountId(spender1)))
                         .intValue());
-        assertTrue(
-                ownerAccount
-                        .getApprovedForAllNftsAllowances()
-                        .contains(
-                                FcTokenAllowanceId.from(
-                                        EntityNum.fromTokenId(token1),
-                                        EntityNum.fromAccountId(spender1))));
-        assertFalse(
-                ownerAccount
-                        .getApprovedForAllNftsAllowances()
-                        .contains(
-                                FcTokenAllowanceId.from(
-                                        EntityNum.fromTokenId(token2),
-                                        EntityNum.fromAccountId(spender1))));
+        assertTrue(ownerAccount
+                .getApprovedForAllNftsAllowances()
+                .contains(FcTokenAllowanceId.from(EntityNum.fromTokenId(token1), EntityNum.fromAccountId(spender1))));
+        assertFalse(ownerAccount
+                .getApprovedForAllNftsAllowances()
+                .contains(FcTokenAllowanceId.from(EntityNum.fromTokenId(token2), EntityNum.fromAccountId(spender1))));
 
         verify(accountStore).commitAccount(ownerAccount);
     }
@@ -442,15 +417,11 @@ class ApproveAllowanceLogicTest {
 
         existingCryptoAllowances.put(EntityNum.fromAccountId(spender1), 20L);
         existingTokenAllowances.put(
-                FcTokenAllowanceId.from(
-                        EntityNum.fromTokenId(token1), EntityNum.fromAccountId(spender1)),
-                20L);
+                FcTokenAllowanceId.from(EntityNum.fromTokenId(token1), EntityNum.fromAccountId(spender1)), 20L);
         existingNftAllowances.add(
-                FcTokenAllowanceId.from(
-                        EntityNum.fromTokenId(token2), EntityNum.fromAccountId(spender1)));
+                FcTokenAllowanceId.from(EntityNum.fromTokenId(token2), EntityNum.fromAccountId(spender1)));
         existingNftAllowances.add(
-                FcTokenAllowanceId.from(
-                        EntityNum.fromTokenId(token1), EntityNum.fromAccountId(spender1)));
+                FcTokenAllowanceId.from(EntityNum.fromTokenId(token1), EntityNum.fromAccountId(spender1)));
         ownerAccount.setCryptoAllowances(existingCryptoAllowances);
         ownerAccount.setFungibleTokenAllowances(existingTokenAllowances);
         ownerAccount.setApproveForAllNfts(existingNftAllowances);
@@ -462,29 +433,26 @@ class ApproveAllowanceLogicTest {
         token2Model.setMaxSupply(5000L);
         token2Model.setType(TokenType.NON_FUNGIBLE_UNIQUE);
 
-        final NftAllowance nftAllowance2 =
-                NftAllowance.newBuilder()
-                        .setSpender(spender1)
-                        .setOwner(ownerId)
-                        .setTokenId(token2)
-                        .setApprovedForAll(BoolValue.of(false))
-                        .addAllSerialNumbers(List.of(serial1, serial2))
-                        .build();
+        final NftAllowance nftAllowance2 = NftAllowance.newBuilder()
+                .setSpender(spender1)
+                .setOwner(ownerId)
+                .setTokenId(token2)
+                .setApprovedForAll(BoolValue.of(false))
+                .addAllSerialNumbers(List.of(serial1, serial2))
+                .build();
 
         cryptoAllowances.add(cryptoAllowance1);
         tokenAllowances.add(tokenAllowance1);
         nftAllowances.add(nftAllowance1);
         nftAllowances.add(nftAllowance2);
 
-        cryptoApproveAllowanceTxn =
-                TransactionBody.newBuilder()
-                        .setTransactionID(ourTxnId())
-                        .setCryptoApproveAllowance(
-                                CryptoApproveAllowanceTransactionBody.newBuilder()
-                                        .addAllCryptoAllowances(cryptoAllowances)
-                                        .addAllTokenAllowances(tokenAllowances)
-                                        .addAllNftAllowances(nftAllowances))
-                        .build();
+        cryptoApproveAllowanceTxn = TransactionBody.newBuilder()
+                .setTransactionID(ourTxnId())
+                .setCryptoApproveAllowance(CryptoApproveAllowanceTransactionBody.newBuilder()
+                        .addAllCryptoAllowances(cryptoAllowances)
+                        .addAllTokenAllowances(tokenAllowances)
+                        .addAllNftAllowances(nftAllowances))
+                .build();
         op = cryptoApproveAllowanceTxn.getCryptoApproveAllowance();
 
         ownerAccount.setApproveForAllNfts(new TreeSet<>());
@@ -502,15 +470,13 @@ class ApproveAllowanceLogicTest {
         tokenAllowances.add(tokenAllowance1);
         nftAllowances.add(nftAllowance1);
 
-        cryptoApproveAllowanceTxn =
-                TransactionBody.newBuilder()
-                        .setTransactionID(ourTxnId())
-                        .setCryptoApproveAllowance(
-                                CryptoApproveAllowanceTransactionBody.newBuilder()
-                                        .addAllCryptoAllowances(cryptoAllowances)
-                                        .addAllTokenAllowances(tokenAllowances)
-                                        .addAllNftAllowances(nftAllowances))
-                        .build();
+        cryptoApproveAllowanceTxn = TransactionBody.newBuilder()
+                .setTransactionID(ourTxnId())
+                .setCryptoApproveAllowance(CryptoApproveAllowanceTransactionBody.newBuilder()
+                        .addAllCryptoAllowances(cryptoAllowances)
+                        .addAllTokenAllowances(tokenAllowances)
+                        .addAllNftAllowances(nftAllowances))
+                .build();
         op = cryptoApproveAllowanceTxn.getCryptoApproveAllowance();
 
         ownerAccount.setApproveForAllNfts(new TreeSet<>());
@@ -524,27 +490,24 @@ class ApproveAllowanceLogicTest {
         token2Model.setMaxSupply(5000L);
         token2Model.setType(TokenType.NON_FUNGIBLE_UNIQUE);
 
-        final CryptoAllowance cryptoAllowance =
-                CryptoAllowance.newBuilder()
-                        .setOwner(ownerId)
-                        .setSpender(spender1)
-                        .setAmount(0L)
-                        .build();
-        final TokenAllowance tokenAllowance =
-                TokenAllowance.newBuilder()
-                        .setSpender(spender1)
-                        .setAmount(0L)
-                        .setTokenId(token1)
-                        .setOwner(ownerId)
-                        .build();
-        final NftAllowance nftAllowance =
-                NftAllowance.newBuilder()
-                        .setSpender(spender1)
-                        .setTokenId(token2)
-                        .setApprovedForAll(BoolValue.of(false))
-                        .setOwner(ownerId)
-                        .addAllSerialNumbers(List.of(1L, 10L))
-                        .build();
+        final CryptoAllowance cryptoAllowance = CryptoAllowance.newBuilder()
+                .setOwner(ownerId)
+                .setSpender(spender1)
+                .setAmount(0L)
+                .build();
+        final TokenAllowance tokenAllowance = TokenAllowance.newBuilder()
+                .setSpender(spender1)
+                .setAmount(0L)
+                .setTokenId(token1)
+                .setOwner(ownerId)
+                .build();
+        final NftAllowance nftAllowance = NftAllowance.newBuilder()
+                .setSpender(spender1)
+                .setTokenId(token2)
+                .setApprovedForAll(BoolValue.of(false))
+                .setOwner(ownerId)
+                .addAllSerialNumbers(List.of(1L, 10L))
+                .build();
 
         cryptoAllowances.add(cryptoAllowance1);
         tokenAllowances.add(tokenAllowance1);
@@ -553,15 +516,13 @@ class ApproveAllowanceLogicTest {
         tokenAllowances.add(tokenAllowance);
         nftAllowances.add(nftAllowance);
 
-        cryptoApproveAllowanceTxn =
-                TransactionBody.newBuilder()
-                        .setTransactionID(ourTxnId())
-                        .setCryptoApproveAllowance(
-                                CryptoApproveAllowanceTransactionBody.newBuilder()
-                                        .addAllCryptoAllowances(cryptoAllowances)
-                                        .addAllTokenAllowances(tokenAllowances)
-                                        .addAllNftAllowances(nftAllowances))
-                        .build();
+        cryptoApproveAllowanceTxn = TransactionBody.newBuilder()
+                .setTransactionID(ourTxnId())
+                .setCryptoApproveAllowance(CryptoApproveAllowanceTransactionBody.newBuilder()
+                        .addAllCryptoAllowances(cryptoAllowances)
+                        .addAllTokenAllowances(tokenAllowances)
+                        .addAllNftAllowances(nftAllowances))
+                .build();
 
         ownerAccount.setApproveForAllNfts(new TreeSet<>());
         ownerAccount.setCryptoAllowances(new HashMap<>());
@@ -576,33 +537,29 @@ class ApproveAllowanceLogicTest {
 
         final CryptoAllowance cryptoAllowance1 =
                 CryptoAllowance.newBuilder().setSpender(spender1).setAmount(10L).build();
-        final TokenAllowance tokenAllowance1 =
-                TokenAllowance.newBuilder()
-                        .setSpender(spender1)
-                        .setAmount(10L)
-                        .setTokenId(token1)
-                        .build();
-        final NftAllowance nftAllowance1 =
-                NftAllowance.newBuilder()
-                        .setSpender(spender1)
-                        .setTokenId(token2)
-                        .setApprovedForAll(BoolValue.of(true))
-                        .addAllSerialNumbers(List.of(1L, 10L))
-                        .build();
+        final TokenAllowance tokenAllowance1 = TokenAllowance.newBuilder()
+                .setSpender(spender1)
+                .setAmount(10L)
+                .setTokenId(token1)
+                .build();
+        final NftAllowance nftAllowance1 = NftAllowance.newBuilder()
+                .setSpender(spender1)
+                .setTokenId(token2)
+                .setApprovedForAll(BoolValue.of(true))
+                .addAllSerialNumbers(List.of(1L, 10L))
+                .build();
 
         cryptoAllowances.add(cryptoAllowance1);
         tokenAllowances.add(tokenAllowance1);
         nftAllowances.add(nftAllowance1);
 
-        cryptoApproveAllowanceTxn =
-                TransactionBody.newBuilder()
-                        .setTransactionID(ourTxnId())
-                        .setCryptoApproveAllowance(
-                                CryptoApproveAllowanceTransactionBody.newBuilder()
-                                        .addAllCryptoAllowances(cryptoAllowances)
-                                        .addAllTokenAllowances(tokenAllowances)
-                                        .addAllNftAllowances(nftAllowances))
-                        .build();
+        cryptoApproveAllowanceTxn = TransactionBody.newBuilder()
+                .setTransactionID(ourTxnId())
+                .setCryptoApproveAllowance(CryptoApproveAllowanceTransactionBody.newBuilder()
+                        .addAllCryptoAllowances(cryptoAllowances)
+                        .addAllTokenAllowances(tokenAllowances)
+                        .addAllNftAllowances(nftAllowances))
+                .build();
         op = cryptoApproveAllowanceTxn.getCryptoApproveAllowance();
 
         payerAccount.setApproveForAllNfts(new TreeSet<>());
@@ -614,12 +571,8 @@ class ApproveAllowanceLogicTest {
         Map<EntityNum, Long> cryptoAllowances = new TreeMap<>();
         Map<FcTokenAllowanceId, Long> tokenAllowances = new TreeMap<>();
         Set<FcTokenAllowanceId> nftAllowances = new TreeSet<>();
-        final var id =
-                FcTokenAllowanceId.from(
-                        EntityNum.fromTokenId(token1), EntityNum.fromAccountId(spender1));
-        final var Nftid =
-                FcTokenAllowanceId.from(
-                        EntityNum.fromTokenId(token2), EntityNum.fromAccountId(spender1));
+        final var id = FcTokenAllowanceId.from(EntityNum.fromTokenId(token1), EntityNum.fromAccountId(spender1));
+        final var Nftid = FcTokenAllowanceId.from(EntityNum.fromTokenId(token2), EntityNum.fromAccountId(spender1));
         cryptoAllowances.put(EntityNum.fromAccountId(spender1), 10000L);
         tokenAllowances.put(id, 100000L);
         nftAllowances.add(Nftid);
@@ -631,8 +584,7 @@ class ApproveAllowanceLogicTest {
     private TransactionID ourTxnId() {
         return TransactionID.newBuilder()
                 .setAccountID(payerId)
-                .setTransactionValidStart(
-                        Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()))
+                .setTransactionValidStart(Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()))
                 .build();
     }
 }

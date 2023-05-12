@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.token.txns;
 
 import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
@@ -62,20 +63,19 @@ class TokenUpdateResourceUsageTest {
     String name = "IsItReallyOk";
     String memo = "We just fake it all the time.";
     TokenID target = IdUtils.asToken("0.0.123");
-    TokenInfo info =
-            TokenInfo.newBuilder()
-                    .setAdminKey(TxnHandlingScenario.TOKEN_ADMIN_KT.asKey())
-                    .setFreezeKey(TxnHandlingScenario.TOKEN_FREEZE_KT.asKey())
-                    .setWipeKey(TxnHandlingScenario.TOKEN_WIPE_KT.asKey())
-                    .setSupplyKey(TxnHandlingScenario.TOKEN_SUPPLY_KT.asKey())
-                    .setKycKey(TxnHandlingScenario.TOKEN_KYC_KT.asKey())
-                    .setFeeScheduleKey(TxnHandlingScenario.TOKEN_FEE_SCHEDULE_KT.asKey())
-                    .setPauseKey(TxnHandlingScenario.TOKEN_PAUSE_KT.asKey())
-                    .setSymbol(symbol)
-                    .setName(name)
-                    .setMemo(memo)
-                    .setExpiry(Timestamp.newBuilder().setSeconds(expiry))
-                    .build();
+    TokenInfo info = TokenInfo.newBuilder()
+            .setAdminKey(TxnHandlingScenario.TOKEN_ADMIN_KT.asKey())
+            .setFreezeKey(TxnHandlingScenario.TOKEN_FREEZE_KT.asKey())
+            .setWipeKey(TxnHandlingScenario.TOKEN_WIPE_KT.asKey())
+            .setSupplyKey(TxnHandlingScenario.TOKEN_SUPPLY_KT.asKey())
+            .setKycKey(TxnHandlingScenario.TOKEN_KYC_KT.asKey())
+            .setFeeScheduleKey(TxnHandlingScenario.TOKEN_FEE_SCHEDULE_KT.asKey())
+            .setPauseKey(TxnHandlingScenario.TOKEN_PAUSE_KT.asKey())
+            .setSymbol(symbol)
+            .setName(name)
+            .setMemo(memo)
+            .setExpiry(Timestamp.newBuilder().setSeconds(expiry))
+            .build();
 
     TxnUsageEstimator txnUsageEstimator;
 
@@ -87,7 +87,8 @@ class TokenUpdateResourceUsageTest {
         tokenUpdateTxn = mock(TransactionBody.class);
         given(tokenUpdateTxn.hasTokenUpdate()).willReturn(true);
         given(tokenUpdateTxn.getTokenUpdate())
-                .willReturn(TokenUpdateTransactionBody.newBuilder().setToken(target).build());
+                .willReturn(
+                        TokenUpdateTransactionBody.newBuilder().setToken(target).build());
 
         nonTokenUpdateTxn = mock(TransactionBody.class);
         given(nonTokenUpdateTxn.hasTokenUpdate()).willReturn(false);
@@ -103,9 +104,7 @@ class TokenUpdateResourceUsageTest {
                 .willReturn(usage);
         given(usage.givenCurrentFreezeKey(Optional.of(TxnHandlingScenario.TOKEN_FREEZE_KT.asKey())))
                 .willReturn(usage);
-        given(
-                        usage.givenCurrentFeeScheduleKey(
-                                Optional.of(TxnHandlingScenario.TOKEN_FEE_SCHEDULE_KT.asKey())))
+        given(usage.givenCurrentFeeScheduleKey(Optional.of(TxnHandlingScenario.TOKEN_FEE_SCHEDULE_KT.asKey())))
                 .willReturn(usage);
         given(usage.givenCurrentPauseKey(Optional.of(TxnHandlingScenario.TOKEN_PAUSE_KT.asKey())))
                 .willReturn(usage);
@@ -120,8 +119,7 @@ class TokenUpdateResourceUsageTest {
 
         txnUsageEstimator = mock(TxnUsageEstimator.class);
         final EstimatorFactory estimatorFactory = mock(EstimatorFactory.class);
-        given(estimatorFactory.get(sigUsage, tokenUpdateTxn, ESTIMATOR_UTILS))
-                .willReturn(txnUsageEstimator);
+        given(estimatorFactory.get(sigUsage, tokenUpdateTxn, ESTIMATOR_UTILS)).willReturn(txnUsageEstimator);
         subject = new TokenUpdateResourceUsage(estimatorFactory);
     }
 

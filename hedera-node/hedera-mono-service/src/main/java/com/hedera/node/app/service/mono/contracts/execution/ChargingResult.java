@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.execution;
 
 import edu.umd.cs.findbugs.annotations.Nullable;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.MutableAccount;
 
-public record ChargingResult(
-        MutableAccount sender, @Nullable MutableAccount relayer, Wei allowanceCharged) {}
+public record ChargingResult(MutableAccount sender, @Nullable MutableAccount relayer, Wei allowanceCharged) {}

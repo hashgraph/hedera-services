@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context.properties;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -25,8 +26,7 @@ class EntityTypeTest {
     void worksWithSomeValidTypes() {
         assertEquals(
                 EnumSet.allOf(EntityType.class),
-                EntityType.csvTypeSet(
-                        "ACCOUNT,CONTRACT, FILE,SCHEDULE,TOKEN, TOPIC,NFT,TOKEN_ASSOCIATION"));
+                EntityType.csvTypeSet("ACCOUNT,CONTRACT, FILE,SCHEDULE,TOKEN, TOPIC,NFT,TOKEN_ASSOCIATION"));
     }
 
     @Test
@@ -36,8 +36,6 @@ class EntityTypeTest {
 
     @Test
     void throwsOnInvalidSpec() {
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> EntityType.csvTypeSet("ACCOUNT,CONTRACTUALLY_SPEAKING"));
+        assertThrows(IllegalArgumentException.class, () -> EntityType.csvTypeSet("ACCOUNT,CONTRACTUALLY_SPEAKING"));
     }
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.config;
 
 import static com.hedera.node.app.service.mono.config.EntityNumbers.UNKNOWN_NUMBER;
@@ -27,6 +28,7 @@ import javax.inject.Singleton;
 /** FUTURE: This class will be moved to hedera-app-spi module in future PRs */
 @Singleton
 public class HederaNumbers {
+
     public static final long NUM_RESERVED_SYSTEM_ENTITIES = 750L;
     public static final long FIRST_POST_SYSTEM_FILE_ENTITY = 200L;
     public static final long FIRST_RESERVED_SYSTEM_CONTRACT = 350L;

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.token;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
@@ -57,8 +58,7 @@ class TokenUpdateTransitionLogicTest {
     long thisSecond = 1_234_567L;
     private Instant now = Instant.ofEpochSecond(thisSecond);
     private TokenID target = IdUtils.asToken("1.2.666");
-    private NftId nftId =
-            new NftId(target.getShardNum(), target.getRealmNum(), target.getTokenNum(), -1);
+    private NftId nftId = new NftId(target.getShardNum(), target.getRealmNum(), target.getTokenNum(), -1);
     private AccountID oldTreasury = IdUtils.asAccount("1.2.4");
     private AccountID newTreasury = IdUtils.asAccount("1.2.5");
     private AccountID newAutoRenew = IdUtils.asAccount("5.2.1");
@@ -104,15 +104,8 @@ class TokenUpdateTransitionLogicTest {
         expiryOnlyCheck = (Predicate<TokenUpdateTransactionBody>) mock(Predicate.class);
         given(expiryOnlyCheck.test(any())).willReturn(false);
 
-        subject =
-                new TokenUpdateTransitionLogic(
-                        true,
-                        validator,
-                        store,
-                        ledger,
-                        txnCtx,
-                        sigImpactHistorian,
-                        expiryOnlyCheck);
+        subject = new TokenUpdateTransitionLogic(
+                true, validator, store, ledger, txnCtx, sigImpactHistorian, expiryOnlyCheck);
     }
 
     @Test
@@ -191,8 +184,7 @@ class TokenUpdateTransitionLogicTest {
         givenValidTxnCtx(true);
         givenToken(true, true);
         given(store.associationExists(newTreasury, target)).willReturn(false);
-        given(store.autoAssociate(newTreasury, target))
-                .willReturn(NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
+        given(store.autoAssociate(newTreasury, target)).willReturn(NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
 
         subject.doStateTransition();
 
@@ -305,11 +297,11 @@ class TokenUpdateTransitionLogicTest {
 
     @Test
     void abortsOnInvalidNewExpiry() {
-        final var expiry = Timestamp.newBuilder().setSeconds(thisSecond + thisSecond).build();
+        final var expiry =
+                Timestamp.newBuilder().setSeconds(thisSecond + thisSecond).build();
 
-        final var builder =
-                TransactionBody.newBuilder()
-                        .setTokenUpdate(TokenUpdateTransactionBody.newBuilder().setExpiry(expiry));
+        final var builder = TransactionBody.newBuilder()
+                .setTokenUpdate(TokenUpdateTransactionBody.newBuilder().setExpiry(expiry));
         tokenUpdateTxn = builder.build();
         given(accessor.getTxn()).willReturn(tokenUpdateTxn);
         given(txnCtx.accessor()).willReturn(accessor);
@@ -390,8 +382,7 @@ class TokenUpdateTransitionLogicTest {
         verify(ledger).unfreeze(newTreasury, target);
         verify(ledger).grantKyc(newTreasury, target);
         verify(ledger).getTokenBalance(oldTreasury, target);
-        verify(ledger, never())
-                .doTokenTransfer(target, oldTreasury, newTreasury, oldTreasuryBalance);
+        verify(ledger, never()).doTokenTransfer(target, oldTreasury, newTreasury, oldTreasuryBalance);
         verify(txnCtx).setStatus(SUCCESS);
         verify(sigImpactHistorian).markEntityChanged(target.getTokenNum());
     }
@@ -531,15 +522,8 @@ class TokenUpdateTransitionLogicTest {
     @Test
     void rejectsTreasuryUpdateIfNonzeroBalanceForUnique() {
         final long oldTreasuryBalance = 1;
-        subject =
-                new TokenUpdateTransitionLogic(
-                        false,
-                        validator,
-                        store,
-                        ledger,
-                        txnCtx,
-                        sigImpactHistorian,
-                        expiryOnlyCheck);
+        subject = new TokenUpdateTransitionLogic(
+                false, validator, store, ledger, txnCtx, sigImpactHistorian, expiryOnlyCheck);
 
         givenValidTxnCtx(true);
         givenToken(true, true, true);
@@ -576,21 +560,15 @@ class TokenUpdateTransitionLogicTest {
     }
 
     private void givenValidTxnCtx(boolean withNewTreasury, boolean useDuplicateTreasury) {
-        final var builder =
-                TransactionBody.newBuilder()
-                        .setTokenUpdate(
-                                TokenUpdateTransactionBody.newBuilder()
-                                        .setSymbol(symbol)
-                                        .setAutoRenewAccount(newAutoRenew)
-                                        .setName(name)
-                                        .setMemo(
-                                                StringValue.newBuilder()
-                                                        .setValue("FATALITY")
-                                                        .build())
-                                        .setToken(target));
+        final var builder = TransactionBody.newBuilder()
+                .setTokenUpdate(TokenUpdateTransactionBody.newBuilder()
+                        .setSymbol(symbol)
+                        .setAutoRenewAccount(newAutoRenew)
+                        .setName(name)
+                        .setMemo(StringValue.newBuilder().setValue("FATALITY").build())
+                        .setToken(target));
         if (withNewTreasury) {
-            builder.getTokenUpdateBuilder()
-                    .setTreasury(useDuplicateTreasury ? oldTreasury : newTreasury);
+            builder.getTokenUpdateBuilder().setTreasury(useDuplicateTreasury ? oldTreasury : newTreasury);
         }
         tokenUpdateTxn = builder.build();
         given(accessor.getTxn()).willReturn(tokenUpdateTxn);
@@ -606,60 +584,44 @@ class TokenUpdateTransitionLogicTest {
     }
 
     private void givenMissingToken() {
-        tokenUpdateTxn =
-                TransactionBody.newBuilder()
-                        .setTokenUpdate(TokenUpdateTransactionBody.newBuilder())
-                        .build();
+        tokenUpdateTxn = TransactionBody.newBuilder()
+                .setTokenUpdate(TokenUpdateTransactionBody.newBuilder())
+                .build();
     }
 
     private void givenInvalidFreezeKey() {
-        tokenUpdateTxn =
-                TransactionBody.newBuilder()
-                        .setTokenUpdate(
-                                TokenUpdateTransactionBody.newBuilder()
-                                        .setToken(target)
-                                        .setFreezeKey(Key.getDefaultInstance()))
-                        .build();
+        tokenUpdateTxn = TransactionBody.newBuilder()
+                .setTokenUpdate(
+                        TokenUpdateTransactionBody.newBuilder().setToken(target).setFreezeKey(Key.getDefaultInstance()))
+                .build();
     }
 
     private void givenInvalidAdminKey() {
-        tokenUpdateTxn =
-                TransactionBody.newBuilder()
-                        .setTokenUpdate(
-                                TokenUpdateTransactionBody.newBuilder()
-                                        .setToken(target)
-                                        .setAdminKey(Key.getDefaultInstance()))
-                        .build();
+        tokenUpdateTxn = TransactionBody.newBuilder()
+                .setTokenUpdate(
+                        TokenUpdateTransactionBody.newBuilder().setToken(target).setAdminKey(Key.getDefaultInstance()))
+                .build();
     }
 
     private void givenInvalidWipeKey() {
-        tokenUpdateTxn =
-                TransactionBody.newBuilder()
-                        .setTokenUpdate(
-                                TokenUpdateTransactionBody.newBuilder()
-                                        .setToken(target)
-                                        .setWipeKey(Key.getDefaultInstance()))
-                        .build();
+        tokenUpdateTxn = TransactionBody.newBuilder()
+                .setTokenUpdate(
+                        TokenUpdateTransactionBody.newBuilder().setToken(target).setWipeKey(Key.getDefaultInstance()))
+                .build();
     }
 
     private void givenInvalidSupplyKey() {
-        tokenUpdateTxn =
-                TransactionBody.newBuilder()
-                        .setTokenUpdate(
-                                TokenUpdateTransactionBody.newBuilder()
-                                        .setToken(target)
-                                        .setSupplyKey(Key.getDefaultInstance()))
-                        .build();
+        tokenUpdateTxn = TransactionBody.newBuilder()
+                .setTokenUpdate(
+                        TokenUpdateTransactionBody.newBuilder().setToken(target).setSupplyKey(Key.getDefaultInstance()))
+                .build();
     }
 
     private void givenInvalidKycKey() {
-        tokenUpdateTxn =
-                TransactionBody.newBuilder()
-                        .setTokenUpdate(
-                                TokenUpdateTransactionBody.newBuilder()
-                                        .setToken(target)
-                                        .setKycKey(Key.getDefaultInstance()))
-                        .build();
+        tokenUpdateTxn = TransactionBody.newBuilder()
+                .setTokenUpdate(
+                        TokenUpdateTransactionBody.newBuilder().setToken(target).setKycKey(Key.getDefaultInstance()))
+                .build();
     }
 
     private void withAlwaysValidValidator() {

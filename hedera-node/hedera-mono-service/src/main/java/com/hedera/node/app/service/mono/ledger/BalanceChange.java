@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger;
 
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isAlias;
@@ -22,6 +23,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NO
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.mono.store.contracts.precompile.impl.TransferPrecompile;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hedera.node.app.service.mono.utils.EntityNum;
@@ -29,6 +31,7 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -73,15 +76,16 @@ public class BalanceChange {
     private boolean isForCustomFee = false;
     private AccountID payerID = null;
 
+    // This is used to indicate if the balance change is for a custom fee that is a fallback fee
+    // This is used to enforce receiver signature requirements for fallback fees
+    private boolean includesFallbackFee = false;
+
     public static BalanceChange changingHbar(final AccountAmount aa, final AccountID payerID) {
         return new BalanceChange(null, aa, INSUFFICIENT_ACCOUNT_BALANCE, payerID);
     }
 
     public static BalanceChange changingFtUnits(
-            final Id token,
-            final TokenID tokenId,
-            final AccountAmount aa,
-            final AccountID payerID) {
+            final Id token, final TokenID tokenId, final AccountAmount aa, final AccountID payerID) {
         final var tokenChange = new BalanceChange(token, aa, INSUFFICIENT_TOKEN_BALANCE, payerID);
         tokenChange.tokenId = tokenId;
         return tokenChange;
@@ -89,26 +93,17 @@ public class BalanceChange {
 
     public static BalanceChange hbarCustomFeeAdjust(final Id id, final long amount) {
         return new BalanceChange(
-                id,
-                amount,
-                DEFAULT_PAYER,
-                DEFAULT_ALLOWANCE_APPROVAL,
-                true,
-                INSUFFICIENT_ACCOUNT_BALANCE);
+                id, amount, DEFAULT_PAYER, DEFAULT_ALLOWANCE_APPROVAL, true, INSUFFICIENT_ACCOUNT_BALANCE);
     }
 
     public static BalanceChange changingNftOwnership(
-            final Id token,
-            final TokenID tokenId,
-            final NftTransfer nftTransfer,
-            final AccountID payerID) {
-        final var nftChange =
-                new BalanceChange(
-                        token,
-                        nftTransfer.getSenderAccountID(),
-                        nftTransfer.getReceiverAccountID(),
-                        nftTransfer.getSerialNumber(),
-                        SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
+            final Id token, final TokenID tokenId, final NftTransfer nftTransfer, final AccountID payerID) {
+        final var nftChange = new BalanceChange(
+                token,
+                nftTransfer.getSenderAccountID(),
+                nftTransfer.getReceiverAccountID(),
+                nftTransfer.getSerialNumber(),
+                SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
         nftChange.tokenId = tokenId;
         nftChange.isApprovedAllowance = nftTransfer.getIsApproval();
         if (nftTransfer.getIsApproval()) {
@@ -118,8 +113,7 @@ public class BalanceChange {
         return nftChange;
     }
 
-    public static BalanceChange tokenCustomFeeAdjust(
-            final Id account, final Id token, final long amount) {
+    public static BalanceChange tokenCustomFeeAdjust(final Id account, final Id token, final long amount) {
         return tokenAdjust(account, token, amount, DEFAULT_PAYER, DEFAULT_ALLOWANCE_APPROVAL, true);
     }
 
@@ -130,14 +124,8 @@ public class BalanceChange {
             final AccountID payerID,
             final boolean isApprovedAllowance,
             final boolean isForCustomFee) {
-        final var change =
-                new BalanceChange(
-                        account,
-                        amount,
-                        payerID,
-                        isApprovedAllowance,
-                        isForCustomFee,
-                        INSUFFICIENT_TOKEN_BALANCE);
+        final var change = new BalanceChange(
+                account, amount, payerID, isApprovedAllowance, isForCustomFee, INSUFFICIENT_TOKEN_BALANCE);
         change.payerID = payerID;
         change.token = token;
         change.tokenId = token.asGrpcToken();
@@ -170,10 +158,7 @@ public class BalanceChange {
 
     /* HTS constructor */
     private BalanceChange(
-            final Id token,
-            final AccountAmount aa,
-            final ResponseCodeEnum code,
-            final AccountID payerID) {
+            final Id token, final AccountAmount aa, final ResponseCodeEnum code, final AccountID payerID) {
         this.token = token;
         this.accountId = aa.getAccountID();
         this.alias = accountId.getAlias();
@@ -213,6 +198,30 @@ public class BalanceChange {
             account = Id.fromGrpcAccount(accountId);
         } else if (hasNonEmptyCounterPartyAlias()) {
             counterPartyAccountId = createdId.toGrpcAccountId();
+        }
+    }
+
+    /**
+     * If this balance change is an hbar or fungible token debit, or an NFT ownership change;
+     * <i>and</i> it is not already an approved change, converts this to an approved change.
+     *
+     * <p>We need this so that when a {@link TransferPrecompile} is running without access to the
+     * top-level {@link SignatureMap}, inside a {@code ContractCall} that previously relied on
+     * top-level signatures, it can keep working by "setting up" the {@code ContractCall} with
+     * appropriate allowances that we will use automatically.
+     */
+    public void switchToApproved() {
+        if (isApprovedAllowance) {
+            return;
+        }
+        if (token == null || nftId == null) {
+            if (originalUnits < 0L) {
+                isApprovedAllowance = true;
+                allowanceUnits = originalUnits;
+            }
+        } else {
+            isApprovedAllowance = true;
+            allowanceUnits = -1;
         }
     }
 
@@ -411,5 +420,22 @@ public class BalanceChange {
         if (isAlias(accountId)) return alias;
         else if (hasNonEmptyCounterPartyAlias()) return counterPartyAlias;
         else return null;
+    }
+
+    /**
+     * Boolean flag to indicate if the change is for a custom fee that includes a fallback fee.
+     *
+     * @return true if the change is for a custom fee that includes a fallback fee
+     */
+    public boolean includesFallbackFee() {
+        return includesFallbackFee;
+    }
+    /**
+     * Sets the flag to indicate if the change is for a custom fee that includes a fallback fee.
+     * This is used to enforce the receiver signature requirement in a crypto transfer of an NFT
+     * with a fallback royalty fee.
+     */
+    public void setIncludesFallbackFee() {
+        this.includesFallbackFee = true;
     }
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi.test.numbers;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -27,58 +28,57 @@ class HederaAccountNumbersTest {
 
     @BeforeEach
     void setUp() {
-        subject =
-                new HederaAccountNumbers() {
-                    @Override
-                    public long treasury() {
-                        return 2L;
-                    }
+        subject = new HederaAccountNumbers() {
+            @Override
+            public long treasury() {
+                return 2L;
+            }
 
-                    @Override
-                    public long freezeAdmin() {
-                        throw new IllegalCallerException("Should not be called here");
-                    }
+            @Override
+            public long freezeAdmin() {
+                throw new IllegalCallerException("Should not be called here");
+            }
 
-                    @Override
-                    public long systemAdmin() {
-                        return 50L;
-                    }
+            @Override
+            public long systemAdmin() {
+                return 50L;
+            }
 
-                    @Override
-                    public long addressBookAdmin() {
-                        throw new IllegalCallerException("Should not be called here");
-                    }
+            @Override
+            public long addressBookAdmin() {
+                throw new IllegalCallerException("Should not be called here");
+            }
 
-                    @Override
-                    public long feeSchedulesAdmin() {
-                        throw new IllegalCallerException("Should not be called here");
-                    }
+            @Override
+            public long feeSchedulesAdmin() {
+                throw new IllegalCallerException("Should not be called here");
+            }
 
-                    @Override
-                    public long exchangeRatesAdmin() {
-                        throw new IllegalCallerException("Should not be called here");
-                    }
+            @Override
+            public long exchangeRatesAdmin() {
+                throw new IllegalCallerException("Should not be called here");
+            }
 
-                    @Override
-                    public long systemDeleteAdmin() {
-                        throw new IllegalCallerException("Should not be called here");
-                    }
+            @Override
+            public long systemDeleteAdmin() {
+                throw new IllegalCallerException("Should not be called here");
+            }
 
-                    @Override
-                    public long systemUndeleteAdmin() {
-                        throw new IllegalCallerException("Should not be called here");
-                    }
+            @Override
+            public long systemUndeleteAdmin() {
+                throw new IllegalCallerException("Should not be called here");
+            }
 
-                    @Override
-                    public long stakingRewardAccount() {
-                        throw new IllegalCallerException("Should not be called here");
-                    }
+            @Override
+            public long stakingRewardAccount() {
+                throw new IllegalCallerException("Should not be called here");
+            }
 
-                    @Override
-                    public long nodeRewardAccount() {
-                        throw new IllegalCallerException("Should not be called here");
-                    }
-                };
+            @Override
+            public long nodeRewardAccount() {
+                throw new IllegalCallerException("Should not be called here");
+            }
+        };
     }
 
     @Test

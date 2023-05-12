@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.submerkle;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -38,11 +39,10 @@ class FcTokenAssociationTest {
     private final long accountNum = 6;
     private final long tokenNum = 3;
     private final FcTokenAssociation subject = new FcTokenAssociation(tokenNum, accountNum);
-    private final TokenAssociation grpc =
-            TokenAssociation.newBuilder()
-                    .setTokenId(TokenID.newBuilder().setTokenNum(tokenNum).build())
-                    .setAccountId(AccountID.newBuilder().setAccountNum(accountNum).build())
-                    .build();
+    private final TokenAssociation grpc = TokenAssociation.newBuilder()
+            .setTokenId(TokenID.newBuilder().setTokenNum(tokenNum).build())
+            .setAccountId(AccountID.newBuilder().setAccountNum(accountNum).build())
+            .build();
 
     @Test
     void serializationWorks() throws IOException, ConstructableRegistryException {

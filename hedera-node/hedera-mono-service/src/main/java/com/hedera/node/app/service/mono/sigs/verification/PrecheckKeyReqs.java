@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs.verification;
 
 import static com.hedera.node.app.service.mono.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
@@ -48,8 +49,7 @@ public class PrecheckKeyReqs {
 
     @Inject
     public PrecheckKeyReqs(
-            final @WorkingStateSigReqs SigRequirements sigReqs,
-            final Predicate<TransactionBody> isQueryPayment) {
+            final @WorkingStateSigReqs SigRequirements sigReqs, final Predicate<TransactionBody> isQueryPayment) {
         this.sigReqs = sigReqs;
         this.isQueryPayment = isQueryPayment;
     }
@@ -81,8 +81,7 @@ public class PrecheckKeyReqs {
         keys.addAll(payerResult.getOrderedKeys());
     }
 
-    private void addQueryPaymentKeys(final TransactionBody txn, final List<JKey> keys)
-            throws Exception {
+    private void addQueryPaymentKeys(final TransactionBody txn, final List<JKey> keys) throws Exception {
         final var otherResult = sigReqs.keysForOtherParties(txn, CODE_ORDER_RESULT_FACTORY);
         if (otherResult.hasErrorReport()) {
             final var errorStatus = otherResult.getErrorReport();

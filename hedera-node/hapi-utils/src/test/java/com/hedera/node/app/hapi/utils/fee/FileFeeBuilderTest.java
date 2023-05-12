@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.utils.fee;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -34,8 +35,7 @@ class FileFeeBuilderTest {
 
     @Test
     void assertGetFileContentQueryFeeMatrices() {
-        var result =
-                fileFeeBuilder.getFileContentQueryFeeMatrices(2, ResponseType.ANSWER_STATE_PROOF);
+        var result = fileFeeBuilder.getFileContentQueryFeeMatrices(2, ResponseType.ANSWER_STATE_PROOF);
         assertEquals(1, result.getNodedata().getConstant());
         assertEquals(236, result.getNodedata().getBpt());
         assertEquals(2016, result.getNodedata().getBpr());
@@ -44,10 +44,9 @@ class FileFeeBuilderTest {
 
     @Test
     void assertGetSystemDeleteFileTxFeeMatrices() throws InvalidTxBodyException {
-        var transactionBody =
-                transactionBodyBuilder
-                        .setSystemDelete(SystemDeleteTransactionBody.newBuilder().build())
-                        .build();
+        var transactionBody = transactionBodyBuilder
+                .setSystemDelete(SystemDeleteTransactionBody.newBuilder().build())
+                .build();
         var result = fileFeeBuilder.getSystemDeleteFileTxFeeMatrices(transactionBody, signValueObj);
         assertEquals(1, result.getNodedata().getConstant());
         assertEquals(115, result.getNodedata().getBpt());
@@ -63,21 +62,17 @@ class FileFeeBuilderTest {
     @Test
     void assertGetSystemDeleteFileTxFeeMatricesThrowsException() {
         var transactionBody = transactionBodyBuilder.build();
-        assertThrows(
-                InvalidTxBodyException.class,
-                () -> {
-                    fileFeeBuilder.getSystemDeleteFileTxFeeMatrices(transactionBody, signValueObj);
-                });
+        assertThrows(InvalidTxBodyException.class, () -> {
+            fileFeeBuilder.getSystemDeleteFileTxFeeMatrices(transactionBody, signValueObj);
+        });
     }
 
     @Test
     void assertGetSystemUnDeleteFileTxFeeMatrices() throws InvalidTxBodyException {
-        var transactionBody =
-                transactionBodyBuilder
-                        .setSystemUndelete(SystemUndeleteTransactionBody.newBuilder().build())
-                        .build();
-        var result =
-                fileFeeBuilder.getSystemUnDeleteFileTxFeeMatrices(transactionBody, signValueObj);
+        var transactionBody = transactionBodyBuilder
+                .setSystemUndelete(SystemUndeleteTransactionBody.newBuilder().build())
+                .build();
+        var result = fileFeeBuilder.getSystemUnDeleteFileTxFeeMatrices(transactionBody, signValueObj);
         assertEquals(1, result.getNodedata().getConstant());
         assertEquals(115, result.getNodedata().getBpt());
         assertEquals(2, result.getNodedata().getVpt());
@@ -92,20 +87,16 @@ class FileFeeBuilderTest {
     @Test
     void assertGetSystemUnDeleteFileTxFeeMatricesThrowsException() throws InvalidTxBodyException {
         var transactionBody = transactionBodyBuilder.build();
-        assertThrows(
-                InvalidTxBodyException.class,
-                () -> {
-                    fileFeeBuilder.getSystemUnDeleteFileTxFeeMatrices(
-                            transactionBody, signValueObj);
-                });
+        assertThrows(InvalidTxBodyException.class, () -> {
+            fileFeeBuilder.getSystemUnDeleteFileTxFeeMatrices(transactionBody, signValueObj);
+        });
     }
 
     @Test
     void assertGetFileDeleteTxFeeMatrices() throws InvalidTxBodyException {
-        var transactionBody =
-                transactionBodyBuilder
-                        .setFileDelete(FileDeleteTransactionBody.newBuilder().build())
-                        .build();
+        var transactionBody = transactionBodyBuilder
+                .setFileDelete(FileDeleteTransactionBody.newBuilder().build())
+                .build();
         var result = fileFeeBuilder.getFileDeleteTxFeeMatrices(transactionBody, signValueObj);
         assertEquals(1, result.getNodedata().getConstant());
         assertEquals(109, result.getNodedata().getBpt());
@@ -122,10 +113,8 @@ class FileFeeBuilderTest {
     @Test
     void assertGetFileDeleteTxFeeMatricesThrowsException() throws InvalidTxBodyException {
         var transactionBody = transactionBodyBuilder.build();
-        assertThrows(
-                InvalidTxBodyException.class,
-                () -> {
-                    fileFeeBuilder.getFileDeleteTxFeeMatrices(transactionBody, signValueObj);
-                });
+        assertThrows(InvalidTxBodyException.class, () -> {
+            fileFeeBuilder.getFileDeleteTxFeeMatrices(transactionBody, signValueObj);
+        });
     }
 }

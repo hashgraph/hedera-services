@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.accounts;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -61,29 +62,22 @@ public class StackedContractAliases extends HederaEvmContractAliases implements 
     @Override
     public void commit(final @Nullable SigImpactHistorian observer) {
         if (removedLinks != null) {
-            removedLinks.forEach(
-                    alias -> {
-                        wrappedAliases.unlink(alias);
-                        if (observer != null) {
-                            observer.markAliasChanged(
-                                    ByteStringUtils.wrapUnsafely(alias.toArrayUnsafe()));
-                        }
-                        log.debug("Committing deletion of CREATE2 address {}", alias);
-                    });
+            removedLinks.forEach(alias -> {
+                wrappedAliases.unlink(alias);
+                if (observer != null) {
+                    observer.markAliasChanged(ByteStringUtils.wrapUnsafely(alias.toArrayUnsafe()));
+                }
+                log.debug("Committing deletion of CREATE2 address {}", alias);
+            });
         }
         if (changedLinks != null) {
-            changedLinks.forEach(
-                    (alias, address) -> {
-                        wrappedAliases.link(alias, address);
-                        log.debug(
-                                "Committing (re-)creation of CREATE2 address {} @ {}",
-                                alias,
-                                address);
-                        if (observer != null) {
-                            observer.markAliasChanged(
-                                    ByteStringUtils.wrapUnsafely(alias.toArrayUnsafe()));
-                        }
-                    });
+            changedLinks.forEach((alias, address) -> {
+                wrappedAliases.link(alias, address);
+                log.debug("Committing (re-)creation of CREATE2 address {} @ {}", alias, address);
+                if (observer != null) {
+                    observer.markAliasChanged(ByteStringUtils.wrapUnsafely(alias.toArrayUnsafe()));
+                }
+            });
         }
     }
 
@@ -101,12 +95,10 @@ public class StackedContractAliases extends HederaEvmContractAliases implements 
     @Override
     public void link(final Address alias, final Address address) {
         if (isMirror(alias)) {
-            throw new IllegalArgumentException(
-                    "Cannot link mirror address " + alias + " to " + address);
+            throw new IllegalArgumentException("Cannot link mirror address " + alias + " to " + address);
         }
         if (!isMirror(address)) {
-            throw new IllegalArgumentException(
-                    "Cannot link alias " + alias + " to non-mirror address " + address);
+            throw new IllegalArgumentException("Cannot link alias " + alias + " to non-mirror address " + address);
         }
         if (isRemoved(alias)) {
             removedLinks.remove(alias);

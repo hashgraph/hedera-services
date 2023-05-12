@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.utils.throttles;
 
 import java.time.Instant;
@@ -31,17 +32,14 @@ public class ConcurrentThrottleTestHelper {
 
     private int lastNumAllowed = 0;
 
-    public ConcurrentThrottleTestHelper(
-            final int threads, final int lifetimeSecs, final int opsToRequest) {
+    public ConcurrentThrottleTestHelper(final int threads, final int lifetimeSecs, final int opsToRequest) {
         this.threads = threads;
         this.lifetimeSecs = lifetimeSecs;
         this.opsToRequest = opsToRequest;
     }
 
     public void assertTolerableTps(
-            final double expectedTps,
-            final double maxPerDeviation,
-            final int logicalToActualTxnRatio) {
+            final double expectedTps, final double maxPerDeviation, final int logicalToActualTxnRatio) {
         final var actualTps = (1.0 * lastNumAllowed) / logicalToActualTxnRatio / lifetimeSecs;
         final var percentDeviation = Math.abs(1.0 - actualTps / expectedTps) * 100.0;
         Assertions.assertEquals(0.0, percentDeviation, maxPerDeviation);
@@ -67,38 +65,36 @@ public class ConcurrentThrottleTestHelper {
         final long[] addNanos = new long[] {0};
 
         for (int i = 0; i < threads; i++) {
-            exec.execute(
-                    () -> {
-                        ready.countDown();
-                        try {
-                            start.await();
-                            while (!stopped.get()) {
-                                synchronized (subject) {
+            exec.execute(() -> {
+                ready.countDown();
+                try {
+                    start.await();
+                    while (!stopped.get()) {
+                        synchronized (subject) {
 
-                                    // We need to handle time going backwards here, which was
-                                    // causing tests using
-                                    // this to be flaky. It is possible for time to go backwards
-                                    // with ntp running on
-                                    // your system.
-                                    final long toAdd = System.nanoTime() - startNanos;
-                                    if (addNanos[0] >= toAdd) {
-                                        continue;
-                                    }
-
-                                    addNanos[0] = toAdd;
-
-                                    if (subject.allow(
-                                            opsToRequest, startTime.plusNanos(addNanos[0]))) {
-                                        allowed.getAndAdd(opsToRequest);
-                                    }
-                                }
+                            // We need to handle time going backwards here, which was
+                            // causing tests using
+                            // this to be flaky. It is possible for time to go backwards
+                            // with ntp running on
+                            // your system.
+                            final long toAdd = System.nanoTime() - startNanos;
+                            if (addNanos[0] >= toAdd) {
+                                continue;
                             }
-                        } catch (final InterruptedException e) {
-                            Thread.currentThread().interrupt();
-                        } finally {
-                            done.countDown();
+
+                            addNanos[0] = toAdd;
+
+                            if (subject.allow(opsToRequest, startTime.plusNanos(addNanos[0]))) {
+                                allowed.getAndAdd(opsToRequest);
+                            }
                         }
-                    });
+                    }
+                } catch (final InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                } finally {
+                    done.countDown();
+                }
+            });
         }
 
         // and:

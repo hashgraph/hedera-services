@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.schedule;
 
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
@@ -36,8 +37,7 @@ public interface ScheduleStore extends Store<ScheduleID, ScheduleVirtualValue> {
 
     ResponseCodeEnum deleteAt(ScheduleID id, Instant consensusTime);
 
-    CreationResult<ScheduleID> createProvisionally(
-            ScheduleVirtualValue candidate, RichInstant consensusTime);
+    CreationResult<ScheduleID> createProvisionally(ScheduleVirtualValue candidate, RichInstant consensusTime);
 
     Pair<ScheduleID, ScheduleVirtualValue> lookupSchedule(byte[] bodyBytes);
 

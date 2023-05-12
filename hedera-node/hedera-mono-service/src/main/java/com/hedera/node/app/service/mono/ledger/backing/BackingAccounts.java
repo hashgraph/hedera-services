@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.backing;
 
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
@@ -35,8 +36,7 @@ public class BackingAccounts implements BackingStore<AccountID, HederaAccount> {
 
     @Inject
     public BackingAccounts(
-            final Supplier<AccountStorageAdapter> delegate,
-            final Supplier<RecordsStorageAdapter> payerRecords) {
+            final Supplier<AccountStorageAdapter> delegate, final Supplier<RecordsStorageAdapter> payerRecords) {
         this.delegate = delegate;
         this.payerRecords = payerRecords;
     }

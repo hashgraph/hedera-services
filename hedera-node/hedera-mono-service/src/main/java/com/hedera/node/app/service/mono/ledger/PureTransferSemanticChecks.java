@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
@@ -86,13 +87,8 @@ public class PureTransferSemanticChecks {
             return NOT_SUPPORTED;
         }
 
-        final var tokenValidity =
-                validateTokenTransferSyntax(
-                        tokenAdjustsList,
-                        maxTokenAdjusts,
-                        maxOwnershipChanges,
-                        areNftsEnabled,
-                        areAllowanceEnabled);
+        final var tokenValidity = validateTokenTransferSyntax(
+                tokenAdjustsList, maxTokenAdjusts, maxOwnershipChanges, areNftsEnabled, areAllowanceEnabled);
         if (tokenValidity != OK) {
             return tokenValidity;
         }
@@ -111,11 +107,7 @@ public class PureTransferSemanticChecks {
         }
 
         return checkTokenTransfersList(
-                tokenTransfersList,
-                areNftsEnabled,
-                maxOwnershipChanges,
-                maxListLen,
-                areAllowanceEnabled);
+                tokenTransfersList, areNftsEnabled, maxOwnershipChanges, maxListLen, areAllowanceEnabled);
     }
 
     private ResponseCodeEnum checkTokenTransfersList(
@@ -168,8 +160,7 @@ public class PureTransferSemanticChecks {
         final Set<TokenID> uniqueTokens = new HashSet<>();
         final Set<Long> uniqueSerialNos = new HashSet<>();
         for (var tokenTransfers : tokenTransfersList) {
-            validity =
-                    validateScopedTransferSemantics(uniqueTokens, tokenTransfers, uniqueSerialNos);
+            validity = validateScopedTransferSemantics(uniqueTokens, tokenTransfers, uniqueSerialNos);
             if (validity != OK) {
                 return validity;
             }
@@ -181,9 +172,7 @@ public class PureTransferSemanticChecks {
     }
 
     private ResponseCodeEnum validateScopedTransferSemantics(
-            final Set<TokenID> uniqueTokens,
-            final TokenTransferList tokenTransfers,
-            final Set<Long> uniqueSerialNos) {
+            final Set<TokenID> uniqueTokens, final TokenTransferList tokenTransfers, final Set<Long> uniqueSerialNos) {
         if (!tokenTransfers.hasToken()) {
             return INVALID_TOKEN_ID;
         }
@@ -191,9 +180,7 @@ public class PureTransferSemanticChecks {
         final var ownershipChanges = tokenTransfers.getNftTransfersList();
         uniqueSerialNos.clear();
         for (final var ownershipChange : ownershipChanges) {
-            if (ownershipChange
-                    .getSenderAccountID()
-                    .equals(ownershipChange.getReceiverAccountID())) {
+            if (ownershipChange.getSenderAccountID().equals(ownershipChange.getReceiverAccountID())) {
                 return ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
             }
             if (!uniqueSerialNos.add(ownershipChange.getSerialNumber())) {

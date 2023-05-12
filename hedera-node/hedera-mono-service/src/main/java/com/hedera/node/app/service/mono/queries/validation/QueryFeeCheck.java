@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.validation;
 
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
@@ -44,16 +45,13 @@ public class QueryFeeCheck {
     private final Supplier<AccountStorageAdapter> accounts;
 
     @Inject
-    public QueryFeeCheck(
-            final OptionValidator validator, final Supplier<AccountStorageAdapter> accounts) {
+    public QueryFeeCheck(final OptionValidator validator, final Supplier<AccountStorageAdapter> accounts) {
         this.accounts = accounts;
         this.validator = validator;
     }
 
     public ResponseCodeEnum nodePaymentValidity(
-            @NonNull final List<AccountAmount> transfers,
-            final long queryFee,
-            final AccountID node) {
+            @NonNull final List<AccountAmount> transfers, final long queryFee, final AccountID node) {
         final var plausibility = transfersPlausibility(transfers);
         if (plausibility != OK) {
             return plausibility;
@@ -163,8 +161,7 @@ public class QueryFeeCheck {
         return OK;
     }
 
-    private ResponseCodeEnum balanceCheck(
-            @Nullable final HederaAccount payingAccount, final long req) {
+    private ResponseCodeEnum balanceCheck(@Nullable final HederaAccount payingAccount, final long req) {
         if (payingAccount == null) {
             return ACCOUNT_ID_DOES_NOT_EXIST;
         }
@@ -172,11 +169,8 @@ public class QueryFeeCheck {
         if (balance >= req) {
             return OK;
         } else {
-            final var expiryStatus =
-                    validator.expiryStatusGiven(
-                            balance,
-                            payingAccount.isExpiredAndPendingRemoval(),
-                            payingAccount.isSmartContract());
+            final var expiryStatus = validator.expiryStatusGiven(
+                    balance, payingAccount.isExpiredAndPendingRemoval(), payingAccount.isSmartContract());
             return (expiryStatus == OK) ? INSUFFICIENT_PAYER_BALANCE : expiryStatus;
         }
     }

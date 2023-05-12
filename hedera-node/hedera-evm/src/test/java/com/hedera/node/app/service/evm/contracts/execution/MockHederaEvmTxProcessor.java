@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.contracts.execution;
 
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
@@ -38,14 +39,7 @@ public class MockHederaEvmTxProcessor extends HederaEvmTxProcessor {
             final Map<String, Provider<MessageCallProcessor>> mcps,
             final Map<String, Provider<ContractCreationProcessor>> ccps,
             final BlockMetaSource blockMetaSource) {
-        super(
-                worldState,
-                livePricesSource,
-                dynamicProperties,
-                gasCalculator,
-                mcps,
-                ccps,
-                blockMetaSource);
+        super(worldState, livePricesSource, dynamicProperties, gasCalculator, mcps, ccps, blockMetaSource);
     }
 
     @Override
@@ -55,10 +49,7 @@ public class MockHederaEvmTxProcessor extends HederaEvmTxProcessor {
 
     @Override
     public MessageFrame buildInitialFrame(
-            final Builder baseInitialFrame,
-            final Address to,
-            final Bytes payload,
-            final long value) {
+            final Builder baseInitialFrame, final Address to, final Bytes payload, final long value) {
         return baseInitialFrame
                 .type(MessageFrame.Type.MESSAGE_CALL)
                 .address(to)

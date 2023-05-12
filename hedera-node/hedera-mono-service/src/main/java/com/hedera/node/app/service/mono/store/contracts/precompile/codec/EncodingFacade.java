@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.codec;
 
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType.HAPI_MINT;
@@ -177,17 +178,15 @@ public class EncodingFacade {
         private Address approved;
 
         private FunctionResultBuilder forFunction(final FunctionType functionType) {
-            this.tupleType =
-                    switch (functionType) {
-                        case HAPI_CREATE, HAPI_GET_APPROVED -> intAddressTuple;
-                        case HAPI_MINT -> mintReturnType;
-                        case HAPI_BURN -> burnReturnType;
-                        case ERC_TRANSFER, ERC_APPROVE -> booleanTuple;
-                        case HAPI_ALLOWANCE -> hapiAllowanceOfType;
-                        case HAPI_APPROVE, HAPI_IS_APPROVED_FOR_ALL -> intBoolTuple;
-                        case HAPI_APPROVE_NFT -> intTuple;
-                        default -> notSpecifiedType;
-                    };
+            this.tupleType = switch (functionType) {
+                case HAPI_CREATE, HAPI_GET_APPROVED -> intAddressTuple;
+                case HAPI_MINT -> mintReturnType;
+                case HAPI_BURN -> burnReturnType;
+                case ERC_TRANSFER, ERC_APPROVE -> booleanTuple;
+                case HAPI_ALLOWANCE -> hapiAllowanceOfType;
+                case HAPI_APPROVE, HAPI_IS_APPROVED_FOR_ALL -> intBoolTuple;
+                case HAPI_APPROVE_NFT -> intTuple;
+                default -> notSpecifiedType;};
 
             this.functionType = functionType;
             return this;
@@ -228,14 +227,12 @@ public class EncodingFacade {
             return this;
         }
 
-        private FunctionResultBuilder withErcFungibleTransferStatus(
-                final boolean ercFungibleTransferStatus) {
+        private FunctionResultBuilder withErcFungibleTransferStatus(final boolean ercFungibleTransferStatus) {
             this.ercFungibleTransferStatus = ercFungibleTransferStatus;
             return this;
         }
 
-        private FunctionResultBuilder withIsApprovedForAllStatus(
-                final boolean isApprovedForAllStatus) {
+        private FunctionResultBuilder withIsApprovedForAllStatus(final boolean isApprovedForAllStatus) {
             this.isApprovedForAllStatus = isApprovedForAllStatus;
             return this;
         }
@@ -243,18 +240,15 @@ public class EncodingFacade {
         private Bytes build() {
             final var result =
                     switch (functionType) {
-                        case HAPI_CREATE -> Tuple.of(
-                                status, convertBesuAddressToHeadlongAddress(newTokenAddress));
-                        case HAPI_MINT -> Tuple.of(
-                                status, BigInteger.valueOf(totalSupply), serialNumbers);
+                        case HAPI_CREATE -> Tuple.of(status, convertBesuAddressToHeadlongAddress(newTokenAddress));
+                        case HAPI_MINT -> Tuple.of(status, BigInteger.valueOf(totalSupply), serialNumbers);
                         case HAPI_BURN -> Tuple.of(status, BigInteger.valueOf(totalSupply));
                         case ERC_TRANSFER -> Tuple.of(ercFungibleTransferStatus);
                         case ERC_APPROVE -> Tuple.of(approve);
                         case HAPI_APPROVE -> Tuple.of(status, approve);
                         case HAPI_APPROVE_NFT -> Tuple.of(status);
                         case HAPI_ALLOWANCE -> Tuple.of(status, BigInteger.valueOf(allowance));
-                        case HAPI_GET_APPROVED -> Tuple.of(
-                                status, convertBesuAddressToHeadlongAddress(approved));
+                        case HAPI_GET_APPROVED -> Tuple.of(status, convertBesuAddressToHeadlongAddress(approved));
                         case HAPI_IS_APPROVED_FOR_ALL -> Tuple.of(status, isApprovedForAllStatus);
                         default -> Tuple.of(status);
                     };
@@ -347,19 +341,13 @@ public class EncodingFacade {
             final byte[] expandedArray = new byte[32];
 
             System.arraycopy(
-                    bytesToExpand,
-                    0,
-                    expandedArray,
-                    expandedArray.length - bytesToExpand.length,
-                    bytesToExpand.length);
+                    bytesToExpand, 0, expandedArray, expandedArray.length - bytesToExpand.length, bytesToExpand.length);
             return expandedArray;
         }
     }
 
-    static com.esaulpaugh.headlong.abi.Address convertBesuAddressToHeadlongAddress(
-            @NonNull final Address address) {
+    static com.esaulpaugh.headlong.abi.Address convertBesuAddressToHeadlongAddress(@NonNull final Address address) {
         return com.esaulpaugh.headlong.abi.Address.wrap(
-                com.esaulpaugh.headlong.abi.Address.toChecksumAddress(
-                        address.toUnsignedBigInteger()));
+                com.esaulpaugh.headlong.abi.Address.toChecksumAddress(address.toUnsignedBigInteger()));
     }
 }

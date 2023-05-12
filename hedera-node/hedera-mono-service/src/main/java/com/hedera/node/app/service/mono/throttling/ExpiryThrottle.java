@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.throttling;
 
 import static com.hedera.node.app.service.mono.utils.MiscUtils.safeResetThrottles;
@@ -93,9 +94,7 @@ public class ExpiryThrottle {
             try {
                 resetInternalsFrom(FALLBACK_RESOURCE_LOC);
             } catch (final Exception unrecoverable) {
-                log.error(
-                        "Unable to load default expiry throttle, will reject all expiry work",
-                        unrecoverable);
+                log.error("Unable to load default expiry throttle, will reject all expiry work", unrecoverable);
                 config = null;
             }
         }
@@ -109,9 +108,7 @@ public class ExpiryThrottle {
             log.error("Attempt to reset expiry throttle to {} before initialization", snapshot);
         } else {
             safeResetThrottles(
-                    List.of(config.throttle),
-                    new DeterministicThrottle.UsageSnapshot[] {snapshot},
-                    "expiry");
+                    List.of(config.throttle), new DeterministicThrottle.UsageSnapshot[] {snapshot}, "expiry");
         }
     }
 
@@ -125,26 +122,18 @@ public class ExpiryThrottle {
         return (config == null) ? null : config.throttle.usageSnapshot();
     }
 
-    private record ThrottleConfig(
-            DeterministicThrottle throttle, Map<MapAccessType, Integer> accessReqs) {}
+    private record ThrottleConfig(DeterministicThrottle throttle, Map<MapAccessType, Integer> accessReqs) {}
 
     private void resetInternalsFrom(final String loc) throws JsonProcessingException {
         final var bucket = loadBucket(loc);
         final var mapping = bucket.asThrottleMapping(1);
         final var throttle = mapping.getKey();
-        final var accessReqs =
-                mapping.getValue().stream()
-                        .collect(
-                                toMap(
-                                        Pair::getKey,
-                                        Pair::getValue,
-                                        (a, b) -> a,
-                                        () -> new EnumMap<>(MapAccessType.class)));
+        final var accessReqs = mapping.getValue().stream()
+                .collect(toMap(Pair::getKey, Pair::getValue, (a, b) -> a, () -> new EnumMap<>(MapAccessType.class)));
         config = new ThrottleConfig(throttle, accessReqs);
     }
 
-    private ThrottleBucket<MapAccessType> loadBucket(final String at)
-            throws JsonProcessingException {
+    private ThrottleBucket<MapAccessType> loadBucket(final String at) throws JsonProcessingException {
         final var bytes = resourceLoader.readAllBytesIfPresent(at);
         if (bytes == null) {
             throw new IllegalArgumentException("Cannot load throttle from '" + at + "'");

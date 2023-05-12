@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.contract.queries;
 
 import static com.hedera.test.utils.IdUtils.asContract;
@@ -87,10 +88,9 @@ class GetBytecodeResourceUsageTest {
     }
 
     private static final Query bytecodeQuery(final ContractID id, final ResponseType type) {
-        final var op =
-                ContractGetBytecodeQuery.newBuilder()
-                        .setContractID(id)
-                        .setHeader(QueryHeader.newBuilder().setResponseType(type));
+        final var op = ContractGetBytecodeQuery.newBuilder()
+                .setContractID(id)
+                .setHeader(QueryHeader.newBuilder().setResponseType(type));
         return Query.newBuilder().setContractGetBytecode(op).build();
     }
 }

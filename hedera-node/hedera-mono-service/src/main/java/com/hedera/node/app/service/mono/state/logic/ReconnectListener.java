@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.logic;
 
 import com.hedera.node.app.service.mono.ServicesState;
-import com.hedera.node.app.service.mono.stream.RecordStreamManager;
 import com.hedera.node.app.service.mono.txns.network.UpgradeActions;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.ReconnectCompleteNotification;
@@ -30,26 +30,21 @@ public class ReconnectListener implements ReconnectCompleteListener {
     private static final Logger log = LogManager.getLogger(ReconnectListener.class);
 
     private final UpgradeActions upgradeActions;
-    private final RecordStreamManager recordStreamManager;
 
     @Inject
-    public ReconnectListener(
-            final UpgradeActions upgradeActions, final RecordStreamManager recordStreamManager) {
+    public ReconnectListener(final UpgradeActions upgradeActions) {
         this.upgradeActions = upgradeActions;
-        this.recordStreamManager = recordStreamManager;
     }
 
     @Override
     public void notify(final ReconnectCompleteNotification notification) {
         log.info(
-                "Notification Received: Reconnect Finished. "
-                        + "consensusTimestamp: {}, roundNumber: {}, sequence: {}",
+                "Notification Received: Reconnect Finished. " + "consensusTimestamp: {}, roundNumber: {}, sequence: {}",
                 notification.getConsensusTimestamp(),
                 notification.getRoundNumber(),
                 notification.getSequence());
         final ServicesState state = (ServicesState) notification.getState();
         state.logSummary();
-        recordStreamManager.setStartWriteAtCompleteWindow(true);
         upgradeActions.catchUpOnMissedSideEffects();
     }
 }

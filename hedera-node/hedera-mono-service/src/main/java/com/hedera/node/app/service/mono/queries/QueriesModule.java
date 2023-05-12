@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries;
 
 import com.hedera.node.app.service.mono.config.AccountNumbers;
@@ -52,21 +53,19 @@ public final class QueriesModule {
             final TransactionPrecheck transactionPrecheck,
             final PlatformSubmissionManager submissionManager,
             @HapiThrottle final FunctionalityThrottling hapiThrottling) {
-        final var stakedFlow =
-                new StakedAnswerFlow(
-                        fees,
-                        accountNums,
-                        stateViews,
-                        usagePrices,
-                        hapiThrottling,
-                        submissionManager,
-                        queryHeaderValidity,
-                        transactionPrecheck,
-                        hapiOpPermissions,
-                        queryFeeCheck);
+        final var stakedFlow = new StakedAnswerFlow(
+                fees,
+                accountNums,
+                stateViews,
+                usagePrices,
+                hapiThrottling,
+                submissionManager,
+                queryHeaderValidity,
+                transactionPrecheck,
+                hapiOpPermissions,
+                queryFeeCheck);
 
-        final var zeroStakeFlow =
-                new ZeroStakeAnswerFlow(queryHeaderValidity, stateViews, hapiThrottling);
+        final var zeroStakeFlow = new ZeroStakeAnswerFlow(queryHeaderValidity, stateViews, hapiThrottling);
 
         return new StakeAwareAnswerFlow(nodeInfo, stakedFlow, zeroStakeFlow);
     }

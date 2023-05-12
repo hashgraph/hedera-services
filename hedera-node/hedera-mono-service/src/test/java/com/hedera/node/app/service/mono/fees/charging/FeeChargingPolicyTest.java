@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.charging;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
@@ -37,7 +38,8 @@ class FeeChargingPolicyTest {
     private final FeeObject fees = new FeeObject(1L, 2L, 3L);
     private final FeeObject feesForDuplicateTxn = new FeeObject(1L, 2L, 0L);
 
-    @Mock private NarratedCharging narratedCharging;
+    @Mock
+    private NarratedCharging narratedCharging;
 
     private FeeChargingPolicy subject;
 
@@ -109,9 +111,9 @@ class FeeChargingPolicyTest {
         // then:
         verify(narratedCharging).setFees(captor.capture());
         // and:
-        assertEquals(feesForDuplicateTxn.getNodeFee(), captor.getValue().getNodeFee());
-        assertEquals(feesForDuplicateTxn.getNetworkFee(), captor.getValue().getNetworkFee());
-        assertEquals(feesForDuplicateTxn.getServiceFee(), captor.getValue().getServiceFee());
+        assertEquals(feesForDuplicateTxn.nodeFee(), captor.getValue().nodeFee());
+        assertEquals(feesForDuplicateTxn.networkFee(), captor.getValue().networkFee());
+        assertEquals(feesForDuplicateTxn.serviceFee(), captor.getValue().serviceFee());
         // and:
         verify(narratedCharging).chargePayerAllFees();
         // and:

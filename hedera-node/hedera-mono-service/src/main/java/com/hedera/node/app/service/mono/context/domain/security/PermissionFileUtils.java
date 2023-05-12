@@ -13,9 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context.domain.security;
 
-import static com.hedera.node.app.service.mono.utils.MiscUtils.functionOf;
+import static com.hedera.node.app.hapi.utils.CommonUtils.functionOf;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.functionalityOfQuery;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusDeleteTopic;
@@ -85,7 +86,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSu
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.TRANSACTIONGETFASTRECORD;
 
-import com.hedera.node.app.service.mono.exceptions.UnknownHederaFunctionality;
+import com.hedera.node.app.hapi.utils.exception.UnknownHederaFunctionality;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -94,8 +95,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public final class PermissionFileUtils {
-    private static final EnumMap<HederaFunctionality, String> permissionKeys =
-            new EnumMap<>(HederaFunctionality.class);
+    private static final EnumMap<HederaFunctionality, String> permissionKeys = new EnumMap<>(HederaFunctionality.class);
     static final Map<String, HederaFunctionality> legacyKeys;
 
     private PermissionFileUtils() {
@@ -189,7 +189,6 @@ public final class PermissionFileUtils {
         permissionKeys.put(UtilPrng, "utilPrng");
 
         legacyKeys =
-                permissionKeys.entrySet().stream()
-                        .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
+                permissionKeys.entrySet().stream().collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
     }
 }

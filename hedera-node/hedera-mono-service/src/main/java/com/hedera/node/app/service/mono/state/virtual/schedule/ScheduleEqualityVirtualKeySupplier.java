@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual.schedule;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -20,8 +21,7 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.jasperdb.SelfSerializableSupplier;
 import java.io.IOException;
 
-public class ScheduleEqualityVirtualKeySupplier
-        implements SelfSerializableSupplier<ScheduleEqualityVirtualKey> {
+public class ScheduleEqualityVirtualKeySupplier implements SelfSerializableSupplier<ScheduleEqualityVirtualKey> {
     static final long CLASS_ID = 0x1e03122be5319f50L;
     static final int CURRENT_VERSION = 1;
 

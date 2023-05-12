@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.utils.sysfiles;
 
 import java.util.function.BiConsumer;
@@ -29,8 +30,7 @@ public class ParsingUtils {
             final BiFunction<A, B, T> finisher) {
         final var splitIndex = literal.indexOf(delimiter);
         if (splitIndex == -1) {
-            throw new IllegalArgumentException(
-                    "Missing '" + delimiter + "' in literal '" + literal + "'");
+            throw new IllegalArgumentException("Missing '" + delimiter + "' in literal '" + literal + "'");
         }
         final var delimLen = delimiter.length();
         final var a = aParser.apply(literal.substring(0, splitIndex));

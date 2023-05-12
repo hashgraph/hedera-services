@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.grpc.marshalling;
 
 import static com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
@@ -99,11 +100,9 @@ public class ImpliedTransfersMarshal {
             }
 
             if (aliasResolver.perceivedMissingAliases() > 0) {
-                return ImpliedTransfers.invalid(
-                        props, aliasResolver.resolutions(), INVALID_ACCOUNT_ID);
+                return ImpliedTransfers.invalid(props, aliasResolver.resolutions(), INVALID_ACCOUNT_ID);
             } else if (aliasResolver.perceivedInvalidCreations() > 0) {
-                return ImpliedTransfers.invalid(
-                        props, aliasResolver.resolutions(), INVALID_ALIAS_KEY);
+                return ImpliedTransfers.invalid(props, aliasResolver.resolutions(), INVALID_ALIAS_KEY);
             } else {
                 resolvedAliases = aliasResolver.resolutions();
             }
@@ -146,8 +145,7 @@ public class ImpliedTransfersMarshal {
     }
 
     public ResponseCodeEnum validityWithCurrentProps(CryptoTransferTransactionBody op) {
-        return checks.fullPureValidation(
-                op.getTransfers(), op.getTokenTransfersList(), currentProps());
+        return checks.fullPureValidation(op.getTransfers(), op.getTokenTransfersList(), currentProps());
     }
 
     public ImpliedTransfers assessCustomFeesAndValidate(
@@ -166,8 +164,7 @@ public class ImpliedTransfersMarshal {
         final List<AssessedCustomFeeWrapper> fees = new ArrayList<>();
         var change = changeManager.nextAssessableChange();
         while (change != null) {
-            final var status =
-                    feeAssessor.assess(change, schedulesManager, changeManager, fees, props);
+            final var status = feeAssessor.assess(change, schedulesManager, changeManager, fees, props);
             if (status != OK) {
                 return ImpliedTransfers.invalid(props, schedulesManager.metaUsed(), status);
             }
@@ -175,17 +172,10 @@ public class ImpliedTransfersMarshal {
         }
 
         return ImpliedTransfers.valid(
-                props,
-                changes,
-                schedulesManager.metaUsed(),
-                fees,
-                resolvedAliases,
-                numAutoCreations,
-                numLazyCreations);
+                props, changes, schedulesManager.metaUsed(), fees, resolvedAliases, numAutoCreations, numLazyCreations);
     }
 
-    private void appendToken(
-            CryptoTransferTransactionBody op, List<BalanceChange> changes, AccountID payerID) {
+    private void appendToken(CryptoTransferTransactionBody op, List<BalanceChange> changes, AccountID payerID) {
         /* First add all fungible changes, then NFT ownership changes. This ensures
         fractional fees are applied to the fungible value exchanges before royalty
         fees are assessed. */
@@ -195,8 +185,7 @@ public class ImpliedTransfersMarshal {
             final var tokenId = Id.fromGrpcToken(grpcTokenId);
 
             boolean decimalsSet = false;
-            Map<TokenAndAccountID, BalanceChange> aggregatedFungibleTokenChanges =
-                    new LinkedHashMap<>();
+            Map<TokenAndAccountID, BalanceChange> aggregatedFungibleTokenChanges = new LinkedHashMap<>();
             for (var aa : xfers.getTransfersList()) {
                 var currChange = changingFtUnits(tokenId, grpcTokenId, aa, payerID);
                 // set only for the first balance change of the token with expectedDecimals
@@ -206,8 +195,7 @@ public class ImpliedTransfersMarshal {
                 }
 
                 var tokenAndAccountId =
-                        new TokenAndAccountID(
-                                EntityNum.fromLong(tokenId.num()), currChange.accountId());
+                        new TokenAndAccountID(EntityNum.fromLong(tokenId.num()), currChange.accountId());
 
                 if (!aggregatedFungibleTokenChanges.containsKey(tokenAndAccountId)) {
                     aggregatedFungibleTokenChanges.put(tokenAndAccountId, currChange);
@@ -233,8 +221,7 @@ public class ImpliedTransfersMarshal {
 
     private boolean hasTokenChanges(CryptoTransferTransactionBody op) {
         for (var tokenTransfers : op.getTokenTransfersList()) {
-            if (tokenTransfers.getNftTransfersCount() > 0
-                    || tokenTransfers.getTransfersCount() > 0) {
+            if (tokenTransfers.getNftTransfersCount() > 0 || tokenTransfers.getTransfersCount() > 0) {
                 return true;
             }
         }

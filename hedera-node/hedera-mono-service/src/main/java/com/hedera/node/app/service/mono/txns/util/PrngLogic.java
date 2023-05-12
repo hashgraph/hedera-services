@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.util;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PRNG_RANGE;
@@ -88,8 +89,7 @@ public class PrngLogic {
         try {
             // Use n-3 running hash instead of n-1 running hash for processing transactions quickly
             nMinus3RunningHash = runningHashLeafSupplier.get().nMinusThreeRunningHash();
-            if (nMinus3RunningHash == null
-                    || Arrays.equals(nMinus3RunningHash.getValue(), new byte[48])) {
+            if (nMinus3RunningHash == null || Arrays.equals(nMinus3RunningHash.getValue(), new byte[48])) {
                 log.info("No n-3 record running hash available to generate random number");
                 return MISSING_BYTES;
             }

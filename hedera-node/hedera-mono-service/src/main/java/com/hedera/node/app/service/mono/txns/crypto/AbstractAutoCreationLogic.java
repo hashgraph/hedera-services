@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.crypto;
 
 import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
@@ -25,7 +26,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
@@ -144,9 +144,9 @@ public abstract class AbstractAutoCreationLogic {
      * after those changes are applied atomically, the returned fee must be given to the funding
      * account!
      *
-     * @param change a triggering change with unique alias
+     * @param change         a triggering change with unique alias
      * @param accountsLedger the accounts ledger to use for the provisional creation
-     * @param changes list of all changes need to construct tokenAliasMap
+     * @param changes        list of all changes need to construct tokenAliasMap
      * @return the fee charged for the auto-creation if ok, a failure reason otherwise
      */
     public Pair<ResponseCodeEnum, Long> create(
@@ -163,8 +163,7 @@ public abstract class AbstractAutoCreationLogic {
 
         final var alias = change.getNonEmptyAliasIfPresent();
         if (alias == null) {
-            throw new IllegalStateException(
-                    "Cannot auto-create an account from unaliased change " + change);
+            throw new IllegalStateException("Cannot auto-create an account from unaliased change " + change);
         }
 
         TransactionBody.Builder syntheticCreation;
@@ -177,7 +176,7 @@ public abstract class AbstractAutoCreationLogic {
         final var maxAutoAssociations =
                 tokenAliasMap.getOrDefault(alias, Collections.emptySet()).size();
         customizer.maxAutomaticAssociations(maxAutoAssociations);
-        final var isAliasEVMAddress = alias.size() == EntityIdUtils.EVM_ADDRESS_SIZE;
+        final var isAliasEVMAddress = EntityIdUtils.isOfEvmAddressSize(alias);
         if (isAliasEVMAddress) {
             syntheticCreation = syntheticTxnFactory.createHollowAccount(alias, 0L);
             customizer.key(EMPTY_KEY);
@@ -185,16 +184,8 @@ public abstract class AbstractAutoCreationLogic {
         } else {
             final var key = asPrimitiveKeyUnchecked(alias);
             JKey jKey = asFcKeyUnchecked(key);
-            ByteString evmAddress = null;
-            if (jKey.hasECDSAsecp256k1Key()) {
-                evmAddress =
-                        ByteStringUtils.wrapUnsafely(
-                                tryAddressRecovery(jKey, EthSigsUtils::recoverAddressFromPubKey));
-            }
 
-            syntheticCreation =
-                    syntheticTxnFactory.createAccount(
-                            alias, key, evmAddress, 0L, maxAutoAssociations);
+            syntheticCreation = syntheticTxnFactory.createAccount(alias, key, 0L, maxAutoAssociations);
             customizer.key(jKey);
             memo = AUTO_MEMO;
         }
@@ -212,7 +203,7 @@ public abstract class AbstractAutoCreationLogic {
             fee += getLazyCreationFinalizationFee();
         }
 
-        final var newId = ids.newAccountId(syntheticCreation.getTransactionID().getAccountID());
+        final var newId = ids.newAccountId();
         accountsLedger.create(newId);
         replaceAliasAndSetBalanceOnChange(change, newId);
 
@@ -221,13 +212,22 @@ public abstract class AbstractAutoCreationLogic {
         final var sideEffects = new SideEffectsTracker();
         sideEffects.trackAutoCreation(newId);
 
-        final var childRecord =
-                creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, memo);
+        final var childRecord = creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, memo);
+
+        if (!isAliasEVMAddress) {
+            final var key = asPrimitiveKeyUnchecked(alias);
+
+            if (key.hasECDSASecp256K1()) {
+                final JKey jKey = asFcKeyUnchecked(key);
+                final var evmAddress = tryAddressRecovery(jKey, EthSigsUtils::recoverAddressFromPubKey);
+                childRecord.setEvmAddress(evmAddress);
+            }
+        }
+
         childRecord.setFee(fee);
 
         final var inProgress =
-                new InProgressChildRecord(
-                        DEFAULT_SOURCE_ID, syntheticCreation, childRecord, Collections.emptyList());
+                new InProgressChildRecord(DEFAULT_SOURCE_ID, syntheticCreation, childRecord, Collections.emptyList());
         pendingCreations.add(inProgress);
 
         trackAlias(alias, newId);
@@ -237,41 +237,34 @@ public abstract class AbstractAutoCreationLogic {
 
     protected abstract void trackAlias(final ByteString alias, final AccountID newId);
 
-    private void replaceAliasAndSetBalanceOnChange(
-            final BalanceChange change, final AccountID newAccountId) {
+    private void replaceAliasAndSetBalanceOnChange(final BalanceChange change, final AccountID newAccountId) {
         if (change.isForHbar()) {
             change.setNewBalance(change.getAggregatedUnits());
         }
         change.replaceNonEmptyAliasWith(EntityNum.fromAccountId(newAccountId));
     }
 
-    public long getLazyCreationFinalizationFee() {
+    private long getLazyCreationFinalizationFee() {
         // an AccountID is already accounted for in the
         // fee estimator, so we just need to pass a stub ECDSA key
         // in the synthetic crypto update body
         final var updateTxnBody =
-                CryptoUpdateTransactionBody.newBuilder()
-                        .setKey(Key.newBuilder().setECDSASecp256K1(ByteString.EMPTY));
-        return autoCreationFeeFor(
-                TransactionBody.newBuilder().setCryptoUpdateAccount(updateTxnBody));
+                CryptoUpdateTransactionBody.newBuilder().setKey(Key.newBuilder().setECDSASecp256K1(ByteString.EMPTY));
+        return autoCreationFeeFor(TransactionBody.newBuilder().setCryptoUpdateAccount(updateTxnBody));
     }
 
     private long autoCreationFeeFor(final TransactionBody.Builder cryptoCreateTxn) {
-        final var signedTxn =
-                SignedTransaction.newBuilder()
-                        .setBodyBytes(cryptoCreateTxn.build().toByteString())
-                        .setSigMap(SignatureMap.getDefaultInstance())
-                        .build();
-        final var txn =
-                Transaction.newBuilder()
-                        .setSignedTransactionBytes(signedTxn.toByteString())
-                        .build();
+        final var signedTxn = SignedTransaction.newBuilder()
+                .setBodyBytes(cryptoCreateTxn.build().toByteString())
+                .setSigMap(SignatureMap.getDefaultInstance())
+                .build();
+        final var txn = Transaction.newBuilder()
+                .setSignedTransactionBytes(signedTxn.toByteString())
+                .build();
 
         final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
-        final var fees =
-                feeCalculator.computeFee(
-                        accessor, EMPTY_KEY, currentView.get(), txnCtx.consensusTime());
-        return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
+        final var fees = feeCalculator.computeFee(accessor, EMPTY_KEY, currentView.get(), txnCtx.consensusTime());
+        return fees.serviceFee() + fees.networkFee() + fees.nodeFee();
     }
 
     private void analyzeTokenTransferCreations(final List<BalanceChange> changes) {

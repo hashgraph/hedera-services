@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.token;
 
 import static com.hedera.node.app.service.evm.store.tokens.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -80,9 +81,7 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
             transitionFor(txnCtx.accessor().getTxn().getTokenUpdate());
         } catch (Exception e) {
             log.warn(
-                    "Unhandled error while processing :: {}!",
-                    txnCtx.accessor().getSignedTxnWrapper(),
-                    e);
+                    "Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxnWrapper(), e);
             abortWith(FAIL_INVALID);
         }
     }
@@ -166,19 +165,12 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
             long replacedTreasuryBalance = ledger.getTokenBalance(oldTreasury, id);
             if (replacedTreasuryBalance > 0) {
                 if (token.tokenType().equals(TokenType.FUNGIBLE_COMMON)) {
-                    outcome =
-                            ledger.doTokenTransfer(
-                                    id, oldTreasury, op.getTreasury(), replacedTreasuryBalance);
+                    outcome = ledger.doTokenTransfer(id, oldTreasury, op.getTreasury(), replacedTreasuryBalance);
                 } else {
-                    outcome =
-                            store.changeOwnerWildCard(
-                                    new NftId(
-                                            id.getShardNum(),
-                                            id.getRealmNum(),
-                                            id.getTokenNum(),
-                                            -1),
-                                    oldTreasury,
-                                    op.getTreasury());
+                    outcome = store.changeOwnerWildCard(
+                            new NftId(id.getShardNum(), id.getRealmNum(), id.getTokenNum(), -1),
+                            oldTreasury,
+                            op.getTreasury());
                 }
             }
         }
@@ -205,8 +197,7 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
         return TokenUpdateValidator.validate(txnBody, validator);
     }
 
-    private ResponseCodeEnum autoRenewAttachmentCheck(
-            TokenUpdateTransactionBody op, MerkleToken token) {
+    private ResponseCodeEnum autoRenewAttachmentCheck(TokenUpdateTransactionBody op, MerkleToken token) {
         if (op.hasAutoRenewAccount()) {
             final var newAutoRenew = op.getAutoRenewAccount();
             final var newAutoRenewStatus = ledger.usabilityOf(newAutoRenew);
@@ -226,10 +217,7 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
     }
 
     private ResponseCodeEnum prepTreasuryChange(
-            final TokenID id,
-            final MerkleToken token,
-            final AccountID newTreasury,
-            final AccountID oldTreasury) {
+            final TokenID id, final MerkleToken token, final AccountID newTreasury, final AccountID oldTreasury) {
         var status = OK;
         if (token.hasFreezeKey()) {
             status = ledger.unfreeze(newTreasury, id);

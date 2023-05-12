@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs.metadata;
 
 import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.IMMUTABLE_ACCOUNT;
@@ -49,8 +50,7 @@ public class SafeLookupResult<T> {
         KNOWN_FAILURES.put(INVALID_CONTRACT, new SafeLookupResult<>(INVALID_CONTRACT));
         KNOWN_FAILURES.put(IMMUTABLE_CONTRACT, new SafeLookupResult<>(IMMUTABLE_CONTRACT));
         KNOWN_FAILURES.put(INVALID_TOPIC, new SafeLookupResult<>(INVALID_TOPIC));
-        KNOWN_FAILURES.put(
-                INVALID_AUTORENEW_ACCOUNT, new SafeLookupResult<>(INVALID_AUTORENEW_ACCOUNT));
+        KNOWN_FAILURES.put(INVALID_AUTORENEW_ACCOUNT, new SafeLookupResult<>(INVALID_AUTORENEW_ACCOUNT));
         KNOWN_FAILURES.put(MISSING_SCHEDULE, new SafeLookupResult<>(MISSING_SCHEDULE));
         KNOWN_FAILURES.put(IMMUTABLE_ACCOUNT, new SafeLookupResult<>(IMMUTABLE_ACCOUNT));
     }
@@ -84,8 +84,7 @@ public class SafeLookupResult<T> {
 
     @Override
     public String toString() {
-        final var helper =
-                MoreObjects.toStringHelper(SafeLookupResult.class).add("failure", failure);
+        final var helper = MoreObjects.toStringHelper(SafeLookupResult.class).add("failure", failure);
         metadata.ifPresent(meta -> helper.add("metadata", meta));
         return helper.toString();
     }

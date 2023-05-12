@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.charging;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
@@ -64,7 +65,7 @@ public class FeeChargingPolicy {
      * @return the outcome of applying the policy
      */
     public ResponseCodeEnum applyForDuplicate(FeeObject fees) {
-        final var feesForDuplicate = new FeeObject(fees.getNodeFee(), fees.getNetworkFee(), 0L);
+        final var feesForDuplicate = new FeeObject(fees.nodeFee(), fees.networkFee(), 0L);
 
         return chargePendingSolvency(feesForDuplicate);
     }

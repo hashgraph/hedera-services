@@ -13,11 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
+import com.hedera.node.app.service.mono.state.logic.ScheduledTransactions;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
-import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
@@ -33,8 +36,6 @@ import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.virtualmap.VirtualMap;
 import java.time.Instant;
 import java.util.Map;
 
@@ -43,15 +44,15 @@ public interface StateChildren {
 
     AccountStorageAdapter accounts();
 
-    MerkleMap<EntityNum, MerkleTopic> topics();
+    MerkleMapLike<EntityNum, MerkleTopic> topics();
 
-    MerkleMap<EntityNum, MerkleToken> tokens();
+    MerkleMapLike<EntityNum, MerkleToken> tokens();
 
-    MerkleScheduledTransactions schedules();
+    ScheduledTransactions schedules();
 
-    VirtualMap<VirtualBlobKey, VirtualBlobValue> storage();
+    VirtualMapLike<VirtualBlobKey, VirtualBlobValue> storage();
 
-    VirtualMap<ContractKey, IterableContractValue> contractStorage();
+    VirtualMapLike<ContractKey, IterableContractValue> contractStorage();
 
     TokenRelStorageAdapter tokenAssociations();
 
@@ -65,7 +66,7 @@ public interface StateChildren {
 
     RecordsStorageAdapter payerRecords();
 
-    MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo();
+    MerkleMapLike<EntityNum, MerkleStakingInfo> stakingInfo();
 
     RecordsRunningHashLeaf runningHashLeaf();
 

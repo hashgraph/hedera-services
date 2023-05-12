@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger;
 
 import static com.hedera.node.app.service.mono.exceptions.InsufficientFundsException.messageFor;
@@ -37,9 +38,7 @@ class HederaLedgerXfersTest extends BaseHederaLedgerTestHelper {
 
     @Test
     void throwsOnTransferWithDeletedFromAccount() {
-        final var e =
-                assertThrows(
-                        DeletedAccountException.class, () -> subject.doTransfer(deleted, misc, 1L));
+        final var e = assertThrows(DeletedAccountException.class, () -> subject.doTransfer(deleted, misc, 1L));
 
         assertEquals("0.0.3456", e.getMessage());
         verify(accountsLedger, never()).set(any(), any(), any());
@@ -47,9 +46,7 @@ class HederaLedgerXfersTest extends BaseHederaLedgerTestHelper {
 
     @Test
     void throwsOnTransferWithDeletedToAccount() {
-        final var e =
-                assertThrows(
-                        DeletedAccountException.class, () -> subject.doTransfer(misc, deleted, 1L));
+        final var e = assertThrows(DeletedAccountException.class, () -> subject.doTransfer(misc, deleted, 1L));
 
         assertEquals("0.0.3456", e.getMessage());
         verify(accountsLedger, never()).set(any(), any(), any());
@@ -68,10 +65,7 @@ class HederaLedgerXfersTest extends BaseHederaLedgerTestHelper {
     @Test
     void throwsOnImpossibleTransferWithBrokerPayer() {
         final var amount = GENESIS_BALANCE + 1;
-        final var e =
-                assertThrows(
-                        InsufficientFundsException.class,
-                        () -> subject.doTransfer(genesis, misc, amount));
+        final var e = assertThrows(InsufficientFundsException.class, () -> subject.doTransfer(genesis, misc, amount));
 
         assertEquals(messageFor(genesis, -1 * amount), e.getMessage());
         verify(accountsLedger, never()).set(any(), any(), any());

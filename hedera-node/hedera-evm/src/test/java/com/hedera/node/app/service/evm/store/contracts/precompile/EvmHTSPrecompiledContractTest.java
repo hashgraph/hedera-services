@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.store.contracts.precompile;
 
 import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_ERC_NAME;
@@ -42,13 +43,26 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class EvmHTSPrecompiledContractTest {
 
-    @Mock private MessageFrame messageFrame;
-    @Mock private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
-    @Mock private EvmInfrastructureFactory evmInfrastructureFactory;
-    @Mock private RedirectViewExecutor redirectViewExecutor;
-    @Mock private ViewExecutor viewExecutor;
-    @Mock private ViewGasCalculator viewGasCalculator;
-    @Mock private TokenAccessor tokenAccessor;
+    @Mock
+    private MessageFrame messageFrame;
+
+    @Mock
+    private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
+
+    @Mock
+    private EvmInfrastructureFactory evmInfrastructureFactory;
+
+    @Mock
+    private RedirectViewExecutor redirectViewExecutor;
+
+    @Mock
+    private ViewExecutor viewExecutor;
+
+    @Mock
+    private ViewGasCalculator viewGasCalculator;
+
+    @Mock
+    private TokenAccessor tokenAccessor;
 
     @BeforeEach
     void setUp() {
@@ -60,8 +74,7 @@ class EvmHTSPrecompiledContractTest {
         final Bytes input = prerequisitesForRedirect(ABI_ID_ERC_NAME);
         given(messageFrame.isStatic()).willReturn(false);
         final var result =
-                evmHTSPrecompiledContract.computeCosted(
-                        input, messageFrame, viewGasCalculator, tokenAccessor);
+                evmHTSPrecompiledContract.computeCosted(input, messageFrame, viewGasCalculator, tokenAccessor);
 
         assertEquals(Bytes.EMPTY, result.getValue());
         assertEquals("EvmHTS", evmHTSPrecompiledContract.getName());
@@ -73,8 +86,7 @@ class EvmHTSPrecompiledContractTest {
         final Bytes input = prerequisites(0x3c4dd32c);
         given(messageFrame.isStatic()).willReturn(true);
         final var result =
-                evmHTSPrecompiledContract.computeCosted(
-                        input, messageFrame, viewGasCalculator, tokenAccessor);
+                evmHTSPrecompiledContract.computeCosted(input, messageFrame, viewGasCalculator, tokenAccessor);
 
         assertEquals(Bytes.EMPTY, result.getValue());
         assertEquals("EvmHTS", evmHTSPrecompiledContract.getName());
@@ -91,8 +103,7 @@ class EvmHTSPrecompiledContractTest {
         given(redirectViewExecutor.computeCosted()).willReturn(Pair.of(1L, Bytes.of(1)));
 
         final var result =
-                evmHTSPrecompiledContract.computeCosted(
-                        input, messageFrame, viewGasCalculator, tokenAccessor);
+                evmHTSPrecompiledContract.computeCosted(input, messageFrame, viewGasCalculator, tokenAccessor);
 
         verify(messageFrame, never()).setRevertReason(any());
         assertEquals(Bytes.of(1), result.getValue());
@@ -108,8 +119,7 @@ class EvmHTSPrecompiledContractTest {
         given(viewExecutor.computeCosted()).willReturn(Pair.of(1L, Bytes.of(1)));
 
         final var result =
-                evmHTSPrecompiledContract.computeCosted(
-                        input, messageFrame, viewGasCalculator, tokenAccessor);
+                evmHTSPrecompiledContract.computeCosted(input, messageFrame, viewGasCalculator, tokenAccessor);
 
         verify(messageFrame, never()).setRevertReason(any());
         assertEquals(Bytes.of(1), result.getValue());

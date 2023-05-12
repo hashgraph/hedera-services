@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_IS_FROZEN;
@@ -86,74 +87,113 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class IsFrozenPrecompileTest {
-    @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private GasCalculator gasCalculator;
-    @Mock private MessageFrame frame;
-    @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
-    @Mock private RecordsHistorian recordsHistorian;
-    @Mock private EncodingFacade encoder;
-    @Mock private EvmEncodingFacade evmEncoder;
-    @Mock private SyntheticTxnFactory syntheticTxnFactory;
-    @Mock private ExpiringCreations creator;
-    @Mock private SideEffectsTracker sideEffects;
-    @Mock private FeeObject mockFeeObject;
-    @Mock private FeeCalculator feeCalculator;
-    @Mock private StateView stateView;
-    @Mock private ContractAliases aliases;
-    @Mock private HederaStackedWorldStateUpdater worldUpdater;
-    @Mock private WorldLedgers wrappedLedgers;
-    @Mock private UsagePricesProvider resourceCosts;
-    @Mock private HbarCentExchange exchange;
-    @Mock private TransactionBody.Builder mockSynthBodyBuilder;
-    @Mock private InfrastructureFactory infrastructureFactory;
-    @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
-    @Mock private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
-    @Mock private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nfts;
-    @Mock private AccessorFactory accessorFactory;
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
 
     @Mock
-    private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
-            tokenRels;
+    private GasCalculator gasCalculator;
 
-    @Mock private AssetsLoader assetLoader;
-    @Mock private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
+    @Mock
+    private MessageFrame frame;
 
-    public static final Bytes IS_FROZEN_INPUT =
-            Bytes.fromHexString(
-                    "0x46de0fb1000000000000000000000000000000000000000000000000000000000000050e000000000000000000000000000000000000000000000000000000000000050c");
+    @Mock
+    private TxnAwareEvmSigsVerifier sigsVerifier;
+
+    @Mock
+    private RecordsHistorian recordsHistorian;
+
+    @Mock
+    private EncodingFacade encoder;
+
+    @Mock
+    private EvmEncodingFacade evmEncoder;
+
+    @Mock
+    private SyntheticTxnFactory syntheticTxnFactory;
+
+    @Mock
+    private ExpiringCreations creator;
+
+    @Mock
+    private SideEffectsTracker sideEffects;
+
+    @Mock
+    private FeeObject mockFeeObject;
+
+    @Mock
+    private FeeCalculator feeCalculator;
+
+    @Mock
+    private StateView stateView;
+
+    @Mock
+    private ContractAliases aliases;
+
+    @Mock
+    private HederaStackedWorldStateUpdater worldUpdater;
+
+    @Mock
+    private WorldLedgers wrappedLedgers;
+
+    @Mock
+    private UsagePricesProvider resourceCosts;
+
+    @Mock
+    private HbarCentExchange exchange;
+
+    @Mock
+    private TransactionBody.Builder mockSynthBodyBuilder;
+
+    @Mock
+    private InfrastructureFactory infrastructureFactory;
+
+    @Mock
+    private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
+
+    @Mock
+    private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
+
+    @Mock
+    private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nfts;
+
+    @Mock
+    private AccessorFactory accessorFactory;
+
+    @Mock
+    private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel> tokenRels;
+
+    @Mock
+    private AssetsLoader assetLoader;
+
+    @Mock
+    private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
+
+    public static final Bytes IS_FROZEN_INPUT = Bytes.fromHexString(
+            "0x46de0fb1000000000000000000000000000000000000000000000000000000000000050e000000000000000000000000000000000000000000000000000000000000050c");
     private HTSPrecompiledContract subject;
     private MockedStatic<IsFrozenPrecompile> isFrozenPrecompile;
 
     @BeforeEach
     void setUp() throws IOException {
         final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
-        canonicalPrices.put(
-                HederaFunctionality.TokenUnfreezeAccount,
-                Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
+        canonicalPrices.put(HederaFunctionality.TokenUnfreezeAccount, Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
-        final PrecompilePricingUtils precompilePricingUtils =
-                new PrecompilePricingUtils(
-                        assetLoader,
-                        exchange,
-                        () -> feeCalculator,
-                        resourceCosts,
-                        stateView,
-                        accessorFactory);
-        subject =
-                new HTSPrecompiledContract(
-                        dynamicProperties,
-                        gasCalculator,
-                        recordsHistorian,
-                        sigsVerifier,
-                        encoder,
-                        evmEncoder,
-                        syntheticTxnFactory,
-                        creator,
-                        () -> feeCalculator,
-                        stateView,
-                        precompilePricingUtils,
-                        infrastructureFactory,
-                        evmHTSPrecompiledContract);
+        final PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(
+                assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView, accessorFactory);
+        subject = new HTSPrecompiledContract(
+                dynamicProperties,
+                gasCalculator,
+                recordsHistorian,
+                sigsVerifier,
+                encoder,
+                evmEncoder,
+                syntheticTxnFactory,
+                creator,
+                () -> feeCalculator,
+                stateView,
+                precompilePricingUtils,
+                infrastructureFactory,
+                evmHTSPrecompiledContract);
         isFrozenPrecompile = Mockito.mockStatic(IsFrozenPrecompile.class);
     }
 
@@ -165,29 +205,21 @@ class IsFrozenPrecompileTest {
     @Test
     void computeCallsCorrectImplementationForIsFrozenFungibleToken() {
         // given
-        final var output =
-                "0x000000000000000000000000000000000000000000000000000000000000"
-                        + "00160000000000000000000000000000000000000000000000000000000000000001";
+        final var output = "0x000000000000000000000000000000000000000000000000000000000000"
+                + "00160000000000000000000000000000000000000000000000000000000000000001";
         final var successOutput =
-                Bytes.fromHexString(
-                        "0x000000000000000000000000000000000000000000000000000000000000001600000000000"
-                            + "00000000000000000000000000000000000000000000000000001");
+                Bytes.fromHexString("0x000000000000000000000000000000000000000000000000000000000000001600000000000"
+                        + "00000000000000000000000000000000000000000000000000001");
         final Bytes pretendArguments =
-                Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_IS_FROZEN)),
-                        fungibleTokenAddr,
-                        accountAddr);
+                Bytes.concatenate(Bytes.of(Integers.toBytes(ABI_ID_IS_FROZEN)), fungibleTokenAddr, accountAddr);
         givenMinimalFrameContext();
         givenMinimalFeesContext();
         givenLedgers();
         given(wrappedLedgers.isFrozen(any(), any())).willReturn(true);
         givenMinimalContextForSuccessfulCall();
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_IS_FROZEN));
-        given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments))
-                .willReturn(mockSynthBodyBuilder);
-        isFrozenPrecompile
-                .when(() -> decodeIsFrozen(any(), any()))
-                .thenReturn(tokenFreezeUnFreezeWrapper);
+        given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
+        isFrozenPrecompile.when(() -> decodeIsFrozen(any(), any())).thenReturn(tokenFreezeUnFreezeWrapper);
         given(evmEncoder.encodeIsFrozen(true)).willReturn(successResult);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(tokenRels.get(any(), any())).willReturn(Boolean.TRUE);
@@ -222,8 +254,7 @@ class IsFrozenPrecompileTest {
         final Optional<WorldUpdater> parent = Optional.of(worldUpdater);
         given(worldUpdater.parentUpdater()).willReturn(parent);
         given(worldUpdater.aliases()).willReturn(aliases);
-        given(aliases.resolveForEvm(any()))
-                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
     }
@@ -237,11 +268,8 @@ class IsFrozenPrecompileTest {
     }
 
     private void givenMinimalFeesContext() {
-        given(feeCalculator.estimatePayment(any(), any(), any(), any(), any()))
-                .willReturn(mockFeeObject);
-        given(
-                        feeCalculator.estimatedGasPriceInTinybars(
-                                HederaFunctionality.ContractCall, timestamp))
+        given(feeCalculator.estimatePayment(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
                 .willReturn(1L);
     }
 }

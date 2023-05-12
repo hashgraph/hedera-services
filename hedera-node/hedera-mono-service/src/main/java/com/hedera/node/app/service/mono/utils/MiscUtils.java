@@ -13,9 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.utils;
 
 import static com.hedera.node.app.hapi.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
+import static com.hedera.node.app.hapi.utils.CommonUtils.functionOf;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.EVM_ADDRESS_LEN;
 import static com.hedera.node.app.service.mono.grpc.controllers.ConsensusController.CREATE_TOPIC_METRIC;
@@ -59,6 +61,7 @@ import static com.hedera.node.app.service.mono.grpc.controllers.NetworkControlle
 import static com.hedera.node.app.service.mono.grpc.controllers.NetworkController.GET_VERSION_INFO_METRIC;
 import static com.hedera.node.app.service.mono.grpc.controllers.NetworkController.UNCHECKED_SUBMIT_METRIC;
 import static com.hedera.node.app.service.mono.legacy.core.jproto.JKey.mapJKey;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.protoToPbj;
 import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.signedLowOrder32From;
 import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.unsignedHighOrder32From;
 import static com.hedera.node.app.service.mono.stats.ServicesStatsConfig.SYSTEM_DELETE_METRIC;
@@ -162,12 +165,13 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
+import com.hedera.node.app.hapi.utils.exception.UnknownHederaFunctionality;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
-import com.hedera.node.app.service.mono.exceptions.UnknownHederaFunctionality;
 import com.hedera.node.app.service.mono.ledger.HederaLedger;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -188,7 +192,6 @@ import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.fcqueue.FCQueue;
-import com.swirlds.merkle.map.MerkleMap;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -221,42 +224,40 @@ public final class MiscUtils {
         throw new UnsupportedOperationException("Utility Class");
     }
 
-    public static final Set<HederaFunctionality> QUERY_FUNCTIONS =
-            EnumSet.of(
-                    ConsensusGetTopicInfo,
-                    GetBySolidityID,
-                    ContractCallLocal,
-                    ContractGetInfo,
-                    ContractGetBytecode,
-                    ContractGetRecords,
-                    CryptoGetAccountBalance,
-                    CryptoGetAccountRecords,
-                    CryptoGetInfo,
-                    CryptoGetLiveHash,
-                    FileGetContents,
-                    FileGetInfo,
-                    TransactionGetReceipt,
-                    TransactionGetRecord,
-                    GetVersionInfo,
-                    TokenGetInfo,
-                    ScheduleGetInfo,
-                    TokenGetNftInfo,
-                    TokenGetNftInfos,
-                    TokenGetAccountNftInfos,
-                    NetworkGetExecutionTime,
-                    GetAccountDetails);
+    public static final Set<HederaFunctionality> QUERY_FUNCTIONS = EnumSet.of(
+            ConsensusGetTopicInfo,
+            GetBySolidityID,
+            ContractCallLocal,
+            ContractGetInfo,
+            ContractGetBytecode,
+            ContractGetRecords,
+            CryptoGetAccountBalance,
+            CryptoGetAccountRecords,
+            CryptoGetInfo,
+            CryptoGetLiveHash,
+            FileGetContents,
+            FileGetInfo,
+            TransactionGetReceipt,
+            TransactionGetRecord,
+            GetVersionInfo,
+            TokenGetInfo,
+            ScheduleGetInfo,
+            TokenGetNftInfo,
+            TokenGetNftInfos,
+            TokenGetAccountNftInfos,
+            NetworkGetExecutionTime,
+            GetAccountDetails);
 
     private static final Set<HederaFunctionality> CONSENSUS_THROTTLED_FUNCTIONS =
             EnumSet.of(ContractCallLocal, ContractCall, ContractCreate, EthereumTransaction);
 
-    public static final Function<TransactionBody, HederaFunctionality> FUNCTION_EXTRACTOR =
-            trans -> {
-                try {
-                    return functionOf(trans);
-                } catch (UnknownHederaFunctionality ignore) {
-                    return NONE;
-                }
-            };
+    public static final Function<TransactionBody, HederaFunctionality> FUNCTION_EXTRACTOR = trans -> {
+        try {
+            return functionOf(trans);
+        } catch (UnknownHederaFunctionality ignore) {
+            return NONE;
+        }
+    };
 
     static final String TOKEN_MINT_METRIC = "mintToken";
     static final String TOKEN_BURN_METRIC = "burnToken";
@@ -313,8 +314,7 @@ public final class MiscUtils {
         queryFunctions.put(ACCOUNTDETAILS, GetAccountDetails);
     }
 
-    private static final Map<HederaFunctionality, String> BASE_STAT_NAMES =
-            new EnumMap<>(HederaFunctionality.class);
+    private static final Map<HederaFunctionality, String> BASE_STAT_NAMES = new EnumMap<>(HederaFunctionality.class);
 
     static {
         /* Transactions */
@@ -391,8 +391,7 @@ public final class MiscUtils {
         return BASE_STAT_NAMES.getOrDefault(function, function.toString());
     }
 
-    public static List<AccountAmount> canonicalDiffRepr(
-            final List<AccountAmount> a, final List<AccountAmount> b) {
+    public static List<AccountAmount> canonicalDiffRepr(final List<AccountAmount> a, final List<AccountAmount> b) {
         return canonicalRepr(
                 Stream.concat(a.stream(), b.stream().map(MiscUtils::negationOf)).toList());
     }
@@ -403,48 +402,37 @@ public final class MiscUtils {
 
     public static List<AccountAmount> canonicalRepr(final List<AccountAmount> transfers) {
         return transfers.stream()
-                .collect(
-                        toMap(
-                                AccountAmount::getAccountID,
-                                AccountAmount::getAmount,
-                                Math::addExact))
+                .collect(toMap(AccountAmount::getAccountID, AccountAmount::getAmount, Math::addExact))
                 .entrySet()
                 .stream()
                 .filter(e -> e.getValue() != 0)
                 .sorted(Map.Entry.comparingByKey(HederaLedger.ACCOUNT_ID_COMPARATOR))
-                .map(
-                        e ->
-                                AccountAmount.newBuilder()
-                                        .setAccountID(e.getKey())
-                                        .setAmount(e.getValue())
-                                        .build())
+                .map(e -> AccountAmount.newBuilder()
+                        .setAccountID(e.getKey())
+                        .setAmount(e.getValue())
+                        .build())
                 .toList();
     }
 
     public static String readableTransferList(final TransferList accountAmounts) {
         return accountAmounts.getAccountAmountsList().stream()
-                .map(
-                        aa ->
-                                String.format(
-                                        "%s %s %s%s",
-                                        EntityIdUtils.readableId(aa.getAccountID()),
-                                        aa.getAmount() < 0 ? "->" : "<-",
-                                        aa.getAmount() < 0 ? "-" : "+",
-                                        BigInteger.valueOf(aa.getAmount()).abs().toString()))
+                .map(aa -> String.format(
+                        "%s %s %s%s",
+                        EntityIdUtils.readableId(aa.getAccountID()),
+                        aa.getAmount() < 0 ? "->" : "<-",
+                        aa.getAmount() < 0 ? "-" : "+",
+                        BigInteger.valueOf(aa.getAmount()).abs().toString()))
                 .toList()
                 .toString();
     }
 
     public static String readableNftTransferList(final TokenTransferList tokenTransferList) {
         return tokenTransferList.getNftTransfersList().stream()
-                .map(
-                        nftTransfer ->
-                                String.format(
-                                        "%s %s %s",
-                                        nftTransfer.getSerialNumber(),
-                                        EntityIdUtils.readableId(nftTransfer.getSenderAccountID()),
-                                        EntityIdUtils.readableId(
-                                                nftTransfer.getReceiverAccountID())))
+                .map(nftTransfer -> String.format(
+                        "%s %s %s",
+                        nftTransfer.getSerialNumber(),
+                        EntityIdUtils.readableId(nftTransfer.getSenderAccountID()),
+                        EntityIdUtils.readableId(nftTransfer.getReceiverAccountID())))
                 .toList()
                 .toString();
     }
@@ -462,8 +450,7 @@ public final class MiscUtils {
         try {
             return JKey.mapKey(key);
         } catch (final DecoderException impermissible) {
-            throw new IllegalArgumentException(
-                    "Key " + key + " should have been decode-able!", impermissible);
+            throw new IllegalArgumentException("Key " + key + " should have been decode-able!", impermissible);
         }
     }
 
@@ -484,6 +471,14 @@ public final class MiscUtils {
             return mapJKey(fcKey);
         } catch (final Exception impossible) {
             return Key.getDefaultInstance();
+        }
+    }
+
+    public static com.hedera.hapi.node.base.Key asPbjKeyUnchecked(final JKey fcKey) {
+        try {
+            return protoToPbj(mapJKey(fcKey), com.hedera.hapi.node.base.Key.class);
+        } catch (final Exception impossible) {
+            return com.hedera.hapi.node.base.Key.newBuilder().build();
         }
     }
 
@@ -591,143 +586,6 @@ public final class MiscUtils {
         }
     }
 
-    public static HederaFunctionality functionOf(final TransactionBody txn)
-            throws UnknownHederaFunctionality {
-        if (txn.hasSystemDelete()) {
-            return SystemDelete;
-        }
-        if (txn.hasSystemUndelete()) {
-            return SystemUndelete;
-        }
-        if (txn.hasContractCall()) {
-            return ContractCall;
-        }
-        if (txn.hasContractCreateInstance()) {
-            return ContractCreate;
-        }
-        if (txn.hasContractUpdateInstance()) {
-            return ContractUpdate;
-        }
-        if (txn.hasCryptoAddLiveHash()) {
-            return CryptoAddLiveHash;
-        }
-        if (txn.hasCryptoCreateAccount()) {
-            return CryptoCreate;
-        }
-        if (txn.hasCryptoDelete()) {
-            return CryptoDelete;
-        }
-        if (txn.hasCryptoDeleteLiveHash()) {
-            return CryptoDeleteLiveHash;
-        }
-        if (txn.hasCryptoTransfer()) {
-            return CryptoTransfer;
-        }
-        if (txn.hasCryptoUpdateAccount()) {
-            return CryptoUpdate;
-        }
-        if (txn.hasFileAppend()) {
-            return FileAppend;
-        }
-        if (txn.hasFileCreate()) {
-            return FileCreate;
-        }
-        if (txn.hasFileDelete()) {
-            return FileDelete;
-        }
-        if (txn.hasFileUpdate()) {
-            return FileUpdate;
-        }
-        if (txn.hasContractDeleteInstance()) {
-            return ContractDelete;
-        }
-        if (txn.hasFreeze()) {
-            return Freeze;
-        }
-        if (txn.hasConsensusCreateTopic()) {
-            return ConsensusCreateTopic;
-        }
-        if (txn.hasConsensusUpdateTopic()) {
-            return ConsensusUpdateTopic;
-        }
-        if (txn.hasConsensusDeleteTopic()) {
-            return ConsensusDeleteTopic;
-        }
-        if (txn.hasConsensusSubmitMessage()) {
-            return ConsensusSubmitMessage;
-        }
-        if (txn.hasTokenCreation()) {
-            return TokenCreate;
-        }
-        if (txn.hasTokenFreeze()) {
-            return TokenFreezeAccount;
-        }
-        if (txn.hasTokenUnfreeze()) {
-            return TokenUnfreezeAccount;
-        }
-        if (txn.hasTokenGrantKyc()) {
-            return TokenGrantKycToAccount;
-        }
-        if (txn.hasTokenRevokeKyc()) {
-            return TokenRevokeKycFromAccount;
-        }
-        if (txn.hasTokenDeletion()) {
-            return TokenDelete;
-        }
-        if (txn.hasTokenUpdate()) {
-            return TokenUpdate;
-        }
-        if (txn.hasTokenMint()) {
-            return TokenMint;
-        }
-        if (txn.hasTokenBurn()) {
-            return TokenBurn;
-        }
-        if (txn.hasTokenWipe()) {
-            return TokenAccountWipe;
-        }
-        if (txn.hasTokenAssociate()) {
-            return TokenAssociateToAccount;
-        }
-        if (txn.hasTokenDissociate()) {
-            return TokenDissociateFromAccount;
-        }
-        if (txn.hasTokenFeeScheduleUpdate()) {
-            return TokenFeeScheduleUpdate;
-        }
-        if (txn.hasTokenPause()) {
-            return TokenPause;
-        }
-        if (txn.hasTokenUnpause()) {
-            return TokenUnpause;
-        }
-        if (txn.hasScheduleCreate()) {
-            return ScheduleCreate;
-        }
-        if (txn.hasScheduleSign()) {
-            return ScheduleSign;
-        }
-        if (txn.hasScheduleDelete()) {
-            return ScheduleDelete;
-        }
-        if (txn.hasUncheckedSubmit()) {
-            return UncheckedSubmit;
-        }
-        if (txn.hasCryptoApproveAllowance()) {
-            return CryptoApproveAllowance;
-        }
-        if (txn.hasCryptoDeleteAllowance()) {
-            return CryptoDeleteAllowance;
-        }
-        if (txn.hasEthereumTransaction()) {
-            return EthereumTransaction;
-        }
-        if (txn.hasUtilPrng()) {
-            return UtilPrng;
-        }
-        throw new UnknownHederaFunctionality();
-    }
-
     public static Optional<HederaFunctionality> functionalityOfQuery(final Query query) {
         return Optional.ofNullable(queryFunctions.get(query.getQueryCase()));
     }
@@ -751,16 +609,14 @@ public final class MiscUtils {
     }
 
     public static TransactionBody asOrdinary(
-            final SchedulableTransactionBody scheduledTxn,
-            final TransactionID scheduledTxnTransactionId) {
+            final SchedulableTransactionBody scheduledTxn, final TransactionID scheduledTxnTransactionId) {
         final var ordinary = TransactionBody.newBuilder();
         ordinary.setTransactionFee(scheduledTxn.getTransactionFee())
                 .setMemo(scheduledTxn.getMemo())
-                .setTransactionID(
-                        TransactionID.newBuilder()
-                                .mergeFrom(scheduledTxnTransactionId)
-                                .setScheduled(true)
-                                .build());
+                .setTransactionID(TransactionID.newBuilder()
+                        .mergeFrom(scheduledTxnTransactionId)
+                        .setScheduled(true)
+                        .build());
         if (scheduledTxn.hasContractCall()) {
             ordinary.setContractCall(scheduledTxn.getContractCall());
         } else if (scheduledTxn.hasContractCreateInstance()) {
@@ -877,8 +733,7 @@ public final class MiscUtils {
         return x;
     }
 
-    public static void withLoggedDuration(
-            final Runnable blockingTask, final Logger logger, final String desc) {
+    public static void withLoggedDuration(final Runnable blockingTask, final Logger logger, final String desc) {
         logger.info("Starting {}", desc);
         final var watch = StopWatch.createStarted();
         blockingTask.run();
@@ -886,18 +741,11 @@ public final class MiscUtils {
     }
 
     public static <K, V extends MerkleNode & Keyed<K>> void forEach(
-            final MerkleMap<K, V> map, final BiConsumer<? super K, ? super V> action) {
-        map.forEachNode(
-                (final MerkleNode node) -> {
-                    if (node instanceof Keyed) {
-                        final V leaf = node.cast();
-                        action.accept(leaf.getKey(), leaf);
-                    }
-                });
+            final MerkleMapLike<K, V> map, final BiConsumer<? super K, ? super V> action) {
+        map.forEachNode(action);
     }
 
-    public static void putIfNotNull(
-            @Nullable final Map<String, Object> map, final String key, final Object value) {
+    public static void putIfNotNull(@Nullable final Map<String, Object> map, final String key, final Object value) {
         if (null != map) {
             map.put(key, value);
         }
@@ -923,8 +771,9 @@ public final class MiscUtils {
             case ContractCall -> txn.getContractCall().getGas();
             case EthereumTransaction -> getEthData != null
                     ? getEthData.get().gasLimit()
-                    : EthTxData.populateEthTxData(
-                                    txn.getEthereumTransaction().getEthereumData().toByteArray())
+                    : EthTxData.populateEthTxData(txn.getEthereumTransaction()
+                                    .getEthereumData()
+                                    .toByteArray())
                             .gasLimit();
             default -> 0L;
         };
@@ -953,9 +802,12 @@ public final class MiscUtils {
     }
 
     public static Transaction synthFromBody(final TransactionBody txnBody) {
-        final var signedTxn =
-                SignedTransaction.newBuilder().setBodyBytes(txnBody.toByteString()).build();
-        return Transaction.newBuilder().setSignedTransactionBytes(signedTxn.toByteString()).build();
+        final var signedTxn = SignedTransaction.newBuilder()
+                .setBodyBytes(txnBody.toByteString())
+                .build();
+        return Transaction.newBuilder()
+                .setSignedTransactionBytes(signedTxn.toByteString())
+                .build();
     }
 
     public static void safeResetThrottles(
@@ -983,19 +835,16 @@ public final class MiscUtils {
         }
     }
 
-    public static <T extends Enum<T>> List<T> csvList(
-            final String propertyValue, final Function<String, T> parser) {
+    public static <T extends Enum<T>> List<T> csvList(final String propertyValue, final Function<String, T> parser) {
         return csvStream(propertyValue, parser).toList();
     }
 
     public static <T extends Enum<T>> Set<T> csvSet(
             final String propertyValue, final Function<String, T> parser, final Class<T> type) {
-        return csvStream(propertyValue, parser)
-                .collect(Collectors.toCollection(() -> EnumSet.noneOf(type)));
+        return csvStream(propertyValue, parser).collect(Collectors.toCollection(() -> EnumSet.noneOf(type)));
     }
 
-    private static <T extends Enum<T>> Stream<T> csvStream(
-            final String propertyValue, final Function<String, T> parser) {
+    public static <T> Stream<T> csvStream(final String propertyValue, final Function<String, T> parser) {
         return Arrays.stream(propertyValue.split(","))
                 .map(String::strip)
                 .filter(desc -> desc.length() > 0)
@@ -1012,10 +861,9 @@ public final class MiscUtils {
 
     public static Transaction synthWithRecordTxnId(
             final TransactionBody.Builder txnBody, final ExpirableTxnRecord.Builder inProgress) {
-        final var synthTxn =
-                synthFromBody(txnBody.setTransactionID(inProgress.getTxnId().toGrpc()).build());
-        final var synthHash =
-                noThrowSha384HashOf(unwrapUnsafelyIfPossible(synthTxn.getSignedTransactionBytes()));
+        final var synthTxn = synthFromBody(
+                txnBody.setTransactionID(inProgress.getTxnId().toGrpc()).build());
+        final var synthHash = noThrowSha384HashOf(unwrapUnsafelyIfPossible(synthTxn.getSignedTransactionBytes()));
         inProgress.setTxnHash(synthHash);
         return synthTxn;
     }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.models;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -25,8 +26,7 @@ import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import org.junit.jupiter.api.Test;
 
 class TopicConversionTest {
-    private static final JKey SUBMIT_KEY =
-            TxnHandlingScenario.MISC_TOPIC_SUBMIT_KT.asJKeyUnchecked();
+    private static final JKey SUBMIT_KEY = TxnHandlingScenario.MISC_TOPIC_SUBMIT_KT.asJKeyUnchecked();
     private static final JKey ADMIN_KEY = TxnHandlingScenario.MISC_TOPIC_ADMIN_KT.asJKeyUnchecked();
 
     @Test
@@ -49,7 +49,8 @@ class TopicConversionTest {
         assertEquals(ADMIN_KEY, mappedModel.getAdminKey());
         assertEquals(100, mappedModel.getAutoRenewDurationSeconds());
         assertEquals(RichInstant.MISSING_INSTANT, mappedModel.getExpirationTimestamp());
-        assertEquals(EntityId.MISSING_ENTITY_ID, mappedModel.getAutoRenewAccountId().asEntityId());
+        assertEquals(
+                EntityId.MISSING_ENTITY_ID, mappedModel.getAutoRenewAccountId().asEntityId());
     }
 
     @Test

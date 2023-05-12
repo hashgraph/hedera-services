@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage.crypto;
 
 import static com.hedera.node.app.hapi.fees.test.AdapterUtils.feeDataFrom;
@@ -44,22 +45,19 @@ class OpsTransferUsageTest {
     void matchesWithLegacyEstimate() {
         givenOp();
         // and given legacy estimate:
-        final var expected =
-                FeeData.newBuilder()
-                        .setNetworkdata(
-                                FeeComponents.newBuilder()
-                                        .setConstant(1)
-                                        .setBpt(18047)
-                                        .setVpt(3)
-                                        .setRbh(1))
-                        .setNodedata(
-                                FeeComponents.newBuilder()
-                                        .setConstant(1)
-                                        .setBpt(18047)
-                                        .setVpt(1)
-                                        .setBpr(4))
-                        .setServicedata(FeeComponents.newBuilder().setConstant(1).setRbh(904))
-                        .build();
+        final var expected = FeeData.newBuilder()
+                .setNetworkdata(FeeComponents.newBuilder()
+                        .setConstant(1)
+                        .setBpt(18047)
+                        .setVpt(3)
+                        .setRbh(1))
+                .setNodedata(FeeComponents.newBuilder()
+                        .setConstant(1)
+                        .setBpt(18047)
+                        .setVpt(1)
+                        .setBpr(4))
+                .setServicedata(FeeComponents.newBuilder().setConstant(1).setRbh(904))
+                .build();
 
         // when:
         final var accum = new UsageAccumulator();
@@ -89,51 +87,40 @@ class OpsTransferUsageTest {
     private CryptoTransferTransactionBody op;
 
     private void givenOp() {
-        final var hbarAdjusts =
-                TransferList.newBuilder()
-                        .addAccountAmounts(adjustFrom(a, -100))
-                        .addAccountAmounts(adjustFrom(b, 50))
-                        .addAccountAmounts(adjustFrom(c, 50))
-                        .build();
-        op =
-                CryptoTransferTransactionBody.newBuilder()
-                        .setTransfers(hbarAdjusts)
-                        .addTokenTransfers(
-                                TokenTransferList.newBuilder()
-                                        .setToken(anotherId)
-                                        .addAllTransfers(
-                                                List.of(
-                                                        adjustFrom(a, -50),
-                                                        adjustFrom(b, 25),
-                                                        adjustFrom(c, 25))))
-                        .addTokenTransfers(
-                                TokenTransferList.newBuilder()
-                                        .setToken(anId)
-                                        .addAllTransfers(
-                                                List.of(adjustFrom(b, -100), adjustFrom(c, 100))))
-                        .addTokenTransfers(
-                                TokenTransferList.newBuilder()
-                                        .setToken(yetAnotherId)
-                                        .addAllTransfers(
-                                                List.of(adjustFrom(a, -15), adjustFrom(b, 15))))
-                        .build();
+        final var hbarAdjusts = TransferList.newBuilder()
+                .addAccountAmounts(adjustFrom(a, -100))
+                .addAccountAmounts(adjustFrom(b, 50))
+                .addAccountAmounts(adjustFrom(c, 50))
+                .build();
+        op = CryptoTransferTransactionBody.newBuilder()
+                .setTransfers(hbarAdjusts)
+                .addTokenTransfers(TokenTransferList.newBuilder()
+                        .setToken(anotherId)
+                        .addAllTransfers(List.of(adjustFrom(a, -50), adjustFrom(b, 25), adjustFrom(c, 25))))
+                .addTokenTransfers(TokenTransferList.newBuilder()
+                        .setToken(anId)
+                        .addAllTransfers(List.of(adjustFrom(b, -100), adjustFrom(c, 100))))
+                .addTokenTransfers(TokenTransferList.newBuilder()
+                        .setToken(yetAnotherId)
+                        .addAllTransfers(List.of(adjustFrom(a, -15), adjustFrom(b, 15))))
+                .build();
 
         setTxn();
     }
 
     private void setTxn() {
-        txn =
-                TransactionBody.newBuilder()
-                        .setMemo(memo)
-                        .setTransactionID(
-                                TransactionID.newBuilder()
-                                        .setTransactionValidStart(
-                                                Timestamp.newBuilder().setSeconds(now)))
-                        .setCryptoTransfer(op)
-                        .build();
+        txn = TransactionBody.newBuilder()
+                .setMemo(memo)
+                .setTransactionID(TransactionID.newBuilder()
+                        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(now)))
+                .setCryptoTransfer(op)
+                .build();
     }
 
     private AccountAmount adjustFrom(final AccountID account, final long amount) {
-        return AccountAmount.newBuilder().setAmount(amount).setAccountID(account).build();
+        return AccountAmount.newBuilder()
+                .setAmount(amount)
+                .setAccountID(account)
+                .build();
     }
 }

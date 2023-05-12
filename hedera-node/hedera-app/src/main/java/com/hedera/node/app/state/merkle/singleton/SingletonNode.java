@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.state.merkle.singleton;
 
 import com.hedera.node.app.state.merkle.StateMetadata;
@@ -29,8 +30,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  *
  * @param <T> The value type
  */
-public class SingletonNode<T> extends PartialBinaryMerkleInternal
-        implements Labeled, MerkleInternal {
+public class SingletonNode<T> extends PartialBinaryMerkleInternal implements Labeled, MerkleInternal {
     private static final long CLASS_ID = 0x3832CC837AB77BFL;
     public static final int CLASS_VERSION = 1;
 
@@ -42,10 +42,8 @@ public class SingletonNode<T> extends PartialBinaryMerkleInternal
     }
 
     public SingletonNode(@NonNull final StateMetadata<?, T> md, @NonNull final T value) {
-        setLeft(
-                new StringLeaf(
-                        StateUtils.computeLabel(
-                                md.serviceName(), md.stateDefinition().stateKey())));
+        setLeft(new StringLeaf(
+                StateUtils.computeLabel(md.serviceName(), md.stateDefinition().stateKey())));
         setRight(new ValueLeaf<T>(md, value));
     }
 

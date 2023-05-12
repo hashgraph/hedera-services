@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.store.contracts.precompile.impl;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -26,8 +27,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class EvmBalanceOfPrecompileTest {
 
     private static final Bytes BALANCE_INPUT =
-            Bytes.fromHexString(
-                    "0x70a08231000000000000000000000000000000000000000000000000000000000000059f");
+            Bytes.fromHexString("0x70a08231000000000000000000000000000000000000000000000000000000000000059f");
 
     @Test
     void decodeBalanceInput() {

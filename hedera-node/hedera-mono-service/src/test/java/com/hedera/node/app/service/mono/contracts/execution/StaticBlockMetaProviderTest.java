@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.execution;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -30,9 +31,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class StaticBlockMetaProviderTest {
-    @Mock private SignedStateViewFactory stateViewFactory;
-    @Mock private MerkleNetworkContext networkContext;
-    @Mock private StateChildren stateChildren;
+    @Mock
+    private SignedStateViewFactory stateViewFactory;
+
+    @Mock
+    private MerkleNetworkContext networkContext;
+
+    @Mock
+    private StateChildren stateChildren;
 
     private StaticBlockMetaProvider subject;
 
@@ -49,8 +55,7 @@ class StaticBlockMetaProviderTest {
 
     @Test
     void usableSourceIfSignedStateChildren() {
-        given(stateViewFactory.childrenOfLatestSignedState())
-                .willReturn(Optional.of(stateChildren));
+        given(stateViewFactory.childrenOfLatestSignedState()).willReturn(Optional.of(stateChildren));
         given(stateChildren.networkCtx()).willReturn(networkContext);
         final var result = subject.getSource();
         assertTrue(result.isPresent());

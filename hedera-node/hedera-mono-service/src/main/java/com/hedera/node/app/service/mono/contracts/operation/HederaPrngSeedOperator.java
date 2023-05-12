@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.operation;
 
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
@@ -36,7 +37,7 @@ public class HederaPrngSeedOperator extends AbstractOperation {
 
     @Inject
     public HederaPrngSeedOperator(PrngLogic prngLogic, GasCalculator gasCalculator) {
-        super(0x44, "PRNGSEED", 0, 1, 1, gasCalculator);
+        super(0x44, "PRNGSEED", 0, 1, gasCalculator);
         this.prngLogic = prngLogic;
         this.gasCost = gasCalculator.getBaseTierGasCost();
         this.successResponse = new OperationResult(gasCost, null);

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.schedule;
 
 import static com.hedera.node.app.service.mono.keys.HederaKeyActivation.INVALID_MISSING_SIG;
@@ -47,8 +48,9 @@ class SigMapScheduleClassifierTest {
     static final TransactionSignature INVALID_PRESENT_SIG = new PresentInvalidSignature();
 
     static String aPrefix = "a", abPrefix = "ab", cPrefix = "c";
-    static SignaturePair aPair =
-            SignaturePair.newBuilder().setPubKeyPrefix(ByteString.copyFromUtf8(aPrefix)).build();
+    static SignaturePair aPair = SignaturePair.newBuilder()
+            .setPubKeyPrefix(ByteString.copyFromUtf8(aPrefix))
+            .build();
     static SignatureMap sigMap = SignatureMap.newBuilder().addSigPair(aPair).build();
 
     static JKey a = new JECDSASecp256k1Key(pretendKeyStartingWith(aPrefix));
@@ -56,15 +58,14 @@ class SigMapScheduleClassifierTest {
     static JKey neither = new JEd25519Key(pretendKeyStartingWith(cPrefix));
     static JKey incomparable = new JContractIDKey(0, 0, 1234);
 
-    @Mock Function<byte[], TransactionSignature> sigsFn;
+    @Mock
+    Function<byte[], TransactionSignature> sigsFn;
 
     SigMapScheduleClassifier subject = new SigMapScheduleClassifier();
 
     @Test
     void returnsEmptyOptionalIfNonPrimitiveInner() {
-        var answer =
-                subject.validScheduleKeys(
-                        List.of(incomparable), sigMap, sigsFn, new MatchingInvalidASig());
+        var answer = subject.validScheduleKeys(List.of(incomparable), sigMap, sigsFn, new MatchingInvalidASig());
 
         // then:
         assertEquals(Optional.empty(), answer);
@@ -75,8 +76,7 @@ class SigMapScheduleClassifierTest {
         given(sigsFn.apply(a.getECDSASecp256k1Key())).willReturn(INVALID_MISSING_SIG);
 
         // when:
-        var answer =
-                subject.validScheduleKeys(List.of(a), sigMap, sigsFn, new MatchingInvalidASig());
+        var answer = subject.validScheduleKeys(List.of(a), sigMap, sigsFn, new MatchingInvalidASig());
 
         // then:
         assertEquals(Optional.empty(), answer);
@@ -87,8 +87,7 @@ class SigMapScheduleClassifierTest {
         given(sigsFn.apply(a.getECDSASecp256k1Key())).willReturn(VALID_SIG);
 
         // when:
-        var answer =
-                subject.validScheduleKeys(List.of(a), sigMap, sigsFn, new MatchingInvalidASig());
+        var answer = subject.validScheduleKeys(List.of(a), sigMap, sigsFn, new MatchingInvalidASig());
 
         // then:
         assertEquals(Optional.of(Collections.emptyList()), answer);
@@ -97,24 +96,20 @@ class SigMapScheduleClassifierTest {
     @Test
     void prioritizesValidScheduledSig() {
         // when:
-        var answer =
-                subject.validScheduleKeys(
-                        List.of(neither), sigMap, sigsFn, new MatchingValidAInvalidABSig());
+        var answer = subject.validScheduleKeys(List.of(neither), sigMap, sigsFn, new MatchingValidAInvalidABSig());
 
         // then:
         assertEquals(Optional.of(List.of(a)), answer);
     }
 
-    private static class MatchingInvalidASig
-            implements Consumer<BiConsumer<JKey, TransactionSignature>> {
+    private static class MatchingInvalidASig implements Consumer<BiConsumer<JKey, TransactionSignature>> {
         @Override
         public void accept(BiConsumer<JKey, TransactionSignature> visitor) {
             visitor.accept(a, INVALID_PRESENT_SIG);
         }
     }
 
-    private static class MatchingValidAInvalidABSig
-            implements Consumer<BiConsumer<JKey, TransactionSignature>> {
+    private static class MatchingValidAInvalidABSig implements Consumer<BiConsumer<JKey, TransactionSignature>> {
         @Override
         public void accept(BiConsumer<JKey, TransactionSignature> visitor) {
             visitor.accept(a, VALID_SIG);

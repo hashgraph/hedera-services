@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.file.txns;
 
 import static com.hedera.node.app.service.mono.state.merkle.MerkleAccountState.DEFAULT_MEMO;
@@ -44,22 +45,18 @@ public class FileUpdateResourceUsage implements TxnResourceUsageEstimator {
     }
 
     @Override
-    public FeeData usageGiven(
-            final TransactionBody txn, final SigValueObj svo, final StateView view) {
+    public FeeData usageGiven(final TransactionBody txn, final SigValueObj svo, final StateView view) {
         final var op = txn.getFileUpdate();
-        final var sigUsage =
-                new SigUsage(
-                        svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
+        final var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
         final var info = view.infoForFile(op.getFileID());
         if (info.isPresent()) {
             final var details = info.get();
-            final var ctx =
-                    ExtantFileContext.newBuilder()
-                            .setCurrentSize(details.getSize())
-                            .setCurrentWacl(details.getKeys())
-                            .setCurrentMemo(details.getMemo())
-                            .setCurrentExpiry(details.getExpirationTime().getSeconds())
-                            .build();
+            final var ctx = ExtantFileContext.newBuilder()
+                    .setCurrentSize(details.getSize())
+                    .setCurrentWacl(details.getKeys())
+                    .setCurrentMemo(details.getMemo())
+                    .setCurrentExpiry(details.getExpirationTime().getSeconds())
+                    .build();
             return fileOpsUsage.fileUpdateUsage(txn, sigUsage, ctx);
         } else {
             final long now = txn.getTransactionID().getTransactionValidStart().getSeconds();

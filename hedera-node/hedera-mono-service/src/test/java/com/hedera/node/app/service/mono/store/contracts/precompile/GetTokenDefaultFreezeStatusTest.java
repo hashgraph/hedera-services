@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS;
@@ -60,60 +61,93 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class GetTokenDefaultFreezeStatusTest {
-    @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private GasCalculator gasCalculator;
-    @Mock private MessageFrame frame;
-    @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
-    @Mock private RecordsHistorian recordsHistorian;
-    @Mock private EncodingFacade encoder;
-    @Mock private SyntheticTxnFactory syntheticTxnFactory;
-    @Mock private ExpiringCreations creator;
-    @Mock private EvmEncodingFacade evmEncoder;
-    @Mock private SideEffectsTracker sideEffects;
-    @Mock private FeeCalculator feeCalculator;
-    @Mock private StateView stateView;
-    @Mock private HederaStackedWorldStateUpdater worldUpdater;
-    @Mock private WorldLedgers wrappedLedgers;
-    @Mock private UsagePricesProvider resourceCosts;
-    @Mock private HbarCentExchange exchange;
-    @Mock private TransactionBody.Builder mockSynthBodyBuilder;
-    @Mock private InfrastructureFactory infrastructureFactory;
-    @Mock private AccessorFactory accessorFactory;
-    @Mock private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
 
-    @Mock private AssetsLoader assetLoader;
+    @Mock
+    private GasCalculator gasCalculator;
+
+    @Mock
+    private MessageFrame frame;
+
+    @Mock
+    private TxnAwareEvmSigsVerifier sigsVerifier;
+
+    @Mock
+    private RecordsHistorian recordsHistorian;
+
+    @Mock
+    private EncodingFacade encoder;
+
+    @Mock
+    private SyntheticTxnFactory syntheticTxnFactory;
+
+    @Mock
+    private ExpiringCreations creator;
+
+    @Mock
+    private EvmEncodingFacade evmEncoder;
+
+    @Mock
+    private SideEffectsTracker sideEffects;
+
+    @Mock
+    private FeeCalculator feeCalculator;
+
+    @Mock
+    private StateView stateView;
+
+    @Mock
+    private HederaStackedWorldStateUpdater worldUpdater;
+
+    @Mock
+    private WorldLedgers wrappedLedgers;
+
+    @Mock
+    private UsagePricesProvider resourceCosts;
+
+    @Mock
+    private HbarCentExchange exchange;
+
+    @Mock
+    private TransactionBody.Builder mockSynthBodyBuilder;
+
+    @Mock
+    private InfrastructureFactory infrastructureFactory;
+
+    @Mock
+    private AccessorFactory accessorFactory;
+
+    @Mock
+    private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
+
+    @Mock
+    private AssetsLoader assetLoader;
+
     public static final Bytes GET_TOKEN_DEFAULT_FREEZE_STATUS_INPUT =
-            Bytes.fromHexString(
-                    "0xa7daa18d00000000000000000000000000000000000000000000000000000000000003ff");
+            Bytes.fromHexString("0xa7daa18d00000000000000000000000000000000000000000000000000000000000003ff");
 
     private HTSPrecompiledContract subject;
     private MockedStatic<GetTokenDefaultFreezeStatus> getTokenDefaultFreezeStatus;
 
     @BeforeEach
     void setUp() throws IOException {
-        final PrecompilePricingUtils precompilePricingUtils =
-                new PrecompilePricingUtils(
-                        assetLoader,
-                        exchange,
-                        () -> feeCalculator,
-                        resourceCosts,
-                        stateView,
-                        accessorFactory);
-        subject =
-                new HTSPrecompiledContract(
-                        dynamicProperties,
-                        gasCalculator,
-                        recordsHistorian,
-                        sigsVerifier,
-                        encoder,
-                        evmEncoder,
-                        syntheticTxnFactory,
-                        creator,
-                        () -> feeCalculator,
-                        stateView,
-                        precompilePricingUtils,
-                        infrastructureFactory,
-                        evmHTSPrecompiledContract);
+        final PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(
+                assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView, accessorFactory);
+        subject = new HTSPrecompiledContract(
+                dynamicProperties,
+                gasCalculator,
+                recordsHistorian,
+                sigsVerifier,
+                encoder,
+                evmEncoder,
+                syntheticTxnFactory,
+                creator,
+                () -> feeCalculator,
+                stateView,
+                precompilePricingUtils,
+                infrastructureFactory,
+                evmHTSPrecompiledContract);
         getTokenDefaultFreezeStatus = Mockito.mockStatic(GetTokenDefaultFreezeStatus.class);
     }
 
@@ -124,32 +158,26 @@ class GetTokenDefaultFreezeStatusTest {
 
     @Test
     void getTokenDefaultFreezeStatus() {
-        final var output =
-                "0x000000000000000000000000000000000000000000000000000000000000"
-                        + "00160000000000000000000000000000000000000000000000000000000000000001";
+        final var output = "0x000000000000000000000000000000000000000000000000000000000000"
+                + "00160000000000000000000000000000000000000000000000000000000000000001";
 
         final var successOutput =
-                Bytes.fromHexString(
-                        "0x000000000000000000000000000000000000000000000000000000000000001600000000000"
-                            + "00000000000000000000000000000000000000000000000000001");
+                Bytes.fromHexString("0x000000000000000000000000000000000000000000000000000000000000001600000000000"
+                        + "00000000000000000000000000000000000000000000000000001");
 
         givenMinimalFrameContext();
         givenLedgers();
         givenMinimalContextForSuccessfulCall();
-        final Bytes pretendArguments =
-                Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS));
+        final Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS));
 
-        given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments))
-                .willReturn(mockSynthBodyBuilder);
+        given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
         getTokenDefaultFreezeStatus
                 .when(() -> decodeTokenDefaultFreezeStatus(any()))
                 .thenReturn(HTSTestsUtil.defaultFreezeStatusWrapper);
-        given(evmEncoder.encodeGetTokenDefaultFreezeStatus(true))
-                .willReturn(HTSTestsUtil.successResult);
+        given(evmEncoder.encodeGetTokenDefaultFreezeStatus(true)).willReturn(HTSTestsUtil.successResult);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(wrappedLedgers.defaultFreezeStatus((any()))).willReturn(Boolean.TRUE);
-        given(evmEncoder.encodeGetTokenDefaultFreezeStatus(true))
-                .willReturn(Bytes.fromHexString(output));
+        given(evmEncoder.encodeGetTokenDefaultFreezeStatus(true)).willReturn(Bytes.fromHexString(output));
         given(frame.getValue()).willReturn(Wei.ZERO);
 
         // when
@@ -166,8 +194,7 @@ class GetTokenDefaultFreezeStatusTest {
         getTokenDefaultFreezeStatus
                 .when(() -> decodeTokenDefaultFreezeStatus(GET_TOKEN_DEFAULT_FREEZE_STATUS_INPUT))
                 .thenCallRealMethod();
-        final var decodedInput =
-                decodeTokenDefaultFreezeStatus(GET_TOKEN_DEFAULT_FREEZE_STATUS_INPUT);
+        final var decodedInput = decodeTokenDefaultFreezeStatus(GET_TOKEN_DEFAULT_FREEZE_STATUS_INPUT);
 
         assertTrue(decodedInput.token().getTokenNum() > 0);
     }

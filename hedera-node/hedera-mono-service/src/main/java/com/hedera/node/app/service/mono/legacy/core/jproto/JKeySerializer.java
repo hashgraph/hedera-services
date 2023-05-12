@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.legacy.core.jproto;
 
 import com.hedera.node.app.service.mono.state.serdes.IoUtils;
@@ -30,47 +31,45 @@ public class JKeySerializer {
     private JKeySerializer() {}
 
     public static byte[] serialize(Object rootObject) throws IOException {
-        return IoUtils.byteStream(
-                buffer -> {
-                    buffer.writeLong(BPACK_VERSION);
+        return IoUtils.byteStream(buffer -> {
+            buffer.writeLong(BPACK_VERSION);
 
-                    JObjectType objectType = JObjectType.FC_KEY;
+            JObjectType objectType = JObjectType.FC_KEY;
 
-                    if (rootObject instanceof JKeyList) {
-                        objectType = JObjectType.FC_KEY_LIST;
-                    } else if (rootObject instanceof JThresholdKey) {
-                        objectType = JObjectType.FC_THRESHOLD_KEY;
-                    } else if (rootObject instanceof JEd25519Key) {
-                        objectType = JObjectType.FC_ED25519_KEY;
-                    } else if (rootObject instanceof JECDSASecp256k1Key) {
-                        objectType = JObjectType.FC_ECDSA_SECP256K1_KEY;
-                    } else if (rootObject instanceof JECDSA_384Key) {
-                        objectType = JObjectType.FC_ECDSA384_KEY;
-                    } else if (rootObject instanceof JRSA_3072Key) {
-                        objectType = JObjectType.FC_RSA3072_KEY;
-                    } else if (rootObject instanceof JDelegatableContractIDKey) {
-                        objectType = JObjectType.FC_DELEGATE_CONTRACT_ID_KEY;
-                    } else if (rootObject instanceof JContractIDKey) {
-                        objectType = JObjectType.FC_CONTRACT_ID_KEY;
-                    } else if (rootObject instanceof JDelegatableContractAliasKey) {
-                        objectType = JObjectType.FC_DELEGATE_CONTRACT_ALIAS_KEY;
-                    } else if (rootObject instanceof JContractAliasKey) {
-                        objectType = JObjectType.FC_CONTRACT_ALIAS_KEY;
-                    }
+            if (rootObject instanceof JKeyList) {
+                objectType = JObjectType.FC_KEY_LIST;
+            } else if (rootObject instanceof JThresholdKey) {
+                objectType = JObjectType.FC_THRESHOLD_KEY;
+            } else if (rootObject instanceof JEd25519Key) {
+                objectType = JObjectType.FC_ED25519_KEY;
+            } else if (rootObject instanceof JECDSASecp256k1Key) {
+                objectType = JObjectType.FC_ECDSA_SECP256K1_KEY;
+            } else if (rootObject instanceof JECDSA_384Key) {
+                objectType = JObjectType.FC_ECDSA384_KEY;
+            } else if (rootObject instanceof JRSA_3072Key) {
+                objectType = JObjectType.FC_RSA3072_KEY;
+            } else if (rootObject instanceof JDelegatableContractIDKey) {
+                objectType = JObjectType.FC_DELEGATE_CONTRACT_ID_KEY;
+            } else if (rootObject instanceof JContractIDKey) {
+                objectType = JObjectType.FC_CONTRACT_ID_KEY;
+            } else if (rootObject instanceof JDelegatableContractAliasKey) {
+                objectType = JObjectType.FC_DELEGATE_CONTRACT_ALIAS_KEY;
+            } else if (rootObject instanceof JContractAliasKey) {
+                objectType = JObjectType.FC_CONTRACT_ALIAS_KEY;
+            }
 
-                    final JObjectType finalObjectType = objectType;
-                    buffer.writeLong(objectType.longValue());
+            final JObjectType finalObjectType = objectType;
+            buffer.writeLong(objectType.longValue());
 
-                    byte[] content =
-                            IoUtils.byteStream(os -> pack(os, finalObjectType, rootObject));
-                    int length = content.length;
+            byte[] content = IoUtils.byteStream(os -> pack(os, finalObjectType, rootObject));
+            int length = content.length;
 
-                    buffer.writeLong(length);
+            buffer.writeLong(length);
 
-                    if (length > 0) {
-                        buffer.write(content);
-                    }
-                });
+            if (length > 0) {
+                buffer.write(content);
+            }
+        });
     }
 
     public static <T> T deserialize(SerializableDataInputStream stream) throws IOException {
@@ -82,16 +81,14 @@ public class JKeySerializer {
         final var objectType = stream.readLong();
         final var type = JObjectType.valueOf(objectType);
         if (type == null) {
-            throw new IllegalStateException(
-                    "Value " + objectType + " from stream is not a valid object type");
+            throw new IllegalStateException("Value " + objectType + " from stream is not a valid object type");
         }
 
         final var length = stream.readLong();
         return unpack(stream, type, length);
     }
 
-    static void pack(final DataOutputStream stream, final JObjectType type, final Object object)
-            throws IOException {
+    static void pack(final DataOutputStream stream, final JObjectType type, final Object object) throws IOException {
         if (JObjectType.FC_ED25519_KEY.equals(type)) {
             JKey jKey = (JKey) object;
             byte[] key = jKey.getEd25519();
@@ -144,14 +141,12 @@ public class JKeySerializer {
             stream.writeLong(key.getRealmNum());
             stream.write(key.getEvmAddress());
         } else {
-            throw new IllegalStateException(
-                    "Unknown type was encountered while writing to the output stream");
+            throw new IllegalStateException("Unknown type was encountered while writing to the output stream");
         }
     }
 
     @SuppressWarnings("unchecked")
-    static <T> T unpack(SerializableDataInputStream stream, JObjectType type, long length)
-            throws IOException {
+    static <T> T unpack(SerializableDataInputStream stream, JObjectType type, long length) throws IOException {
         if (JObjectType.FC_ED25519_KEY.equals(type)) {
             byte[] key = new byte[(int) length];
             stream.readFully(key);
@@ -204,8 +199,7 @@ public class JKeySerializer {
             stream.readFully(evmAddress);
             return (T) new JDelegatableContractAliasKey(shard, realm, evmAddress);
         } else {
-            throw new IllegalStateException(
-                    "Unknown type was encountered while reading from the input stream");
+            throw new IllegalStateException("Unknown type was encountered while reading from the input stream");
         }
     }
 

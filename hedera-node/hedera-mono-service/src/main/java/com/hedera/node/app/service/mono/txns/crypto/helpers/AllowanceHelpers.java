@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.crypto.helpers;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
@@ -79,17 +80,15 @@ public class AllowanceHelpers {
         if (!account.getApproveForAllNfts().isEmpty()) {
             Set<AllowanceId> nftAllowances = new HashSet<>();
             for (var a : account.getApproveForAllNfts()) {
-                nftAllowances.add(
-                        new AllowanceId(
-                                a.getTokenNum().longValue(), a.getSpenderNum().longValue()));
+                nftAllowances.add(new AllowanceId(
+                        a.getTokenNum().longValue(), a.getSpenderNum().longValue()));
             }
             return nftAllowances;
         }
         return Collections.emptySet();
     }
 
-    public static Map<AllowanceId, Long> getFungibleTokenAllowancesList(
-            final HederaAccount account) {
+    public static Map<AllowanceId, Long> getFungibleTokenAllowancesList(final HederaAccount account) {
         if (!account.getFungibleTokenAllowances().isEmpty()) {
             Map<AllowanceId, Long> tokenAllowances = new HashMap<>();
             for (var a : account.getFungibleTokenAllowances().entrySet()) {
@@ -207,14 +206,11 @@ public class AllowanceHelpers {
      * @param owner The Account to validate the allowances limit on.
      * @param maxAllowanceLimitPerAccount The maximum number of allowances an Account can have.
      */
-    public static void validateAllowanceLimitsOn(
-            final Account owner, final int maxAllowanceLimitPerAccount) {
-        validateFalse(
-                owner.getTotalAllowances() > maxAllowanceLimitPerAccount, MAX_ALLOWANCES_EXCEEDED);
+    public static void validateAllowanceLimitsOn(final Account owner, final int maxAllowanceLimitPerAccount) {
+        validateFalse(owner.getTotalAllowances() > maxAllowanceLimitPerAccount, MAX_ALLOWANCES_EXCEEDED);
     }
 
-    public static List<GrantedNftAllowance> getNftGrantedAllowancesList(
-            final HederaAccount account) {
+    public static List<GrantedNftAllowance> getNftGrantedAllowancesList(final HederaAccount account) {
         if (!account.getApproveForAllNfts().isEmpty()) {
             List<GrantedNftAllowance> nftAllowances = new ArrayList<>();
             for (var a : account.getApproveForAllNfts()) {
@@ -228,8 +224,7 @@ public class AllowanceHelpers {
         return Collections.emptyList();
     }
 
-    public static List<GrantedTokenAllowance> getFungibleGrantedTokenAllowancesList(
-            final HederaAccount account) {
+    public static List<GrantedTokenAllowance> getFungibleGrantedTokenAllowancesList(final HederaAccount account) {
         if (!account.getFungibleTokenAllowances().isEmpty()) {
             List<GrantedTokenAllowance> tokenAllowances = new ArrayList<>();
             final var tokenAllowance = GrantedTokenAllowance.newBuilder();
@@ -244,8 +239,7 @@ public class AllowanceHelpers {
         return Collections.emptyList();
     }
 
-    public static List<GrantedCryptoAllowance> getCryptoGrantedAllowancesList(
-            final HederaAccount account) {
+    public static List<GrantedCryptoAllowance> getCryptoGrantedAllowancesList(final HederaAccount account) {
         if (!account.getCryptoAllowances().isEmpty()) {
             List<GrantedCryptoAllowance> cryptoAllowances = new ArrayList<>();
             final var cryptoAllowance = GrantedCryptoAllowance.newBuilder();

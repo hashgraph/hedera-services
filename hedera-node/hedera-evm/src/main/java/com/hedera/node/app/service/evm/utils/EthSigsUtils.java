@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.utils;
 
 import static org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.CONTEXT;
@@ -29,9 +30,7 @@ public final class EthSigsUtils {
 
     public static byte[] recoverAddressFromPubKey(byte[] pubKeyBytes) {
         LibSecp256k1.secp256k1_pubkey pubKey = new LibSecp256k1.secp256k1_pubkey();
-        var parseResult =
-                LibSecp256k1.secp256k1_ec_pubkey_parse(
-                        CONTEXT, pubKey, pubKeyBytes, pubKeyBytes.length);
+        var parseResult = LibSecp256k1.secp256k1_ec_pubkey_parse(CONTEXT, pubKey, pubKeyBytes, pubKeyBytes.length);
         if (parseResult == 1) {
             return recoverAddressFromPubKey(pubKey);
         } else {

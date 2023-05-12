@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.utils;
 
 import java.io.BufferedOutputStream;
@@ -52,8 +53,7 @@ public final class UnzipUtility {
             filePath = fileOrDir.getCanonicalPath();
 
             if (!filePath.startsWith(destDir.getCanonicalPath() + File.separator)) {
-                throw new IllegalArgumentException(
-                        "Zip file entry " + filePath + " has an invalid path prefix!");
+                throw new IllegalArgumentException("Zip file entry " + filePath + " has an invalid path prefix!");
             }
 
             if (!entry.isDirectory()) {

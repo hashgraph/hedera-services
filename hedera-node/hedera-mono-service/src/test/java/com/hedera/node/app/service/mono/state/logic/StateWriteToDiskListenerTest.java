@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.logic;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -40,11 +41,17 @@ class StateWriteToDiskListenerTest {
     private static final long sequence = 123L;
     private static final Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 890);
 
-    @Mock private StateWriteToDiskCompleteNotification notification;
-    @Mock private UpgradeActions upgradeActions;
+    @Mock
+    private StateWriteToDiskCompleteNotification notification;
 
-    @LoggingTarget private LogCaptor logCaptor;
-    @LoggingSubject private StateWriteToDiskListener subject;
+    @Mock
+    private UpgradeActions upgradeActions;
+
+    @LoggingTarget
+    private LogCaptor logCaptor;
+
+    @LoggingSubject
+    private StateWriteToDiskListener subject;
 
     @BeforeEach
     void setUp() {
@@ -62,9 +69,8 @@ class StateWriteToDiskListenerTest {
 
         assertThat(
                 logCaptor.infoLogs(),
-                contains(
-                        "Notification Received: Freeze State Finished. consensusTimestamp:"
-                            + " 1970-01-15T06:56:07.000000890Z, roundNumber: 234, sequence: 123"));
+                contains("Notification Received: Freeze State Finished. consensusTimestamp:"
+                        + " 1970-01-15T06:56:07.000000890Z, roundNumber: 234, sequence: 123"));
         verify(upgradeActions).externalizeFreezeIfUpgradePending();
     }
 

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.utils;
 
 import org.junit.jupiter.api.extension.ParameterContext;
@@ -21,8 +22,7 @@ import org.junit.jupiter.params.converter.ArgumentConverter;
 
 public class AccountIDConverter implements ArgumentConverter {
     @Override
-    public Object convert(Object input, ParameterContext parameterContext)
-            throws ArgumentConversionException {
+    public Object convert(Object input, ParameterContext parameterContext) throws ArgumentConversionException {
         if (null == input) {
             return null;
         }

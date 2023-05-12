@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.GetTokenTypePrecompile.decodeGetTokenType;
@@ -27,8 +28,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class GetTokenTypePrecompileTest {
     private static final Bytes GET_TOKEN_TYPE_INPUT =
-            Bytes.fromHexString(
-                    "0x93272baf0000000000000000000000000000000000000000000000000000000000000b0d");
+            Bytes.fromHexString("0x93272baf0000000000000000000000000000000000000000000000000000000000000b0d");
 
     @Test
     void decodeGetTokenTypeAsExpected() {

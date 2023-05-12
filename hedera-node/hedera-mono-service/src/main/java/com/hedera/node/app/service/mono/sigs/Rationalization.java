@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs;
 
 import static com.hedera.node.app.service.mono.sigs.PlatformSigOps.createCryptoSigsFrom;
@@ -23,19 +24,24 @@ import static com.hedera.node.app.service.mono.utils.RationalizedSigMeta.forPaye
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
+import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JWildcardECDSAKey;
 import com.hedera.node.app.service.mono.sigs.annotations.WorkingStateSigReqs;
 import com.hedera.node.app.service.mono.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.node.app.service.mono.sigs.order.SigRequirements;
 import com.hedera.node.app.service.mono.sigs.order.SigningOrderResult;
 import com.hedera.node.app.service.mono.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.node.app.service.mono.sigs.verification.SyncVerifier;
+import com.hedera.node.app.service.mono.utils.PendingCompletion;
 import com.hedera.node.app.service.mono.utils.RationalizedSigMeta;
 import com.hedera.node.app.service.mono.utils.accessors.SwirldsTxnAccessor;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.common.crypto.TransactionSignature;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -62,17 +68,20 @@ public class Rationalization {
     private SigningOrderResult<ResponseCodeEnum> lastOrderResult;
     private final List<TransactionSignature> realPayerSigs = new ArrayList<>();
     private final List<TransactionSignature> realOtherPartySigs = new ArrayList<>();
+    private final AliasManager aliasManager;
 
     @Inject
     public Rationalization(
             final SyncVerifier syncVerifier,
             final SigImpactHistorian sigImpactHistorian,
             final @WorkingStateSigReqs SigRequirements sigReqs,
-            final ReusableBodySigningFactory bodySigningFactory) {
+            final ReusableBodySigningFactory bodySigningFactory,
+            final AliasManager aliasManager) {
         this.sigReqs = sigReqs;
         this.syncVerifier = syncVerifier;
         this.sigImpactHistorian = sigImpactHistorian;
         this.bodySigningFactory = bodySigningFactory;
+        this.aliasManager = aliasManager;
     }
 
     public void performFor(final SwirldsTxnAccessor txnAccessor) {
@@ -80,9 +89,7 @@ public class Rationalization {
         if (linkedRefs != null && linkedRefs.haveNoChangesAccordingTo(sigImpactHistorian)) {
             finalStatus = txnAccessor.getExpandedSigStatus();
             if (finalStatus == null) {
-                log.warn(
-                        "{} had non-null linked refs but null sig status",
-                        txnAccessor.getSignedTxnWrapper());
+                log.warn("{} had non-null linked refs but null sig status", txnAccessor.getSignedTxnWrapper());
             } else {
                 verifiedSync = false;
                 return;
@@ -107,6 +114,7 @@ public class Rationalization {
 
         pkToSigFn.resetAllSigsToUnused();
         bodySigningFactory.resetFor(txnAccessor);
+        txnAccessor.setPendingCompletions(Collections.emptyList());
 
         txnSigs = txnAccessor.getCryptoSigs();
         realPayerSigs.clear();
@@ -137,26 +145,25 @@ public class Rationalization {
         } else {
             reqOthersSigs = lastOrderResult.getOrderedKeys();
             if (pkToSigFn.hasAtLeastOneUnusedSigWithFullPrefix()) {
-                pkToSigFn.forEachUnusedSigWithFullPrefix(
-                        (type, pubKey, sig) ->
-                                realOtherPartySigs.add(
-                                        bodySigningFactory.signAppropriately(type, pubKey, sig)));
+                pkToSigFn.forEachUnusedSigWithFullPrefix((type, pubKey, sig) ->
+                        realOtherPartySigs.add(bodySigningFactory.signAppropriately(type, pubKey, sig)));
             }
         }
 
         final var rationalizedPayerSigs = rationalize(realPayerSigs, 0);
-        final var rationalizedOtherPartySigs =
-                rationalize(realOtherPartySigs, realPayerSigs.size());
-        if (rationalizedPayerSigs == realPayerSigs
-                || rationalizedOtherPartySigs == realOtherPartySigs) {
+        final var rationalizedOtherPartySigs = rationalize(realOtherPartySigs, realPayerSigs.size());
+        if (rationalizedPayerSigs == realPayerSigs || rationalizedOtherPartySigs == realOtherPartySigs) {
             txnSigs = new ArrayList<>();
             txnSigs.addAll(rationalizedPayerSigs);
             txnSigs.addAll(rationalizedOtherPartySigs);
             verifiedSync = true;
         }
 
-        makeRationalizedMetaAccessible();
+        if (otherFailure == null) {
+            maybePerformHollowScreening();
+        }
 
+        makeRationalizedMetaAccessible();
         finalStatus = (otherFailure != null) ? otherFailure : OK;
     }
 
@@ -164,13 +171,11 @@ public class Rationalization {
         if (reqOthersSigs == null) {
             txnAccessor.setSigMeta(forPayerOnly(reqPayerSig, txnSigs, txnAccessor));
         } else {
-            txnAccessor.setSigMeta(
-                    forPayerAndOthers(reqPayerSig, reqOthersSigs, txnSigs, txnAccessor));
+            txnAccessor.setSigMeta(forPayerAndOthers(reqPayerSig, reqOthersSigs, txnSigs, txnAccessor));
         }
     }
 
-    private List<TransactionSignature> rationalize(
-            final List<TransactionSignature> realSigs, final int startingAt) {
+    private List<TransactionSignature> rationalize(final List<TransactionSignature> realSigs, final int startingAt) {
         final var maxSubListEnd = txnSigs.size();
         final var requestedSubListEnd = startingAt + realSigs.size();
         if (requestedSubListEnd <= maxSubListEnd) {
@@ -185,25 +190,44 @@ public class Rationalization {
         return realSigs;
     }
 
-    private ResponseCodeEnum expandIn(
-            final List<TransactionSignature> target, final Expansion.SigReqsFunction keysFn) {
-        lastOrderResult =
-                keysFn.apply(
-                        txnAccessor.getTxn(),
-                        CODE_ORDER_RESULT_FACTORY,
-                        null,
-                        txnAccessor.getPayer());
+    private ResponseCodeEnum expandIn(final List<TransactionSignature> target, final Expansion.SigReqsFunction keysFn) {
+        lastOrderResult = keysFn.apply(txnAccessor.getTxn(), CODE_ORDER_RESULT_FACTORY, null, txnAccessor.getPayer());
         if (lastOrderResult.hasErrorReport()) {
             return lastOrderResult.getErrorReport();
         }
-        final var creation =
-                createCryptoSigsFrom(
-                        lastOrderResult.getOrderedKeys(), pkToSigFn, bodySigningFactory);
+        final var creation = createCryptoSigsFrom(lastOrderResult.getOrderedKeys(), pkToSigFn, bodySigningFactory);
         if (creation.hasFailed()) {
             return creation.asCode();
         }
         target.addAll(creation.getPlatformSigs());
         return OK;
+    }
+
+    /**
+     * If there are any {@link JWildcardECDSAKey}s
+     * in the req keys and if any ECDSA sigs are present in {@link Rationalization#txnSigs}, we need to replace those
+     * {@link JWildcardECDSAKey}s with their corresponding {@link JECDSASecp256k1Key}s for further key activation checks,
+     * and add all {@link PendingCompletion}s to the txn accessor, if such are present.
+     *
+     * <p>Execute a {@link HollowScreening}, scoped
+     * to those {@link Rationalization#txnSigs}, and apply all needed changes according to the returnes {@link HollowScreening.HollowScreenResult}.
+     *
+     */
+    private void maybePerformHollowScreening() {
+        if (HollowScreening.atLeastOneWildcardECDSAKeyIn(reqPayerSig, reqOthersSigs)
+                && pkToSigFn.hasAtLeastOneEcdsaSig()) {
+            final var hollowScreenResult =
+                    HollowScreening.performFor(txnSigs, reqPayerSig, reqOthersSigs, aliasManager, null);
+            if (hollowScreenResult.pendingCompletions() != null) {
+                txnAccessor.setPendingCompletions(hollowScreenResult.pendingCompletions());
+            }
+            if (hollowScreenResult.replacedPayerKey() != null) {
+                reqPayerSig = hollowScreenResult.replacedPayerKey();
+            }
+            if (hollowScreenResult.replacedOtherKeys() != null) {
+                reqOthersSigs = hollowScreenResult.replacedOtherKeys();
+            }
+        }
     }
 
     /* --- Only used by unit tests --- */
@@ -271,6 +295,6 @@ public class Rationalization {
             final SyncVerifier syncVerifier,
             final SigRequirements sigReqs,
             final ReusableBodySigningFactory bodySigningFactory) {
-        this(syncVerifier, null, sigReqs, bodySigningFactory);
+        this(syncVerifier, null, sigReqs, bodySigningFactory, null);
     }
 }

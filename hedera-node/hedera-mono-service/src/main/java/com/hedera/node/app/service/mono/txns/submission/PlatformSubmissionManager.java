@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.submission;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -38,8 +39,7 @@ public class PlatformSubmissionManager {
     private final MiscSpeedometers speedometers;
 
     @Inject
-    public PlatformSubmissionManager(
-            Platform platform, RecordCache recordCache, MiscSpeedometers speedometers) {
+    public PlatformSubmissionManager(Platform platform, RecordCache recordCache, MiscSpeedometers speedometers) {
         this.platform = platform;
         this.recordCache = recordCache;
         this.speedometers = speedometers;
@@ -48,9 +48,7 @@ public class PlatformSubmissionManager {
     public ResponseCodeEnum trySubmission(SignedTxnAccessor accessor) {
         accessor = effective(accessor);
 
-        var success =
-                (accessor != null)
-                        && platform.createTransaction(accessor.getSignedTxnWrapperBytes());
+        var success = (accessor != null) && platform.createTransaction(accessor.getSignedTxnWrapperBytes());
         if (success) {
             recordCache.addPreConsensus(accessor.getTxnId());
             return OK;

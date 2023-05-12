@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.customfees;
 
 import com.hedera.node.app.service.mono.grpc.marshalling.CustomFeeMeta;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.swirlds.merkle.map.MerkleMap;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -29,10 +30,10 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 /** Active CustomFeeSchedules for an entity in the tokens FCMap */
 @Singleton
 public class FcmCustomFeeSchedules implements CustomFeeSchedules {
-    private final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens;
+    private final Supplier<MerkleMapLike<EntityNum, MerkleToken>> tokens;
 
     @Inject
-    public FcmCustomFeeSchedules(Supplier<MerkleMap<EntityNum, MerkleToken>> tokens) {
+    public FcmCustomFeeSchedules(Supplier<MerkleMapLike<EntityNum, MerkleToken>> tokens) {
         this.tokens = tokens;
     }
 
@@ -44,11 +45,10 @@ public class FcmCustomFeeSchedules implements CustomFeeSchedules {
             return CustomFeeMeta.forMissingLookupOf(tokenId);
         }
         final var merkleToken = currentTokens.get(key);
-        return new CustomFeeMeta(
-                tokenId, merkleToken.treasury().asId(), merkleToken.customFeeSchedule());
+        return new CustomFeeMeta(tokenId, merkleToken.treasury().asId(), merkleToken.customFeeSchedule());
     }
 
-    public Supplier<MerkleMap<EntityNum, MerkleToken>> getTokens() {
+    public Supplier<MerkleMapLike<EntityNum, MerkleToken>> getTokens() {
         return tokens;
     }
 

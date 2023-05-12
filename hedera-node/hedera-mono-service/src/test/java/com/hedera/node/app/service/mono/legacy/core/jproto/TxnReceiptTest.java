@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.legacy.core.jproto;
 
 import static com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt.MISSING_RUNNING_HASH;
@@ -41,14 +42,17 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class TxnReceiptTest {
-    final TransactionID scheduledTxnId =
-            TransactionID.newBuilder()
-                    .setScheduled(true)
-                    .setAccountID(IdUtils.asAccount("0.0.2"))
-                    .build();
+    final TransactionID scheduledTxnId = TransactionID.newBuilder()
+            .setScheduled(true)
+            .setAccountID(IdUtils.asAccount("0.0.2"))
+            .build();
 
     private TopicID getTopicId(long shard, long realm, long num) {
-        return TopicID.newBuilder().setShardNum(shard).setRealmNum(realm).setTopicNum(num).build();
+        return TopicID.newBuilder()
+                .setShardNum(shard)
+                .setRealmNum(realm)
+                .setTopicNum(num)
+                .build();
     }
 
     private EntityId getTopicJAccountId(long shard, long realm, long num) {
@@ -65,7 +69,8 @@ class TxnReceiptTest {
 
     @Test
     void canGetStatusAsEnum() {
-        final var subject = TxnReceipt.newBuilder().setStatus("INVALID_ACCOUNT_ID").build();
+        final var subject =
+                TxnReceipt.newBuilder().setStatus("INVALID_ACCOUNT_ID").build();
         assertEquals(INVALID_ACCOUNT_ID, subject.getEnumStatus());
     }
 
@@ -73,11 +78,10 @@ class TxnReceiptTest {
     void constructorPostConsensusCreateTopic() {
         final var topicId = getTopicJAccountId(1L, 22L, 333L);
         final var sequenceNumber = 0L;
-        final var cut =
-                TxnReceipt.newBuilder()
-                        .setTopicId(topicId)
-                        .setTopicSequenceNumber(sequenceNumber)
-                        .build();
+        final var cut = TxnReceipt.newBuilder()
+                .setTopicId(topicId)
+                .setTopicSequenceNumber(sequenceNumber)
+                .build();
 
         assertAll(
                 () -> assertEquals(topicId, cut.getTopicId()),
@@ -88,11 +92,10 @@ class TxnReceiptTest {
     @Test
     void constructorPostConsensusSubmitMessage() {
         final var sequenceNumber = 55555L;
-        final var cut =
-                TxnReceipt.newBuilder()
-                        .setTopicRunningHash(getSha384Hash())
-                        .setTopicSequenceNumber(sequenceNumber)
-                        .build();
+        final var cut = TxnReceipt.newBuilder()
+                .setTopicRunningHash(getSha384Hash())
+                .setTopicSequenceNumber(sequenceNumber)
+                .build();
 
         assertAll(
                 () -> assertNull(cut.getTopicId()),
@@ -110,11 +113,10 @@ class TxnReceiptTest {
     @Test
     void convertToJTransactionReceiptPostConsensusCreateTopic() {
         final var topicId = getTopicId(1L, 22L, 333L);
-        final var receipt =
-                TransactionReceipt.newBuilder()
-                        .setExchangeRate(new ExchangeRates().toGrpc())
-                        .setTopicID(topicId)
-                        .build();
+        final var receipt = TransactionReceipt.newBuilder()
+                .setExchangeRate(new ExchangeRates().toGrpc())
+                .setTopicID(topicId)
+                .build();
         final var cut = ExpirableTxnRecordTestHelper.fromGrpc(receipt);
 
         assertAll(
@@ -131,12 +133,11 @@ class TxnReceiptTest {
     void scheduleCreateInterconversionWorks() {
         final var scheduleId = IdUtils.asSchedule("0.0.123");
 
-        final var receipt =
-                TransactionReceipt.newBuilder()
-                        .setExchangeRate(new ExchangeRates().toGrpc())
-                        .setScheduleID(scheduleId)
-                        .setScheduledTransactionID(scheduledTxnId)
-                        .build();
+        final var receipt = TransactionReceipt.newBuilder()
+                .setExchangeRate(new ExchangeRates().toGrpc())
+                .setScheduleID(scheduleId)
+                .setScheduledTransactionID(scheduledTxnId)
+                .build();
         final var cut = ExpirableTxnRecordTestHelper.fromGrpc(receipt);
         final var back = TxnReceipt.convert(cut);
 
@@ -148,13 +149,12 @@ class TxnReceiptTest {
         final var topicSequenceNumber = 4444L;
         final var topicRunningHash = getSha384Hash();
 
-        final var receipt =
-                TransactionReceipt.newBuilder()
-                        .setExchangeRate(new ExchangeRates().toGrpc())
-                        .setTopicSequenceNumber(topicSequenceNumber)
-                        .setTopicRunningHash(ByteString.copyFrom(topicRunningHash))
-                        .setTopicRunningHashVersion(2L)
-                        .build();
+        final var receipt = TransactionReceipt.newBuilder()
+                .setExchangeRate(new ExchangeRates().toGrpc())
+                .setTopicSequenceNumber(topicSequenceNumber)
+                .setTopicRunningHash(ByteString.copyFrom(topicRunningHash))
+                .setTopicRunningHashVersion(2L)
+                .build();
         final var cut = ExpirableTxnRecordTestHelper.fromGrpc(receipt);
         final var back = TxnReceipt.convert(cut);
 
@@ -165,11 +165,10 @@ class TxnReceiptTest {
     void postConsensusTokenMintBurnWipeInterconversionWorks() {
         final var totalSupply = 12345L;
 
-        final var receipt =
-                TransactionReceipt.newBuilder()
-                        .setExchangeRate(new ExchangeRates().toGrpc())
-                        .setNewTotalSupply(totalSupply)
-                        .build();
+        final var receipt = TransactionReceipt.newBuilder()
+                .setExchangeRate(new ExchangeRates().toGrpc())
+                .setNewTotalSupply(totalSupply)
+                .build();
         final var cut = ExpirableTxnRecordTestHelper.fromGrpc(receipt);
         final var back = TxnReceipt.convert(cut);
 
@@ -178,11 +177,10 @@ class TxnReceiptTest {
 
     @Test
     void postConsensusTokenNftInterconversionWorks() {
-        final var receipt =
-                TransactionReceipt.newBuilder()
-                        .setExchangeRate(new ExchangeRates().toGrpc())
-                        .addAllSerialNumbers(List.of(1L, 2L, 3L, 4L, 5L))
-                        .build();
+        final var receipt = TransactionReceipt.newBuilder()
+                .setExchangeRate(new ExchangeRates().toGrpc())
+                .addAllSerialNumbers(List.of(1L, 2L, 3L, 4L, 5L))
+                .build();
         final var cut = ExpirableTxnRecordTestHelper.fromGrpc(receipt);
         final var back = TxnReceipt.convert(cut);
 
@@ -194,11 +192,10 @@ class TxnReceiptTest {
         final TokenID.Builder tokenIdBuilder =
                 TokenID.newBuilder().setTokenNum(1001L).setRealmNum(0).setShardNum(0);
 
-        final var receipt =
-                TransactionReceipt.newBuilder()
-                        .setExchangeRate(new ExchangeRates().toGrpc())
-                        .setTokenID(tokenIdBuilder)
-                        .build();
+        final var receipt = TransactionReceipt.newBuilder()
+                .setExchangeRate(new ExchangeRates().toGrpc())
+                .setTokenID(tokenIdBuilder)
+                .build();
         final var cut = ExpirableTxnRecordTestHelper.fromGrpc(receipt);
         final var back = TxnReceipt.convert(cut);
 
@@ -210,12 +207,11 @@ class TxnReceiptTest {
         final var topicSequenceNumber = 4444L;
         final var topicRunningHash = getSha384Hash();
 
-        final var receipt =
-                TransactionReceipt.newBuilder()
-                        .setTopicSequenceNumber(topicSequenceNumber)
-                        .setTopicRunningHash(ByteString.copyFrom(topicRunningHash))
-                        .setTopicRunningHashVersion(2L)
-                        .build();
+        final var receipt = TransactionReceipt.newBuilder()
+                .setTopicSequenceNumber(topicSequenceNumber)
+                .setTopicRunningHash(ByteString.copyFrom(topicRunningHash))
+                .setTopicRunningHashVersion(2L)
+                .build();
         final var cut = ExpirableTxnRecordTestHelper.fromGrpc(receipt);
 
         assertAll(
@@ -253,7 +249,8 @@ class TxnReceiptTest {
         assertAll(
                 () -> assertFalse(cut.hasTopicID()),
                 () -> assertEquals(sequenceNumber, cut.getTopicSequenceNumber()),
-                () -> assertArrayEquals(getSha384Hash(), cut.getTopicRunningHash().toByteArray()));
+                () -> assertArrayEquals(
+                        getSha384Hash(), cut.getTopicRunningHash().toByteArray()));
     }
 
     @Test
@@ -276,98 +273,81 @@ class TxnReceiptTest {
         assertNull(cut.getTopicId());
         assertNull(cut.getTopicRunningHash());
 
-        assertAll(
-                () -> Assertions.assertDoesNotThrow(() -> cut.toString()),
-                () -> assertNotNull(cut.toString()));
+        assertAll(() -> Assertions.assertDoesNotThrow(() -> cut.toString()), () -> assertNotNull(cut.toString()));
     }
 
     @Test
     void scheduleConstructor() {
         final var scheduleId = EntityId.fromGrpcScheduleId(IdUtils.asSchedule("0.0.123"));
-        final var cut =
-                TxnReceipt.newBuilder()
-                        .setStatus("SUCCESS")
-                        .setScheduleId(scheduleId)
-                        .setTopicRunningHash(MISSING_RUNNING_HASH)
-                        .setTopicSequenceNumber(0L)
-                        .setRunningHashVersion(0)
-                        .setNewTotalSupply(0L)
-                        .setScheduledTxnId(TxnId.fromGrpc(scheduledTxnId))
-                        .build();
+        final var cut = TxnReceipt.newBuilder()
+                .setStatus("SUCCESS")
+                .setScheduleId(scheduleId)
+                .setTopicRunningHash(MISSING_RUNNING_HASH)
+                .setTopicSequenceNumber(0L)
+                .setRunningHashVersion(0)
+                .setNewTotalSupply(0L)
+                .setScheduledTxnId(TxnId.fromGrpc(scheduledTxnId))
+                .build();
 
-        assertAll(
-                () -> Assertions.assertDoesNotThrow(() -> cut.toString()),
-                () -> assertNotNull(cut.toString()));
+        assertAll(() -> Assertions.assertDoesNotThrow(() -> cut.toString()), () -> assertNotNull(cut.toString()));
     }
 
     @Test
     void hcsConstructor() {
-        final var topicId = EntityId.fromGrpcTopicId(TopicID.newBuilder().setTopicNum(1L).build());
+        final var topicId =
+                EntityId.fromGrpcTopicId(TopicID.newBuilder().setTopicNum(1L).build());
         final var sequenceNumber = 2L;
         final var runningHash = new byte[3];
-        final var cut =
-                TxnReceipt.newBuilder()
-                        .setStatus("SUCCESS")
-                        .setTopicId(topicId)
-                        .setTopicRunningHash(runningHash)
-                        .setTopicSequenceNumber(sequenceNumber)
-                        .build();
+        final var cut = TxnReceipt.newBuilder()
+                .setStatus("SUCCESS")
+                .setTopicId(topicId)
+                .setTopicRunningHash(runningHash)
+                .setTopicSequenceNumber(sequenceNumber)
+                .build();
 
         assertEquals(topicId, cut.getTopicId());
         assertEquals(sequenceNumber, cut.getTopicSequenceNumber());
         assertEquals(runningHash, cut.getTopicRunningHash());
 
-        assertAll(
-                () -> Assertions.assertDoesNotThrow(() -> cut.toString()),
-                () -> assertNotNull(cut.toString()));
+        assertAll(() -> Assertions.assertDoesNotThrow(() -> cut.toString()), () -> assertNotNull(cut.toString()));
     }
 
     @Test
     void tokenConstructorWithTokenId() {
-        final var tokenId =
-                EntityId.fromGrpcTokenId(
-                        TokenID.newBuilder()
-                                .setTokenNum(1001L)
-                                .setRealmNum(0)
-                                .setShardNum(0)
-                                .build());
-        final var cut =
-                TxnReceipt.newBuilder()
-                        .setStatus("SUCCESS")
-                        .setTokenId(tokenId)
-                        .setNewTotalSupply(0L)
-                        .build();
+        final var tokenId = EntityId.fromGrpcTokenId(TokenID.newBuilder()
+                .setTokenNum(1001L)
+                .setRealmNum(0)
+                .setShardNum(0)
+                .build());
+        final var cut = TxnReceipt.newBuilder()
+                .setStatus("SUCCESS")
+                .setTokenId(tokenId)
+                .setNewTotalSupply(0L)
+                .build();
 
         assertEquals(tokenId, cut.getTokenId());
 
-        assertAll(
-                () -> Assertions.assertDoesNotThrow(() -> cut.toString()),
-                () -> assertNotNull(cut.toString()));
+        assertAll(() -> Assertions.assertDoesNotThrow(() -> cut.toString()), () -> assertNotNull(cut.toString()));
     }
 
     @Test
     void tokenConstructorWithTotalSupply() {
-        final var tokenId =
-                EntityId.fromGrpcTokenId(
-                        TokenID.newBuilder()
-                                .setTokenNum(1001L)
-                                .setRealmNum(0)
-                                .setShardNum(0)
-                                .build());
-        final var cut =
-                TxnReceipt.newBuilder()
-                        .setStatus("SUCCESS")
-                        .setTokenId(tokenId)
-                        .setRunningHashVersion(MISSING_RUNNING_HASH_VERSION)
-                        .setTopicSequenceNumber(0L)
-                        .setNewTotalSupply(1000L)
-                        .setScheduledTxnId(MISSING_SCHEDULED_TXN_ID)
-                        .build();
+        final var tokenId = EntityId.fromGrpcTokenId(TokenID.newBuilder()
+                .setTokenNum(1001L)
+                .setRealmNum(0)
+                .setShardNum(0)
+                .build());
+        final var cut = TxnReceipt.newBuilder()
+                .setStatus("SUCCESS")
+                .setTokenId(tokenId)
+                .setRunningHashVersion(MISSING_RUNNING_HASH_VERSION)
+                .setTopicSequenceNumber(0L)
+                .setNewTotalSupply(1000L)
+                .setScheduledTxnId(MISSING_SCHEDULED_TXN_ID)
+                .build();
 
         assertEquals(1000L, cut.getNewTotalSupply());
 
-        assertAll(
-                () -> Assertions.assertDoesNotThrow(cut::toString),
-                () -> assertNotNull(cut.toString()));
+        assertAll(() -> Assertions.assertDoesNotThrow(cut::toString), () -> assertNotNull(cut.toString()));
     }
 }

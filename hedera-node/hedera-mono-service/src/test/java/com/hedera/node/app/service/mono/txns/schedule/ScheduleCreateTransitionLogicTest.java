@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.schedule;
 
 import static com.hedera.node.app.service.mono.txns.schedule.SigMapScheduleClassifierTest.pretendKeyStartingWith;
@@ -75,11 +76,10 @@ class ScheduleCreateTransitionLogicTest {
     private static final Instant now = Instant.ofEpochSecond(thisSecond);
     private static final byte[] bodyBytes =
             TransactionBody.newBuilder().setMemo("Just this").build().toByteArray();
-    private static final TransactionID scheduledTxnId =
-            TransactionID.newBuilder()
-                    .setAccountID(IdUtils.asAccount("0.0.2"))
-                    .setScheduled(true)
-                    .build();
+    private static final TransactionID scheduledTxnId = TransactionID.newBuilder()
+            .setAccountID(IdUtils.asAccount("0.0.2"))
+            .setScheduled(true)
+            .build();
 
     private static final Key key = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
     private static final Key invalidKey = Key.getDefaultInstance();
@@ -89,14 +89,12 @@ class ScheduleCreateTransitionLogicTest {
     private static final String entityMemo = "some cool memo?";
     private static final String innerMemo = "Strictly business now";
 
-    private static final TransactionID txnId =
-            TransactionID.newBuilder()
-                    .setTransactionValidStart(
-                            Timestamp.newBuilder()
-                                    .setSeconds(now.getEpochSecond())
-                                    .setNanos(now.getNano())
-                                    .build())
-                    .build();
+    private static final TransactionID txnId = TransactionID.newBuilder()
+            .setTransactionValidStart(Timestamp.newBuilder()
+                    .setSeconds(now.getEpochSecond())
+                    .setNanos(now.getNano())
+                    .build())
+            .build();
 
     private static final JKey payerKey = new JEd25519Key(pretendKeyStartingWith("payer"));
     private static final Optional<JKey> jAdminKey = asUsableFcKey(key);
@@ -141,9 +139,7 @@ class ScheduleCreateTransitionLogicTest {
 
         classifier = mock(SigMapScheduleClassifier.class);
 
-        given(
-                        replSigningWitness.observeInScope(
-                                schedule, store, validScheduleKeys, activationHelper, false))
+        given(replSigningWitness.observeInScope(schedule, store, validScheduleKeys, activationHelper, false))
                 .willReturn(Pair.of(OK, true));
 
         given(executor.processImmediateExecution(any(), any(), any())).willReturn(OK);
@@ -152,17 +148,16 @@ class ScheduleCreateTransitionLogicTest {
         given(txnCtx.activePayer()).willReturn(payer);
         given(txnCtx.activePayerKey()).willReturn(payerKey);
 
-        subject =
-                new ScheduleCreateTransitionLogic(
-                        usageLimits,
-                        properties,
-                        store,
-                        txnCtx,
-                        activationHelper,
-                        validator,
-                        executor,
-                        sigImpactHistorian,
-                        scheduleProcessing);
+        subject = new ScheduleCreateTransitionLogic(
+                usageLimits,
+                properties,
+                store,
+                txnCtx,
+                activationHelper,
+                validator,
+                executor,
+                sigImpactHistorian,
+                scheduleProcessing);
 
         subject.signingsWitness = replSigningWitness;
         subject.classifier = classifier;
@@ -190,8 +185,7 @@ class ScheduleCreateTransitionLogicTest {
 
         verify(store).lookupSchedule(bodyBytes);
         verify(store).createProvisionally(scheduleValue, RichInstant.fromJava(now));
-        verify(replSigningWitness)
-                .observeInScope(schedule, store, validScheduleKeys, activationHelper, false);
+        verify(replSigningWitness).observeInScope(schedule, store, validScheduleKeys, activationHelper, false);
         verify(store).commitCreation();
         verify(txnCtx, never()).addExpiringEntities(any());
         verify(txnCtx).setStatus(SUCCESS);
@@ -209,9 +203,7 @@ class ScheduleCreateTransitionLogicTest {
                 .willReturn(OK);
         givenValidTxnCtx();
         given(scheduleValue.adminKey()).willReturn(jAdminKey);
-        given(
-                        replSigningWitness.observeInScope(
-                                schedule, store, validScheduleKeys, activationHelper, false))
+        given(replSigningWitness.observeInScope(schedule, store, validScheduleKeys, activationHelper, false))
                 .willReturn(Pair.of(NO_NEW_VALID_SIGNATURES, false));
         given(usageLimits.areCreatableSchedules(1)).willReturn(true);
 
@@ -235,17 +227,14 @@ class ScheduleCreateTransitionLogicTest {
         given(scheduleValue.adminKey()).willReturn(jAdminKey);
         given(scheduleValue.calculatedWaitForExpiry()).willReturn(true);
         given(properties.schedulingLongTermEnabled()).willReturn(true);
-        given(
-                        replSigningWitness.observeInScope(
-                                schedule, store, validScheduleKeys, activationHelper, true))
+        given(replSigningWitness.observeInScope(schedule, store, validScheduleKeys, activationHelper, true))
                 .willReturn(Pair.of(OK, false));
 
         subject.doStateTransition();
 
         verify(store).lookupSchedule(bodyBytes);
         verify(store).createProvisionally(scheduleValue, RichInstant.fromJava(now));
-        verify(replSigningWitness)
-                .observeInScope(schedule, store, validScheduleKeys, activationHelper, true);
+        verify(replSigningWitness).observeInScope(schedule, store, validScheduleKeys, activationHelper, true);
         verify(replSigningWitness, never()).observeInScope(any(), any(), any(), any(), eq(false));
         verify(store).commitCreation();
         verify(txnCtx, never()).addExpiringEntities(any());
@@ -270,8 +259,7 @@ class ScheduleCreateTransitionLogicTest {
 
         verify(store).lookupSchedule(bodyBytes);
         verify(store).createProvisionally(scheduleValue, RichInstant.fromJava(now));
-        verify(replSigningWitness)
-                .observeInScope(schedule, store, validScheduleKeys, activationHelper, false);
+        verify(replSigningWitness).observeInScope(schedule, store, validScheduleKeys, activationHelper, false);
         verify(replSigningWitness, never()).observeInScope(any(), any(), any(), any(), eq(true));
         verify(store).commitCreation();
         verify(txnCtx, never()).addExpiringEntities(any());
@@ -314,9 +302,7 @@ class ScheduleCreateTransitionLogicTest {
         given(scheduleValue.adminKey()).willReturn(jAdminKey);
         given(scheduleProcessing.checkFutureThrottlesForCreate(schedule, scheduleValue))
                 .willReturn(OK);
-        given(
-                        replSigningWitness.observeInScope(
-                                schedule, store, validScheduleKeys, activationHelper, false))
+        given(replSigningWitness.observeInScope(schedule, store, validScheduleKeys, activationHelper, false))
                 .willReturn(Pair.of(SOME_SIGNATURES_WERE_INVALID, true));
         given(usageLimits.areCreatableSchedules(1)).willReturn(true);
 
@@ -415,23 +401,18 @@ class ScheduleCreateTransitionLogicTest {
     }
 
     private void givenCtx(
-            final boolean invalidAdminKey,
-            final boolean invalidEntityMemo,
-            final boolean invalidInnerMemo) {
+            final boolean invalidAdminKey, final boolean invalidEntityMemo, final boolean invalidInnerMemo) {
         given(accessor.getSigMap()).willReturn(sigMap);
-        given(
-                        classifier.validScheduleKeys(
-                                eq(List.of(payerKey, jAdminKey.get())), eq(sigMap), any(), any()))
+        given(classifier.validScheduleKeys(eq(List.of(payerKey, jAdminKey.get())), eq(sigMap), any(), any()))
                 .willReturn(validScheduleKeys);
 
         final var builder = TransactionBody.newBuilder();
-        final var scheduleCreate =
-                ScheduleCreateTransactionBody.newBuilder()
-                        .setAdminKey(key)
-                        .setPayerAccountID(payer)
-                        .setMemo(entityMemo)
-                        .setScheduledTransactionBody(
-                                SchedulableTransactionBody.newBuilder().setMemo(innerMemo));
+        final var scheduleCreate = ScheduleCreateTransactionBody.newBuilder()
+                .setAdminKey(key)
+                .setPayerAccountID(payer)
+                .setMemo(entityMemo)
+                .setScheduledTransactionBody(
+                        SchedulableTransactionBody.newBuilder().setMemo(innerMemo));
 
         if (invalidAdminKey) {
             if (invalidAdminKeyIsSentinelKeyList) {
@@ -450,10 +431,8 @@ class ScheduleCreateTransitionLogicTest {
 
         scheduleCreateTxn = builder.build();
 
-        given(validator.memoCheck(entityMemo))
-                .willReturn(invalidEntityMemo ? INVALID_ZERO_BYTE_IN_STRING : OK);
-        given(validator.memoCheck(innerMemo))
-                .willReturn(invalidInnerMemo ? INVALID_ZERO_BYTE_IN_STRING : OK);
+        given(validator.memoCheck(entityMemo)).willReturn(invalidEntityMemo ? INVALID_ZERO_BYTE_IN_STRING : OK);
+        given(validator.memoCheck(innerMemo)).willReturn(invalidInnerMemo ? INVALID_ZERO_BYTE_IN_STRING : OK);
         given(accessor.getTxnId()).willReturn(txnId);
         given(accessor.getTxn()).willReturn(scheduleCreateTxn);
         given(txnCtx.accessor()).willReturn(accessor);

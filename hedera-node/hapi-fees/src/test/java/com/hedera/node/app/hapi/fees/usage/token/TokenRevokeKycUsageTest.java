@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage.token;
 
 import static com.hedera.node.app.hapi.fees.test.UsageUtils.A_USAGES_MATRIX;
@@ -87,13 +88,10 @@ class TokenRevokeKycUsageTest {
     }
 
     private void setTxn() {
-        txn =
-                TransactionBody.newBuilder()
-                        .setTransactionID(
-                                TransactionID.newBuilder()
-                                        .setTransactionValidStart(
-                                                Timestamp.newBuilder().setSeconds(now)))
-                        .setTokenRevokeKyc(op)
-                        .build();
+        txn = TransactionBody.newBuilder()
+                .setTransactionID(TransactionID.newBuilder()
+                        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(now)))
+                .setTokenRevokeKyc(op)
+                .build();
     }
 }

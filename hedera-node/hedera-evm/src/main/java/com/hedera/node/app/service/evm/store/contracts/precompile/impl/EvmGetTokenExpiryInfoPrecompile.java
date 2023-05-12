@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.decodeFunctionCall;
@@ -32,8 +33,7 @@ public interface EvmGetTokenExpiryInfoPrecompile {
 
     public static GetTokenExpiryInfoWrapper<byte[]> decodeGetTokenExpiryInfo(final Bytes input) {
         final Tuple decodedArguments =
-                decodeFunctionCall(
-                        input, GET_TOKEN_EXPIRY_INFO_SELECTOR, GET_TOKEN_EXPIRY_INFO_DECODER);
+                decodeFunctionCall(input, GET_TOKEN_EXPIRY_INFO_SELECTOR, GET_TOKEN_EXPIRY_INFO_DECODER);
 
         return new GetTokenExpiryInfoWrapper<>(decodedArguments.get(0));
     }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.grpc.marshalling;
 
 import com.google.common.base.MoreObjects;
@@ -44,18 +45,14 @@ public final class AssessedCustomFeeWrapper {
     private final AccountID[] effPayerAccounts;
 
     public AssessedCustomFeeWrapper(
-            final EntityId account,
-            final EntityId token,
-            final long units,
-            final AccountID[] effPayerAccounts) {
+            final EntityId account, final EntityId token, final long units, final AccountID[] effPayerAccounts) {
         this.account = account;
         this.token = token;
         this.units = units;
         this.effPayerAccounts = effPayerAccounts;
     }
 
-    public AssessedCustomFeeWrapper(
-            final EntityId account, final long units, final AccountID[] effPayerAccounts) {
+    public AssessedCustomFeeWrapper(final EntityId account, final long units, final AccountID[] effPayerAccounts) {
         this.token = null;
         this.account = account;
         this.units = units;
@@ -70,8 +67,7 @@ public final class AssessedCustomFeeWrapper {
         return token;
     }
 
-    public FcAssessedCustomFee toFcAssessedCustomFee(
-            final Map<ByteString, AccountID> aliasesToNewIds) {
+    public FcAssessedCustomFee toFcAssessedCustomFee(final Map<ByteString, AccountID> aliasesToNewIds) {
         final var nums = new long[effPayerAccounts.length];
         for (int i = 0; i < effPayerAccounts.length; i++) {
             final var payer = effPayerAccounts[i];

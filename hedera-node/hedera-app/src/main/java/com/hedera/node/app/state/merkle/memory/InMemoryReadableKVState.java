@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.state.merkle.memory;
 
 import com.hedera.node.app.spi.state.ReadableKVState;
@@ -30,8 +31,8 @@ import java.util.Objects;
  * @param <K> The type of key for the state
  * @param <V> The type of value for the state
  */
-public final class InMemoryReadableKVState<K extends Comparable<K>, V>
-        extends ReadableKVStateBase<K, V> {
+public final class InMemoryReadableKVState<K extends Comparable<K>, V> extends ReadableKVStateBase<K, V> {
+
     /** The underlying merkle tree data structure with the data */
     private final MerkleMap<InMemoryKey<K>, InMemoryValue<K, V>> merkle;
 
@@ -42,8 +43,7 @@ public final class InMemoryReadableKVState<K extends Comparable<K>, V>
      * @param merkleMap The backing merkle map
      */
     public InMemoryReadableKVState(
-            @NonNull final StateMetadata<K, V> md,
-            @NonNull MerkleMap<InMemoryKey<K>, InMemoryValue<K, V>> merkleMap) {
+            @NonNull final StateMetadata<K, V> md, @NonNull MerkleMap<InMemoryKey<K>, InMemoryValue<K, V>> merkleMap) {
         super(md.stateDefinition().stateKey());
         this.merkle = Objects.requireNonNull(merkleMap);
     }
@@ -59,5 +59,12 @@ public final class InMemoryReadableKVState<K extends Comparable<K>, V>
     @Override
     protected Iterator<K> iterateFromDataSource() {
         return merkle.keySet().stream().map(InMemoryKey::key).iterator();
+    }
+
+    /** {@inheritDoc} */
+    @NonNull
+    @Override
+    public long size() {
+        return merkle.size();
     }
 }

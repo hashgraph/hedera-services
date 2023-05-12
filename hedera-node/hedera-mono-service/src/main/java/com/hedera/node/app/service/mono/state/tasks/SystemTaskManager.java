@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.tasks;
 
 import static com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext.*;
@@ -35,11 +36,7 @@ public class SystemTaskManager {
     @Inject
     public SystemTaskManager(final Map<String, SystemTask> namedTasks) {
         // Only runs once per restart, so performance doesn't matter
-        tasks =
-                namedTasks.keySet().stream()
-                        .sorted()
-                        .map(namedTasks::get)
-                        .toArray(SystemTask[]::new);
+        tasks = namedTasks.keySet().stream().sorted().map(namedTasks::get).toArray(SystemTask[]::new);
         log.info("Discovered {} tasks ({})", tasks.length, namedTasks.keySet());
     }
 
@@ -91,15 +88,11 @@ public class SystemTaskManager {
         final var status = curNetworkCtx.getPreExistingEntityScanStatus();
         if (status == LAST_PRE_EXISTING_ENTITY_NOT_SCANNED) {
             if (n == curNetworkCtx.seqNoPostUpgrade() - 1) {
-                log.info(
-                        "Setting pre-existing entity scan status to"
-                                + " LAST_PRE_EXISTING_ENTITY_SCANNED");
+                log.info("Setting pre-existing entity scan status to" + " LAST_PRE_EXISTING_ENTITY_SCANNED");
                 curNetworkCtx.setPreExistingEntityScanStatus(LAST_PRE_EXISTING_ENTITY_SCANNED);
             }
-        } else if (status == LAST_PRE_EXISTING_ENTITY_SCANNED
-                && n == curNetworkCtx.lastScannedPostUpgrade()) {
-            log.info(
-                    "Setting pre-existing entity scan status to ALL_PRE_EXISTING_ENTITIES_SCANNED");
+        } else if (status == LAST_PRE_EXISTING_ENTITY_SCANNED && n == curNetworkCtx.lastScannedPostUpgrade()) {
+            log.info("Setting pre-existing entity scan status to ALL_PRE_EXISTING_ENTITIES_SCANNED");
             curNetworkCtx.setPreExistingEntityScanStatus(ALL_PRE_EXISTING_ENTITIES_SCANNED);
         }
     }

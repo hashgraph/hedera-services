@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.token;
 
 import static com.hedera.node.app.service.mono.txns.token.CreateLogic.MODEL_FACTORY;
@@ -90,18 +91,38 @@ class TokenCreateTransitionLogicTest {
 
     private TransactionBody tokenCreateTxn;
 
-    @Mock private Creation creation;
-    @Mock private AccountStore accountStore;
+    @Mock
+    private Creation creation;
 
-    @Mock private UsageLimits usageLimits;
-    @Mock private EntityIdSource ids;
-    @Mock private TypedTokenStore tokenStore;
-    @Mock private OptionValidator validator;
-    @Mock private TransactionContext txnCtx;
-    @Mock private SignedTxnAccessor accessor;
-    @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private Creation.CreationFactory creationFactory;
-    @Mock private SigImpactHistorian sigImpactHistorian;
+    @Mock
+    private AccountStore accountStore;
+
+    @Mock
+    private UsageLimits usageLimits;
+
+    @Mock
+    private EntityIdSource ids;
+
+    @Mock
+    private TypedTokenStore tokenStore;
+
+    @Mock
+    private OptionValidator validator;
+
+    @Mock
+    private TransactionContext txnCtx;
+
+    @Mock
+    private SignedTxnAccessor accessor;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
+
+    @Mock
+    private Creation.CreationFactory creationFactory;
+
+    @Mock
+    private SigImpactHistorian sigImpactHistorian;
 
     private CreateLogic createLogic;
     private CreateChecks createChecks;
@@ -109,15 +130,8 @@ class TokenCreateTransitionLogicTest {
 
     @BeforeEach
     void setup() {
-        createLogic =
-                new CreateLogic(
-                        usageLimits,
-                        accountStore,
-                        tokenStore,
-                        dynamicProperties,
-                        sigImpactHistorian,
-                        ids,
-                        validator);
+        createLogic = new CreateLogic(
+                usageLimits, accountStore, tokenStore, dynamicProperties, sigImpactHistorian, ids, validator);
         createChecks = new CreateChecks(dynamicProperties, validator);
         subject = new TokenCreateTransitionLogic(txnCtx, createLogic, createChecks);
     }
@@ -133,12 +147,8 @@ class TokenCreateTransitionLogicTest {
         given(txnCtx.accessor()).willReturn(accessor);
         given(txnCtx.activePayer()).willReturn(payer);
         given(txnCtx.consensusTime()).willReturn(now);
-        given(
-                        creationFactory.processFrom(
-                                accountStore,
-                                tokenStore,
-                                dynamicProperties,
-                                tokenCreateTxn.getTokenCreation()))
+        given(creationFactory.processFrom(
+                        accountStore, tokenStore, dynamicProperties, tokenCreateTxn.getTokenCreation()))
                 .willReturn(creation);
         given(creation.newTokenId()).willReturn(createdId);
 
@@ -256,8 +266,7 @@ class TokenCreateTransitionLogicTest {
         withHappyValidatorExceptAutoRenew();
 
         // expect:
-        assertEquals(
-                INVALID_TREASURY_ACCOUNT_FOR_TOKEN, subject.semanticCheck().apply(tokenCreateTxn));
+        assertEquals(INVALID_TREASURY_ACCOUNT_FOR_TOKEN, subject.semanticCheck().apply(tokenCreateTxn));
     }
 
     @Test
@@ -266,8 +275,7 @@ class TokenCreateTransitionLogicTest {
         withHappyValidatorExceptAutoRenew();
 
         // expect:
-        assertEquals(
-                INVALID_CUSTOM_FEE_SCHEDULE_KEY, subject.semanticCheck().apply(tokenCreateTxn));
+        assertEquals(INVALID_CUSTOM_FEE_SCHEDULE_KEY, subject.semanticCheck().apply(tokenCreateTxn));
     }
 
     @Test
@@ -388,27 +396,23 @@ class TokenCreateTransitionLogicTest {
     }
 
     private void givenInvalidSupplyTypeAndSupply() {
-        var builder =
-                TransactionBody.newBuilder()
-                        .setTokenCreation(
-                                TokenCreateTransactionBody.newBuilder()
-                                        .setSupplyType(TokenSupplyType.INFINITE)
-                                        .setInitialSupply(0)
-                                        .setMaxSupply(1)
-                                        .build());
+        var builder = TransactionBody.newBuilder()
+                .setTokenCreation(TokenCreateTransactionBody.newBuilder()
+                        .setSupplyType(TokenSupplyType.INFINITE)
+                        .setInitialSupply(0)
+                        .setMaxSupply(1)
+                        .build());
 
         tokenCreateTxn = builder.build();
     }
 
     private void givenTxWithInvalidSupplies() {
-        var builder =
-                TransactionBody.newBuilder()
-                        .setTokenCreation(
-                                TokenCreateTransactionBody.newBuilder()
-                                        .setSupplyType(TokenSupplyType.FINITE)
-                                        .setInitialSupply(1000)
-                                        .setMaxSupply(1)
-                                        .build());
+        var builder = TransactionBody.newBuilder()
+                .setTokenCreation(TokenCreateTransactionBody.newBuilder()
+                        .setSupplyType(TokenSupplyType.FINITE)
+                        .setInitialSupply(1000)
+                        .setMaxSupply(1)
+                        .build());
         tokenCreateTxn = builder.build();
     }
 
@@ -420,193 +424,156 @@ class TokenCreateTransitionLogicTest {
         givenValidTxnCtx(false, false, true, false);
     }
 
-    private void givenValidTxnCtx(
-            boolean withKyc, boolean withFreeze, boolean isUnique, boolean withSupplyKey) {
-        final var expiry = Timestamp.newBuilder().setSeconds(thisSecond + thisSecond).build();
+    private void givenValidTxnCtx(boolean withKyc, boolean withFreeze, boolean isUnique, boolean withSupplyKey) {
+        final var expiry =
+                Timestamp.newBuilder().setSeconds(thisSecond + thisSecond).build();
         final var memo = "...descending into thin air, where no arms / outstretch to catch her";
-        var builder =
-                TransactionBody.newBuilder()
-                        .setTokenCreation(
-                                TokenCreateTransactionBody.newBuilder()
-                                        .setMemo(memo)
-                                        .setInitialSupply(initialSupply)
-                                        .setDecimals(decimals)
-                                        .setTreasury(treasury)
-                                        .setAdminKey(key)
-                                        .setAutoRenewAccount(renewAccount)
-                                        .setExpiry(expiry));
+        var builder = TransactionBody.newBuilder()
+                .setTokenCreation(TokenCreateTransactionBody.newBuilder()
+                        .setMemo(memo)
+                        .setInitialSupply(initialSupply)
+                        .setDecimals(decimals)
+                        .setTreasury(treasury)
+                        .setAdminKey(key)
+                        .setAutoRenewAccount(renewAccount)
+                        .setExpiry(expiry));
         if (isUnique) {
             builder.getTokenCreationBuilder().setTokenType(TokenType.NON_FUNGIBLE_UNIQUE);
             builder.getTokenCreationBuilder().setInitialSupply(0L);
             builder.getTokenCreationBuilder().setDecimals(0);
         }
         if (withFreeze) {
-            builder.getTokenCreationBuilder()
-                    .setFreezeKey(TxnHandlingScenario.TOKEN_FREEZE_KT.asKey());
+            builder.getTokenCreationBuilder().setFreezeKey(TxnHandlingScenario.TOKEN_FREEZE_KT.asKey());
         }
         if (withKyc) {
             builder.getTokenCreationBuilder().setKycKey(TxnHandlingScenario.TOKEN_KYC_KT.asKey());
         }
         if (withSupplyKey) {
-            builder.getTokenCreationBuilder()
-                    .setSupplyKey(TxnHandlingScenario.TOKEN_SUPPLY_KT.asKey());
+            builder.getTokenCreationBuilder().setSupplyKey(TxnHandlingScenario.TOKEN_SUPPLY_KT.asKey());
         }
         tokenCreateTxn = builder.build();
     }
 
     private void givenInvalidInitialSupply() {
-        tokenCreateTxn =
-                TransactionBody.newBuilder()
-                        .setTokenCreation(
-                                TokenCreateTransactionBody.newBuilder().setInitialSupply(-1))
-                        .build();
+        tokenCreateTxn = TransactionBody.newBuilder()
+                .setTokenCreation(TokenCreateTransactionBody.newBuilder().setInitialSupply(-1))
+                .build();
     }
 
     private void givenInvalidDecimals() {
-        tokenCreateTxn =
-                TransactionBody.newBuilder()
-                        .setTokenCreation(
-                                TokenCreateTransactionBody.newBuilder()
-                                        .setInitialSupply(0)
-                                        .setDecimals(-1))
-                        .build();
+        tokenCreateTxn = TransactionBody.newBuilder()
+                .setTokenCreation(TokenCreateTransactionBody.newBuilder()
+                        .setInitialSupply(0)
+                        .setDecimals(-1))
+                .build();
     }
 
     private void givenMissingTreasury() {
-        tokenCreateTxn =
-                TransactionBody.newBuilder()
-                        .setTokenCreation(TokenCreateTransactionBody.newBuilder())
-                        .build();
+        tokenCreateTxn = TransactionBody.newBuilder()
+                .setTokenCreation(TokenCreateTransactionBody.newBuilder())
+                .build();
     }
 
     private void givenMissingFreezeKeyWithFreezeDefault() {
-        tokenCreateTxn =
-                TransactionBody.newBuilder()
-                        .setTokenCreation(
-                                TokenCreateTransactionBody.newBuilder()
-                                        .setInitialSupply(initialSupply)
-                                        .setDecimals(decimals)
-                                        .setTreasury(treasury)
-                                        .setFreezeDefault(true))
-                        .build();
+        tokenCreateTxn = TransactionBody.newBuilder()
+                .setTokenCreation(TokenCreateTransactionBody.newBuilder()
+                        .setInitialSupply(initialSupply)
+                        .setDecimals(decimals)
+                        .setTreasury(treasury)
+                        .setFreezeDefault(true))
+                .build();
     }
 
     private void givenInvalidFreezeKey() {
-        tokenCreateTxn =
-                TransactionBody.newBuilder()
-                        .setTokenCreation(
-                                TokenCreateTransactionBody.newBuilder()
-                                        .setInitialSupply(initialSupply)
-                                        .setDecimals(decimals)
-                                        .setTreasury(treasury)
-                                        .setFreezeKey(Key.getDefaultInstance()))
-                        .build();
+        tokenCreateTxn = TransactionBody.newBuilder()
+                .setTokenCreation(TokenCreateTransactionBody.newBuilder()
+                        .setInitialSupply(initialSupply)
+                        .setDecimals(decimals)
+                        .setTreasury(treasury)
+                        .setFreezeKey(Key.getDefaultInstance()))
+                .build();
     }
 
     private void givenInvalidAdminKey() {
-        tokenCreateTxn =
-                TransactionBody.newBuilder()
-                        .setTokenCreation(
-                                TokenCreateTransactionBody.newBuilder()
-                                        .setInitialSupply(initialSupply)
-                                        .setDecimals(decimals)
-                                        .setTreasury(treasury)
-                                        .setAdminKey(Key.getDefaultInstance()))
-                        .build();
+        tokenCreateTxn = TransactionBody.newBuilder()
+                .setTokenCreation(TokenCreateTransactionBody.newBuilder()
+                        .setInitialSupply(initialSupply)
+                        .setDecimals(decimals)
+                        .setTreasury(treasury)
+                        .setAdminKey(Key.getDefaultInstance()))
+                .build();
     }
 
     private void givenInvalidFeeScheduleKey() {
-        tokenCreateTxn =
-                TransactionBody.newBuilder()
-                        .setTokenCreation(
-                                TokenCreateTransactionBody.newBuilder()
-                                        .setInitialSupply(initialSupply)
-                                        .setDecimals(decimals)
-                                        .setTreasury(treasury)
-                                        .setFeeScheduleKey(Key.getDefaultInstance()))
-                        .build();
+        tokenCreateTxn = TransactionBody.newBuilder()
+                .setTokenCreation(TokenCreateTransactionBody.newBuilder()
+                        .setInitialSupply(initialSupply)
+                        .setDecimals(decimals)
+                        .setTreasury(treasury)
+                        .setFeeScheduleKey(Key.getDefaultInstance()))
+                .build();
     }
 
     private void givenInvalidAdminKeyBytes() {
-        tokenCreateTxn =
-                TransactionBody.newBuilder()
-                        .setTokenCreation(
-                                TokenCreateTransactionBody.newBuilder()
-                                        .setInitialSupply(initialSupply)
-                                        .setDecimals(decimals)
-                                        .setTreasury(treasury)
-                                        .setAdminKey(
-                                                Key.newBuilder()
-                                                        .setEd25519(
-                                                                ByteString.copyFrom(
-                                                                        "1".getBytes()))))
-                        .build();
+        tokenCreateTxn = TransactionBody.newBuilder()
+                .setTokenCreation(TokenCreateTransactionBody.newBuilder()
+                        .setInitialSupply(initialSupply)
+                        .setDecimals(decimals)
+                        .setTreasury(treasury)
+                        .setAdminKey(Key.newBuilder().setEd25519(ByteString.copyFrom("1".getBytes()))))
+                .build();
     }
 
     private void givenInvalidKycKey() {
-        tokenCreateTxn =
-                TransactionBody.newBuilder()
-                        .setTokenCreation(
-                                TokenCreateTransactionBody.newBuilder()
-                                        .setInitialSupply(initialSupply)
-                                        .setDecimals(decimals)
-                                        .setTreasury(treasury)
-                                        .setKycKey(Key.getDefaultInstance()))
-                        .build();
+        tokenCreateTxn = TransactionBody.newBuilder()
+                .setTokenCreation(TokenCreateTransactionBody.newBuilder()
+                        .setInitialSupply(initialSupply)
+                        .setDecimals(decimals)
+                        .setTreasury(treasury)
+                        .setKycKey(Key.getDefaultInstance()))
+                .build();
     }
 
     private void givenInvalidWipeKey() {
-        tokenCreateTxn =
-                TransactionBody.newBuilder()
-                        .setTokenCreation(
-                                TokenCreateTransactionBody.newBuilder()
-                                        .setInitialSupply(initialSupply)
-                                        .setDecimals(decimals)
-                                        .setTreasury(treasury)
-                                        .setWipeKey(Key.getDefaultInstance()))
-                        .build();
+        tokenCreateTxn = TransactionBody.newBuilder()
+                .setTokenCreation(TokenCreateTransactionBody.newBuilder()
+                        .setInitialSupply(initialSupply)
+                        .setDecimals(decimals)
+                        .setTreasury(treasury)
+                        .setWipeKey(Key.getDefaultInstance()))
+                .build();
     }
 
     private void givenInvalidSupplyKey() {
-        tokenCreateTxn =
-                TransactionBody.newBuilder()
-                        .setTokenCreation(
-                                TokenCreateTransactionBody.newBuilder()
-                                        .setInitialSupply(initialSupply)
-                                        .setDecimals(decimals)
-                                        .setTreasury(treasury)
-                                        .setSupplyKey(Key.getDefaultInstance()))
-                        .build();
+        tokenCreateTxn = TransactionBody.newBuilder()
+                .setTokenCreation(TokenCreateTransactionBody.newBuilder()
+                        .setInitialSupply(initialSupply)
+                        .setDecimals(decimals)
+                        .setTreasury(treasury)
+                        .setSupplyKey(Key.getDefaultInstance()))
+                .build();
     }
 
     private void givenInvalidExpirationTime() {
-        tokenCreateTxn =
-                TransactionBody.newBuilder()
-                        .setTokenCreation(
-                                TokenCreateTransactionBody.newBuilder()
-                                        .setInitialSupply(initialSupply)
-                                        .setDecimals(decimals)
-                                        .setTreasury(treasury)
-                                        .setExpiry(Timestamp.newBuilder().setSeconds(-1)))
-                        .build();
+        tokenCreateTxn = TransactionBody.newBuilder()
+                .setTokenCreation(TokenCreateTransactionBody.newBuilder()
+                        .setInitialSupply(initialSupply)
+                        .setDecimals(decimals)
+                        .setTreasury(treasury)
+                        .setExpiry(Timestamp.newBuilder().setSeconds(-1)))
+                .build();
     }
 
     private void givenValidMissingRenewAccount() {
-        tokenCreateTxn =
-                TransactionBody.newBuilder()
-                        .setTokenCreation(
-                                TokenCreateTransactionBody.newBuilder()
-                                        .setInitialSupply(initialSupply)
-                                        .setDecimals(decimals)
-                                        .setTreasury(treasury)
-                                        .setAdminKey(key)
-                                        .setExpiry(
-                                                Timestamp.newBuilder()
-                                                        .setSeconds(
-                                                                thisSecond
-                                                                        + Instant.now()
-                                                                                .getEpochSecond())))
-                        .build();
+        tokenCreateTxn = TransactionBody.newBuilder()
+                .setTokenCreation(TokenCreateTransactionBody.newBuilder()
+                        .setInitialSupply(initialSupply)
+                        .setDecimals(decimals)
+                        .setTreasury(treasury)
+                        .setAdminKey(key)
+                        .setExpiry(Timestamp.newBuilder()
+                                .setSeconds(thisSecond + Instant.now().getEpochSecond())))
+                .build();
     }
 
     private void withHappyValidator() {

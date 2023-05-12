@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.utils;
 
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
@@ -20,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.hapi.node.base.TopicID;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.test.utils.IdUtils;
@@ -56,19 +58,19 @@ class EntityNumTest {
 
     @Test
     void factoriesWorkForValidShardRealm() {
+        final var pbjTopicId = TopicID.newBuilder().topicNum(123).build();
+
         final var expected = EntityNum.fromInt(123);
 
         assertEquals(expected, EntityNum.fromLong(123L));
+        assertEquals(expected, EntityNum.fromTopicId(pbjTopicId));
         assertEquals(expected, EntityNum.fromAccountId(IdUtils.asAccount("0.0.123")));
         assertEquals(expected, EntityNum.fromTokenId(IdUtils.asToken("0.0.123")));
         assertEquals(expected, EntityNum.fromScheduleId(IdUtils.asSchedule("0.0.123")));
         assertEquals(expected, EntityNum.fromTopicId(IdUtils.asTopic("0.0.123")));
         assertEquals(expected, EntityNum.fromContractId(IdUtils.asContract("0.0.123")));
         assertEquals(expected, EntityNum.fromModel(new Id(0, 0, 123)));
-        assertEquals(
-                expected,
-                EntityNum.fromEvmAddress(
-                        Address.wrap(Bytes.wrap(EntityIdUtils.asEvmAddress(0, 0, 123)))));
+        assertEquals(expected, EntityNum.fromEvmAddress(Address.wrap(Bytes.wrap(EntityIdUtils.asEvmAddress(123)))));
     }
 
     @Test
@@ -80,9 +82,8 @@ class EntityNumTest {
         assertEquals(MISSING_NUM, EntityNum.fromContractId(IdUtils.asContract("1.0.123")));
         assertEquals(MISSING_NUM, EntityNum.fromModel(new Id(1, 0, 123)));
         assertEquals(
-                MISSING_NUM,
-                EntityNum.fromEvmAddress(
-                        Address.wrap(Bytes.wrap(EntityIdUtils.asEvmAddress(1, 0, 123)))));
+                new EntityNum(123),
+                EntityNum.fromEvmAddress(Address.wrap(Bytes.wrap(EntityIdUtils.asEvmAddress(123)))));
     }
 
     @Test
@@ -94,9 +95,8 @@ class EntityNumTest {
         assertEquals(MISSING_NUM, EntityNum.fromContractId(IdUtils.asContract("0.1.123")));
         assertEquals(MISSING_NUM, EntityNum.fromModel(new Id(0, 1, 123)));
         assertEquals(
-                MISSING_NUM,
-                EntityNum.fromEvmAddress(
-                        Address.wrap(Bytes.wrap(EntityIdUtils.asEvmAddress(0, 1, 123)))));
+                new EntityNum(123),
+                EntityNum.fromEvmAddress(Address.wrap(Bytes.wrap(EntityIdUtils.asEvmAddress(123)))));
     }
 
     @Test

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.INT;
@@ -43,8 +44,7 @@ import org.apache.tuweni.bytes.Bytes;
 public class WipeNonFungiblePrecompile extends AbstractWipePrecompile {
     private static final Function WIPE_TOKEN_ACCOUNT_NFT_FUNCTION =
             new Function("wipeTokenAccountNFT(address,address,int64[])", INT);
-    private static final Bytes WIPE_TOKEN_ACCOUNT_NFT_SELECTOR =
-            Bytes.wrap(WIPE_TOKEN_ACCOUNT_NFT_FUNCTION.selector());
+    private static final Bytes WIPE_TOKEN_ACCOUNT_NFT_SELECTOR = Bytes.wrap(WIPE_TOKEN_ACCOUNT_NFT_FUNCTION.selector());
     private static final ABIType<Tuple> WIPE_TOKEN_ACCOUNT_NFT_DECODER =
             TypeFactory.create("(bytes32,bytes32,int64[])");
 
@@ -56,14 +56,7 @@ public class WipeNonFungiblePrecompile extends AbstractWipePrecompile {
             SyntheticTxnFactory syntheticTxnFactory,
             InfrastructureFactory infrastructureFactory,
             PrecompilePricingUtils pricingUtils) {
-        super(
-                ledgers,
-                aliases,
-                sigsVerifier,
-                sideEffects,
-                syntheticTxnFactory,
-                infrastructureFactory,
-                pricingUtils);
+        super(ledgers, aliases, sigsVerifier, sideEffects, syntheticTxnFactory, infrastructureFactory, pricingUtils);
     }
 
     @Override
@@ -75,20 +68,16 @@ public class WipeNonFungiblePrecompile extends AbstractWipePrecompile {
 
     @Override
     public long getMinimumFeeInTinybars(Timestamp consensusTime) {
-        Objects.requireNonNull(
-                wipeOp, "`body` method should be called before `getMinimumFeeInTinybars`");
+        Objects.requireNonNull(wipeOp, "`body` method should be called before `getMinimumFeeInTinybars`");
         return pricingUtils.getMinimumPriceInTinybars(WIPE_NFT, consensusTime);
     }
 
-    public static WipeWrapper decodeWipeNFT(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    public static WipeWrapper decodeWipeNFT(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
-                decodeFunctionCall(
-                        input, WIPE_TOKEN_ACCOUNT_NFT_SELECTOR, WIPE_TOKEN_ACCOUNT_NFT_DECODER);
+                decodeFunctionCall(input, WIPE_TOKEN_ACCOUNT_NFT_SELECTOR, WIPE_TOKEN_ACCOUNT_NFT_DECODER);
 
         final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
-        final var accountID =
-                convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
+        final var accountID = convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
         final var serialNumbers = ((long[]) decodedArguments.get(2));
 
         return WipeWrapper.forNonFungible(

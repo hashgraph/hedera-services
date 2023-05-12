@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store;
 
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
@@ -61,10 +62,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ReadOnlyTokenStoreTest {
-    @Mock private AccountStore accountStore;
-    @Mock private BackingStore<TokenID, MerkleToken> tokens;
-    @Mock private BackingStore<NftId, UniqueTokenAdapter> uniqueTokens;
-    @Mock private BackingStore<Pair<AccountID, TokenID>, HederaTokenRel> tokenRels;
+    @Mock
+    private AccountStore accountStore;
+
+    @Mock
+    private BackingStore<TokenID, MerkleToken> tokens;
+
+    @Mock
+    private BackingStore<NftId, UniqueTokenAdapter> uniqueTokens;
+
+    @Mock
+    private BackingStore<Pair<AccountID, TokenID>, HederaTokenRel> tokenRels;
 
     private ReadOnlyTokenStore subject;
 
@@ -77,16 +85,8 @@ class ReadOnlyTokenStoreTest {
     }
 
     private void setupToken() {
-        merkleToken =
-                new MerkleToken(
-                        expiry,
-                        tokenSupply,
-                        0,
-                        symbol,
-                        name,
-                        freezeDefault,
-                        true,
-                        new EntityId(0, 0, treasuryAccountNum));
+        merkleToken = new MerkleToken(
+                expiry, tokenSupply, 0, symbol, name, freezeDefault, true, new EntityId(0, 0, treasuryAccountNum));
         merkleToken.setAutoRenewAccount(new EntityId(0, 0, autoRenewAccountNum));
         merkleToken.setSupplyKey(supplyKey);
         merkleToken.setKycKey(kycKey);
@@ -108,8 +108,7 @@ class ReadOnlyTokenStoreTest {
     }
 
     private void setupTokenRel() {
-        miscTokenMerkleRel =
-                new MerkleTokenRelStatus(balance, frozen, kycGranted, automaticAssociation);
+        miscTokenMerkleRel = new MerkleTokenRelStatus(balance, frozen, kycGranted, automaticAssociation);
         miscTokenMerkleRel.setKey(miscTokenRelId);
         miscTokenMerkleRel.setPrev(0);
         miscTokenMerkleRel.setNext(0);
@@ -235,12 +234,8 @@ class ReadOnlyTokenStoreTest {
     @Test
     void loadsUniqueTokens() {
         final var aToken = new Token(miscId);
-        final var uniqueTokenHolder =
-                UniqueTokenAdapter.wrap(
-                        new MerkleUniqueToken(
-                                new EntityId(Id.DEFAULT),
-                                new byte[0],
-                                RichInstant.MISSING_INSTANT));
+        final var uniqueTokenHolder = UniqueTokenAdapter.wrap(
+                new MerkleUniqueToken(new EntityId(Id.DEFAULT), new byte[0], RichInstant.MISSING_INSTANT));
         uniqueTokenHolder.setSpender(new EntityId(Id.DEFAULT));
         final var serialNumbers = List.of(1L, 2L);
         given(uniqueTokens.getImmutableRef(any())).willReturn(uniqueTokenHolder);
@@ -250,21 +245,14 @@ class ReadOnlyTokenStoreTest {
         assertEquals(2, aToken.getLoadedUniqueTokens().size());
 
         given(uniqueTokens.getImmutableRef(any())).willReturn(null);
-        assertThrows(
-                InvalidTransactionException.class,
-                () -> subject.loadUniqueTokens(aToken, serialNumbers));
+        assertThrows(InvalidTransactionException.class, () -> subject.loadUniqueTokens(aToken, serialNumbers));
     }
 
     @Test
     void loadsUniqueTokensVirtual() {
         final var aToken = new Token(miscId);
-        final var uniqueTokenHolder =
-                UniqueTokenAdapter.wrap(
-                        new UniqueTokenValue(
-                                Id.DEFAULT.num(),
-                                Id.DEFAULT.num(),
-                                new byte[0],
-                                RichInstant.MISSING_INSTANT));
+        final var uniqueTokenHolder = UniqueTokenAdapter.wrap(
+                new UniqueTokenValue(Id.DEFAULT.num(), Id.DEFAULT.num(), new byte[0], RichInstant.MISSING_INSTANT));
         uniqueTokenHolder.setSpender(new EntityId(Id.DEFAULT));
         final var serialNumbers = List.of(1L, 2L);
         given(uniqueTokens.getImmutableRef(any())).willReturn(uniqueTokenHolder);
@@ -274,9 +262,7 @@ class ReadOnlyTokenStoreTest {
         assertEquals(2, aToken.getLoadedUniqueTokens().size());
 
         given(uniqueTokens.getImmutableRef(any())).willReturn(null);
-        assertThrows(
-                InvalidTransactionException.class,
-                () -> subject.loadUniqueTokens(aToken, serialNumbers));
+        assertThrows(InvalidTransactionException.class, () -> subject.loadUniqueTokens(aToken, serialNumbers));
     }
 
     @Test
@@ -306,8 +292,7 @@ class ReadOnlyTokenStoreTest {
         assertEquals(miscTokenRel, actualTokenRel);
     }
 
-    private void givenRelationship(
-            final EntityNumPair anAssoc, MerkleTokenRelStatus aRelationship) {
+    private void givenRelationship(final EntityNumPair anAssoc, MerkleTokenRelStatus aRelationship) {
         given(tokenRels.getImmutableRef(anAssoc.asAccountTokenRel())).willReturn(aRelationship);
     }
 
@@ -316,24 +301,18 @@ class ReadOnlyTokenStoreTest {
     }
 
     private void assertTokenLoadFailsWith(final ResponseCodeEnum status) {
-        final var ex =
-                assertThrows(InvalidTransactionException.class, () -> subject.loadToken(tokenId));
+        final var ex = assertThrows(InvalidTransactionException.class, () -> subject.loadToken(tokenId));
         assertEquals(status, ex.getResponseCode());
     }
 
     private void assertLoadPossiblyPausedTokenFailsWith(final ResponseCodeEnum status) {
-        final var ex =
-                assertThrows(
-                        InvalidTransactionException.class,
-                        () -> subject.loadPossiblyPausedToken(tokenId));
+        final var ex = assertThrows(InvalidTransactionException.class, () -> subject.loadPossiblyPausedToken(tokenId));
         assertEquals(status, ex.getResponseCode());
     }
 
     private void assertLoadPossiblyDeletedTokenFailsWith(final ResponseCodeEnum status) {
-        final var ex =
-                assertThrows(
-                        InvalidTransactionException.class,
-                        () -> subject.loadPossiblyDeletedOrAutoRemovedToken(tokenId));
+        final var ex = assertThrows(
+                InvalidTransactionException.class, () -> subject.loadPossiblyDeletedOrAutoRemovedToken(tokenId));
         assertEquals(status, ex.getResponseCode());
     }
 

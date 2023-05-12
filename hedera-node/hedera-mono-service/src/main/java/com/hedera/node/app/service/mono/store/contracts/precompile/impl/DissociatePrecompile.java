@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ADDRESS_PAIR_RAW_TYPE;
@@ -34,18 +35,22 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.Infrastructur
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.Dissociation;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hedera.node.app.service.mono.utils.EntityIdUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.Objects;
 import java.util.function.UnaryOperator;
 import javax.inject.Provider;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 
 public class DissociatePrecompile extends AbstractDissociatePrecompile {
-    private static final Function DISSOCIATE_TOKEN_FUNCTION =
-            new Function("dissociateToken(address,address)", INT);
-    private static final Bytes DISSOCIATE_TOKEN_SELECTOR =
-            Bytes.wrap(DISSOCIATE_TOKEN_FUNCTION.selector());
-    private static final ABIType<Tuple> DISSOCIATE_TOKEN_DECODER =
-            TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
+    private static final Function DISSOCIATE_TOKEN_FUNCTION = new Function("dissociateToken(address,address)", INT);
+    private static final Bytes DISSOCIATE_TOKEN_SELECTOR = Bytes.wrap(DISSOCIATE_TOKEN_FUNCTION.selector());
+    private static final ABIType<Tuple> DISSOCIATE_TOKEN_DECODER = TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
+    private final TokenID tokenID;
+    private final AccountID callerAccountID;
 
     public DissociatePrecompile(
             final WorldLedgers ledgers,
@@ -65,12 +70,40 @@ public class DissociatePrecompile extends AbstractDissociatePrecompile {
                 infrastructureFactory,
                 pricingUtils,
                 feeCalculator);
+        this.tokenID = null;
+        this.callerAccountID = null;
+    }
+
+    public DissociatePrecompile(
+            final TokenID tokenID,
+            final Address callerAccount,
+            final WorldLedgers ledgers,
+            final ContractAliases aliases,
+            final EvmSigsVerifier sigsVerifier,
+            final SideEffectsTracker sideEffects,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final InfrastructureFactory infrastructureFactory,
+            final PrecompilePricingUtils pricingUtils,
+            final Provider<FeeCalculator> feeCalculator) {
+        super(
+                ledgers,
+                aliases,
+                sigsVerifier,
+                sideEffects,
+                syntheticTxnFactory,
+                infrastructureFactory,
+                pricingUtils,
+                feeCalculator);
+
+        this.tokenID = tokenID;
+        this.callerAccountID = EntityIdUtils.accountIdFromEvmAddress(Objects.requireNonNull(callerAccount));
     }
 
     @Override
-    public TransactionBody.Builder body(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        dissociateOp = decodeDissociate(input, aliasResolver);
+    public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        dissociateOp = tokenID == null
+                ? decodeDissociate(input, aliasResolver)
+                : Dissociation.singleDissociation(Objects.requireNonNull(callerAccountID), tokenID);
         transactionBody = syntheticTxnFactory.createDissociate(dissociateOp);
         return transactionBody;
     }
@@ -80,13 +113,10 @@ public class DissociatePrecompile extends AbstractDissociatePrecompile {
         return pricingUtils.computeGasRequirement(blockTimestamp, this, transactionBody);
     }
 
-    public static Dissociation decodeDissociate(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        final Tuple decodedArguments =
-                decodeFunctionCall(input, DISSOCIATE_TOKEN_SELECTOR, DISSOCIATE_TOKEN_DECODER);
+    public static Dissociation decodeDissociate(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        final Tuple decodedArguments = decodeFunctionCall(input, DISSOCIATE_TOKEN_SELECTOR, DISSOCIATE_TOKEN_DECODER);
 
-        final var accountID =
-                convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
+        final var accountID = convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
         final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(1));
 
         return Dissociation.singleDissociation(accountID, tokenID);

@@ -13,16 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.expiry;
 
 import static com.hedera.node.app.service.mono.state.tasks.SystemTaskResult.NEEDS_DIFFERENT_CONTEXT;
 import static com.hedera.node.app.service.mono.state.tasks.SystemTaskResult.NOTHING_TO_DO;
 import static com.hedera.node.app.service.mono.state.tasks.SystemTaskResult.NO_CAPACITY_LEFT;
 
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.records.ConsensusTimeTracker;
 import com.hedera.node.app.service.mono.state.expiry.classification.ClassificationWork;
 import com.hedera.node.app.service.mono.state.expiry.removal.RemovalWork;
 import com.hedera.node.app.service.mono.state.expiry.renewal.RenewalWork;
+import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.tasks.SystemTask;
 import com.hedera.node.app.service.mono.state.tasks.SystemTaskResult;
 import com.hedera.node.app.service.mono.utils.EntityNum;
@@ -32,6 +35,7 @@ import javax.inject.Inject;
 public class ExpiryProcess implements SystemTask {
     private final RenewalWork renewalWork;
     private final RemovalWork removalWork;
+    private final GlobalDynamicProperties dynamicProperties;
     private final ClassificationWork classifier;
     private final ConsensusTimeTracker consensusTimeTracker;
 
@@ -40,11 +44,18 @@ public class ExpiryProcess implements SystemTask {
             final ClassificationWork classifier,
             final RenewalWork renewalWork,
             final RemovalWork removalWork,
+            final GlobalDynamicProperties dynamicProperties,
             final ConsensusTimeTracker consensusTimeTracker) {
         this.consensusTimeTracker = consensusTimeTracker;
         this.renewalWork = renewalWork;
         this.removalWork = removalWork;
+        this.dynamicProperties = dynamicProperties;
         this.classifier = classifier;
+    }
+
+    @Override
+    public boolean isActive(final long literalNum, final MerkleNetworkContext curNetworkCtx) {
+        return dynamicProperties.shouldAutoRenewSomeEntityType();
     }
 
     @Override

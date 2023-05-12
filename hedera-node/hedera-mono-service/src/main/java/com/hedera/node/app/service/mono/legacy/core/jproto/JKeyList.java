@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.legacy.core.jproto;
 
 import java.util.LinkedList;
@@ -28,8 +29,7 @@ public class JKeyList extends JKey {
 
     public JKeyList(List<JKey> keys) {
         if (keys == null) {
-            throw new IllegalArgumentException(
-                    "JKeyList cannot be constructed with a null 'keys' argument!");
+            throw new IllegalArgumentException("JKeyList cannot be constructed with a null 'keys' argument!");
         }
         this.keys = keys;
     }

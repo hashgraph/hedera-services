@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage.token;
 
 import static com.hedera.node.app.hapi.fees.test.IdUtils.asAccount;
@@ -126,8 +127,7 @@ class TokenOpsUsageUtilsTest {
     void tokenWipeFungibleCommonWorks() {
         final var txn = givenTokenWipeWith(FUNGIBLE_COMMON);
 
-        final TokenWipeMeta tokenWipeMeta =
-                TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(txn.getTokenWipe());
+        final TokenWipeMeta tokenWipeMeta = TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(txn.getTokenWipe());
 
         assertEquals(0, tokenWipeMeta.getSerialNumsCount());
         assertEquals(56, tokenWipeMeta.getTransferRecordDb());
@@ -137,8 +137,7 @@ class TokenOpsUsageUtilsTest {
     void tokenWipeNonFungibleUniqueWorks() {
         final var txn = givenTokenWipeWith(NON_FUNGIBLE_UNIQUE);
 
-        final TokenWipeMeta tokenWipeMeta =
-                TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(txn.getTokenWipe());
+        final TokenWipeMeta tokenWipeMeta = TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(txn.getTokenWipe());
 
         assertEquals(1, tokenWipeMeta.getSerialNumsCount());
         assertEquals(80, tokenWipeMeta.getTransferRecordDb());
@@ -222,18 +221,17 @@ class TokenOpsUsageUtilsTest {
             final boolean withCustomFees,
             final boolean withAutoRenewAccount,
             final boolean withInitialSupply) {
-        final var builder =
-                TokenCreateTransactionBody.newBuilder()
-                        .setTokenType(type)
-                        .setExpiry(Timestamp.newBuilder().setSeconds(expiry))
-                        .setSymbol(symbol)
-                        .setMemo(memo)
-                        .setName(name)
-                        .setKycKey(kycKey)
-                        .setAdminKey(adminKey)
-                        .setFreezeKey(freezeKey)
-                        .setSupplyKey(supplyKey)
-                        .setWipeKey(wipeKey);
+        final var builder = TokenCreateTransactionBody.newBuilder()
+                .setTokenType(type)
+                .setExpiry(Timestamp.newBuilder().setSeconds(expiry))
+                .setSymbol(symbol)
+                .setMemo(memo)
+                .setName(name)
+                .setKycKey(kycKey)
+                .setAdminKey(adminKey)
+                .setFreezeKey(freezeKey)
+                .setSupplyKey(supplyKey)
+                .setWipeKey(wipeKey);
         if (withInitialSupply) {
             builder.setInitialSupply(1000L);
         }
@@ -241,44 +239,35 @@ class TokenOpsUsageUtilsTest {
             builder.setFeeScheduleKey(customFeeKey);
         }
         if (withCustomFees) {
-            builder.addCustomFees(
-                    CustomFee.newBuilder()
-                            .setFeeCollectorAccountId(IdUtils.asAccount("0.0.1234"))
-                            .setFixedFee(FixedFee.newBuilder().setAmount(123)));
+            builder.addCustomFees(CustomFee.newBuilder()
+                    .setFeeCollectorAccountId(IdUtils.asAccount("0.0.1234"))
+                    .setFixedFee(FixedFee.newBuilder().setAmount(123)));
         }
         if (withAutoRenewAccount) {
             builder.setAutoRenewAccount(autoRenewAccount)
                     .setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod));
         }
-        final var txn =
-                TransactionBody.newBuilder()
-                        .setTransactionID(
-                                TransactionID.newBuilder()
-                                        .setTransactionValidStart(
-                                                Timestamp.newBuilder().setSeconds(now)))
-                        .setTokenCreation(builder)
-                        .build();
+        final var txn = TransactionBody.newBuilder()
+                .setTransactionID(TransactionID.newBuilder()
+                        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(now)))
+                .setTokenCreation(builder)
+                .build();
         return txn;
     }
 
     private TransactionBody givenTokenWipeWith(final TokenType type) {
         final var op =
-                TokenWipeAccountTransactionBody.newBuilder()
-                        .setToken(tokenId)
-                        .setAccount(accountID);
+                TokenWipeAccountTransactionBody.newBuilder().setToken(tokenId).setAccount(accountID);
         if (type == FUNGIBLE_COMMON) {
             op.setAmount(100);
         } else {
             op.addAllSerialNumbers(List.of(1L));
         }
-        final var txn =
-                TransactionBody.newBuilder()
-                        .setTransactionID(
-                                TransactionID.newBuilder()
-                                        .setTransactionValidStart(
-                                                Timestamp.newBuilder().setSeconds(now)))
-                        .setTokenWipe(op.build())
-                        .build();
+        final var txn = TransactionBody.newBuilder()
+                .setTransactionID(TransactionID.newBuilder()
+                        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(now)))
+                .setTokenWipe(op.build())
+                .build();
         return txn;
     }
 
@@ -289,14 +278,11 @@ class TokenOpsUsageUtilsTest {
         } else {
             op.addAllSerialNumbers(List.of(1L));
         }
-        final var txn =
-                TransactionBody.newBuilder()
-                        .setTransactionID(
-                                TransactionID.newBuilder()
-                                        .setTransactionValidStart(
-                                                Timestamp.newBuilder().setSeconds(now)))
-                        .setTokenBurn(op.build())
-                        .build();
+        final var txn = TransactionBody.newBuilder()
+                .setTransactionID(TransactionID.newBuilder()
+                        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(now)))
+                .setTokenBurn(op.build())
+                .build();
         return txn;
     }
 
@@ -305,19 +291,13 @@ class TokenOpsUsageUtilsTest {
         if (type == FUNGIBLE_COMMON) {
             op.setAmount(100);
         } else {
-            op.addAllMetadata(
-                    List.of(
-                            ByteString.copyFromUtf8("NFT meta1"),
-                            ByteString.copyFromUtf8("NFT meta2")));
+            op.addAllMetadata(List.of(ByteString.copyFromUtf8("NFT meta1"), ByteString.copyFromUtf8("NFT meta2")));
         }
-        final var txn =
-                TransactionBody.newBuilder()
-                        .setTransactionID(
-                                TransactionID.newBuilder()
-                                        .setTransactionValidStart(
-                                                Timestamp.newBuilder().setSeconds(now)))
-                        .setTokenMint(op.build())
-                        .build();
+        final var txn = TransactionBody.newBuilder()
+                .setTransactionID(TransactionID.newBuilder()
+                        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(now)))
+                .setTokenMint(op.build())
+                .build();
         return txn;
     }
 

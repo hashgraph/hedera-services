@@ -13,12 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-plugins {
-    id("com.hedera.hashgraph.conventions")
-}
+
+plugins { id("com.hedera.hashgraph.conventions") }
 
 description = "Hedera Token Service API"
 
 dependencies {
-    api(project(":hedera-node:hedera-app-spi"))
+  api(project(":hedera-node:hedera-app-spi"))
+  implementation(libs.pbj.runtime)
+  implementation(project(":hedera-node:hapi"))
 }

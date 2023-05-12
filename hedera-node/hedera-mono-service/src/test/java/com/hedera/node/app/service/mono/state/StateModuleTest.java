@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state;
 
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_GENESIS_PUBLIC_KEY;
@@ -20,14 +21,21 @@ import static com.hedera.node.app.service.mono.state.StateModule.provideStateVie
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.node.app.service.mono.config.NetworkInfo;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
+import com.hedera.node.app.service.mono.state.exports.BalancesExporter;
+import com.hedera.node.app.service.mono.state.exports.ExportingRecoveredStateListener;
 import com.hedera.node.app.service.mono.store.schedule.ScheduleStore;
+import com.hedera.node.app.service.mono.stream.RecordStreamManager;
+import com.swirlds.common.system.InitTrigger;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.utility.CommonUtils;
 import java.nio.charset.Charset;
@@ -38,16 +46,32 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class StateModuleTest {
-    @Mock private ScheduleStore scheduleStore;
-    @Mock private MutableStateChildren workingState;
-    @Mock private PropertySource properties;
-    @Mock private NetworkInfo networkInfo;
-    @Mock private StateModule.ConsoleCreator consoleCreator;
+
+    @Mock
+    private ScheduleStore scheduleStore;
+
+    @Mock
+    private MutableStateChildren workingState;
+
+    @Mock
+    private PropertySource properties;
+
+    @Mock
+    private NetworkInfo networkInfo;
+
+    @Mock
+    private RecordStreamManager recordStreamManager;
+
+    @Mock
+    private BalancesExporter balancesExporter;
+
+    private final NodeId nodeId = new NodeId(false, 0);
 
     @Test
     void providesDefaultCharset() {
         // expect:
-        assertEquals(Charset.defaultCharset(), StateModule.provideNativeCharset().get());
+        assertEquals(
+                Charset.defaultCharset(), StateModule.provideNativeCharset().get());
     }
 
     @Test
@@ -59,7 +83,8 @@ class StateModuleTest {
     @Test
     void notificationEngineAvail() {
         // expect:
-        assertDoesNotThrow(() -> StateModule.provideNotificationEngine(mock(Platform.class)).get());
+        assertDoesNotThrow(() ->
+                StateModule.provideNotificationEngine(mock(Platform.class)).get());
     }
 
     @Test
@@ -94,5 +119,22 @@ class StateModuleTest {
 
         final var keySupplier = StateModule.provideSystemFileKey(properties);
         assertThrows(IllegalStateException.class, keySupplier::get);
+    }
+
+    @Test
+    void providesNoRecoveredStateListenerIfNotInEventRecovery() {
+        final var maybeListener = StateModule.provideMaybeRecoveredStateListener(
+                InitTrigger.GENESIS, recordStreamManager, balancesExporter, nodeId);
+
+        assertTrue(maybeListener.isEmpty());
+    }
+
+    @Test
+    void providesRecoveredStateListenerIfNotInEventRecovery() {
+        final var maybeListener = StateModule.provideMaybeRecoveredStateListener(
+                InitTrigger.EVENT_STREAM_RECOVERY, recordStreamManager, balancesExporter, nodeId);
+
+        assertTrue(maybeListener.isPresent());
+        assertInstanceOf(ExportingRecoveredStateListener.class, maybeListener.get());
     }
 }

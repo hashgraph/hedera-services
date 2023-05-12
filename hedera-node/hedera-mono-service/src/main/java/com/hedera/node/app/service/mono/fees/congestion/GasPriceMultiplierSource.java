@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.congestion;
 
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -30,16 +31,14 @@ public class GasPriceMultiplierSource extends DelegatingMultiplierSource {
 
     @Inject
     public GasPriceMultiplierSource(
-            final GlobalDynamicProperties properties,
-            @HandleThrottle FunctionalityThrottling throttling) {
-        super(
-                new ThrottleMultiplierSource(
-                        "EVM gas/sec",
-                        "gas/sec",
-                        "EVM utilization",
-                        log,
-                        properties::feesMinCongestionPeriod,
-                        properties::congestionMultipliers,
-                        () -> List.of(throttling.gasLimitThrottle())));
+            final GlobalDynamicProperties properties, @HandleThrottle FunctionalityThrottling throttling) {
+        super(new ThrottleMultiplierSource(
+                "EVM gas/sec",
+                "gas/sec",
+                "EVM utilization",
+                log,
+                properties::feesMinCongestionPeriod,
+                properties::congestionMultipliers,
+                () -> List.of(throttling.gasLimitThrottle())));
     }
 }

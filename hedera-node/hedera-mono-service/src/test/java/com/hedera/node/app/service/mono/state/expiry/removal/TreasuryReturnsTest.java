@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.expiry.removal;
 
 import static com.hedera.node.app.service.mono.state.expiry.removal.TreasuryReturns.*;
@@ -24,6 +25,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.expiry.TokenRelsListMutation;
 import com.hedera.node.app.service.mono.state.expiry.classification.EntityLookup;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
@@ -49,27 +51,38 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class TreasuryReturnsTest {
-    @Mock private ExpiryThrottle expiryThrottle;
-    @Mock private TreasuryReturnHelper returnHelper;
+    @Mock
+    private ExpiryThrottle expiryThrottle;
 
-    @Mock private EntityLookup entityLookup;
-    @Mock private RelRemover relRemover;
-    @Mock private MerkleMap<EntityNum, MerkleToken> tokens;
-    @Mock private UniqueTokenMapAdapter nfts;
-    @Mock private TokenRelStorageAdapter tokenRels;
+    @Mock
+    private TreasuryReturnHelper returnHelper;
+
+    @Mock
+    private EntityLookup entityLookup;
+
+    @Mock
+    private RelRemover relRemover;
+
+    @Mock
+    private MerkleMap<EntityNum, MerkleToken> tokens;
+
+    @Mock
+    private UniqueTokenMapAdapter nfts;
+
+    @Mock
+    private TokenRelStorageAdapter tokenRels;
 
     private TreasuryReturns subject;
 
     @BeforeEach
     void setUp() {
-        subject =
-                new TreasuryReturns(
-                        entityLookup,
-                        () -> tokens,
-                        () -> nfts,
-                        () -> tokenRels,
-                        expiryThrottle,
-                        returnHelper);
+        subject = new TreasuryReturns(
+                entityLookup,
+                () -> MerkleMapLike.from(tokens),
+                () -> nfts,
+                () -> tokenRels,
+                expiryThrottle,
+                returnHelper);
     }
 
     @Test
@@ -121,12 +134,7 @@ class TreasuryReturnsTest {
         assertEquals(expected, actual);
         verify(returnHelper)
                 .updateFungibleReturns(
-                        eq(num),
-                        eq(bTokenId.asNum()),
-                        eq(fungibleToken),
-                        eq(1L),
-                        any(List.class),
-                        eq(tokenRels));
+                        eq(num), eq(bTokenId.asNum()), eq(fungibleToken), eq(1L), any(List.class), eq(tokenRels));
         assertEquals(0, accountWithRels.getNumAssociations());
         assertTrue(accountWithRels.isDeleted());
     }
@@ -368,26 +376,24 @@ class TreasuryReturnsTest {
             given(tokens.get(bNftKey.getHiOrderAsNum())).willReturn(deletedNfToken);
         }
 
-        given(
-                        returnHelper.updateNftReturns(
-                                eq(num),
-                                eq(aNftKey.getHiOrderAsNum()),
-                                eq(nfToken),
-                                eq(aNftKey.getLowOrderAsLong()),
-                                any(List.class),
-                                any(List.class)))
+        given(returnHelper.updateNftReturns(
+                        eq(num),
+                        eq(aNftKey.getHiOrderAsNum()),
+                        eq(nfToken),
+                        eq(aNftKey.getLowOrderAsLong()),
+                        any(List.class),
+                        any(List.class)))
                 .willReturn(true);
         given(returnHelper.burnOrReturnNft(false, aNftKey.asNftNumPair().nftId(), nfts))
                 .willReturn(bNftKey);
         if (includeBRemoval) {
-            given(
-                            returnHelper.updateNftReturns(
-                                    eq(num),
-                                    eq(bNftKey.getHiOrderAsNum()),
-                                    any(),
-                                    eq(bNftKey.getLowOrderAsLong()),
-                                    any(List.class),
-                                    any(List.class)))
+            given(returnHelper.updateNftReturns(
+                            eq(num),
+                            eq(bNftKey.getHiOrderAsNum()),
+                            any(),
+                            eq(bNftKey.getLowOrderAsLong()),
+                            any(List.class),
+                            any(List.class)))
                     .willReturn(false);
             given(returnHelper.burnOrReturnNft(true, bNftKey.asNftNumPair().nftId(), nfts))
                     .willReturn(null);
@@ -398,14 +404,13 @@ class TreasuryReturnsTest {
         given(tokens.get(aNftKey.getHiOrderAsNum())).willReturn(nfToken);
         given(tokens.get(bNftKey.getHiOrderAsNum())).willReturn(deletedNfToken);
 
-        given(
-                        returnHelper.updateNftReturns(
-                                eq(num),
-                                eq(aNftKey.getHiOrderAsNum()),
-                                eq(nfToken),
-                                eq(aNftKey.getLowOrderAsLong()),
-                                any(List.class),
-                                any(List.class)))
+        given(returnHelper.updateNftReturns(
+                        eq(num),
+                        eq(aNftKey.getHiOrderAsNum()),
+                        eq(nfToken),
+                        eq(aNftKey.getLowOrderAsLong()),
+                        any(List.class),
+                        any(List.class)))
                 .willReturn(true);
     }
 
@@ -415,31 +420,25 @@ class TreasuryReturnsTest {
     private final EntityId aTokenId = EntityId.fromNum(666L);
     private final EntityId bTokenId = EntityId.fromNum(777L);
     private final EntityNumPair aRelKey = EntityNumPair.fromNums(num, aTokenId.asNum());
-    private final EntityNumPair aNftKey =
-            new NftNumPair(aTokenId.num(), aSerialNo).asEntityNumPair();
-    private final EntityNumPair bNftKey =
-            new NftNumPair(bTokenId.num(), bSerialNo).asEntityNumPair();
+    private final EntityNumPair aNftKey = new NftNumPair(aTokenId.num(), aSerialNo).asEntityNumPair();
+    private final EntityNumPair bNftKey = new NftNumPair(bTokenId.num(), bSerialNo).asEntityNumPair();
     private final EntityNumPair bRelKey = EntityNumPair.fromNums(num, bTokenId.asNum());
-    private final MerkleTokenRelStatus aRelStatus =
-            new MerkleTokenRelStatus(0L, false, false, true);
-    private final MerkleTokenRelStatus bRelStatus =
-            new MerkleTokenRelStatus(1L, false, false, true);
+    private final MerkleTokenRelStatus aRelStatus = new MerkleTokenRelStatus(0L, false, false, true);
+    private final MerkleTokenRelStatus bRelStatus = new MerkleTokenRelStatus(1L, false, false, true);
 
     private final MerkleUniqueToken someNft =
             new MerkleUniqueToken(num.toEntityId(), "A".getBytes(), RichInstant.MISSING_INSTANT);
 
-    private final MerkleAccount accountWithRels =
-            MerkleAccountFactory.newAccount()
-                    .lastAssociatedToken(aTokenId.num())
-                    .associatedTokensCount(2)
-                    .get();
+    private final MerkleAccount accountWithRels = MerkleAccountFactory.newAccount()
+            .lastAssociatedToken(aTokenId.num())
+            .associatedTokensCount(2)
+            .get();
 
-    private final MerkleAccount accountWithNfts =
-            MerkleAccountFactory.newAccount()
-                    .nftsOwned(2)
-                    .headNftTokenNum(aNftKey.getHiOrderAsLong())
-                    .headNftSerialNo(aNftKey.getLowOrderAsLong())
-                    .get();
+    private final MerkleAccount accountWithNfts = MerkleAccountFactory.newAccount()
+            .nftsOwned(2)
+            .headNftTokenNum(aNftKey.getHiOrderAsLong())
+            .headNftSerialNo(aNftKey.getLowOrderAsLong())
+            .get();
 
     {
         accountWithRels.setKey(num);

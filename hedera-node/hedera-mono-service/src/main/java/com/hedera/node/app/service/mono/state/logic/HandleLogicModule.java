@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.logic;
 
 import com.hedera.node.app.service.mono.state.annotations.RunTopLevelTransition;
 import com.hedera.node.app.service.mono.state.annotations.RunTriggeredTransition;
-import com.hedera.node.app.service.mono.txns.ProcessLogic;
 import dagger.Binds;
 import dagger.Module;
 import javax.inject.Singleton;
@@ -33,8 +33,4 @@ public interface HandleLogicModule {
     @Singleton
     @RunTriggeredTransition
     Runnable provideTriggeredTransition(TriggeredTransition triggeredTransition);
-
-    @Binds
-    @Singleton
-    ProcessLogic provideProcessLogic(StandardProcessLogic standardProcessLogic);
 }

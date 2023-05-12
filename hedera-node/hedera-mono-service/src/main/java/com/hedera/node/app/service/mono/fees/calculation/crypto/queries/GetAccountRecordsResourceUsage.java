@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.crypto.queries;
 
 import static com.hedera.node.app.service.mono.queries.meta.GetTxnRecordAnswer.PAYER_RECORDS_CTX_KEY;
@@ -49,18 +50,13 @@ public final class GetAccountRecordsResourceUsage implements QueryResourceUsageE
     }
 
     @Override
-    public FeeData usageGiven(
-            final Query query, final StateView view, final Map<String, Object> queryCtx) {
+    public FeeData usageGiven(final Query query, final StateView view, final Map<String, Object> queryCtx) {
         return usageFor(
-                query,
-                view,
-                query.getCryptoGetAccountRecords().getHeader().getResponseType(),
-                queryCtx);
+                query, view, query.getCryptoGetAccountRecords().getHeader().getResponseType(), queryCtx);
     }
 
     @Override
-    public FeeData usageGivenType(
-            final Query query, final StateView view, final ResponseType type) {
+    public FeeData usageGivenType(final Query query, final StateView view, final ResponseType type) {
         return usageFor(query, view, type, null);
     }
 

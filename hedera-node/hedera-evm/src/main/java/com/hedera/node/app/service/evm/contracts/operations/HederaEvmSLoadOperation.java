@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.contracts.operations;
 
 import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
@@ -35,7 +36,7 @@ public class HederaEvmSLoadOperation extends AbstractOperation {
     protected final OperationResult coldSuccess;
 
     public HederaEvmSLoadOperation(final GasCalculator gasCalculator) {
-        super(0x54, "SLOAD", 1, 1, 1, gasCalculator);
+        super(0x54, "SLOAD", 1, 1, gasCalculator);
         final long baseCost = gasCalculator.getSloadOperationGasCost();
         warmCost = baseCost + gasCalculator.getWarmStorageReadCost();
         coldCost = baseCost + gasCalculator.getColdSloadCost();
@@ -74,8 +75,7 @@ public class HederaEvmSLoadOperation extends AbstractOperation {
     /**
      * A placeholder logic method to be overridden by {@link HederaEvmSLoadOperation} descendants.
      */
-    protected void intermediateCustomLogic(
-            MessageFrame frame, Address address, Bytes32 key, UInt256 storageValue) {
+    protected void intermediateCustomLogic(MessageFrame frame, Address address, Bytes32 key, UInt256 storageValue) {
         // The method is intentionally-blank
     }
 }

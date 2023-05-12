@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.codec;
 
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
@@ -34,8 +35,7 @@ public record WipeWrapper(TokenID token, AccountID account, long amount, List<Lo
         return new WipeWrapper(token, account, NON_FUNGIBLE_WIPE_AMOUNT, serialNumbers);
     }
 
-    public static WipeWrapper forFungible(
-            final TokenID token, final AccountID account, final long amount) {
+    public static WipeWrapper forFungible(final TokenID token, final AccountID account, final long amount) {
         return new WipeWrapper(token, account, amount, FUNGIBLE_WIPE_SERIAL_NUMBERS);
     }
 

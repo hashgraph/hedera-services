@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.schedule;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
@@ -87,15 +88,13 @@ public class SignatoryUtils {
         return Pair.of(status, isReadyToExecute);
     }
 
-    static boolean isReady(
-            final ScheduleVirtualValue schedule, final InHandleActivationHelper activationHelper) {
+    static boolean isReady(final ScheduleVirtualValue schedule, final InHandleActivationHelper activationHelper) {
         return activationHelper.areScheduledPartiesActive(
                 schedule.ordinaryViewOfScheduledTxn(),
                 (key, sig) -> schedule.hasValidSignatureFor(key.primitiveKeyIfPresent()));
     }
 
-    private static ResponseCodeEnum witnessNonTriviallyScoped(
-            List<JKey> valid, ScheduleID id, ScheduleStore store) {
+    private static ResponseCodeEnum witnessNonTriviallyScoped(List<JKey> valid, ScheduleID id, ScheduleStore store) {
         List<byte[]> signatories = new ArrayList<>();
         for (JKey key : valid) {
             appendIfUnique(signatories, key.primitiveKeyIfPresent());
@@ -112,18 +111,15 @@ public class SignatoryUtils {
         l.add(bytes);
     }
 
-    private static boolean witnessAnyNew(
-            ScheduleStore store, ScheduleID id, List<byte[]> signatories) {
+    private static boolean witnessAnyNew(ScheduleStore store, ScheduleID id, List<byte[]> signatories) {
         var witnessedNew = new AtomicBoolean(false);
-        store.apply(
-                id,
-                schedule -> {
-                    for (byte[] key : signatories) {
-                        if (schedule.witnessValidSignature(key)) {
-                            witnessedNew.set(true);
-                        }
-                    }
-                });
+        store.apply(id, schedule -> {
+            for (byte[] key : signatories) {
+                if (schedule.witnessValidSignature(key)) {
+                    witnessedNew.set(true);
+                }
+            }
+        });
         return witnessedNew.get();
     }
 }

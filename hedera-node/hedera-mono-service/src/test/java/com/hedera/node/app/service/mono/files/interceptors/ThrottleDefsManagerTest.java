@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.files.interceptors;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
@@ -60,29 +61,30 @@ class ThrottleDefsManagerTest {
     FileNumbers fileNums = new MockFileNumbers();
     FileID throttleDefs = fileNums.toFid(123L);
 
-    EnumSet<HederaFunctionality> pretendExpectedOps =
-            EnumSet.of(
-                    CryptoCreate,
-                    CryptoTransfer,
-                    ContractCall,
-                    EthereumTransaction,
-                    TokenCreate,
-                    TokenAssociateToAccount,
-                    TokenMint,
-                    CryptoGetAccountBalance,
-                    TransactionGetReceipt,
-                    GetVersionInfo);
-
-    @Mock AddressBook book;
-    @Mock ThrottleBucket bucket;
+    EnumSet<HederaFunctionality> pretendExpectedOps = EnumSet.of(
+            CryptoCreate,
+            CryptoTransfer,
+            ContractCall,
+            EthereumTransaction,
+            TokenCreate,
+            TokenAssociateToAccount,
+            TokenMint,
+            CryptoGetAccountBalance,
+            TransactionGetReceipt,
+            GetVersionInfo);
 
     @Mock
-    Function<
-                    ThrottleDefinitions,
-                    com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions>
+    AddressBook book;
+
+    @Mock
+    ThrottleBucket bucket;
+
+    @Mock
+    Function<ThrottleDefinitions, com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions>
             mockToPojo;
 
-    @Mock Consumer<ThrottleDefinitions> postUpdateCb;
+    @Mock
+    Consumer<ThrottleDefinitions> postUpdateCb;
 
     ThrottleDefsManager subject;
 
@@ -157,24 +159,20 @@ class ThrottleDefsManagerTest {
     void reusesResponseCodeFromMapperFailure() {
         // setup:
         final int nodes = 7;
-        final var pojoDefs =
-                new com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions();
+        final var pojoDefs = new com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions();
         pojoDefs.getBuckets().add(bucket);
 
         given(book.getSize()).willReturn(nodes);
         given(bucket.asThrottleMapping(nodes))
-                .willThrow(
-                        new IllegalStateException(
-                                ErrorCodeUtils.exceptionMsgFor(
-                                        NODE_CAPACITY_NOT_SUFFICIENT_FOR_OPERATION, "YIKES!")));
+                .willThrow(new IllegalStateException(
+                        ErrorCodeUtils.exceptionMsgFor(NODE_CAPACITY_NOT_SUFFICIENT_FOR_OPERATION, "YIKES!")));
         given(mockToPojo.apply(any())).willReturn(pojoDefs);
         // and:
         subject.toPojo = mockToPojo;
 
         // when:
-        final var verdict =
-                subject.preUpdate(
-                        throttleDefs, ThrottleDefinitions.getDefaultInstance().toByteArray());
+        final var verdict = subject.preUpdate(
+                throttleDefs, ThrottleDefinitions.getDefaultInstance().toByteArray());
 
         // then:
         assertEquals(NODE_CAPACITY_NOT_SUFFICIENT_FOR_OPERATION, verdict.getKey());
@@ -185,8 +183,7 @@ class ThrottleDefsManagerTest {
     void fallsBackToDefaultInvalidIfNoDetailsFromMapperFailure() {
         // setup:
         final int nodes = 7;
-        final var pojoDefs =
-                new com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions();
+        final var pojoDefs = new com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions();
         pojoDefs.getBuckets().add(bucket);
 
         given(book.getSize()).willReturn(nodes);
@@ -196,9 +193,8 @@ class ThrottleDefsManagerTest {
         subject.toPojo = mockToPojo;
 
         // when:
-        final var verdict =
-                subject.preUpdate(
-                        throttleDefs, ThrottleDefinitions.getDefaultInstance().toByteArray());
+        final var verdict = subject.preUpdate(
+                throttleDefs, ThrottleDefinitions.getDefaultInstance().toByteArray());
 
         // then:
         assertEquals(INVALID_THROTTLE_DEFINITIONS, verdict.getKey());

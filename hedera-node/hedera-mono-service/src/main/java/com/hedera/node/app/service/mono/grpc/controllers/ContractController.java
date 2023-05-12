@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.grpc.controllers;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
@@ -59,29 +60,24 @@ public class ContractController extends SmartContractServiceGrpc.SmartContractSe
 
     @Inject
     public ContractController(
-            ContractAnswers contractAnswers,
-            TxnResponseHelper txnHelper,
-            QueryResponseHelper queryHelper) {
+            ContractAnswers contractAnswers, TxnResponseHelper txnHelper, QueryResponseHelper queryHelper) {
         this.txnHelper = txnHelper;
         this.queryHelper = queryHelper;
         this.contractAnswers = contractAnswers;
     }
 
     @Override
-    public void createContract(
-            Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+    public void createContract(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
         txnHelper.submit(signedTxn, observer, ContractCreate);
     }
 
     @Override
-    public void updateContract(
-            Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+    public void updateContract(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
         txnHelper.submit(signedTxn, observer, ContractUpdate);
     }
 
     @Override
-    public void contractCallMethod(
-            Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+    public void contractCallMethod(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
         txnHelper.submit(signedTxn, observer, ContractCall);
     }
 
@@ -107,13 +103,11 @@ public class ContractController extends SmartContractServiceGrpc.SmartContractSe
 
     @Override
     public void getTxRecordByContractID(Query query, StreamObserver<Response> observer) {
-        queryHelper.answer(
-                query, observer, contractAnswers.getContractRecords(), ContractGetRecords);
+        queryHelper.answer(query, observer, contractAnswers.getContractRecords(), ContractGetRecords);
     }
 
     @Override
-    public void deleteContract(
-            Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+    public void deleteContract(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
         txnHelper.submit(signedTxn, observer, ContractDelete);
     }
 
@@ -123,8 +117,7 @@ public class ContractController extends SmartContractServiceGrpc.SmartContractSe
     }
 
     @Override
-    public void systemUndelete(
-            Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+    public void systemUndelete(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
         txnHelper.submit(signedTxn, observer, SystemUndelete);
     }
 

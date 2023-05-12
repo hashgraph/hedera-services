@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.utils.throttles;
 
 import java.time.Duration;
@@ -80,7 +81,8 @@ public class GasLimitDeterministicThrottle implements CongestibleThrottle {
         if (lastDecisionTime == null) {
             return 0.0;
         }
-        final var elapsedNanos = Math.max(0, Duration.between(lastDecisionTime, now).toNanos());
+        final var elapsedNanos =
+                Math.max(0, Duration.between(lastDecisionTime, now).toNanos());
         return delegate.percentUsed(elapsedNanos);
     }
 

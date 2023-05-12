@@ -1,0 +1,95 @@
+<!--
+  ~ Copyright 2016-2022 Hedera Hashgraph, LLC
+  ~
+  ~ This software is the confidential and proprietary information of
+  ~ Hedera Hashgraph, LLC. ("Confidential Information"). You shall not
+  ~ disclose such Confidential Information and shall use it only in
+  ~ accordance with the terms of the license agreement you entered into
+  ~ with Hedera Hashgraph.
+  ~
+  ~ HEDERA HASHGRAPH MAKES NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF
+  ~ THE SOFTWARE, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+  ~ TO THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+  ~ PARTICULAR PURPOSE, OR NON-INFRINGEMENT. HEDERA HASHGRAPH SHALL NOT BE LIABLE FOR
+  ~ ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, MODIFYING OR
+  ~ DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
+  -->
+
+<h1>The Swirlds SDK demo apps</h1>
+
+The <a href="runBrowser.html">Swirlds
+	SDK</a> comes with several demo apps, including source code. They are intended to be simple demonstrations of how the browser works, how consensus works, and how to write apps.  One good way to write a new app is to start with the code of a demo app, and modify it. The demo apps are:
+<br><br><br>
+
+<html>
+<head>
+	<style>
+		pre {
+			font-family: "Courier 10 Pitch", Courier, monospace;
+			margin-bottom: 1.6em;
+			max-width: 100%;
+			overflow: auto;
+			background-color: #efefef;
+		}
+	</style>
+</head>
+<body>
+
+<b>Hello Swirld Demo</b> - a very simple app<p>
+	The app prints a Hello Swirld message to the console along with its name, then creates just one transaction
+	containing that name. Then every member repeatedly prints the list of all transactions received so far, in the
+	current order they are believed to have occurred. They keep printing until as long as the list keeps changing. There
+	are several things visible here. The screen quickly stops changing, which shows consensus was reached quickly. Each
+	member ends up with the names in the same order, which shows the "consensus" was actually a true consensus. If the
+	program is run several times, the final order will be different each time, showing that the exact ordering is
+	dependent on the exact speed with which each member talks to the others, which is nondeterministic. It is also
+	usually the case that at least one member will have several lists where two of the names change order. So it might
+	be that Alice has a row where Bob comes before Carol, and then a later row where Carol comes before Bob. That shows
+	that Alice received both the Bob transaction and the Carol transaction, with her receiving Bob before Carol, but
+	later she realized the community consensus was in the opposite order, so she switched to match the group's
+	consensus.<br><br><br>
+
+	<b>Game Demo</b> - a simple game
+<p>
+	Use the arrow keys (or WASD) to move your character (outlined square) to the goal (outlined circle) to get one
+	point. If you hit the SPACEBAR, your character will move automatically toward the goal, which is the default when it
+	starts. This game is useful for visually seeing timing and lag and consensus. As soon as any player hits the goal,
+	the goal jumps to a new location. The new location of the goal is dependent on which player reached it first.
+	Therefore, you can see history changing, due to the consensus algorithm running, by seeing the location of the goal
+	flicker. It flickers as there are changing opinions on who reached it first. Typically, such flickering is both rare
+	and short-lived, indicating fast consensus. If you take control of a character by using the arrow keys, you can see
+	how responsive its movements are to your actions (local lag), and can see that all the windows show the movement at
+	the same time (global lag). In most cases, the lag is very small.<br><br><br>
+
+	<b>Hashgraph Demo</b> - display the hashgraph
+<p>
+	This allows the user to watch the hashgraph grow, and see how the consensus algorithm works. If the "slow" checkbox
+	is checked, then it intentionally slows down the progress by sleeping frequently, so the image will grow slowly. The
+	other checkboxes can control the display of additional information.<br><br><br>
+
+	<b>Cryptocurrency Demo</b> - create a cryptocurrency and use it in a simulated stock market
+<p>
+	This app creates a cryptocurrency, and uses it in a simulated stock market for 10 stocks. The market and the stocks
+	are simulated. The cryptocurrency is real. At least it would be a real cryptocurrency, if the app were to keep
+	running long enough, and enough people joined it (and if the Swirlds browser has cryptography turned on). In other
+	words, it is a new alt coin that lasts only as long as the program is running.<br><br><br>
+
+	<b>Stats Demo</b> - gather profiling statistics on how the system runs
+<p>
+	This writes to a file various statistics on the system, such as the number of transactions per second. It can run in
+	a windowed mode, where it also shows the statistics on the screen. Or it can run in a headless mode, where there are
+	no windows and it simply creates the file. That can be useful when running on embedded systems that do not support a
+	GUI.<br><br><br>
+
+	<b> Filesystem Demo</b> - this demonstrates a fast copyable filesystem. This means the app can create what appears
+	to be an external hard drive, and can create files and directories on it. But it is actually shared between all the
+	members, and all of them see a single, consistent view of it as it changes over time. Furthermore, even if it has
+	grown very large, an app can make a "fast copy" of it, which appears to be a new external drive containing an exact
+	copy of all the bytes on the original drive. Both the original and copy can then be modified independently. The
+	"fast copy" happens almost instantly because of a copy-on-write mechanism that causes information to only be truly
+	copied when a file changes. <br><br><br>
+
+<p>
+	<a href="index.html">Back</a>
+</p>
+</body>

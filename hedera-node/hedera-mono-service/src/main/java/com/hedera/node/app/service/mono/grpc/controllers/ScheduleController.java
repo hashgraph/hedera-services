@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.grpc.controllers;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
@@ -40,17 +41,14 @@ public class ScheduleController extends ScheduleServiceGrpc.ScheduleServiceImplB
 
     @Inject
     public ScheduleController(
-            ScheduleAnswers scheduleAnswers,
-            TxnResponseHelper txnHelper,
-            QueryResponseHelper queryHelper) {
+            ScheduleAnswers scheduleAnswers, TxnResponseHelper txnHelper, QueryResponseHelper queryHelper) {
         this.txnHelper = txnHelper;
         this.queryHelper = queryHelper;
         this.scheduleAnswers = scheduleAnswers;
     }
 
     @Override
-    public void createSchedule(
-            Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+    public void createSchedule(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
         txnHelper.submit(signedTxn, observer, ScheduleCreate);
     }
 
@@ -60,8 +58,7 @@ public class ScheduleController extends ScheduleServiceGrpc.ScheduleServiceImplB
     }
 
     @Override
-    public void deleteSchedule(
-            Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+    public void deleteSchedule(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
         txnHelper.submit(signedTxn, observer, ScheduleDelete);
     }
 

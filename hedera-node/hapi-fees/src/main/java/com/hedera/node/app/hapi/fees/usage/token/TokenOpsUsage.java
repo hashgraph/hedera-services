@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage.token;
 
 import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
@@ -46,10 +47,8 @@ public final class TokenOpsUsage {
     private static final int FIXED_HTS_REPR_SIZE = LONG_SIZE + BASIC_ENTITY_ID_SIZE;
     private static final int FRACTIONAL_REPR_SIZE = 4 * LONG_SIZE;
     private static final int ROYALTY_NO_FALLBACK_REPR_SIZE = 2 * LONG_SIZE;
-    private static final int ROYALTY_HBAR_FALLBACK_REPR_SIZE =
-            ROYALTY_NO_FALLBACK_REPR_SIZE + FIXED_HBAR_REPR_SIZE;
-    private static final int ROYALTY_HTS_FALLBACK_REPR_SIZE =
-            ROYALTY_NO_FALLBACK_REPR_SIZE + FIXED_HTS_REPR_SIZE;
+    private static final int ROYALTY_HBAR_FALLBACK_REPR_SIZE = ROYALTY_NO_FALLBACK_REPR_SIZE + FIXED_HBAR_REPR_SIZE;
+    private static final int ROYALTY_HTS_FALLBACK_REPR_SIZE = ROYALTY_NO_FALLBACK_REPR_SIZE + FIXED_HTS_REPR_SIZE;
     private static final long LONG_BASIC_ENTITY_ID_SIZE = BASIC_ENTITY_ID_SIZE;
 
     @Inject
@@ -67,12 +66,8 @@ public final class TokenOpsUsage {
 
         accumulator.addBpt(LONG_BASIC_ENTITY_ID_SIZE + opMeta.numBytesInNewFeeScheduleRepr());
         final var lifetime = Math.max(0, ctx.expiry() - opMeta.effConsensusTime());
-        final var rbsDelta =
-                ESTIMATOR_UTILS.changeInBsUsage(
-                        ctx.numBytesInFeeScheduleRepr(),
-                        lifetime,
-                        opMeta.numBytesInNewFeeScheduleRepr(),
-                        lifetime);
+        final var rbsDelta = ESTIMATOR_UTILS.changeInBsUsage(
+                ctx.numBytesInFeeScheduleRepr(), lifetime, opMeta.numBytesInNewFeeScheduleRepr(), lifetime);
         accumulator.addRbs(rbsDelta);
     }
 
@@ -137,20 +132,17 @@ public final class TokenOpsUsage {
         accumulator.resetForTransaction(baseMeta, sigUsage);
 
         accumulator.addBpt(tokenCreateMeta.getBaseSize());
-        accumulator.addRbs(
-                (tokenCreateMeta.getBaseSize() + tokenCreateMeta.getCustomFeeScheduleSize())
-                        * tokenCreateMeta.getLifeTime());
+        accumulator.addRbs((tokenCreateMeta.getBaseSize() + tokenCreateMeta.getCustomFeeScheduleSize())
+                * tokenCreateMeta.getLifeTime());
 
-        final long tokenSizes =
-                TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(
-                                tokenCreateMeta.getNumTokens(),
-                                tokenCreateMeta.getFungibleNumTransfers(),
-                                tokenCreateMeta.getNftsTransfers())
-                        * USAGE_PROPERTIES.legacyReceiptStorageSecs();
+        final long tokenSizes = TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(
+                        tokenCreateMeta.getNumTokens(),
+                        tokenCreateMeta.getFungibleNumTransfers(),
+                        tokenCreateMeta.getNftsTransfers())
+                * USAGE_PROPERTIES.legacyReceiptStorageSecs();
         accumulator.addRbs(tokenSizes);
 
-        accumulator.addNetworkRbs(
-                tokenCreateMeta.getNetworkRecordRb() * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+        accumulator.addNetworkRbs(tokenCreateMeta.getNetworkRecordRb() * USAGE_PROPERTIES.legacyReceiptStorageSecs());
     }
 
     public void tokenBurnUsage(
@@ -161,8 +153,7 @@ public final class TokenOpsUsage {
         accumulator.resetForTransaction(baseMeta, sigUsage);
 
         accumulator.addBpt(tokenBurnMeta.getBpt());
-        accumulator.addNetworkRbs(
-                tokenBurnMeta.getTransferRecordDb() * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+        accumulator.addNetworkRbs(tokenBurnMeta.getTransferRecordDb() * USAGE_PROPERTIES.legacyReceiptStorageSecs());
     }
 
     public void tokenMintUsage(
@@ -174,8 +165,7 @@ public final class TokenOpsUsage {
 
         accumulator.addBpt(tokenMintMeta.getBpt());
         accumulator.addRbs(tokenMintMeta.getRbs());
-        accumulator.addNetworkRbs(
-                tokenMintMeta.getTransferRecordDb() * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+        accumulator.addNetworkRbs(tokenMintMeta.getTransferRecordDb() * USAGE_PROPERTIES.legacyReceiptStorageSecs());
     }
 
     public void tokenWipeUsage(
@@ -186,8 +176,7 @@ public final class TokenOpsUsage {
         accumulator.resetForTransaction(baseMeta, sigUsage);
 
         accumulator.addBpt(tokenWipeMeta.getBpt());
-        accumulator.addNetworkRbs(
-                tokenWipeMeta.getTransferRecordDb() * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+        accumulator.addNetworkRbs(tokenWipeMeta.getTransferRecordDb() * USAGE_PROPERTIES.legacyReceiptStorageSecs());
     }
 
     public void tokenFreezeUsage(

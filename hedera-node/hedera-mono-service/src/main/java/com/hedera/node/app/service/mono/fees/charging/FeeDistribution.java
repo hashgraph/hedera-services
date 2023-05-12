@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.charging;
 
 import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
@@ -44,14 +45,10 @@ public class FeeDistribution {
     private final AccountID nodeRewardAccountId;
 
     @Inject
-    public FeeDistribution(
-            final HederaAccountNumbers accountNumbers,
-            final GlobalDynamicProperties dynamicProperties) {
+    public FeeDistribution(final HederaAccountNumbers accountNumbers, final GlobalDynamicProperties dynamicProperties) {
         this.dynamicProperties = dynamicProperties;
-        this.stakingRewardAccountId =
-                STATIC_PROPERTIES.scopedAccountWith(accountNumbers.stakingRewardAccount());
-        this.nodeRewardAccountId =
-                STATIC_PROPERTIES.scopedAccountWith(accountNumbers.nodeRewardAccount());
+        this.stakingRewardAccountId = STATIC_PROPERTIES.scopedAccountWith(accountNumbers.stakingRewardAccount());
+        this.nodeRewardAccountId = STATIC_PROPERTIES.scopedAccountWith(accountNumbers.nodeRewardAccount());
     }
 
     /**
@@ -66,24 +63,19 @@ public class FeeDistribution {
      * @param accounts the ledger to use for the distribution
      */
     public void distributeChargedFee(
-            final long amount,
-            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts) {
+            final long amount, final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts) {
         long fundingAdjustment = amount;
         final var fundingId = dynamicProperties.fundingAccount();
         if (dynamicProperties.isStakingEnabled()) {
             final var nodeRewardAdjustment = nodeRewardFractionOf(amount);
             if (nodeRewardAdjustment != 0) {
                 final var nodeRewardBalance = (long) accounts.get(nodeRewardAccountId, BALANCE);
-                accounts.set(
-                        nodeRewardAccountId, BALANCE, nodeRewardBalance + nodeRewardAdjustment);
+                accounts.set(nodeRewardAccountId, BALANCE, nodeRewardBalance + nodeRewardAdjustment);
             }
             final var stakeRewardAdjustment = stakingRewardFractionOf(amount);
             if (stakeRewardAdjustment != 0) {
                 final var stakeRewardBalance = (long) accounts.get(stakingRewardAccountId, BALANCE);
-                accounts.set(
-                        stakingRewardAccountId,
-                        BALANCE,
-                        stakeRewardBalance + stakeRewardAdjustment);
+                accounts.set(stakingRewardAccountId, BALANCE, stakeRewardBalance + stakeRewardAdjustment);
             }
             fundingAdjustment -= (nodeRewardAdjustment + stakeRewardAdjustment);
         }

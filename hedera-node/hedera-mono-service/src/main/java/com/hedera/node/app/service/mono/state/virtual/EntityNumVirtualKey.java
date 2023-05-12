@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual;
 
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualLongKey;
@@ -42,8 +44,17 @@ public final class EntityNumVirtualKey implements VirtualLongKey {
         return new EntityNumVirtualKey(num.longValue());
     }
 
+    public static EntityNumVirtualKey fromLong(final long num) {
+        return new EntityNumVirtualKey(num);
+    }
+
     public static EntityNumVirtualKey fromPair(final EntityNumPair num) {
         return new EntityNumVirtualKey(num.value());
+    }
+
+    public static EntityNumVirtualKey fromAccountId(AccountID acct) {
+        final var entityNum = EntityNum.fromAccountId(acct);
+        return EntityNumVirtualKey.from(entityNum);
     }
 
     public EntityNumVirtualKey() {
@@ -101,8 +112,7 @@ public final class EntityNumVirtualKey implements VirtualLongKey {
 
     /** {@inheritDoc} */
     @Override
-    public void deserialize(final SerializableDataInputStream in, final int version)
-            throws IOException {
+    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         value = in.readLong();
     }
 
@@ -140,7 +150,7 @@ public final class EntityNumVirtualKey implements VirtualLongKey {
      * @param version The version of the data inside the given {@code buffer}.
      * @return {@code true} if the content from the buffer has the same data as this instance.
      *     {@code false}, otherwise.
-     * @throws IOException
+     * @throws IOException If an I/O error occurred
      */
     public boolean equals(final ByteBuffer buffer, final int version) throws IOException {
         return buffer.getLong() == this.value;

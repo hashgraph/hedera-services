@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.submerkle;
 
 import com.google.common.base.MoreObjects;
@@ -51,16 +52,14 @@ public class FcAssessedCustomFee implements SelfSerializable {
         /* For RuntimeConstructable */
     }
 
-    private FcAssessedCustomFee(
-            final EntityId token, final AccountAmount aa, final long[] effPayerAccountNums) {
+    private FcAssessedCustomFee(final EntityId token, final AccountAmount aa, final long[] effPayerAccountNums) {
         this.token = token;
         this.account = EntityId.fromGrpcAccountId(aa.getAccountID());
         this.units = aa.getAmount();
         this.effPayerAccountNums = effPayerAccountNums;
     }
 
-    public FcAssessedCustomFee(
-            final EntityId account, final long amount, final long[] effPayerAccountNums) {
+    public FcAssessedCustomFee(final EntityId account, final long amount, final long[] effPayerAccountNums) {
         this.token = null;
         this.account = account;
         this.units = amount;
@@ -68,10 +67,7 @@ public class FcAssessedCustomFee implements SelfSerializable {
     }
 
     public FcAssessedCustomFee(
-            final EntityId account,
-            final EntityId token,
-            final long amount,
-            final long[] effPayerAccountNums) {
+            final EntityId account, final EntityId token, final long amount, final long[] effPayerAccountNums) {
         this.token = token;
         this.account = account;
         this.units = amount;
@@ -98,8 +94,7 @@ public class FcAssessedCustomFee implements SelfSerializable {
         return effPayerAccountNums;
     }
 
-    public static FcAssessedCustomFee assessedHbarFeeFrom(
-            final AccountAmount aa, final long[] effPayerAccountNums) {
+    public static FcAssessedCustomFee assessedHbarFeeFrom(final AccountAmount aa, final long[] effPayerAccountNums) {
         return new FcAssessedCustomFee(null, aa, effPayerAccountNums);
     }
 
@@ -130,13 +125,11 @@ public class FcAssessedCustomFee implements SelfSerializable {
 
     /* --- Helpers --- */
     public AssessedCustomFee toGrpc() {
-        var grpc =
-                AssessedCustomFee.newBuilder()
-                        .setFeeCollectorAccountId(account.toGrpcAccountId())
-                        .setAmount(units);
+        var grpc = AssessedCustomFee.newBuilder()
+                .setFeeCollectorAccountId(account.toGrpcAccountId())
+                .setAmount(units);
         for (int i = 0; i < effPayerAccountNums.length; i++) {
-            grpc.addEffectivePayerAccountId(
-                    AccountID.newBuilder().setAccountNum(effPayerAccountNums[i]));
+            grpc.addEffectivePayerAccountId(AccountID.newBuilder().setAccountNum(effPayerAccountNums[i]));
         }
         if (isForHbar()) {
             return grpc.build();
@@ -145,19 +138,17 @@ public class FcAssessedCustomFee implements SelfSerializable {
     }
 
     public static FcAssessedCustomFee fromGrpc(AssessedCustomFee assessedFee) {
-        final var aa =
-                AccountAmount.newBuilder()
-                        .setAccountID(assessedFee.getFeeCollectorAccountId())
-                        .setAmount(assessedFee.getAmount())
-                        .build();
+        final var aa = AccountAmount.newBuilder()
+                .setAccountID(assessedFee.getFeeCollectorAccountId())
+                .setAmount(assessedFee.getAmount())
+                .build();
         int n = assessedFee.getEffectivePayerAccountIdCount();
         long[] effPayerAccountNums = n > 0 ? new long[n] : UNKNOWN_EFFECTIVE_PAYER_ACCOUNT_NUMS;
         for (int i = 0; i < n; i++) {
             effPayerAccountNums[i] = assessedFee.getEffectivePayerAccountId(i).getAccountNum();
         }
         if (assessedFee.hasTokenId()) {
-            return assessedHtsFeeFrom(
-                    EntityId.fromGrpcTokenId(assessedFee.getTokenId()), aa, effPayerAccountNums);
+            return assessedHtsFeeFrom(EntityId.fromGrpcTokenId(assessedFee.getTokenId()), aa, effPayerAccountNums);
         }
         return assessedHbarFeeFrom(aa, effPayerAccountNums);
     }

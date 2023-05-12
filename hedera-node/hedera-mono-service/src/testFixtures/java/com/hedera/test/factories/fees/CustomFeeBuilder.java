@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.factories.fees;
 
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -68,8 +69,7 @@ public class CustomFeeBuilder {
                         Fraction.newBuilder().setNumerator(numerator).setDenominator(denominator));
     }
 
-    public static RoyaltyFee.Builder royaltyWithFallback(
-            long numerator, long denominator, FixedFee.Builder fallback) {
+    public static RoyaltyFee.Builder royaltyWithFallback(long numerator, long denominator, FixedFee.Builder fallback) {
         return RoyaltyFee.newBuilder()
                 .setExchangeValueFraction(
                         Fraction.newBuilder().setNumerator(numerator).setDenominator(denominator))

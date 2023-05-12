@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger;
 
 import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakingUtils.roundedToHbar;
@@ -131,12 +132,9 @@ public class StakingActivityBench {
 
         final var actionsPerDay = (long) actionsPerRound * roundsPerPeriod;
         final var avgDailyActionsPerAccount = actionsPerDay / stakeableAccounts;
-        callsBetweenStakingChange =
-                (int) (meanDaysBeforeNewStakePeriodStart * avgDailyActionsPerAccount);
+        callsBetweenStakingChange = (int) (meanDaysBeforeNewStakePeriodStart * avgDailyActionsPerAccount);
         System.out.println(
-                "A staking change will occur every ~"
-                        + callsBetweenStakingChange
-                        + " benchmark invocations");
+                "A staking change will occur every ~" + callsBetweenStakingChange + " benchmark invocations");
     }
 
     @Setup(Level.Invocation)
@@ -146,17 +144,14 @@ public class StakingActivityBench {
             round++;
             if (round % roundsPerPeriod == 0) {
                 final var finishedPeriodOffset = (round / roundsPerPeriod) - 1;
-                final var finishedTimeRepresentative =
-                        SOME_TIME.plusSeconds(finishedPeriodOffset * SECS_PER_DAY);
-                System.out.println(
-                        "\n--- END OF PERIOD @ "
-                                + finishedTimeRepresentative
-                                + " -> "
-                                + app.periodManager().currentStakePeriod()
-                                + " ---");
+                final var finishedTimeRepresentative = SOME_TIME.plusSeconds(finishedPeriodOffset * SECS_PER_DAY);
+                System.out.println("\n--- END OF PERIOD @ "
+                        + finishedTimeRepresentative
+                        + " -> "
+                        + app.periodManager().currentStakePeriod()
+                        + " ---");
                 app.endOfPeriodCalcs().updateNodes(finishedTimeRepresentative);
-                final var currentPeriodTimeRepresentative =
-                        finishedTimeRepresentative.plusSeconds(SECS_PER_DAY);
+                final var currentPeriodTimeRepresentative = finishedTimeRepresentative.plusSeconds(SECS_PER_DAY);
                 app.txnCtx().resetFor(null, currentPeriodTimeRepresentative, 0L);
                 System.out.println(
                         "- Current period is now   :: " + app.periodManager().currentStakePeriod());
@@ -180,9 +175,8 @@ public class StakingActivityBench {
             ledger.set(FUNDING_ID, BALANCE, (long) ledger.get(FUNDING_ID, BALANCE) + 1);
             ledger.commit();
         }
-        System.out.println(
-                "Pending rewards after forcing all reward payments: "
-                        + app.networkCtx().get().pendingRewards());
+        System.out.println("Pending rewards after forcing all reward payments: "
+                + app.networkCtx().get().pendingRewards());
         compareStakeToReward();
     }
 
@@ -194,50 +188,33 @@ public class StakingActivityBench {
             final var account = curAccounts.get(num);
             if (account.getStakedId() < 0) {
                 final var nodeId = account.getStakedNodeAddressBookId();
-                summedStakesToReward.merge(
-                        EntityNum.fromLong(nodeId), roundedToHbar(account.totalStake()), Long::sum);
+                summedStakesToReward.merge(EntityNum.fromLong(nodeId), roundedToHbar(account.totalStake()), Long::sum);
             }
         }
-        summedStakesToReward.forEach(
-                (num, amount) -> {
-                    final var info = app.stakingInfos().get().get(num);
-                    System.out.println(
-                            "- node"
-                                    + num.longValue()
-                                    + " has Merkle stakeToReward "
-                                    + info.getStakeToReward()
-                                    + " vs "
-                                    + amount
-                                    + " summed stakeToReward");
-                });
+        summedStakesToReward.forEach((num, amount) -> {
+            final var info = app.stakingInfos().get().get(num);
+            System.out.println("- node"
+                    + num.longValue()
+                    + " has Merkle stakeToReward "
+                    + info.getStakeToReward()
+                    + " vs "
+                    + amount
+                    + " summed stakeToReward");
+        });
     }
 
     private long sumDetailRewards() {
         final var detailPendingRewards = new AtomicLong();
         final var stakePeriodManager = app.periodManager();
         final var curPeriod = stakePeriodManager.currentStakePeriod();
-        app.accounts()
-                .get()
-                .forEach(
-                        (num, account) -> {
-                            if (account.mayHavePendingReward()) {
-                                final var info =
-                                        app.stakingInfos()
-                                                .get()
-                                                .get(
-                                                        EntityNum.fromLong(
-                                                                account
-                                                                        .getStakedNodeAddressBookId()));
-                                final var detailReward =
-                                        rewardCalculator.computeRewardFromDetails(
-                                                account,
-                                                info,
-                                                curPeriod,
-                                                stakePeriodManager.effectivePeriod(
-                                                        account.getStakePeriodStart()));
-                                detailPendingRewards.getAndAdd(detailReward);
-                            }
-                        });
+        app.accounts().get().forEach((num, account) -> {
+            if (account.mayHavePendingReward()) {
+                final var info = app.stakingInfos().get().get(EntityNum.fromLong(account.getStakedNodeAddressBookId()));
+                final var detailReward = rewardCalculator.computeRewardFromDetails(
+                        account, info, curPeriod, stakePeriodManager.effectivePeriod(account.getStakePeriodStart()));
+                detailPendingRewards.getAndAdd(detailReward);
+            }
+        });
         return detailPendingRewards.get();
     }
 
@@ -274,14 +251,8 @@ public class StakingActivityBench {
                 ledger.set(payerId, BALANCE, (long) ledger.get(payerId, BALANCE) - PRETEND_FEE);
             } else {
                 // Just do a simple transfer
-                ledger.set(
-                        payerId,
-                        BALANCE,
-                        (long) ledger.get(payerId, BALANCE) - PRETEND_FEE - PRETEND_AMOUNT);
-                ledger.set(
-                        countpartyId,
-                        BALANCE,
-                        (long) ledger.get(countpartyId, BALANCE) + PRETEND_AMOUNT);
+                ledger.set(payerId, BALANCE, (long) ledger.get(payerId, BALANCE) - PRETEND_FEE - PRETEND_AMOUNT);
+                ledger.set(countpartyId, BALANCE, (long) ledger.get(countpartyId, BALANCE) + PRETEND_AMOUNT);
             }
         }
         ledger.commit();

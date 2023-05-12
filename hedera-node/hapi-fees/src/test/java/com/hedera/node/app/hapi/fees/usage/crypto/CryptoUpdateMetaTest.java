@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage.crypto;
 
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
@@ -42,22 +43,20 @@ class CryptoUpdateMetaTest {
 
     @Test
     void allGettersAndToStringWork() {
-        final var expected =
-                "CryptoUpdateMeta{keyBytesUsed=123, msgBytesUsed=1234, memoSize=20,"
-                        + " effectiveNow=1234567, expiry=2234567, hasProxy=true,"
-                        + " maxAutomaticAssociations=12, hasMaxAutomaticAssociations=true}";
+        final var expected = "CryptoUpdateMeta{keyBytesUsed=123, msgBytesUsed=1234, memoSize=20,"
+                + " effectiveNow=1234567, expiry=2234567, hasProxy=true,"
+                + " maxAutomaticAssociations=12, hasMaxAutomaticAssociations=true}";
 
-        final var subject =
-                new CryptoUpdateMeta.Builder()
-                        .keyBytesUsed(keyBytes)
-                        .msgBytesUsed(msgBytes)
-                        .memoSize(memoSize)
-                        .effectiveNow(now)
-                        .expiry(expiry)
-                        .hasProxy(hasProxy)
-                        .maxAutomaticAssociations(maxAutoAssociations)
-                        .hasMaxAutomaticAssociations(hasMaxAutoAssociations)
-                        .build();
+        final var subject = new CryptoUpdateMeta.Builder()
+                .keyBytesUsed(keyBytes)
+                .msgBytesUsed(msgBytes)
+                .memoSize(memoSize)
+                .effectiveNow(now)
+                .expiry(expiry)
+                .hasProxy(hasProxy)
+                .maxAutomaticAssociations(maxAutoAssociations)
+                .hasMaxAutomaticAssociations(hasMaxAutoAssociations)
+                .build();
 
         assertEquals(keyBytes, subject.getKeyBytesUsed());
         assertEquals(msgBytes, subject.getMsgBytesUsed());
@@ -72,29 +71,27 @@ class CryptoUpdateMetaTest {
 
     @Test
     void hashCodeAndEqualsWork() {
-        final var subject1 =
-                new CryptoUpdateMeta.Builder()
-                        .keyBytesUsed(keyBytes)
-                        .msgBytesUsed(msgBytes)
-                        .memoSize(memoSize)
-                        .effectiveNow(now)
-                        .expiry(expiry)
-                        .hasProxy(hasProxy)
-                        .maxAutomaticAssociations(maxAutoAssociations)
-                        .hasMaxAutomaticAssociations(hasMaxAutoAssociations)
-                        .build();
+        final var subject1 = new CryptoUpdateMeta.Builder()
+                .keyBytesUsed(keyBytes)
+                .msgBytesUsed(msgBytes)
+                .memoSize(memoSize)
+                .effectiveNow(now)
+                .expiry(expiry)
+                .hasProxy(hasProxy)
+                .maxAutomaticAssociations(maxAutoAssociations)
+                .hasMaxAutomaticAssociations(hasMaxAutoAssociations)
+                .build();
 
-        final var subject2 =
-                new CryptoUpdateMeta.Builder()
-                        .keyBytesUsed(keyBytes)
-                        .msgBytesUsed(msgBytes)
-                        .memoSize(memoSize)
-                        .effectiveNow(now)
-                        .expiry(expiry)
-                        .hasProxy(hasProxy)
-                        .maxAutomaticAssociations(maxAutoAssociations)
-                        .hasMaxAutomaticAssociations(hasMaxAutoAssociations)
-                        .build();
+        final var subject2 = new CryptoUpdateMeta.Builder()
+                .keyBytesUsed(keyBytes)
+                .msgBytesUsed(msgBytes)
+                .memoSize(memoSize)
+                .effectiveNow(now)
+                .expiry(expiry)
+                .hasProxy(hasProxy)
+                .maxAutomaticAssociations(maxAutoAssociations)
+                .hasMaxAutomaticAssociations(hasMaxAutoAssociations)
+                .build();
 
         assertEquals(subject1, subject2);
         assertEquals(subject1.hashCode(), subject2.hashCode());
@@ -105,32 +102,22 @@ class CryptoUpdateMetaTest {
         final var memo = "updateMemo";
         final var accountID = AccountID.newBuilder().setAccountNum(1_234L).build();
         final var proxyID = AccountID.newBuilder().setAccountNum(1_230L).build();
-        final var canonicalTxn =
-                TransactionBody.newBuilder()
-                        .setCryptoUpdateAccount(
-                                CryptoUpdateTransactionBody.newBuilder()
-                                        .setMemo(StringValue.of(memo))
-                                        .setMaxAutomaticTokenAssociations(Int32Value.of(5))
-                                        .setProxyAccountID(proxyID)
-                                        .setAutoRenewPeriod(
-                                                Duration.newBuilder().setSeconds(expiry))
-                                        .setAccountIDToUpdate(accountID)
-                                        .setExpirationTime(
-                                                Timestamp.newBuilder().setSeconds(expiry)))
-                        .build();
+        final var canonicalTxn = TransactionBody.newBuilder()
+                .setCryptoUpdateAccount(CryptoUpdateTransactionBody.newBuilder()
+                        .setMemo(StringValue.of(memo))
+                        .setMaxAutomaticTokenAssociations(Int32Value.of(5))
+                        .setProxyAccountID(proxyID)
+                        .setAutoRenewPeriod(Duration.newBuilder().setSeconds(expiry))
+                        .setAccountIDToUpdate(accountID)
+                        .setExpirationTime(Timestamp.newBuilder().setSeconds(expiry)))
+                .build();
 
         final var expectedMsgBytes =
-                BASIC_ENTITY_ID_SIZE
-                        + memo.length()
-                        + LONG_SIZE
-                        + LONG_SIZE
-                        + BASIC_ENTITY_ID_SIZE
-                        + INT_SIZE;
+                BASIC_ENTITY_ID_SIZE + memo.length() + LONG_SIZE + LONG_SIZE + BASIC_ENTITY_ID_SIZE + INT_SIZE;
 
-        final var subject =
-                new CryptoUpdateMeta(
-                        canonicalTxn.getCryptoUpdateAccount(),
-                        canonicalTxn.getTransactionID().getTransactionValidStart().getSeconds());
+        final var subject = new CryptoUpdateMeta(
+                canonicalTxn.getCryptoUpdateAccount(),
+                canonicalTxn.getTransactionID().getTransactionValidStart().getSeconds());
 
         assertEquals(0, subject.getKeyBytesUsed());
         assertEquals(expectedMsgBytes, subject.getMsgBytesUsed());

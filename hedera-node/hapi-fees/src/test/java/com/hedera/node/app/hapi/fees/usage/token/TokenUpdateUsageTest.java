@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage.token;
 
 import static com.hedera.node.app.hapi.fees.test.KeyUtils.A_KEY_LIST;
@@ -110,9 +111,8 @@ class TokenUpdateUsageTest {
         verify(base).addBpt(expectedBytes);
         verify(base).addRbs((newRb - curRb) * maxLifetime);
         verify(base)
-                .addRbs(
-                        TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 2, 0)
-                                * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+                .addRbs(TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 2, 0)
+                        * USAGE_PROPERTIES.legacyReceiptStorageSecs());
     }
 
     @Test
@@ -135,9 +135,8 @@ class TokenUpdateUsageTest {
         verify(base).addBpt(expectedBytes);
         verify(base).addRbs((newRb - curRb) * (expiry - now));
         verify(base)
-                .addRbs(
-                        TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 2, 0)
-                                * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+                .addRbs(TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 2, 0)
+                        * USAGE_PROPERTIES.legacyReceiptStorageSecs());
     }
 
     @Test
@@ -181,9 +180,8 @@ class TokenUpdateUsageTest {
         verify(base).addBpt(expectedBytes);
         verify(base).addRbs((newRb - curRb) * (expiry - now));
         verify(base)
-                .addRbs(
-                        TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 2, 0)
-                                * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+                .addRbs(TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 2, 0)
+                        * USAGE_PROPERTIES.legacyReceiptStorageSecs());
     }
 
     @Test
@@ -209,9 +207,8 @@ class TokenUpdateUsageTest {
         verify(base).addBpt(expectedBytes);
         verify(base).addRbs((newRb - curRb) * (expiry - now));
         verify(base)
-                .addRbs(
-                        TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 2, 0)
-                                * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+                .addRbs(TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 2, 0)
+                        * USAGE_PROPERTIES.legacyReceiptStorageSecs());
     }
 
     private void givenImpliedSubjectWithLargerKeys() {
@@ -227,19 +224,18 @@ class TokenUpdateUsageTest {
     }
 
     private void givenImpliedSubjectWithExpiryAndKey(final long extantExpiry, final Key oldKey) {
-        subject =
-                TokenUpdateUsage.newEstimate(txn, base)
-                        .givenCurrentExpiry(extantExpiry)
-                        .givenCurrentMemo(oldMemo)
-                        .givenCurrentName(oldName)
-                        .givenCurrentSymbol(oldSymbol)
-                        .givenCurrentAdminKey(Optional.of(oldKey))
-                        .givenCurrentKycKey(Optional.of(oldKey))
-                        .givenCurrentSupplyKey(Optional.of(oldKey))
-                        .givenCurrentWipeKey(Optional.of(oldKey))
-                        .givenCurrentFreezeKey(Optional.of(oldKey))
-                        .givenCurrentPauseKey(Optional.of(oldKey))
-                        .givenCurrentFeeScheduleKey(Optional.of(oldKey));
+        subject = TokenUpdateUsage.newEstimate(txn, base)
+                .givenCurrentExpiry(extantExpiry)
+                .givenCurrentMemo(oldMemo)
+                .givenCurrentName(oldName)
+                .givenCurrentSymbol(oldSymbol)
+                .givenCurrentAdminKey(Optional.of(oldKey))
+                .givenCurrentKycKey(Optional.of(oldKey))
+                .givenCurrentSupplyKey(Optional.of(oldKey))
+                .givenCurrentWipeKey(Optional.of(oldKey))
+                .givenCurrentFreezeKey(Optional.of(oldKey))
+                .givenCurrentPauseKey(Optional.of(oldKey))
+                .givenCurrentFeeScheduleKey(Optional.of(oldKey));
     }
 
     private long curSize(final Key oldKey) {
@@ -266,32 +262,28 @@ class TokenUpdateUsageTest {
     }
 
     private void givenOp(final long newExpiry) {
-        op =
-                TokenUpdateTransactionBody.newBuilder()
-                        .setToken(id)
-                        .setMemo(StringValue.newBuilder().setValue(memo).build())
-                        .setExpiry(Timestamp.newBuilder().setSeconds(newExpiry))
-                        .setTreasury(treasury)
-                        .setAutoRenewAccount(autoRenewAccount)
-                        .setSymbol(symbol)
-                        .setName(name)
-                        .setKycKey(kycKey)
-                        .setAdminKey(adminKey)
-                        .setFreezeKey(freezeKey)
-                        .setSupplyKey(supplyKey)
-                        .setWipeKey(wipeKey)
-                        .build();
+        op = TokenUpdateTransactionBody.newBuilder()
+                .setToken(id)
+                .setMemo(StringValue.newBuilder().setValue(memo).build())
+                .setExpiry(Timestamp.newBuilder().setSeconds(newExpiry))
+                .setTreasury(treasury)
+                .setAutoRenewAccount(autoRenewAccount)
+                .setSymbol(symbol)
+                .setName(name)
+                .setKycKey(kycKey)
+                .setAdminKey(adminKey)
+                .setFreezeKey(freezeKey)
+                .setSupplyKey(supplyKey)
+                .setWipeKey(wipeKey)
+                .build();
         setTxn();
     }
 
     private void setTxn() {
-        txn =
-                TransactionBody.newBuilder()
-                        .setTransactionID(
-                                TransactionID.newBuilder()
-                                        .setTransactionValidStart(
-                                                Timestamp.newBuilder().setSeconds(now)))
-                        .setTokenUpdate(op)
-                        .build();
+        txn = TransactionBody.newBuilder()
+                .setTransactionID(TransactionID.newBuilder()
+                        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(now)))
+                .setTokenUpdate(op)
+                .build();
     }
 }

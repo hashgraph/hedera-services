@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.GetApprovedPrecompile.decodeGetApproved;
@@ -27,20 +28,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class GetApprovedPrecompileTest {
-    private static final Bytes GET_APPROVED_INPUT_ERC =
-            Bytes.fromHexString(
-                    "0x618dc65e00000000000000000000000000000000000003ec081812fc0000000000000000000000000000000000000000000000000000000000000001");
+    private static final Bytes GET_APPROVED_INPUT_ERC = Bytes.fromHexString(
+            "0x618dc65e00000000000000000000000000000000000003ec081812fc0000000000000000000000000000000000000000000000000000000000000001");
 
-    private static final Bytes GET_APPROVED_LONG_OVERFLOWN =
-            Bytes.fromHexString(
-                    "0x618dc65e00000000000000000000000000000000000003ec081812fc0000000000000000000000000000000000000000000000010000000000000001");
-    private static final Bytes GET_APPROVED_INPUT_HAPI =
-            Bytes.fromHexString(
-                    "0x098f236600000000000000000000000000000000000000000000000000000000000012340000000000000000000000000000000000000000000000000000000000000001");
+    private static final Bytes GET_APPROVED_LONG_OVERFLOWN = Bytes.fromHexString(
+            "0x618dc65e00000000000000000000000000000000000003ec081812fc0000000000000000000000000000000000000000000000010000000000000001");
+    private static final Bytes GET_APPROVED_INPUT_HAPI = Bytes.fromHexString(
+            "0x098f236600000000000000000000000000000000000000000000000000000000000012340000000000000000000000000000000000000000000000000000000000000001");
 
     private static final long TOKEN_NUM_HAPI_TOKEN = 0x1234;
 
-    private static final TokenID TOKEN_ID = TokenID.newBuilder().setTokenNum(1004).build();
+    private static final TokenID TOKEN_ID =
+            TokenID.newBuilder().setTokenNum(1004).build();
 
     @Test
     void decodeGetApprovedInputERC() {
@@ -52,9 +51,7 @@ class GetApprovedPrecompileTest {
 
     @Test
     void decodeGetApprovedShouldThrowOnSerialNoOverflown() {
-        assertThrows(
-                ArithmeticException.class,
-                () -> decodeGetApproved(GET_APPROVED_LONG_OVERFLOWN, TOKEN_ID));
+        assertThrows(ArithmeticException.class, () -> decodeGetApproved(GET_APPROVED_LONG_OVERFLOWN, TOKEN_ID));
     }
 
     @Test

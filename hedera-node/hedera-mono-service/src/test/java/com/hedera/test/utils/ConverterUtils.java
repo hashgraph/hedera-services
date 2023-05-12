@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.utils;
 
 import org.junit.jupiter.params.converter.ArgumentConversionException;
@@ -47,10 +48,7 @@ public final class ConverterUtils {
      *     operation
      */
     static String[] getPartsIfValid(
-            final String inputString,
-            final int exactNumberOfParts,
-            final String delimiter,
-            final String type)
+            final String inputString, final int exactNumberOfParts, final String delimiter, final String type)
             throws ArgumentConversionException {
         final var parts = inputString.split(delimiter, exactNumberOfParts);
         if (exactNumberOfParts != parts.length && exactNumberOfParts > 0) {

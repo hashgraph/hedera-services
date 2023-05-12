@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.records;
 
 import static com.hedera.node.app.service.mono.utils.Units.MIN_TRANS_TIMESTAMP_INCR_NANOS;
@@ -75,8 +76,7 @@ public class ConsensusTimeTracker {
 
     @Inject
     public ConsensusTimeTracker(
-            final GlobalDynamicProperties properties,
-            final Supplier<MerkleNetworkContext> networkCtx) {
+            final GlobalDynamicProperties properties, final Supplier<MerkleNetworkContext> networkCtx) {
         this(properties, networkCtx, DEFAULT_NANOS_PER_INCORPORATE_CALL);
     }
 
@@ -89,8 +89,7 @@ public class ConsensusTimeTracker {
         maxFollowingRecords = properties.maxFollowingRecords();
         this.nanosBetweenIncorporateCalls = nanosBetweenIncorporateCalls;
         if (nanosBetweenIncorporateCalls < (maxFollowingRecords + maxPrecedingRecords + 10)) {
-            throw new IllegalArgumentException(
-                    "TransactionHandler.MIN_TRANS_TIMESTAMP_INCR_NANOS is too small!");
+            throw new IllegalArgumentException("TransactionHandler.MIN_TRANS_TIMESTAMP_INCR_NANOS is too small!");
         }
         this.properties = properties;
         this.networkCtx = networkCtx;
@@ -169,9 +168,8 @@ public class ConsensusTimeTracker {
     public Instant firstTransactionTime() {
 
         if (firstUsed) {
-            throw new IllegalStateException(
-                    "firstTransactionTime can only be used once, before nextTransactionTime is"
-                            + " called, per incorporateConsensusTxn call!");
+            throw new IllegalStateException("firstTransactionTime can only be used once, before nextTransactionTime is"
+                    + " called, per incorporateConsensusTxn call!");
         }
 
         firstUsed = true;
@@ -258,8 +256,7 @@ public class ConsensusTimeTracker {
         return (time < currentTxnTime) && (time >= currentTxnMinTime);
     }
 
-    private Instant nextTime(
-            final boolean canTriggerTxn, final long maxPreceding, final long maxFollowing) {
+    private Instant nextTime(final boolean canTriggerTxn, final long maxPreceding, final long maxFollowing) {
 
         if (!hasMoreTime(canTriggerTxn, maxPreceding, maxFollowing)) {
             log.error("Cannot get more transaction times! {}", this);
@@ -280,8 +277,7 @@ public class ConsensusTimeTracker {
         return minConsensusTime.plusNanos(currentTxnTime);
     }
 
-    private boolean hasMoreTime(
-            boolean canTriggerTxn, final long maxPreceding, final long maxFollowing) {
+    private boolean hasMoreTime(boolean canTriggerTxn, final long maxPreceding, final long maxFollowing) {
         long next = currentTxnTime + followingRecordsCount;
 
         if (next > currentTxnMaxTime) {

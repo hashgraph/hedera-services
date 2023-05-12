@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.factories.scenarios;
 
 import static com.hedera.test.factories.txns.TokenUnpauseFactory.newSignedTokenUnpause;
@@ -23,11 +24,10 @@ public enum TokenUnpauseScenarios implements TxnHandlingScenario {
     VALID_UNPAUSE_WITH_EXTANT_TOKEN {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(
-                    newSignedTokenUnpause()
-                            .unPausing(KNOWN_TOKEN_WITH_PAUSE)
-                            .nonPayerKts(TOKEN_PAUSE_KT)
-                            .get());
+            return PlatformTxnAccessor.from(newSignedTokenUnpause()
+                    .unPausing(KNOWN_TOKEN_WITH_PAUSE)
+                    .nonPayerKts(TOKEN_PAUSE_KT)
+                    .get());
         }
     },
 }

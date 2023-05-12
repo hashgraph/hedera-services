@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,8 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_IS_IMMUTABLE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_ALLOWANCE_SPENDER_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_FROM_IMMUTABLE_SENDER_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_MISSING_ACCOUNT_SCENARIO;
@@ -56,582 +61,366 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.NO_RECEIVE
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.RECEIVER_SIG_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SECOND_TOKEN_SENDER_KT;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
-import static com.hedera.test.utils.KeyUtils.sanityRestored;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
 
-import com.hedera.node.app.service.token.impl.ReadableTokenStore;
+import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
-import com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils;
-import com.hedera.node.app.spi.AccountKeyLookup;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
-import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.junit.jupiter.api.BeforeEach;
+import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import org.junit.jupiter.api.Test;
 
-class CryptoTransferHandlerParityTest {
-    private AccountKeyLookup keyLookup;
-    private ReadableTokenStore readableTokenStore;
-
+class CryptoTransferHandlerParityTest extends ParityTestBase {
     private final CryptoTransferHandler subject = new CryptoTransferHandler();
 
-    @BeforeEach
-    void setUp() {
-        keyLookup = AdapterUtils.wellKnownKeyLookupAt();
-        readableTokenStore = SigReqAdapterUtils.wellKnownTokenStoreAt();
-    }
-
     @Test
-    void cryptoTransferTokenReceiverIsMissingAliasScenario() {
+    void cryptoTransferTokenReceiverIsMissingAliasScenario() throws PreCheckException {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_TOKEN_RECEIVER_IS_MISSING_ALIAS_SCENARIO);
-        final var meta =
-                subject.preHandle(
-                        theTxn,
-                        theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
-                        readableTokenStore);
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertTrue(meta.requiredNonPayerKeys().isEmpty());
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        subject.preHandle(context);
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertTrue(context.requiredNonPayerKeys().isEmpty());
     }
 
     @Test
-    void cryptoTransferReceiverIsMissingAliasScenario() {
+    void cryptoTransferReceiverIsMissingAliasScenario() throws PreCheckException {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_RECEIVER_IS_MISSING_ALIAS_SCENARIO);
-        final var meta =
-                subject.preHandle(
-                        theTxn,
-                        theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
-                        readableTokenStore);
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(
-                sanityRestored(meta.requiredNonPayerKeys()),
-                contains(FIRST_TOKEN_SENDER_KT.asKey()));
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        subject.preHandle(context);
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertThat(context.requiredNonPayerKeys(), contains(FIRST_TOKEN_SENDER_KT.asPbjKey()));
     }
 
     @Test
-    void tokenTransactWithOwnershipChangeNoSigReqWithFallbackWhenReceiverIsTreasury() {
+    void tokenTransactWithOwnershipChangeNoSigReqWithFallbackWhenReceiverIsTreasury() throws PreCheckException {
         final var theTxn =
-                txnFrom(
-                        TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_SIG_REQ_WITH_FALLBACK_WHEN_RECEIVER_IS_TREASURY);
-        final var meta =
-                subject.preHandle(
-                        theTxn,
-                        theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
-                        readableTokenStore);
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(
-                sanityRestored(meta.requiredNonPayerKeys()), contains(NO_RECEIVER_SIG_KT.asKey()));
+                txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_SIG_REQ_WITH_FALLBACK_WHEN_RECEIVER_IS_TREASURY);
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        subject.preHandle(context);
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertTrue(context.requiredNonPayerKeys().contains(NO_RECEIVER_SIG_KT.asPbjKey()));
     }
 
     @Test
-    void cryptoTransferSenderIsMissingAliasScenario() {
+    void cryptoTransferSenderIsMissingAliasScenario() throws PreCheckException {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_SENDER_IS_MISSING_ALIAS_SCENARIO);
-        final var meta =
-                subject.preHandle(
-                        theTxn,
-                        theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
-                        readableTokenStore);
-        assertMetaFailedWithReqPayerKeyAnd(meta, INVALID_ACCOUNT_ID);
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ACCOUNT_ID);
     }
 
     @Test
-    void cryptoTransferNoReceiverSigUsingAliasScenario() {
+    void cryptoTransferNoReceiverSigUsingAliasScenario() throws PreCheckException {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_NO_RECEIVER_SIG_USING_ALIAS_SCENARIO);
-        final var meta =
-                subject.preHandle(
-                        theTxn,
-                        theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
-                        readableTokenStore);
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertTrue(meta.requiredNonPayerKeys().isEmpty());
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        subject.preHandle(context);
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertTrue(context.requiredNonPayerKeys().isEmpty());
     }
 
     @Test
-    void cryptoTransferToImmutableReceiverScenario() {
+    void cryptoTransferToImmutableReceiverScenario() throws PreCheckException {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_TO_IMMUTABLE_RECEIVER_SCENARIO);
-        final var meta =
-                subject.preHandle(
-                        theTxn,
-                        theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
-                        readableTokenStore);
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(
-                sanityRestored(meta.requiredNonPayerKeys()),
-                contains(FIRST_TOKEN_SENDER_KT.asKey()));
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        subject.preHandle(context);
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertThat(context.requiredNonPayerKeys(), contains(FIRST_TOKEN_SENDER_KT.asPbjKey()));
     }
 
     @Test
-    void cryptoTransferTokenToImmutableReceiverScenario() {
+    void cryptoTransferTokenToImmutableReceiverScenario() throws PreCheckException {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_TOKEN_TO_IMMUTABLE_RECEIVER_SCENARIO);
-        final var meta =
-                subject.preHandle(
-                        theTxn,
-                        theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
-                        readableTokenStore);
-        // THEN
-        //        assertMetaFailedWith(meta, INVALID_ACCOUNT_ID);
-        // NOW
-        assertMetaFailedWithReqPayerKeyAnd(meta, ACCOUNT_IS_IMMUTABLE);
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        assertThrowsPreCheck(() -> subject.preHandle(context), ACCOUNT_IS_IMMUTABLE);
     }
 
     @Test
-    void cryptoTransferNftFromMissingSenderScenario() {
+    void cryptoTransferNftFromMissingSenderScenario() throws PreCheckException {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_NFT_FROM_MISSING_SENDER_SCENARIO);
-        final var meta =
-                subject.preHandle(
-                        theTxn,
-                        theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
-                        readableTokenStore);
-        // THEN
-        //        assertMetaFailedWith(meta, ACCOUNT_ID_DOES_NOT_EXIST);
-        // NOW
-        assertMetaFailedWithReqPayerKeyAnd(meta, INVALID_ACCOUNT_ID);
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ACCOUNT_ID);
     }
 
     @Test
-    void cryptoTransferNftToMissingReceiverAliasScenario() {
+    void cryptoTransferNftToMissingReceiverAliasScenario() throws PreCheckException {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_NFT_TO_MISSING_RECEIVER_ALIAS_SCENARIO);
-        final var meta =
-                subject.preHandle(
-                        theTxn,
-                        theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
-                        readableTokenStore);
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(
-                sanityRestored(meta.requiredNonPayerKeys()),
-                contains(FIRST_TOKEN_SENDER_KT.asKey()));
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        subject.preHandle(context);
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertThat(context.requiredNonPayerKeys(), contains(FIRST_TOKEN_SENDER_KT.asPbjKey()));
     }
 
     @Test
-    void cryptoTransferNftFromImmutableSenderScenario() {
+    void cryptoTransferNftFromImmutableSenderScenario() throws PreCheckException {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_NFT_FROM_IMMUTABLE_SENDER_SCENARIO);
-        final var meta =
-                subject.preHandle(
-                        theTxn,
-                        theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
-                        readableTokenStore);
-        // THEN
-        //        assertMetaFailedWith(meta, INVALID_ACCOUNT_ID);
-        // NOW
-        assertMetaFailedWithReqPayerKeyAnd(meta, ACCOUNT_IS_IMMUTABLE);
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        assertThrowsPreCheck(() -> subject.preHandle(context), ACCOUNT_IS_IMMUTABLE);
     }
 
     @Test
-    void cryptoTransferNftToImmutableReceiverScenario() {
+    void cryptoTransferNftToImmutableReceiverScenario() throws PreCheckException {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_NFT_TO_IMMUTABLE_RECEIVER_SCENARIO);
-        final var meta =
-                subject.preHandle(
-                        theTxn,
-                        theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
-                        readableTokenStore);
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        // THEN
-        //        assertMetaFailedWith(meta, INVALID_ACCOUNT_ID);
-        // NOW
-        assertMetaFailedWithReqPayerKeyAnd(
-                meta, ACCOUNT_IS_IMMUTABLE, FIRST_TOKEN_SENDER_KT.asKey());
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        assertThrowsPreCheck(() -> subject.preHandle(context), ACCOUNT_IS_IMMUTABLE);
     }
 
     @Test
-    void cryptoTransferFromImmutableSenderScenario() {
+    void cryptoTransferFromImmutableSenderScenario() throws PreCheckException {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_FROM_IMMUTABLE_SENDER_SCENARIO);
-        final var meta =
-                subject.preHandle(
-                        theTxn,
-                        theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
-                        readableTokenStore);
-        // THEN
-        //        assertMetaFailedWith(meta, INVALID_ACCOUNT_ID);
-        // NOW
-        assertMetaFailedWithReqPayerKeyAnd(meta, ACCOUNT_IS_IMMUTABLE);
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        assertThrowsPreCheck(() -> subject.preHandle(context), ACCOUNT_IS_IMMUTABLE);
     }
 
     @Test
-    void cryptoTransferNoReceiverSigScenario() {
+    void cryptoTransferNoReceiverSigScenario() throws PreCheckException {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_NO_RECEIVER_SIG_SCENARIO);
-        final var meta =
-                subject.preHandle(
-                        theTxn,
-                        theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
-                        readableTokenStore);
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        subject.preHandle(context);
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
     }
 
     @Test
-    void cryptoTransferReceiverSigScenario() {
+    void cryptoTransferReceiverSigScenario() throws PreCheckException {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_RECEIVER_SIG_SCENARIO);
-        final var meta =
-                subject.preHandle(
-                        theTxn,
-                        theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
-                        readableTokenStore);
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(sanityRestored(meta.requiredNonPayerKeys()), contains(RECEIVER_SIG_KT.asKey()));
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        subject.preHandle(context);
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertThat(context.requiredNonPayerKeys(), contains(RECEIVER_SIG_KT.asPbjKey()));
     }
 
     @Test
-    void cryptoTransferReceiverSigUsingAliasScenario() {
+    void cryptoTransferReceiverSigUsingAliasScenario() throws PreCheckException {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_RECEIVER_SIG_USING_ALIAS_SCENARIO);
-        final var meta =
-                subject.preHandle(
-                        theTxn,
-                        theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
-                        readableTokenStore);
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(sanityRestored(meta.requiredNonPayerKeys()), contains(RECEIVER_SIG_KT.asKey()));
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        subject.preHandle(context);
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertThat(context.requiredNonPayerKeys(), contains(RECEIVER_SIG_KT.asPbjKey()));
     }
 
     @Test
-    void cryptoTransferMissingAccountScenario() {
+    void cryptoTransferMissingAccountScenario() throws PreCheckException {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_MISSING_ACCOUNT_SCENARIO);
-        final var meta =
-                subject.preHandle(
-                        theTxn,
-                        theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
-                        readableTokenStore);
-        assertMetaFailedWithReqPayerKeyAnd(meta, INVALID_ACCOUNT_ID);
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ACCOUNT_ID);
     }
 
     @Test
-    void tokenTransactWithExtantSenders() {
+    void tokenTransactWithExtantSenders() throws PreCheckException {
         final var theTxn = txnFrom(TOKEN_TRANSACT_WITH_EXTANT_SENDERS);
-        final var meta =
-                subject.preHandle(
-                        theTxn,
-                        theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
-                        readableTokenStore);
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(
-                sanityRestored(meta.requiredNonPayerKeys()),
-                contains(SECOND_TOKEN_SENDER_KT.asKey()));
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        subject.preHandle(context);
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertThat(context.requiredNonPayerKeys(), contains(SECOND_TOKEN_SENDER_KT.asPbjKey()));
     }
 
     @Test
-    void tokenTransactMovingHbarsWithExtantSender() {
+    void tokenTransactMovingHbarsWithExtantSender() throws PreCheckException {
         final var theTxn = txnFrom(TOKEN_TRANSACT_MOVING_HBARS_WITH_EXTANT_SENDER);
-        final var meta =
-                subject.preHandle(
-                        theTxn,
-                        theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
-                        readableTokenStore);
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(
-                sanityRestored(meta.requiredNonPayerKeys()),
-                contains(FIRST_TOKEN_SENDER_KT.asKey()));
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        subject.preHandle(context);
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertThat(context.requiredNonPayerKeys(), contains(FIRST_TOKEN_SENDER_KT.asPbjKey()));
     }
 
     @Test
-    void tokenTransactMovingHbarsWithReceiverSigReqAndExtantSender() {
-        final var theTxn =
-                txnFrom(TOKEN_TRANSACT_MOVING_HBARS_WITH_RECEIVER_SIG_REQ_AND_EXTANT_SENDER);
-        final var meta =
-                subject.preHandle(
-                        theTxn,
-                        theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
-                        readableTokenStore);
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
+    void tokenTransactMovingHbarsWithReceiverSigReqAndExtantSender() throws PreCheckException {
+        final var theTxn = txnFrom(TOKEN_TRANSACT_MOVING_HBARS_WITH_RECEIVER_SIG_REQ_AND_EXTANT_SENDER);
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        subject.preHandle(context);
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertThat(
-                sanityRestored(meta.requiredNonPayerKeys()),
-                contains(FIRST_TOKEN_SENDER_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+                context.requiredNonPayerKeys(),
+                containsInAnyOrder(FIRST_TOKEN_SENDER_KT.asPbjKey(), RECEIVER_SIG_KT.asPbjKey()));
     }
 
     @Test
-    void tokenTransactWithReceiverSigReqAndExtantSenders() {
+    void tokenTransactWithReceiverSigReqAndExtantSenders() throws PreCheckException {
         final var theTxn = txnFrom(TOKEN_TRANSACT_WITH_RECEIVER_SIG_REQ_AND_EXTANT_SENDERS);
-        final var meta =
-                subject.preHandle(
-                        theTxn,
-                        theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
-                        readableTokenStore);
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        subject.preHandle(context);
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertThat(
-                sanityRestored(meta.requiredNonPayerKeys()),
-                contains(
-                        FIRST_TOKEN_SENDER_KT.asKey(),
-                        SECOND_TOKEN_SENDER_KT.asKey(),
-                        RECEIVER_SIG_KT.asKey()));
+                context.requiredNonPayerKeys(),
+                containsInAnyOrder(
+                        FIRST_TOKEN_SENDER_KT.asPbjKey(),
+                        SECOND_TOKEN_SENDER_KT.asPbjKey(),
+                        RECEIVER_SIG_KT.asPbjKey()));
     }
 
     @Test
-    void tokenTransactWithMissingSenders() {
+    void tokenTransactWithMissingSenders() throws PreCheckException {
         final var theTxn = txnFrom(TOKEN_TRANSACT_WITH_MISSING_SENDERS);
-        final var meta =
-                subject.preHandle(
-                        theTxn,
-                        theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
-                        readableTokenStore);
-        assertMetaFailedWithReqPayerKeyAnd(meta, INVALID_ACCOUNT_ID, FIRST_TOKEN_SENDER_KT.asKey());
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ACCOUNT_ID);
     }
 
     @Test
-    void tokenTransactWithOwnershipChange() {
+    void tokenTransactWithOwnershipChange() throws PreCheckException {
         final var theTxn = txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE);
-        final var meta =
-                subject.preHandle(
-                        theTxn,
-                        theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
-                        readableTokenStore);
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(
-                sanityRestored(meta.requiredNonPayerKeys()),
-                contains(FIRST_TOKEN_SENDER_KT.asKey()));
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        subject.preHandle(context);
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertThat(context.requiredNonPayerKeys(), contains(FIRST_TOKEN_SENDER_KT.asPbjKey()));
     }
 
     @Test
-    void tokenTransactWithOwnershipChangeUsingAlias() {
+    void tokenTransactWithOwnershipChangeUsingAlias() throws PreCheckException {
         final var theTxn = txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_USING_ALIAS);
-        final var meta =
-                subject.preHandle(
-                        theTxn,
-                        theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
-                        readableTokenStore);
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(
-                sanityRestored(meta.requiredNonPayerKeys()),
-                contains(FIRST_TOKEN_SENDER_KT.asKey()));
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        subject.preHandle(context);
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertThat(context.requiredNonPayerKeys(), contains(FIRST_TOKEN_SENDER_KT.asPbjKey()));
     }
 
     @Test
-    void tokenTransactWithOwnershipChangeReceiverSigReq() {
+    void tokenTransactWithOwnershipChangeReceiverSigReq() throws PreCheckException {
         final var theTxn = txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_RECEIVER_SIG_REQ);
-        final var meta =
-                subject.preHandle(
-                        theTxn,
-                        theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
-                        readableTokenStore);
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        subject.preHandle(context);
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertThat(
-                sanityRestored(meta.requiredNonPayerKeys()),
-                contains(
-                        FIRST_TOKEN_SENDER_KT.asKey(),
-                        RECEIVER_SIG_KT.asKey(),
-                        SECOND_TOKEN_SENDER_KT.asKey()));
+                context.requiredNonPayerKeys(),
+                containsInAnyOrder(
+                        FIRST_TOKEN_SENDER_KT.asPbjKey(),
+                        RECEIVER_SIG_KT.asPbjKey(),
+                        SECOND_TOKEN_SENDER_KT.asPbjKey()));
     }
 
     @Test
-    void tokenTransactWithOwnershipChangeNoReceiverSigReq() {
+    void tokenTransactWithOwnershipChangeNoReceiverSigReq() throws PreCheckException {
         final var theTxn = txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ);
-        final var meta =
-                subject.preHandle(
-                        theTxn,
-                        theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
-                        readableTokenStore);
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        subject.preHandle(context);
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertThat(context.requiredNonPayerKeys(), contains(FIRST_TOKEN_SENDER_KT.asPbjKey()));
+    }
+
+    @Test
+    void tokenTransactWithOwnershipChangeNoReceiverSigReqButRoyaltyFeeWithFallbackTriggered() throws PreCheckException {
+        final var theTxn = txnFrom(
+                TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_BUT_ROYALTY_FEE_WITH_FALLBACK_TRIGGERED);
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        subject.preHandle(context);
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
         assertThat(
-                sanityRestored(meta.requiredNonPayerKeys()),
-                contains(FIRST_TOKEN_SENDER_KT.asKey()));
+                context.requiredNonPayerKeys(),
+                containsInAnyOrder(FIRST_TOKEN_SENDER_KT.asPbjKey(), NO_RECEIVER_SIG_KT.asPbjKey()));
     }
 
     @Test
-    void tokenTransactWithOwnershipChangeNoReceiverSigReqButRoyaltyFeeWithFallbackTriggered() {
+    void tokenTransactWithOwnershipChangeNoSigReqWithFallbackTriggeredButSenderIsTreasury() throws PreCheckException {
         final var theTxn =
-                txnFrom(
-                        TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_BUT_ROYALTY_FEE_WITH_FALLBACK_TRIGGERED);
-        final var meta =
-                subject.preHandle(
-                        theTxn,
-                        theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
-                        readableTokenStore);
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        System.out.println(sanityRestored(meta.requiredNonPayerKeys()));
-        assertThat(
-                sanityRestored(meta.requiredNonPayerKeys()),
-                contains(
-                        FIRST_TOKEN_SENDER_KT.asKey(),
-                        NO_RECEIVER_SIG_KT.asKey(),
-                        FIRST_TOKEN_SENDER_KT.asKey()));
+                txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_SIG_REQ_WITH_FALLBACK_TRIGGERED_BUT_SENDER_IS_TREASURY);
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        subject.preHandle(context);
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertTrue(context.requiredNonPayerKeys().contains(MISC_ACCOUNT_KT.asPbjKey()));
     }
 
     @Test
-    void tokenTransactWithOwnershipChangeNoSigReqWithFallbackTriggeredButSenderIsTreasury() {
+    void tokenTransactWithOwnershipChangeNoReceiverSigReqAndFallbackNotTriggeredDueToHbar() throws PreCheckException {
+        final var theTxn = txnFrom(
+                TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_FALLBACK_NOT_TRIGGERED_DUE_TO_HBAR);
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        subject.preHandle(context);
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertThat(context.requiredNonPayerKeys(), contains(FIRST_TOKEN_SENDER_KT.asPbjKey()));
+    }
+
+    @Test
+    void tokenTransactWithOwnershipChangeNoReceiverSigReqAndFallbackNotTriggeredDueToFt() throws PreCheckException {
         final var theTxn =
-                txnFrom(
-                        TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_SIG_REQ_WITH_FALLBACK_TRIGGERED_BUT_SENDER_IS_TREASURY);
-        final var meta =
-                subject.preHandle(
-                        theTxn,
-                        theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
-                        readableTokenStore);
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(sanityRestored(meta.requiredNonPayerKeys()), contains(MISC_ACCOUNT_KT.asKey()));
+                txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_FALLBACK_NOT_TRIGGERED_DUE_TO_FT);
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        subject.preHandle(context);
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertThat(context.requiredNonPayerKeys(), contains(FIRST_TOKEN_SENDER_KT.asPbjKey()));
     }
 
     @Test
-    void tokenTransactWithOwnershipChangeNoReceiverSigReqAndFallbackNotTriggeredDueToHbar() {
-        final var theTxn =
-                txnFrom(
-                        TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_FALLBACK_NOT_TRIGGERED_DUE_TO_HBAR);
-        final var meta =
-                subject.preHandle(
-                        theTxn,
-                        theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
-                        readableTokenStore);
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(
-                sanityRestored(meta.requiredNonPayerKeys()),
-                contains(FIRST_TOKEN_SENDER_KT.asKey()));
+    void tokenTransactWithOwnershipChangeNoReceiverSigReqAndMissingToken() throws PreCheckException {
+        final var theTxn = txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_MISSING_TOKEN);
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_TOKEN_ID);
     }
 
     @Test
-    void tokenTransactWithOwnershipChangeNoReceiverSigReqAndFallbackNotTriggeredDueToFt() {
-        final var theTxn =
-                txnFrom(
-                        TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_FALLBACK_NOT_TRIGGERED_DUE_TO_FT);
-        final var meta =
-                subject.preHandle(
-                        theTxn,
-                        theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
-                        readableTokenStore);
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(
-                sanityRestored(meta.requiredNonPayerKeys()),
-                contains(FIRST_TOKEN_SENDER_KT.asKey()));
-    }
-
-    @Test
-    void tokenTransactWithOwnershipChangeNoReceiverSigReqAndMissingToken() {
-        final var theTxn =
-                txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_MISSING_TOKEN);
-        final var meta =
-                subject.preHandle(
-                        theTxn,
-                        theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
-                        readableTokenStore);
-        assertMetaFailedWithReqPayerKeyAnd(meta, INVALID_TOKEN_ID);
-    }
-
-    @Test
-    void tokenTransactWithOwnershipChangeMissingSender() {
+    void tokenTransactWithOwnershipChangeMissingSender() throws PreCheckException {
         final var theTxn = txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_MISSING_SENDER);
-        final var meta =
-                subject.preHandle(
-                        theTxn,
-                        theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
-                        readableTokenStore);
-        assertMetaFailedWithReqPayerKeyAnd(meta, INVALID_ACCOUNT_ID);
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ACCOUNT_ID);
     }
 
     @Test
-    void tokenTransactWithOwnershipChangeMissingReceiver() {
+    void tokenTransactWithOwnershipChangeMissingReceiver() throws PreCheckException {
         final var theTxn = txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_MISSING_RECEIVER);
-        final var meta =
-                subject.preHandle(
-                        theTxn,
-                        theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
-                        readableTokenStore);
-        assertMetaFailedWithReqPayerKeyAnd(meta, INVALID_ACCOUNT_ID, FIRST_TOKEN_SENDER_KT.asKey());
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ACCOUNT_ID);
     }
 
     @Test
-    void cryptoTransferAllowanceSpenderScenario() {
+    void cryptoTransferAllowanceSpenderScenario() throws PreCheckException {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_ALLOWANCE_SPENDER_SCENARIO);
-        final var meta =
-                subject.preHandle(
-                        theTxn,
-                        theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
-                        readableTokenStore);
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        subject.preHandle(context);
 
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertTrue(meta.requiredNonPayerKeys().isEmpty());
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertTrue(context.requiredNonPayerKeys().isEmpty());
     }
 
     @Test
-    void tokenTransferAllowanceSpenderScenario() {
+    void tokenTransferAllowanceSpenderScenario() throws PreCheckException {
         final var theTxn = txnFrom(TOKEN_TRANSFER_ALLOWANCE_SPENDER_SCENARIO);
-        final var meta =
-                subject.preHandle(
-                        theTxn,
-                        theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
-                        readableTokenStore);
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertTrue(meta.requiredNonPayerKeys().isEmpty());
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        subject.preHandle(context);
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertTrue(context.requiredNonPayerKeys().isEmpty());
     }
 
     @Test
-    void nftTransferAllowanceSpenderScenario() {
+    void nftTransferAllowanceSpenderScenario() throws PreCheckException {
         final var theTxn = txnFrom(NFT_TRANSFER_ALLOWANCE_SPENDER_SCENARIO);
-        final var meta =
-                subject.preHandle(
-                        theTxn,
-                        theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
-                        readableTokenStore);
+        final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+        context.registerStore(ReadableTokenStore.class, readableTokenStore);
+        subject.preHandle(context);
 
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertTrue(meta.requiredNonPayerKeys().isEmpty());
-    }
-
-    @Test
-    void handleNotImplemented() {
-        final var metaToHandle = mock(TransactionMetadata.class);
-
-        assertThrows(UnsupportedOperationException.class, () -> subject.handle(metaToHandle));
-    }
-
-    private void assertMetaFailedWithReqPayerKeyAnd(
-            final TransactionMetadata meta, final ResponseCodeEnum expectedFailure) {
-        assertTrue(meta.failed());
-        assertEquals(expectedFailure, meta.status());
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertTrue(meta.requiredNonPayerKeys().isEmpty());
-    }
-
-    private void assertMetaFailedWithReqPayerKeyAnd(
-            final TransactionMetadata meta,
-            final ResponseCodeEnum expectedFailure,
-            final Key aNonPayerKey) {
-        assertTrue(meta.failed());
-        assertEquals(expectedFailure, meta.status());
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(sanityRestored(meta.requiredNonPayerKeys()), contains(aNonPayerKey));
-    }
-
-    private TransactionBody txnFrom(final TxnHandlingScenario scenario) {
-        try {
-            return scenario.platformTxn().getTxn();
-        } catch (final Throwable e) {
-            throw new RuntimeException(e);
-        }
+        assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+        assertTrue(context.requiredNonPayerKeys().isEmpty());
     }
 }

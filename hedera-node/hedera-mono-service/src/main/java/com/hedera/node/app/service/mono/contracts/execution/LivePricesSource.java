@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.execution;
 
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getTinybarsFromTinyCents;
@@ -61,7 +62,8 @@ public class LivePricesSource implements PricesAndFeesProvider {
             final Instant now,
             final HederaFunctionality function,
             final ToLongFunction<FeeComponents> resourcePriceFn) {
-        final var timestamp = Timestamp.newBuilder().setSeconds(now.getEpochSecond()).build();
+        final var timestamp =
+                Timestamp.newBuilder().setSeconds(now.getEpochSecond()).build();
         long feeInTinyCents = currentFeeInTinycents(now, function, resourcePriceFn);
         long feeInTinyBars = getTinybarsFromTinyCents(exchange.rate(timestamp), feeInTinyCents);
         final var unscaledPrice = Math.max(1L, feeInTinyBars);
@@ -79,7 +81,8 @@ public class LivePricesSource implements PricesAndFeesProvider {
             final Instant now,
             final HederaFunctionality function,
             final ToLongFunction<FeeComponents> resourcePriceFn) {
-        final var timestamp = Timestamp.newBuilder().setSeconds(now.getEpochSecond()).build();
+        final var timestamp =
+                Timestamp.newBuilder().setSeconds(now.getEpochSecond()).build();
         final var prices = usagePrices.defaultPricesGiven(function, timestamp);
 
         /* Fee schedule prices are set in thousandths of a tinycent */

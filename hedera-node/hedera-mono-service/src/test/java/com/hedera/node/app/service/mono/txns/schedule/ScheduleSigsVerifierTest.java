@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.schedule;
 
 import static com.hedera.node.app.service.mono.keys.HederaKeyActivation.INVALID_MISSING_SIG;
@@ -45,19 +46,41 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ScheduleSigsVerifierTest {
 
-    @Mock private JKey key1;
+    @Mock
+    private JKey key1;
+
     private final byte[] key1Bytes = new byte[] {1};
-    @Mock private JKey key2;
-    @Mock private JKey key3;
+
+    @Mock
+    private JKey key2;
+
+    @Mock
+    private JKey key3;
+
     private final byte[] key3Bytes = new byte[] {1, 1, 1};
-    @Mock private JKey key4;
+
+    @Mock
+    private JKey key4;
+
     private final byte[] key4Bytes = new byte[] {1, 1, 1, 1};
-    @Mock private CharacteristicsFactory characteristics;
-    @Mock private SigRequirements workingSigReqs;
-    @Mock private ScheduleVirtualValue schedule;
-    @Mock private SigningOrderResult keysForOtherParties;
-    @Mock private KeyActivationCharacteristics inferredCharacteristics;
-    @Mock private TransactionBody txnBody;
+
+    @Mock
+    private CharacteristicsFactory characteristics;
+
+    @Mock
+    private SigRequirements workingSigReqs;
+
+    @Mock
+    private ScheduleVirtualValue schedule;
+
+    @Mock
+    private SigningOrderResult keysForOtherParties;
+
+    @Mock
+    private KeyActivationCharacteristics inferredCharacteristics;
+
+    @Mock
+    private TransactionBody txnBody;
 
     private ScheduleSigsVerifier subject;
 
@@ -73,8 +96,7 @@ class ScheduleSigsVerifierTest {
         given(workingSigReqs.keysForOtherParties(txnBody, CODE_ORDER_RESULT_FACTORY))
                 .willReturn(keysForOtherParties);
         given(keysForOtherParties.hasErrorReport()).willReturn(false);
-        given(keysForOtherParties.getOrderedKeys())
-                .willReturn(ImmutableList.of(key1, key2, key3, key4));
+        given(keysForOtherParties.getOrderedKeys()).willReturn(ImmutableList.of(key1, key2, key3, key4));
         given(characteristics.inferredFor(txnBody)).willReturn(inferredCharacteristics);
         given(key1.isForScheduledTxn()).willReturn(true);
         given(key2.isForScheduledTxn()).willReturn(false);
@@ -87,13 +109,12 @@ class ScheduleSigsVerifierTest {
         given(schedule.hasValidSignatureFor(key3Bytes)).willReturn(true);
         given(schedule.hasValidSignatureFor(key4Bytes)).willReturn(true);
 
-        subject.activation =
-                (key, sigsFn, tests, characteristics) -> {
-                    assertEquals(INVALID_MISSING_SIG, sigsFn.apply(null));
-                    assertEquals(characteristics, inferredCharacteristics);
-                    assertTrue(key == key1 || key == key2 || key == key3 || key == key4);
-                    return tests.test(key, null);
-                };
+        subject.activation = (key, sigsFn, tests, characteristics) -> {
+            assertEquals(INVALID_MISSING_SIG, sigsFn.apply(null));
+            assertEquals(characteristics, inferredCharacteristics);
+            assertTrue(key == key1 || key == key2 || key == key3 || key == key4);
+            return tests.test(key, null);
+        };
 
         assertTrue(subject.areAllKeysActive(schedule));
 
@@ -115,8 +136,7 @@ class ScheduleSigsVerifierTest {
         given(workingSigReqs.keysForOtherParties(txnBody, CODE_ORDER_RESULT_FACTORY))
                 .willReturn(keysForOtherParties);
         given(keysForOtherParties.hasErrorReport()).willReturn(false);
-        given(keysForOtherParties.getOrderedKeys())
-                .willReturn(ImmutableList.of(key1, key2, key3, key4));
+        given(keysForOtherParties.getOrderedKeys()).willReturn(ImmutableList.of(key1, key2, key3, key4));
         given(characteristics.inferredFor(txnBody)).willReturn(inferredCharacteristics);
         given(key1.isForScheduledTxn()).willReturn(true);
         given(key2.isForScheduledTxn()).willReturn(false);
@@ -126,13 +146,12 @@ class ScheduleSigsVerifierTest {
         given(schedule.hasValidSignatureFor(key1Bytes)).willReturn(true);
         given(schedule.hasValidSignatureFor(key3Bytes)).willReturn(true);
 
-        subject.activation =
-                (key, sigsFn, tests, characteristics) -> {
-                    assertEquals(INVALID_MISSING_SIG, sigsFn.apply(null));
-                    assertEquals(characteristics, inferredCharacteristics);
-                    assertTrue(key == key1 || key == key2 || key == key3);
-                    return tests.test(key, null);
-                };
+        subject.activation = (key, sigsFn, tests, characteristics) -> {
+            assertEquals(INVALID_MISSING_SIG, sigsFn.apply(null));
+            assertEquals(characteristics, inferredCharacteristics);
+            assertTrue(key == key1 || key == key2 || key == key3);
+            return tests.test(key, null);
+        };
 
         given(schedule.hasValidSignatureFor(key3Bytes)).willReturn(false);
 
@@ -173,10 +192,9 @@ class ScheduleSigsVerifierTest {
         given(keysForOtherParties.getOrderedKeys()).willReturn(ImmutableList.of());
         given(characteristics.inferredFor(txnBody)).willReturn(inferredCharacteristics);
 
-        subject.activation =
-                (key, sigsFn, tests, characteristics) -> {
-                    throw new IllegalStateException();
-                };
+        subject.activation = (key, sigsFn, tests, characteristics) -> {
+            throw new IllegalStateException();
+        };
 
         assertTrue(subject.areAllKeysActive(schedule));
 
@@ -198,9 +216,12 @@ class ScheduleSigsVerifierTest {
 
     @Test
     void getTransactionBodyWorksAsExpected() {
-        given(schedule.bodyBytes()).willReturn(TransactionBody.newBuilder().build().toByteArray());
+        given(schedule.bodyBytes())
+                .willReturn(TransactionBody.newBuilder().build().toByteArray());
 
-        assertEquals(subject.getTransactionBody(schedule), TransactionBody.newBuilder().build());
+        assertEquals(
+                subject.getTransactionBody(schedule),
+                TransactionBody.newBuilder().build());
     }
 
     @Test

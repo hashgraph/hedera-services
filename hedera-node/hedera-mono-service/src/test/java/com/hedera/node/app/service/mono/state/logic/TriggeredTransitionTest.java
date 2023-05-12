@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.logic;
 
 import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
@@ -47,38 +48,55 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class TriggeredTransitionTest {
-    private final JKey activePayerKey =
-            new JEd25519Key("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes());
+    private final JKey activePayerKey = new JEd25519Key("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes());
     private final Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 890);
     private final FeeObject fee = new FeeObject(1, 2, 3);
     private static final ScheduleID scheduleId = IdUtils.asSchedule("0.0.333333");
 
-    @Mock private SignedTxnAccessor accessor;
-    @Mock private StateView currentView;
-    @Mock private FeeCalculator fees;
-    @Mock private FeeChargingPolicy chargingPolicy;
-    @Mock private NetworkCtxManager networkCtxManager;
-    @Mock private RequestedTransition requestedTransition;
-    @Mock private TransactionContext txnCtx;
-    @Mock private NetworkUtilization networkUtilization;
-    @Mock private ScheduleStore scheduleStore;
-    @Mock private SigImpactHistorian sigImpactHistorian;
+    @Mock
+    private SignedTxnAccessor accessor;
+
+    @Mock
+    private StateView currentView;
+
+    @Mock
+    private FeeCalculator fees;
+
+    @Mock
+    private FeeChargingPolicy chargingPolicy;
+
+    @Mock
+    private NetworkCtxManager networkCtxManager;
+
+    @Mock
+    private RequestedTransition requestedTransition;
+
+    @Mock
+    private TransactionContext txnCtx;
+
+    @Mock
+    private NetworkUtilization networkUtilization;
+
+    @Mock
+    private ScheduleStore scheduleStore;
+
+    @Mock
+    private SigImpactHistorian sigImpactHistorian;
 
     private TriggeredTransition subject;
 
     @BeforeEach
     void setUp() {
-        subject =
-                new TriggeredTransition(
-                        currentView,
-                        fees,
-                        chargingPolicy,
-                        txnCtx,
-                        sigImpactHistorian,
-                        networkCtxManager,
-                        requestedTransition,
-                        scheduleStore,
-                        networkUtilization);
+        subject = new TriggeredTransition(
+                currentView,
+                fees,
+                chargingPolicy,
+                txnCtx,
+                sigImpactHistorian,
+                networkCtxManager,
+                requestedTransition,
+                scheduleStore,
+                networkUtilization);
     }
 
     @Test
@@ -86,7 +104,8 @@ class TriggeredTransitionTest {
         given(txnCtx.accessor()).willReturn(accessor);
         given(txnCtx.consensusTime()).willReturn(consensusNow);
         given(txnCtx.activePayerKey()).willReturn(activePayerKey);
-        given(fees.computeFee(accessor, activePayerKey, currentView, consensusNow)).willReturn(fee);
+        given(fees.computeFee(accessor, activePayerKey, currentView, consensusNow))
+                .willReturn(fee);
         given(chargingPolicy.applyForTriggered(fee)).willReturn(OK);
         given(networkUtilization.screenForAvailableCapacity()).willReturn(true);
 
@@ -105,7 +124,8 @@ class TriggeredTransitionTest {
         given(txnCtx.accessor()).willReturn(accessor);
         given(txnCtx.consensusTime()).willReturn(consensusNow);
         given(txnCtx.activePayerKey()).willReturn(activePayerKey);
-        given(fees.computeFee(accessor, activePayerKey, currentView, consensusNow)).willReturn(fee);
+        given(fees.computeFee(accessor, activePayerKey, currentView, consensusNow))
+                .willReturn(fee);
         given(chargingPolicy.applyForTriggered(fee)).willReturn(OK);
 
         // when:
@@ -123,7 +143,8 @@ class TriggeredTransitionTest {
         given(txnCtx.accessor()).willReturn(accessor);
         given(txnCtx.consensusTime()).willReturn(consensusNow);
         given(txnCtx.activePayerKey()).willReturn(activePayerKey);
-        given(fees.computeFee(accessor, activePayerKey, currentView, consensusNow)).willReturn(fee);
+        given(fees.computeFee(accessor, activePayerKey, currentView, consensusNow))
+                .willReturn(fee);
         given(chargingPolicy.applyForTriggered(fee)).willReturn(INSUFFICIENT_TX_FEE);
 
         // when:
@@ -166,8 +187,7 @@ class TriggeredTransitionTest {
         given(txnCtx.consensusTime()).willReturn(consensusNow);
         given(accessor.isTriggeredTxn()).willReturn(true);
         given(accessor.getScheduleRef()).willReturn(scheduleId);
-        given(scheduleStore.markAsExecuted(scheduleId, consensusNow))
-                .willReturn(INVALID_SCHEDULE_ID);
+        given(scheduleStore.markAsExecuted(scheduleId, consensusNow)).willReturn(INVALID_SCHEDULE_ID);
 
         // when:
         subject.run();
@@ -188,7 +208,8 @@ class TriggeredTransitionTest {
         given(txnCtx.consensusTime()).willReturn(consensusNow);
         given(txnCtx.activePayerKey()).willReturn(activePayerKey);
         given(accessor.isTriggeredTxn()).willReturn(true);
-        given(fees.computeFee(accessor, activePayerKey, currentView, consensusNow)).willReturn(fee);
+        given(fees.computeFee(accessor, activePayerKey, currentView, consensusNow))
+                .willReturn(fee);
         given(chargingPolicy.applyForTriggered(fee)).willReturn(OK);
         given(networkUtilization.screenForAvailableCapacity()).willReturn(true);
         given(accessor.getScheduleRef()).willReturn(null);

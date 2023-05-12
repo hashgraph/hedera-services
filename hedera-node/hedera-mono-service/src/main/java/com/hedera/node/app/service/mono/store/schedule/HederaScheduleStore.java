@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.schedule;
 
 /*
@@ -54,7 +55,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_PENDI
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
-import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
+import com.hedera.node.app.service.mono.state.logic.ScheduledTransactions;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEqualityVirtualKey;
@@ -89,7 +90,7 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
     static final ScheduleID NO_PENDING_ID = ScheduleID.getDefaultInstance();
 
     private final GlobalDynamicProperties properties;
-    private final Supplier<MerkleScheduledTransactions> schedules;
+    private final Supplier<ScheduledTransactions> schedules;
 
     ScheduleID pendingId = NO_PENDING_ID;
     ScheduleVirtualValue pendingCreation;
@@ -98,7 +99,7 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
     public HederaScheduleStore(
             final GlobalDynamicProperties properties,
             final EntityIdSource ids,
-            final Supplier<MerkleScheduledTransactions> schedules) {
+            final Supplier<ScheduledTransactions> schedules) {
         super(ids);
         this.schedules = schedules;
         this.properties = properties;
@@ -165,11 +166,8 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
             }
 
             if (schedule.expirationTimeProvided()
-                    .isAfter(
-                            new RichInstant(
-                                    consensusTime.getSeconds()
-                                            + properties.schedulingMaxExpirationFutureSeconds(),
-                                    0))) {
+                    .isAfter(new RichInstant(
+                            consensusTime.getSeconds() + properties.schedulingMaxExpirationFutureSeconds(), 0))) {
                 return failure(SCHEDULE_EXPIRATION_TIME_TOO_FAR_IN_FUTURE);
             }
 
@@ -177,9 +175,7 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 
         } else {
             schedule.setCalculatedExpirationTime(
-                    new RichInstant(
-                            consensusTime.getSeconds() + properties.scheduledTxExpiryTimeSecs(),
-                            0));
+                    new RichInstant(consensusTime.getSeconds() + properties.scheduledTxExpiryTimeSecs(), 0));
         }
 
         if (!properties.schedulingLongTermEnabled()) {
@@ -193,10 +189,7 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
             validity = usableOrElse(schedule.payer().toGrpcAccountId(), INVALID_SCHEDULE_PAYER_ID);
         }
         if (validity == OK) {
-            validity =
-                    usableOrElse(
-                            schedule.schedulingAccount().toGrpcAccountId(),
-                            INVALID_SCHEDULE_ACCOUNT_ID);
+            validity = usableOrElse(schedule.schedulingAccount().toGrpcAccountId(), INVALID_SCHEDULE_ACCOUNT_ID);
         }
         if (validity != OK) {
             return failure(validity);
@@ -231,9 +224,8 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
         final var id = new EntityNumVirtualKey(fromScheduleId(pendingId));
         schedules.get().byId().put(id, pendingCreation);
 
-        final var secondKey =
-                new SecondSinceEpocVirtualKey(
-                        pendingCreation.calculatedExpirationTime().getSeconds());
+        final var secondKey = new SecondSinceEpocVirtualKey(
+                pendingCreation.calculatedExpirationTime().getSeconds());
 
         var bySecond = schedules.get().byExpirationSecond().get(secondKey);
 
@@ -243,8 +235,7 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
             bySecond = bySecond.asWritable();
         }
 
-        bySecond.add(
-                pendingCreation.calculatedExpirationTime(), new LongArrayList(id.getKeyAsLong()));
+        bySecond.add(pendingCreation.calculatedExpirationTime(), new LongArrayList(id.getKeyAsLong()));
 
         schedules.get().byExpirationSecond().put(secondKey, bySecond);
 
@@ -266,7 +257,8 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
                 > pendingCreation.calculatedExpirationTime().getSeconds()) {
             schedules
                     .get()
-                    .setCurrentMinSecond(pendingCreation.calculatedExpirationTime().getSeconds());
+                    .setCurrentMinSecond(
+                            pendingCreation.calculatedExpirationTime().getSeconds());
         }
 
         resetPendingCreation();
@@ -333,8 +325,7 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
     public void expire(final ScheduleID id) {
         if (id.equals(pendingId)) {
             throw new IllegalArgumentException(
-                    String.format(
-                            "Argument 'id=%s' refers to a pending creation!", readableId(id)));
+                    String.format("Argument 'id=%s' refers to a pending creation!", readableId(id)));
         }
 
         throwIfMissing(id);
@@ -344,16 +335,14 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 
         if (existingSchedule != null) {
 
-            final var secondKey =
-                    new SecondSinceEpocVirtualKey(
-                            existingSchedule.calculatedExpirationTime().getSeconds());
+            final var secondKey = new SecondSinceEpocVirtualKey(
+                    existingSchedule.calculatedExpirationTime().getSeconds());
 
             var bySecond = schedules.get().byExpirationSecond().get(secondKey);
 
             if (bySecond != null) {
                 bySecond = bySecond.asWritable();
-                bySecond.removeId(
-                        existingSchedule.calculatedExpirationTime(), idToDelete.getKeyAsLong());
+                bySecond.removeId(existingSchedule.calculatedExpirationTime(), idToDelete.getKeyAsLong());
 
                 if (bySecond.getIds().isEmpty()) {
                     schedules.get().byExpirationSecond().remove(secondKey);
@@ -362,8 +351,7 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
                 }
             }
 
-            final var equalityKey =
-                    new ScheduleEqualityVirtualKey(existingSchedule.equalityCheckKey());
+            final var equalityKey = new ScheduleEqualityVirtualKey(existingSchedule.equalityCheckKey());
 
             var byEquality = schedules.get().byEquality().get(equalityKey);
 
@@ -388,10 +376,7 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
         long curSecond = schedules.get().getCurrentMinSecond();
 
         while ((consensusTime.getEpochSecond() > curSecond)
-                && (!schedules
-                        .get()
-                        .byExpirationSecond()
-                        .containsKey(new SecondSinceEpocVirtualKey(curSecond)))) {
+                && (!schedules.get().byExpirationSecond().containsKey(new SecondSinceEpocVirtualKey(curSecond)))) {
 
             ++curSecond;
             changed = true;
@@ -436,8 +421,7 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 
                     if (schedule == null) {
                         log.error(
-                                "bySecond contained a schedule that does not exist! Removing it!"
-                                        + " second={}, id={}",
+                                "bySecond contained a schedule that does not exist! Removing it!" + " second={}, id={}",
                                 curSecond,
                                 scheduleId);
                         toRemove.add(Pair.of(instant, id));
@@ -489,8 +473,7 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
             return null;
         }
 
-        final var bySecond =
-                schedules.get().byExpirationSecond().get(new SecondSinceEpocVirtualKey(curSecond));
+        final var bySecond = schedules.get().byExpirationSecond().get(new SecondSinceEpocVirtualKey(curSecond));
 
         if (bySecond != null) {
             for (final var ids : bySecond.getIds().values()) {
@@ -551,9 +534,7 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
     }
 
     private ResponseCodeEnum usabilityCheck(
-            final ScheduleID id,
-            final boolean requiresMutability,
-            @Nullable final Instant consensusTime) {
+            final ScheduleID id, final boolean requiresMutability, @Nullable final Instant consensusTime) {
         final var idRes = resolve(id);
         if (idRes == MISSING_SCHEDULE) {
             return INVALID_SCHEDULE_ID;
@@ -585,9 +566,7 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
     private void throwIfMissing(final ScheduleID id) {
         if (!exists(id)) {
             throw new IllegalArgumentException(
-                    String.format(
-                            "Argument 'id=%s' does not refer to an extant scheduled entity!",
-                            readableId(id)));
+                    String.format("Argument 'id=%s' does not refer to an extant scheduled entity!", readableId(id)));
         }
     }
 }

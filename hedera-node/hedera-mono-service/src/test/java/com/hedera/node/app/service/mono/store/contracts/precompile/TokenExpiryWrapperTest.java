@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.payer;
@@ -59,8 +60,7 @@ class TokenExpiryWrapperTest {
         assertEquals(one.hashCode(), two.hashCode());
 
         assertEquals(
-                "TokenExpiryWrapper{second=442, autoRenewAccount=accountNum: 12345\n"
-                        + ", autoRenewPeriod=555}",
+                "TokenExpiryWrapper{second=442, autoRenewAccount=accountNum: 12345\n" + ", autoRenewPeriod=555}",
                 wrapper.toString());
     }
 

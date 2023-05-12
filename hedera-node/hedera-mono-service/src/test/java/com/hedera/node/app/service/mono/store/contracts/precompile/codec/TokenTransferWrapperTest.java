@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.codec;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,22 +38,22 @@ class TokenTransferWrapperTest {
         assertEquals(token, builder.getToken());
         final var exchanges = builder.getNftTransfersList();
         assertEquals(
-                inputExchanges.stream().map(SyntheticTxnFactory.NftExchange::asGrpc).toList(),
+                inputExchanges.stream()
+                        .map(SyntheticTxnFactory.NftExchange::asGrpc)
+                        .toList(),
                 exchanges);
     }
 
     @Test
     void translatesFungibleTransfersAsExpected() {
         final var inputTransfers = wellKnownTransfers();
-        final var expectedAdjustments =
-                TokenTransferList.newBuilder()
-                        .setToken(token)
-                        .addTransfers(aaWith(anAccount, aChange))
-                        .addTransfers(aaWith(otherAccount, bChange))
-                        .addTransfers(aaWith(anotherAccount, cChange))
-                        .build();
-        final var fungibleSubject =
-                new TokenTransferWrapper(Collections.emptyList(), inputTransfers);
+        final var expectedAdjustments = TokenTransferList.newBuilder()
+                .setToken(token)
+                .addTransfers(aaWith(anAccount, aChange))
+                .addTransfers(aaWith(otherAccount, bChange))
+                .addTransfers(aaWith(anotherAccount, cChange))
+                .build();
+        final var fungibleSubject = new TokenTransferWrapper(Collections.emptyList(), inputTransfers);
 
         final var builder = fungibleSubject.asGrpcBuilder();
         assertEquals(expectedAdjustments, builder.build());
@@ -60,15 +61,17 @@ class TokenTransferWrapperTest {
 
     @Test
     void translatesNoopAsExpected() {
-        final var nothingSubject =
-                new TokenTransferWrapper(Collections.emptyList(), Collections.emptyList());
+        final var nothingSubject = new TokenTransferWrapper(Collections.emptyList(), Collections.emptyList());
 
         final var builder = nothingSubject.asGrpcBuilder();
         assertEquals(TokenTransferList.getDefaultInstance(), builder.build());
     }
 
     private AccountAmount aaWith(final AccountID account, final long amount) {
-        return AccountAmount.newBuilder().setAccountID(account).setAmount(amount).build();
+        return AccountAmount.newBuilder()
+                .setAccountID(account)
+                .setAmount(amount)
+                .build();
     }
 
     private List<SyntheticTxnFactory.NftExchange> wellKnownExchanges() {
@@ -79,12 +82,9 @@ class TokenTransferWrapperTest {
 
     private List<SyntheticTxnFactory.FungibleTokenTransfer> wellKnownTransfers() {
         return List.of(
-                new SyntheticTxnFactory.FungibleTokenTransfer(
-                        Math.abs(aChange), false, token, anAccount, null),
-                new SyntheticTxnFactory.FungibleTokenTransfer(
-                        Math.abs(bChange), false, token, null, otherAccount),
-                new SyntheticTxnFactory.FungibleTokenTransfer(
-                        Math.abs(cChange), false, token, null, anotherAccount));
+                new SyntheticTxnFactory.FungibleTokenTransfer(Math.abs(aChange), false, token, anAccount, null),
+                new SyntheticTxnFactory.FungibleTokenTransfer(Math.abs(bChange), false, token, null, otherAccount),
+                new SyntheticTxnFactory.FungibleTokenTransfer(Math.abs(cChange), false, token, null, anotherAccount));
     }
 
     private final long aSerialNo = 1_234L;

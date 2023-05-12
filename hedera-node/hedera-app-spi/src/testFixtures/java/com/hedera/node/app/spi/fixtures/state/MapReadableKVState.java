@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi.fixtures.state;
 
 import com.hedera.node.app.spi.state.ReadableKVStateBase;
@@ -36,7 +37,7 @@ import java.util.Objects;
  * @param <K> The key type
  * @param <V> The value type
  */
-public class MapReadableKVState<K extends Comparable<K>, V> extends ReadableKVStateBase<K, V> {
+public class MapReadableKVState<K, V> extends ReadableKVStateBase<K, V> {
     /** Represents the backing storage for this state */
     private final Map<K, V> backingStore;
 
@@ -48,8 +49,7 @@ public class MapReadableKVState<K extends Comparable<K>, V> extends ReadableKVSt
      * @param stateKey The state key for this state
      * @param backingStore The backing store to use
      */
-    public MapReadableKVState(
-            @NonNull final String stateKey, @NonNull final Map<K, V> backingStore) {
+    public MapReadableKVState(@NonNull final String stateKey, @NonNull final Map<K, V> backingStore) {
         super(stateKey);
         this.backingStore = Objects.requireNonNull(backingStore);
     }
@@ -65,6 +65,13 @@ public class MapReadableKVState<K extends Comparable<K>, V> extends ReadableKVSt
         return backingStore.keySet().iterator();
     }
 
+    /** {@inheritDoc} */
+    @NonNull
+    @Override
+    public long size() {
+        return backingStore.size();
+    }
+
     /**
      * Create a new {@link Builder} for building a {@link MapReadableKVState}. The builder has
      * convenience methods for pre-populating the map.
@@ -75,8 +82,7 @@ public class MapReadableKVState<K extends Comparable<K>, V> extends ReadableKVSt
      * @param <V> The value type
      */
     @NonNull
-    public static <K extends Comparable<K>, V> Builder<K, V> builder(
-            @NonNull final String stateKey) {
+    public static <K, V> Builder<K, V> builder(@NonNull final String stateKey) {
         return new Builder<>(stateKey);
     }
 
@@ -84,7 +90,7 @@ public class MapReadableKVState<K extends Comparable<K>, V> extends ReadableKVSt
      * A convenient builder for creating instances of {@link
      * com.hedera.node.app.spi.fixtures.state.MapReadableKVState}.
      */
-    public static final class Builder<K extends Comparable<K>, V> {
+    public static final class Builder<K, V> {
         private final Map<K, V> backingStore = new HashMap<>();
         private final String stateKey;
 

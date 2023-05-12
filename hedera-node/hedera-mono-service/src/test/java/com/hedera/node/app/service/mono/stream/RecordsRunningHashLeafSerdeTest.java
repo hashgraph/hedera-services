@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -25,8 +26,7 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 import org.junit.jupiter.api.Assertions;
 
-public class RecordsRunningHashLeafSerdeTest
-        extends SelfSerializableDataTest<RecordsRunningHashLeaf> {
+public class RecordsRunningHashLeafSerdeTest extends SelfSerializableDataTest<RecordsRunningHashLeaf> {
     @Override
     protected Class<RecordsRunningHashLeaf> getType() {
         return RecordsRunningHashLeaf.class;
@@ -38,13 +38,11 @@ public class RecordsRunningHashLeafSerdeTest
     }
 
     @Override
-    protected Optional<BiConsumer<RecordsRunningHashLeaf, RecordsRunningHashLeaf>>
-            customAssertEquals() {
+    protected Optional<BiConsumer<RecordsRunningHashLeaf, RecordsRunningHashLeaf>> customAssertEquals() {
         return Optional.of(RecordsRunningHashLeafSerdeTest::assertEqualLeaves);
     }
 
-    public static void assertEqualLeaves(
-            final RecordsRunningHashLeaf a, final RecordsRunningHashLeaf b) {
+    public static void assertEqualLeaves(final RecordsRunningHashLeaf a, final RecordsRunningHashLeaf b) {
         try {
             assertEqualRunningHashes(a.getRunningHash(), b.getRunningHash());
             assertEqualRunningHashes(a.getNMinus1RunningHash(), b.getNMinus1RunningHash());
@@ -55,8 +53,7 @@ public class RecordsRunningHashLeafSerdeTest
         }
     }
 
-    private static void assertEqualRunningHashes(
-            @Nullable final RunningHash a, @Nullable final RunningHash b)
+    private static void assertEqualRunningHashes(@Nullable final RunningHash a, @Nullable final RunningHash b)
             throws InterruptedException {
         if (a == b) {
             return;

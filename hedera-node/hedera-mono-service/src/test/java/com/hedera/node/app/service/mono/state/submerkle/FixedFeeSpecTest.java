@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.submerkle;
 
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
@@ -42,15 +43,18 @@ class FixedFeeSpecTest {
     private final EntityId selfDenom = new EntityId(0, 0, 0);
     private final EntityId otherDenom = new EntityId(0, 0, 1234);
 
-    @Mock private Token token;
-    @Mock private Account feeCollector;
-    @Mock private TypedTokenStore tokenStore;
+    @Mock
+    private Token token;
+
+    @Mock
+    private Account feeCollector;
+
+    @Mock
+    private TypedTokenStore tokenStore;
 
     @Test
     void validationRequiresFungibleDenom() {
-        given(
-                        tokenStore.loadTokenOrFailWith(
-                                new Id(0, 0, otherDenom.num()), INVALID_TOKEN_ID_IN_CUSTOM_FEES))
+        given(tokenStore.loadTokenOrFailWith(new Id(0, 0, otherDenom.num()), INVALID_TOKEN_ID_IN_CUSTOM_FEES))
                 .willReturn(token);
 
         final var otherDenomSubject = new FixedFeeSpec(123, otherDenom);
@@ -62,24 +66,19 @@ class FixedFeeSpecTest {
 
     @Test
     void validationRequiresAssociatedFeeCollector() {
-        given(
-                        tokenStore.loadTokenOrFailWith(
-                                new Id(0, 0, otherDenom.num()), INVALID_TOKEN_ID_IN_CUSTOM_FEES))
+        given(tokenStore.loadTokenOrFailWith(new Id(0, 0, otherDenom.num()), INVALID_TOKEN_ID_IN_CUSTOM_FEES))
                 .willReturn(token);
         given(token.isFungibleCommon()).willReturn(true);
 
         final var otherDenomSubject = new FixedFeeSpec(123, otherDenom);
 
         assertFailsWith(
-                () -> otherDenomSubject.validateWith(feeCollector, tokenStore),
-                TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
+                () -> otherDenomSubject.validateWith(feeCollector, tokenStore), TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
     }
 
     @Test
     void validationWorksWithWellBehaved() {
-        given(
-                        tokenStore.loadTokenOrFailWith(
-                                new Id(0, 0, otherDenom.num()), INVALID_TOKEN_ID_IN_CUSTOM_FEES))
+        given(tokenStore.loadTokenOrFailWith(new Id(0, 0, otherDenom.num()), INVALID_TOKEN_ID_IN_CUSTOM_FEES))
                 .willReturn(token);
         given(token.isFungibleCommon()).willReturn(true);
         given(tokenStore.hasAssociation(token, feeCollector)).willReturn(true);
@@ -91,9 +90,7 @@ class FixedFeeSpecTest {
 
     @Test
     void finalizationRequiresFungibleDenomAtCreationWithOtherDenom() {
-        given(
-                        tokenStore.loadTokenOrFailWith(
-                                new Id(0, 0, otherDenom.num()), INVALID_TOKEN_ID_IN_CUSTOM_FEES))
+        given(tokenStore.loadTokenOrFailWith(new Id(0, 0, otherDenom.num()), INVALID_TOKEN_ID_IN_CUSTOM_FEES))
                 .willReturn(token);
 
         final var otherDenomSubject = new FixedFeeSpec(123, otherDenom);
@@ -106,16 +103,13 @@ class FixedFeeSpecTest {
     @Test
     void finalizationWorksWithFungibleDenomAtCreation() {
         given(token.isFungibleCommon()).willReturn(true);
-        given(
-                        tokenStore.loadTokenOrFailWith(
-                                new Id(0, 0, otherDenom.num()), INVALID_TOKEN_ID_IN_CUSTOM_FEES))
+        given(tokenStore.loadTokenOrFailWith(new Id(0, 0, otherDenom.num()), INVALID_TOKEN_ID_IN_CUSTOM_FEES))
                 .willReturn(token);
         given(tokenStore.hasAssociation(token, feeCollector)).willReturn(true);
 
         final var otherDenomSubject = new FixedFeeSpec(123, otherDenom);
 
-        assertDoesNotThrow(
-                () -> otherDenomSubject.validateAndFinalizeWith(token, feeCollector, tokenStore));
+        assertDoesNotThrow(() -> otherDenomSubject.validateAndFinalizeWith(token, feeCollector, tokenStore));
     }
 
     @Test
@@ -137,7 +131,8 @@ class FixedFeeSpecTest {
         selfDenomSubject.validateAndFinalizeWith(token, feeCollector, tokenStore);
 
         verifyNoInteractions(tokenStore);
-        assertEquals(provisionalId.num(), selfDenomSubject.getTokenDenomination().num());
+        assertEquals(
+                provisionalId.num(), selfDenomSubject.getTokenDenomination().num());
         assertTrue(selfDenomSubject.usedDenomWildcard());
     }
 
@@ -173,11 +168,10 @@ class FixedFeeSpecTest {
     void factoryWorksForHts() {
         // setup:
         final var denom = new EntityId(1, 2, 3);
-        final var htsGrpc =
-                FixedFee.newBuilder()
-                        .setAmount(123)
-                        .setDenominatingTokenId(denom.toGrpcTokenId())
-                        .build();
+        final var htsGrpc = FixedFee.newBuilder()
+                .setAmount(123)
+                .setDenominatingTokenId(denom.toGrpcTokenId())
+                .build();
         final var expected = new FixedFeeSpec(123, denom);
 
         // when
@@ -206,11 +200,10 @@ class FixedFeeSpecTest {
     void reprWorksForHts() {
         // setup:
         final var denom = new EntityId(1, 2, 3);
-        final var htsGrpc =
-                FixedFee.newBuilder()
-                        .setAmount(123)
-                        .setDenominatingTokenId(denom.toGrpcTokenId())
-                        .build();
+        final var htsGrpc = FixedFee.newBuilder()
+                .setAmount(123)
+                .setDenominatingTokenId(denom.toGrpcTokenId())
+                .build();
 
         // given:
         final var subject = new FixedFeeSpec(123, denom);

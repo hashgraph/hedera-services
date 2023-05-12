@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.gascalculator;
 
 /*
@@ -66,24 +67,17 @@ public final class GasCalculatorHederaUtil {
         final var timestamp = Timestamp.newBuilder().setSeconds(consensusTime).build();
         FeeData prices = usagePrices.defaultPricesGiven(functionType, timestamp);
         long feeInTinyCents = prices.getServicedata().getRbh() / 1000;
-        long feeInTinyBars =
-                FeeBuilder.getTinybarsFromTinyCents(exchange.rate(timestamp), feeInTinyCents);
+        long feeInTinyBars = FeeBuilder.getTinybarsFromTinyCents(exchange.rate(timestamp), feeInTinyCents);
         return Math.max(1L, feeInTinyBars);
     }
 
     public static long calculateLogSize(int numberOfTopics, long dataSize) {
-        return LOG_CONTRACT_ID_SIZE
-                + LOG_BLOOM_SIZE
-                + LOG_TOPIC_SIZE * (long) numberOfTopics
-                + dataSize;
+        return LOG_CONTRACT_ID_SIZE + LOG_BLOOM_SIZE + LOG_TOPIC_SIZE * (long) numberOfTopics + dataSize;
     }
 
     @SuppressWarnings("unused")
     public static long calculateStorageGasNeeded(
-            long numberOfBytes,
-            long durationInSeconds,
-            long byteHourCostInTinyBars,
-            long gasPrice) {
+            long numberOfBytes, long durationInSeconds, long byteHourCostInTinyBars, long gasPrice) {
         long storageCostTinyBars = (durationInSeconds * byteHourCostInTinyBars) / 3600;
         return Math.round((double) storageCostTinyBars / (double) gasPrice);
     }
@@ -110,8 +104,7 @@ public final class GasCalculatorHederaUtil {
         return GasCalculatorHederaUtil.calculateStorageGasNeeded(
                 logStorageTotalSize,
                 storageDuration,
-                GasCalculatorHederaUtil.ramByteHoursTinyBarsGiven(
-                        usagePrices, exchange, timestamp, functionType),
+                GasCalculatorHederaUtil.ramByteHoursTinyBarsGiven(usagePrices, exchange, timestamp, functionType),
                 gasPrice);
     }
 }

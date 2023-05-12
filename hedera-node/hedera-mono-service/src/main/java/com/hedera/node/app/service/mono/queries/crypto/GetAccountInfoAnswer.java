@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.crypto;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetInfo;
@@ -66,18 +67,13 @@ public class GetAccountInfoAnswer implements AnswerService {
     public ResponseCodeEnum checkValidity(final Query query, final StateView view) {
         final AccountID id = query.getCryptoGetInfo().getAccountID();
         final var entityNum =
-                id.getAlias().isEmpty()
-                        ? EntityNum.fromAccountId(id)
-                        : aliasManager.lookupIdBy(id.getAlias());
+                id.getAlias().isEmpty() ? EntityNum.fromAccountId(id) : aliasManager.lookupIdBy(id.getAlias());
         return optionValidator.queryableAccountStatus(entityNum, view.accounts());
     }
 
     @Override
     public Response responseGiven(
-            final Query query,
-            final @Nullable StateView view,
-            final ResponseCodeEnum validity,
-            final long cost) {
+            final Query query, final @Nullable StateView view, final ResponseCodeEnum validity, final long cost) {
         final CryptoGetInfoQuery op = query.getCryptoGetInfo();
         final CryptoGetInfoResponse.Builder response = CryptoGetInfoResponse.newBuilder();
 
@@ -89,13 +85,9 @@ public class GetAccountInfoAnswer implements AnswerService {
                 response.setHeader(costAnswerHeader(OK, cost));
             } else {
                 final AccountID id = op.getAccountID();
-                final var optionalInfo =
-                        Objects.requireNonNull(view)
-                                .infoForAccount(
-                                        id,
-                                        aliasManager,
-                                        dynamicProperties.maxTokensRelsPerInfoQuery(),
-                                        rewardCalculator);
+                final var optionalInfo = Objects.requireNonNull(view)
+                        .infoForAccount(
+                                id, aliasManager, dynamicProperties.maxTokensRelsPerInfoQuery(), rewardCalculator);
                 if (optionalInfo.isPresent()) {
                     response.setHeader(answerOnlyHeader(OK));
                     response.setAccountInfo(optionalInfo.get());

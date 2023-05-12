@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.codec;
 
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
@@ -28,8 +29,7 @@ public record MintWrapper(long amount, TokenID tokenType, List<ByteString> metad
     private static final long NONFUNGIBLE_MINT_AMOUNT = -1;
     private static final List<ByteString> FUNGIBLE_MINT_METADATA = Collections.emptyList();
 
-    public static MintWrapper forNonFungible(
-            final TokenID tokenType, final List<ByteString> metadata) {
+    public static MintWrapper forNonFungible(final TokenID tokenType, final List<ByteString> metadata) {
         return new MintWrapper(NONFUNGIBLE_MINT_AMOUNT, tokenType, metadata);
     }
 

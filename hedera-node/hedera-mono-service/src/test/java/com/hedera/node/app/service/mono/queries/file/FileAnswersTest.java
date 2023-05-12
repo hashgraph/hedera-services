@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.file;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -24,8 +25,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class FileAnswersTest {
-    @Mock GetFileInfoAnswer getFileInfo;
-    @Mock GetFileContentsAnswer getFileContents;
+    @Mock
+    GetFileInfoAnswer getFileInfo;
+
+    @Mock
+    GetFileContentsAnswer getFileContents;
 
     @Test
     void assertGetters() {

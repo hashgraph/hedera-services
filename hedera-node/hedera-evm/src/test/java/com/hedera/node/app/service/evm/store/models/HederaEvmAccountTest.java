@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.store.models;
 
 import static com.swirlds.common.utility.CommonUtils.unhex;
@@ -51,10 +52,8 @@ class HederaEvmAccountTest {
     @Test
     void canonicalAddressIsEVMAddressIfCorrectAlias() {
         // default truffle address #0
-        subject.setAlias(
-                ByteString.copyFrom(
-                        Hex.decode(
-                                "3a2103af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d")));
+        subject.setAlias(ByteString.copyFrom(
+                Hex.decode("3a2103af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d")));
         assertEquals(
                 Address.wrap(Bytes.fromHexString("627306090abaB3A6e1400e9345bC60c78a8BEf57")),
                 subject.canonicalAddress());
@@ -67,17 +66,13 @@ class HederaEvmAccountTest {
         assertEquals(accountAddress, subject.canonicalAddress());
 
         // incorrect starting bytes for ECDSA
-        subject.setAlias(
-                ByteString.copyFrom(
-                        Hex.decode(
-                                "ffff03af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d")));
+        subject.setAlias(ByteString.copyFrom(
+                Hex.decode("ffff03af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d")));
         assertEquals(accountAddress, subject.canonicalAddress());
 
         // incorrect ECDSA key
-        subject.setAlias(
-                ByteString.copyFrom(
-                        Hex.decode(
-                                "3a21ffaf80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d")));
+        subject.setAlias(ByteString.copyFrom(
+                Hex.decode("3a21ffaf80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d")));
         assertEquals(accountAddress, subject.canonicalAddress());
     }
 
@@ -95,8 +90,7 @@ class HederaEvmAccountTest {
 
     @Test
     void toStringAsExpected() {
-        final var desired =
-                "HederaEvmAccount{address=0x0000000000000000000000000000000000000006, alias=}";
+        final var desired = "HederaEvmAccount{address=0x0000000000000000000000000000000000000006, alias=}";
 
         // expect:
         assertEquals(desired, subject.toString());

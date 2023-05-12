@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.execution;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
@@ -83,10 +84,7 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
 
     @Override
     protected MessageFrame buildInitialFrame(
-            final MessageFrame.Builder baseInitialFrame,
-            final Address to,
-            final Bytes payload,
-            final long value) {
+            final MessageFrame.Builder baseInitialFrame, final Address to, final Bytes payload, final long value) {
         final var code = codeCache.getIfPresent(aliasManager.resolveForEvm(to));
         /* It's possible we are racing the handleTransaction() thread, and the target contract's
          * _account_ has been created, but not yet its _bytecode_. So if `code` is null here,

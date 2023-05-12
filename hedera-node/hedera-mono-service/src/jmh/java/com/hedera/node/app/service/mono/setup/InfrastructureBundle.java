@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.setup;
 
 import com.swirlds.common.FastCopyable;
@@ -39,53 +40,46 @@ import java.util.function.Supplier;
  */
 public class InfrastructureBundle {
     private final Set<InfrastructureType> types;
-    private final Map<InfrastructureType, AtomicReference<?>> refs =
-            new EnumMap<>(InfrastructureType.class);
+    private final Map<InfrastructureType, AtomicReference<?>> refs = new EnumMap<>(InfrastructureType.class);
 
     public InfrastructureBundle(final Collection<InfrastructureType> types) {
         this.types = includingDeps(types);
     }
 
     public void abInitio(final String dir) {
-        inTopologicalOrder(
-                "Creating",
-                type -> {
-                    final var instance = type.abInitio(dir, this);
-                    refs.put(type, new AtomicReference<>(instance));
-                });
+        inTopologicalOrder("Creating", type -> {
+            final var instance = type.abInitio(dir, this);
+            refs.put(type, new AtomicReference<>(instance));
+        });
     }
 
     public void loadFrom(final String dir) {
-        inTopologicalOrder(
-                "Loading",
-                type -> {
-                    final var instance = type.fromStorage(dir, this);
-                    refs.put(type, new AtomicReference<>(instance));
-                });
+        inTopologicalOrder("Loading", type -> {
+            final var instance = type.fromStorage(dir, this);
+            refs.put(type, new AtomicReference<>(instance));
+        });
     }
 
     @SuppressWarnings("java:S106")
     public void toStorage(final String dir) {
-        refs.forEach(
-                (type, ref) -> {
-                    System.out.println("  -> Serializing " + type);
-                    type.toStorage(ref.get(), dir, this);
-                });
+        refs.forEach((type, ref) -> {
+            System.out.println("  -> Serializing " + type);
+            type.toStorage(ref.get(), dir, this);
+        });
     }
 
     public void newRound() {
-        refs.forEach(
-                (type, ref) -> {
-                    final var curRef = ref.get();
-                    if (curRef instanceof FastCopyable fc) {
-                        ref.set(fc.copy());
-                        if (curRef instanceof Releasable r) {
-                            r.release();
-                        } else if (curRef instanceof VirtualMap<?, ?> vm) {
-                            vm.release();
-                        }
-                    }
-                });
+        refs.forEach((type, ref) -> {
+            final var curRef = ref.get();
+            if (curRef instanceof FastCopyable fc) {
+                ref.set(fc.copy());
+                if (curRef instanceof Releasable r) {
+                    r.release();
+                } else if (curRef instanceof VirtualMap<?, ?> vm) {
+                    vm.release();
+                }
+            }
+        });
     }
 
     public static long codeFor(final Collection<InfrastructureType> types) {
@@ -123,20 +117,17 @@ public class InfrastructureBundle {
         ((AtomicReference<T>) refs.get(type)).set(instance);
     }
 
-    public static Collection<InfrastructureType> allImplied(
-            final Collection<InfrastructureType> types) {
+    public static Collection<InfrastructureType> allImplied(final Collection<InfrastructureType> types) {
         return includingDeps(types);
     }
 
-    private static Set<InfrastructureType> includingDeps(
-            final Collection<InfrastructureType> types) {
+    private static Set<InfrastructureType> includingDeps(final Collection<InfrastructureType> types) {
         final Set<InfrastructureType> included = EnumSet.noneOf(InfrastructureType.class);
         types.forEach(type -> ensureDeps(included, type));
         return included;
     }
 
-    private static void ensureDeps(
-            final Set<InfrastructureType> included, final InfrastructureType type) {
+    private static void ensureDeps(final Set<InfrastructureType> included, final InfrastructureType type) {
         if (included.contains(type)) {
             return;
         }
@@ -151,12 +142,11 @@ public class InfrastructureBundle {
             types.stream()
                     .filter(type -> !instantiated.contains(type))
                     .filter(type -> instantiated.containsAll(type.dependencies()))
-                    .forEach(
-                            type -> {
-                                System.out.println("  -> " + desc + " " + type);
-                                action.accept(type);
-                                added.add(type);
-                            });
+                    .forEach(type -> {
+                        System.out.println("  -> " + desc + " " + type);
+                        action.accept(type);
+                        added.add(type);
+                    });
             instantiated.addAll(added);
         }
     }

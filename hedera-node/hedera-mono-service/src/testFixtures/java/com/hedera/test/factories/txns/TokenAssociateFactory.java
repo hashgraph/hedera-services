@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.factories.txns;
 
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -60,10 +61,9 @@ public class TokenAssociateFactory extends SignedTxnFactory<TokenAssociateFactor
 
     @Override
     protected void customizeTxn(TransactionBody.Builder txn) {
-        txn.setTokenAssociate(
-                        TokenAssociateTransactionBody.newBuilder()
-                                .setAccount(target)
-                                .addAllTokens(associations))
+        txn.setTokenAssociate(TokenAssociateTransactionBody.newBuilder()
+                        .setAccount(target)
+                        .addAllTokens(associations))
                 .build();
     }
 }

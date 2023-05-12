@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.contracts.operations;
 
 import java.util.function.BiPredicate;
@@ -50,15 +51,13 @@ public interface HederaEvmOperationsUtil {
             final var address = Words.toAddress(supplierAddressBytes.get());
             if (Boolean.FALSE.equals(addressValidator.test(address, frame))) {
                 return new Operation.OperationResult(
-                        supplierHaltGasCost.getAsLong(),
-                        HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
+                        supplierHaltGasCost.getAsLong(), HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
             }
 
             return supplierExecution.get();
         } catch (final FixedStack.UnderflowException ufe) {
             return new Operation.OperationResult(
-                    supplierHaltGasCost.getAsLong(),
-                    ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
+                    supplierHaltGasCost.getAsLong(), ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
         }
     }
 }

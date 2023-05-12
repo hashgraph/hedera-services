@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.merkle;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -35,10 +36,9 @@ public class MerklePayerRecordsSerdeTest extends SelfSerializableDataTest<Merkle
 
     @Override
     protected Optional<BiConsumer<MerklePayerRecords, MerklePayerRecords>> customAssertEquals() {
-        return Optional.of(
-                (a, b) -> {
-                    assertEquals(a.getKey(), b.getKey());
-                    assertEquals(a.readOnlyQueue(), b.readOnlyQueue());
-                });
+        return Optional.of((a, b) -> {
+            assertEquals(a.getKey(), b.getKey());
+            assertEquals(a.readOnlyQueue(), b.readOnlyQueue());
+        });
     }
 }

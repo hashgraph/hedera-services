@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.submission;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
@@ -42,43 +43,32 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 class PlatformSubmissionManagerTest {
-    TransactionID txnId = TransactionID.newBuilder().setAccountID(asAccount("0.0.2")).build();
+    TransactionID txnId =
+            TransactionID.newBuilder().setAccountID(asAccount("0.0.2")).build();
     TransactionID uncheckedTxnId =
             TransactionID.newBuilder().setAccountID(asAccount("1.0.2")).build();
-    Transaction signedTxn =
-            Transaction.newBuilder()
-                    .setBodyBytes(
-                            TransactionBody.newBuilder()
-                                    .setCryptoTransfer(
-                                            CryptoTransferTransactionBody.getDefaultInstance())
-                                    .setTransactionID(txnId)
-                                    .build()
-                                    .toByteString())
-                    .build();
-    Transaction uncheckedSubTxn =
-            Transaction.newBuilder()
-                    .setBodyBytes(
-                            TransactionBody.newBuilder()
-                                    .setTransactionID(uncheckedTxnId)
-                                    .setUncheckedSubmit(
-                                            UncheckedSubmitBody.newBuilder()
-                                                    .setTransactionBytes(signedTxn.toByteString()))
-                                    .build()
-                                    .toByteString())
-                    .build();
-    Transaction invalidUncheckedSubTxn =
-            Transaction.newBuilder()
-                    .setBodyBytes(
-                            TransactionBody.newBuilder()
-                                    .setTransactionID(uncheckedTxnId)
-                                    .setUncheckedSubmit(
-                                            UncheckedSubmitBody.newBuilder()
-                                                    .setTransactionBytes(
-                                                            ByteString.copyFrom(
-                                                                    "INVALID".getBytes())))
-                                    .build()
-                                    .toByteString())
-                    .build();
+    Transaction signedTxn = Transaction.newBuilder()
+            .setBodyBytes(TransactionBody.newBuilder()
+                    .setCryptoTransfer(CryptoTransferTransactionBody.getDefaultInstance())
+                    .setTransactionID(txnId)
+                    .build()
+                    .toByteString())
+            .build();
+    Transaction uncheckedSubTxn = Transaction.newBuilder()
+            .setBodyBytes(TransactionBody.newBuilder()
+                    .setTransactionID(uncheckedTxnId)
+                    .setUncheckedSubmit(UncheckedSubmitBody.newBuilder().setTransactionBytes(signedTxn.toByteString()))
+                    .build()
+                    .toByteString())
+            .build();
+    Transaction invalidUncheckedSubTxn = Transaction.newBuilder()
+            .setBodyBytes(TransactionBody.newBuilder()
+                    .setTransactionID(uncheckedTxnId)
+                    .setUncheckedSubmit(UncheckedSubmitBody.newBuilder()
+                            .setTransactionBytes(ByteString.copyFrom("INVALID".getBytes())))
+                    .build()
+                    .toByteString())
+            .build();
     SignedTxnAccessor accessor;
     SignedTxnAccessor uncheckedAccessor;
     SignedTxnAccessor invalidUncheckedAccessor;
@@ -97,9 +87,7 @@ class PlatformSubmissionManagerTest {
 
         accessor = SignedTxnAccessor.from(signedTxn.toByteArray(), signedTxn);
         uncheckedAccessor = SignedTxnAccessor.from(uncheckedSubTxn.toByteArray(), uncheckedSubTxn);
-        invalidUncheckedAccessor =
-                SignedTxnAccessor.from(
-                        invalidUncheckedSubTxn.toByteArray(), invalidUncheckedSubTxn);
+        invalidUncheckedAccessor = SignedTxnAccessor.from(invalidUncheckedSubTxn.toByteArray(), invalidUncheckedSubTxn);
 
         subject = new PlatformSubmissionManager(platform, recordCache, speedometers);
     }

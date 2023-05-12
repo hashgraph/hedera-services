@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.store.contracts.precompile.codec;
 
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.ADDRESS_TUPLE;
@@ -135,7 +136,10 @@ public class EvmEncodingFacade {
     }
 
     public Bytes encodeName(final String name) {
-        return functionResultBuilder().forFunction(FunctionType.ERC_NAME).withName(name).build();
+        return functionResultBuilder()
+                .forFunction(FunctionType.ERC_NAME)
+                .withName(name)
+                .build();
     }
 
     public Bytes encodeSymbol(final String symbol) {
@@ -190,8 +194,7 @@ public class EvmEncodingFacade {
                 .build();
     }
 
-    public Bytes encodeGetNonFungibleTokenInfo(
-            final EvmTokenInfo tokenInfo, final EvmNftInfo nonFungibleTokenInfo) {
+    public Bytes encodeGetNonFungibleTokenInfo(final EvmTokenInfo tokenInfo, final EvmNftInfo nonFungibleTokenInfo) {
         return functionResultBuilder()
                 .forFunction(FunctionType.HAPI_GET_NON_FUNGIBLE_TOKEN_INFO)
                 .withStatus(SUCCESS.getNumber())
@@ -255,27 +258,25 @@ public class EvmEncodingFacade {
         private Tuple keyValue;
 
         private FunctionResultBuilder forFunction(final FunctionType functionType) {
-            this.tupleType =
-                    switch (functionType) {
-                        case ERC_DECIMALS -> DECIMALS_TYPE;
-                        case HAPI_GET_TOKEN_TYPE -> intPairTuple;
-                        case ERC_ALLOWANCE, ERC_TOTAL_SUPPLY, ERC_BALANCE -> BIG_INTEGER_TUPLE;
-                        case ERC_IS_APPROVED_FOR_ALL -> BOOLEAN_TUPLE;
-                        case HAPI_IS_FROZEN,
-                                GET_TOKEN_DEFAULT_FREEZE_STATUS,
-                                GET_TOKEN_DEFAULT_KYC_STATUS,
-                                HAPI_IS_KYC,
-                                HAPI_IS_TOKEN -> INT_BOOL_TUPLE;
-                        case ERC_NAME, ERC_SYMBOL, ERC_TOKEN_URI -> STRING_TUPLE;
-                        case ERC_OWNER, ERC_GET_APPROVED -> ADDRESS_TUPLE;
-                        case HAPI_GET_TOKEN_INFO -> GET_TOKEN_INFO_TYPE;
-                        case HAPI_GET_FUNGIBLE_TOKEN_INFO -> GET_FUNGIBLE_TOKEN_INFO_TYPE;
-                        case HAPI_GET_NON_FUNGIBLE_TOKEN_INFO -> GET_NON_FUNGIBLE_TOKEN_INFO_TYPE;
-                        case HAPI_GET_TOKEN_CUSTOM_FEES -> GET_TOKEN_CUSTOM_FEES_TYPE;
-                        case HAPI_GET_TOKEN_EXPIRY_INFO -> GET_TOKEN_EXPIRY_INFO_TYPE;
-                        case HAPI_GET_TOKEN_KEY -> GET_TOKEN_KEY_TYPE;
-                        default -> NOT_SPECIFIED_TYPE;
-                    };
+            this.tupleType = switch (functionType) {
+                case ERC_DECIMALS -> DECIMALS_TYPE;
+                case HAPI_GET_TOKEN_TYPE -> intPairTuple;
+                case ERC_ALLOWANCE, ERC_TOTAL_SUPPLY, ERC_BALANCE -> BIG_INTEGER_TUPLE;
+                case ERC_IS_APPROVED_FOR_ALL -> BOOLEAN_TUPLE;
+                case HAPI_IS_FROZEN,
+                        GET_TOKEN_DEFAULT_FREEZE_STATUS,
+                        GET_TOKEN_DEFAULT_KYC_STATUS,
+                        HAPI_IS_KYC,
+                        HAPI_IS_TOKEN -> INT_BOOL_TUPLE;
+                case ERC_NAME, ERC_SYMBOL, ERC_TOKEN_URI -> STRING_TUPLE;
+                case ERC_OWNER, ERC_GET_APPROVED -> ADDRESS_TUPLE;
+                case HAPI_GET_TOKEN_INFO -> GET_TOKEN_INFO_TYPE;
+                case HAPI_GET_FUNGIBLE_TOKEN_INFO -> GET_FUNGIBLE_TOKEN_INFO_TYPE;
+                case HAPI_GET_NON_FUNGIBLE_TOKEN_INFO -> GET_NON_FUNGIBLE_TOKEN_INFO_TYPE;
+                case HAPI_GET_TOKEN_CUSTOM_FEES -> GET_TOKEN_CUSTOM_FEES_TYPE;
+                case HAPI_GET_TOKEN_EXPIRY_INFO -> GET_TOKEN_EXPIRY_INFO_TYPE;
+                case HAPI_GET_TOKEN_KEY -> GET_TOKEN_KEY_TYPE;
+                default -> NOT_SPECIFIED_TYPE;};
             this.functionType = functionType;
             return this;
         }
@@ -310,8 +311,7 @@ public class EvmEncodingFacade {
             return this;
         }
 
-        private FunctionResultBuilder withIsApprovedForAllStatus(
-                final boolean isApprovedForAllStatus) {
+        private FunctionResultBuilder withIsApprovedForAllStatus(final boolean isApprovedForAllStatus) {
             this.isApprovedForAllStatus = isApprovedForAllStatus;
             return this;
         }
@@ -321,14 +321,12 @@ public class EvmEncodingFacade {
             return this;
         }
 
-        private FunctionResultBuilder withGetTokenDefaultFreezeStatus(
-                final boolean tokenDefaultFreezeStatus) {
+        private FunctionResultBuilder withGetTokenDefaultFreezeStatus(final boolean tokenDefaultFreezeStatus) {
             this.tokenDefaultFreezeStatus = tokenDefaultFreezeStatus;
             return this;
         }
 
-        private FunctionResultBuilder withGetTokenDefaultKycStatus(
-                final boolean tokenDefaultKycStatus) {
+        private FunctionResultBuilder withGetTokenDefaultKycStatus(final boolean tokenDefaultKycStatus) {
             this.tokenDefaultKycStatus = tokenDefaultKycStatus;
             return this;
         }
@@ -384,24 +382,20 @@ public class EvmEncodingFacade {
         }
 
         private FunctionResultBuilder withExpiry(final TokenExpiryInfo tokenExpiryInfo) {
-            this.tokenExpiryInfo =
-                    Tuple.of(
-                            tokenExpiryInfo.getSecond(),
-                            convertBesuAddressToHeadlongAddress(
-                                    tokenExpiryInfo.getAutoRenewAccount()),
-                            tokenExpiryInfo.getAutoRenewPeriod());
+            this.tokenExpiryInfo = Tuple.of(
+                    tokenExpiryInfo.getSecond(),
+                    convertBesuAddressToHeadlongAddress(tokenExpiryInfo.getAutoRenewAccount()),
+                    tokenExpiryInfo.getAutoRenewPeriod());
             return this;
         }
 
         private FunctionResultBuilder withKey(final EvmKey wrapper) {
-            this.keyValue =
-                    Tuple.of(
-                            false,
-                            convertBesuAddressToHeadlongAddress(wrapper.getContractId()),
-                            wrapper.getEd25519(),
-                            wrapper.getECDSASecp256K1(),
-                            convertBesuAddressToHeadlongAddress(
-                                    wrapper.getDelegatableContractId()));
+            this.keyValue = Tuple.of(
+                    false,
+                    convertBesuAddressToHeadlongAddress(wrapper.getContractId()),
+                    wrapper.getEd25519(),
+                    wrapper.getECDSASecp256K1(),
+                    convertBesuAddressToHeadlongAddress(wrapper.getDelegatableContractId()));
             return this;
         }
 
@@ -414,10 +408,8 @@ public class EvmEncodingFacade {
                         case ERC_BALANCE -> Tuple.of(BigInteger.valueOf(balance));
                         case ERC_IS_APPROVED_FOR_ALL -> Tuple.of(isApprovedForAllStatus);
                         case HAPI_IS_FROZEN -> Tuple.of(status, isFrozen);
-                        case GET_TOKEN_DEFAULT_FREEZE_STATUS -> Tuple.of(
-                                status, tokenDefaultFreezeStatus);
-                        case GET_TOKEN_DEFAULT_KYC_STATUS -> Tuple.of(
-                                status, tokenDefaultKycStatus);
+                        case GET_TOKEN_DEFAULT_FREEZE_STATUS -> Tuple.of(status, tokenDefaultFreezeStatus);
+                        case GET_TOKEN_DEFAULT_KYC_STATUS -> Tuple.of(status, tokenDefaultKycStatus);
                         case HAPI_IS_KYC -> Tuple.of(status, isKyc);
                         case HAPI_IS_TOKEN -> Tuple.of(status, isToken);
                         case HAPI_GET_TOKEN_TYPE -> Tuple.of(status, tokenType);
@@ -425,8 +417,7 @@ public class EvmEncodingFacade {
                         case ERC_SYMBOL -> Tuple.of(symbol);
                         case ERC_TOKEN_URI -> Tuple.of(metadata);
                         case ERC_OWNER -> Tuple.of(convertBesuAddressToHeadlongAddress(owner));
-                        case ERC_GET_APPROVED -> Tuple.of(
-                                convertBesuAddressToHeadlongAddress(approved));
+                        case ERC_GET_APPROVED -> Tuple.of(convertBesuAddressToHeadlongAddress(approved));
                         case HAPI_GET_TOKEN_INFO -> getTupleForGetTokenInfo();
                         case HAPI_GET_FUNGIBLE_TOKEN_INFO -> getTupleForGetFungibleTokenInfo();
                         case HAPI_GET_NON_FUNGIBLE_TOKEN_INFO -> getTupleForGetNonFungibleTokenInfo();
@@ -456,8 +447,7 @@ public class EvmEncodingFacade {
                             convertBesuAddressToHeadlongAddress(nonFungibleTokenInfo.getAccount()),
                             nonFungibleTokenInfo.getCreationTime(),
                             nonFungibleTokenInfo.getMetadata(),
-                            convertBesuAddressToHeadlongAddress(
-                                    nonFungibleTokenInfo.getSpender())));
+                            convertBesuAddressToHeadlongAddress(nonFungibleTokenInfo.getSpender())));
         }
 
         private Tuple getTupleForTokenGetCustomFees() {
@@ -511,11 +501,8 @@ public class EvmEncodingFacade {
         private Tuple getHederaTokenTuple() {
             final var expiry = tokenInfo.getExpiry();
             final var autoRenewPeriod = tokenInfo.getAutoRenewPeriod();
-            final var expiryTuple =
-                    Tuple.of(
-                            expiry,
-                            convertBesuAddressToHeadlongAddress(tokenInfo.getAutoRenewAccount()),
-                            autoRenewPeriod);
+            final var expiryTuple = Tuple.of(
+                    expiry, convertBesuAddressToHeadlongAddress(tokenInfo.getAutoRenewAccount()), autoRenewPeriod);
 
             return Tuple.of(
                     tokenInfo.getName(),
@@ -539,22 +526,13 @@ public class EvmEncodingFacade {
             final var pauseKey = tokenInfo.getPauseKey();
 
             final Tuple[] tokenKeysTuples = new Tuple[TokenKeyType.values().length];
-            tokenKeysTuples[0] =
-                    getKeyTuple(BigInteger.valueOf(TokenKeyType.ADMIN_KEY.value()), adminKey);
-            tokenKeysTuples[1] =
-                    getKeyTuple(BigInteger.valueOf(TokenKeyType.KYC_KEY.value()), kycKey);
-            tokenKeysTuples[2] =
-                    getKeyTuple(BigInteger.valueOf(TokenKeyType.FREEZE_KEY.value()), freezeKey);
-            tokenKeysTuples[3] =
-                    getKeyTuple(BigInteger.valueOf(TokenKeyType.WIPE_KEY.value()), wipeKey);
-            tokenKeysTuples[4] =
-                    getKeyTuple(BigInteger.valueOf(TokenKeyType.SUPPLY_KEY.value()), supplyKey);
-            tokenKeysTuples[5] =
-                    getKeyTuple(
-                            BigInteger.valueOf(TokenKeyType.FEE_SCHEDULE_KEY.value()),
-                            feeScheduleKey);
-            tokenKeysTuples[6] =
-                    getKeyTuple(BigInteger.valueOf(TokenKeyType.PAUSE_KEY.value()), pauseKey);
+            tokenKeysTuples[0] = getKeyTuple(BigInteger.valueOf(TokenKeyType.ADMIN_KEY.value()), adminKey);
+            tokenKeysTuples[1] = getKeyTuple(BigInteger.valueOf(TokenKeyType.KYC_KEY.value()), kycKey);
+            tokenKeysTuples[2] = getKeyTuple(BigInteger.valueOf(TokenKeyType.FREEZE_KEY.value()), freezeKey);
+            tokenKeysTuples[3] = getKeyTuple(BigInteger.valueOf(TokenKeyType.WIPE_KEY.value()), wipeKey);
+            tokenKeysTuples[4] = getKeyTuple(BigInteger.valueOf(TokenKeyType.SUPPLY_KEY.value()), supplyKey);
+            tokenKeysTuples[5] = getKeyTuple(BigInteger.valueOf(TokenKeyType.FEE_SCHEDULE_KEY.value()), feeScheduleKey);
+            tokenKeysTuples[6] = getKeyTuple(BigInteger.valueOf(TokenKeyType.PAUSE_KEY.value()), pauseKey);
 
             return tokenKeysTuples;
         }
@@ -614,10 +592,8 @@ public class EvmEncodingFacade {
         }
     }
 
-    static com.esaulpaugh.headlong.abi.Address convertBesuAddressToHeadlongAddress(
-            @NonNull final Address address) {
+    static com.esaulpaugh.headlong.abi.Address convertBesuAddressToHeadlongAddress(@NonNull final Address address) {
         return com.esaulpaugh.headlong.abi.Address.wrap(
-                com.esaulpaugh.headlong.abi.Address.toChecksumAddress(
-                        address.toUnsignedBigInteger()));
+                com.esaulpaugh.headlong.abi.Address.toChecksumAddress(address.toUnsignedBigInteger()));
     }
 }

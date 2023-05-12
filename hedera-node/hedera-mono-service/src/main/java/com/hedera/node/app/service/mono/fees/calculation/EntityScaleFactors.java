@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation;
 
 import static com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ScaleFactor.ONE_TO_ONE;
@@ -26,8 +27,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public record EntityScaleFactors(
-        UtilizationScaleFactors defaultScaleFactors,
-        Map<EntityType, UtilizationScaleFactors> typeScaleFactors) {
+        UtilizationScaleFactors defaultScaleFactors, Map<EntityType, UtilizationScaleFactors> typeScaleFactors) {
 
     private static final Logger log = LogManager.getLogger(EntityScaleFactors.class);
 
@@ -40,18 +40,14 @@ public record EntityScaleFactors(
         try {
             return parseScaleFactorsByEntity(csv);
         } catch (Exception any) {
-            log.warn(
-                    "Unable to parse '{}' as an entity scale factors spec, using 1:1 everywhere",
-                    csv,
-                    any);
+            log.warn("Unable to parse '{}' as an entity scale factors spec, using 1:1 everywhere", csv, any);
             return new EntityScaleFactors(NOOP_SCALE_FACTORS, new EnumMap<>(EntityType.class));
         }
     }
 
     private static EntityScaleFactors parseScaleFactorsByEntity(final String csv) {
         UtilizationScaleFactors defaultScaleFactors = NOOP_SCALE_FACTORS;
-        final Map<EntityType, UtilizationScaleFactors> typeScaleFactors =
-                new EnumMap<>(EntityType.class);
+        final Map<EntityType, UtilizationScaleFactors> typeScaleFactors = new EnumMap<>(EntityType.class);
         final var matcher = SCOPED_FACTOR_PATTERN.matcher(csv);
         while (matcher.find()) {
             final var entityType = matcher.group(1);

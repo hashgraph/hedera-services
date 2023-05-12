@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ADDRESS_PAIR_RAW_TYPE;
@@ -43,12 +44,9 @@ import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
 public class UnfreezeTokenPrecompile extends AbstractFreezeUnfreezePrecompile {
-    private static final Function UNFREEZE_TOKEN_FUNCTION =
-            new Function("unfreezeToken(address,address)", INT);
-    private static final Bytes UNFREEZE_TOKEN_FUNCTION_SELECTOR =
-            Bytes.wrap(UNFREEZE_TOKEN_FUNCTION.selector());
-    private static final ABIType<Tuple> UNFREEZE_TOKEN_ACCOUNT_DECODER =
-            TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
+    private static final Function UNFREEZE_TOKEN_FUNCTION = new Function("unfreezeToken(address,address)", INT);
+    private static final Bytes UNFREEZE_TOKEN_FUNCTION_SELECTOR = Bytes.wrap(UNFREEZE_TOKEN_FUNCTION.selector());
+    private static final ABIType<Tuple> UNFREEZE_TOKEN_ACCOUNT_DECODER = TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
 
     public UnfreezeTokenPrecompile(
             WorldLedgers ledgers,
@@ -79,21 +77,17 @@ public class UnfreezeTokenPrecompile extends AbstractFreezeUnfreezePrecompile {
 
     @Override
     public long getMinimumFeeInTinybars(Timestamp consensusTime) {
-        Objects.requireNonNull(
-                freezeUnfreezeOp,
-                "`body` method should be called before `getMinimumFeeInTinybars`");
+        Objects.requireNonNull(freezeUnfreezeOp, "`body` method should be called before `getMinimumFeeInTinybars`");
         return pricingUtils.getMinimumPriceInTinybars(UNFREEZE, consensusTime);
     }
 
     public static TokenFreezeUnfreezeWrapper<TokenID, AccountID> decodeUnfreeze(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
-                decodeFunctionCall(
-                        input, UNFREEZE_TOKEN_FUNCTION_SELECTOR, UNFREEZE_TOKEN_ACCOUNT_DECODER);
+                decodeFunctionCall(input, UNFREEZE_TOKEN_FUNCTION_SELECTOR, UNFREEZE_TOKEN_ACCOUNT_DECODER);
 
         final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
-        final var accountID =
-                convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
+        final var accountID = convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
         return TokenFreezeUnfreezeWrapper.forUnfreeze(tokenID, accountID);
     }
 }

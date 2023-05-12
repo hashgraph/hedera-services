@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.factories.scenarios;
 
 import static com.hedera.test.factories.txns.CryptoDeleteFactory.newSignedCryptoDelete;
@@ -29,8 +30,8 @@ public enum CryptoDeleteScenarios implements TxnHandlingScenario {
     },
     CRYPTO_DELETE_NO_TARGET_RECEIVER_SIG_CUSTOM_PAYER_PAID_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(
-                    newSignedCryptoDelete(CUSTOM_PAYER_ACCOUNT_ID, NO_RECEIVER_SIG_ID).get());
+            return PlatformTxnAccessor.from(newSignedCryptoDelete(CUSTOM_PAYER_ACCOUNT_ID, NO_RECEIVER_SIG_ID)
+                    .get());
         }
     },
     CRYPTO_DELETE_NO_TARGET_RECEIVER_SIG_SCENARIO {
@@ -59,8 +60,8 @@ public enum CryptoDeleteScenarios implements TxnHandlingScenario {
     },
     CRYPTO_DELETE_TARGET_RECEIVER_SIG_CUSTOM_PAYER_PAID_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(
-                    newSignedCryptoDelete(CUSTOM_PAYER_ACCOUNT_ID, RECEIVER_SIG_ID).get());
+            return PlatformTxnAccessor.from(newSignedCryptoDelete(CUSTOM_PAYER_ACCOUNT_ID, RECEIVER_SIG_ID)
+                    .get());
         }
     },
     CRYPTO_DELETE_MISSING_RECEIVER_SIG_SCENARIO {
@@ -71,8 +72,8 @@ public enum CryptoDeleteScenarios implements TxnHandlingScenario {
     },
     CRYPTO_DELETE_MISSING_TARGET {
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(
-                    newSignedCryptoDelete(MISSING_ACCOUNT_ID, NO_RECEIVER_SIG_ID).get());
+            return PlatformTxnAccessor.from(newSignedCryptoDelete(MISSING_ACCOUNT_ID, NO_RECEIVER_SIG_ID)
+                    .get());
         }
     },
 }

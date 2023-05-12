@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.token;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -146,13 +147,11 @@ class TokenGrantKycTransitionLogicTest {
     }
 
     private void givenValidTxnCtx() {
-        tokenGrantKycTxn =
-                TransactionBody.newBuilder()
-                        .setTokenGrantKyc(
-                                TokenGrantKycTransactionBody.newBuilder()
-                                        .setAccount(accountID)
-                                        .setToken(tokenID))
-                        .build();
+        tokenGrantKycTxn = TransactionBody.newBuilder()
+                .setTokenGrantKyc(TokenGrantKycTransactionBody.newBuilder()
+                        .setAccount(accountID)
+                        .setToken(tokenID))
+                .build();
         given(accessor.getTxn()).willReturn(tokenGrantKycTxn);
         given(txnCtx.accessor()).willReturn(accessor);
         given(tokenStore.loadToken(tokenId)).willReturn(token);
@@ -161,18 +160,15 @@ class TokenGrantKycTransitionLogicTest {
     }
 
     private void givenMissingToken() {
-        tokenGrantKycTxn =
-                TransactionBody.newBuilder()
-                        .setTokenGrantKyc(TokenGrantKycTransactionBody.newBuilder())
-                        .build();
+        tokenGrantKycTxn = TransactionBody.newBuilder()
+                .setTokenGrantKyc(TokenGrantKycTransactionBody.newBuilder())
+                .build();
     }
 
     private void givenMissingAccount() {
-        tokenGrantKycTxn =
-                TransactionBody.newBuilder()
-                        .setTokenGrantKyc(
-                                TokenGrantKycTransactionBody.newBuilder().setToken(tokenID))
-                        .build();
+        tokenGrantKycTxn = TransactionBody.newBuilder()
+                .setTokenGrantKyc(TokenGrantKycTransactionBody.newBuilder().setToken(tokenID))
+                .build();
     }
 
     private void assertFailsWith(Runnable something, ResponseCodeEnum status) {

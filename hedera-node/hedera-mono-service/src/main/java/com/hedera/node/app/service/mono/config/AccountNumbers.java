@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.config;
 
 import static com.hedera.node.app.service.mono.config.EntityNumbers.UNKNOWN_NUMBER;
@@ -36,6 +37,7 @@ import javax.inject.Singleton;
 /** FUTURE: This class will be moved to hedera-app-spi module in future PRs */
 @Singleton
 public class AccountNumbers implements HederaAccountNumbers {
+
     private final PropertySource properties;
 
     private long treasury = UNKNOWN_NUMBER;
@@ -50,7 +52,7 @@ public class AccountNumbers implements HederaAccountNumbers {
     private long nodeRewardAccount = UNKNOWN_NUMBER;
 
     @Inject
-    public AccountNumbers(@CompositeProps PropertySource properties) {
+    public AccountNumbers(@CompositeProps final PropertySource properties) {
         this.properties = properties;
     }
 
@@ -135,7 +137,7 @@ public class AccountNumbers implements HederaAccountNumbers {
     }
 
     @Override
-    public boolean isSuperuser(long num) {
+    public boolean isSuperuser(final long num) {
         return num == treasury() || num == systemAdmin();
     }
 }

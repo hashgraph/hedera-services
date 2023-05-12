@@ -13,10 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.crypto;
 
 import static com.hedera.node.app.service.mono.ledger.accounts.AliasManager.keyAliasToEVMAddress;
 import static com.hedera.node.app.service.mono.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isAliasSizeGreaterThanEvmAddress;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isOfEvmAddressSize;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asPrimitiveKeyUnchecked;
 
@@ -36,7 +39,6 @@ import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.store.models.Id;
-import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
@@ -77,7 +79,7 @@ public class AutoCreationLogic extends AbstractAutoCreationLogic {
         // If the transaction fails, we will get an opportunity to unlink this alias in
         // reclaimPendingAliases()
         aliasManager.link(alias, EntityNum.fromAccountId(newId));
-        if (alias.size() > EntityIdUtils.EVM_ADDRESS_SIZE) {
+        if (isAliasSizeGreaterThanEvmAddress(alias)) {
             final var key = asPrimitiveKeyUnchecked(alias);
             JKey jKey = asFcKeyUnchecked(key);
             aliasManager.maybeLinkEvmAddress(jKey, EntityNum.fromAccountId(newId));
@@ -93,15 +95,15 @@ public class AutoCreationLogic extends AbstractAutoCreationLogic {
     public boolean reclaimPendingAliases() {
         if (!pendingCreations.isEmpty()) {
             for (final var pendingCreation : pendingCreations) {
-                final var syntheticTxnBody =
-                        pendingCreation.syntheticBody().getCryptoCreateAccount();
+                final var syntheticTxnBody = pendingCreation.syntheticBody().getCryptoCreateAccount();
                 final var alias = syntheticTxnBody.getAlias();
                 if (!alias.isEmpty()) {
                     aliasManager.unlink(alias);
-                }
-                final var evmAddress = syntheticTxnBody.getEvmAddress();
-                if (!evmAddress.isEmpty()) {
-                    aliasManager.unlink(evmAddress);
+                    if (!isOfEvmAddressSize(alias)) {
+                        // if this is an alias of type ECDSA public key
+                        // we should also unlink the EVM address derived from that key
+                        aliasManager.forgetEvmAddress(alias);
+                    }
                 }
             }
             return true;
@@ -111,8 +113,7 @@ public class AutoCreationLogic extends AbstractAutoCreationLogic {
     }
 
     @Override
-    protected void trackSigImpactIfNeeded(
-            final Builder syntheticCreation, ExpirableTxnRecord.Builder childRecord) {
+    protected void trackSigImpactIfNeeded(final Builder syntheticCreation, ExpirableTxnRecord.Builder childRecord) {
         final var alias = syntheticCreation.getCryptoCreateAccount().getAlias();
         if (alias != ByteString.EMPTY) {
             sigImpactHistorian.markAliasChanged(alias);
@@ -121,14 +122,13 @@ public class AutoCreationLogic extends AbstractAutoCreationLogic {
                 sigImpactHistorian.markAliasChanged(ByteString.copyFrom(maybeAddress));
             }
         }
-        sigImpactHistorian.markEntityChanged(childRecord.getReceiptBuilder().getAccountId().num());
+        sigImpactHistorian.markEntityChanged(
+                childRecord.getReceiptBuilder().getAccountId().num());
     }
 
     public void submitRecordsTo(final RecordsHistorian recordsHistorian) {
-        submitRecords(
-                (syntheticBody, recordSoFar) ->
-                        recordsHistorian.trackPrecedingChildRecord(
-                                DEFAULT_SOURCE_ID, syntheticBody, recordSoFar));
+        submitRecords((syntheticBody, recordSoFar) ->
+                recordsHistorian.trackPrecedingChildRecord(DEFAULT_SOURCE_ID, syntheticBody, recordSoFar));
     }
 
     @VisibleForTesting

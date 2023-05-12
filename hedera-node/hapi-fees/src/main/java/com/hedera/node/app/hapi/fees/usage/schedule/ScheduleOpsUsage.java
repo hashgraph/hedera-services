@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage.schedule;
 
 import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
@@ -43,8 +44,11 @@ public class ScheduleOpsUsage {
     /* Scheduled transaction ids have the scheduled=true flag set */
     private static final long SCHEDULED_TXN_ID_SIZE = (1L * BASIC_TX_ID_SIZE) + BOOL_SIZE;
 
-    @VisibleForTesting EstimatorFactory txnEstimateFactory = TxnUsageEstimator::new;
-    @VisibleForTesting Function<ResponseType, QueryUsage> queryEstimateFactory = QueryUsage::new;
+    @VisibleForTesting
+    EstimatorFactory txnEstimateFactory = TxnUsageEstimator::new;
+
+    @VisibleForTesting
+    Function<ResponseType, QueryUsage> queryEstimateFactory = QueryUsage::new;
 
     @Inject
     public ScheduleOpsUsage() {
@@ -61,22 +65,21 @@ public class ScheduleOpsUsage {
         return estimate.get();
     }
 
-    public FeeData scheduleCreateUsage(
-            TransactionBody scheduleCreate, SigUsage sigUsage, long lifetimeSecs) {
+    public FeeData scheduleCreateUsage(TransactionBody scheduleCreate, SigUsage sigUsage, long lifetimeSecs) {
         var op = scheduleCreate.getScheduleCreate();
 
         var scheduledTxn = op.getScheduledTransactionBody();
-        long msgBytesUsed = (long) scheduledTxn.getSerializedSize() + op.getMemoBytes().size();
+        long msgBytesUsed =
+                (long) scheduledTxn.getSerializedSize() + op.getMemoBytes().size();
         if (op.hasPayerAccountID()) {
             msgBytesUsed += BASIC_ENTITY_ID_SIZE;
         }
 
-        var creationCtx =
-                ExtantScheduleContext.newBuilder()
-                        .setScheduledTxn(scheduledTxn)
-                        .setNumSigners(SCHEDULE_ENTITY_SIZES.estimatedScheduleSigs(sigUsage))
-                        .setMemo(op.getMemo())
-                        .setResolved(false);
+        var creationCtx = ExtantScheduleContext.newBuilder()
+                .setScheduledTxn(scheduledTxn)
+                .setNumSigners(SCHEDULE_ENTITY_SIZES.estimatedScheduleSigs(sigUsage))
+                .setMemo(op.getMemo())
+                .setResolved(false);
         if (op.hasAdminKey()) {
             var adminKey = op.getAdminKey();
             msgBytesUsed += getAccountKeyStorageSize(adminKey);
@@ -92,8 +95,7 @@ public class ScheduleOpsUsage {
         /* The receipt of a schedule create includes both the id of the created schedule
         and the transaction id to use for querying the record of the scheduled txn. */
         estimate.addNetworkRbs(
-                (BASIC_ENTITY_ID_SIZE + SCHEDULED_TXN_ID_SIZE)
-                        * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+                (BASIC_ENTITY_ID_SIZE + SCHEDULED_TXN_ID_SIZE) * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 
         if (scheduledTxn.hasContractCall()) {
             return estimate.get(SCHEDULE_CREATE_CONTRACT_CALL);
@@ -102,8 +104,7 @@ public class ScheduleOpsUsage {
         return estimate.get();
     }
 
-    public FeeData scheduleSignUsage(
-            TransactionBody scheduleSign, SigUsage sigUsage, long scheduleExpiry) {
+    public FeeData scheduleSignUsage(TransactionBody scheduleSign, SigUsage sigUsage, long scheduleExpiry) {
         var estimate = txnEstimateFactory.get(sigUsage, scheduleSign, ESTIMATOR_UTILS);
 
         estimate.addBpt(BASIC_ENTITY_ID_SIZE);
@@ -117,8 +118,7 @@ public class ScheduleOpsUsage {
         return estimate.get();
     }
 
-    public FeeData scheduleDeleteUsage(
-            TransactionBody scheduleDelete, SigUsage sigUsage, long scheduleExpiry) {
+    public FeeData scheduleDeleteUsage(TransactionBody scheduleDelete, SigUsage sigUsage, long scheduleExpiry) {
         var estimate = txnEstimateFactory.get(sigUsage, scheduleDelete, ESTIMATOR_UTILS);
 
         estimate.addBpt(BASIC_ENTITY_ID_SIZE);

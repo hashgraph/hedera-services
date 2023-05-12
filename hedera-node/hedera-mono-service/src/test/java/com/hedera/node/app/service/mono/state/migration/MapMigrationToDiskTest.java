@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.migration;
 
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.ACCOUNTS;
@@ -59,12 +60,23 @@ class MapMigrationToDiskTest {
     private final EntityNumPair aNumPair = new EntityNumPair(666L);
     private final EntityNumPair bNumPair = new EntityNumPair(777L);
 
-    @Mock private ServicesState mutableState;
-    @Mock private VirtualMapFactory virtualMapFactory;
-    @Mock private VirtualMap<EntityNumVirtualKey, OnDiskAccount> accountStore;
-    @Mock private VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> tokenRelStore;
-    @Mock private Function<MerkleAccountState, OnDiskAccount> accountMigrator;
-    @Mock private Function<MerkleTokenRelStatus, OnDiskTokenRel> tokenRelMigrator;
+    @Mock
+    private ServicesState mutableState;
+
+    @Mock
+    private VirtualMapFactory virtualMapFactory;
+
+    @Mock
+    private VirtualMap<EntityNumVirtualKey, OnDiskAccount> accountStore;
+
+    @Mock
+    private VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> tokenRelStore;
+
+    @Mock
+    private Function<MerkleAccountState, OnDiskAccount> accountMigrator;
+
+    @Mock
+    private Function<MerkleTokenRelStatus, OnDiskTokenRel> tokenRelMigrator;
 
     @Test
     @SuppressWarnings("unchecked")
@@ -78,8 +90,7 @@ class MapMigrationToDiskTest {
         liveAccounts.put(aNum, aAccount);
         liveAccounts.put(bNum, bAccount);
 
-        final ArgumentCaptor<MerkleMap<EntityNum, MerklePayerRecords>> captor =
-                forClass(MerkleMap.class);
+        final ArgumentCaptor<MerkleMap<EntityNum, MerklePayerRecords>> captor = forClass(MerkleMap.class);
         final var aPretendOnDiskAccount = new OnDiskAccount();
         final var bPretendOnDiskAccount = new OnDiskAccount();
 
@@ -90,12 +101,7 @@ class MapMigrationToDiskTest {
         given(accountMigrator.apply(bAccount.state())).willReturn(bPretendOnDiskAccount);
 
         MapMigrationToDisk.migrateToDiskAsApropos(
-                1,
-                mutableState,
-                accountsOnly,
-                virtualMapFactory,
-                accountMigrator,
-                tokenRelMigrator);
+                1, mutableState, accountsOnly, virtualMapFactory, accountMigrator, tokenRelMigrator);
 
         verify(mutableState).setChild(ACCOUNTS, accountStore);
         verify(mutableState).setChild(eq(StateChildIndices.PAYER_RECORDS), captor.capture());
@@ -125,8 +131,7 @@ class MapMigrationToDiskTest {
         liveRels.put(aNumPair, aRel);
         liveRels.put(bNumPair, bRel);
 
-        final ArgumentCaptor<MerkleMap<EntityNum, MerklePayerRecords>> captor =
-                forClass(MerkleMap.class);
+        final ArgumentCaptor<MerkleMap<EntityNum, MerklePayerRecords>> captor = forClass(MerkleMap.class);
         final var aPretendOnDiskRel = new OnDiskTokenRel();
         final var bPretendOnDiskRel = new OnDiskTokenRel();
 

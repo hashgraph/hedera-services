@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.mocks;
 
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
@@ -77,8 +78,7 @@ public class MockEntityCreator implements EntityCreator {
     }
 
     @Override
-    public Builder createInvalidFailureRecord(
-            final TxnAccessor accessor, final Instant consensusTimestamp) {
+    public Builder createInvalidFailureRecord(final TxnAccessor accessor, final Instant consensusTimestamp) {
         return ExpirableTxnRecord.newBuilder();
     }
 }

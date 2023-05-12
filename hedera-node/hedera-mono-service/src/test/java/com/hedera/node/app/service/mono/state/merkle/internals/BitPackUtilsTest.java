@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.merkle.internals;
 
 import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.MAX_NUM_ALLOWED;
@@ -37,9 +38,7 @@ import org.junit.jupiter.api.Test;
 class BitPackUtilsTest {
     private final int maxAutoAssociations = 123;
     private final int alreadyUsedAutomaticAssociations = 12;
-    private int metadata =
-            buildAutomaticAssociationMetaData(
-                    maxAutoAssociations, alreadyUsedAutomaticAssociations);
+    private int metadata = buildAutomaticAssociationMetaData(maxAutoAssociations, alreadyUsedAutomaticAssociations);
 
     @Test
     void numFromCodeWorks() {
@@ -57,9 +56,7 @@ class BitPackUtilsTest {
     void codeFromNumThrowsWhenOutOfRange() {
         // expect:
         assertThrows(IllegalArgumentException.class, () -> BitPackUtils.codeFromNum(-1));
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> BitPackUtils.codeFromNum(MAX_NUM_ALLOWED + 1));
+        assertThrows(IllegalArgumentException.class, () -> BitPackUtils.codeFromNum(MAX_NUM_ALLOWED + 1));
     }
 
     @Test
@@ -67,9 +64,7 @@ class BitPackUtilsTest {
         // expect:
         assertDoesNotThrow(() -> BitPackUtils.assertValid(MAX_NUM_ALLOWED));
         assertThrows(IllegalArgumentException.class, () -> BitPackUtils.assertValid(-1));
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> BitPackUtils.assertValid(MAX_NUM_ALLOWED + 1));
+        assertThrows(IllegalArgumentException.class, () -> BitPackUtils.assertValid(MAX_NUM_ALLOWED + 1));
     }
 
     @Test
@@ -80,9 +75,7 @@ class BitPackUtilsTest {
         // when:
         final var packed = packedTime(distantFuture.getEpochSecond(), distantFuture.getNano());
         // and:
-        final var unpacked =
-                Instant.ofEpochSecond(
-                        unsignedHighOrder32From(packed), signedLowOrder32From(packed));
+        final var unpacked = Instant.ofEpochSecond(unsignedHighOrder32From(packed), signedLowOrder32From(packed));
 
         // then:
         assertEquals(distantFuture, unpacked);
@@ -113,12 +106,8 @@ class BitPackUtilsTest {
         final long bigNum = MAX_NUM_ALLOWED;
 
         // given:
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> BitPackUtils.packedNums(overlyBigNum, bigNum));
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> BitPackUtils.packedNums(bigNum, overlyBigNum));
+        assertThrows(IllegalArgumentException.class, () -> BitPackUtils.packedNums(overlyBigNum, bigNum));
+        assertThrows(IllegalArgumentException.class, () -> BitPackUtils.packedNums(bigNum, overlyBigNum));
     }
 
     @Test
@@ -130,9 +119,7 @@ class BitPackUtilsTest {
     @Test
     void automaticAssociationsMetaWorks() {
         assertEquals(maxAutoAssociations, getMaxAutomaticAssociationsFrom(metadata));
-        assertEquals(
-                alreadyUsedAutomaticAssociations,
-                getAlreadyUsedAutomaticAssociationsFrom(metadata));
+        assertEquals(alreadyUsedAutomaticAssociations, getAlreadyUsedAutomaticAssociationsFrom(metadata));
     }
 
     @Test
@@ -142,12 +129,9 @@ class BitPackUtilsTest {
         metadata = setMaxAutomaticAssociationsTo(metadata, newMax);
 
         assertEquals(newMax, getMaxAutomaticAssociationsFrom(metadata));
-        assertEquals(
-                alreadyUsedAutomaticAssociations,
-                getAlreadyUsedAutomaticAssociationsFrom(metadata));
+        assertEquals(alreadyUsedAutomaticAssociations, getAlreadyUsedAutomaticAssociationsFrom(metadata));
 
-        int newAlreadyAutoAssociations =
-                alreadyUsedAutomaticAssociations + alreadyUsedAutomaticAssociations;
+        int newAlreadyAutoAssociations = alreadyUsedAutomaticAssociations + alreadyUsedAutomaticAssociations;
 
         metadata = setAlreadyUsedAutomaticAssociationsTo(metadata, newAlreadyAutoAssociations);
 

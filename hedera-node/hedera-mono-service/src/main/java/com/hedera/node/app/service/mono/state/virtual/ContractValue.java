@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -126,11 +127,9 @@ public class ContractValue implements VirtualValue {
      */
     public void setValue(byte[] bigEndianUint256Value) {
         Objects.requireNonNull(bigEndianUint256Value);
-        if (isImmutable)
-            throw new IllegalStateException(IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR);
+        if (isImmutable) throw new IllegalStateException(IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR);
         if (bigEndianUint256Value.length != 32) {
-            throw new IllegalArgumentException(
-                    "Tried to set ContractValue value with array that is not 32 bytes.");
+            throw new IllegalArgumentException("Tried to set ContractValue value with array that is not 32 bytes.");
         }
         this.uint256Value = bigEndianUint256Value;
     }
@@ -143,24 +142,18 @@ public class ContractValue implements VirtualValue {
      */
     public void setValue(BigInteger value) {
         Objects.requireNonNull(value);
-        if (isImmutable)
-            throw new IllegalStateException(IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR);
+        if (isImmutable) throw new IllegalStateException(IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR);
         byte[] bigIntegerBytes = value.toByteArray();
         bigIntegerBytes[0] &= 0b01111111; // remove sign
         if (bigIntegerBytes.length == 32) {
             this.uint256Value = bigIntegerBytes;
         } else if (bigIntegerBytes.length > 32) {
             this.uint256Value = new byte[32];
-            System.arraycopy(
-                    bigIntegerBytes, bigIntegerBytes.length - 32, this.uint256Value, 0, 32);
+            System.arraycopy(bigIntegerBytes, bigIntegerBytes.length - 32, this.uint256Value, 0, 32);
         } else {
             this.uint256Value = new byte[32];
             System.arraycopy(
-                    bigIntegerBytes,
-                    0,
-                    this.uint256Value,
-                    32 - bigIntegerBytes.length,
-                    bigIntegerBytes.length);
+                    bigIntegerBytes, 0, this.uint256Value, 32 - bigIntegerBytes.length, bigIntegerBytes.length);
         }
     }
 
@@ -171,8 +164,7 @@ public class ContractValue implements VirtualValue {
      * @param value long value
      */
     public void setValue(long value) {
-        if (isImmutable)
-            throw new IllegalStateException(IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR);
+        if (isImmutable) throw new IllegalStateException(IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR);
         this.uint256Value = new byte[32];
         this.uint256Value[24] = (byte) (value >>> 56);
         this.uint256Value[25] = (byte) (value >>> 48);
@@ -248,16 +240,14 @@ public class ContractValue implements VirtualValue {
 
     @Override
     public void deserialize(SerializableDataInputStream inputStream, int i) throws IOException {
-        if (isImmutable)
-            throw new IllegalStateException(IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR);
+        if (isImmutable) throw new IllegalStateException(IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR);
         int lengthRead = inputStream.read(this.uint256Value);
         assert lengthRead == SERIALIZED_SIZE;
     }
 
     @Override
     public void deserialize(ByteBuffer byteBuffer, int i) throws IOException {
-        if (isImmutable)
-            throw new IllegalStateException(IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR);
+        if (isImmutable) throw new IllegalStateException(IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR);
         byteBuffer.get(this.uint256Value);
     }
 }

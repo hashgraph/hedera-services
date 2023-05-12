@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.file.queries;
 
 import static com.hedera.test.utils.IdUtils.asFile;
@@ -52,13 +53,12 @@ class GetFileInfoResourceUsageTest {
     private static final String memo = "Ok whatever";
     private static final FileID target = asFile("0.0.123");
     private static final Key wacl = TxnHandlingScenario.MISC_FILE_WACL_KT.asKey();
-    private static final FileGetInfoResponse.FileInfo targetInfo =
-            FileGetInfoResponse.FileInfo.newBuilder()
-                    .setExpirationTime(Timestamp.newBuilder().setSeconds(expiry).build())
-                    .setSize(size)
-                    .setMemo(memo)
-                    .setKeys(wacl.getKeyList())
-                    .build();
+    private static final FileGetInfoResponse.FileInfo targetInfo = FileGetInfoResponse.FileInfo.newBuilder()
+            .setExpirationTime(Timestamp.newBuilder().setSeconds(expiry).build())
+            .setSize(size)
+            .setMemo(memo)
+            .setKeys(wacl.getKeyList())
+            .build();
 
     private StateView view;
     private FileOpsUsage fileOpsUsage;
@@ -111,10 +111,9 @@ class GetFileInfoResourceUsageTest {
     }
 
     private static final Query fileInfoQuery(final FileID id, final ResponseType type) {
-        final var op =
-                FileGetInfoQuery.newBuilder()
-                        .setFileID(id)
-                        .setHeader(QueryHeader.newBuilder().setResponseType(type));
+        final var op = FileGetInfoQuery.newBuilder()
+                .setFileID(id)
+                .setHeader(QueryHeader.newBuilder().setResponseType(type));
         return Query.newBuilder().setFileGetInfo(op).build();
     }
 }

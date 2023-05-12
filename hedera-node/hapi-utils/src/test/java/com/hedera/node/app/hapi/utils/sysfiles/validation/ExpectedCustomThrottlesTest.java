@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.utils.sysfiles.validation;
 
 import static com.hedera.node.app.hapi.utils.sysfiles.validation.ExpectedCustomThrottles.ACTIVE_OPS;
@@ -102,26 +103,20 @@ class ExpectedCustomThrottlesTest {
         assertTrue(ACTIVE_OPS.contains(TokenCreate), "Missing TokenCreate!");
         assertTrue(ACTIVE_OPS.contains(TokenFreezeAccount), "Missing TokenFreezeAccount!");
         assertTrue(ACTIVE_OPS.contains(TokenGetNftInfo), "Missing TokenGetNftInfo!");
-        assertTrue(
-                ACTIVE_OPS.contains(TokenGetAccountNftInfos), "Missing TokenGetAccountNftInfos!");
+        assertTrue(ACTIVE_OPS.contains(TokenGetAccountNftInfos), "Missing TokenGetAccountNftInfos!");
         assertTrue(ACTIVE_OPS.contains(TokenGetNftInfos), "Missing TokenGetNftInfos!");
         assertTrue(ACTIVE_OPS.contains(TokenUnfreezeAccount), "Missing TokenUnfreezeAccount!");
         assertTrue(ACTIVE_OPS.contains(TokenPause), "Missing TokenPause!");
         assertTrue(ACTIVE_OPS.contains(TokenUnpause), "Missing TokenUnpause!");
         assertTrue(ACTIVE_OPS.contains(TokenGrantKycToAccount), "Missing TokenGrantKycToAccount!");
-        assertTrue(
-                ACTIVE_OPS.contains(TokenRevokeKycFromAccount),
-                "Missing TokenRevokeKycFromAccount!");
+        assertTrue(ACTIVE_OPS.contains(TokenRevokeKycFromAccount), "Missing TokenRevokeKycFromAccount!");
         assertTrue(ACTIVE_OPS.contains(TokenDelete), "Missing TokenDelete!");
         assertTrue(ACTIVE_OPS.contains(TokenMint), "Missing TokenMint!");
         assertTrue(ACTIVE_OPS.contains(TokenBurn), "Missing TokenBurn!");
         assertTrue(ACTIVE_OPS.contains(TokenAccountWipe), "Missing TokenAccountWipe!");
         assertTrue(ACTIVE_OPS.contains(TokenUpdate), "Missing TokenUpdate!");
-        assertTrue(
-                ACTIVE_OPS.contains(TokenAssociateToAccount), "Missing TokenAssociateToAccount!");
-        assertTrue(
-                ACTIVE_OPS.contains(TokenDissociateFromAccount),
-                "Missing TokenDissociateFromAccount!");
+        assertTrue(ACTIVE_OPS.contains(TokenAssociateToAccount), "Missing TokenAssociateToAccount!");
+        assertTrue(ACTIVE_OPS.contains(TokenDissociateFromAccount), "Missing TokenDissociateFromAccount!");
         assertTrue(ACTIVE_OPS.contains(TokenFeeScheduleUpdate), "Missing TokenFeeScheduleUpdate!");
         assertTrue(ACTIVE_OPS.contains(ScheduleCreate), "Missing ScheduleCreate!");
         assertTrue(ACTIVE_OPS.contains(ScheduleSign), "Missing ScheduleSign!");
@@ -131,10 +126,8 @@ class ExpectedCustomThrottlesTest {
         assertTrue(ACTIVE_OPS.contains(ContractGetInfo), "Missing ContractGetInfo!");
         assertTrue(ACTIVE_OPS.contains(ContractGetBytecode), "Missing ContractGetBytecode!");
         assertTrue(ACTIVE_OPS.contains(ContractGetRecords), "Missing ContractGetRecords!");
-        assertTrue(
-                ACTIVE_OPS.contains(CryptoGetAccountBalance), "Missing CryptoGetAccountBalance!");
-        assertTrue(
-                ACTIVE_OPS.contains(CryptoGetAccountRecords), "Missing CryptoGetAccountRecords!");
+        assertTrue(ACTIVE_OPS.contains(CryptoGetAccountBalance), "Missing CryptoGetAccountBalance!");
+        assertTrue(ACTIVE_OPS.contains(CryptoGetAccountRecords), "Missing CryptoGetAccountRecords!");
         assertTrue(ACTIVE_OPS.contains(CryptoGetInfo), "Missing CryptoGetInfo!");
         assertTrue(ACTIVE_OPS.contains(FileGetContents), "Missing FileGetContents!");
         assertTrue(ACTIVE_OPS.contains(FileGetInfo), "Missing FileGetInfo!");

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.span;
 
 import static com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
@@ -73,42 +74,33 @@ class SpanMapManagerTest {
     private final boolean autoCreationEnabled = true;
     private final boolean lazyCreationEnabled = true;
     private final boolean areAllowancesEnabled = true;
-    private final ImpliedTransfersMeta.ValidationProps validationProps =
-            new ImpliedTransfersMeta.ValidationProps(
-                    maxHbarAdjusts,
-                    maxTokenAdjusts,
-                    maxOwnershipChanges,
-                    maxFeeNesting,
-                    maxBalanceChanges,
-                    areNftsEnabled,
-                    autoCreationEnabled,
-                    lazyCreationEnabled,
-                    areAllowancesEnabled);
-    private final ImpliedTransfersMeta.ValidationProps otherValidationProps =
-            new ImpliedTransfersMeta.ValidationProps(
-                    maxHbarAdjusts,
-                    maxTokenAdjusts,
-                    maxOwnershipChanges + 1,
-                    maxFeeNesting,
-                    maxBalanceChanges,
-                    areNftsEnabled,
-                    autoCreationEnabled,
-                    lazyCreationEnabled,
-                    areAllowancesEnabled);
+    private final ImpliedTransfersMeta.ValidationProps validationProps = new ImpliedTransfersMeta.ValidationProps(
+            maxHbarAdjusts,
+            maxTokenAdjusts,
+            maxOwnershipChanges,
+            maxFeeNesting,
+            maxBalanceChanges,
+            areNftsEnabled,
+            autoCreationEnabled,
+            lazyCreationEnabled,
+            areAllowancesEnabled);
+    private final ImpliedTransfersMeta.ValidationProps otherValidationProps = new ImpliedTransfersMeta.ValidationProps(
+            maxHbarAdjusts,
+            maxTokenAdjusts,
+            maxOwnershipChanges + 1,
+            maxFeeNesting,
+            maxBalanceChanges,
+            areNftsEnabled,
+            autoCreationEnabled,
+            lazyCreationEnabled,
+            areAllowancesEnabled);
     private final TransactionBody pretendXferTxn = TransactionBody.getDefaultInstance();
     private final ImpliedTransfers someImpliedXfers =
             ImpliedTransfers.invalid(validationProps, ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
     private final ImpliedTransfers someOtherImpliedXfers =
             ImpliedTransfers.invalid(otherValidationProps, ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
-    private final ImpliedTransfers someValidImpliedXfers =
-            ImpliedTransfers.valid(
-                    validationProps,
-                    Collections.emptyList(),
-                    NO_CUSTOM_FEE_META,
-                    NO_CUSTOM_FEES,
-                    NO_ALIASES,
-                    2,
-                    0);
+    private final ImpliedTransfers someValidImpliedXfers = ImpliedTransfers.valid(
+            validationProps, Collections.emptyList(), NO_CUSTOM_FEE_META, NO_CUSTOM_FEES, NO_ALIASES, 2, 0);
 
     private final AccountID payer = AccountID.newBuilder().setAccountNum(12345L).build();
     private final Id treasury = new Id(0, 0, 2);
@@ -117,53 +109,28 @@ class SpanMapManagerTest {
     final List<CustomFeeMeta> entityCustomFees =
             List.of(new CustomFeeMeta(customFeeToken, treasury, new ArrayList<>()));
 
-    final List<CustomFeeMeta> newCustomFeeChanges =
-            List.of(
-                    new CustomFeeMeta(
-                            customFeeToken,
-                            treasury,
-                            List.of(
-                                    FcCustomFee.fixedFee(
-                                            10L,
-                                            customFeeToken.asEntityId(),
-                                            customFeeCollector.asEntityId(),
-                                            false))));
+    final List<CustomFeeMeta> newCustomFeeChanges = List.of(new CustomFeeMeta(
+            customFeeToken,
+            treasury,
+            List.of(FcCustomFee.fixedFee(10L, customFeeToken.asEntityId(), customFeeCollector.asEntityId(), false))));
     private final AccountID[] effPayerAccountIds =
             new AccountID[] {AccountID.newBuilder().setAccountNum(123L).build()};
-    private final List<AssessedCustomFeeWrapper> assessedCustomFees =
-            List.of(
-                    new AssessedCustomFeeWrapper(
-                            customFeeCollector.asEntityId(),
-                            customFeeToken.asEntityId(),
-                            123L,
-                            effPayerAccountIds),
-                    new AssessedCustomFeeWrapper(
-                            customFeeCollector.asEntityId(), 123L, effPayerAccountIds));
+    private final List<AssessedCustomFeeWrapper> assessedCustomFees = List.of(
+            new AssessedCustomFeeWrapper(
+                    customFeeCollector.asEntityId(), customFeeToken.asEntityId(), 123L, effPayerAccountIds),
+            new AssessedCustomFeeWrapper(customFeeCollector.asEntityId(), 123L, effPayerAccountIds));
 
     private final AccountID[] effPayerNumWrapped =
             new AccountID[] {AccountID.newBuilder().setAccountNum(123L).build()};
-    private final List<AssessedCustomFeeWrapper> assessedCustomFeesWrappers =
-            List.of(
-                    new AssessedCustomFeeWrapper(
-                            customFeeCollector.asEntityId(),
-                            customFeeToken.asEntityId(),
-                            123L,
-                            effPayerNumWrapped),
-                    new AssessedCustomFeeWrapper(
-                            customFeeCollector.asEntityId(), 123L, effPayerNumWrapped));
+    private final List<AssessedCustomFeeWrapper> assessedCustomFeesWrappers = List.of(
+            new AssessedCustomFeeWrapper(
+                    customFeeCollector.asEntityId(), customFeeToken.asEntityId(), 123L, effPayerNumWrapped),
+            new AssessedCustomFeeWrapper(customFeeCollector.asEntityId(), 123L, effPayerNumWrapped));
 
     private final ImpliedTransfers validImpliedTransfers =
-            ImpliedTransfers.valid(
-                    validationProps,
-                    new ArrayList<>(),
-                    entityCustomFees,
-                    assessedCustomFeesWrappers);
-    private final ImpliedTransfers feeChangedImpliedTransfers =
-            ImpliedTransfers.valid(
-                    otherValidationProps,
-                    new ArrayList<>(),
-                    newCustomFeeChanges,
-                    assessedCustomFeesWrappers);
+            ImpliedTransfers.valid(validationProps, new ArrayList<>(), entityCustomFees, assessedCustomFeesWrappers);
+    private final ImpliedTransfers feeChangedImpliedTransfers = ImpliedTransfers.valid(
+            otherValidationProps, new ArrayList<>(), newCustomFeeChanges, assessedCustomFeesWrappers);
 
     private final ExpandHandleSpanMapAccessor spanMapAccessor = new ExpandHandleSpanMapAccessor();
 
@@ -171,36 +138,58 @@ class SpanMapManagerTest {
 
     private final Map<String, Object> span = new HashMap<>();
 
-    @Mock private TxnAccessor accessor;
-    @Mock private ImpliedTransfersMarshal impliedTransfersMarshal;
-    @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private ImpliedTransfers mockImpliedTransfers;
-    @Mock private CustomFeeSchedules customFeeSchedules;
-    @Mock private AliasManager aliasManager;
-    @Mock private SignedStateViewFactory stateViewFactory;
-    @Mock private ContractCallTransitionLogic contractCallTransitionLogic;
-    @Mock private Function<EthTxData, EthTxSigs> sigsFunction;
-    @Mock private MutableStateChildren workingState;
-    @Mock private SigImpactHistorian sigImpactHistorian;
-    @Mock private SyntheticTxnFactory syntheticTxnFactory;
+    @Mock
+    private TxnAccessor accessor;
+
+    @Mock
+    private ImpliedTransfersMarshal impliedTransfersMarshal;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
+
+    @Mock
+    private ImpliedTransfers mockImpliedTransfers;
+
+    @Mock
+    private CustomFeeSchedules customFeeSchedules;
+
+    @Mock
+    private AliasManager aliasManager;
+
+    @Mock
+    private SignedStateViewFactory stateViewFactory;
+
+    @Mock
+    private ContractCallTransitionLogic contractCallTransitionLogic;
+
+    @Mock
+    private Function<EthTxData, EthTxSigs> sigsFunction;
+
+    @Mock
+    private MutableStateChildren workingState;
+
+    @Mock
+    private SigImpactHistorian sigImpactHistorian;
+
+    @Mock
+    private SyntheticTxnFactory syntheticTxnFactory;
 
     private SpanMapManager subject;
 
     @BeforeEach
     void setUp() {
-        subject =
-                new SpanMapManager(
-                        sigsFunction,
-                        contractCallTransitionLogic,
-                        new ExpandHandleSpanMapAccessor(),
-                        impliedTransfersMarshal,
-                        dynamicProperties,
-                        stateViewFactory,
-                        syntheticTxnFactory,
-                        customFeeSchedules,
-                        sigImpactHistorian,
-                        workingState,
-                        aliasManager);
+        subject = new SpanMapManager(
+                sigsFunction,
+                contractCallTransitionLogic,
+                new ExpandHandleSpanMapAccessor(),
+                impliedTransfersMarshal,
+                dynamicProperties,
+                stateViewFactory,
+                syntheticTxnFactory,
+                customFeeSchedules,
+                sigImpactHistorian,
+                workingState,
+                aliasManager);
     }
 
     @Test
@@ -296,8 +285,7 @@ class SpanMapManagerTest {
         subject.rationalizeSpan(accessor);
 
         // then:
-        verify(impliedTransfersMarshal)
-                .unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer(), payer);
+        verify(impliedTransfersMarshal).unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer(), payer);
         assertSame(someOtherImpliedXfers, spanMapAccessor.getImpliedTransfers(accessor));
     }
 
@@ -318,8 +306,7 @@ class SpanMapManagerTest {
         subject.rationalizeSpan(accessor);
 
         // then:
-        verify(impliedTransfersMarshal)
-                .unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer(), payer);
+        verify(impliedTransfersMarshal).unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer(), payer);
         assertSame(feeChangedImpliedTransfers, spanMapAccessor.getImpliedTransfers(accessor));
     }
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.keys;
 
 import static com.hedera.node.app.service.mono.keys.HederaKeyTraversal.visitSimpleKeys;
@@ -51,8 +52,7 @@ public class InHandleActivationHelper {
     private Function<byte[], TransactionSignature> sigsFn = NO_LAST_SIGS_FN;
 
     public InHandleActivationHelper(
-            final CharacteristicsFactory characteristics,
-            final Supplier<SwirldsTxnAccessor> accessorSource) {
+            final CharacteristicsFactory characteristics, final Supplier<SwirldsTxnAccessor> accessorSource) {
         this.characteristics = characteristics;
         this.accessorSource = accessorSource;
     }
@@ -81,8 +81,7 @@ public class InHandleActivationHelper {
      *     referenced by the active transaction
      */
     public boolean areScheduledPartiesActive(
-            final TransactionBody scheduledTxn,
-            final BiPredicate<JKey, TransactionSignature> tests) {
+            final TransactionBody scheduledTxn, final BiPredicate<JKey, TransactionSignature> tests) {
         ensureUpToDate();
         return arePartiesActive(true, scheduledTxn, tests);
     }
@@ -97,8 +96,7 @@ public class InHandleActivationHelper {
         ensureUpToDate();
         for (final var req : otherParties) {
             if (req.isForScheduledTxn()) {
-                visitSimpleKeys(
-                        req, key -> visitor.accept(key, sigsFn.apply(key.primitiveKeyIfPresent())));
+                visitSimpleKeys(req, key -> visitor.accept(key, sigsFn.apply(key.primitiveKeyIfPresent())));
             }
         }
     }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.charging;
 
 import static com.hedera.node.app.service.mono.txns.diligence.DuplicateClassification.BELIEVED_UNIQUE;
@@ -56,31 +57,38 @@ class TxnChargingPolicyAgentTest {
     private final long submittingNode = 1L;
     private final JKey payerKey = TxnHandlingScenario.MISC_ACCOUNT_KT.asJKeyUnchecked();
     private final FeeObject mockFees = new FeeObject(1L, 2L, 3L);
-    private final PlatformTxnAccessor accessor =
-            PlatformTxnAccessor.from(
-                    Transaction.newBuilder()
-                            .setBodyBytes(
-                                    TransactionBody.newBuilder()
-                                            .setTransactionID(
-                                                    TransactionID.newBuilder()
-                                                            .setTransactionValidStart(
-                                                                    Timestamp.newBuilder()
-                                                                            .setSeconds(1_234_567L)
-                                                                            .build())
-                                                            .setAccountID(
-                                                                    IdUtils.asAccount("0.0.1234")))
-                                            .build()
-                                            .toByteString())
-                            .build()
-                            .toByteArray());
+    private final PlatformTxnAccessor accessor = PlatformTxnAccessor.from(Transaction.newBuilder()
+            .setBodyBytes(TransactionBody.newBuilder()
+                    .setTransactionID(TransactionID.newBuilder()
+                            .setTransactionValidStart(Timestamp.newBuilder()
+                                    .setSeconds(1_234_567L)
+                                    .build())
+                            .setAccountID(IdUtils.asAccount("0.0.1234")))
+                    .build()
+                    .toByteString())
+            .build()
+            .toByteArray());
 
-    @Mock private StateView currentView;
-    @Mock private FeeCalculator fees;
-    @Mock private TxnIdRecentHistory recentHistory;
-    @Mock private FeeChargingPolicy chargingPolicy;
-    @Mock private TransactionContext txnCtx;
-    @Mock private AwareNodeDiligenceScreen nodeDiligenceScreen;
-    @Mock private Map<TransactionID, TxnIdRecentHistory> txnHistories;
+    @Mock
+    private StateView currentView;
+
+    @Mock
+    private FeeCalculator fees;
+
+    @Mock
+    private TxnIdRecentHistory recentHistory;
+
+    @Mock
+    private FeeChargingPolicy chargingPolicy;
+
+    @Mock
+    private TransactionContext txnCtx;
+
+    @Mock
+    private AwareNodeDiligenceScreen nodeDiligenceScreen;
+
+    @Mock
+    private Map<TransactionID, TxnIdRecentHistory> txnHistories;
 
     private TxnChargingPolicyAgent subject;
 
@@ -88,14 +96,8 @@ class TxnChargingPolicyAgentTest {
 
     @BeforeEach
     void setUp() {
-        subject =
-                new TxnChargingPolicyAgent(
-                        fees,
-                        chargingPolicy,
-                        txnCtx,
-                        () -> currentView,
-                        nodeDiligenceScreen,
-                        txnHistories);
+        subject = new TxnChargingPolicyAgent(
+                fees, chargingPolicy, txnCtx, () -> currentView, nodeDiligenceScreen, txnHistories);
     }
 
     @Test

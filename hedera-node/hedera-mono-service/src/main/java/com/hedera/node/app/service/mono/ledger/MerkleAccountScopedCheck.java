@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger;
 
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.APPROVE_FOR_ALL_NFTS_ALLOWANCES;
@@ -58,14 +59,12 @@ public class MerkleAccountScopedCheck implements LedgerCheck<HederaAccount, Acco
 
     @Override
     public ResponseCodeEnum checkUsing(
-            final Function<AccountProperty, Object> extantProps,
-            final Map<AccountProperty, Object> changeSet) {
+            final Function<AccountProperty, Object> extantProps, final Map<AccountProperty, Object> changeSet) {
         return internalCheck(null, extantProps, changeSet);
     }
 
     @Override
-    public ResponseCodeEnum checkUsing(
-            final HederaAccount account, final Map<AccountProperty, Object> changeSet) {
+    public ResponseCodeEnum checkUsing(final HederaAccount account, final Map<AccountProperty, Object> changeSet) {
         return internalCheck(account, null, changeSet);
     }
 
@@ -101,9 +100,7 @@ public class MerkleAccountScopedCheck implements LedgerCheck<HederaAccount, Acco
         }
         switch (prop) {
             case IS_SMART_CONTRACT:
-                return useExtantProps
-                        ? extantProps.apply(IS_SMART_CONTRACT)
-                        : account.isSmartContract();
+                return useExtantProps ? extantProps.apply(IS_SMART_CONTRACT) : account.isSmartContract();
             case IS_DELETED:
                 return useExtantProps ? extantProps.apply(IS_DELETED) : account.isDeleted();
             case BALANCE:
@@ -113,9 +110,7 @@ public class MerkleAccountScopedCheck implements LedgerCheck<HederaAccount, Acco
                         ? extantProps.apply(EXPIRED_AND_PENDING_REMOVAL)
                         : account.isExpiredAndPendingRemoval();
             case CRYPTO_ALLOWANCES:
-                return useExtantProps
-                        ? extantProps.apply(CRYPTO_ALLOWANCES)
-                        : account.getCryptoAllowances();
+                return useExtantProps ? extantProps.apply(CRYPTO_ALLOWANCES) : account.getCryptoAllowances();
             case FUNGIBLE_TOKEN_ALLOWANCES:
                 return useExtantProps
                         ? extantProps.apply(FUNGIBLE_TOKEN_ALLOWANCES)
@@ -125,8 +120,7 @@ public class MerkleAccountScopedCheck implements LedgerCheck<HederaAccount, Acco
                         ? extantProps.apply(APPROVE_FOR_ALL_NFTS_ALLOWANCES)
                         : account.getApproveForAllNfts();
             default:
-                throw new IllegalArgumentException(
-                        "Invalid Property " + prop + " cannot be validated in scoped check");
+                throw new IllegalArgumentException("Invalid Property " + prop + " cannot be validated in scoped check");
         }
     }
 
@@ -138,12 +132,9 @@ public class MerkleAccountScopedCheck implements LedgerCheck<HederaAccount, Acco
             return ACCOUNT_DELETED;
         }
 
-        final var isDetached =
-                (boolean)
-                        getEffective(EXPIRED_AND_PENDING_REMOVAL, account, extantProps, changeSet);
+        final var isDetached = (boolean) getEffective(EXPIRED_AND_PENDING_REMOVAL, account, extantProps, changeSet);
         final var balance = (long) getEffective(BALANCE, account, extantProps, changeSet);
-        final var isContract =
-                (boolean) getEffective(IS_SMART_CONTRACT, account, extantProps, changeSet);
+        final var isContract = (boolean) getEffective(IS_SMART_CONTRACT, account, extantProps, changeSet);
         final var expiryStatus = validator.expiryStatusGiven(balance, isDetached, isContract);
         if (expiryStatus != OK) {
             return ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
@@ -169,21 +160,13 @@ public class MerkleAccountScopedCheck implements LedgerCheck<HederaAccount, Acco
             @Nullable final Function<AccountProperty, Object> extantProps,
             final Map<AccountProperty, Object> changeSet) {
         if (balanceChange.isApprovedAllowance()) {
-            final var approveForAllNftsAllowances =
-                    (Set<FcTokenAllowanceId>)
-                            getEffective(
-                                    APPROVE_FOR_ALL_NFTS_ALLOWANCES,
-                                    account,
-                                    extantProps,
-                                    changeSet);
-            final var nftAllowanceId =
-                    FcTokenAllowanceId.from(
-                            balanceChange.getToken().asEntityNum(),
-                            EntityNum.fromAccountId(balanceChange.getPayerID()));
+            final var approveForAllNftsAllowances = (Set<FcTokenAllowanceId>)
+                    getEffective(APPROVE_FOR_ALL_NFTS_ALLOWANCES, account, extantProps, changeSet);
+            final var nftAllowanceId = FcTokenAllowanceId.from(
+                    balanceChange.getToken().asEntityNum(), EntityNum.fromAccountId(balanceChange.getPayerID()));
 
             if (!approveForAllNftsAllowances.contains(nftAllowanceId)) {
-                final var approvedSpender =
-                        (EntityId) nftsLedger.get(balanceChange.nftId(), NftProperty.SPENDER);
+                final var approvedSpender = (EntityId) nftsLedger.get(balanceChange.nftId(), NftProperty.SPENDER);
 
                 if (!approvedSpender.matches(balanceChange.getPayerID())) {
                     return SPENDER_DOES_NOT_HAVE_ALLOWANCE;
@@ -200,11 +183,9 @@ public class MerkleAccountScopedCheck implements LedgerCheck<HederaAccount, Acco
             final Map<AccountProperty, Object> changeSet) {
         if (balanceChange.isApprovedAllowance()) {
             final var cryptoAllowances =
-                    (Map<EntityNum, Long>)
-                            getEffective(CRYPTO_ALLOWANCES, account, extantProps, changeSet);
+                    (Map<EntityNum, Long>) getEffective(CRYPTO_ALLOWANCES, account, extantProps, changeSet);
             final var allowance =
-                    cryptoAllowances.getOrDefault(
-                            EntityNum.fromAccountId(balanceChange.getPayerID()), 0L);
+                    cryptoAllowances.getOrDefault(EntityNum.fromAccountId(balanceChange.getPayerID()), 0L);
             if (allowance == 0L) {
                 return SPENDER_DOES_NOT_HAVE_ALLOWANCE;
             }
@@ -222,16 +203,13 @@ public class MerkleAccountScopedCheck implements LedgerCheck<HederaAccount, Acco
             @Nullable final Function<AccountProperty, Object> extantProps,
             final Map<AccountProperty, Object> changeSet) {
         if (balanceChange.isApprovedAllowance()) {
-            final var fungibleAllowances =
-                    (Map<FcTokenAllowanceId, Long>)
-                            getEffective(
-                                    FUNGIBLE_TOKEN_ALLOWANCES, account, extantProps, changeSet);
-            final var allowance =
-                    fungibleAllowances.getOrDefault(
-                            FcTokenAllowanceId.from(
-                                    balanceChange.getToken().asEntityNum(),
-                                    EntityNum.fromAccountId(balanceChange.getPayerID())),
-                            0L);
+            final var fungibleAllowances = (Map<FcTokenAllowanceId, Long>)
+                    getEffective(FUNGIBLE_TOKEN_ALLOWANCES, account, extantProps, changeSet);
+            final var allowance = fungibleAllowances.getOrDefault(
+                    FcTokenAllowanceId.from(
+                            balanceChange.getToken().asEntityNum(),
+                            EntityNum.fromAccountId(balanceChange.getPayerID())),
+                    0L);
             if (allowance == 0L) {
                 return SPENDER_DOES_NOT_HAVE_ALLOWANCE;
             }

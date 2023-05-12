@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.utils.throttles;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -118,9 +119,7 @@ class DiscreteLeakyBucketTest {
         var subject = new DiscreteLeakyBucket(capacityUsed, totalCapacity);
 
         // when:
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> subject.useCapacity(1 + totalCapacity - capacityUsed));
+        assertThrows(IllegalArgumentException.class, () -> subject.useCapacity(1 + totalCapacity - capacityUsed));
     }
 
     @Test

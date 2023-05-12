@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.validation;
 
 import static com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer.STAKED_ACCOUNT_ID_CASE;
@@ -66,19 +67,16 @@ public final class PureValidation {
     }
 
     private static ResponseCodeEnum internalQueryableAccountStatus(
-            final boolean contractIsOk,
-            final EntityNum entityNum,
-            final AccountStorageAdapter accounts) {
+            final boolean contractIsOk, final EntityNum entityNum, final AccountStorageAdapter accounts) {
         final var account = accounts.get(entityNum);
 
         return Optional.ofNullable(account)
-                .map(
-                        v -> {
-                            if (v.isDeleted()) {
-                                return ACCOUNT_DELETED;
-                            }
-                            return (contractIsOk || !v.isSmartContract()) ? OK : INVALID_ACCOUNT_ID;
-                        })
+                .map(v -> {
+                    if (v.isDeleted()) {
+                        return ACCOUNT_DELETED;
+                    }
+                    return (contractIsOk || !v.isSmartContract()) ? OK : INVALID_ACCOUNT_ID;
+                })
                 .orElse(INVALID_ACCOUNT_ID);
     }
 
@@ -92,20 +90,18 @@ public final class PureValidation {
         final var contract = contracts.get(contractId);
 
         return Optional.ofNullable(contract)
-                .map(
-                        v -> {
-                            if (v.isDeleted()) {
-                                return CONTRACT_DELETED;
-                            }
-                            return !v.isSmartContract() ? INVALID_CONTRACT_ID : OK;
-                        })
+                .map(v -> {
+                    if (v.isDeleted()) {
+                        return CONTRACT_DELETED;
+                    }
+                    return !v.isSmartContract() ? INVALID_CONTRACT_ID : OK;
+                })
                 .orElse(INVALID_CONTRACT_ID);
     }
 
     public static ResponseCodeEnum chronologyStatus(
             final Instant consensusTime, final Instant validStart, long validDuration) {
-        validDuration =
-                Math.min(validDuration, Instant.MAX.getEpochSecond() - validStart.getEpochSecond());
+        validDuration = Math.min(validDuration, Instant.MAX.getEpochSecond() - validStart.getEpochSecond());
         if (validStart.plusSeconds(validDuration).isBefore(consensusTime)) {
             return TRANSACTION_EXPIRED;
         } else if (!validStart.isBefore(consensusTime)) {
@@ -117,9 +113,7 @@ public final class PureValidation {
 
     public static Instant asCoercedInstant(final Timestamp when) {
         return Instant.ofEpochSecond(
-                Math.min(
-                        Math.max(Instant.MIN.getEpochSecond(), when.getSeconds()),
-                        Instant.MAX.getEpochSecond()),
+                Math.min(Math.max(Instant.MIN.getEpochSecond(), when.getSeconds()), Instant.MAX.getEpochSecond()),
                 Math.min(Math.max(Instant.MIN.getNano(), when.getNanos()), Instant.MAX.getNano()));
     }
 
@@ -153,9 +147,7 @@ public final class PureValidation {
             final AccountStorageAdapter accounts,
             final NodeInfo nodeInfo) {
         if (idCase.matches(STAKED_ACCOUNT_ID_CASE)) {
-            return queryableAccountOrContractStatus(
-                            EntityNum.fromAccountId(stakedAccountId), accounts)
-                    == OK;
+            return queryableAccountOrContractStatus(EntityNum.fromAccountId(stakedAccountId), accounts) == OK;
         } else {
             return nodeInfo.isValidId(stakedNodeId);
         }

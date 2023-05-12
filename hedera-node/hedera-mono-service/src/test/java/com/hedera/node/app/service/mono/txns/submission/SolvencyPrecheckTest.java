@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.submission;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
@@ -73,60 +74,58 @@ class SolvencyPrecheckTest {
     private final JKey payerKey = TxnHandlingScenario.MISC_ACCOUNT_KT.asJKeyUnchecked();
     private final Timestamp now = MiscUtils.asTimestamp(Instant.ofEpochSecond(1_234_567L));
     private final AccountID payer = IdUtils.asAccount("0.0.1234");
-    private final MerkleAccount solventPayerAccount =
-            MerkleAccountFactory.newAccount().accountKeys(payerKey).balance(payerBalance).get();
-    private final MerkleAccount insolventPayerAccount =
-            MerkleAccountFactory.newAccount()
-                    .expirationTime(insolventExpiry)
-                    .accountKeys(payerKey)
-                    .balance(0L)
-                    .get();
-    private final SignedTxnAccessor accessorCoveringAllFees =
-            SignedTxnAccessor.uncheckedFrom(
-                    Transaction.newBuilder()
-                            .setBodyBytes(
-                                    TransactionBody.newBuilder()
-                                            .setTransactionID(
-                                                    TransactionID.newBuilder()
-                                                            .setTransactionValidStart(now)
-                                                            .setAccountID(payer))
-                                            .setTransactionFee(acceptableRequiredFee)
-                                            .build()
-                                            .toByteString())
-                            .build());
-    private final SignedTxnAccessor accessorNotCoveringSvcFee =
-            SignedTxnAccessor.uncheckedFrom(
-                    Transaction.newBuilder()
-                            .setBodyBytes(
-                                    TransactionBody.newBuilder()
-                                            .setTransactionID(
-                                                    TransactionID.newBuilder()
-                                                            .setTransactionValidStart(now)
-                                                            .setAccountID(payer))
-                                            .setTransactionFee(acceptableRequiredFeeSansSvc)
-                                            .build()
-                                            .toByteString())
-                            .build());
+    private final MerkleAccount solventPayerAccount = MerkleAccountFactory.newAccount()
+            .accountKeys(payerKey)
+            .balance(payerBalance)
+            .get();
+    private final MerkleAccount insolventPayerAccount = MerkleAccountFactory.newAccount()
+            .expirationTime(insolventExpiry)
+            .accountKeys(payerKey)
+            .balance(0L)
+            .get();
+    private final SignedTxnAccessor accessorCoveringAllFees = SignedTxnAccessor.uncheckedFrom(Transaction.newBuilder()
+            .setBodyBytes(TransactionBody.newBuilder()
+                    .setTransactionID(TransactionID.newBuilder()
+                            .setTransactionValidStart(now)
+                            .setAccountID(payer))
+                    .setTransactionFee(acceptableRequiredFee)
+                    .build()
+                    .toByteString())
+            .build());
+    private final SignedTxnAccessor accessorNotCoveringSvcFee = SignedTxnAccessor.uncheckedFrom(Transaction.newBuilder()
+            .setBodyBytes(TransactionBody.newBuilder()
+                    .setTransactionID(TransactionID.newBuilder()
+                            .setTransactionValidStart(now)
+                            .setAccountID(payer))
+                    .setTransactionFee(acceptableRequiredFeeSansSvc)
+                    .build()
+                    .toByteString())
+            .build());
 
-    @Mock private OptionValidator validator;
-    @Mock private StateView stateView;
-    @Mock private FeeExemptions feeExemptions;
-    @Mock private FeeCalculator feeCalculator;
-    @Mock private PrecheckVerifier precheckVerifier;
-    @Mock private AccountStorageAdapter accounts;
+    @Mock
+    private OptionValidator validator;
+
+    @Mock
+    private StateView stateView;
+
+    @Mock
+    private FeeExemptions feeExemptions;
+
+    @Mock
+    private FeeCalculator feeCalculator;
+
+    @Mock
+    private PrecheckVerifier precheckVerifier;
+
+    @Mock
+    private AccountStorageAdapter accounts;
 
     private SolvencyPrecheck subject;
 
     @BeforeEach
     void setUp() {
-        subject =
-                new SolvencyPrecheck(
-                        feeExemptions,
-                        feeCalculator,
-                        validator,
-                        precheckVerifier,
-                        () -> stateView,
-                        () -> accounts);
+        subject = new SolvencyPrecheck(
+                feeExemptions, feeCalculator, validator, precheckVerifier, () -> stateView, () -> accounts);
     }
 
     @Test
@@ -167,8 +166,7 @@ class SolvencyPrecheckTest {
     @Test
     void preservesRespForGenericFailure() throws Exception {
         givenSolventPayer();
-        given(precheckVerifier.hasNecessarySignatures(accessorCoveringAllFees))
-                .willThrow(Exception.class);
+        given(precheckVerifier.hasNecessarySignatures(accessorCoveringAllFees)).willThrow(Exception.class);
 
         // when:
         var result = subject.assessWithSvcFees(accessorCoveringAllFees);
@@ -258,8 +256,7 @@ class SolvencyPrecheckTest {
         var result = subject.assessWithSvcFees(accessorCoveringAllFees);
 
         // then:
-        assertBothValidityAndReqFee(
-                result, ACCOUNT_EXPIRED_AND_PENDING_REMOVAL, acceptableRequiredFee);
+        assertBothValidityAndReqFee(result, ACCOUNT_EXPIRED_AND_PENDING_REMOVAL, acceptableRequiredFee);
     }
 
     @Test
@@ -267,7 +264,8 @@ class SolvencyPrecheckTest {
         givenInsolventPayer();
         givenValidSigs();
         givenAcceptableFees();
-        given(validator.expiryStatusGiven(anyLong(), anyBoolean(), anyBoolean())).willReturn(OK);
+        given(validator.expiryStatusGiven(anyLong(), anyBoolean(), anyBoolean()))
+                .willReturn(OK);
         given(feeCalculator.estimatedNonFeePayerAdjustments(accessorCoveringAllFees, now))
                 .willReturn(+payerBalance);
 
@@ -285,7 +283,8 @@ class SolvencyPrecheckTest {
         givenAcceptableFees();
         given(feeCalculator.estimatedNonFeePayerAdjustments(accessorCoveringAllFees, now))
                 .willReturn(+payerBalance);
-        given(validator.expiryStatusGiven(anyLong(), anyBoolean(), anyBoolean())).willReturn(OK);
+        given(validator.expiryStatusGiven(anyLong(), anyBoolean(), anyBoolean()))
+                .willReturn(OK);
 
         // when:
         var result = subject.assessWithSvcFees(accessorCoveringAllFees);
@@ -299,7 +298,8 @@ class SolvencyPrecheckTest {
         givenSolventPayer();
         givenValidSigs();
         givenAcceptableFees();
-        given(validator.expiryStatusGiven(anyLong(), anyBoolean(), anyBoolean())).willReturn(OK);
+        given(validator.expiryStatusGiven(anyLong(), anyBoolean(), anyBoolean()))
+                .willReturn(OK);
         given(feeCalculator.estimatedNonFeePayerAdjustments(accessorCoveringAllFees, now))
                 .willReturn(-payerBalance);
 
@@ -363,8 +363,7 @@ class SolvencyPrecheckTest {
         assertEquals(0, result.getRequiredFee());
     }
 
-    private void assertBothValidityAndReqFee(
-            TxnValidityAndFeeReq result, ResponseCodeEnum expected, long reqFee) {
+    private void assertBothValidityAndReqFee(TxnValidityAndFeeReq result, ResponseCodeEnum expected, long reqFee) {
         assertEquals(expected, result.getValidity());
         assertEquals(reqFee, result.getRequiredFee());
     }

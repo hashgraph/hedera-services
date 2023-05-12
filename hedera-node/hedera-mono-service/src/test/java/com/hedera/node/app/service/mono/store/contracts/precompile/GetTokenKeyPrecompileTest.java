@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenKeyType.ADMIN_KEY;
@@ -75,71 +76,106 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class GetTokenKeyPrecompileTest {
-    @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private GasCalculator gasCalculator;
-    @Mock private MessageFrame frame;
-    @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
-    @Mock private RecordsHistorian recordsHistorian;
-    @Mock private EncodingFacade encoder;
-    @Mock private EvmEncodingFacade evmEncoder;
-    @Mock private SyntheticTxnFactory syntheticTxnFactory;
-    @Mock private ExpiringCreations creator;
-    @Mock private FeeCalculator feeCalculator;
-    @Mock private StateView stateView;
-    @Mock private HederaStackedWorldStateUpdater worldUpdater;
-    @Mock private WorldLedgers wrappedLedgers;
-    @Mock private UsagePricesProvider resourceCosts;
-    @Mock private HbarCentExchange exchange;
-    @Mock private InfrastructureFactory infrastructureFactory;
-    @Mock private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
-    @Mock private AssetsLoader assetLoader;
-    @Mock private JKey key;
-    @Mock private JContractIDKey jContractIDKey;
-    @Mock private JDelegatableContractIDKey jDelegatableContractIDKey;
-    @Mock private AccessorFactory accessorFactory;
-    @Mock private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
 
-    private static final Bytes GET_TOKEN_KEY_INPUT =
-            Bytes.fromHexString(
-                    "0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
+    @Mock
+    private GasCalculator gasCalculator;
+
+    @Mock
+    private MessageFrame frame;
+
+    @Mock
+    private TxnAwareEvmSigsVerifier sigsVerifier;
+
+    @Mock
+    private RecordsHistorian recordsHistorian;
+
+    @Mock
+    private EncodingFacade encoder;
+
+    @Mock
+    private EvmEncodingFacade evmEncoder;
+
+    @Mock
+    private SyntheticTxnFactory syntheticTxnFactory;
+
+    @Mock
+    private ExpiringCreations creator;
+
+    @Mock
+    private FeeCalculator feeCalculator;
+
+    @Mock
+    private StateView stateView;
+
+    @Mock
+    private HederaStackedWorldStateUpdater worldUpdater;
+
+    @Mock
+    private WorldLedgers wrappedLedgers;
+
+    @Mock
+    private UsagePricesProvider resourceCosts;
+
+    @Mock
+    private HbarCentExchange exchange;
+
+    @Mock
+    private InfrastructureFactory infrastructureFactory;
+
+    @Mock
+    private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
+
+    @Mock
+    private AssetsLoader assetLoader;
+
+    @Mock
+    private JKey key;
+
+    @Mock
+    private JContractIDKey jContractIDKey;
+
+    @Mock
+    private JDelegatableContractIDKey jDelegatableContractIDKey;
+
+    @Mock
+    private AccessorFactory accessorFactory;
+
+    @Mock
+    private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
+
+    private static final Bytes GET_TOKEN_KEY_INPUT = Bytes.fromHexString(
+            "0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
     private HTSPrecompiledContract subject;
     private MockedStatic<GetTokenKeyPrecompile> getTokenKeyPrecompile;
     private GetTokenKeyWrapper<TokenID> wrapper = new GetTokenKeyWrapper<>(fungible, 1L);
-    private final byte[] ed25519Key =
-            new byte[] {
-                -98, 65, 115, 52, -46, -22, 107, -28, 89, 98, 64, 96, -29, -17, -36, 27, 69, -102,
-                -120, 75, -58, -87, -62, 50, 52, -102, -13, 94, -112, 96, -19, 98
-            };
+    private final byte[] ed25519Key = new byte[] {
+        -98, 65, 115, 52, -46, -22, 107, -28, 89, 98, 64, 96, -29, -17, -36, 27, 69, -102, -120, 75, -58, -87, -62, 50,
+        52, -102, -13, 94, -112, 96, -19, 98
+    };
 
     @BeforeEach
     void setUp() throws IOException {
         final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
-        canonicalPrices.put(
-                HederaFunctionality.TokenGetInfo, Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
+        canonicalPrices.put(HederaFunctionality.TokenGetInfo, Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
-        final PrecompilePricingUtils precompilePricingUtils =
-                new PrecompilePricingUtils(
-                        assetLoader,
-                        exchange,
-                        () -> feeCalculator,
-                        resourceCosts,
-                        stateView,
-                        accessorFactory);
-        subject =
-                new HTSPrecompiledContract(
-                        dynamicProperties,
-                        gasCalculator,
-                        recordsHistorian,
-                        sigsVerifier,
-                        encoder,
-                        evmEncoder,
-                        syntheticTxnFactory,
-                        creator,
-                        () -> feeCalculator,
-                        stateView,
-                        precompilePricingUtils,
-                        infrastructureFactory,
-                        evmHTSPrecompiledContract);
+        final PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(
+                assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView, accessorFactory);
+        subject = new HTSPrecompiledContract(
+                dynamicProperties,
+                gasCalculator,
+                recordsHistorian,
+                sigsVerifier,
+                encoder,
+                evmEncoder,
+                syntheticTxnFactory,
+                creator,
+                () -> feeCalculator,
+                stateView,
+                precompilePricingUtils,
+                infrastructureFactory,
+                evmHTSPrecompiledContract);
         getTokenKeyPrecompile = Mockito.mockStatic(GetTokenKeyPrecompile.class);
     }
 
@@ -151,9 +187,8 @@ class GetTokenKeyPrecompileTest {
     @Test
     void successfulCallForGetFungibleTokenKey() {
         // given
-        final var input =
-                Bytes.fromHexString(
-                        "0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
+        final var input = Bytes.fromHexString(
+                "0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
         givenMinimalFrameContext();
         givenMinimalContextForCall();
         given(tokens.get(fungible, TokenProperty.ADMIN_KEY)).willReturn(key);
@@ -172,9 +207,8 @@ class GetTokenKeyPrecompileTest {
     @Test
     void successfulCallForGetFungibleTokenKeyWithDelegateContractKey() {
         // given
-        final var input =
-                Bytes.fromHexString(
-                        "0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
+        final var input = Bytes.fromHexString(
+                "0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
         givenMinimalFrameContext();
         givenMinimalContextForCall();
         givenJKeyContractAndDelegateContext();
@@ -195,9 +229,8 @@ class GetTokenKeyPrecompileTest {
     @Test
     void successfulCallForGetFungibleTokenKeyWithFreezeKey() {
         // given
-        final var input =
-                Bytes.fromHexString(
-                        "0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
+        final var input = Bytes.fromHexString(
+                "0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
         givenMinimalFrameContext();
         givenMinimalContextForCall();
         wrapper = new GetTokenKeyWrapper<>(fungible, 4L);
@@ -217,9 +250,8 @@ class GetTokenKeyPrecompileTest {
     @Test
     void successfulCallForGetFungibleTokenKeyWithWipeKey() {
         // given
-        final var input =
-                Bytes.fromHexString(
-                        "0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
+        final var input = Bytes.fromHexString(
+                "0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
         givenMinimalFrameContext();
         givenMinimalContextForCall();
         wrapper = new GetTokenKeyWrapper<>(fungible, 8L);
@@ -239,9 +271,8 @@ class GetTokenKeyPrecompileTest {
     @Test
     void successfulCallForGetFungibleTokenKeyWithPauseKey() {
         // given
-        final var input =
-                Bytes.fromHexString(
-                        "0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
+        final var input = Bytes.fromHexString(
+                "0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
         givenMinimalFrameContext();
         givenMinimalContextForCall();
         wrapper = new GetTokenKeyWrapper<>(fungible, 64L);
@@ -261,9 +292,8 @@ class GetTokenKeyPrecompileTest {
     @Test
     void successfulCallForGetFungibleTokenKeyWithFeeScheduleKey() {
         // given
-        final var input =
-                Bytes.fromHexString(
-                        "0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
+        final var input = Bytes.fromHexString(
+                "0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
         givenMinimalFrameContext();
         givenMinimalContextForCall();
         wrapper = new GetTokenKeyWrapper<>(fungible, 32L);
@@ -283,9 +313,8 @@ class GetTokenKeyPrecompileTest {
     @Test
     void successfulCallForGetFungibleTokenKeyWithKycKey() {
         // given
-        final var input =
-                Bytes.fromHexString(
-                        "0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
+        final var input = Bytes.fromHexString(
+                "0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
         givenMinimalFrameContext();
         givenMinimalContextForCall();
         wrapper = new GetTokenKeyWrapper(fungible, 2L);
@@ -305,9 +334,8 @@ class GetTokenKeyPrecompileTest {
     @Test
     void callForGetFungibleTokenKeyWithInvalidKeyFails() {
         // given
-        final var input =
-                Bytes.fromHexString(
-                        "0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
+        final var input = Bytes.fromHexString(
+                "0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
         givenMinimalFrameContext();
         givenMinimalContextForCall();
         wrapper = new GetTokenKeyWrapper<>(fungible, 200L);
@@ -325,9 +353,8 @@ class GetTokenKeyPrecompileTest {
     @Test
     void getTokenKeyCallForInvalidTokenIds() {
         // given
-        final var input =
-                Bytes.fromHexString(
-                        "0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
+        final var input = Bytes.fromHexString(
+                "0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
         givenMinimalFrameContext();
         givenMinimalContextForCall();
         given(wrappedLedgers.tokens()).willReturn(tokens);
@@ -343,9 +370,7 @@ class GetTokenKeyPrecompileTest {
 
     @Test
     void decodeFungibleTokenGetKey() {
-        getTokenKeyPrecompile
-                .when(() -> decodeGetTokenKey(GET_TOKEN_KEY_INPUT))
-                .thenCallRealMethod();
+        getTokenKeyPrecompile.when(() -> decodeGetTokenKey(GET_TOKEN_KEY_INPUT)).thenCallRealMethod();
         final var decodedInput = decodeGetTokenKey(GET_TOKEN_KEY_INPUT);
         assertTrue(decodedInput.token().getTokenNum() > 0);
         assertEquals(1L, decodedInput.keyType());

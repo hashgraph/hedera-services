@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage.token;
 
 import static com.hedera.node.app.hapi.fees.test.UsageUtils.A_USAGES_MATRIX;
@@ -79,28 +80,23 @@ class TokenAssociateUsageTest {
         // and:
         verify(base, times(3)).addBpt(FeeBuilder.BASIC_ENTITY_ID_SIZE);
         // and:
-        verify(base)
-                .addRbs(2 * tokenEntitySizes.bytesUsedPerAccountRelationship() * (expiry - now));
+        verify(base).addRbs(2 * tokenEntitySizes.bytesUsedPerAccountRelationship() * (expiry - now));
     }
 
     private void givenOpWithTwoAssociations() {
-        op =
-                TokenAssociateTransactionBody.newBuilder()
-                        .setAccount(id)
-                        .addTokens(firstId)
-                        .addTokens(secondId)
-                        .build();
+        op = TokenAssociateTransactionBody.newBuilder()
+                .setAccount(id)
+                .addTokens(firstId)
+                .addTokens(secondId)
+                .build();
         setTxn();
     }
 
     private void setTxn() {
-        txn =
-                TransactionBody.newBuilder()
-                        .setTransactionID(
-                                TransactionID.newBuilder()
-                                        .setTransactionValidStart(
-                                                Timestamp.newBuilder().setSeconds(now)))
-                        .setTokenAssociate(op)
-                        .build();
+        txn = TransactionBody.newBuilder()
+                .setTransactionID(TransactionID.newBuilder()
+                        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(now)))
+                .setTokenAssociate(op)
+                .build();
     }
 }

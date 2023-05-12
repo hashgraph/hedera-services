@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.execution;
 
 import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.FAILURE_DURING_LAZY_ACCOUNT_CREATE;
@@ -48,8 +49,7 @@ import org.hyperledger.besu.evm.tracing.OperationTracer;
 
 public class HederaMessageCallProcessor extends HederaEvmMessageCallProcessor {
     private static final String INVALID_TRANSFER_MSG = "Transfer of Value to Hedera Precompile";
-    public static final Bytes INVALID_TRANSFER =
-            Bytes.of(INVALID_TRANSFER_MSG.getBytes(StandardCharsets.UTF_8));
+    public static final Bytes INVALID_TRANSFER = Bytes.of(INVALID_TRANSFER_MSG.getBytes(StandardCharsets.UTF_8));
 
     private final Predicate<Address> isNativePrecompileCheck;
     private InfrastructureFactory infrastructureFactory;
@@ -78,8 +78,7 @@ public class HederaMessageCallProcessor extends HederaEvmMessageCallProcessor {
         // potential precompile execution will be done after super.start(),
         // so trace results here
         final var contractAddress = frame.getContractAddress();
-        if (isNativePrecompileCheck.test(contractAddress)
-                || hederaPrecompiles.containsKey(contractAddress)) {
+        if (isNativePrecompileCheck.test(contractAddress) || hederaPrecompiles.containsKey(contractAddress)) {
             ((HederaOperationTracer) operationTracer)
                     .tracePrecompileResult(
                             frame,
@@ -91,9 +90,7 @@ public class HederaMessageCallProcessor extends HederaEvmMessageCallProcessor {
 
     @Override
     protected void executeHederaPrecompile(
-            final PrecompiledContract contract,
-            final MessageFrame frame,
-            final OperationTracer operationTracer) {
+            final PrecompiledContract contract, final MessageFrame frame, final OperationTracer operationTracer) {
         if (contract instanceof HTSPrecompiledContract htsPrecompile) {
             final var costedResult = htsPrecompile.computeCosted(frame.getInputData(), frame);
             output = costedResult.getValue();
@@ -110,23 +107,19 @@ public class HederaMessageCallProcessor extends HederaEvmMessageCallProcessor {
     // and nested calls to non-existing recipients are currently rejected in all
     // versions (see {@code HederaOperationUtil})
     @Override
-    protected void executeLazyCreate(
-            final MessageFrame frame, final OperationTracer operationTracer) {
+    protected void executeLazyCreate(final MessageFrame frame, final OperationTracer operationTracer) {
         final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
         final var syntheticBalanceChange = constructSyntheticLazyCreateBalanceChangeFrom(frame);
         final var autoCreationLogic = infrastructureFactory.newAutoCreationLogicScopedTo(updater);
 
-        final var lazyCreateResult =
-                autoCreationLogic.create(
-                        syntheticBalanceChange,
-                        updater.trackingAccounts(),
-                        List.of(syntheticBalanceChange));
+        final var lazyCreateResult = autoCreationLogic.create(
+                syntheticBalanceChange, updater.trackingAccounts(), List.of(syntheticBalanceChange));
         if (lazyCreateResult.getLeft() != ResponseCodeEnum.OK) {
-            haltFrameAndTraceCreationResult(
-                    frame, operationTracer, FAILURE_DURING_LAZY_ACCOUNT_CREATE);
+            haltFrameAndTraceCreationResult(frame, operationTracer, FAILURE_DURING_LAZY_ACCOUNT_CREATE);
         } else {
             final var creationFeeInTinybars = lazyCreateResult.getRight();
-            final var creationFeeInGas = creationFeeInTinybars / frame.getGasPrice().toLong();
+            final var creationFeeInGas =
+                    creationFeeInTinybars / frame.getGasPrice().toLong();
             if (frame.getRemainingGas() < creationFeeInGas) {
                 // ledgers won't be committed on unsuccessful frame and StackedContractAliases
                 // will revert any new aliases
@@ -134,12 +127,10 @@ public class HederaMessageCallProcessor extends HederaEvmMessageCallProcessor {
             } else {
                 frame.decrementRemainingGas(creationFeeInGas);
                 // track auto-creation preceding child record
-                final var recordSubmissions =
-                        infrastructureFactory.newRecordSubmissionsScopedTo(updater);
+                final var recordSubmissions = infrastructureFactory.newRecordSubmissionsScopedTo(updater);
                 autoCreationLogic.submitRecords(recordSubmissions);
                 // track the lazy account so it is accessible to the EVM
-                updater.trackLazilyCreatedAccount(
-                        EntityIdUtils.asTypedEvmAddress(syntheticBalanceChange.accountId()));
+                updater.trackLazilyCreatedAccount(EntityIdUtils.asTypedEvmAddress(syntheticBalanceChange.accountId()));
             }
         }
     }
@@ -148,21 +139,16 @@ public class HederaMessageCallProcessor extends HederaEvmMessageCallProcessor {
     private BalanceChange constructSyntheticLazyCreateBalanceChangeFrom(final MessageFrame frame) {
         return BalanceChange.changingHbar(
                 AccountAmount.newBuilder()
-                        .setAccountID(
-                                AccountID.newBuilder()
-                                        .setAlias(
-                                                ByteStringUtils.wrapUnsafely(
-                                                        frame.getRecipientAddress()
-                                                                .toArrayUnsafe()))
-                                        .build())
+                        .setAccountID(AccountID.newBuilder()
+                                .setAlias(ByteStringUtils.wrapUnsafely(
+                                        frame.getRecipientAddress().toArrayUnsafe()))
+                                .build())
                         .build(),
                 null);
     }
 
     private void haltFrameAndTraceCreationResult(
-            final MessageFrame frame,
-            final OperationTracer operationTracer,
-            final ExceptionalHaltReason haltReason) {
+            final MessageFrame frame, final OperationTracer operationTracer, final ExceptionalHaltReason haltReason) {
         frame.decrementRemainingGas(frame.getRemainingGas());
         frame.setState(EXCEPTIONAL_HALT);
         operationTracer.traceAccountCreationResult(frame, Optional.of(haltReason));

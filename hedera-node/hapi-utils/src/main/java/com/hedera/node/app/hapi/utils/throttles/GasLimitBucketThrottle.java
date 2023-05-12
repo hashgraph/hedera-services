@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.utils.throttles;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.productWouldOverflow;
@@ -74,9 +75,7 @@ public class GasLimitBucketThrottle {
      */
     double percentUsed(final long givenElapsedNanos) {
         final var used = bucket.capacityUsed();
-        return 100.0
-                * (used - Math.min(used, effectiveLeak(givenElapsedNanos)))
-                / bucket.totalCapacity();
+        return 100.0 * (used - Math.min(used, effectiveLeak(givenElapsedNanos))) / bucket.totalCapacity();
     }
 
     /**

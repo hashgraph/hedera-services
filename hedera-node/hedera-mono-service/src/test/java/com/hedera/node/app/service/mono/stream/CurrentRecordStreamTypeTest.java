@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.stream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -38,29 +39,32 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class CurrentRecordStreamTypeTest {
-    private static final SemanticVersion pretendSemVer =
-            SemanticVersion.newBuilder()
-                    .setMajor(1)
-                    .setMinor(2)
-                    .setPatch(4)
-                    .setPre("zeta.123")
-                    .setBuild("2b26be40")
-                    .build();
+    private static final SemanticVersion pretendSemVer = SemanticVersion.newBuilder()
+            .setMajor(1)
+            .setMinor(2)
+            .setPatch(4)
+            .setPre("zeta.123")
+            .setBuild("2b26be40")
+            .build();
     private static final int[] expectedV5Header =
-            new int[] {
-                5, pretendSemVer.getMajor(), pretendSemVer.getMinor(), pretendSemVer.getPatch()
-            };
+            new int[] {5, pretendSemVer.getMajor(), pretendSemVer.getMinor(), pretendSemVer.getPatch()};
     private static final int[] expectedV6Header =
-            new int[] {
-                6, pretendSemVer.getMajor(), pretendSemVer.getMinor(), pretendSemVer.getPatch()
-            };
+            new int[] {6, pretendSemVer.getMajor(), pretendSemVer.getMinor(), pretendSemVer.getPatch()};
 
-    @Mock private ActiveVersions activeVersions;
-    @Mock private SemanticVersions semanticVersions;
-    @Mock private GlobalDynamicProperties dynamicProperties;
+    @Mock
+    private ActiveVersions activeVersions;
 
-    @LoggingSubject private CurrentRecordStreamType subject;
-    @LoggingTarget private LogCaptor logCaptor;
+    @Mock
+    private SemanticVersions semanticVersions;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
+
+    @LoggingSubject
+    private CurrentRecordStreamType subject;
+
+    @LoggingTarget
+    private LogCaptor logCaptor;
 
     @BeforeEach
     void setUp() {

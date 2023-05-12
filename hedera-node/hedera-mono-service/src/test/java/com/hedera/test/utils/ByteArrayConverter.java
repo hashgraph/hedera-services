@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.utils;
 
 import com.swirlds.common.utility.CommonUtils;
@@ -23,8 +24,7 @@ import org.junit.jupiter.params.converter.ArgumentConverter;
 /** Convert hex string to byte array. */
 public final class ByteArrayConverter implements ArgumentConverter {
     @Override
-    public Object convert(Object input, ParameterContext parameterContext)
-            throws ArgumentConversionException {
+    public Object convert(Object input, ParameterContext parameterContext) throws ArgumentConversionException {
         if (null == input) {
             return null;
         }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.mono.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
@@ -155,8 +156,7 @@ public class InfrastructureFactory {
         return new SideEffectsTracker();
     }
 
-    public AccountStore newAccountStore(
-            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts) {
+    public AccountStore newAccountStore(final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts) {
         return new AccountStore(validator, accounts);
     }
 
@@ -173,8 +173,7 @@ public class InfrastructureFactory {
             final SideEffectsTracker sideEffects,
             final BackingStore<TokenID, MerkleToken> backingTokens,
             final TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger,
-            final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
-                    tokenRelsLedger) {
+            final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel> tokenRelsLedger) {
         return new HederaTokenStore(
                 NOOP_ID_SOURCE,
                 usageLimits,
@@ -186,8 +185,7 @@ public class InfrastructureFactory {
                 backingTokens);
     }
 
-    public ImpliedTransfersMarshal newImpliedTransfersMarshal(
-            final CustomFeeSchedules customFeeSchedules) {
+    public ImpliedTransfersMarshal newImpliedTransfersMarshal(final CustomFeeSchedules customFeeSchedules) {
         return new ImpliedTransfersMarshal(
                 feeAssessor,
                 aliasManager,
@@ -200,41 +198,29 @@ public class InfrastructureFactory {
                 schedulesManagerFactory);
     }
 
-    public BurnLogic newBurnLogic(
-            final AccountStore accountStore, final TypedTokenStore tokenStore) {
+    public BurnLogic newBurnLogic(final AccountStore accountStore, final TypedTokenStore tokenStore) {
         return new BurnLogic(validator, tokenStore, accountStore, dynamicProperties);
     }
 
-    public DeleteLogic newDeleteLogic(
-            final AccountStore accountStore, final TypedTokenStore tokenStore) {
+    public DeleteLogic newDeleteLogic(final AccountStore accountStore, final TypedTokenStore tokenStore) {
         return new DeleteLogic(accountStore, tokenStore, sigImpactHistorian);
     }
 
-    public MintLogic newMintLogic(
-            final AccountStore accountStore, final TypedTokenStore tokenStore) {
+    public MintLogic newMintLogic(final AccountStore accountStore, final TypedTokenStore tokenStore) {
         return new MintLogic(usageLimits, validator, tokenStore, accountStore, dynamicProperties);
     }
 
-    public AssociateLogic newAssociateLogic(
-            final AccountStore accountStore, final TypedTokenStore tokenStore) {
+    public AssociateLogic newAssociateLogic(final AccountStore accountStore, final TypedTokenStore tokenStore) {
         return new AssociateLogic(usageLimits, tokenStore, accountStore, dynamicProperties);
     }
 
-    public DissociateLogic newDissociateLogic(
-            final AccountStore accountStore, final TypedTokenStore tokenStore) {
+    public DissociateLogic newDissociateLogic(final AccountStore accountStore, final TypedTokenStore tokenStore) {
         return new DissociateLogic(validator, tokenStore, accountStore, dissociationFactory);
     }
 
-    public CreateLogic newTokenCreateLogic(
-            final AccountStore accountStore, final TypedTokenStore tokenStore) {
+    public CreateLogic newTokenCreateLogic(final AccountStore accountStore, final TypedTokenStore tokenStore) {
         return new CreateLogic(
-                usageLimits,
-                accountStore,
-                tokenStore,
-                dynamicProperties,
-                sigImpactHistorian,
-                ids,
-                validator);
+                usageLimits, accountStore, tokenStore, dynamicProperties, sigImpactHistorian, ids, validator);
     }
 
     public TransferLogic newTransferLogic(
@@ -242,8 +228,7 @@ public class InfrastructureFactory {
             final SideEffectsTracker sideEffects,
             final TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger,
             final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger,
-            final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
-                    tokenRelsLedger) {
+            final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel> tokenRelsLedger) {
         return new TransferLogic(
                 accountsLedger,
                 nftsLedger,
@@ -268,13 +253,11 @@ public class InfrastructureFactory {
         return new DeleteAllowanceLogic(accountStore, tokenStore);
     }
 
-    public GrantKycLogic newGrantKycLogic(
-            final AccountStore accountStore, final TypedTokenStore tokenStore) {
+    public GrantKycLogic newGrantKycLogic(final AccountStore accountStore, final TypedTokenStore tokenStore) {
         return new GrantKycLogic(tokenStore, accountStore);
     }
 
-    public RevokeKycLogic newRevokeKycLogic(
-            final AccountStore accountStore, final TypedTokenStore tokenStore) {
+    public RevokeKycLogic newRevokeKycLogic(final AccountStore accountStore, final TypedTokenStore tokenStore) {
         return new RevokeKycLogic(tokenStore, accountStore);
     }
 
@@ -286,18 +269,15 @@ public class InfrastructureFactory {
         return new UnpauseLogic(tokenStore);
     }
 
-    public WipeLogic newWipeLogic(
-            final AccountStore accountStore, final TypedTokenStore tokenStore) {
+    public WipeLogic newWipeLogic(final AccountStore accountStore, final TypedTokenStore tokenStore) {
         return new WipeLogic(tokenStore, accountStore, dynamicProperties);
     }
 
-    public FreezeLogic newFreezeLogic(
-            final AccountStore accountStore, final TypedTokenStore tokenStore) {
+    public FreezeLogic newFreezeLogic(final AccountStore accountStore, final TypedTokenStore tokenStore) {
         return new FreezeLogic(tokenStore, accountStore);
     }
 
-    public UnfreezeLogic newUnfreezeLogic(
-            final AccountStore accountStore, final TypedTokenStore tokenStore) {
+    public UnfreezeLogic newUnfreezeLogic(final AccountStore accountStore, final TypedTokenStore tokenStore) {
         return new UnfreezeLogic(tokenStore, accountStore);
     }
 
@@ -314,9 +294,7 @@ public class InfrastructureFactory {
     }
 
     public TokenUpdateLogic newTokenUpdateLogic(
-            HederaTokenStore hederaTokenStore,
-            WorldLedgers ledgers,
-            SideEffectsTracker sideEffects) {
+            HederaTokenStore hederaTokenStore, WorldLedgers ledgers, SideEffectsTracker sideEffects) {
         return new TokenUpdateLogic(
                 dynamicProperties.treasuryNftAllowance(),
                 validator,
@@ -326,24 +304,21 @@ public class InfrastructureFactory {
                 sigImpactHistorian);
     }
 
-    public AbstractAutoCreationLogic newAutoCreationLogicScopedTo(
-            final HederaStackedWorldStateUpdater updater) {
-        final var autoCreationLogic =
-                new EvmAutoCreationLogic(
-                        usageLimits,
-                        syntheticTxnFactory,
-                        entityCreator,
-                        ids,
-                        () -> view,
-                        txnCtx,
-                        dynamicProperties,
-                        updater.aliases());
+    public AbstractAutoCreationLogic newAutoCreationLogicScopedTo(final HederaStackedWorldStateUpdater updater) {
+        final var autoCreationLogic = new EvmAutoCreationLogic(
+                usageLimits,
+                syntheticTxnFactory,
+                entityCreator,
+                ids,
+                () -> view,
+                txnCtx,
+                dynamicProperties,
+                updater.aliases());
         autoCreationLogic.setFeeCalculator(feeCalculator.get());
         return autoCreationLogic;
     }
 
-    public RecordSubmissions newRecordSubmissionsScopedTo(
-            final HederaStackedWorldStateUpdater updater) {
+    public RecordSubmissions newRecordSubmissionsScopedTo(final HederaStackedWorldStateUpdater updater) {
         return (txnBody, txnRecord) -> {
             txnRecord.onlyExternalizeIfSuccessful();
             updater.manageInProgressPrecedingRecord(recordsHistorian, txnRecord, txnBody);

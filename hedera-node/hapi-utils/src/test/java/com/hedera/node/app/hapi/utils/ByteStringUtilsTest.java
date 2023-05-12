@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.utils;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -83,9 +84,7 @@ class ByteStringUtilsTest {
 
     @Test
     void propagatesCnfeAsIse() {
-        assertThrows(
-                IllegalStateException.class,
-                () -> ByteStringUtils.UnsafeByteOutput.CLASS_BY_NAME.apply("Nope"));
+        assertThrows(IllegalStateException.class, () -> ByteStringUtils.UnsafeByteOutput.CLASS_BY_NAME.apply("Nope"));
     }
 
     @Test

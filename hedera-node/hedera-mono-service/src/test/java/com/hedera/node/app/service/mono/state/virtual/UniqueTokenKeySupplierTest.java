@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -50,14 +51,12 @@ class UniqueTokenKeySupplierTest {
     void noopFunctions_forTestCoverage() {
         final UniqueTokenKeySupplier supplier = new UniqueTokenKeySupplier();
         final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        final SerializableDataOutputStream dataOutputStream =
-                new SerializableDataOutputStream(outputStream);
+        final SerializableDataOutputStream dataOutputStream = new SerializableDataOutputStream(outputStream);
         supplier.serialize(dataOutputStream);
         assertThat(outputStream.toByteArray()).isEmpty();
 
         final SerializableDataInputStream dataInputStream =
-                new SerializableDataInputStream(
-                        new ByteArrayInputStream(outputStream.toByteArray()));
+                new SerializableDataInputStream(new ByteArrayInputStream(outputStream.toByteArray()));
         supplier.deserialize(dataInputStream, 1);
     }
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.consensus;
 
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT;
@@ -74,22 +75,40 @@ class TopicCreateTransitionLogicTest {
 
     // key to be used as a valid admin or submit key.
     private static final Key key = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
-    private static final AccountID payer = AccountID.newBuilder().setAccountNum(2_345L).build();
+    private static final AccountID payer =
+            AccountID.newBuilder().setAccountNum(2_345L).build();
     private static final Instant consensusTimestamp = Instant.ofEpochSecond(1546304463);
     private TransactionBody transactionBody;
 
     private MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
     private MerkleMap<EntityNum, MerkleTopic> topics = new MerkleMap<>();
 
-    @Mock private UsageLimits usageLimits;
-    @Mock private TransactionContext transactionContext;
-    @Mock private SignedTxnAccessor accessor;
-    @Mock private OptionValidator validator;
-    @Mock private EntityIdSource entityIdSource;
-    @Mock private TopicStore topicStore;
-    @Mock private AccountStore accountStore;
-    @Mock private Account autoRenew;
-    @Mock private SigImpactHistorian sigImpactHistorian;
+    @Mock
+    private UsageLimits usageLimits;
+
+    @Mock
+    private TransactionContext transactionContext;
+
+    @Mock
+    private SignedTxnAccessor accessor;
+
+    @Mock
+    private OptionValidator validator;
+
+    @Mock
+    private EntityIdSource entityIdSource;
+
+    @Mock
+    private TopicStore topicStore;
+
+    @Mock
+    private AccountStore accountStore;
+
+    @Mock
+    private Account autoRenew;
+
+    @Mock
+    private SigImpactHistorian sigImpactHistorian;
 
     private TopicCreateTransitionLogic subject;
 
@@ -98,15 +117,14 @@ class TopicCreateTransitionLogicTest {
         accounts.clear();
         topics.clear();
 
-        subject =
-                new TopicCreateTransitionLogic(
-                        usageLimits,
-                        topicStore,
-                        entityIdSource,
-                        validator,
-                        sigImpactHistorian,
-                        transactionContext,
-                        accountStore);
+        subject = new TopicCreateTransitionLogic(
+                usageLimits,
+                topicStore,
+                entityIdSource,
+                validator,
+                sigImpactHistorian,
+                transactionContext,
+                accountStore);
     }
 
     @Test
@@ -141,11 +159,9 @@ class TopicCreateTransitionLogicTest {
         given(accessor.getTxn()).willReturn(transactionBody);
         given(accountStore.loadAccountOrFailWith(any(), any())).willReturn(autoRenew);
         given(autoRenew.isSmartContract()).willReturn(false);
-        given(
-                        validator.isValidAutoRenewPeriod(
-                                Duration.newBuilder()
-                                        .setSeconds(VALID_AUTORENEW_PERIOD_SECONDS)
-                                        .build()))
+        given(validator.isValidAutoRenewPeriod(Duration.newBuilder()
+                        .setSeconds(VALID_AUTORENEW_PERIOD_SECONDS)
+                        .build()))
                 .willReturn(true);
         given(transactionContext.consensusTime()).willReturn(consensusTimestamp);
         given(entityIdSource.newTopicId(any())).willReturn(NEW_TOPIC_ID);
@@ -175,8 +191,7 @@ class TopicCreateTransitionLogicTest {
         givenTransactionWithInvalidSubmitKey();
         given(transactionContext.accessor()).willReturn(accessor);
         given(accessor.getTxn()).willReturn(transactionBody);
-        given(validator.attemptDecodeOrThrow(any()))
-                .willThrow(new InvalidTransactionException(BAD_ENCODING));
+        given(validator.attemptDecodeOrThrow(any())).willThrow(new InvalidTransactionException(BAD_ENCODING));
 
         assertFailsWith(() -> subject.doStateTransition(), BAD_ENCODING);
 
@@ -215,11 +230,9 @@ class TopicCreateTransitionLogicTest {
         given(accessor.getTxn()).willReturn(transactionBody);
         given(accountStore.loadAccountOrFailWith(any(), any()))
                 .willThrow(new InvalidTransactionException(INVALID_AUTORENEW_ACCOUNT));
-        given(
-                        validator.isValidAutoRenewPeriod(
-                                Duration.newBuilder()
-                                        .setSeconds(VALID_AUTORENEW_PERIOD_SECONDS)
-                                        .build()))
+        given(validator.isValidAutoRenewPeriod(Duration.newBuilder()
+                        .setSeconds(VALID_AUTORENEW_PERIOD_SECONDS)
+                        .build()))
                 .willReturn(true);
 
         assertFailsWith(() -> subject.doStateTransition(), INVALID_AUTORENEW_ACCOUNT);
@@ -233,11 +246,9 @@ class TopicCreateTransitionLogicTest {
         given(validator.memoCheck(anyString())).willReturn(OK);
         given(transactionContext.accessor()).willReturn(accessor);
         given(accessor.getTxn()).willReturn(transactionBody);
-        given(
-                        validator.isValidAutoRenewPeriod(
-                                Duration.newBuilder()
-                                        .setSeconds(VALID_AUTORENEW_PERIOD_SECONDS)
-                                        .build()))
+        given(validator.isValidAutoRenewPeriod(Duration.newBuilder()
+                        .setSeconds(VALID_AUTORENEW_PERIOD_SECONDS)
+                        .build()))
                 .willReturn(true);
         given(accountStore.loadAccountOrFailWith(any(), any()))
                 .willThrow(new InvalidTransactionException(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
@@ -253,11 +264,9 @@ class TopicCreateTransitionLogicTest {
         given(validator.memoCheck(anyString())).willReturn(OK);
         given(transactionContext.accessor()).willReturn(accessor);
         given(accessor.getTxn()).willReturn(transactionBody);
-        given(
-                        validator.isValidAutoRenewPeriod(
-                                Duration.newBuilder()
-                                        .setSeconds(VALID_AUTORENEW_PERIOD_SECONDS)
-                                        .build()))
+        given(validator.isValidAutoRenewPeriod(Duration.newBuilder()
+                        .setSeconds(VALID_AUTORENEW_PERIOD_SECONDS)
+                        .build()))
                 .willReturn(true);
         given(accountStore.loadAccountOrFailWith(any(), any())).willReturn(autoRenew);
         given(autoRenew.isSmartContract()).willReturn(false);
@@ -268,32 +277,28 @@ class TopicCreateTransitionLogicTest {
     }
 
     private void givenTransaction(final ConsensusCreateTopicTransactionBody.Builder body) {
-        final var txnId =
-                TransactionID.newBuilder()
-                        .setAccountID(payer)
-                        .setTransactionValidStart(
-                                Timestamp.newBuilder()
-                                        .setSeconds(consensusTimestamp.getEpochSecond()));
-        transactionBody =
-                TransactionBody.newBuilder()
-                        .setTransactionID(txnId)
-                        .setConsensusCreateTopic(body)
-                        .build();
+        final var txnId = TransactionID.newBuilder()
+                .setAccountID(payer)
+                .setTransactionValidStart(Timestamp.newBuilder().setSeconds(consensusTimestamp.getEpochSecond()));
+        transactionBody = TransactionBody.newBuilder()
+                .setTransactionID(txnId)
+                .setConsensusCreateTopic(body)
+                .build();
     }
 
     private ConsensusCreateTopicTransactionBody.Builder getBasicValidTransactionBodyBuilder() {
         return ConsensusCreateTopicTransactionBody.newBuilder()
-                .setAutoRenewPeriod(
-                        Duration.newBuilder().setSeconds(VALID_AUTORENEW_PERIOD_SECONDS).build());
+                .setAutoRenewPeriod(Duration.newBuilder()
+                        .setSeconds(VALID_AUTORENEW_PERIOD_SECONDS)
+                        .build());
     }
 
     private void givenValidTransactionWithAllOptions() {
-        givenTransaction(
-                getBasicValidTransactionBodyBuilder()
-                        .setMemo(VALID_MEMO)
-                        .setAdminKey(key)
-                        .setSubmitKey(key)
-                        .setAutoRenewAccount(MISC_ACCOUNT));
+        givenTransaction(getBasicValidTransactionBodyBuilder()
+                .setMemo(VALID_MEMO)
+                .setAdminKey(key)
+                .setSubmitKey(key)
+                .setAutoRenewAccount(MISC_ACCOUNT));
     }
 
     private void givenTransactionWithTooLongMemo() {
@@ -301,17 +306,14 @@ class TopicCreateTransitionLogicTest {
     }
 
     private void givenTransactionWithInvalidSubmitKey() {
-        givenTransaction(
-                getBasicValidTransactionBodyBuilder().setSubmitKey(Key.getDefaultInstance()));
+        givenTransaction(getBasicValidTransactionBodyBuilder().setSubmitKey(Key.getDefaultInstance()));
     }
 
     private void givenTransactionWithInvalidAutoRenewPeriod() {
-        givenTransaction(
-                ConsensusCreateTopicTransactionBody.newBuilder()
-                        .setAutoRenewPeriod(
-                                Duration.newBuilder()
-                                        .setSeconds(INVALID_AUTORENEW_PERIOD_SECONDS)
-                                        .build()));
+        givenTransaction(ConsensusCreateTopicTransactionBody.newBuilder()
+                .setAutoRenewPeriod(Duration.newBuilder()
+                        .setSeconds(INVALID_AUTORENEW_PERIOD_SECONDS)
+                        .build()));
     }
 
     private void givenTransactionWithMissingAutoRenewPeriod() {

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.expiry.classification;
 
 import static com.hedera.node.app.service.mono.state.expiry.classification.ClassificationResult.*;
@@ -38,8 +39,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ClassificationWorkTest {
-    @Mock private AccountStorageAdapter accounts;
-    @Mock private ExpiryThrottle expiryThrottle;
+    @Mock
+    private AccountStorageAdapter accounts;
+
+    @Mock
+    private ExpiryThrottle expiryThrottle;
 
     private EntityLookup lookup;
     private ClassificationWork subject;
@@ -78,9 +82,7 @@ class ClassificationWorkTest {
         givenPresent(nonExpiredAccountNum, contractAccount);
 
         // expect:
-        assertEquals(
-                EXPIRED_CONTRACT_READY_TO_RENEW,
-                subject.classify(EntityNum.fromLong(nonExpiredAccountNum), now));
+        assertEquals(EXPIRED_CONTRACT_READY_TO_RENEW, subject.classify(EntityNum.fromLong(nonExpiredAccountNum), now));
     }
 
     @Test
@@ -89,9 +91,7 @@ class ClassificationWorkTest {
         givenPresent(brokeExpiredNum, expiredDeletedAccount);
 
         // expect:
-        assertEquals(
-                DETACHED_ACCOUNT_GRACE_PERIOD_OVER,
-                subject.classify(EntityNum.fromLong(brokeExpiredNum), now));
+        assertEquals(DETACHED_ACCOUNT_GRACE_PERIOD_OVER, subject.classify(EntityNum.fromLong(brokeExpiredNum), now));
     }
 
     @Test
@@ -99,9 +99,7 @@ class ClassificationWorkTest {
         given(expiryThrottle.allow(CLASSIFICATION_WORK)).willReturn(true);
         givenPresent(brokeExpiredNum, expiredDeletedContract);
 
-        assertEquals(
-                DETACHED_CONTRACT_GRACE_PERIOD_OVER,
-                subject.classify(EntityNum.fromLong(brokeExpiredNum), now));
+        assertEquals(DETACHED_CONTRACT_GRACE_PERIOD_OVER, subject.classify(EntityNum.fromLong(brokeExpiredNum), now));
     }
 
     @Test
@@ -113,8 +111,7 @@ class ClassificationWorkTest {
         assertEquals(
                 DETACHED_ACCOUNT_GRACE_PERIOD_OVER,
                 subject.classify(
-                        EntityNum.fromLong(brokeExpiredNum),
-                        now.plusSeconds(dynamicProps.autoRenewGracePeriod())));
+                        EntityNum.fromLong(brokeExpiredNum), now.plusSeconds(dynamicProps.autoRenewGracePeriod())));
     }
 
     @Test
@@ -127,8 +124,7 @@ class ClassificationWorkTest {
         assertEquals(
                 DETACHED_CONTRACT_GRACE_PERIOD_OVER,
                 subject.classify(
-                        EntityNum.fromLong(brokeExpiredNum),
-                        now.plusSeconds(dynamicProps.autoRenewGracePeriod())));
+                        EntityNum.fromLong(brokeExpiredNum), now.plusSeconds(dynamicProps.autoRenewGracePeriod())));
     }
 
     @Test
@@ -142,8 +138,7 @@ class ClassificationWorkTest {
         assertEquals(
                 EXPIRED_CONTRACT_READY_TO_RENEW,
                 subject.classify(
-                        EntityNum.fromLong(brokeExpiredNum),
-                        now.plusSeconds(dynamicProps.autoRenewGracePeriod())));
+                        EntityNum.fromLong(brokeExpiredNum), now.plusSeconds(dynamicProps.autoRenewGracePeriod())));
         assertEquals(EntityNum.fromLong(autoRenewNum), subject.getPayerNumForLastClassified());
         assertSame(solventAutoRenewAccount, subject.getPayerForLastClassified());
     }
@@ -159,8 +154,7 @@ class ClassificationWorkTest {
         assertEquals(
                 EXPIRED_CONTRACT_READY_TO_RENEW,
                 subject.classify(
-                        EntityNum.fromLong(brokeExpiredNum),
-                        now.plusSeconds(dynamicProps.autoRenewGracePeriod())));
+                        EntityNum.fromLong(brokeExpiredNum), now.plusSeconds(dynamicProps.autoRenewGracePeriod())));
         assertEquals(EntityNum.fromLong(brokeExpiredNum), subject.getPayerNumForLastClassified());
         assertSame(expiredContractWithAutoRenew, subject.getPayerForLastClassified());
     }
@@ -174,8 +168,7 @@ class ClassificationWorkTest {
         assertEquals(
                 COME_BACK_LATER,
                 subject.classify(
-                        EntityNum.fromLong(brokeExpiredNum),
-                        now.plusSeconds(dynamicProps.autoRenewGracePeriod())));
+                        EntityNum.fromLong(brokeExpiredNum), now.plusSeconds(dynamicProps.autoRenewGracePeriod())));
     }
 
     @Test
@@ -188,8 +181,7 @@ class ClassificationWorkTest {
         assertEquals(
                 DETACHED_TREASURY_GRACE_PERIOD_OVER_BEFORE_TOKEN,
                 subject.classify(
-                        EntityNum.fromLong(brokeExpiredNum),
-                        now.plusSeconds(dynamicProps.autoRenewGracePeriod())));
+                        EntityNum.fromLong(brokeExpiredNum), now.plusSeconds(dynamicProps.autoRenewGracePeriod())));
     }
 
     @Test
@@ -218,11 +210,8 @@ class ClassificationWorkTest {
 
         // expect:
         assertEquals(
-                EXPIRED_ACCOUNT_READY_TO_RENEW,
-                subject.classify(EntityNum.fromLong(fundedExpiredAccountNum), now));
-        assertEquals(
-                EntityNum.fromLong(fundedExpiredAccountNum),
-                subject.getPayerNumForLastClassified());
+                EXPIRED_ACCOUNT_READY_TO_RENEW, subject.classify(EntityNum.fromLong(fundedExpiredAccountNum), now));
+        assertEquals(EntityNum.fromLong(fundedExpiredAccountNum), subject.getPayerNumForLastClassified());
         // and:
         assertEquals(expiredAccountNonZeroBalance, subject.getLastClassified());
     }
@@ -260,72 +249,62 @@ class ClassificationWorkTest {
     private final long nonZeroBalance = 1L;
     private final MockGlobalDynamicProps dynamicProps = new MockGlobalDynamicProps();
 
-    private final MerkleAccount nonExpiredAccount =
-            MerkleAccountFactory.newAccount()
-                    .balance(10)
-                    .expirationTime(now.getEpochSecond() + 1)
-                    .alias(ByteString.copyFromUtf8("aaaa"))
-                    .get();
-    private final MerkleAccount solventAutoRenewAccount =
-            MerkleAccountFactory.newAccount()
-                    .balance(10)
-                    .expirationTime(now.getEpochSecond() + 1)
-                    .alias(ByteString.copyFromUtf8("aaaa"))
-                    .get();
-    private final MerkleAccount expiredContractWithAutoRenew =
-            MerkleAccountFactory.newAccount()
-                    .isSmartContract(true)
-                    .balance(10)
-                    .expirationTime(now.getEpochSecond() + 1)
-                    .alias(ByteString.copyFromUtf8("aaaa"))
-                    .autoRenewAccount(EntityId.fromIdentityCode(10).toGrpcAccountId())
-                    .get();
-    private final MerkleAccount insolventAutoRenewAccount =
-            MerkleAccountFactory.newAccount()
-                    .balance(0)
-                    .expirationTime(now.getEpochSecond() + 1)
-                    .alias(ByteString.copyFromUtf8("aaaa"))
-                    .get();
-    private final MerkleAccount expiredAccountZeroBalance =
-            MerkleAccountFactory.newAccount()
-                    .balance(0)
-                    .expirationTime(now.getEpochSecond() - 1)
-                    .alias(ByteString.copyFromUtf8("bbbb"))
-                    .get();
-    private final MerkleAccount expiredContractZeroBalance =
-            MerkleAccountFactory.newAccount()
-                    .isSmartContract(true)
-                    .balance(0)
-                    .expirationTime(now.getEpochSecond() - 1)
-                    .alias(ByteString.copyFromUtf8("bbbb"))
-                    .get();
-    private final MerkleAccount expiredDeletedAccount =
-            MerkleAccountFactory.newAccount()
-                    .balance(0)
-                    .deleted(true)
-                    .alias(ByteString.copyFromUtf8("cccc"))
-                    .expirationTime(now.getEpochSecond() - 1)
-                    .get();
-    private final MerkleAccount expiredDeletedContract =
-            MerkleAccountFactory.newAccount()
-                    .isSmartContract(true)
-                    .balance(0)
-                    .deleted(true)
-                    .alias(ByteString.copyFromUtf8("cccc"))
-                    .expirationTime(now.getEpochSecond() - 1)
-                    .get();
-    private final MerkleAccount expiredAccountNonZeroBalance =
-            MerkleAccountFactory.newAccount()
-                    .balance(nonZeroBalance)
-                    .expirationTime(now.getEpochSecond() - 1)
-                    .alias(ByteString.copyFromUtf8("dddd"))
-                    .get();
-    private final MerkleAccount contractAccount =
-            MerkleAccountFactory.newAccount()
-                    .isSmartContract(true)
-                    .balance(1)
-                    .expirationTime(now.getEpochSecond() - 1)
-                    .get();
+    private final MerkleAccount nonExpiredAccount = MerkleAccountFactory.newAccount()
+            .balance(10)
+            .expirationTime(now.getEpochSecond() + 1)
+            .alias(ByteString.copyFromUtf8("aaaa"))
+            .get();
+    private final MerkleAccount solventAutoRenewAccount = MerkleAccountFactory.newAccount()
+            .balance(10)
+            .expirationTime(now.getEpochSecond() + 1)
+            .alias(ByteString.copyFromUtf8("aaaa"))
+            .get();
+    private final MerkleAccount expiredContractWithAutoRenew = MerkleAccountFactory.newAccount()
+            .isSmartContract(true)
+            .balance(10)
+            .expirationTime(now.getEpochSecond() + 1)
+            .alias(ByteString.copyFromUtf8("aaaa"))
+            .autoRenewAccount(EntityId.fromIdentityCode(10).toGrpcAccountId())
+            .get();
+    private final MerkleAccount insolventAutoRenewAccount = MerkleAccountFactory.newAccount()
+            .balance(0)
+            .expirationTime(now.getEpochSecond() + 1)
+            .alias(ByteString.copyFromUtf8("aaaa"))
+            .get();
+    private final MerkleAccount expiredAccountZeroBalance = MerkleAccountFactory.newAccount()
+            .balance(0)
+            .expirationTime(now.getEpochSecond() - 1)
+            .alias(ByteString.copyFromUtf8("bbbb"))
+            .get();
+    private final MerkleAccount expiredContractZeroBalance = MerkleAccountFactory.newAccount()
+            .isSmartContract(true)
+            .balance(0)
+            .expirationTime(now.getEpochSecond() - 1)
+            .alias(ByteString.copyFromUtf8("bbbb"))
+            .get();
+    private final MerkleAccount expiredDeletedAccount = MerkleAccountFactory.newAccount()
+            .balance(0)
+            .deleted(true)
+            .alias(ByteString.copyFromUtf8("cccc"))
+            .expirationTime(now.getEpochSecond() - 1)
+            .get();
+    private final MerkleAccount expiredDeletedContract = MerkleAccountFactory.newAccount()
+            .isSmartContract(true)
+            .balance(0)
+            .deleted(true)
+            .alias(ByteString.copyFromUtf8("cccc"))
+            .expirationTime(now.getEpochSecond() - 1)
+            .get();
+    private final MerkleAccount expiredAccountNonZeroBalance = MerkleAccountFactory.newAccount()
+            .balance(nonZeroBalance)
+            .expirationTime(now.getEpochSecond() - 1)
+            .alias(ByteString.copyFromUtf8("dddd"))
+            .get();
+    private final MerkleAccount contractAccount = MerkleAccountFactory.newAccount()
+            .isSmartContract(true)
+            .balance(1)
+            .expirationTime(now.getEpochSecond() - 1)
+            .get();
     private final long nonExpiredAccountNum = 1L;
     private final long brokeExpiredNum = 2L;
     private final long fundedExpiredAccountNum = 3L;

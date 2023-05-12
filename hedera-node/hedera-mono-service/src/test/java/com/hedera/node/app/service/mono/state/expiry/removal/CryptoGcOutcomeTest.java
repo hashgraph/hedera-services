@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.expiry.removal;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -28,28 +29,22 @@ import org.junit.jupiter.api.Test;
 class CryptoGcOutcomeTest {
     @Test
     void recognizesExternalizationNeeds() {
-        final var doesnt =
-                new CryptoGcOutcome(
-                        FungibleTreasuryReturns.UNFINISHED_NOOP_FUNGIBLE_RETURNS,
-                        NonFungibleTreasuryReturns.FINISHED_NOOP_NON_FUNGIBLE_RETURNS,
-                        false);
-        final var does =
-                new CryptoGcOutcome(
-                        FungibleTreasuryReturns.UNFINISHED_NOOP_FUNGIBLE_RETURNS,
-                        new NonFungibleTreasuryReturns(
-                                List.of(EntityId.fromIdentityCode(1234)), List.of(), false),
-                        false);
-        final var alsoDoes =
-                new CryptoGcOutcome(
-                        new FungibleTreasuryReturns(
-                                List.of(EntityId.fromIdentityCode(1234)), List.of(), false),
-                        NonFungibleTreasuryReturns.FINISHED_NOOP_NON_FUNGIBLE_RETURNS,
-                        false);
-        final var doesToo =
-                new CryptoGcOutcome(
-                        FungibleTreasuryReturns.UNFINISHED_NOOP_FUNGIBLE_RETURNS,
-                        NonFungibleTreasuryReturns.FINISHED_NOOP_NON_FUNGIBLE_RETURNS,
-                        true);
+        final var doesnt = new CryptoGcOutcome(
+                FungibleTreasuryReturns.UNFINISHED_NOOP_FUNGIBLE_RETURNS,
+                NonFungibleTreasuryReturns.FINISHED_NOOP_NON_FUNGIBLE_RETURNS,
+                false);
+        final var does = new CryptoGcOutcome(
+                FungibleTreasuryReturns.UNFINISHED_NOOP_FUNGIBLE_RETURNS,
+                new NonFungibleTreasuryReturns(List.of(EntityId.fromIdentityCode(1234)), List.of(), false),
+                false);
+        final var alsoDoes = new CryptoGcOutcome(
+                new FungibleTreasuryReturns(List.of(EntityId.fromIdentityCode(1234)), List.of(), false),
+                NonFungibleTreasuryReturns.FINISHED_NOOP_NON_FUNGIBLE_RETURNS,
+                false);
+        final var doesToo = new CryptoGcOutcome(
+                FungibleTreasuryReturns.UNFINISHED_NOOP_FUNGIBLE_RETURNS,
+                NonFungibleTreasuryReturns.FINISHED_NOOP_NON_FUNGIBLE_RETURNS,
+                true);
 
         assertTrue(does.needsExternalizing());
         assertTrue(alsoDoes.needsExternalizing());
@@ -61,19 +56,16 @@ class CryptoGcOutcomeTest {
     void canAccumulateReturnsFromBoth() {
         final var adjust = new CurrencyAdjustments();
         final var exchange = new NftAdjustments();
-        final var outcome =
-                new CryptoGcOutcome(
-                        new FungibleTreasuryReturns(
-                                new ArrayList<>(List.of(EntityId.fromIdentityCode(1234))),
-                                new ArrayList<>(List.of(adjust)),
-                                false),
-                        new NonFungibleTreasuryReturns(
-                                List.of(EntityId.fromIdentityCode(2345)), List.of(exchange), false),
-                        false);
+        final var outcome = new CryptoGcOutcome(
+                new FungibleTreasuryReturns(
+                        new ArrayList<>(List.of(EntityId.fromIdentityCode(1234))),
+                        new ArrayList<>(List.of(adjust)),
+                        false),
+                new NonFungibleTreasuryReturns(List.of(EntityId.fromIdentityCode(2345)), List.of(exchange), false),
+                false);
 
         assertEquals(
-                List.of(EntityId.fromIdentityCode(1234), EntityId.fromIdentityCode(2345)),
-                outcome.allReturnedTokens());
+                List.of(EntityId.fromIdentityCode(1234), EntityId.fromIdentityCode(2345)), outcome.allReturnedTokens());
         final List<CurrencyAdjustments> parallelAdjusts = new ArrayList<>();
         parallelAdjusts.add(adjust);
         parallelAdjusts.add(null);
@@ -87,14 +79,13 @@ class CryptoGcOutcomeTest {
     @Test
     void canAccumulateReturnsFromOne() {
         final var exchange = new NftAdjustments();
-        final var outcome =
-                new CryptoGcOutcome(
-                        FungibleTreasuryReturns.UNFINISHED_NOOP_FUNGIBLE_RETURNS,
-                        new NonFungibleTreasuryReturns(
-                                new ArrayList<>(List.of(EntityId.fromIdentityCode(2345))),
-                                new ArrayList<>(List.of(exchange)),
-                                false),
-                        false);
+        final var outcome = new CryptoGcOutcome(
+                FungibleTreasuryReturns.UNFINISHED_NOOP_FUNGIBLE_RETURNS,
+                new NonFungibleTreasuryReturns(
+                        new ArrayList<>(List.of(EntityId.fromIdentityCode(2345))),
+                        new ArrayList<>(List.of(exchange)),
+                        false),
+                false);
 
         assertEquals(List.of(EntityId.fromIdentityCode(2345)), outcome.allReturnedTokens());
         final List<CurrencyAdjustments> parallelAdjusts = new ArrayList<>();
@@ -107,11 +98,10 @@ class CryptoGcOutcomeTest {
 
     @Test
     void canAccumulateReturnsFromNeither() {
-        final var outcome =
-                new CryptoGcOutcome(
-                        FungibleTreasuryReturns.UNFINISHED_NOOP_FUNGIBLE_RETURNS,
-                        NonFungibleTreasuryReturns.FINISHED_NOOP_NON_FUNGIBLE_RETURNS,
-                        false);
+        final var outcome = new CryptoGcOutcome(
+                FungibleTreasuryReturns.UNFINISHED_NOOP_FUNGIBLE_RETURNS,
+                NonFungibleTreasuryReturns.FINISHED_NOOP_NON_FUNGIBLE_RETURNS,
+                false);
 
         assertEquals(Collections.emptyList(), outcome.allReturnedTokens());
         assertEquals(Collections.emptyList(), outcome.parallelAdjustments());

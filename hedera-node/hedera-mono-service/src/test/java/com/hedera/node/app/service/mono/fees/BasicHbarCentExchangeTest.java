@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -30,23 +31,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class BasicHbarCentExchangeTest {
     private static final long crossoverTime = 1_234_567L;
-    private static final ExchangeRateSet rates =
-            ExchangeRateSet.newBuilder()
-                    .setCurrentRate(
-                            ExchangeRate.newBuilder()
-                                    .setHbarEquiv(1)
-                                    .setCentEquiv(12)
-                                    .setExpirationTime(
-                                            TimestampSeconds.newBuilder()
-                                                    .setSeconds(crossoverTime)))
-                    .setNextRate(
-                            ExchangeRate.newBuilder()
-                                    .setExpirationTime(
-                                            TimestampSeconds.newBuilder()
-                                                    .setSeconds(crossoverTime * 2))
-                                    .setHbarEquiv(1)
-                                    .setCentEquiv(24))
-                    .build();
+    private static final ExchangeRateSet rates = ExchangeRateSet.newBuilder()
+            .setCurrentRate(ExchangeRate.newBuilder()
+                    .setHbarEquiv(1)
+                    .setCentEquiv(12)
+                    .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(crossoverTime)))
+            .setNextRate(ExchangeRate.newBuilder()
+                    .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(crossoverTime * 2))
+                    .setHbarEquiv(1)
+                    .setCentEquiv(24))
+            .build();
 
     private BasicHbarCentExchange subject;
 

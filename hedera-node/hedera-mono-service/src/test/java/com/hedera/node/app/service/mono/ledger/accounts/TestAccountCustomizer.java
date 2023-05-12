@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.accounts;
 
 import static com.hedera.node.app.service.mono.ledger.accounts.AccountCustomizer.Option.AUTO_RENEW_ACCOUNT_ID;
@@ -59,8 +60,7 @@ public final class TestAccountCustomizer
         OPTION_PROPERTIES.put(EXPIRED_AND_PENDING_REMOVAL, FLAG);
     }
 
-    public TestAccountCustomizer(
-            final ChangeSummaryManager<TestAccount, TestAccountProperty> changeManager) {
+    public TestAccountCustomizer(final ChangeSummaryManager<TestAccount, TestAccountProperty> changeManager) {
         super(TestAccountProperty.class, OPTION_PROPERTIES, changeManager);
     }
 

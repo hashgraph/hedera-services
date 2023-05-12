@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.contract;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -31,10 +32,13 @@ class GetBySolidityIdAnswerTest {
 
     @Test
     void assertSolidityIDHeadersWhenResponseTypeIsCostAnswer() {
-        final var header =
-                QueryHeader.newBuilder().setResponseType(ResponseType.COST_ANSWER).build();
-        final var getSolidityIdQuery = getBySolidityIDQueryBuilder.setHeader(header).build();
-        final Query query = Query.newBuilder().setGetBySolidityID(getSolidityIdQuery).build();
+        final var header = QueryHeader.newBuilder()
+                .setResponseType(ResponseType.COST_ANSWER)
+                .build();
+        final var getSolidityIdQuery =
+                getBySolidityIDQueryBuilder.setHeader(header).build();
+        final Query query =
+                Query.newBuilder().setGetBySolidityID(getSolidityIdQuery).build();
         final var result = solidityIdAnswer.responseGiven(query, null, null, 0);
 
         assertEquals(
@@ -48,8 +52,9 @@ class GetBySolidityIdAnswerTest {
 
     @Test
     void assertSolidityIDHeadersWhenResponseTypeIsMissing() {
-        final Query query =
-                Query.newBuilder().setGetBySolidityID(getBySolidityIDQueryBuilder.build()).build();
+        final Query query = Query.newBuilder()
+                .setGetBySolidityID(getBySolidityIDQueryBuilder.build())
+                .build();
         final var result = solidityIdAnswer.responseGiven(query, null, null, 0);
 
         assertEquals(

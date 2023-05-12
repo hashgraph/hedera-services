@@ -13,30 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-plugins {
-    id("com.hedera.hashgraph.conventions")
-}
+
+plugins { id("com.hedera.hashgraph.conventions") }
 
 description = "Hedera Services API Fees"
 
 configurations.all {
-    exclude("javax.annotation", "javax.annotation-api")
+  exclude("javax.annotation", "javax.annotation-api")
 
-    exclude("io.grpc", "grpc-core")
-    exclude("io.grpc", "grpc-context")
-    exclude("io.grpc", "grpc-api")
-    exclude("io.grpc", "grpc-testing")
+  exclude("io.grpc", "grpc-core")
+  exclude("io.grpc", "grpc-context")
+  exclude("io.grpc", "grpc-api")
+  exclude("io.grpc", "grpc-testing")
 }
 
 dependencies {
-    annotationProcessor(libs.dagger.compiler)
+  annotationProcessor(libs.dagger.compiler)
 
-    api(project(":hedera-node:hapi-utils"))
+  api(project(":hedera-node:hapi-utils"))
 
-    implementation(libs.javax.inject)
-    implementation(libs.dagger.api)
-    implementation(libs.log4j.api)
-    implementation(libs.jackson)
+  implementation(libs.javax.inject)
+  implementation(libs.dagger.api)
+  implementation(libs.log4j.api)
+  implementation(libs.jackson)
 
-    testImplementation(testLibs.bundles.testing)
+  testImplementation(testLibs.bundles.testing)
 }

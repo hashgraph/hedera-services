@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.operation;
 
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
@@ -63,6 +64,7 @@ public class HederaCallOperation extends CallOperation {
                 () -> cost(frame),
                 () -> super.execute(frame, evm),
                 addressValidator,
-                precompiledContractMap);
+                precompiledContractMap,
+                () -> isStatic(frame));
     }
 }

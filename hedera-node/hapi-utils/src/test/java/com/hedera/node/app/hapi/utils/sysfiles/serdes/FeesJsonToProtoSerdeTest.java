@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.utils.sysfiles.serdes;
 
 import static com.hedera.node.app.hapi.utils.sysfiles.serdes.FeesJsonToProtoSerde.loadFeeScheduleFromJson;
@@ -35,13 +36,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class FeesJsonToProtoSerdeTest {
-    private static final String UNTYPED_FEE_SCHEDULE_REPR_PATH =
-            "src/test/resources/sysfiles/r4FeeSchedule.bin";
-    private static final String TYPED_FEE_SCHEDULE_JSON_PATH =
-            "src/test/resources/sysfiles/r16feeSchedules.json";
+    private static final String UNTYPED_FEE_SCHEDULE_REPR_PATH = "src/test/resources/sysfiles/r4FeeSchedule.bin";
+    private static final String TYPED_FEE_SCHEDULE_JSON_PATH = "src/test/resources/sysfiles/r16feeSchedules.json";
     private static final String TYPED_FEE_SCHEDULE_JSON_RESOURCE = "sysfiles/r16feeSchedules.json";
 
-    @TempDir private File tempDir;
+    @TempDir
+    private File tempDir;
 
     @Test
     void isUninstantiable() throws NoSuchMethodException {
@@ -68,10 +68,8 @@ class FeesJsonToProtoSerdeTest {
         Files.write(typedSchedules.toByteArray(), tmpFile);
 
         // and sanity check:
-        Assertions.assertDoesNotThrow(
-                () ->
-                        CurrentAndNextFeeSchedule.parseFrom(
-                                java.nio.file.Files.readAllBytes(Paths.get(tmpFile.getPath()))));
+        Assertions.assertDoesNotThrow(() ->
+                CurrentAndNextFeeSchedule.parseFrom(java.nio.file.Files.readAllBytes(Paths.get(tmpFile.getPath()))));
     }
 
     @Test
@@ -83,18 +81,14 @@ class FeesJsonToProtoSerdeTest {
         Files.write(typedSchedules.toByteArray(), tmpFile);
 
         // and sanity check:
-        Assertions.assertDoesNotThrow(
-                () ->
-                        CurrentAndNextFeeSchedule.parseFrom(
-                                java.nio.file.Files.readAllBytes(Paths.get(tmpFile.getPath()))));
+        Assertions.assertDoesNotThrow(() ->
+                CurrentAndNextFeeSchedule.parseFrom(java.nio.file.Files.readAllBytes(Paths.get(tmpFile.getPath()))));
     }
 
     @Test
     void serializesTypedFeeScheduleFromParsedJsonLiteral() throws Exception {
         // setup:
-        final var jsonLiteral =
-                new String(
-                        java.nio.file.Files.readAllBytes(Paths.get(TYPED_FEE_SCHEDULE_JSON_PATH)));
+        final var jsonLiteral = new String(java.nio.file.Files.readAllBytes(Paths.get(TYPED_FEE_SCHEDULE_JSON_PATH)));
 
         // given:
         final var typedSchedules = parseFeeScheduleFromJson(jsonLiteral);
@@ -103,18 +97,15 @@ class FeesJsonToProtoSerdeTest {
         Files.write(typedSchedules.toByteArray(), tmpFile);
 
         // and sanity check:
-        Assertions.assertDoesNotThrow(
-                () ->
-                        CurrentAndNextFeeSchedule.parseFrom(
-                                java.nio.file.Files.readAllBytes(Paths.get(tmpFile.getPath()))));
+        Assertions.assertDoesNotThrow(() ->
+                CurrentAndNextFeeSchedule.parseFrom(java.nio.file.Files.readAllBytes(Paths.get(tmpFile.getPath()))));
     }
 
     @Test
     void preservesR4Behavior() throws Exception {
         // given:
         CurrentAndNextFeeSchedule expectedR4 =
-                CurrentAndNextFeeSchedule.parseFrom(
-                        Files.toByteArray(new File(UNTYPED_FEE_SCHEDULE_REPR_PATH)));
+                CurrentAndNextFeeSchedule.parseFrom(Files.toByteArray(new File(UNTYPED_FEE_SCHEDULE_REPR_PATH)));
 
         // when:
         CurrentAndNextFeeSchedule actual = loadFeeScheduleFromJson("sysfiles/R4FeeSchedule.json");
@@ -126,9 +117,7 @@ class FeesJsonToProtoSerdeTest {
     @Test
     void throwIseOnFailure() {
         // expect:
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> loadFeeScheduleFromJson("no-such-resource.json"));
+        assertThrows(IllegalArgumentException.class, () -> loadFeeScheduleFromJson("no-such-resource.json"));
     }
 
     @Test

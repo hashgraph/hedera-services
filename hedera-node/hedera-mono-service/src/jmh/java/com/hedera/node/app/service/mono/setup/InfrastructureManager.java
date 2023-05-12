@@ -13,16 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.setup;
 
 import static com.hedera.node.app.service.mono.setup.InfrastructureBundle.allImplied;
 import static com.hedera.node.app.service.mono.setup.InfrastructureInitializer.initializeBundle;
 
 import com.hedera.node.app.service.mono.state.virtual.VirtualMapFactory;
-import com.hedera.node.app.service.mono.state.virtual.VirtualMapFactory.JasperDbBuilderFactory;
-import com.swirlds.jasperdb.JasperDbBuilder;
-import com.swirlds.virtualmap.VirtualKey;
-import com.swirlds.virtualmap.VirtualValue;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -74,8 +71,7 @@ public class InfrastructureManager {
     private static InfrastructureBundle loadBundle(
             final Map<String, Object> config, final Collection<InfrastructureType> types) {
         if (!bundleExistsWith(config, types)) {
-            throw new IllegalArgumentException(
-                    "Bundle " + bundleDirFor(config, types) + " was not found");
+            throw new IllegalArgumentException("Bundle " + bundleDirFor(config, types) + " was not found");
         }
         final var dir = bundleDirFor(config, types);
         final var bundle = new InfrastructureBundle(types);
@@ -95,20 +91,10 @@ public class InfrastructureManager {
     }
 
     public static VirtualMapFactory newVmFactory(final String storageLoc) {
-        final var jdbBuilderFactory =
-                new JasperDbBuilderFactory() {
-                    @Override
-                    @SuppressWarnings({"rawtypes", "unchecked"})
-                    public <K extends VirtualKey<? super K>, V extends VirtualValue>
-                            JasperDbBuilder<K, V> newJdbBuilder() {
-                        return new JasperDbBuilder().storageDir(Paths.get(storageLoc));
-                    }
-                };
-        return new VirtualMapFactory(jdbBuilderFactory);
+        return new VirtualMapFactory(Paths.get(storageLoc));
     }
 
-    private static String bundleDirFor(
-            final Map<String, Object> config, final Collection<InfrastructureType> types) {
+    private static String bundleDirFor(final Map<String, Object> config, final Collection<InfrastructureType> types) {
         final var sb = new StringBuilder("bundle").append(InfrastructureBundle.codeFor(types));
         config.keySet().stream()
                 .sorted()
@@ -120,8 +106,7 @@ public class InfrastructureManager {
         final var f = new File(loc);
         if (!f.exists()) {
             if (!f.mkdirs()) {
-                throw new IllegalStateException(
-                        "Failed to create directory " + f.getAbsolutePath());
+                throw new IllegalStateException("Failed to create directory " + f.getAbsolutePath());
             }
         } else if (!f.isDirectory()) {
             throw new IllegalStateException(f.getAbsolutePath() + " is not a directory");

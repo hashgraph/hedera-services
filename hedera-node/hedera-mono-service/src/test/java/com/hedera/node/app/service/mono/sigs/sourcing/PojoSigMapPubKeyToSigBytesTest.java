@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs.sourcing;
 
 import static com.hedera.test.factories.keys.NodeFactory.ecdsa384Secp256k1;
@@ -52,13 +53,7 @@ import org.junit.jupiter.api.Test;
 class PojoSigMapPubKeyToSigBytesTest {
     private final byte[] EMPTY_SIG = {};
     private final KeyTree payerKt =
-            KeyTree.withRoot(
-                    list(
-                            ed25519(true),
-                            ecdsa384Secp256k1(true),
-                            ed25519(true),
-                            ed25519(true),
-                            ed25519(true)));
+            KeyTree.withRoot(list(ed25519(true), ecdsa384Secp256k1(true), ed25519(true), ed25519(true), ed25519(true)));
     private final KeyTree otherKt =
             KeyTree.withRoot(list(ed25519(true), ecdsa384Secp256k1(true), ecdsa384Secp256k1(true)));
     private final KeyFactory defaultFactory = KeyFactory.getDefaultInstance();
@@ -69,58 +64,44 @@ class PojoSigMapPubKeyToSigBytesTest {
         doCallRealMethod().when(subject).forEachUnusedSigWithFullPrefix(any());
         doCallRealMethod().when(subject).resetAllSigsToUnused();
         doCallRealMethod().when(subject).hasAtLeastOneUnusedSigWithFullPrefix();
+        doCallRealMethod().when(subject).hasAtLeastOneEcdsaSig();
         assertDoesNotThrow(() -> subject.forEachUnusedSigWithFullPrefix(null));
         assertDoesNotThrow(subject::resetAllSigsToUnused);
         assertFalse(subject::hasAtLeastOneUnusedSigWithFullPrefix);
+        assertFalse(subject::hasAtLeastOneEcdsaSig);
     }
 
     @Test
     void getsUnusedFullKeysAndSigs() throws Throwable {
-        final var signedTxn =
-                newSignedSystemDelete()
-                        .payerKt(payerKt)
-                        .nonPayerKts(otherKt)
-                        .sigMapGen(withAlternatingUniqueAndFullPrefixes())
-                        .get();
-        final var subject =
-                new PojoSigMapPubKeyToSigBytes(
-                        SignedTxnAccessor.uncheckedFrom(signedTxn).getSigMap());
-        lookupsMatch(
-                payerKt,
-                defaultFactory,
-                CommonUtils.extractTransactionBodyBytes(signedTxn),
-                subject);
+        final var signedTxn = newSignedSystemDelete()
+                .payerKt(payerKt)
+                .nonPayerKts(otherKt)
+                .sigMapGen(withAlternatingUniqueAndFullPrefixes())
+                .get();
+        final var subject = new PojoSigMapPubKeyToSigBytes(
+                SignedTxnAccessor.uncheckedFrom(signedTxn).getSigMap());
+        lookupsMatch(payerKt, defaultFactory, CommonUtils.extractTransactionBodyBytes(signedTxn), subject);
 
         final var numUnusedFullPrefixSigs = new AtomicInteger(0);
         assertTrue(subject.hasAtLeastOneUnusedSigWithFullPrefix());
-        subject.forEachUnusedSigWithFullPrefix(
-                (type, pubKey, sig) -> {
-                    numUnusedFullPrefixSigs.getAndIncrement();
-                });
+        subject.forEachUnusedSigWithFullPrefix((type, pubKey, sig) -> {
+            numUnusedFullPrefixSigs.getAndIncrement();
+        });
         assertEquals(2, numUnusedFullPrefixSigs.get());
+        assertTrue(subject.hasAtLeastOneEcdsaSig());
     }
 
     @Test
     void getsNoUnusedFullKeysAndSigs() throws Throwable {
-        final var signedTxn =
-                newSignedSystemDelete()
-                        .payerKt(payerKt)
-                        .nonPayerKts(otherKt)
-                        .sigMapGen(withAlternatingUniqueAndFullPrefixes())
-                        .get();
-        final var subject =
-                new PojoSigMapPubKeyToSigBytes(
-                        SignedTxnAccessor.uncheckedFrom(signedTxn).getSigMap());
-        lookupsMatch(
-                payerKt,
-                defaultFactory,
-                CommonUtils.extractTransactionBodyBytes(signedTxn),
-                subject);
-        lookupsMatch(
-                otherKt,
-                defaultFactory,
-                CommonUtils.extractTransactionBodyBytes(signedTxn),
-                subject);
+        final var signedTxn = newSignedSystemDelete()
+                .payerKt(payerKt)
+                .nonPayerKts(otherKt)
+                .sigMapGen(withAlternatingUniqueAndFullPrefixes())
+                .get();
+        final var subject = new PojoSigMapPubKeyToSigBytes(
+                SignedTxnAccessor.uncheckedFrom(signedTxn).getSigMap());
+        lookupsMatch(payerKt, defaultFactory, CommonUtils.extractTransactionBodyBytes(signedTxn), subject);
+        lookupsMatch(otherKt, defaultFactory, CommonUtils.extractTransactionBodyBytes(signedTxn), subject);
 
         assertFalse(subject.hasAtLeastOneUnusedSigWithFullPrefix());
 
@@ -128,10 +109,9 @@ class PojoSigMapPubKeyToSigBytesTest {
 
         assertTrue(subject.hasAtLeastOneUnusedSigWithFullPrefix());
         final var numUnusedFullPrefixSigs = new AtomicInteger(0);
-        subject.forEachUnusedSigWithFullPrefix(
-                (type, pubKey, sig) -> {
-                    numUnusedFullPrefixSigs.getAndIncrement();
-                });
+        subject.forEachUnusedSigWithFullPrefix((type, pubKey, sig) -> {
+            numUnusedFullPrefixSigs.getAndIncrement();
+        });
         assertEquals(4, numUnusedFullPrefixSigs.get());
     }
 
@@ -140,21 +120,12 @@ class PojoSigMapPubKeyToSigBytesTest {
         // given:
         final Transaction signedTxn =
                 newSignedSystemDelete().payerKt(payerKt).nonPayerKts(otherKt).get();
-        final PubKeyToSigBytes subject =
-                new PojoSigMapPubKeyToSigBytes(
-                        SignedTxnAccessor.uncheckedFrom(signedTxn).getSigMap());
+        final PubKeyToSigBytes subject = new PojoSigMapPubKeyToSigBytes(
+                SignedTxnAccessor.uncheckedFrom(signedTxn).getSigMap());
 
         // expect:
-        lookupsMatch(
-                payerKt,
-                defaultFactory,
-                CommonUtils.extractTransactionBodyBytes(signedTxn),
-                subject);
-        lookupsMatch(
-                otherKt,
-                defaultFactory,
-                CommonUtils.extractTransactionBodyBytes(signedTxn),
-                subject);
+        lookupsMatch(payerKt, defaultFactory, CommonUtils.extractTransactionBodyBytes(signedTxn), subject);
+        lookupsMatch(otherKt, defaultFactory, CommonUtils.extractTransactionBodyBytes(signedTxn), subject);
     }
 
     @Test
@@ -162,20 +133,19 @@ class PojoSigMapPubKeyToSigBytesTest {
         // given:
         final String str = "TEST_STRING";
         final byte[] pubKey = str.getBytes(StandardCharsets.UTF_8);
-        final SignaturePair sigPair =
-                SignaturePair.newBuilder().setPubKeyPrefix(ByteString.copyFromUtf8(str)).build();
-        final SignatureMap sigMap =
-                SignatureMap.newBuilder().addSigPair(sigPair).addSigPair(sigPair).build();
-        final PojoSigMapPubKeyToSigBytes sigMapPubKeyToSigBytes =
-                new PojoSigMapPubKeyToSigBytes(sigMap);
+        final SignaturePair sigPair = SignaturePair.newBuilder()
+                .setPubKeyPrefix(ByteString.copyFromUtf8(str))
+                .build();
+        final SignatureMap sigMap = SignatureMap.newBuilder()
+                .addSigPair(sigPair)
+                .addSigPair(sigPair)
+                .build();
+        final PojoSigMapPubKeyToSigBytes sigMapPubKeyToSigBytes = new PojoSigMapPubKeyToSigBytes(sigMap);
 
         // expect:
-        final KeyPrefixMismatchException exception =
-                assertThrows(
-                        KeyPrefixMismatchException.class,
-                        () -> {
-                            sigMapPubKeyToSigBytes.sigBytesFor(pubKey);
-                        });
+        final KeyPrefixMismatchException exception = assertThrows(KeyPrefixMismatchException.class, () -> {
+            sigMapPubKeyToSigBytes.sigBytesFor(pubKey);
+        });
 
         assertEquals(
                 "Source signature map with prefix 544553545f535452494e47 is ambiguous for given"
@@ -183,31 +153,40 @@ class PojoSigMapPubKeyToSigBytesTest {
                 exception.getMessage());
     }
 
+    @Test
+    void hasAtLeastOneEcdsaSigReturnsFalseWhenNoneHaveSigned() throws Throwable {
+        final var signedTxn = newSignedSystemDelete()
+                .payerKt(KeyTree.withRoot(ed25519()))
+                .sigMapGen(withAlternatingUniqueAndFullPrefixes())
+                .get();
+
+        final var subject = new PojoSigMapPubKeyToSigBytes(
+                SignedTxnAccessor.uncheckedFrom(signedTxn).getSigMap());
+
+        assertFalse(subject.hasAtLeastOneEcdsaSig());
+    }
+
     private void lookupsMatch(
-            final KeyTree kt,
-            final KeyFactory factory,
-            final byte[] data,
-            final PubKeyToSigBytes subject)
+            final KeyTree kt, final KeyFactory factory, final byte[] data, final PubKeyToSigBytes subject)
             throws Exception {
         final AtomicReference<Exception> thrown = new AtomicReference<>();
-        kt.traverseLeaves(
-                leaf -> {
-                    final byte[] pubKey = pubKeyFor(leaf, factory);
-                    byte[] sigBytes = EMPTY_SIG;
-                    try {
-                        sigBytes = subject.sigBytesFor(pubKey);
-                    } catch (final Exception e) {
-                        thrown.set(e);
-                    }
-                    if (pubKey.length == 32) {
-                        final byte[] expectedSigBytes = expectedSigFor(leaf, factory, data);
-                        if (thrown.get() == null) {
-                            assertArrayEquals(expectedSigBytes, sigBytes);
-                        }
-                    } else {
-                        assertTrue(sigBytes.length >= 64);
-                    }
-                });
+        kt.traverseLeaves(leaf -> {
+            final byte[] pubKey = pubKeyFor(leaf, factory);
+            byte[] sigBytes = EMPTY_SIG;
+            try {
+                sigBytes = subject.sigBytesFor(pubKey);
+            } catch (final Exception e) {
+                thrown.set(e);
+            }
+            if (pubKey.length == 32) {
+                final byte[] expectedSigBytes = expectedSigFor(leaf, factory, data);
+                if (thrown.get() == null) {
+                    assertArrayEquals(expectedSigBytes, sigBytes);
+                }
+            } else {
+                assertTrue(sigBytes.length >= 64);
+            }
+        });
         if (thrown.get() != null) {
             throw thrown.get();
         }
@@ -227,8 +206,7 @@ class PojoSigMapPubKeyToSigBytesTest {
         throw new AssertionError("Impossible leaf type!");
     }
 
-    private byte[] expectedSigFor(
-            final KeyTreeLeaf leaf, final KeyFactory factory, final byte[] data) {
+    private byte[] expectedSigFor(final KeyTreeLeaf leaf, final KeyFactory factory, final byte[] data) {
         if (!leaf.isUsedToSign()) {
             return EMPTY_SIG;
         } else {

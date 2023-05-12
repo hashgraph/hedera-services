@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.token;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -53,11 +54,20 @@ class BurnLogicTest {
     private final Id treasuryId = new Id(2, 4, 6);
     private final Account treasury = new Account(treasuryId);
 
-    @Mock private Token token;
-    @Mock private TypedTokenStore store;
-    @Mock private AccountStore accountStore;
-    @Mock private OptionValidator validator;
-    @Mock private GlobalDynamicProperties dynamicProperties;
+    @Mock
+    private Token token;
+
+    @Mock
+    private TypedTokenStore store;
+
+    @Mock
+    private AccountStore accountStore;
+
+    @Mock
+    private OptionValidator validator;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
 
     private TransactionBody tokenBurnTxn;
 
@@ -123,40 +133,30 @@ class BurnLogicTest {
     }
 
     private void givenValidTxnCtx() {
-        tokenBurnTxn =
-                TransactionBody.newBuilder()
-                        .setTokenBurn(
-                                TokenBurnTransactionBody.newBuilder()
-                                        .setToken(grpcId)
-                                        .setAmount(amount))
-                        .build();
+        tokenBurnTxn = TransactionBody.newBuilder()
+                .setTokenBurn(
+                        TokenBurnTransactionBody.newBuilder().setToken(grpcId).setAmount(amount))
+                .build();
     }
 
     private void givenValidTxnCtxWithZeroAmount() {
-        tokenBurnTxn =
-                TransactionBody.newBuilder()
-                        .setTokenBurn(
-                                TokenBurnTransactionBody.newBuilder().setToken(grpcId).setAmount(0))
-                        .build();
+        tokenBurnTxn = TransactionBody.newBuilder()
+                .setTokenBurn(
+                        TokenBurnTransactionBody.newBuilder().setToken(grpcId).setAmount(0))
+                .build();
     }
 
     private void givenUniqueTxnCtxWithNoSerials() {
-        tokenBurnTxn =
-                TransactionBody.newBuilder()
-                        .setTokenBurn(
-                                TokenBurnTransactionBody.newBuilder()
-                                        .setToken(grpcId)
-                                        .addAllSerialNumbers(List.of()))
-                        .build();
+        tokenBurnTxn = TransactionBody.newBuilder()
+                .setTokenBurn(
+                        TokenBurnTransactionBody.newBuilder().setToken(grpcId).addAllSerialNumbers(List.of()))
+                .build();
     }
 
     private void givenValidUniqueTxnCtx() {
-        tokenBurnTxn =
-                TransactionBody.newBuilder()
-                        .setTokenBurn(
-                                TokenBurnTransactionBody.newBuilder()
-                                        .setToken(grpcId)
-                                        .addAllSerialNumbers(List.of(1L)))
-                        .build();
+        tokenBurnTxn = TransactionBody.newBuilder()
+                .setTokenBurn(
+                        TokenBurnTransactionBody.newBuilder().setToken(grpcId).addAllSerialNumbers(List.of(1L)))
+                .build();
     }
 }

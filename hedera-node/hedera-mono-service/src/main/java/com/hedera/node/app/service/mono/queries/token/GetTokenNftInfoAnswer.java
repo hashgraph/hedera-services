@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.token;
 
 import static com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor.uncheckedFrom;
@@ -40,8 +41,7 @@ import javax.inject.Singleton;
 
 @Singleton
 public class GetTokenNftInfoAnswer implements AnswerService {
-    public static final String NFT_INFO_CTX_KEY =
-            GetTokenNftInfoAnswer.class.getSimpleName() + "_nftInfo";
+    public static final String NFT_INFO_CTX_KEY = GetTokenNftInfoAnswer.class.getSimpleName() + "_nftInfo";
 
     @Inject
     public GetTokenNftInfoAnswer() {
@@ -61,10 +61,7 @@ public class GetTokenNftInfoAnswer implements AnswerService {
 
     @Override
     public Response responseGiven(
-            final Query query,
-            @Nullable final StateView view,
-            final ResponseCodeEnum validity,
-            final long cost) {
+            final Query query, @Nullable final StateView view, final ResponseCodeEnum validity, final long cost) {
         return responseFor(query, view, validity, cost, NO_QUERY_CTX);
     }
 

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.token;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -140,13 +141,11 @@ class TokenUnfreezeTransitionLogicTest {
     }
 
     private void givenValidTxnCtx() {
-        tokenUnfreezeTxn =
-                TransactionBody.newBuilder()
-                        .setTokenUnfreeze(
-                                TokenUnfreezeAccountTransactionBody.newBuilder()
-                                        .setAccount(accountID)
-                                        .setToken(tokenID))
-                        .build();
+        tokenUnfreezeTxn = TransactionBody.newBuilder()
+                .setTokenUnfreeze(TokenUnfreezeAccountTransactionBody.newBuilder()
+                        .setAccount(accountID)
+                        .setToken(tokenID))
+                .build();
         given(accessor.getTxn()).willReturn(tokenUnfreezeTxn);
         given(txnCtx.accessor()).willReturn(accessor);
         given(tokenStore.loadToken(tokenId)).willReturn(token);
@@ -155,18 +154,16 @@ class TokenUnfreezeTransitionLogicTest {
     }
 
     private void givenMissingToken() {
-        tokenUnfreezeTxn =
-                TransactionBody.newBuilder()
-                        .setTokenUnfreeze(TokenUnfreezeAccountTransactionBody.newBuilder())
-                        .build();
+        tokenUnfreezeTxn = TransactionBody.newBuilder()
+                .setTokenUnfreeze(TokenUnfreezeAccountTransactionBody.newBuilder())
+                .build();
     }
 
     private void givenMissingAccount() {
-        tokenUnfreezeTxn =
-                TransactionBody.newBuilder()
-                        .setTokenUnfreeze(
-                                TokenUnfreezeAccountTransactionBody.newBuilder().setToken(tokenID))
-                        .build();
+        tokenUnfreezeTxn = TransactionBody.newBuilder()
+                .setTokenUnfreeze(
+                        TokenUnfreezeAccountTransactionBody.newBuilder().setToken(tokenID))
+                .build();
     }
 
     private void assertFailsWith(Runnable something, ResponseCodeEnum status) {

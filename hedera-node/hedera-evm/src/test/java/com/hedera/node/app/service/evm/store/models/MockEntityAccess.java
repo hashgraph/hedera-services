@@ -13,14 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.store.models;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
 public class MockEntityAccess implements HederaEvmEntityAccess {
+    private final Map<Address, Boolean> accounts = new HashMap<>();
+
     @Override
     public boolean isUsable(Address address) {
         return false;
@@ -33,7 +38,8 @@ public class MockEntityAccess implements HederaEvmEntityAccess {
 
     @Override
     public boolean isTokenAccount(Address address) {
-        return false;
+        final var isToken = accounts.get(address);
+        return isToken != null ? isToken : false;
     }
 
     @Override
@@ -54,5 +60,9 @@ public class MockEntityAccess implements HederaEvmEntityAccess {
     @Override
     public Bytes fetchCodeIfPresent(Address address) {
         return null;
+    }
+
+    public void setIsTokenFor(final Address address) {
+        accounts.put(address, true);
     }
 }

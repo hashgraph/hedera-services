@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.utils.sysfiles.domain.throttling;
 
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -30,20 +31,19 @@ public class ThrottleDefinitions {
         this.buckets = buckets;
     }
 
-    public static ThrottleDefinitions fromProto(
-            com.hederahashgraph.api.proto.java.ThrottleDefinitions defs) {
+    public static ThrottleDefinitions fromProto(com.hederahashgraph.api.proto.java.ThrottleDefinitions defs) {
         var pojo = new ThrottleDefinitions();
-        pojo.buckets.addAll(
-                defs.getThrottleBucketsList().stream()
-                        .map(HapiThrottleUtils::hapiBucketFromProto)
-                        .toList());
+        pojo.buckets.addAll(defs.getThrottleBucketsList().stream()
+                .map(HapiThrottleUtils::hapiBucketFromProto)
+                .toList());
         return pojo;
     }
 
     public com.hederahashgraph.api.proto.java.ThrottleDefinitions toProto() {
         return com.hederahashgraph.api.proto.java.ThrottleDefinitions.newBuilder()
-                .addAllThrottleBuckets(
-                        buckets.stream().map(HapiThrottleUtils::hapiBucketToProto).toList())
+                .addAllThrottleBuckets(buckets.stream()
+                        .map(HapiThrottleUtils::hapiBucketToProto)
+                        .toList())
                 .build();
     }
 }

@@ -13,7 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi.key;
 
 /** Placeholder implementation for moving JKey */
-public interface HederaKey {}
+public interface HederaKey {
+    /** A key is empty if it is a key with no bytes or a key list with nothing in it */
+    boolean isEmpty();
+}

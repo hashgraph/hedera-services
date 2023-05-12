@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.meta.queries;
 
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_QUERY_HEADER;
@@ -35,15 +36,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class GetExecTimeResourceUsageTest {
-    private static final Query execTimeQuery =
-            Query.newBuilder()
-                    .setNetworkGetExecutionTime(
-                            NetworkGetExecutionTimeQuery.newBuilder()
-                                    .addAllTransactionIds(
-                                            List.of(
-                                                    TransactionID.getDefaultInstance(),
-                                                    TransactionID.getDefaultInstance())))
-                    .build();
+    private static final Query execTimeQuery = Query.newBuilder()
+            .setNetworkGetExecutionTime(NetworkGetExecutionTimeQuery.newBuilder()
+                    .addAllTransactionIds(
+                            List.of(TransactionID.getDefaultInstance(), TransactionID.getDefaultInstance())))
+            .build();
     private static final Query nonExecTimeQuery = Query.getDefaultInstance();
 
     private GetExecTimeResourceUsage subject;
@@ -61,12 +58,11 @@ class GetExecTimeResourceUsageTest {
 
     @Test
     void getsExpectedUsage() {
-        final var expectedNodeUsage =
-                FeeComponents.newBuilder()
-                        .setConstant(FEE_MATRICES_CONST)
-                        .setBpt(BASIC_QUERY_HEADER + 2 * BASIC_TX_ID_SIZE)
-                        .setBpr(BASIC_QUERY_RES_HEADER + 2 * LONG_SIZE)
-                        .build();
+        final var expectedNodeUsage = FeeComponents.newBuilder()
+                .setConstant(FEE_MATRICES_CONST)
+                .setBpt(BASIC_QUERY_HEADER + 2 * BASIC_TX_ID_SIZE)
+                .setBpr(BASIC_QUERY_RES_HEADER + 2 * LONG_SIZE)
+                .build();
         final var expected = FeeData.newBuilder().setNodedata(expectedNodeUsage).build();
 
         assertEquals(expected, subject.usageGiven(execTimeQuery, null));

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.utils.sysfiles.serdes;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -29,12 +30,9 @@ public final class ThrottlesJsonToProtoSerde {
         return loadPojoDefs(in).toProto();
     }
 
-    public static com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions
-            loadPojoDefs(InputStream in) throws IOException {
+    public static com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions loadPojoDefs(
+            InputStream in) throws IOException {
         var om = new ObjectMapper();
-        return om.readValue(
-                in,
-                com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions
-                        .class);
+        return om.readValue(in, com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions.class);
     }
 }

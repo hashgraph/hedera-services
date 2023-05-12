@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.pricing;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
@@ -156,19 +157,13 @@ class BaseOperationUsageTest {
     void failsOnUnrecognizedTokenTypes() {
         final var subject = new BaseOperationUsage();
 
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> subject.baseUsageFor(TokenCreate, UNRECOGNIZED));
+        assertThrows(IllegalArgumentException.class, () -> subject.baseUsageFor(TokenCreate, UNRECOGNIZED));
+
+        assertThrows(IllegalArgumentException.class, () -> subject.baseUsageFor(TokenMint, UNRECOGNIZED));
 
         assertThrows(
                 IllegalArgumentException.class,
-                () -> subject.baseUsageFor(TokenMint, UNRECOGNIZED));
-
-        assertThrows(
-                IllegalArgumentException.class,
-                () ->
-                        subject.baseUsageFor(
-                                TokenAccountWipe, TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES));
+                () -> subject.baseUsageFor(TokenAccountWipe, TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES));
 
         assertThrows(
                 IllegalArgumentException.class,
@@ -179,29 +174,22 @@ class BaseOperationUsageTest {
     void failsOnUnrecognizedCryptoTypes() {
         final var subject = new BaseOperationUsage();
 
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> subject.baseUsageFor(CryptoTransfer, UNRECOGNIZED));
+        assertThrows(IllegalArgumentException.class, () -> subject.baseUsageFor(CryptoTransfer, UNRECOGNIZED));
     }
 
     @Test
     void failsOnUnrecognizedFileTypes() {
         final var subject = new BaseOperationUsage();
 
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> subject.baseUsageFor(FileAppend, UNRECOGNIZED));
+        assertThrows(IllegalArgumentException.class, () -> subject.baseUsageFor(FileAppend, UNRECOGNIZED));
     }
 
     @Test
     void failsOnUnrecognizedScheduleTypes() {
         final var subject = new BaseOperationUsage();
 
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> subject.baseUsageFor(ScheduleCreate, UNRECOGNIZED));
+        assertThrows(IllegalArgumentException.class, () -> subject.baseUsageFor(ScheduleCreate, UNRECOGNIZED));
 
-        assertThrows(
-                IllegalArgumentException.class, () -> subject.baseUsageFor(ScheduleSign, DEFAULT));
+        assertThrows(IllegalArgumentException.class, () -> subject.baseUsageFor(ScheduleSign, DEFAULT));
     }
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.consensus;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
@@ -32,24 +33,21 @@ public final class ConsensusLogicModule {
     @Provides
     @IntoMap
     @FunctionKey(ConsensusCreateTopic)
-    public static List<TransitionLogic> provideTopicCreateLogic(
-            final TopicCreateTransitionLogic topicCreateLogic) {
+    public static List<TransitionLogic> provideTopicCreateLogic(final TopicCreateTransitionLogic topicCreateLogic) {
         return List.of(topicCreateLogic);
     }
 
     @Provides
     @IntoMap
     @FunctionKey(ConsensusUpdateTopic)
-    public static List<TransitionLogic> provideTopicUpdateLogic(
-            final TopicUpdateTransitionLogic topicUpdateLogic) {
+    public static List<TransitionLogic> provideTopicUpdateLogic(final TopicUpdateTransitionLogic topicUpdateLogic) {
         return List.of(topicUpdateLogic);
     }
 
     @Provides
     @IntoMap
     @FunctionKey(ConsensusDeleteTopic)
-    public static List<TransitionLogic> provideTopicDeleteLogic(
-            final TopicDeleteTransitionLogic topicDeleteLogic) {
+    public static List<TransitionLogic> provideTopicDeleteLogic(final TopicDeleteTransitionLogic topicDeleteLogic) {
         return List.of(topicDeleteLogic);
     }
 

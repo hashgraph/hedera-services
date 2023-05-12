@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.utils;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -44,8 +45,7 @@ public class MapValueListUtils {
             @Nullable final K rootKey,
             @Nullable final V rootValue,
             @NonNull final MapValueListMutation<K, V> listMutation) {
-        return internalAddFirstInPlaceForMapValueList(
-                key, value, rootKey, rootValue, listMutation, true);
+        return internalAddFirstInPlaceForMapValueList(key, value, rootKey, rootValue, listMutation, true);
     }
 
     /**
@@ -69,8 +69,7 @@ public class MapValueListUtils {
             @Nullable final K rootKey,
             @Nullable final V rootValue,
             @NonNull final MapValueListMutation<K, V> listMutation) {
-        return internalAddFirstInPlaceForMapValueList(
-                key, value, rootKey, rootValue, listMutation, false);
+        return internalAddFirstInPlaceForMapValueList(key, value, rootKey, rootValue, listMutation, false);
     }
 
     /**
@@ -85,9 +84,7 @@ public class MapValueListUtils {
      * @return the new root key, for convenience
      */
     public static @Nullable <K, V extends FastCopyable> K removeInPlaceFromMapValueList(
-            @NonNull final K key,
-            @NonNull final K root,
-            @NonNull final MapValueListMutation<K, V> listRemoval) {
+            @NonNull final K key, @NonNull final K root, @NonNull final MapValueListMutation<K, V> listRemoval) {
         return internalDetachFromMapValueList(key, root, listRemoval, true, true, false);
     }
 
@@ -103,9 +100,7 @@ public class MapValueListUtils {
      * @return the new root key, for convenience
      */
     public static @Nullable <K, V extends FastCopyable> K removeFromMapValueList(
-            @NonNull final K key,
-            @NonNull final K root,
-            @NonNull final MapValueListMutation<K, V> listRemoval) {
+            @NonNull final K key, @NonNull final K root, @NonNull final MapValueListMutation<K, V> listRemoval) {
         return internalDetachFromMapValueList(key, root, listRemoval, false, true, false);
     }
 
@@ -121,9 +116,7 @@ public class MapValueListUtils {
      * @return the new root key, for convenience
      */
     public static @Nullable <K, V extends FastCopyable> K unlinkInPlaceFromMapValueList(
-            @NonNull final K key,
-            @NonNull final K root,
-            @NonNull final MapValueListMutation<K, V> listRemoval) {
+            @NonNull final K key, @NonNull final K root, @NonNull final MapValueListMutation<K, V> listRemoval) {
         return internalDetachFromMapValueList(key, root, listRemoval, true, false, true);
     }
 
@@ -158,18 +151,13 @@ public class MapValueListUtils {
         }
 
         if (nextKey != null) {
-            final var nextValue =
-                    useGetForModify
-                            ? Objects.requireNonNull(
-                                    listRemoval.getForModify(nextKey),
-                                    () -> "Missing next key " + nextKey)
-                            // It is ONLY safe to call copy() here---making the map's value
-                            // immutable!---because
-                            // we immediately put() the mutable value back into the map below
-                            : Objects.requireNonNull(
-                                            listRemoval.get(nextKey),
-                                            () -> "Missing next key " + nextKey)
-                                    .<V>copy();
+            final var nextValue = useGetForModify
+                    ? Objects.requireNonNull(listRemoval.getForModify(nextKey), () -> "Missing next key " + nextKey)
+                    // It is ONLY safe to call copy() here---making the map's value
+                    // immutable!---because
+                    // we immediately put() the mutable value back into the map below
+                    : Objects.requireNonNull(listRemoval.get(nextKey), () -> "Missing next key " + nextKey)
+                            .<V>copy();
             if (prevKey == null) {
                 listRemoval.markAsHead(nextValue);
             } else {
@@ -180,17 +168,12 @@ public class MapValueListUtils {
             }
         }
         if (prevKey != null) {
-            final var prevValue =
-                    useGetForModify
-                            ? Objects.requireNonNull(
-                                    listRemoval.getForModify(prevKey),
-                                    () -> "Missing prev key " + prevKey)
-                            // Note it is ONLY safe to call copy() here---making the map's value
-                            // immutable!---because we immediately put() the mutable value below
-                            : Objects.requireNonNull(
-                                            listRemoval.get(prevKey),
-                                            () -> "Missing prev key " + prevKey)
-                                    .<V>copy();
+            final var prevValue = useGetForModify
+                    ? Objects.requireNonNull(listRemoval.getForModify(prevKey), () -> "Missing prev key " + prevKey)
+                    // Note it is ONLY safe to call copy() here---making the map's value
+                    // immutable!---because we immediately put() the mutable value below
+                    : Objects.requireNonNull(listRemoval.get(prevKey), () -> "Missing prev key " + prevKey)
+                            .<V>copy();
             if (nextKey == null) {
                 listRemoval.markAsTail(prevValue);
             } else {
@@ -215,8 +198,7 @@ public class MapValueListUtils {
             listMutation.put(key, value);
         }
         if (rootKey != null) {
-            final V nextValue =
-                    (rootValue == null) ? listMutation.getForModify(rootKey) : rootValue;
+            final V nextValue = (rootValue == null) ? listMutation.getForModify(rootKey) : rootValue;
             listMutation.updateNext(value, rootKey);
             listMutation.updatePrev(nextValue, key);
         }

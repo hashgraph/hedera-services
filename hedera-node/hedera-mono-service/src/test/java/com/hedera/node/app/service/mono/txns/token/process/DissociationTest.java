@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.token.process;
 
 import static com.hedera.node.app.service.evm.store.tokens.TokenType.FUNGIBLE_COMMON;
@@ -57,10 +58,8 @@ class DissociationTest {
     private static final Account ancientTreasury = new Account(veryAncientTreasuryId);
     private final Token token = new Token(tokenId);
     private final TokenRelationship dissociatingAccountRel = new TokenRelationship(token, account);
-    private final TokenRelationship dissociatedTokenTreasuryRel =
-            new TokenRelationship(token, treasury);
-    private final TokenRelationship ancientTokenTreasuryRel =
-            new TokenRelationship(token, ancientTreasury);
+    private final TokenRelationship dissociatedTokenTreasuryRel = new TokenRelationship(token, treasury);
+    private final TokenRelationship ancientTokenTreasuryRel = new TokenRelationship(token, ancientTreasury);
 
     {
         token.setTreasury(treasury);
@@ -69,15 +68,17 @@ class DissociationTest {
         dissociatingAccountRel.markAsPersisted();
     }
 
-    @Mock private TypedTokenStore tokenStore;
-    @Mock private OptionValidator validator;
+    @Mock
+    private TypedTokenStore tokenStore;
+
+    @Mock
+    private OptionValidator validator;
 
     @Test
     void loadsExpectedRelsForExtantToken() {
         given(tokenStore.loadPossiblyDeletedOrAutoRemovedToken(tokenId)).willReturn(token);
         given(tokenStore.loadTokenRelationship(token, account)).willReturn(dissociatingAccountRel);
-        given(tokenStore.loadPossiblyMissingTokenRelationship(token, treasury))
-                .willReturn(dissociatedTokenTreasuryRel);
+        given(tokenStore.loadPossiblyMissingTokenRelationship(token, treasury)).willReturn(dissociatedTokenTreasuryRel);
 
         final var subject = Dissociation.loadFrom(tokenStore, account, tokenId);
 
@@ -153,8 +154,7 @@ class DissociationTest {
 
         final var subject = new Dissociation(dissociatingAccountRel, dissociatedTokenTreasuryRel);
 
-        assertFailsWith(
-                () -> subject.updateModelRelsSubjectTo(validator), ACCOUNT_FROZEN_FOR_TOKEN);
+        assertFailsWith(() -> subject.updateModelRelsSubjectTo(validator), ACCOUNT_FROZEN_FOR_TOKEN);
     }
 
     @Test
@@ -178,9 +178,7 @@ class DissociationTest {
 
         final var subject = new Dissociation(dissociatingAccountRel, dissociatedTokenTreasuryRel);
 
-        assertFailsWith(
-                () -> subject.updateModelRelsSubjectTo(validator),
-                TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
+        assertFailsWith(() -> subject.updateModelRelsSubjectTo(validator), TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
     }
 
     @Test
@@ -295,10 +293,9 @@ class DissociationTest {
 
     @Test
     void toStringWorks() {
-        final var desired =
-                "Dissociation{dissociatingAccountId=1.2.3, dissociatedTokenId=2.3.4,"
-                        + " dissociatedTokenTreasuryId=3.4.5,"
-                        + " expiredTokenTreasuryReceivedBalance=false}";
+        final var desired = "Dissociation{dissociatingAccountId=1.2.3, dissociatedTokenId=2.3.4,"
+                + " dissociatedTokenTreasuryId=3.4.5,"
+                + " expiredTokenTreasuryReceivedBalance=false}";
 
         final var subject = new Dissociation(dissociatingAccountRel, dissociatedTokenTreasuryRel);
 

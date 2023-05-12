@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.BYTES32;
@@ -21,6 +22,7 @@ import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.PAUSE;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenPause;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -67,8 +69,7 @@ public class PausePrecompile extends AbstractWritePrecompile {
     }
 
     @Override
-    public TransactionBody.Builder body(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         pauseOp = decodePause(input);
         transactionBody = syntheticTxnFactory.createPause(pauseOp);
         return transactionBody;
@@ -76,8 +77,7 @@ public class PausePrecompile extends AbstractWritePrecompile {
 
     @Override
     public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
-        Objects.requireNonNull(
-                pauseOp, "`body` method should be called before `getMinimumFeeInTinybars`");
+        Objects.requireNonNull(pauseOp, "`body` method should be called before `getMinimumFeeInTinybars`");
         return pricingUtils.getMinimumPriceInTinybars(PAUSE, consensusTime);
     }
 
@@ -87,24 +87,14 @@ public class PausePrecompile extends AbstractWritePrecompile {
 
         /* --- Check required signatures --- */
         final var tokenId = Id.fromGrpcToken(pauseOp.token());
-        final var hasRequiredSigs =
-                KeyActivationUtils.validateKey(
-                        frame,
-                        tokenId.asEvmAddress(),
-                        sigsVerifier::hasActivePauseKey,
-                        ledgers,
-                        aliases);
+        final var hasRequiredSigs = KeyActivationUtils.validateKey(
+                frame, tokenId.asEvmAddress(), sigsVerifier::hasActivePauseKey, ledgers, aliases, TokenPause);
         validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
         /* --- Build the necessary infrastructure to execute the transaction --- */
         final var accountStore = infrastructureFactory.newAccountStore(ledgers.accounts());
-        final var tokenStore =
-                infrastructureFactory.newTokenStore(
-                        accountStore,
-                        sideEffects,
-                        ledgers.tokens(),
-                        ledgers.nfts(),
-                        ledgers.tokenRels());
+        final var tokenStore = infrastructureFactory.newTokenStore(
+                accountStore, sideEffects, ledgers.tokens(), ledgers.nfts(), ledgers.tokenRels());
         final var pauseLogic = infrastructureFactory.newPauseLogic(tokenStore);
         final var validity = pauseLogic.validateSyntax(transactionBody.build());
         validateTrue(validity == OK, validity);
@@ -114,8 +104,7 @@ public class PausePrecompile extends AbstractWritePrecompile {
     }
 
     public static PauseWrapper decodePause(final Bytes input) {
-        final Tuple decodedArguments =
-                decodeFunctionCall(input, PAUSE_TOKEN_SELECTOR, PAUSE_TOKEN_DECODER);
+        final Tuple decodedArguments = decodeFunctionCall(input, PAUSE_TOKEN_SELECTOR, PAUSE_TOKEN_DECODER);
 
         final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
 

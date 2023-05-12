@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.store.models;
 
 import com.google.common.base.MoreObjects;
@@ -25,8 +26,7 @@ import org.hyperledger.besu.datatypes.Address;
 
 public class HederaEvmAccount {
 
-    public static final ByteString ECDSA_KEY_ALIAS_PREFIX =
-            ByteString.copyFrom(new byte[] {0x3a, 0x21});
+    public static final ByteString ECDSA_KEY_ALIAS_PREFIX = ByteString.copyFrom(new byte[] {0x3a, 0x21});
     public static final int EVM_ADDRESS_SIZE = 20;
     public static final int ECDSA_SECP256K1_ALIAS_SIZE = 35;
 
@@ -51,8 +51,7 @@ public class HederaEvmAccount {
         } else {
             if (alias.size() == EVM_ADDRESS_SIZE) {
                 return Address.wrap(Bytes.wrap(alias.toByteArray()));
-            } else if (alias.size() == ECDSA_SECP256K1_ALIAS_SIZE
-                    && alias.startsWith(ECDSA_KEY_ALIAS_PREFIX)) {
+            } else if (alias.size() == ECDSA_SECP256K1_ALIAS_SIZE && alias.startsWith(ECDSA_KEY_ALIAS_PREFIX)) {
                 var addressBytes =
                         EthSigsUtils.recoverAddressFromPubKey(alias.substring(2).toByteArray());
                 return addressBytes.length == 0 ? address : Address.wrap(Bytes.wrap(addressBytes));

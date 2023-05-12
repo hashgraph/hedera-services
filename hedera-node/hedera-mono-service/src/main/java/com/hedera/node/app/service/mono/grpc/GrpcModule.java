@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.grpc;
 
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -85,15 +86,13 @@ public interface GrpcModule {
 
     @Binds
     @Singleton
-    CustomFeePayerExemptions bindCustomFeeExemptions(
-            StandardCustomPayerExemptions standardCustomExemptions);
+    CustomFeePayerExemptions bindCustomFeeExemptions(StandardCustomPayerExemptions standardCustomExemptions);
 
     @Provides
     @Singleton
     static RoyaltyFeeAssessor provideRoyaltyFeeAssessor(
             FixedFeeAssessor fixedFeeAssessor, CustomFeePayerExemptions customFeePayerExemptions) {
-        return new RoyaltyFeeAssessor(
-                fixedFeeAssessor, AdjustmentUtils::adjustedChange, customFeePayerExemptions);
+        return new RoyaltyFeeAssessor(fixedFeeAssessor, AdjustmentUtils::adjustedChange, customFeePayerExemptions);
     }
 
     @Provides

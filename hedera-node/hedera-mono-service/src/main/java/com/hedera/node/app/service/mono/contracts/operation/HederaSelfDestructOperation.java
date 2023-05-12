@@ -13,34 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.mono.contracts.operation;
 
-/*
- * -
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ‍
- *
- */
+package com.hedera.node.app.service.mono.contracts.operation;
 
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.numOfMirror;
 
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.BiPredicate;
@@ -67,16 +47,18 @@ import org.hyperledger.besu.evm.operation.SelfDestructOperation;
  */
 public class HederaSelfDestructOperation extends SelfDestructOperation {
     private final TransactionContext txnCtx;
-
     private final BiPredicate<Address, MessageFrame> addressValidator;
+    private final EvmSigsVerifier sigsVerifier;
 
     public HederaSelfDestructOperation(
             final GasCalculator gasCalculator,
             final TransactionContext txnCtx,
-            final BiPredicate<Address, MessageFrame> addressValidator) {
+            final BiPredicate<Address, MessageFrame> addressValidator,
+            final EvmSigsVerifier sigsVerifier) {
         super(gasCalculator);
         this.txnCtx = txnCtx;
         this.addressValidator = addressValidator;
+        this.sigsVerifier = sigsVerifier;
     }
 
     @Override
@@ -89,13 +71,12 @@ public class HederaSelfDestructOperation extends SelfDestructOperation {
         }
         final var beneficiary = updater.get(beneficiaryAddress);
 
-        final var exceptionalHaltReason = reasonToHalt(toBeDeleted, beneficiaryAddress, updater);
+        final var exceptionalHaltReason = reasonToHalt(toBeDeleted, beneficiaryAddress, updater, frame);
         if (exceptionalHaltReason != null) {
             return reversionWith(beneficiary, exceptionalHaltReason);
         }
         final var tbdNum = numOfMirror(updater.permissivelyUnaliased(toBeDeleted.toArrayUnsafe()));
-        final var beneficiaryNum =
-                numOfMirror(updater.permissivelyUnaliased(beneficiaryAddress.toArrayUnsafe()));
+        final var beneficiaryNum = numOfMirror(updater.permissivelyUnaliased(beneficiaryAddress.toArrayUnsafe()));
         txnCtx.recordBeneficiaryOfDeleted(tbdNum, beneficiaryNum);
 
         return super.execute(frame, evm);
@@ -105,7 +86,8 @@ public class HederaSelfDestructOperation extends SelfDestructOperation {
     private ExceptionalHaltReason reasonToHalt(
             final Address toBeDeleted,
             final Address beneficiaryAddress,
-            final HederaStackedWorldStateUpdater updater) {
+            final HederaStackedWorldStateUpdater updater,
+            final MessageFrame frame) {
         if (toBeDeleted.equals(beneficiaryAddress)) {
             return HederaExceptionalHaltReason.SELF_DESTRUCT_TO_SELF;
         }
@@ -118,11 +100,13 @@ public class HederaSelfDestructOperation extends SelfDestructOperation {
         if (updater.contractOwnsNfts(toBeDeleted)) {
             return HederaExceptionalHaltReason.CONTRACT_STILL_OWNS_NFTS;
         }
+        if (!HederaOperationUtil.isSigReqMetFor(beneficiaryAddress, frame, sigsVerifier)) {
+            return HederaExceptionalHaltReason.INVALID_SIGNATURE;
+        }
         return null;
     }
 
-    private OperationResult reversionWith(
-            final Account beneficiary, final ExceptionalHaltReason reason) {
+    private OperationResult reversionWith(final Account beneficiary, final ExceptionalHaltReason reason) {
         final long cost = gasCalculator().selfDestructOperationGasCost(beneficiary, Wei.ONE);
         return new OperationResult(cost, reason);
     }

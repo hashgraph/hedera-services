@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage.contract;
 
 import com.hedera.node.app.hapi.fees.usage.contract.entities.ContractEntitySizes;
@@ -22,8 +23,7 @@ public class ExtantContractContext {
     private final int currentNumKvPairs;
     private final ExtantCryptoContext currentCryptoContext;
 
-    public ExtantContractContext(
-            final int currentNumKvPairs, final ExtantCryptoContext currentCryptoContext) {
+    public ExtantContractContext(final int currentNumKvPairs, final ExtantCryptoContext currentCryptoContext) {
         this.currentNumKvPairs = currentNumKvPairs;
         this.currentCryptoContext = currentCryptoContext;
     }

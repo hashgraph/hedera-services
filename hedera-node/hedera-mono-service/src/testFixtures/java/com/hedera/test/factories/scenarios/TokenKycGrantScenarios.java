@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.factories.scenarios;
 
 import static com.hedera.test.factories.txns.TokenGrantKycFactory.newSignedTokenGrantKyc;
@@ -23,11 +24,10 @@ public enum TokenKycGrantScenarios implements TxnHandlingScenario {
     VALID_GRANT_WITH_EXTANT_TOKEN {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(
-                    newSignedTokenGrantKyc()
-                            .granting(KNOWN_TOKEN_WITH_KYC, MISC_ACCOUNT)
-                            .nonPayerKts(TOKEN_KYC_KT)
-                            .get());
+            return PlatformTxnAccessor.from(newSignedTokenGrantKyc()
+                    .granting(KNOWN_TOKEN_WITH_KYC, MISC_ACCOUNT)
+                    .nonPayerKts(TOKEN_KYC_KT)
+                    .get());
         }
     },
 }

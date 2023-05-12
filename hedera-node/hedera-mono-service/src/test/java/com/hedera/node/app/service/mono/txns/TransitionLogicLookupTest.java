@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
@@ -42,33 +43,26 @@ import org.mockito.Mockito;
 
 class TransitionLogicLookupTest {
     private TransitionLogic a =
-            withApplicability(
-                    txn -> txn.getTransactionID().getAccountID().equals(asAccount("0.0.2")));
+            withApplicability(txn -> txn.getTransactionID().getAccountID().equals(asAccount("0.0.2")));
     private TransitionLogic b =
-            withApplicability(
-                    txn -> txn.getTransactionID().getAccountID().equals(asAccount("2.2.0")));
+            withApplicability(txn -> txn.getTransactionID().getAccountID().equals(asAccount("2.2.0")));
     private TransitionLogic c =
-            withApplicability(
-                    txn -> txn.getTransactionID().getAccountID().equals(asAccount("2.2.2")));
+            withApplicability(txn -> txn.getTransactionID().getAccountID().equals(asAccount("2.2.2")));
     Map<HederaFunctionality, List<TransitionLogic>> transitionsMap =
-            Map.ofEntries(
-                    Map.entry(CryptoTransfer, List.of(b, a)), Map.entry(TokenMint, List.of(c)));
+            Map.ofEntries(Map.entry(CryptoTransfer, List.of(b, a)), Map.entry(TokenMint, List.of(c)));
     TransitionLogicLookup subject = new TransitionLogicLookup(transitionsMap);
-    TransactionBody aTxn =
-            TransactionBody.newBuilder()
-                    .setTransactionID(TransactionID.newBuilder().setAccountID(asAccount("0.0.2")))
-                    .setCryptoTransfer(CryptoTransferTransactionBody.getDefaultInstance())
-                    .build();
-    TransactionBody cTxn =
-            TransactionBody.newBuilder()
-                    .setTransactionID(TransactionID.newBuilder().setAccountID(asAccount("2.2.2")))
-                    .setCryptoTransfer(CryptoTransferTransactionBody.getDefaultInstance())
-                    .build();
-    TransactionBody zTxn =
-            TransactionBody.newBuilder()
-                    .setTransactionID(TransactionID.newBuilder().setAccountID(asAccount("9.0.2")))
-                    .setCryptoCreateAccount(CryptoCreateTransactionBody.getDefaultInstance())
-                    .build();
+    TransactionBody aTxn = TransactionBody.newBuilder()
+            .setTransactionID(TransactionID.newBuilder().setAccountID(asAccount("0.0.2")))
+            .setCryptoTransfer(CryptoTransferTransactionBody.getDefaultInstance())
+            .build();
+    TransactionBody cTxn = TransactionBody.newBuilder()
+            .setTransactionID(TransactionID.newBuilder().setAccountID(asAccount("2.2.2")))
+            .setCryptoTransfer(CryptoTransferTransactionBody.getDefaultInstance())
+            .build();
+    TransactionBody zTxn = TransactionBody.newBuilder()
+            .setTransactionID(TransactionID.newBuilder().setAccountID(asAccount("9.0.2")))
+            .setCryptoCreateAccount(CryptoCreateTransactionBody.getDefaultInstance())
+            .build();
 
     @Test
     void identifiesMissing() {

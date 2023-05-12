@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.store.contracts.precompile.codec;
 
 public record TokenInfoWrapper<T>(T token, long serialNumber) {
     private static final long INVALID_SERIAL_NUMBER = -1;
 
-    public static <T> TokenInfoWrapper<T> forNonFungibleToken(
-            final T token, final long serialNumber) {
+    public static <T> TokenInfoWrapper<T> forNonFungibleToken(final T token, final long serialNumber) {
         return new TokenInfoWrapper<>(token, serialNumber);
     }
 

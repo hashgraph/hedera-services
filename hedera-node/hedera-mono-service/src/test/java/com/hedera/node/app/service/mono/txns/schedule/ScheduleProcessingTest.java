@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.schedule;
 
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromScheduleId;
@@ -27,7 +28,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
-import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
+import com.hedera.node.app.service.mono.state.logic.ScheduledTransactions;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleSecondVirtualValue;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
@@ -57,37 +58,66 @@ class ScheduleProcessingTest {
     private static final ScheduleID scheduleId4 = IdUtils.asSchedule("0.0.433333");
     private static final ScheduleID scheduleId5 = IdUtils.asSchedule("0.0.533333");
 
-    @Mock private SigImpactHistorian sigImpactHistorian;
-    @Mock private ScheduleStore store;
-    @Mock private ScheduleExecutor scheduleExecutor;
-    @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private ScheduleSigsVerifier scheduleSigsVerifier;
-    @Mock private TimedFunctionalityThrottling scheduleThrottling;
-    @Mock private ScheduleVirtualValue schedule1;
-    @Mock private ScheduleVirtualValue schedule2;
-    @Mock private ScheduleVirtualValue schedule3;
-    @Mock private ScheduleVirtualValue schedule4;
-    @Mock private TxnAccessor schedule1Accessor;
-    @Mock private TxnAccessor schedule2Accessor;
-    @Mock private TxnAccessor schedule3Accessor;
-    @Mock private TxnAccessor schedule4Accessor;
-    @Mock private ScheduleSecondVirtualValue bySecond;
-    @Mock private TxnAccessor accessor;
-    @Mock private MerkleScheduledTransactions schedules;
+    @Mock
+    private SigImpactHistorian sigImpactHistorian;
+
+    @Mock
+    private ScheduleStore store;
+
+    @Mock
+    private ScheduleExecutor scheduleExecutor;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
+
+    @Mock
+    private ScheduleSigsVerifier scheduleSigsVerifier;
+
+    @Mock
+    private TimedFunctionalityThrottling scheduleThrottling;
+
+    @Mock
+    private ScheduleVirtualValue schedule1;
+
+    @Mock
+    private ScheduleVirtualValue schedule2;
+
+    @Mock
+    private ScheduleVirtualValue schedule3;
+
+    @Mock
+    private ScheduleVirtualValue schedule4;
+
+    @Mock
+    private TxnAccessor schedule1Accessor;
+
+    @Mock
+    private TxnAccessor schedule2Accessor;
+
+    @Mock
+    private TxnAccessor schedule4Accessor;
+
+    @Mock
+    private ScheduleSecondVirtualValue bySecond;
+
+    @Mock
+    private TxnAccessor accessor;
+
+    @Mock
+    private ScheduledTransactions schedules;
 
     private ScheduleProcessing subject;
 
     @BeforeEach
     void setUp() {
-        subject =
-                new ScheduleProcessing(
-                        sigImpactHistorian,
-                        store,
-                        scheduleExecutor,
-                        dynamicProperties,
-                        scheduleSigsVerifier,
-                        scheduleThrottling,
-                        () -> schedules);
+        subject = new ScheduleProcessing(
+                sigImpactHistorian,
+                store,
+                scheduleExecutor,
+                dynamicProperties,
+                scheduleSigsVerifier,
+                scheduleThrottling,
+                () -> schedules);
     }
 
     @Test
@@ -96,9 +126,7 @@ class ScheduleProcessingTest {
         given(dynamicProperties.schedulingMaxTxnPerSecond()).willReturn(5L);
         given(store.nextSchedulesToExpire(consensusTime))
                 .willReturn(
-                        ImmutableList.of(scheduleId1, scheduleId2),
-                        ImmutableList.of(scheduleId3),
-                        ImmutableList.of());
+                        ImmutableList.of(scheduleId1, scheduleId2), ImmutableList.of(scheduleId3), ImmutableList.of());
 
         // when:
         subject.expire(consensusTime);
@@ -135,10 +163,8 @@ class ScheduleProcessingTest {
     }
 
     @Test
-    void triggerNextTransactionExpiringAsNeededWorksAsExpected()
-            throws InvalidProtocolBufferException {
-        var inOrder =
-                Mockito.inOrder(store, sigImpactHistorian, dynamicProperties, scheduleExecutor);
+    void triggerNextTransactionExpiringAsNeededWorksAsExpected() throws InvalidProtocolBufferException {
+        var inOrder = Mockito.inOrder(store, sigImpactHistorian, dynamicProperties, scheduleExecutor);
         given(dynamicProperties.schedulingMaxTxnPerSecond()).willReturn(5L);
         given(store.nextSchedulesToExpire(consensusTime)).willReturn(ImmutableList.of());
         given(dynamicProperties.schedulingLongTermEnabled()).willReturn(true);
@@ -147,11 +173,10 @@ class ScheduleProcessingTest {
 
         given(store.get(scheduleId1)).willReturn(schedule1);
 
-        subject.isFullySigned =
-                k -> {
-                    assertEquals(k, schedule1);
-                    return true;
-                };
+        subject.isFullySigned = k -> {
+            assertEquals(k, schedule1);
+            return true;
+        };
 
         given(scheduleExecutor.getTriggeredTxnAccessor(scheduleId1, store, false))
                 .willReturn(Pair.of(OK, accessor));
@@ -214,8 +239,7 @@ class ScheduleProcessingTest {
 
     @Test
     void triggerNextTransactionExpiringAsNeededOnlyExpireWorksAsExpected() {
-        var inOrder =
-                Mockito.inOrder(store, sigImpactHistorian, dynamicProperties, scheduleExecutor);
+        var inOrder = Mockito.inOrder(store, sigImpactHistorian, dynamicProperties, scheduleExecutor);
         given(dynamicProperties.schedulingMaxTxnPerSecond()).willReturn(5L);
         given(store.nextSchedulesToExpire(consensusTime)).willReturn(ImmutableList.of());
         given(dynamicProperties.schedulingLongTermEnabled()).willReturn(true);
@@ -224,11 +248,10 @@ class ScheduleProcessingTest {
 
         given(store.get(scheduleId1)).willReturn(schedule1);
 
-        subject.isFullySigned =
-                k -> {
-                    assertEquals(k, schedule1);
-                    return true;
-                };
+        subject.isFullySigned = k -> {
+            assertEquals(k, schedule1);
+            return true;
+        };
 
         // when:
         var result = subject.triggerNextTransactionExpiringAsNeeded(consensusTime, null, true);
@@ -247,8 +270,7 @@ class ScheduleProcessingTest {
 
     @Test
     void triggerNextTransactionExpiringAsNeededErrorsOnSameIdTwiceFromExternal() {
-        var inOrder =
-                Mockito.inOrder(store, sigImpactHistorian, dynamicProperties, scheduleExecutor);
+        var inOrder = Mockito.inOrder(store, sigImpactHistorian, dynamicProperties, scheduleExecutor);
         given(dynamicProperties.schedulingMaxTxnPerSecond()).willReturn(5L);
         given(store.nextSchedulesToExpire(consensusTime)).willReturn(ImmutableList.of());
 
@@ -258,9 +280,7 @@ class ScheduleProcessingTest {
         // when:
         assertThrows(
                 IllegalStateException.class,
-                () ->
-                        subject.triggerNextTransactionExpiringAsNeeded(
-                                consensusTime, accessor, false));
+                () -> subject.triggerNextTransactionExpiringAsNeeded(consensusTime, accessor, false));
 
         // then:
 
@@ -274,13 +294,14 @@ class ScheduleProcessingTest {
     @Test
     void triggerNextTransactionExpiringAsNeededWithLongTermDisabledWorksAsExpected() {
 
-        var inOrder =
-                Mockito.inOrder(store, sigImpactHistorian, dynamicProperties, scheduleExecutor);
+        var inOrder = Mockito.inOrder(store, sigImpactHistorian, dynamicProperties, scheduleExecutor);
         given(dynamicProperties.schedulingMaxTxnPerSecond()).willReturn(5L);
         given(store.nextSchedulesToExpire(consensusTime)).willReturn(ImmutableList.of());
         given(dynamicProperties.schedulingLongTermEnabled()).willReturn(false);
 
-        given(store.nextScheduleToEvaluate(consensusTime)).willReturn(scheduleId1).willReturn(null);
+        given(store.nextScheduleToEvaluate(consensusTime))
+                .willReturn(scheduleId1)
+                .willReturn(null);
 
         // when:
         var result = subject.triggerNextTransactionExpiringAsNeeded(consensusTime, null, false);
@@ -301,10 +322,8 @@ class ScheduleProcessingTest {
     }
 
     @Test
-    void triggerNextTransactionExpiringAsNeededHandlesNotReady()
-            throws InvalidProtocolBufferException {
-        var inOrder =
-                Mockito.inOrder(store, sigImpactHistorian, dynamicProperties, scheduleExecutor);
+    void triggerNextTransactionExpiringAsNeededHandlesNotReady() throws InvalidProtocolBufferException {
+        var inOrder = Mockito.inOrder(store, sigImpactHistorian, dynamicProperties, scheduleExecutor);
         given(dynamicProperties.schedulingMaxTxnPerSecond()).willReturn(5L);
         given(store.nextSchedulesToExpire(consensusTime)).willReturn(ImmutableList.of());
         given(dynamicProperties.schedulingLongTermEnabled()).willReturn(true);
@@ -314,14 +333,13 @@ class ScheduleProcessingTest {
         given(store.get(scheduleId1)).willReturn(schedule1);
         given(store.get(scheduleId2)).willReturn(schedule2);
 
-        subject.isFullySigned =
-                k -> {
-                    if (k == schedule1) {
-                        return false;
-                    }
-                    assertEquals(k, schedule2);
-                    return true;
-                };
+        subject.isFullySigned = k -> {
+            if (k == schedule1) {
+                return false;
+            }
+            assertEquals(k, schedule2);
+            return true;
+        };
 
         given(scheduleExecutor.getTriggeredTxnAccessor(scheduleId2, store, false))
                 .willReturn(Pair.of(OK, accessor));
@@ -351,10 +369,8 @@ class ScheduleProcessingTest {
     }
 
     @Test
-    void triggerNextTransactionExpiringAsNeededHandlesTriggerNotOk()
-            throws InvalidProtocolBufferException {
-        var inOrder =
-                Mockito.inOrder(store, sigImpactHistorian, dynamicProperties, scheduleExecutor);
+    void triggerNextTransactionExpiringAsNeededHandlesTriggerNotOk() throws InvalidProtocolBufferException {
+        var inOrder = Mockito.inOrder(store, sigImpactHistorian, dynamicProperties, scheduleExecutor);
         given(dynamicProperties.schedulingMaxTxnPerSecond()).willReturn(5L);
         given(store.nextSchedulesToExpire(consensusTime)).willReturn(ImmutableList.of());
         given(dynamicProperties.schedulingLongTermEnabled()).willReturn(true);
@@ -364,14 +380,13 @@ class ScheduleProcessingTest {
         given(store.get(scheduleId1)).willReturn(schedule1);
         given(store.get(scheduleId2)).willReturn(schedule2);
 
-        subject.isFullySigned =
-                k -> {
-                    if (k == schedule1) {
-                        return true;
-                    }
-                    assertEquals(k, schedule2);
-                    return true;
-                };
+        subject.isFullySigned = k -> {
+            if (k == schedule1) {
+                return true;
+            }
+            assertEquals(k, schedule2);
+            return true;
+        };
 
         given(scheduleExecutor.getTriggeredTxnAccessor(scheduleId1, store, false))
                 .willReturn(Pair.of(INVALID_SCHEDULE_ID, accessor));
@@ -404,10 +419,8 @@ class ScheduleProcessingTest {
     }
 
     @Test
-    void triggerNextTransactionExpiringAsNeededHandlesErrorProcessing()
-            throws InvalidProtocolBufferException {
-        var inOrder =
-                Mockito.inOrder(store, sigImpactHistorian, dynamicProperties, scheduleExecutor);
+    void triggerNextTransactionExpiringAsNeededHandlesErrorProcessing() throws InvalidProtocolBufferException {
+        var inOrder = Mockito.inOrder(store, sigImpactHistorian, dynamicProperties, scheduleExecutor);
         given(dynamicProperties.schedulingMaxTxnPerSecond()).willReturn(5L);
         given(store.nextSchedulesToExpire(consensusTime)).willReturn(ImmutableList.of());
         given(dynamicProperties.schedulingLongTermEnabled()).willReturn(true);
@@ -417,14 +430,13 @@ class ScheduleProcessingTest {
         given(store.get(scheduleId1)).willReturn(schedule1);
         given(store.get(scheduleId2)).willReturn(schedule2);
 
-        subject.isFullySigned =
-                k -> {
-                    if (k == schedule1) {
-                        throw new IllegalStateException();
-                    }
-                    assertEquals(k, schedule2);
-                    return true;
-                };
+        subject.isFullySigned = k -> {
+            if (k == schedule1) {
+                throw new IllegalStateException();
+            }
+            assertEquals(k, schedule2);
+            return true;
+        };
 
         given(scheduleExecutor.getTriggeredTxnAccessor(scheduleId2, store, false))
                 .willReturn(Pair.of(OK, accessor));
@@ -455,8 +467,7 @@ class ScheduleProcessingTest {
 
     @Test
     void triggerNextTransactionExpiringAsNeededErrorsOnSameIdTwiceFromInternal() {
-        var inOrder =
-                Mockito.inOrder(store, sigImpactHistorian, dynamicProperties, scheduleExecutor);
+        var inOrder = Mockito.inOrder(store, sigImpactHistorian, dynamicProperties, scheduleExecutor);
         given(dynamicProperties.schedulingMaxTxnPerSecond()).willReturn(5L);
         given(store.nextSchedulesToExpire(consensusTime)).willReturn(ImmutableList.of());
         given(dynamicProperties.schedulingLongTermEnabled()).willReturn(true);
@@ -505,21 +516,21 @@ class ScheduleProcessingTest {
 
     @Test
     void triggerNextTransactionExpiringAsNeededSkipsOnNextNull() {
-        var inOrder =
-                Mockito.inOrder(store, sigImpactHistorian, dynamicProperties, scheduleExecutor);
+        var inOrder = Mockito.inOrder(store, sigImpactHistorian, dynamicProperties, scheduleExecutor);
         given(dynamicProperties.schedulingMaxTxnPerSecond()).willReturn(5L);
         given(store.nextSchedulesToExpire(consensusTime)).willReturn(ImmutableList.of());
         given(dynamicProperties.schedulingLongTermEnabled()).willReturn(true);
 
-        given(store.nextScheduleToEvaluate(consensusTime)).willReturn(scheduleId1).willReturn(null);
+        given(store.nextScheduleToEvaluate(consensusTime))
+                .willReturn(scheduleId1)
+                .willReturn(null);
 
         given(store.get(scheduleId1)).willReturn(schedule1);
 
-        subject.isFullySigned =
-                k -> {
-                    assertEquals(k, schedule1);
-                    throw new IllegalStateException();
-                };
+        subject.isFullySigned = k -> {
+            assertEquals(k, schedule1);
+            throw new IllegalStateException();
+        };
 
         // when:
         var result = subject.triggerNextTransactionExpiringAsNeeded(consensusTime, null, false);
@@ -554,52 +565,37 @@ class ScheduleProcessingTest {
         given(store.getBySecond(consensusTime.getEpochSecond())).willReturn(bySecond);
 
         given(bySecond.getIds())
-                .willReturn(
-                        new TreeMap<>(
-                                ImmutableMap.of(
-                                        new RichInstant(consensusTime.getEpochSecond(), 0),
-                                                LongLists.immutable.of(
-                                                        fromScheduleId(scheduleId1).longValue()),
-                                        new RichInstant(consensusTime.getEpochSecond(), 2),
-                                                LongLists.immutable.of(
-                                                        fromScheduleId(scheduleId2).longValue(),
-                                                        fromScheduleId(scheduleId3).longValue(),
-                                                        fromScheduleId(scheduleId5).longValue()))));
+                .willReturn(new TreeMap<>(ImmutableMap.of(
+                        new RichInstant(consensusTime.getEpochSecond(), 0),
+                                LongLists.immutable.of(
+                                        fromScheduleId(scheduleId1).longValue()),
+                        new RichInstant(consensusTime.getEpochSecond(), 2),
+                                LongLists.immutable.of(
+                                        fromScheduleId(scheduleId2).longValue(),
+                                        fromScheduleId(scheduleId3).longValue(),
+                                        fromScheduleId(scheduleId5).longValue()))));
 
-        given(schedule1.calculatedExpirationTime())
-                .willReturn(new RichInstant(consensusTime.getEpochSecond(), 0));
-        given(schedule2.calculatedExpirationTime())
-                .willReturn(new RichInstant(consensusTime.getEpochSecond(), 2));
-        given(schedule3.calculatedExpirationTime())
-                .willReturn(new RichInstant(consensusTime.getEpochSecond() - 1, 0));
-        given(schedule4.calculatedExpirationTime())
-                .willReturn(new RichInstant(consensusTime.getEpochSecond(), 1));
+        given(schedule1.calculatedExpirationTime()).willReturn(new RichInstant(consensusTime.getEpochSecond(), 0));
+        given(schedule2.calculatedExpirationTime()).willReturn(new RichInstant(consensusTime.getEpochSecond(), 2));
+        given(schedule3.calculatedExpirationTime()).willReturn(new RichInstant(consensusTime.getEpochSecond() - 1, 0));
+        given(schedule4.calculatedExpirationTime()).willReturn(new RichInstant(consensusTime.getEpochSecond(), 1));
 
         given(store.getNoError(scheduleId1)).willReturn(schedule1);
         given(store.getNoError(scheduleId2)).willReturn(schedule2);
         given(store.getNoError(scheduleId3)).willReturn(schedule3);
 
-        given(scheduleExecutor.getTxnAccessor(scheduleId1, schedule1, false))
-                .willReturn(schedule1Accessor);
-        given(scheduleExecutor.getTxnAccessor(scheduleId2, schedule2, false))
-                .willReturn(schedule2Accessor);
-        given(scheduleExecutor.getTxnAccessor(scheduleId4, schedule4, false))
-                .willReturn(schedule4Accessor);
+        given(scheduleExecutor.getTxnAccessor(scheduleId1, schedule1, false)).willReturn(schedule1Accessor);
+        given(scheduleExecutor.getTxnAccessor(scheduleId2, schedule2, false)).willReturn(schedule2Accessor);
+        given(scheduleExecutor.getTxnAccessor(scheduleId4, schedule4, false)).willReturn(schedule4Accessor);
 
-        given(
-                        scheduleThrottling.shouldThrottleTxn(
-                                any(TxnAccessor.class),
-                                eq(new RichInstant(consensusTime.getEpochSecond(), 0).toJava())))
+        given(scheduleThrottling.shouldThrottleTxn(
+                        any(TxnAccessor.class), eq(new RichInstant(consensusTime.getEpochSecond(), 0).toJava())))
                 .willReturn(false);
-        given(
-                        scheduleThrottling.shouldThrottleTxn(
-                                any(TxnAccessor.class),
-                                eq(new RichInstant(consensusTime.getEpochSecond(), 1).toJava())))
+        given(scheduleThrottling.shouldThrottleTxn(
+                        any(TxnAccessor.class), eq(new RichInstant(consensusTime.getEpochSecond(), 1).toJava())))
                 .willReturn(false);
-        given(
-                        scheduleThrottling.shouldThrottleTxn(
-                                any(TxnAccessor.class),
-                                eq(new RichInstant(consensusTime.getEpochSecond(), 2).toJava())))
+        given(scheduleThrottling.shouldThrottleTxn(
+                        any(TxnAccessor.class), eq(new RichInstant(consensusTime.getEpochSecond(), 2).toJava())))
                 .willReturn(true);
 
         var result = subject.checkFutureThrottlesForCreate(scheduleId4, schedule4);
@@ -607,17 +603,11 @@ class ScheduleProcessingTest {
         assertEquals(SCHEDULE_FUTURE_THROTTLE_EXCEEDED, result);
 
         inOrder.verify(scheduleThrottling)
-                .shouldThrottleTxn(
-                        schedule1Accessor,
-                        new RichInstant(consensusTime.getEpochSecond(), 0).toJava());
+                .shouldThrottleTxn(schedule1Accessor, new RichInstant(consensusTime.getEpochSecond(), 0).toJava());
         inOrder.verify(scheduleThrottling)
-                .shouldThrottleTxn(
-                        schedule4Accessor,
-                        new RichInstant(consensusTime.getEpochSecond(), 1).toJava());
+                .shouldThrottleTxn(schedule4Accessor, new RichInstant(consensusTime.getEpochSecond(), 1).toJava());
         inOrder.verify(scheduleThrottling)
-                .shouldThrottleTxn(
-                        schedule2Accessor,
-                        new RichInstant(consensusTime.getEpochSecond(), 2).toJava());
+                .shouldThrottleTxn(schedule2Accessor, new RichInstant(consensusTime.getEpochSecond(), 2).toJava());
 
         given(dynamicProperties.schedulingLongTermEnabled()).willReturn(false);
 
@@ -632,10 +622,8 @@ class ScheduleProcessingTest {
 
         assertEquals(SCHEDULE_FUTURE_GAS_LIMIT_EXCEEDED, result);
 
-        given(
-                        scheduleThrottling.shouldThrottleTxn(
-                                any(TxnAccessor.class),
-                                eq(new RichInstant(consensusTime.getEpochSecond(), 2).toJava())))
+        given(scheduleThrottling.shouldThrottleTxn(
+                        any(TxnAccessor.class), eq(new RichInstant(consensusTime.getEpochSecond(), 2).toJava())))
                 .willReturn(false);
 
         result = subject.checkFutureThrottlesForCreate(scheduleId4, schedule4);
@@ -652,26 +640,18 @@ class ScheduleProcessingTest {
         assertFalse(subject.shouldProcessScheduledTransactions(consensusTime));
         assertFalse(subject.shouldProcessScheduledTransactions(consensusTime.minusSeconds(1)));
 
-        assertTrue(
-                subject.shouldProcessScheduledTransactions(
-                        Instant.ofEpochSecond(consensusTime.getEpochSecond()).plusSeconds(1)));
-        assertFalse(
-                subject.shouldProcessScheduledTransactions(
-                        Instant.ofEpochSecond(consensusTime.getEpochSecond())
-                                .plusSeconds(1)
-                                .minusNanos(1)));
-        assertFalse(
-                subject.shouldProcessScheduledTransactions(
-                        Instant.ofEpochSecond(consensusTime.getEpochSecond()).plusNanos(1)));
-        assertFalse(
-                subject.shouldProcessScheduledTransactions(
-                        Instant.ofEpochSecond(consensusTime.getEpochSecond())));
-        assertFalse(
-                subject.shouldProcessScheduledTransactions(
-                        Instant.ofEpochSecond(consensusTime.getEpochSecond()).minusSeconds(1)));
-        assertFalse(
-                subject.shouldProcessScheduledTransactions(
-                        Instant.ofEpochSecond(consensusTime.getEpochSecond()).minusNanos(1)));
+        assertTrue(subject.shouldProcessScheduledTransactions(
+                Instant.ofEpochSecond(consensusTime.getEpochSecond()).plusSeconds(1)));
+        assertFalse(subject.shouldProcessScheduledTransactions(Instant.ofEpochSecond(consensusTime.getEpochSecond())
+                .plusSeconds(1)
+                .minusNanos(1)));
+        assertFalse(subject.shouldProcessScheduledTransactions(
+                Instant.ofEpochSecond(consensusTime.getEpochSecond()).plusNanos(1)));
+        assertFalse(subject.shouldProcessScheduledTransactions(Instant.ofEpochSecond(consensusTime.getEpochSecond())));
+        assertFalse(subject.shouldProcessScheduledTransactions(
+                Instant.ofEpochSecond(consensusTime.getEpochSecond()).minusSeconds(1)));
+        assertFalse(subject.shouldProcessScheduledTransactions(
+                Instant.ofEpochSecond(consensusTime.getEpochSecond()).minusNanos(1)));
     }
 
     @Test

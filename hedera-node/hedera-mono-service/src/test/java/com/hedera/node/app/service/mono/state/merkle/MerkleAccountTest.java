@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.merkle;
 
 import static com.hedera.node.app.service.mono.legacy.core.jproto.JKey.equalUpToDecodability;
@@ -57,20 +58,17 @@ class MerkleAccountTest {
     private final int number = 123;
     private final int maxAutoAssociations = 1234;
     private final int usedAutoAssociations = 123;
-    private static final Key aliasKey =
-            Key.newBuilder()
-                    .setECDSASecp256K1(ByteString.copyFromUtf8("bbbbbbbbbbbbbbbbbbbbb"))
-                    .build();
+    private static final Key aliasKey = Key.newBuilder()
+            .setECDSASecp256K1(ByteString.copyFromUtf8("bbbbbbbbbbbbbbbbbbbbb"))
+            .build();
     private static final int kvPairs = 123;
     private static final ByteString alias = aliasKey.getECDSASecp256K1();
     private static final UInt256 firstKey =
-            UInt256.fromHexString(
-                    "0x0000fe0432ce31138ecf09aa3e8a410004a1e204ef84efe01ee160fea1e22060");
+            UInt256.fromHexString("0x0000fe0432ce31138ecf09aa3e8a410004a1e204ef84efe01ee160fea1e22060");
     private static final int[] explicitFirstKey = ContractKey.asPackedInts(firstKey);
     private static final byte numNonZeroBytesInFirst = 30;
 
-    private static final JKey otherKey =
-            new JEd25519Key("aBcDeFgHiJkLmNoPqRsTuVwXyZ012345".getBytes());
+    private static final JKey otherKey = new JEd25519Key("aBcDeFgHiJkLmNoPqRsTuVwXyZ012345".getBytes());
     private static final long otherExpiry = 7_234_567L;
     private static final long otherBalance = 666_666L;
     private static final long otherAutoRenewSecs = 432_765L;
@@ -114,42 +112,41 @@ class MerkleAccountTest {
 
         delegate = mock(MerkleAccountState.class);
 
-        state =
-                new MerkleAccountState(
-                        key,
-                        expiry,
-                        balance,
-                        autoRenewSecs,
-                        memo,
-                        deleted,
-                        smartContract,
-                        receiverSigRequired,
-                        proxy,
-                        number,
-                        maxAutoAssociations,
-                        usedAutoAssociations,
-                        alias,
-                        kvPairs,
-                        cryptoAllowances,
-                        fungibleTokenAllowances,
-                        approveForAllNfts,
-                        explicitFirstKey,
-                        numNonZeroBytesInFirst,
-                        nftsOwned,
-                        0,
-                        0,
-                        lastAssociatedTokenNum,
-                        numTreasuryTitles,
-                        ethereumNonce,
-                        autoRenewAccountId,
-                        lastAssociatedNftNum,
-                        lastAssociatedNftSerial,
-                        stakedToMe,
-                        stakePeriodStart,
-                        stakedNum,
-                        declinedReward,
-                        balanceAtStartOfLastRewardedPeriod,
-                        expiredAndPendingRemoval);
+        state = new MerkleAccountState(
+                key,
+                expiry,
+                balance,
+                autoRenewSecs,
+                memo,
+                deleted,
+                smartContract,
+                receiverSigRequired,
+                proxy,
+                number,
+                maxAutoAssociations,
+                usedAutoAssociations,
+                alias,
+                kvPairs,
+                cryptoAllowances,
+                fungibleTokenAllowances,
+                approveForAllNfts,
+                explicitFirstKey,
+                numNonZeroBytesInFirst,
+                nftsOwned,
+                0,
+                0,
+                lastAssociatedTokenNum,
+                numTreasuryTitles,
+                ethereumNonce,
+                autoRenewAccountId,
+                lastAssociatedNftNum,
+                lastAssociatedNftSerial,
+                stakedToMe,
+                stakePeriodStart,
+                stakedNum,
+                declinedReward,
+                balanceAtStartOfLastRewardedPeriod,
+                expiredAndPendingRemoval);
 
         subject = new MerkleAccount(List.of(state, payerRecords));
     }
@@ -192,8 +189,7 @@ class MerkleAccountTest {
     @Test
     @SuppressWarnings("unchecked")
     void returnsExpectedRecordsIterator() {
-        final Iterator<ExpirableTxnRecord> mockIter =
-                (Iterator<ExpirableTxnRecord>) mock(Iterator.class);
+        final Iterator<ExpirableTxnRecord> mockIter = (Iterator<ExpirableTxnRecord>) mock(Iterator.class);
         given(payerRecords.iterator()).willReturn(mockIter);
 
         assertSame(mockIter, subject.recordIterator());
@@ -213,8 +209,7 @@ class MerkleAccountTest {
 
     @Test
     void merkleMethodsWork() {
-        assertEquals(
-                MerkleAccount.ChildIndices.NUM_POST_0240_CHILDREN, subject.getMinimumChildCount());
+        assertEquals(MerkleAccount.ChildIndices.NUM_POST_0240_CHILDREN, subject.getMinimumChildCount());
         assertEquals(MerkleAccount.MERKLE_VERSION, subject.getVersion());
         assertEquals(MerkleAccount.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
         assertFalse(subject.isLeaf());
@@ -224,9 +219,7 @@ class MerkleAccountTest {
     void toStringWorks() {
         given(payerRecords.size()).willReturn(3);
 
-        assertEquals(
-                "MerkleAccount{state=" + state.toString() + ", # records=" + 3 + "}",
-                subject.toString());
+        assertEquals("MerkleAccount{state=" + state.toString() + ", # records=" + 3 + "}", subject.toString());
     }
 
     @Test
@@ -249,7 +242,8 @@ class MerkleAccountTest {
         assertEquals(state.getAlias(), subject.getAlias());
         assertEquals(state.getNumContractKvPairs(), subject.getNumContractKvPairs());
         assertEquals(
-                state.getCryptoAllowances().entrySet(), subject.getCryptoAllowances().entrySet());
+                state.getCryptoAllowances().entrySet(),
+                subject.getCryptoAllowances().entrySet());
         assertEquals(
                 state.getFungibleTokenAllowances().entrySet(),
                 subject.getFungibleTokenAllowances().entrySet());
@@ -266,9 +260,7 @@ class MerkleAccountTest {
         assertEquals(state.getStakePeriodStart(), subject.getStakePeriodStart());
         assertEquals(state.isDeclineReward(), subject.isDeclinedReward());
         assertEquals(state.getStakedNum(), subject.getStakedId());
-        assertEquals(
-                state.getStakeAtStartOfLastRewardedPeriod(),
-                subject.totalStakeAtStartOfLastRewardedPeriod());
+        assertEquals(state.getStakeAtStartOfLastRewardedPeriod(), subject.totalStakeAtStartOfLastRewardedPeriod());
         assertEquals(state.isExpiredAndPendingRemoval(), subject.isExpiredAndPendingRemoval());
     }
 
@@ -399,11 +391,9 @@ class MerkleAccountTest {
 
     @Test
     void throwsOnInvalidAlreadyUsedAtoAssociations() {
+        assertThrows(IllegalArgumentException.class, () -> subject.setUsedAutomaticAssociations(-1));
         assertThrows(
-                IllegalArgumentException.class, () -> subject.setUsedAutomaticAssociations(-1));
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> subject.setUsedAutomaticAssociations(maxAutoAssociations + 1));
+                IllegalArgumentException.class, () -> subject.setUsedAutomaticAssociations(maxAutoAssociations + 1));
     }
 
     @Test

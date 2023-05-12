@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -24,8 +25,7 @@ public class UniqueTokenKeySupplier implements SelfSerializableSupplier<UniqueTo
     static final int CURRENT_VERSION = 1;
 
     @Override
-    public void deserialize(
-            final SerializableDataInputStream serializableDataInputStream, final int i) {
+    public void deserialize(final SerializableDataInputStream serializableDataInputStream, final int i) {
         /* No operations since no state needs to be restored. */
     }
 

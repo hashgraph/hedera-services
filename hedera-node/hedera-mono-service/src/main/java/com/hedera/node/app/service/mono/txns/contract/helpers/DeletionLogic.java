@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.contract.helpers;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
@@ -72,8 +73,7 @@ public class DeletionLogic {
         final var id = unaliased(op.getContractID(), aliasManager);
         final var tbd = id.toGrpcAccountId();
         validateFalse(ledger.isKnownTreasury(tbd), ACCOUNT_IS_TREASURY);
-        validateFalse(
-                ledger.hasAnyFungibleTokenBalance(tbd), TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
+        validateFalse(ledger.hasAnyFungibleTokenBalance(tbd), TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
         validateFalse(ledger.hasAnyNfts(tbd), ACCOUNT_STILL_OWNS_NFTS);
 
         obtainer = obtainerOf(op);

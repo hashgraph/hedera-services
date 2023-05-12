@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual.entities;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -25,8 +26,7 @@ public class OnDiskTokenRelSupplier implements SelfSerializableSupplier<OnDiskTo
     static final int CURRENT_VERSION = 1;
 
     @Override
-    public void deserialize(final SerializableDataInputStream in, final int version)
-            throws IOException {
+    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         // Nothing to do here
     }
 

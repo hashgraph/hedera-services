@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.util;
 
 import static com.hedera.node.app.service.mono.txns.validation.TokenListChecks.checkKeys;
@@ -30,8 +31,7 @@ public class TokenUpdateValidator {
         throw new UnsupportedOperationException("Utility class");
     }
 
-    public static ResponseCodeEnum validate(
-            final TransactionBody txnBody, final OptionValidator validator) {
+    public static ResponseCodeEnum validate(final TransactionBody txnBody, final OptionValidator validator) {
         final TokenUpdateTransactionBody op = txnBody.getTokenUpdate();
 
         if (!op.hasToken()) {
@@ -59,15 +59,14 @@ public class TokenUpdateValidator {
             }
         }
 
-        validity =
-                checkKeys(
-                        op.hasAdminKey(), op.getAdminKey(),
-                        op.hasKycKey(), op.getKycKey(),
-                        op.hasWipeKey(), op.getWipeKey(),
-                        op.hasSupplyKey(), op.getSupplyKey(),
-                        op.hasFreezeKey(), op.getFreezeKey(),
-                        op.hasFeeScheduleKey(), op.getFeeScheduleKey(),
-                        op.hasPauseKey(), op.getPauseKey());
+        validity = checkKeys(
+                op.hasAdminKey(), op.getAdminKey(),
+                op.hasKycKey(), op.getKycKey(),
+                op.hasWipeKey(), op.getWipeKey(),
+                op.hasSupplyKey(), op.getSupplyKey(),
+                op.hasFreezeKey(), op.getFreezeKey(),
+                op.hasFeeScheduleKey(), op.getFeeScheduleKey(),
+                op.hasPauseKey(), op.getPauseKey());
 
         return validity;
     }

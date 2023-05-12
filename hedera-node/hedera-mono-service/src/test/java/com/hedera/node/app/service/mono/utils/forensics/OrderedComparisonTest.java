@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.utils.forensics;
 
 import static com.hedera.node.app.service.mono.utils.forensics.OrderedComparison.findDifferencesBetweenV6;
@@ -58,8 +59,11 @@ class OrderedComparisonTest {
     private static final Instant THEN = Instant.ofEpochSecond(1_234_567, 890);
     private static final Instant NOW = Instant.ofEpochSecond(9_999_999, 001);
 
-    @Mock private TxnAccessor aAccessor;
-    @Mock private TxnAccessor bAccessor;
+    @Mock
+    private TxnAccessor aAccessor;
+
+    @Mock
+    private TxnAccessor bAccessor;
 
     @Test
     void detectsDifferenceInCaseOfObviouslyWrongNonce() throws IOException {
@@ -83,9 +87,7 @@ class OrderedComparisonTest {
         final var aEntry = new RecordStreamEntry(aAccessor, MOCK_RECORD, NOW);
         final var firstList = Collections.<RecordStreamEntry>emptyList();
         final var secondList = List.of(aEntry);
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> OrderedComparison.diff(firstList, secondList));
+        assertThrows(IllegalArgumentException.class, () -> OrderedComparison.diff(firstList, secondList));
     }
 
     @Test
@@ -94,9 +96,7 @@ class OrderedComparisonTest {
         final var bEntry = new RecordStreamEntry(bAccessor, MOCK_RECORD, NOW);
         final var firstList = List.of(aEntry);
         final var secondList = List.of(bEntry);
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> OrderedComparison.diff(firstList, secondList));
+        assertThrows(IllegalArgumentException.class, () -> OrderedComparison.diff(firstList, secondList));
     }
 
     @Test
@@ -104,17 +104,14 @@ class OrderedComparisonTest {
         final var aEntry = new RecordStreamEntry(aAccessor, MOCK_RECORD, THEN);
         final var bEntry = new RecordStreamEntry(bAccessor, MOCK_RECORD, THEN);
         final var aMockTxn = Transaction.getDefaultInstance();
-        final var bMockTxn =
-                Transaction.newBuilder()
-                        .setSignedTransactionBytes(ByteString.copyFromUtf8("ABCDEFG"))
-                        .build();
+        final var bMockTxn = Transaction.newBuilder()
+                .setSignedTransactionBytes(ByteString.copyFromUtf8("ABCDEFG"))
+                .build();
         given(aAccessor.getSignedTxnWrapper()).willReturn(aMockTxn);
         given(bAccessor.getSignedTxnWrapper()).willReturn(bMockTxn);
         final var firstList = List.of(aEntry);
         final var secondList = List.of(bEntry);
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> OrderedComparison.diff(firstList, secondList));
+        assertThrows(IllegalArgumentException.class, () -> OrderedComparison.diff(firstList, secondList));
     }
 
     @Test
@@ -137,31 +134,20 @@ class OrderedComparisonTest {
         final var loc = ABSENT_RESULT_STREAMS_DIR + File.separator + "node0";
         final var entries = parseV6RecordStreamEntriesIn(loc);
         final var firstEntryRepr = entries.get(0).toString();
-        assertTrue(
-                firstEntryRepr.startsWith(
-                        "RecordStreamEntry{consensusTime=2022-12-05T14:23:46.192841556Z"));
+        assertTrue(firstEntryRepr.startsWith("RecordStreamEntry{consensusTime=2022-12-05T14:23:46.192841556Z"));
         final var sidecarRecords = parseV6SidecarRecordsByConsTimeIn(loc);
 
-        visitWithSidecars(
-                entries,
-                sidecarRecords,
-                (entry, records) -> {
-                    final var accessor = entry.accessor();
-                    if (accessor.getFunction() == HederaFunctionality.EthereumTransaction) {
-                        final var expected = List.of(RESULTDATA_NOT_SET, REVERT_REASON);
-                        final var actual =
-                                records.stream()
-                                        .filter(TransactionSidecarRecord::hasActions)
-                                        .flatMap(
-                                                r ->
-                                                        r
-                                                                .getActions()
-                                                                .getContractActionsList()
-                                                                .stream())
-                                        .map(ContractAction::getResultDataCase)
-                                        .toList();
-                        assertEquals(expected, actual);
-                    }
-                });
+        visitWithSidecars(entries, sidecarRecords, (entry, records) -> {
+            final var accessor = entry.accessor();
+            if (accessor.getFunction() == HederaFunctionality.EthereumTransaction) {
+                final var expected = List.of(RESULTDATA_NOT_SET, REVERT_REASON);
+                final var actual = records.stream()
+                        .filter(TransactionSidecarRecord::hasActions)
+                        .flatMap(r -> r.getActions().getContractActionsList().stream())
+                        .map(ContractAction::getResultDataCase)
+                        .toList();
+                assertEquals(expected, actual);
+            }
+        });
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.crypto.queries;
 
 import static com.hedera.node.app.service.mono.fees.calculation.crypto.queries.GetTxnRecordResourceUsage.MISSING_RECORD_STANDIN;
@@ -49,29 +50,23 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class GetTxnRecordResourceUsageTest {
-    private static final TransactionID targetTxnId =
-            TransactionID.newBuilder()
-                    .setAccountID(asAccount("0.0.2"))
-                    .setTransactionValidStart(Timestamp.newBuilder().setSeconds(1_234L))
-                    .build();
-    private static final TransactionID missingTxnId =
-            TransactionID.newBuilder()
-                    .setAccountID(asAccount("1.2.3"))
-                    .setTransactionValidStart(Timestamp.newBuilder().setSeconds(1_234L))
-                    .build();
-    private static final TransactionGetRecordQuery satisfiableAnswerOnly =
-            txnRecordQuery(targetTxnId, ANSWER_ONLY);
+    private static final TransactionID targetTxnId = TransactionID.newBuilder()
+            .setAccountID(asAccount("0.0.2"))
+            .setTransactionValidStart(Timestamp.newBuilder().setSeconds(1_234L))
+            .build();
+    private static final TransactionID missingTxnId = TransactionID.newBuilder()
+            .setAccountID(asAccount("1.2.3"))
+            .setTransactionValidStart(Timestamp.newBuilder().setSeconds(1_234L))
+            .build();
+    private static final TransactionGetRecordQuery satisfiableAnswerOnly = txnRecordQuery(targetTxnId, ANSWER_ONLY);
     private static final TransactionGetRecordQuery satisfiableAnswerOnlyWithDups =
             txnRecordQuery(targetTxnId, ANSWER_ONLY, true);
     private static final TransactionGetRecordQuery satisfiableAnswerOnlyWithChildrenNoDups =
             txnRecordQuery(targetTxnId, ANSWER_ONLY, false, true);
-    private static final TransactionGetRecordQuery satisfiableCostAnswer =
-            txnRecordQuery(targetTxnId, COST_ANSWER);
-    private static final TransactionGetRecordQuery unsatisfiable =
-            txnRecordQuery(missingTxnId, ANSWER_ONLY);
+    private static final TransactionGetRecordQuery satisfiableCostAnswer = txnRecordQuery(targetTxnId, COST_ANSWER);
+    private static final TransactionGetRecordQuery unsatisfiable = txnRecordQuery(missingTxnId, ANSWER_ONLY);
     private static final Query satisfiableAnswerOnlyQuery = queryOf(satisfiableAnswerOnly);
-    private static final Query satisfiableAnswerOnlyWithDupsQuery =
-            queryOf(satisfiableAnswerOnlyWithDups);
+    private static final Query satisfiableAnswerOnlyWithDupsQuery = queryOf(satisfiableAnswerOnlyWithDups);
     private static final Query satisfiableAnswerOnlyWithChildrenQuery =
             queryOf(satisfiableAnswerOnlyWithChildrenNoDups);
     private static final Query satisfiableCostAnswerQuery = queryOf(satisfiableCostAnswer);
@@ -93,12 +88,10 @@ class GetTxnRecordResourceUsageTest {
         view = new StateView(null, children, null);
 
         answerFunctions = mock(AnswerFunctions.class);
-        given(answerFunctions.txnRecord(recordCache, satisfiableAnswerOnly))
-                .willReturn(Optional.of(desiredRecord));
+        given(answerFunctions.txnRecord(recordCache, satisfiableAnswerOnly)).willReturn(Optional.of(desiredRecord));
         given(answerFunctions.txnRecord(recordCache, satisfiableAnswerOnlyWithDups))
                 .willReturn(Optional.of(desiredRecord));
-        given(answerFunctions.txnRecord(recordCache, satisfiableCostAnswer))
-                .willReturn(Optional.of(desiredRecord));
+        given(answerFunctions.txnRecord(recordCache, satisfiableCostAnswer)).willReturn(Optional.of(desiredRecord));
         given(answerFunctions.txnRecord(recordCache, unsatisfiable)).willReturn(Optional.empty());
         given(recordCache.getDuplicateRecords(targetTxnId)).willReturn(List.of(desiredRecord));
 
@@ -118,8 +111,7 @@ class GetTxnRecordResourceUsageTest {
 
         subject.usageGiven(satisfiableAnswerOnlyWithChildrenQuery, view, queryCtx);
 
-        assertEquals(
-                List.of(desiredRecord), queryCtx.get(GetTxnRecordAnswer.CHILD_RECORDS_CTX_KEY));
+        assertEquals(List.of(desiredRecord), queryCtx.get(GetTxnRecordAnswer.CHILD_RECORDS_CTX_KEY));
 
         mockedStatic.close();
     }
@@ -173,8 +165,7 @@ class GetTxnRecordResourceUsageTest {
 
         subject.usageGiven(satisfiableAnswerOnlyWithDupsQuery, view, queryCtx);
 
-        assertEquals(
-                List.of(desiredRecord), queryCtx.get(GetTxnRecordAnswer.DUPLICATE_RECORDS_CTX_KEY));
+        assertEquals(List.of(desiredRecord), queryCtx.get(GetTxnRecordAnswer.DUPLICATE_RECORDS_CTX_KEY));
 
         mockedStatic.close();
     }
@@ -195,12 +186,9 @@ class GetTxnRecordResourceUsageTest {
     void onlySetsPriorityRecordInQueryCxtIfFound() {
         final var answerOnlyUsage = mock(FeeData.class);
         final var queryCtx = new HashMap<String, Object>();
-        given(
-                        usageEstimator.getTransactionRecordQueryFeeMatrices(
-                                MISSING_RECORD_STANDIN, ANSWER_ONLY))
+        given(usageEstimator.getTransactionRecordQueryFeeMatrices(MISSING_RECORD_STANDIN, ANSWER_ONLY))
                 .willReturn(answerOnlyUsage);
-        given(answerFunctions.txnRecord(recordCache, satisfiableAnswerOnly))
-                .willReturn(Optional.empty());
+        given(answerFunctions.txnRecord(recordCache, satisfiableAnswerOnly)).willReturn(Optional.empty());
 
         final var actual = subject.usageGiven(satisfiableAnswerOnlyQuery, view, queryCtx);
 

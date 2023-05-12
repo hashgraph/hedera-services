@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.pricing;
 
 import static java.math.MathContext.DECIMAL128;
@@ -51,13 +52,13 @@ public class FeeSchedules {
         final var canonicalUsage = CANONICAL_OPS.baseUsageFor(function, type);
         final var genericPrices = genericPricesFor(function);
         final var genericPrice = computeGenericGiven(canonicalUsage, genericPrices);
-        final var canonicalPrice = ASSETS_LOADER.loadCanonicalPrices().get(function).get(type);
+        final var canonicalPrice =
+                ASSETS_LOADER.loadCanonicalPrices().get(function).get(type);
 
-        final var normalizingFactor =
-                FEE_SCHEDULE_MULTIPLIER
-                        .multiply(canonicalPrice)
-                        .divide(genericPrice, DECIMAL128)
-                        .multiply(USD_TO_TINYCENTS);
+        final var normalizingFactor = FEE_SCHEDULE_MULTIPLIER
+                .multiply(canonicalPrice)
+                .divide(genericPrice, DECIMAL128)
+                .multiply(USD_TO_TINYCENTS);
 
         return canonicalPricesGiven(normalizingFactor, genericPrices);
     }
@@ -65,8 +66,7 @@ public class FeeSchedules {
     private Map<ResourceProvider, Map<UsableResource, Long>> canonicalPricesGiven(
             final BigDecimal normalizingFactor,
             final Map<ResourceProvider, Map<UsableResource, BigDecimal>> genericPrices) {
-        final Map<ResourceProvider, Map<UsableResource, Long>> canonicalPrices =
-                new EnumMap<>(ResourceProvider.class);
+        final Map<ResourceProvider, Map<UsableResource, Long>> canonicalPrices = new EnumMap<>(ResourceProvider.class);
         for (final var provider : ResourceProvider.class.getEnumConstants()) {
             final Map<UsableResource, Long> providerPrices = new EnumMap<>(UsableResource.class);
             final var providerGenerics = genericPrices.get(provider);
@@ -96,17 +96,15 @@ public class FeeSchedules {
         return sum;
     }
 
-    private Map<ResourceProvider, Map<UsableResource, BigDecimal>> genericPricesFor(
-            final HederaFunctionality function) throws IOException {
+    private Map<ResourceProvider, Map<UsableResource, BigDecimal>> genericPricesFor(final HederaFunctionality function)
+            throws IOException {
         final var capacities = ASSETS_LOADER.loadCapacities();
         final var constW = ASSETS_LOADER.loadConstWeights().get(function);
         final var oneMinusConstW = BigDecimal.ONE.subtract(constW);
 
-        final Map<ResourceProvider, Map<UsableResource, BigDecimal>> generics =
-                new EnumMap<>(ResourceProvider.class);
+        final Map<ResourceProvider, Map<UsableResource, BigDecimal>> generics = new EnumMap<>(ResourceProvider.class);
         for (final var provider : ResourceProvider.class.getEnumConstants()) {
-            final Map<UsableResource, BigDecimal> providerGenerics =
-                    new EnumMap<>(UsableResource.class);
+            final Map<UsableResource, BigDecimal> providerGenerics = new EnumMap<>(UsableResource.class);
 
             var nonConstantGenerics = BigDecimal.ZERO;
             for (final var resource : UsableResource.class.getEnumConstants()) {

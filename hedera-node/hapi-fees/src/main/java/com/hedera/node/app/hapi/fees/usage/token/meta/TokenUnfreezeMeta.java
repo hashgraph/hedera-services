@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage.token.meta;
 
 /** This is simply to get rid of code duplication with {@link TokenFreezeMeta} class. */

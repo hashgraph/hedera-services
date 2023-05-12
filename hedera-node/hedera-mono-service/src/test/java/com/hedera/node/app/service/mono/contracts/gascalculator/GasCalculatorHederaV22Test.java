@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.gascalculator;
 
 /*
@@ -53,17 +54,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class GasCalculatorHederaV22Test {
     GasCalculatorHederaV22 subject;
 
-    @Mock GlobalDynamicProperties globalDynamicProperties;
+    @Mock
+    GlobalDynamicProperties globalDynamicProperties;
 
-    @Mock UsagePricesProvider usagePricesProvider;
+    @Mock
+    UsagePricesProvider usagePricesProvider;
 
-    @Mock HbarCentExchange hbarCentExchange;
+    @Mock
+    HbarCentExchange hbarCentExchange;
 
     @BeforeEach
     void setUp() {
-        subject =
-                new GasCalculatorHederaV22(
-                        globalDynamicProperties, usagePricesProvider, hbarCentExchange);
+        subject = new GasCalculatorHederaV22(globalDynamicProperties, usagePricesProvider, hbarCentExchange);
     }
 
     @Test

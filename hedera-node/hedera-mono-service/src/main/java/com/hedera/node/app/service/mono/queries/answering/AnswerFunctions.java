@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.answering;
 
 import com.hedera.node.app.service.mono.context.primitives.StateView;
@@ -55,8 +56,7 @@ public class AnswerFunctions {
      * @param op the query with the target payer account
      * @return the most recent available records for the given payer
      */
-    public List<TransactionRecord> mostRecentRecords(
-            final StateView view, final CryptoGetAccountRecordsQuery op) {
+    public List<TransactionRecord> mostRecentRecords(final StateView view, final CryptoGetAccountRecordsQuery op) {
         final var payerNum = EntityNum.fromAccountId(op.getAccountID());
         final var queryableRecords = view.payerRecords().getReadOnlyPayerRecords(payerNum);
         return mostRecentFrom(queryableRecords, dynamicProperties.maxNumQueryableRecords());
@@ -70,8 +70,7 @@ public class AnswerFunctions {
      * @param op the query with the target transaction id
      * @return the transaction record if available
      */
-    public Optional<TransactionRecord> txnRecord(
-            final RecordCache recordCache, final TransactionGetRecordQuery op) {
+    public Optional<TransactionRecord> txnRecord(final RecordCache recordCache, final TransactionGetRecordQuery op) {
         final var txnId = op.getTransactionID();
         final var expirableTxnRecord = recordCache.getPriorityRecord(txnId);
         return Optional.ofNullable(expirableTxnRecord).map(ExpirableTxnRecord::asGrpc);
@@ -93,8 +92,7 @@ public class AnswerFunctions {
      * @param m the maximum number of records to return
      * @return the available records
      */
-    private List<TransactionRecord> mostRecentFrom(
-            final QueryableRecords payerRecords, final int m) {
+    private List<TransactionRecord> mostRecentFrom(final QueryableRecords payerRecords, final int m) {
         final List<TransactionRecord> ans = new ArrayList<>();
         final var n = payerRecords.expectedSize();
         final Iterator<ExpirableTxnRecord> iter = payerRecords.iterator();

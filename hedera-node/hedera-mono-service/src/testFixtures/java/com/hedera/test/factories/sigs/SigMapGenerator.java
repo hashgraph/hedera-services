@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.factories.sigs;
 
 import static java.util.Map.Entry;
@@ -45,13 +46,11 @@ public class SigMapGenerator {
 
     public static SigMapGenerator withAlternatingUniqueAndFullPrefixes() {
         final var isUnique = new AtomicBoolean(true);
-        final Function<ByteTrie, Function<byte[], byte[]>> prefixCalcFn =
-                trie ->
-                        key -> {
-                            final var goUnique = isUnique.get();
-                            isUnique.set(!goUnique);
-                            return goUnique ? trie.shortestPrefix(key, 1) : key;
-                        };
+        final Function<ByteTrie, Function<byte[], byte[]>> prefixCalcFn = trie -> key -> {
+            final var goUnique = isUnique.get();
+            isUnique.set(!goUnique);
+            return goUnique ? trie.shortestPrefix(key, 1) : key;
+        };
         return new SigMapGenerator(prefixCalcFn);
     }
 
@@ -77,20 +76,14 @@ public class SigMapGenerator {
         Function<byte[], byte[]> prefixCalc = prefixCalcFn.apply(trie);
 
         return keySigs.stream()
-                .map(
-                        keySig ->
-                                from(
-                                        prefixCalc.apply(keySig.getKey()),
-                                        keySig.getValue(),
-                                        sigTypes.get()))
-                .collect(
-                        collectingAndThen(
-                                toList(), l -> SignatureMap.newBuilder().addAllSigPair(l).build()));
+                .map(keySig -> from(prefixCalc.apply(keySig.getKey()), keySig.getValue(), sigTypes.get()))
+                .collect(collectingAndThen(
+                        toList(),
+                        l -> SignatureMap.newBuilder().addAllSigPair(l).build()));
     }
 
     private SignaturePair from(byte[] pubKeyPrefix, byte[] sig, SignatureType sigType) {
-        SignaturePair.Builder sp =
-                SignaturePair.newBuilder().setPubKeyPrefix(ByteString.copyFrom(pubKeyPrefix));
+        SignaturePair.Builder sp = SignaturePair.newBuilder().setPubKeyPrefix(ByteString.copyFrom(pubKeyPrefix));
         entryNo++;
         if (invalidEntries.contains(entryNo)) {
             sp.setEd25519(ByteString.copyFrom(NONSENSE_SIG));

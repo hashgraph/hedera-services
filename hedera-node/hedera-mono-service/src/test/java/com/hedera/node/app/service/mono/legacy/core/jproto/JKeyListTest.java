@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.legacy.core.jproto;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -44,9 +45,7 @@ class JKeyListTest {
         byte[] repr = JKeySerializer.serialize(StateView.EMPTY_WACL);
 
         // when:
-        JKey recovered =
-                JKeySerializer.deserialize(
-                        new SerializableDataInputStream(new ByteArrayInputStream(repr)));
+        JKey recovered = JKeySerializer.deserialize(new SerializableDataInputStream(new ByteArrayInputStream(repr)));
 
         // then:
         assertTrue(recovered.isEmpty());
@@ -75,22 +74,27 @@ class JKeyListTest {
 
     @Test
     void invalidJKeyListTest() throws Exception {
-        Key validED25519Key =
-                Key.newBuilder()
-                        .setEd25519(TxnUtils.randomUtf8ByteString(JEd25519Key.ED25519_BYTE_LENGTH))
-                        .build();
+        Key validED25519Key = Key.newBuilder()
+                .setEd25519(TxnUtils.randomUtf8ByteString(JEd25519Key.ED25519_BYTE_LENGTH))
+                .build();
 
         Key invalidECDSAsecp256k1Key = randomInvalidECDSASecp256K1Key();
         KeyList invalidKeyList1 = KeyList.newBuilder().build();
         Key invalidKey1 = Key.newBuilder().setKeyList(invalidKeyList1).build();
-        KeyList invalidKeyList2 =
-                KeyList.newBuilder().addKeys(validED25519Key).addKeys(invalidKey1).build();
+        KeyList invalidKeyList2 = KeyList.newBuilder()
+                .addKeys(validED25519Key)
+                .addKeys(invalidKey1)
+                .build();
         Key invalidKey2 = Key.newBuilder().setKeyList(invalidKeyList2).build();
-        KeyList invalidKeyList3 =
-                KeyList.newBuilder().addKeys(validED25519Key).addKeys(invalidKey2).build();
+        KeyList invalidKeyList3 = KeyList.newBuilder()
+                .addKeys(validED25519Key)
+                .addKeys(invalidKey2)
+                .build();
         Key invalidKey3 = Key.newBuilder().setKeyList(invalidKeyList3).build();
-        KeyList invalidKeyList4 =
-                KeyList.newBuilder().addKeys(invalidECDSAsecp256k1Key).addKeys(invalidKey3).build();
+        KeyList invalidKeyList4 = KeyList.newBuilder()
+                .addKeys(invalidECDSAsecp256k1Key)
+                .addKeys(invalidKey3)
+                .build();
         Key invalidKey4 = Key.newBuilder().setKeyList(invalidKeyList4).build();
 
         JKey jKeyList1 = JKey.convertKey(invalidKey1, 1);
@@ -108,15 +112,16 @@ class JKeyListTest {
 
     @Test
     void validJKeyListTest() throws Exception {
-        Key validED25519Key =
-                Key.newBuilder()
-                        .setEd25519(TxnUtils.randomUtf8ByteString(JEd25519Key.ED25519_BYTE_LENGTH))
-                        .build();
+        Key validED25519Key = Key.newBuilder()
+                .setEd25519(TxnUtils.randomUtf8ByteString(JEd25519Key.ED25519_BYTE_LENGTH))
+                .build();
         Key validECDSAsecp256k1Key = randomValidECDSASecp256K1Key();
         Key validECDSA384Key =
                 Key.newBuilder().setECDSA384(TxnUtils.randomUtf8ByteString(24)).build();
-        KeyList validKeyList1 =
-                KeyList.newBuilder().addKeys(validECDSA384Key).addKeys(validED25519Key).build();
+        KeyList validKeyList1 = KeyList.newBuilder()
+                .addKeys(validECDSA384Key)
+                .addKeys(validED25519Key)
+                .build();
         Key validKey1 = Key.newBuilder().setKeyList(validKeyList1).build();
         KeyList validKeyList2 =
                 KeyList.newBuilder().addKeys(validED25519Key).addKeys(validKey1).build();
@@ -124,8 +129,10 @@ class JKeyListTest {
         KeyList validKeyList3 =
                 KeyList.newBuilder().addKeys(validED25519Key).addKeys(validKey2).build();
         Key validKey3 = Key.newBuilder().setKeyList(validKeyList3).build();
-        KeyList validKeyList4 =
-                KeyList.newBuilder().addKeys(validECDSAsecp256k1Key).addKeys(validKey3).build();
+        KeyList validKeyList4 = KeyList.newBuilder()
+                .addKeys(validECDSAsecp256k1Key)
+                .addKeys(validKey3)
+                .build();
         Key validKey4 = Key.newBuilder().setKeyList(validKeyList4).build();
 
         JKey jKeyList1 = JKey.convertKey(validKey1, 1);
@@ -150,8 +157,7 @@ class JKeyListTest {
         var contractKey = new JContractIDKey(0, 0, 75231);
         var ecdsasecp256k1Key = new JECDSASecp256k1Key("ecdsasecp256k1".getBytes());
         // and:
-        List<JKey> keys =
-                List.of(ed25519Key, ecdsa384Key, rsa3072Key, contractKey, ecdsasecp256k1Key);
+        List<JKey> keys = List.of(ed25519Key, ecdsa384Key, rsa3072Key, contractKey, ecdsasecp256k1Key);
 
         // given:
         var subject = new JKeyList(keys);
@@ -192,22 +198,14 @@ class JKeyListTest {
     }
 
     public static Key randomValidECDSASecp256K1Key() {
-        ByteString edcsaSecp256K1Bytes =
-                ByteString.copyFrom(new byte[] {0x02})
-                        .concat(
-                                TxnUtils.randomUtf8ByteString(
-                                        JECDSASecp256k1Key.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH
-                                                - 1));
+        ByteString edcsaSecp256K1Bytes = ByteString.copyFrom(new byte[] {0x02})
+                .concat(TxnUtils.randomUtf8ByteString(JECDSASecp256k1Key.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH - 1));
         return Key.newBuilder().setECDSASecp256K1(edcsaSecp256K1Bytes).build();
     }
 
     public static Key randomInvalidECDSASecp256K1Key() {
-        ByteString edcsaSecp256K1Bytes =
-                ByteString.copyFrom(new byte[] {0x06})
-                        .concat(
-                                TxnUtils.randomUtf8ByteString(
-                                        JECDSASecp256k1Key.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH
-                                                - 1));
+        ByteString edcsaSecp256K1Bytes = ByteString.copyFrom(new byte[] {0x06})
+                .concat(TxnUtils.randomUtf8ByteString(JECDSASecp256k1Key.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH - 1));
         return Key.newBuilder().setECDSASecp256K1(edcsaSecp256K1Bytes).build();
     }
 }

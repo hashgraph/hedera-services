@@ -13,51 +13,41 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl.handlers;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
+import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.service.token.impl.ReadableAccountStore;
-import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoDelete}.
+ * HederaFunctionality#CRYPTO_DELETE}.
  */
+@Singleton
 public class CryptoDeleteHandler implements TransactionHandler {
-    /**
-     * Pre-handles a {@link
-     * com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoDeleteAllowance} transaction,
-     * returning the metadata required to, at minimum, validate the signatures of all required
-     * signing keys.
-     *
-     * @param txn the {@link TransactionBody} with the transaction data
-     * @param payer the {@link AccountID} of the payer
-     * @param accountStore the {@link ReadableAccountStore} with the current data
-     * @return the {@link TransactionMetadata} with all information that needs to be passed to
-     *     {@link #handle(TransactionMetadata)}
-     * @throws NullPointerException if one of the arguments is {@code null}
-     */
-    public TransactionMetadata preHandle(
-            @NonNull final TransactionBody txn,
-            @NonNull final AccountID payer,
-            @NonNull final ReadableAccountStore accountStore) {
-        final var op = txn.getCryptoDelete();
-        final var deleteAccountId = op.getDeleteAccountID();
-        final var transferAccountId = op.getTransferAccountID();
-        final var meta =
-                new SigTransactionMetadataBuilder(accountStore)
-                        .payerKeyFor(payer)
-                        .txnBody(txn)
-                        .addNonPayerKey(deleteAccountId)
-                        .addNonPayerKeyIfReceiverSigRequired(
-                                transferAccountId, INVALID_TRANSFER_ACCOUNT_ID);
-        return meta.build();
+    @Inject
+    public CryptoDeleteHandler() {
+        // Exists for injection
+    }
+
+    @Override
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
+        requireNonNull(context);
+        final var op = context.body().cryptoDeleteOrThrow();
+        final var deleteAccountId = op.deleteAccountIDOrElse(AccountID.DEFAULT);
+        final var transferAccountId = op.transferAccountIDOrElse(AccountID.DEFAULT);
+        context.requireKeyOrThrow(deleteAccountId, INVALID_ACCOUNT_ID)
+                .requireKeyIfReceiverSigRequired(transferAccountId, INVALID_TRANSFER_ACCOUNT_ID);
     }
 
     /**
@@ -66,10 +56,9 @@ public class CryptoDeleteHandler implements TransactionHandler {
      * <p>Please note: the method signature is just a placeholder which is most likely going to
      * change.
      *
-     * @param metadata the {@link TransactionMetadata} that was generated during pre-handle.
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void handle(@NonNull final TransactionMetadata metadata) {
+    public void handle() {
         throw new UnsupportedOperationException("Not implemented");
     }
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual.schedule;
 
 import static com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleSecondVirtualValueSupplier.CLASS_ID;
@@ -35,8 +36,7 @@ class ScheduleSecondVirtualValueSupplierTest {
     void delegatesAsExpected() {
         final var virtualValue = subject.get();
 
-        assertEquals(
-                ScheduleSecondVirtualValue.RUNTIME_CONSTRUCTABLE_ID, virtualValue.getClassId());
+        assertEquals(ScheduleSecondVirtualValue.RUNTIME_CONSTRUCTABLE_ID, virtualValue.getClassId());
     }
 
     @Test

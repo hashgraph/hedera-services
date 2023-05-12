@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs.verification;
 
 import static com.hedera.node.app.service.mono.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
@@ -55,10 +56,8 @@ class PrecheckKeyReqsTest {
 
     @Test
     void throwsGenericExceptionAsExpected() {
-        given(keyOrder.keysForPayer(txn, CODE_ORDER_RESULT_FACTORY))
-                .willReturn(new SigningOrderResult<>(PAYER_KEYS));
-        given(keyOrder.keysForOtherParties(txn, CODE_ORDER_RESULT_FACTORY))
-                .willReturn(factory.forGeneralError());
+        given(keyOrder.keysForPayer(txn, CODE_ORDER_RESULT_FACTORY)).willReturn(new SigningOrderResult<>(PAYER_KEYS));
+        given(keyOrder.keysForOtherParties(txn, CODE_ORDER_RESULT_FACTORY)).willReturn(factory.forGeneralError());
         givenImpliedSubject(FOR_QUERY_PAYMENT);
 
         // expect:
@@ -67,10 +66,8 @@ class PrecheckKeyReqsTest {
 
     @Test
     void throwsInvalidAccountAsExpected() {
-        given(keyOrder.keysForPayer(txn, CODE_ORDER_RESULT_FACTORY))
-                .willReturn(new SigningOrderResult<>(PAYER_KEYS));
-        given(keyOrder.keysForOtherParties(txn, CODE_ORDER_RESULT_FACTORY))
-                .willReturn(factory.forMissingAccount());
+        given(keyOrder.keysForPayer(txn, CODE_ORDER_RESULT_FACTORY)).willReturn(new SigningOrderResult<>(PAYER_KEYS));
+        given(keyOrder.keysForOtherParties(txn, CODE_ORDER_RESULT_FACTORY)).willReturn(factory.forMissingAccount());
         givenImpliedSubject(FOR_QUERY_PAYMENT);
 
         // expect:
@@ -79,8 +76,7 @@ class PrecheckKeyReqsTest {
 
     @Test
     void throwsInvalidPayerAccountAsExpected() {
-        given(keyOrder.keysForPayer(txn, CODE_ORDER_RESULT_FACTORY))
-                .willReturn(factory.forInvalidAccount());
+        given(keyOrder.keysForPayer(txn, CODE_ORDER_RESULT_FACTORY)).willReturn(factory.forInvalidAccount());
         givenImpliedSubject(FOR_NON_QUERY_PAYMENT);
 
         // expect:
@@ -89,8 +85,7 @@ class PrecheckKeyReqsTest {
 
     @Test
     void usesStdKeyOrderForNonQueryPayment() throws Exception {
-        given(keyOrder.keysForPayer(txn, CODE_ORDER_RESULT_FACTORY))
-                .willReturn(new SigningOrderResult<>(PAYER_KEYS));
+        given(keyOrder.keysForPayer(txn, CODE_ORDER_RESULT_FACTORY)).willReturn(new SigningOrderResult<>(PAYER_KEYS));
         givenImpliedSubject(FOR_NON_QUERY_PAYMENT);
 
         // when:

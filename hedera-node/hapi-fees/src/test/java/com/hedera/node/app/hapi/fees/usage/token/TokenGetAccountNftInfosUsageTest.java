@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage.token;
 
 import static com.hedera.node.app.hapi.fees.usage.token.entities.NftEntitySizes.NFT_ENTITY_SIZES;
@@ -38,7 +39,11 @@ class TokenGetAccountNftInfosUsageTest {
     @BeforeEach
     void setup() {
         metadata = List.of(ByteString.copyFromUtf8("some metadata"));
-        id = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(1).build();
+        id = AccountID.newBuilder()
+                .setShardNum(0)
+                .setRealmNum(0)
+                .setAccountNum(1)
+                .build();
         subject = TokenGetAccountNftInfosUsage.newEstimate(tokenQuery());
     }
 
@@ -51,19 +56,17 @@ class TokenGetAccountNftInfosUsageTest {
         final var usage = subject.get();
         final int additionalRb = metadata.stream().mapToInt(ByteString::size).sum();
         final var expectedBytes =
-                BASIC_QUERY_RES_HEADER
-                        + NFT_ENTITY_SIZES.fixedBytesInNftRepr() * metadata.size()
-                        + additionalRb;
+                BASIC_QUERY_RES_HEADER + NFT_ENTITY_SIZES.fixedBytesInNftRepr() * metadata.size() + additionalRb;
 
         // then:
         final var node = usage.getNodedata();
-        assertEquals(
-                FeeBuilder.BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE + 2 * INT_SIZE, node.getBpt());
+        assertEquals(FeeBuilder.BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE + 2 * INT_SIZE, node.getBpt());
         assertEquals(expectedBytes, node.getBpr());
     }
 
     private Query tokenQuery() {
-        final var op = TokenGetAccountNftInfosQuery.newBuilder().setAccountID(id).build();
+        final var op =
+                TokenGetAccountNftInfosQuery.newBuilder().setAccountID(id).build();
         return Query.newBuilder().setTokenGetAccountNftInfos(op).build();
     }
 }

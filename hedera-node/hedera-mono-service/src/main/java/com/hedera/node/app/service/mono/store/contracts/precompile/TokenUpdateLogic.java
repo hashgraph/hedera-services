@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.evm.store.tokens.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -23,10 +24,12 @@ import static com.hedera.node.app.service.mono.ledger.TransferLogic.dropTokenCha
 import static com.hedera.node.app.service.mono.ledger.backing.BackingTokenRels.asTokenRel;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.NUM_TREASURY_TITLES;
 import static com.hedera.node.app.service.mono.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
+import static com.hedera.node.app.service.mono.state.merkle.MerkleAccountState.DEFAULT_MEMO;
 import static com.hedera.node.app.service.mono.store.tokens.HederaTokenStore.affectsExpiryAtMost;
 import static com.hedera.node.app.service.mono.store.tokens.TokenStore.MISSING_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
+import com.google.protobuf.StringValue;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
@@ -72,11 +75,37 @@ public class TokenUpdateLogic {
     }
 
     public void updateToken(TokenUpdateTransactionBody op, long now) {
+        updateToken(op, now, false);
+    }
+
+    /**
+     * Given a token update transaction and the current consensus time, updates the token in the store.
+     *
+     * <p>The third {@code mergeUnsetMemoFromExisting} argument says whether to preserve the token's
+     * existing memo if the transaction memo is empty. We need this because the current application
+     * binary interface (ABI) for the {@code tokenUpdate()} system contract does not let us distinguish
+     * between a contract omitting the memo in an token update vs. a contract explicitly setting the
+     * memo to the empty string.
+     *
+     * <p>Once the ABI is improved to let a contract advertise it truly does want to erase a memo,
+     * we can remove the {@code mergeUnsetMemoFromExisting} argument and just use the protobuf
+     * message's {@code hasMemo()} method.
+     *
+     * @param op the token update transaction
+     * @param now the current consensus time
+     * @param mergeUnsetMemoFromExisting whether to preserve the token's memo if the transaction memo is unset
+     */
+    public void updateToken(TokenUpdateTransactionBody op, long now, boolean mergeUnsetMemoFromExisting) {
         final var tokenID = tokenValidityCheck(op);
         if (op.hasExpiry()) {
             validateTrueOrRevert(validator.isValidExpiry(op.getExpiry()), INVALID_EXPIRATION_TIME);
         }
         MerkleToken token = tokenStore.get(tokenID);
+        final var isOpMemoUnset = !op.hasMemo() || op.getMemo().getValue().length() == 0;
+        if (isOpMemoUnset && mergeUnsetMemoFromExisting) {
+            final var existingMemo = Optional.ofNullable(token.memo()).orElse(DEFAULT_MEMO);
+            op = op.toBuilder().setMemo(StringValue.of(existingMemo)).build();
+        }
         checkTokenPreconditions(token, op);
 
         assertAutoRenewValidity(op, token);
@@ -100,8 +129,7 @@ public class TokenUpdateLogic {
                 }
             }
             if (!newTreasury.equals(existingTreasury)) {
-                validateFalseOrRevert(
-                        isDetached(existingTreasury), ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+                validateFalseOrRevert(isDetached(existingTreasury), ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 
                 outcome = prepTreasuryChange(tokenID, token, newTreasury, existingTreasury);
                 if (outcome != OK) {
@@ -117,22 +145,12 @@ public class TokenUpdateLogic {
             long replacedTreasuryBalance = getTokenBalance(oldTreasury, tokenID);
             if (replacedTreasuryBalance > 0) {
                 if (token.tokenType().equals(TokenType.FUNGIBLE_COMMON)) {
-                    outcome =
-                            doTokenTransfer(
-                                    tokenID,
-                                    oldTreasury,
-                                    op.getTreasury(),
-                                    replacedTreasuryBalance);
+                    outcome = doTokenTransfer(tokenID, oldTreasury, op.getTreasury(), replacedTreasuryBalance);
                 } else {
-                    outcome =
-                            tokenStore.changeOwnerWildCard(
-                                    new NftId(
-                                            tokenID.getShardNum(),
-                                            tokenID.getRealmNum(),
-                                            tokenID.getTokenNum(),
-                                            -1),
-                                    oldTreasury,
-                                    op.getTreasury());
+                    outcome = tokenStore.changeOwnerWildCard(
+                            new NftId(tokenID.getShardNum(), tokenID.getRealmNum(), tokenID.getTokenNum(), -1),
+                            oldTreasury,
+                            op.getTreasury());
                 }
             }
         }
@@ -178,8 +196,7 @@ public class TokenUpdateLogic {
     }
 
     private void checkTokenPreconditions(MerkleToken token, TokenUpdateTransactionBody op) {
-        if (!token.hasAdminKey())
-            validateTrueOrRevert((affectsExpiryAtMost(op)), TOKEN_IS_IMMUTABLE);
+        if (!token.hasAdminKey()) validateTrueOrRevert((affectsExpiryAtMost(op)), TOKEN_IS_IMMUTABLE);
         validateFalseOrRevert(token.isDeleted(), TOKEN_WAS_DELETED);
         validateFalseOrRevert(token.isPaused(), TOKEN_IS_PAUSED);
     }
@@ -191,14 +208,12 @@ public class TokenUpdateLogic {
     private void assertAutoRenewValidity(TokenUpdateTransactionBody op, MerkleToken token) {
         if (op.hasAutoRenewAccount()) {
             final var newAutoRenew = op.getAutoRenewAccount();
-            validateTrueOrRevert(
-                    worldLedgers.accounts().contains(newAutoRenew), INVALID_AUTORENEW_ACCOUNT);
+            validateTrueOrRevert(worldLedgers.accounts().contains(newAutoRenew), INVALID_AUTORENEW_ACCOUNT);
             validateFalseOrRevert(isDetached(newAutoRenew), ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 
             if (token.hasAutoRenewAccount()) {
                 final var existingAutoRenew = token.autoRenewAccount().toGrpcAccountId();
-                validateFalseOrRevert(
-                        isDetached(existingAutoRenew), ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+                validateFalseOrRevert(isDetached(existingAutoRenew), ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
             }
         }
     }
@@ -208,10 +223,7 @@ public class TokenUpdateLogic {
     }
 
     private ResponseCodeEnum prepTreasuryChange(
-            final TokenID id,
-            final MerkleToken token,
-            final AccountID newTreasury,
-            final AccountID oldTreasury) {
+            final TokenID id, final MerkleToken token, final AccountID newTreasury, final AccountID oldTreasury) {
         var status = OK;
         if (token.hasFreezeKey()) {
             status = tokenStore.unfreeze(newTreasury, id);
@@ -227,16 +239,11 @@ public class TokenUpdateLogic {
     }
 
     private void abortWith(ResponseCodeEnum cause) {
-        dropTokenChanges(
-                sideEffectsTracker,
-                worldLedgers.nfts(),
-                worldLedgers.accounts(),
-                worldLedgers.tokenRels());
+        dropTokenChanges(sideEffectsTracker, worldLedgers.nfts(), worldLedgers.accounts(), worldLedgers.tokenRels());
         throw new InvalidTransactionException(cause);
     }
 
-    private ResponseCodeEnum doTokenTransfer(
-            TokenID tId, AccountID from, AccountID to, long adjustment) {
+    private ResponseCodeEnum doTokenTransfer(TokenID tId, AccountID from, AccountID to, long adjustment) {
         ResponseCodeEnum validity = tokenStore.adjustBalance(from, tId, -adjustment);
         if (validity == OK) {
             validity = tokenStore.adjustBalance(to, tId, adjustment);
@@ -244,10 +251,7 @@ public class TokenUpdateLogic {
 
         if (validity != OK) {
             dropTokenChanges(
-                    sideEffectsTracker,
-                    worldLedgers.nfts(),
-                    worldLedgers.accounts(),
-                    worldLedgers.tokenRels());
+                    sideEffectsTracker, worldLedgers.nfts(), worldLedgers.accounts(), worldLedgers.tokenRels());
         }
         return validity;
     }

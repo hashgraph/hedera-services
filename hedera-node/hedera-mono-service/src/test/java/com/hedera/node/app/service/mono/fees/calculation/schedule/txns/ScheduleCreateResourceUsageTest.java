@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.schedule.txns;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -56,14 +57,11 @@ class ScheduleCreateResourceUsageTest {
         scheduleCreateTxn = mock(TransactionBody.class);
         scheduleOpsUsage = mock(ScheduleOpsUsage.class);
         given(scheduleCreateTxn.hasScheduleCreate()).willReturn(true);
-        given(scheduleCreateTxn.getScheduleCreate())
-                .willReturn(ScheduleCreateTransactionBody.getDefaultInstance());
+        given(scheduleCreateTxn.getScheduleCreate()).willReturn(ScheduleCreateTransactionBody.getDefaultInstance());
 
         nonScheduleCreateTxn = mock(TransactionBody.class);
 
-        given(
-                        scheduleOpsUsage.scheduleCreateUsage(
-                                scheduleCreateTxn, sigUsage, props.scheduledTxExpiryTimeSecs()))
+        given(scheduleOpsUsage.scheduleCreateUsage(scheduleCreateTxn, sigUsage, props.scheduledTxExpiryTimeSecs()))
                 .willReturn(expected);
 
         subject = new ScheduleCreateResourceUsage(scheduleOpsUsage, props);
@@ -87,18 +85,15 @@ class ScheduleCreateResourceUsageTest {
         props.enableSchedulingLongTerm();
 
         given(scheduleCreateTxn.getScheduleCreate())
-                .willReturn(
-                        ScheduleCreateTransactionBody.newBuilder()
-                                .setExpirationTime(
-                                        Timestamp.newBuilder().setSeconds(2L).setNanos(0))
-                                .build());
+                .willReturn(ScheduleCreateTransactionBody.newBuilder()
+                        .setExpirationTime(Timestamp.newBuilder().setSeconds(2L).setNanos(0))
+                        .build());
 
         given(scheduleCreateTxn.getTransactionID())
-                .willReturn(
-                        TransactionID.newBuilder()
-                                .setTransactionValidStart(
-                                        Timestamp.newBuilder().setSeconds(1L).setNanos(0))
-                                .build());
+                .willReturn(TransactionID.newBuilder()
+                        .setTransactionValidStart(
+                                Timestamp.newBuilder().setSeconds(1L).setNanos(0))
+                        .build());
 
         given(scheduleOpsUsage.scheduleCreateUsage(scheduleCreateTxn, sigUsage, 1L))
                 .willReturn(expected);
@@ -110,18 +105,15 @@ class ScheduleCreateResourceUsageTest {
     void ignoresExpirationTimeLongTermDisabled() throws Exception {
 
         given(scheduleCreateTxn.getScheduleCreate())
-                .willReturn(
-                        ScheduleCreateTransactionBody.newBuilder()
-                                .setExpirationTime(
-                                        Timestamp.newBuilder().setSeconds(2L).setNanos(0))
-                                .build());
+                .willReturn(ScheduleCreateTransactionBody.newBuilder()
+                        .setExpirationTime(Timestamp.newBuilder().setSeconds(2L).setNanos(0))
+                        .build());
 
         given(scheduleCreateTxn.getTransactionID())
-                .willReturn(
-                        TransactionID.newBuilder()
-                                .setTransactionValidStart(
-                                        Timestamp.newBuilder().setSeconds(1L).setNanos(0))
-                                .build());
+                .willReturn(TransactionID.newBuilder()
+                        .setTransactionValidStart(
+                                Timestamp.newBuilder().setSeconds(1L).setNanos(0))
+                        .build());
 
         assertEquals(expected, subject.usageGiven(scheduleCreateTxn, obj, view));
     }
@@ -131,18 +123,15 @@ class ScheduleCreateResourceUsageTest {
         props.enableSchedulingLongTerm();
 
         given(scheduleCreateTxn.getScheduleCreate())
-                .willReturn(
-                        ScheduleCreateTransactionBody.newBuilder()
-                                .setExpirationTime(
-                                        Timestamp.newBuilder().setSeconds(2L).setNanos(0))
-                                .build());
+                .willReturn(ScheduleCreateTransactionBody.newBuilder()
+                        .setExpirationTime(Timestamp.newBuilder().setSeconds(2L).setNanos(0))
+                        .build());
 
         given(scheduleCreateTxn.getTransactionID())
-                .willReturn(
-                        TransactionID.newBuilder()
-                                .setTransactionValidStart(
-                                        Timestamp.newBuilder().setSeconds(5L).setNanos(0))
-                                .build());
+                .willReturn(TransactionID.newBuilder()
+                        .setTransactionValidStart(
+                                Timestamp.newBuilder().setSeconds(5L).setNanos(0))
+                        .build());
 
         given(scheduleOpsUsage.scheduleCreateUsage(scheduleCreateTxn, sigUsage, 0L))
                 .willReturn(expected);

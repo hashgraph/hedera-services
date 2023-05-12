@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.crypto;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -63,10 +64,7 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
         final var op = cryptoApproveAllowanceTxn.getCryptoApproveAllowance();
 
         approveAllowanceLogic.approveAllowance(
-                op.getCryptoAllowancesList(),
-                op.getTokenAllowancesList(),
-                op.getNftAllowancesList(),
-                payer);
+                op.getCryptoAllowancesList(), op.getTokenAllowancesList(), op.getNftAllowancesList(), payer);
 
         txnCtx.setStatus(SUCCESS);
     }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.network;
 
 import static com.hedera.node.app.service.mono.utils.MiscUtils.timestampToInstant;
@@ -71,32 +72,37 @@ class FreezeTransitionLogicTest {
     private static final AccountID PAYER = IdUtils.asAccount("0.0.1234");
     private static final Instant CONSENSUS_TIME = Instant.ofEpochSecond(1_234_567L, 890);
     private static final Instant VALID_START_TIME = CONSENSUS_TIME.plusSeconds(120);
-    private static final ByteString IMPOSSIBLE_HASH =
-            ByteString.copyFromUtf8("012345678901234567890123456789");
+    private static final ByteString IMPOSSIBLE_HASH = ByteString.copyFromUtf8("012345678901234567890123456789");
     private static final ByteString PRETEND_HASH =
             ByteString.copyFromUtf8("012345678901234567890123456789012345678901234567");
     private static final byte[] hashBytes = PRETEND_HASH.toByteArray();
     private static final ByteString ALSO_PRETEND_HASH =
             ByteString.copyFromUtf8("x123456789x123456789x123456789x123456789x1234567");
     private static final byte[] PRETEND_ARCHIVE =
-            "This is missing something. Hard to put a finger on what..."
-                    .getBytes(StandardCharsets.UTF_8);
+            "This is missing something. Hard to put a finger on what...".getBytes(StandardCharsets.UTF_8);
 
     private TransactionBody freezeTxn;
 
-    @Mock private UpgradeActions upgradeActions;
-    @Mock private SignedTxnAccessor accessor;
-    @Mock private TransactionContext txnCtx;
-    @Mock private MerkleSpecialFiles specialFiles;
-    @Mock private MerkleNetworkContext networkCtx;
+    @Mock
+    private UpgradeActions upgradeActions;
+
+    @Mock
+    private SignedTxnAccessor accessor;
+
+    @Mock
+    private TransactionContext txnCtx;
+
+    @Mock
+    private MerkleSpecialFiles specialFiles;
+
+    @Mock
+    private MerkleNetworkContext networkCtx;
 
     private FreezeTransitionLogic subject;
 
     @BeforeEach
     void setup() {
-        subject =
-                new FreezeTransitionLogic(
-                        upgradeActions, txnCtx, () -> specialFiles, () -> networkCtx);
+        subject = new FreezeTransitionLogic(upgradeActions, txnCtx, () -> specialFiles, () -> networkCtx);
     }
 
     @Test
@@ -127,11 +133,7 @@ class FreezeTransitionLogicTest {
 
     @Test
     void rejectsPostConsensusTelemetryUpgradeWithMismatchedHash() {
-        givenTypicalTxnInCtx(
-                true,
-                TELEMETRY_UPGRADE,
-                Optional.of(TELEMETRY_UPGRADE_FILE),
-                Optional.of(PRETEND_HASH));
+        givenTypicalTxnInCtx(true, TELEMETRY_UPGRADE, Optional.of(TELEMETRY_UPGRADE_FILE), Optional.of(PRETEND_HASH));
         given(txnCtx.consensusTime()).willReturn(CONSENSUS_TIME);
 
         assertFailsWith(() -> subject.doStateTransition(), FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH);
@@ -139,11 +141,7 @@ class FreezeTransitionLogicTest {
 
     @Test
     void acceptsPostConsensusTelemetryUpgradeWithMatchingHash() {
-        givenTypicalTxnInCtx(
-                true,
-                TELEMETRY_UPGRADE,
-                Optional.of(TELEMETRY_UPGRADE_FILE),
-                Optional.of(PRETEND_HASH));
+        givenTypicalTxnInCtx(true, TELEMETRY_UPGRADE, Optional.of(TELEMETRY_UPGRADE_FILE), Optional.of(PRETEND_HASH));
         given(txnCtx.consensusTime()).willReturn(CONSENSUS_TIME);
         given(specialFiles.hashMatches(TELEMETRY_UPGRADE_FILE, hashBytes)).willReturn(true);
         given(specialFiles.get(TELEMETRY_UPGRADE_FILE)).willReturn(PRETEND_ARCHIVE);
@@ -191,11 +189,7 @@ class FreezeTransitionLogicTest {
 
     @Test
     void rejectsPostConsensusFreezeUpgradeWithDifferentFileId() {
-        givenTypicalTxnInCtx(
-                true,
-                FREEZE_UPGRADE,
-                Optional.of(TELEMETRY_UPGRADE_FILE),
-                Optional.of(PRETEND_HASH));
+        givenTypicalTxnInCtx(true, FREEZE_UPGRADE, Optional.of(TELEMETRY_UPGRADE_FILE), Optional.of(PRETEND_HASH));
         given(txnCtx.consensusTime()).willReturn(CONSENSUS_TIME);
         given(networkCtx.hasPreparedUpgrade()).willReturn(true);
         given(networkCtx.getPreparedUpdateFileNum()).willReturn(SOFTWARE_UPGRADE_FILE.getFileNum());
@@ -205,18 +199,13 @@ class FreezeTransitionLogicTest {
 
     @Test
     void rejectsPostConsensusFreezeUpgradeWithDifferentFileHash() {
-        givenTypicalTxnInCtx(
-                true,
-                FREEZE_UPGRADE,
-                Optional.of(SOFTWARE_UPGRADE_FILE),
-                Optional.of(ALSO_PRETEND_HASH));
+        givenTypicalTxnInCtx(true, FREEZE_UPGRADE, Optional.of(SOFTWARE_UPGRADE_FILE), Optional.of(ALSO_PRETEND_HASH));
         given(txnCtx.consensusTime()).willReturn(CONSENSUS_TIME);
         given(networkCtx.hasPreparedUpgrade()).willReturn(true);
         given(networkCtx.getPreparedUpdateFileNum()).willReturn(SOFTWARE_UPGRADE_FILE.getFileNum());
         given(networkCtx.getPreparedUpdateFileHash()).willReturn(hashBytes);
 
-        assertFailsWith(
-                () -> subject.doStateTransition(), UPDATE_FILE_HASH_DOES_NOT_MATCH_PREPARED);
+        assertFailsWith(() -> subject.doStateTransition(), UPDATE_FILE_HASH_DOES_NOT_MATCH_PREPARED);
     }
 
     @Test
@@ -241,16 +230,11 @@ class FreezeTransitionLogicTest {
     void rejectsPostConsensusFreezeUpgradeWithNonMatchingUpdateFileHash() {
         given(txnCtx.consensusTime()).willReturn(CONSENSUS_TIME);
         given(networkCtx.hasPreparedUpgrade()).willReturn(true);
-        givenTypicalTxnInCtx(
-                true,
-                FREEZE_UPGRADE,
-                Optional.of(SOFTWARE_UPGRADE_FILE),
-                Optional.of(PRETEND_HASH));
+        givenTypicalTxnInCtx(true, FREEZE_UPGRADE, Optional.of(SOFTWARE_UPGRADE_FILE), Optional.of(PRETEND_HASH));
         given(networkCtx.getPreparedUpdateFileNum()).willReturn(SOFTWARE_UPGRADE_FILE.getFileNum());
         given(networkCtx.getPreparedUpdateFileHash()).willReturn(hashBytes);
 
-        assertFailsWith(
-                () -> subject.doStateTransition(), UPDATE_FILE_HASH_CHANGED_SINCE_PREPARE_UPGRADE);
+        assertFailsWith(() -> subject.doStateTransition(), UPDATE_FILE_HASH_CHANGED_SINCE_PREPARE_UPGRADE);
     }
 
     @Test
@@ -265,11 +249,7 @@ class FreezeTransitionLogicTest {
     void acceptsPostConsensusFreezeUpgradeWithEverythingInPlace() {
         given(networkCtx.hasPreparedUpgrade()).willReturn(true);
         given(networkCtx.isPreparedFileHashValidGiven(specialFiles)).willReturn(true);
-        givenTypicalTxnInCtx(
-                true,
-                FREEZE_UPGRADE,
-                Optional.of(SOFTWARE_UPGRADE_FILE),
-                Optional.of(PRETEND_HASH));
+        givenTypicalTxnInCtx(true, FREEZE_UPGRADE, Optional.of(SOFTWARE_UPGRADE_FILE), Optional.of(PRETEND_HASH));
         given(txnCtx.consensusTime()).willReturn(CONSENSUS_TIME);
         given(networkCtx.getPreparedUpdateFileNum()).willReturn(SOFTWARE_UPGRADE_FILE.getFileNum());
         given(networkCtx.getPreparedUpdateFileHash()).willReturn(hashBytes);
@@ -290,11 +270,7 @@ class FreezeTransitionLogicTest {
 
     @Test
     void rejectsPostConsensusPrepareUpgradeWithUnmatchedHash() {
-        givenTypicalTxnInCtx(
-                false,
-                PREPARE_UPGRADE,
-                Optional.of(SOFTWARE_UPGRADE_FILE),
-                Optional.of(PRETEND_HASH));
+        givenTypicalTxnInCtx(false, PREPARE_UPGRADE, Optional.of(SOFTWARE_UPGRADE_FILE), Optional.of(PRETEND_HASH));
 
         assertFailsWith(() -> subject.doStateTransition(), FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH);
     }
@@ -308,11 +284,7 @@ class FreezeTransitionLogicTest {
 
     @Test
     void unarchivesDataWithMatchingHash() {
-        givenTypicalTxnInCtx(
-                false,
-                PREPARE_UPGRADE,
-                Optional.of(SOFTWARE_UPGRADE_FILE),
-                Optional.of(PRETEND_HASH));
+        givenTypicalTxnInCtx(false, PREPARE_UPGRADE, Optional.of(SOFTWARE_UPGRADE_FILE), Optional.of(PRETEND_HASH));
         given(specialFiles.hashMatches(SOFTWARE_UPGRADE_FILE, hashBytes)).willReturn(true);
         given(specialFiles.get(SOFTWARE_UPGRADE_FILE)).willReturn(PRETEND_ARCHIVE);
 
@@ -339,64 +311,28 @@ class FreezeTransitionLogicTest {
 
     @Test
     void freezeOnlyPrecheckRejectsDeprecatedStartHour() {
-        givenTxn(
-                false,
-                FREEZE_ONLY,
-                Optional.empty(),
-                Optional.empty(),
-                false,
-                true,
-                false,
-                false,
-                false);
+        givenTxn(false, FREEZE_ONLY, Optional.empty(), Optional.empty(), false, true, false, false, false);
 
         assertEquals(INVALID_FREEZE_TRANSACTION_BODY, subject.semanticCheck().apply(freezeTxn));
     }
 
     @Test
     void freezeOnlyPrecheckRejectsDeprecatedStartMin() {
-        givenTxn(
-                false,
-                FREEZE_ONLY,
-                Optional.empty(),
-                Optional.empty(),
-                false,
-                false,
-                true,
-                false,
-                false);
+        givenTxn(false, FREEZE_ONLY, Optional.empty(), Optional.empty(), false, false, true, false, false);
 
         assertEquals(INVALID_FREEZE_TRANSACTION_BODY, subject.semanticCheck().apply(freezeTxn));
     }
 
     @Test
     void freezeOnlyPrecheckRejectsDeprecatedEndHour() {
-        givenTxn(
-                false,
-                FREEZE_ONLY,
-                Optional.empty(),
-                Optional.empty(),
-                false,
-                false,
-                false,
-                true,
-                false);
+        givenTxn(false, FREEZE_ONLY, Optional.empty(), Optional.empty(), false, false, false, true, false);
 
         assertEquals(INVALID_FREEZE_TRANSACTION_BODY, subject.semanticCheck().apply(freezeTxn));
     }
 
     @Test
     void freezeOnlyPrecheckRejectsDeprecatedEndMin() {
-        givenTxn(
-                false,
-                FREEZE_ONLY,
-                Optional.empty(),
-                Optional.empty(),
-                false,
-                false,
-                false,
-                false,
-                true);
+        givenTxn(false, FREEZE_ONLY, Optional.empty(), Optional.empty(), false, false, false, false, true);
 
         assertEquals(INVALID_FREEZE_TRANSACTION_BODY, subject.semanticCheck().apply(freezeTxn));
     }
@@ -431,8 +367,7 @@ class FreezeTransitionLogicTest {
 
     @Test
     void telemetryUpgradePrecheckRejectsImpossibleFile() {
-        givenTypicalTxn(
-                true, TELEMETRY_UPGRADE, Optional.of(ILLEGAL_FILE), Optional.of(PRETEND_HASH));
+        givenTypicalTxn(true, TELEMETRY_UPGRADE, Optional.of(ILLEGAL_FILE), Optional.of(PRETEND_HASH));
 
         assertEquals(FREEZE_UPDATE_FILE_DOES_NOT_EXIST, subject.semanticCheck().apply(freezeTxn));
     }
@@ -453,16 +388,14 @@ class FreezeTransitionLogicTest {
 
     @Test
     void prepPrecheckRejectsMissingHash() {
-        givenTypicalTxn(
-                false, PREPARE_UPGRADE, Optional.of(SOFTWARE_UPGRADE_FILE), Optional.empty());
+        givenTypicalTxn(false, PREPARE_UPGRADE, Optional.of(SOFTWARE_UPGRADE_FILE), Optional.empty());
 
         assertEquals(INVALID_FREEZE_TRANSACTION_BODY, subject.semanticCheck().apply(freezeTxn));
     }
 
     @Test
     void prepPrecheckRejectsImpossibleFile() {
-        givenTypicalTxn(
-                false, PREPARE_UPGRADE, Optional.of(ILLEGAL_FILE), Optional.of(PRETEND_HASH));
+        givenTypicalTxn(false, PREPARE_UPGRADE, Optional.of(ILLEGAL_FILE), Optional.of(PRETEND_HASH));
 
         assertEquals(FREEZE_UPDATE_FILE_DOES_NOT_EXIST, subject.semanticCheck().apply(freezeTxn));
     }
@@ -470,11 +403,7 @@ class FreezeTransitionLogicTest {
     @Test
     void prepPrecheckRejectsImpossibleHash() {
         given(specialFiles.contains(SOFTWARE_UPGRADE_FILE)).willReturn(true);
-        givenTypicalTxn(
-                false,
-                PREPARE_UPGRADE,
-                Optional.of(SOFTWARE_UPGRADE_FILE),
-                Optional.of(IMPOSSIBLE_HASH));
+        givenTypicalTxn(false, PREPARE_UPGRADE, Optional.of(SOFTWARE_UPGRADE_FILE), Optional.of(IMPOSSIBLE_HASH));
 
         assertEquals(
                 FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH, subject.semanticCheck().apply(freezeTxn));
@@ -483,11 +412,7 @@ class FreezeTransitionLogicTest {
     @Test
     void prepPrecheckAcceptsViableValues() {
         given(specialFiles.contains(SOFTWARE_UPGRADE_FILE)).willReturn(true);
-        givenTypicalTxn(
-                false,
-                PREPARE_UPGRADE,
-                Optional.of(SOFTWARE_UPGRADE_FILE),
-                Optional.of(PRETEND_HASH));
+        givenTypicalTxn(false, PREPARE_UPGRADE, Optional.of(SOFTWARE_UPGRADE_FILE), Optional.of(PRETEND_HASH));
 
         assertEquals(OK, subject.semanticCheck().apply(freezeTxn));
     }
@@ -579,25 +504,22 @@ class FreezeTransitionLogicTest {
     }
 
     private void setValidFreezeStartTimeStamp(final FreezeTransactionBody.Builder op) {
-        op.setStartTime(
-                Timestamp.newBuilder()
-                        .setSeconds(VALID_START_TIME.getEpochSecond())
-                        .setNanos(VALID_START_TIME.getNano()));
+        op.setStartTime(Timestamp.newBuilder()
+                .setSeconds(VALID_START_TIME.getEpochSecond())
+                .setNanos(VALID_START_TIME.getNano()));
     }
 
     private void setInvalidFreezeStartTimeStamp(final FreezeTransactionBody.Builder op) {
         final var inValidFreezeStartTime = CONSENSUS_TIME.minusSeconds(60);
-        op.setStartTime(
-                Timestamp.newBuilder()
-                        .setSeconds(inValidFreezeStartTime.getEpochSecond())
-                        .setNanos(inValidFreezeStartTime.getNano()));
+        op.setStartTime(Timestamp.newBuilder()
+                .setSeconds(inValidFreezeStartTime.getEpochSecond())
+                .setNanos(inValidFreezeStartTime.getNano()));
     }
 
     private TransactionID ourTxnId() {
         return TransactionID.newBuilder()
                 .setAccountID(PAYER)
-                .setTransactionValidStart(
-                        Timestamp.newBuilder().setSeconds(CONSENSUS_TIME.getEpochSecond()))
+                .setTransactionValidStart(Timestamp.newBuilder().setSeconds(CONSENSUS_TIME.getEpochSecond()))
                 .build();
     }
 }

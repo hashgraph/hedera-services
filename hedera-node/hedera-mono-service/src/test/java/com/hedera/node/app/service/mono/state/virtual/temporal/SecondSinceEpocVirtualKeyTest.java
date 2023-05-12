@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual.temporal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -41,18 +42,6 @@ class SecondSinceEpocVirtualKeyTest {
     @BeforeEach
     void setup() {
         subject = new SecondSinceEpocVirtualKey(longKey);
-    }
-
-    @Test
-    void ordersSameAsExpected() {
-        final var sameButDifferent = subject;
-        assertEquals(0, subject.compareTo(sameButDifferent));
-    }
-
-    @Test
-    void orderPrioritizesEntityNum() {
-        final var smallerEntityNum = new SecondSinceEpocVirtualKey(longKey - 1);
-        assertEquals(+1, subject.compareTo(smallerEntityNum));
     }
 
     @Test
@@ -106,75 +95,69 @@ class SecondSinceEpocVirtualKeyTest {
 
     @Test
     void serializeActuallyWorks() throws Exception {
-        checkSerialize(
-                () -> {
-                    final var byteArr = new ByteArrayOutputStream();
-                    final var out = new SerializableDataOutputStream(byteArr);
-                    subject.serialize(out);
+        checkSerialize(() -> {
+            final var byteArr = new ByteArrayOutputStream();
+            final var out = new SerializableDataOutputStream(byteArr);
+            subject.serialize(out);
 
-                    var copy = new SecondSinceEpocVirtualKey();
-                    copy.deserialize(
-                            new SerializableDataInputStream(
-                                    new ByteArrayInputStream(byteArr.toByteArray())),
-                            SecondSinceEpocVirtualKey.CURRENT_VERSION);
+            var copy = new SecondSinceEpocVirtualKey();
+            copy.deserialize(
+                    new SerializableDataInputStream(new ByteArrayInputStream(byteArr.toByteArray())),
+                    SecondSinceEpocVirtualKey.CURRENT_VERSION);
 
-                    assertEquals(subject, copy);
+            assertEquals(subject, copy);
 
-                    return copy;
-                });
+            return copy;
+        });
     }
 
     @Test
     void serializeActuallyWithByteBufferWorks() throws Exception {
-        checkSerialize(
-                () -> {
-                    final var buffer = ByteBuffer.allocate(100000);
-                    subject.serialize(buffer);
-                    buffer.rewind();
-                    var copy = new SecondSinceEpocVirtualKey();
-                    copy.deserialize(buffer, SecondSinceEpocVirtualKey.CURRENT_VERSION);
+        checkSerialize(() -> {
+            final var buffer = ByteBuffer.allocate(100000);
+            subject.serialize(buffer);
+            buffer.rewind();
+            var copy = new SecondSinceEpocVirtualKey();
+            copy.deserialize(buffer, SecondSinceEpocVirtualKey.CURRENT_VERSION);
 
-                    assertEquals(subject, copy);
+            assertEquals(subject, copy);
 
-                    return copy;
-                });
+            return copy;
+        });
     }
 
     @Test
     void serializeActuallyWithMixedWorksBytesFirst() throws Exception {
-        checkSerialize(
-                () -> {
-                    final var buffer = ByteBuffer.allocate(100000);
-                    subject.serialize(buffer);
+        checkSerialize(() -> {
+            final var buffer = ByteBuffer.allocate(100000);
+            subject.serialize(buffer);
 
-                    var copy = new SecondSinceEpocVirtualKey();
-                    copy.deserialize(
-                            new SerializableDataInputStream(
-                                    new ByteArrayInputStream(buffer.array())),
-                            SecondSinceEpocVirtualKey.CURRENT_VERSION);
+            var copy = new SecondSinceEpocVirtualKey();
+            copy.deserialize(
+                    new SerializableDataInputStream(new ByteArrayInputStream(buffer.array())),
+                    SecondSinceEpocVirtualKey.CURRENT_VERSION);
 
-                    assertEquals(subject, copy);
+            assertEquals(subject, copy);
 
-                    return copy;
-                });
+            return copy;
+        });
     }
 
     @Test
     void serializeActuallyWithMixedWorksBytesSecond() throws Exception {
-        checkSerialize(
-                () -> {
-                    final var byteArr = new ByteArrayOutputStream();
-                    final var out = new SerializableDataOutputStream(byteArr);
-                    subject.serialize(out);
+        checkSerialize(() -> {
+            final var byteArr = new ByteArrayOutputStream();
+            final var out = new SerializableDataOutputStream(byteArr);
+            subject.serialize(out);
 
-                    final var buffer = ByteBuffer.wrap(byteArr.toByteArray());
-                    var copy = new SecondSinceEpocVirtualKey();
-                    copy.deserialize(buffer, SecondSinceEpocVirtualKey.CURRENT_VERSION);
+            final var buffer = ByteBuffer.wrap(byteArr.toByteArray());
+            var copy = new SecondSinceEpocVirtualKey();
+            copy.deserialize(buffer, SecondSinceEpocVirtualKey.CURRENT_VERSION);
 
-                    assertEquals(subject, copy);
+            assertEquals(subject, copy);
 
-                    return copy;
-                });
+            return copy;
+        });
     }
 
     private void checkSerialize(Callable<SecondSinceEpocVirtualKey> check) throws Exception {

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.consensus;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
@@ -79,10 +80,8 @@ public final class TopicCreateTransitionLogic implements TransitionLogic {
         /* --- Extract gRPC --- */
         final var transactionBody = transactionContext.accessor().getTxn();
         final var op = transactionBody.getConsensusCreateTopic();
-        final var submitKey =
-                op.hasSubmitKey() ? validator.attemptDecodeOrThrow(op.getSubmitKey()) : null;
-        final var adminKey =
-                op.hasAdminKey() ? validator.attemptDecodeOrThrow(op.getAdminKey()) : null;
+        final var submitKey = op.hasSubmitKey() ? validator.attemptDecodeOrThrow(op.getSubmitKey()) : null;
+        final var adminKey = op.hasAdminKey() ? validator.attemptDecodeOrThrow(op.getAdminKey()) : null;
         final var memo = op.getMemo();
         final var autoRenewPeriod = op.getAutoRenewPeriod();
         final var autoRenewAccountId = Id.fromGrpcAccount(op.getAutoRenewAccount());
@@ -92,30 +91,25 @@ public final class TopicCreateTransitionLogic implements TransitionLogic {
         final var memoValidationResult = validator.memoCheck(memo);
         validateTrue(OK == memoValidationResult, memoValidationResult);
         validateTrue(op.hasAutoRenewPeriod(), INVALID_RENEWAL_PERIOD);
-        validateTrue(
-                validator.isValidAutoRenewPeriod(autoRenewPeriod), AUTORENEW_DURATION_NOT_IN_RANGE);
+        validateTrue(validator.isValidAutoRenewPeriod(autoRenewPeriod), AUTORENEW_DURATION_NOT_IN_RANGE);
         Account autoRenewAccount = null;
         if (op.hasAutoRenewAccount()) {
-            autoRenewAccount =
-                    accountStore.loadAccountOrFailWith(
-                            autoRenewAccountId, INVALID_AUTORENEW_ACCOUNT);
+            autoRenewAccount = accountStore.loadAccountOrFailWith(autoRenewAccountId, INVALID_AUTORENEW_ACCOUNT);
             validateFalse(autoRenewAccount.isSmartContract(), INVALID_AUTORENEW_ACCOUNT);
             validateTrue(op.hasAdminKey(), AUTORENEW_ACCOUNT_NOT_ALLOWED);
         }
 
         /* --- Do business logic --- */
-        final var expirationTime =
-                transactionContext.consensusTime().plusSeconds(autoRenewPeriod.getSeconds());
+        final var expirationTime = transactionContext.consensusTime().plusSeconds(autoRenewPeriod.getSeconds());
         final var topicId = entityIdSource.newTopicId(transactionContext.activePayer());
-        final var topic =
-                Topic.fromGrpcTopicCreate(
-                        Id.fromGrpcTopic(topicId),
-                        submitKey,
-                        adminKey,
-                        autoRenewAccount,
-                        memo,
-                        autoRenewPeriod.getSeconds(),
-                        expirationTime);
+        final var topic = Topic.fromGrpcTopicCreate(
+                Id.fromGrpcTopic(topicId),
+                submitKey,
+                adminKey,
+                autoRenewAccount,
+                memo,
+                autoRenewPeriod.getSeconds(),
+                expirationTime);
 
         /* --- Persist the topic --- */
         topicStore.persistNew(topic);

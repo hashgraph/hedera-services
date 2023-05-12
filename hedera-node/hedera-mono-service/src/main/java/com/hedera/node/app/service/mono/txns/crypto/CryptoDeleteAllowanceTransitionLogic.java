@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.crypto;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -82,7 +83,6 @@ public class CryptoDeleteAllowanceTransitionLogic implements TransitionLogic {
         final var op = cryptoDeleteAllowanceTxn.getCryptoDeleteAllowance();
         final var payerAccount = accountStore.loadAccount(Id.fromGrpcAccount(payer));
 
-        return deleteAllowanceChecks.deleteAllowancesValidation(
-                op.getNftAllowancesList(), payerAccount, workingView);
+        return deleteAllowanceChecks.deleteAllowancesValidation(op.getNftAllowancesList(), payerAccount, workingView);
     }
 }

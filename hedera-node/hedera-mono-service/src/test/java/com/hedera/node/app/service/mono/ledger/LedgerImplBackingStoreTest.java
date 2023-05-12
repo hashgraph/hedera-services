@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger;
 
 import static com.hedera.node.app.service.mono.ledger.TransactionalLedger.activeLedgerWrapping;
@@ -42,8 +43,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 class LedgerImplBackingStoreTest {
-    private static final TestAccountProperty[] ALL_PROPS =
-            TestAccountProperty.class.getEnumConstants();
+    private static final TestAccountProperty[] ALL_PROPS = TestAccountProperty.class.getEnumConstants();
 
     private final TestAccount aTestAccount = new TestAccount(1L, new Object(), true, 9L);
     private final TestAccount bTestAccount = new TestAccount(2L, new Object(), false, 8L);
@@ -57,12 +57,8 @@ class LedgerImplBackingStoreTest {
     void setUp() {
         backingTestAccounts = new HashMapTestAccounts();
 
-        firstOrder =
-                new TransactionalLedger<>(
-                        TestAccountProperty.class,
-                        TestAccount::new,
-                        backingTestAccounts,
-                        new ChangeSummaryManager<>());
+        firstOrder = new TransactionalLedger<>(
+                TestAccountProperty.class, TestAccount::new, backingTestAccounts, new ChangeSummaryManager<>());
     }
 
     @Test
@@ -204,10 +200,8 @@ class LedgerImplBackingStoreTest {
         firstOrder.set(1L, TestAccountProperty.LONG, 2L);
 
         final var captor = ArgumentCaptor.forClass(Function.class);
-        final var mockCheck =
-                (LedgerCheck<TestAccount, TestAccountProperty>) mock(LedgerCheck.class);
-        given(mockCheck.checkUsing(any(Function.class), any(Map.class)))
-                .willReturn(INVALID_TOKEN_MINT_AMOUNT);
+        final var mockCheck = (LedgerCheck<TestAccount, TestAccountProperty>) mock(LedgerCheck.class);
+        given(mockCheck.checkUsing(any(Function.class), any(Map.class))).willReturn(INVALID_TOKEN_MINT_AMOUNT);
 
         subject.begin();
         subject.set(1L, TestAccountProperty.FLAG, false);
@@ -220,8 +214,7 @@ class LedgerImplBackingStoreTest {
         assertEquals(2L, extantProps.apply(TestAccountProperty.LONG));
         assertEquals(aTestAccount.isFlag(), extantProps.apply(TestAccountProperty.FLAG));
         assertSame(aTestAccount.getThing(), extantProps.apply(TestAccountProperty.OBJ));
-        assertEquals(
-                aTestAccount.getTokenThing(), extantProps.apply(TestAccountProperty.TOKEN_LONG));
+        assertEquals(aTestAccount.getTokenThing(), extantProps.apply(TestAccountProperty.TOKEN_LONG));
     }
 
     @Test
@@ -232,10 +225,8 @@ class LedgerImplBackingStoreTest {
         final var aDefaultAccount = new TestAccount();
 
         final var captor = ArgumentCaptor.forClass(Function.class);
-        final var mockCheck =
-                (LedgerCheck<TestAccount, TestAccountProperty>) mock(LedgerCheck.class);
-        given(mockCheck.checkUsing(any(Function.class), any(Map.class)))
-                .willReturn(INVALID_TOKEN_MINT_AMOUNT);
+        final var mockCheck = (LedgerCheck<TestAccount, TestAccountProperty>) mock(LedgerCheck.class);
+        given(mockCheck.checkUsing(any(Function.class), any(Map.class))).willReturn(INVALID_TOKEN_MINT_AMOUNT);
 
         subject.begin();
         subject.create(1L);
@@ -249,8 +240,7 @@ class LedgerImplBackingStoreTest {
         assertEquals(aDefaultAccount.getValue(), extantProps.apply(TestAccountProperty.LONG));
         assertEquals(aDefaultAccount.isFlag(), extantProps.apply(TestAccountProperty.FLAG));
         assertNull(extantProps.apply(TestAccountProperty.OBJ));
-        assertEquals(
-                aDefaultAccount.getTokenThing(), extantProps.apply(TestAccountProperty.TOKEN_LONG));
+        assertEquals(aDefaultAccount.getTokenThing(), extantProps.apply(TestAccountProperty.TOKEN_LONG));
     }
 
     @Test
@@ -307,14 +297,9 @@ class LedgerImplBackingStoreTest {
         givenSecondOrderSubjectBackedBy(firstOrder);
     }
 
-    private void givenSecondOrderSubjectBackedBy(
-            TransactionalLedger<Long, TestAccountProperty, TestAccount> ledger) {
-        subject =
-                new TransactionalLedger<>(
-                        TestAccountProperty.class,
-                        TestAccount::new,
-                        ledger,
-                        new ChangeSummaryManager<>());
+    private void givenSecondOrderSubjectBackedBy(TransactionalLedger<Long, TestAccountProperty, TestAccount> ledger) {
+        subject = new TransactionalLedger<>(
+                TestAccountProperty.class, TestAccount::new, ledger, new ChangeSummaryManager<>());
     }
 
     private void givenMockSubject() {
@@ -323,7 +308,6 @@ class LedgerImplBackingStoreTest {
 
     @SuppressWarnings("unchecked")
     private TransactionalLedger<Long, TestAccountProperty, TestAccount> mockLedger() {
-        return (TransactionalLedger<Long, TestAccountProperty, TestAccount>)
-                mock(TransactionalLedger.class);
+        return (TransactionalLedger<Long, TestAccountProperty, TestAccount>) mock(TransactionalLedger.class);
     }
 }

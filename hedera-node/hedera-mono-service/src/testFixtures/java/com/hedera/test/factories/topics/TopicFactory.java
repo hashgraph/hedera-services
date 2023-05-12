@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.factories.topics;
 
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
@@ -41,16 +42,12 @@ public class TopicFactory {
 
         value.setDeleted(isDeleted);
         memo.ifPresent(s -> value.setMemo(s));
-        expiry.ifPresent(
-                secs ->
-                        value.setExpirationTimestamp(
-                                RichInstant.fromGrpc(
-                                        Timestamp.newBuilder().setSeconds(secs).build())));
+        expiry.ifPresent(secs -> value.setExpirationTimestamp(
+                RichInstant.fromGrpc(Timestamp.newBuilder().setSeconds(secs).build())));
         autoRenewDuration.ifPresent(value::setAutoRenewDurationSeconds);
         adminKey.ifPresent(k -> value.setAdminKey(uncheckedMap(k)));
         submitKey.ifPresent(k -> value.setSubmitKey(uncheckedMap(k)));
-        autoRenewAccount.ifPresent(
-                id -> value.setAutoRenewAccountId(EntityId.fromGrpcAccountId(id)));
+        autoRenewAccount.ifPresent(id -> value.setAutoRenewAccountId(EntityId.fromGrpcAccountId(id)));
 
         return value;
     }

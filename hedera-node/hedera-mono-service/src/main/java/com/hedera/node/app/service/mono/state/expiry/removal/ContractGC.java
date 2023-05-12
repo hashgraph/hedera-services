@@ -13,12 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.expiry.removal;
 
 import static com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey.Type.CONTRACT_BYTECODE;
 import static com.hedera.node.app.service.mono.throttling.MapAccessType.*;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.virtual.ContractKey;
@@ -30,7 +32,6 @@ import com.hedera.node.app.service.mono.throttling.ExpiryThrottle;
 import com.hedera.node.app.service.mono.throttling.MapAccessType;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.MapValueListUtils;
-import com.swirlds.virtualmap.VirtualMap;
 import java.util.List;
 import java.util.function.Supplier;
 import javax.inject.Inject;
@@ -49,26 +50,24 @@ public class ContractGC {
 
     private final ExpiryThrottle expiryThrottle;
     private final Supplier<AccountStorageAdapter> contracts;
-    private final Supplier<VirtualMap<ContractKey, IterableContractValue>> storage;
-    private final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode;
+    private final Supplier<VirtualMapLike<ContractKey, IterableContractValue>> storage;
+    private final Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> bytecode;
 
-    private ContractGC.RemovalFacilitation removalFacilitation =
-            MapValueListUtils::removeFromMapValueList;
+    private ContractGC.RemovalFacilitation removalFacilitation = MapValueListUtils::removeFromMapValueList;
 
     @Inject
     public ContractGC(
             final ExpiryThrottle expiryThrottle,
             final Supplier<AccountStorageAdapter> contracts,
-            final Supplier<VirtualMap<ContractKey, IterableContractValue>> storage,
-            final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode) {
+            final Supplier<VirtualMapLike<ContractKey, IterableContractValue>> storage,
+            final Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> bytecode) {
         this.expiryThrottle = expiryThrottle;
         this.contracts = contracts;
         this.storage = storage;
         this.bytecode = bytecode;
     }
 
-    public boolean expireBestEffort(
-            final EntityNum expiredContractNum, final HederaAccount contract) {
+    public boolean expireBestEffort(final EntityNum expiredContractNum, final HederaAccount contract) {
         final var numKvPairs = contract.getNumContractKvPairs();
         var isDeleted = contract.isDeleted();
         if (numKvPairs > 0) {
@@ -76,11 +75,7 @@ public class ContractGC {
                 return false;
             }
             final var slotRemovals =
-                    removeKvPairs(
-                            numKvPairs,
-                            expiredContractNum,
-                            contract.getFirstContractStorageKey(),
-                            storage.get());
+                    removeKvPairs(numKvPairs, expiredContractNum, contract.getFirstContractStorageKey(), storage.get());
             final var numRemoved = slotRemovals.numRemoved();
             if (numRemoved == 0) {
                 expiryThrottle.reclaimLastAllowedUse();
@@ -92,7 +87,8 @@ public class ContractGC {
                 mutableContract.setDeleted(true);
                 isDeleted = true;
                 if (slotRemovals.newRoot() != null) {
-                    mutableContract.setFirstUint256StorageKey(slotRemovals.newRoot().getKey());
+                    mutableContract.setFirstUint256StorageKey(
+                            slotRemovals.newRoot().getKey());
                     return false;
                 }
             }
@@ -104,7 +100,7 @@ public class ContractGC {
             final int maxKvPairs,
             final EntityNum contractNum,
             final ContractKey rootKey,
-            final VirtualMap<ContractKey, IterableContractValue> storage) {
+            final VirtualMapLike<ContractKey, IterableContractValue> storage) {
         final var listRemoval = new ContractStorageListMutation(contractNum.longValue(), storage);
         var i = maxKvPairs;
         var n = 0;
@@ -114,10 +110,7 @@ public class ContractGC {
                 contractKey = removalFacilitation.removeNext(contractKey, contractKey, listRemoval);
                 n++;
             } catch (Exception unrecoverable) {
-                log.error(
-                        "Unable to reclaim all storage from contract 0.0.{}",
-                        contractNum,
-                        unrecoverable);
+                log.error("Unable to reclaim all storage from contract 0.0.{}", contractNum, unrecoverable);
                 contractKey = null;
             }
         }
@@ -132,8 +125,7 @@ public class ContractGC {
         return remainingPairs == 1 ? ONLY_SLOT_REMOVAL_WORK : NEXT_SLOT_REMOVAL_WORK;
     }
 
-    private boolean tryToRemoveBytecode(
-            final EntityNum expiredContractNum, final boolean alreadyDeleted) {
+    private boolean tryToRemoveBytecode(final EntityNum expiredContractNum, final boolean alreadyDeleted) {
         if (!alreadyDeleted) {
             if (!expiryThrottle.allow(ROOT_KEY_UPDATE_WORK)) {
                 return false;
@@ -146,8 +138,7 @@ public class ContractGC {
         if (!expiryThrottle.allow(BYTECODE_REMOVAL_WORK)) {
             return false;
         }
-        final var bytecodeKey =
-                new VirtualBlobKey(CONTRACT_BYTECODE, expiredContractNum.intValue());
+        final var bytecodeKey = new VirtualBlobKey(CONTRACT_BYTECODE, expiredContractNum.intValue());
         final var curBytecode = bytecode.get();
         curBytecode.remove(bytecodeKey);
         return true;
@@ -155,8 +146,7 @@ public class ContractGC {
 
     @FunctionalInterface
     interface RemovalFacilitation {
-        ContractKey removeNext(
-                ContractKey key, ContractKey root, ContractStorageListMutation listRemoval);
+        ContractKey removeNext(ContractKey key, ContractKey root, ContractStorageListMutation listRemoval);
     }
 
     @VisibleForTesting

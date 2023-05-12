@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.migration;
 
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
@@ -20,6 +21,5 @@ import java.util.Collections;
 import java.util.Iterator;
 
 public record QueryableRecords(int expectedSize, Iterator<ExpirableTxnRecord> iterator) {
-    public static final QueryableRecords NO_QUERYABLE_RECORDS =
-            new QueryableRecords(0, Collections.emptyIterator());
+    public static final QueryableRecords NO_QUERYABLE_RECORDS = new QueryableRecords(0, Collections.emptyIterator());
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -83,10 +84,8 @@ class ReadableKVStateBaseTest extends StateTestBase {
     void testReadKeysIsUnmodifiable() {
         state.get(A_KEY);
         final var readKeys = state.readKeys();
-        assertThatThrownBy(() -> readKeys.add(B_KEY))
-                .isInstanceOf(UnsupportedOperationException.class);
-        assertThatThrownBy(() -> readKeys.remove(A_KEY))
-                .isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(() -> readKeys.add(B_KEY)).isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(() -> readKeys.remove(A_KEY)).isInstanceOf(UnsupportedOperationException.class);
     }
 
     /**
@@ -148,5 +147,11 @@ class ReadableKVStateBaseTest extends StateTestBase {
         assertThat(state.keys())
                 .toIterable()
                 .containsExactlyInAnyOrder(backingMap.keySet().toArray(new String[0]));
+    }
+
+    @Test
+    @DisplayName("Size returns backing map size")
+    void testSize() {
+        assertThat(state.size()).isEqualTo(backingMap.size());
     }
 }

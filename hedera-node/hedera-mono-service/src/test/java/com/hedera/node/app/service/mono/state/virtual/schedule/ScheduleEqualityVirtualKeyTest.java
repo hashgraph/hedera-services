@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual.schedule;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -41,18 +42,6 @@ class ScheduleEqualityVirtualKeyTest {
     @BeforeEach
     void setup() {
         subject = new ScheduleEqualityVirtualKey(longKey);
-    }
-
-    @Test
-    void ordersSameAsExpected() {
-        final var sameButDifferent = subject;
-        assertEquals(0, subject.compareTo(sameButDifferent));
-    }
-
-    @Test
-    void orderPrioritizesEntityNum() {
-        final var smallerEntityNum = new ScheduleEqualityVirtualKey(longKey - 1);
-        assertEquals(+1, subject.compareTo(smallerEntityNum));
     }
 
     @Test
@@ -106,75 +95,69 @@ class ScheduleEqualityVirtualKeyTest {
 
     @Test
     void serializeActuallyWorks() throws Exception {
-        checkSerialize(
-                () -> {
-                    final var byteArr = new ByteArrayOutputStream();
-                    final var out = new SerializableDataOutputStream(byteArr);
-                    subject.serialize(out);
+        checkSerialize(() -> {
+            final var byteArr = new ByteArrayOutputStream();
+            final var out = new SerializableDataOutputStream(byteArr);
+            subject.serialize(out);
 
-                    var copy = new ScheduleEqualityVirtualKey();
-                    copy.deserialize(
-                            new SerializableDataInputStream(
-                                    new ByteArrayInputStream(byteArr.toByteArray())),
-                            ScheduleEqualityVirtualKey.CURRENT_VERSION);
+            var copy = new ScheduleEqualityVirtualKey();
+            copy.deserialize(
+                    new SerializableDataInputStream(new ByteArrayInputStream(byteArr.toByteArray())),
+                    ScheduleEqualityVirtualKey.CURRENT_VERSION);
 
-                    assertEquals(subject, copy);
+            assertEquals(subject, copy);
 
-                    return copy;
-                });
+            return copy;
+        });
     }
 
     @Test
     void serializeActuallyWithByteBufferWorks() throws Exception {
-        checkSerialize(
-                () -> {
-                    final var buffer = ByteBuffer.allocate(100000);
-                    subject.serialize(buffer);
-                    buffer.rewind();
-                    var copy = new ScheduleEqualityVirtualKey();
-                    copy.deserialize(buffer, ScheduleEqualityVirtualKey.CURRENT_VERSION);
+        checkSerialize(() -> {
+            final var buffer = ByteBuffer.allocate(100000);
+            subject.serialize(buffer);
+            buffer.rewind();
+            var copy = new ScheduleEqualityVirtualKey();
+            copy.deserialize(buffer, ScheduleEqualityVirtualKey.CURRENT_VERSION);
 
-                    assertEquals(subject, copy);
+            assertEquals(subject, copy);
 
-                    return copy;
-                });
+            return copy;
+        });
     }
 
     @Test
     void serializeActuallyWithMixedWorksBytesFirst() throws Exception {
-        checkSerialize(
-                () -> {
-                    final var buffer = ByteBuffer.allocate(100000);
-                    subject.serialize(buffer);
+        checkSerialize(() -> {
+            final var buffer = ByteBuffer.allocate(100000);
+            subject.serialize(buffer);
 
-                    var copy = new ScheduleEqualityVirtualKey();
-                    copy.deserialize(
-                            new SerializableDataInputStream(
-                                    new ByteArrayInputStream(buffer.array())),
-                            ScheduleEqualityVirtualKey.CURRENT_VERSION);
+            var copy = new ScheduleEqualityVirtualKey();
+            copy.deserialize(
+                    new SerializableDataInputStream(new ByteArrayInputStream(buffer.array())),
+                    ScheduleEqualityVirtualKey.CURRENT_VERSION);
 
-                    assertEquals(subject, copy);
+            assertEquals(subject, copy);
 
-                    return copy;
-                });
+            return copy;
+        });
     }
 
     @Test
     void serializeActuallyWithMixedWorksBytesSecond() throws Exception {
-        checkSerialize(
-                () -> {
-                    final var byteArr = new ByteArrayOutputStream();
-                    final var out = new SerializableDataOutputStream(byteArr);
-                    subject.serialize(out);
+        checkSerialize(() -> {
+            final var byteArr = new ByteArrayOutputStream();
+            final var out = new SerializableDataOutputStream(byteArr);
+            subject.serialize(out);
 
-                    final var buffer = ByteBuffer.wrap(byteArr.toByteArray());
-                    var copy = new ScheduleEqualityVirtualKey();
-                    copy.deserialize(buffer, ScheduleEqualityVirtualKey.CURRENT_VERSION);
+            final var buffer = ByteBuffer.wrap(byteArr.toByteArray());
+            var copy = new ScheduleEqualityVirtualKey();
+            copy.deserialize(buffer, ScheduleEqualityVirtualKey.CURRENT_VERSION);
 
-                    assertEquals(subject, copy);
+            assertEquals(subject, copy);
 
-                    return copy;
-                });
+            return copy;
+        });
     }
 
     private void checkSerialize(Callable<ScheduleEqualityVirtualKey> check) throws Exception {

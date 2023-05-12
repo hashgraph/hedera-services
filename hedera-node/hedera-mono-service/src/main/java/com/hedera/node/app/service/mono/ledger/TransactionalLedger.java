@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger;
 
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.readableId;
@@ -59,12 +60,9 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 
     private final P[] allProps;
     private final Set<K> deadKeys = new HashSet<>();
-    private final List<K> createdKeys =
-            new ArrayList<>(MAX_ENTITIES_CONCEIVABLY_TOUCHED_IN_LEDGER_TXN);
-    private final List<K> changedKeys =
-            new ArrayList<>(MAX_ENTITIES_CONCEIVABLY_TOUCHED_IN_LEDGER_TXN);
-    private final List<K> removedKeys =
-            new ArrayList<>(MAX_ENTITIES_CONCEIVABLY_TOUCHED_IN_LEDGER_TXN);
+    private final List<K> createdKeys = new ArrayList<>(MAX_ENTITIES_CONCEIVABLY_TOUCHED_IN_LEDGER_TXN);
+    private final List<K> changedKeys = new ArrayList<>(MAX_ENTITIES_CONCEIVABLY_TOUCHED_IN_LEDGER_TXN);
+    private final List<K> removedKeys = new ArrayList<>(MAX_ENTITIES_CONCEIVABLY_TOUCHED_IN_LEDGER_TXN);
     private final Map<K, EnumMap<P, Object>> changes = new HashMap<>();
 
     private final Class<P> propertyType;
@@ -112,17 +110,15 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
      * @param <A> the type of ledger entity
      * @return an active ledger wrapping the source
      */
-    public static <K, P extends Enum<P> & BeanProperty<A>, A>
-            TransactionalLedger<K, P, A> activeLedgerWrapping(
-                    final TransactionalLedger<K, P, A> sourceLedger) {
+    public static <K, P extends Enum<P> & BeanProperty<A>, A> TransactionalLedger<K, P, A> activeLedgerWrapping(
+            final TransactionalLedger<K, P, A> sourceLedger) {
         Objects.requireNonNull(sourceLedger);
 
-        final var wrapper =
-                new TransactionalLedger<>(
-                        sourceLedger.getPropertyType(),
-                        sourceLedger.getNewEntity(),
-                        sourceLedger,
-                        sourceLedger.getChangeManager());
+        final var wrapper = new TransactionalLedger<>(
+                sourceLedger.getPropertyType(),
+                sourceLedger.getNewEntity(),
+                sourceLedger,
+                sourceLedger.getChangeManager());
         wrapper.begin();
         return wrapper;
     }
@@ -134,41 +130,27 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
     public String changeSetSoFar() {
         final var desc = new StringBuilder("{");
         final var isFirstChange = new AtomicBoolean(true);
-        changes.forEach(
-                (id, value) -> {
-                    if (!isFirstChange.get()) {
-                        desc.append(", ");
-                    }
-                    final var accountInDeadAccounts = deadKeys.contains(id) ? "*DEAD* " : "";
-                    final var accountNotInDeadAccounts =
-                            deadKeys.contains(id) ? "*NEW -> DEAD* " : "*NEW* ";
-                    final var prefix =
-                            entities.contains(id)
-                                    ? accountInDeadAccounts
-                                    : accountNotInDeadAccounts;
-                    desc.append(prefix).append(readable(id)).append(": [");
-                    desc.append(
-                            value.entrySet().stream()
-                                    .map(
-                                            entry ->
-                                                    String.format(
-                                                            "%s -> %s",
-                                                            entry.getKey(),
-                                                            readableProperty(entry.getValue())))
-                                    .collect(joining(", ")));
-                    desc.append("]");
-                    isFirstChange.set(false);
-                });
-        deadKeys.stream()
-                .filter(id -> !changes.containsKey(id))
-                .forEach(
-                        id -> {
-                            if (!isFirstChange.get()) {
-                                desc.append(", ");
-                            }
-                            desc.append("*DEAD* ").append(readable(id));
-                            isFirstChange.set(false);
-                        });
+        changes.forEach((id, value) -> {
+            if (!isFirstChange.get()) {
+                desc.append(", ");
+            }
+            final var accountInDeadAccounts = deadKeys.contains(id) ? "*DEAD* " : "";
+            final var accountNotInDeadAccounts = deadKeys.contains(id) ? "*NEW -> DEAD* " : "*NEW* ";
+            final var prefix = entities.contains(id) ? accountInDeadAccounts : accountNotInDeadAccounts;
+            desc.append(prefix).append(readable(id)).append(": [");
+            desc.append(value.entrySet().stream()
+                    .map(entry -> String.format("%s -> %s", entry.getKey(), readableProperty(entry.getValue())))
+                    .collect(joining(", ")));
+            desc.append("]");
+            isFirstChange.set(false);
+        });
+        deadKeys.stream().filter(id -> !changes.containsKey(id)).forEach(id -> {
+            if (!isFirstChange.get()) {
+                desc.append(", ");
+            }
+            desc.append("*DEAD* ").append(readable(id));
+            isFirstChange.set(false);
+        });
         return desc.append("}").toString();
     }
 
@@ -196,15 +178,13 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
     public void setCommitInterceptor(final CommitInterceptor<K, A, P> commitInterceptor) {
         this.commitInterceptor = commitInterceptor;
         pendingChanges = new EntityChangeSet<>();
-        previewAction =
-                id -> {
-                    final var entity = entities.contains(id) ? entities.getImmutableRef(id) : null;
-                    pendingChanges.include(id, entity, changes.get(id));
-                };
+        previewAction = id -> {
+            final var entity = entities.contains(id) ? entities.getImmutableRef(id) : null;
+            pendingChanges.include(id, entity, changes.get(id));
+        };
     }
 
-    public void setPropertyChangeObserver(
-            final PropertyChangeObserver<K, P> propertyChangeObserver) {
+    public void setPropertyChangeObserver(final PropertyChangeObserver<K, P> propertyChangeObserver) {
         this.propertyChangeObserver = propertyChangeObserver;
     }
 
@@ -309,12 +289,10 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
     public void set(final K id, final P property, final Object value) {
         assertIsSettable(id);
         changeManager.update(
-                changes.computeIfAbsent(
-                        id,
-                        ignore -> {
-                            changedKeys.add(id);
-                            return changeFactory.apply(id);
-                        }),
+                changes.computeIfAbsent(id, ignore -> {
+                    changedKeys.add(id);
+                    return changeFactory.apply(id);
+                }),
                 property,
                 value);
     }
@@ -458,8 +436,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
         return entity;
     }
 
-    private void setPropsWithSource(
-            final K id, final A entity, final Function<P, Object> extantProps) {
+    private void setPropsWithSource(final K id, final A entity, final Function<P, Object> extantProps) {
         final var changeSet = changes.get(id);
         for (final var prop : allProps) {
             if (changeSet != null && changeSet.containsKey(prop)) {
@@ -472,9 +449,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 
     private Function<P, Object> extantLedgerPropsFor(final K id) {
         Objects.requireNonNull(entitiesLedger);
-        return entitiesLedger.contains(id)
-                ? prop -> entitiesLedger.get(id, prop)
-                : newDefaultPropertySource();
+        return entitiesLedger.contains(id) ? prop -> entitiesLedger.get(id, prop) : newDefaultPropertySource();
     }
 
     private void throwIfNotInTxn() {
@@ -485,9 +460,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 
     private void ensureNotInTxn() {
         if (isInTransaction) {
-            log.warn(
-                    "Ledger with property type {} still in transaction at begin()",
-                    propertyType::getSimpleName);
+            log.warn("Ledger with property type {} still in transaction at begin()", propertyType::getSimpleName);
             rollback();
         }
     }

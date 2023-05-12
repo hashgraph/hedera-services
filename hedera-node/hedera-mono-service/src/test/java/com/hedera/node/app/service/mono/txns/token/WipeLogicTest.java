@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.token;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
@@ -57,10 +58,17 @@ class WipeLogicTest {
     private TransactionBody tokenWipeTxn;
     private Account account;
 
-    @Mock private Token token;
-    @Mock private TypedTokenStore typedTokenStore;
-    @Mock private AccountStore accountStore;
-    @Mock private GlobalDynamicProperties dynamicProperties;
+    @Mock
+    private Token token;
+
+    @Mock
+    private TypedTokenStore typedTokenStore;
+
+    @Mock
+    private AccountStore accountStore;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
 
     private WipeLogic subject;
 
@@ -105,14 +113,12 @@ class WipeLogicTest {
 
     @Test
     void validatesSyntax() {
-        tokenWipeTxn =
-                TransactionBody.newBuilder()
-                        .setTokenWipe(
-                                TokenWipeAccountTransactionBody.newBuilder()
-                                        .setToken(id)
-                                        .setAccount(accountID)
-                                        .addAllSerialNumbers(List.of(1L, 2L, 3L)))
-                        .build();
+        tokenWipeTxn = TransactionBody.newBuilder()
+                .setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
+                        .setToken(id)
+                        .setAccount(accountID)
+                        .addAllSerialNumbers(List.of(1L, 2L, 3L)))
+                .build();
 
         given(dynamicProperties.areNftsEnabled()).willReturn(true);
         given(dynamicProperties.maxBatchSizeWipe()).willReturn(10);
@@ -122,14 +128,12 @@ class WipeLogicTest {
 
     @Test
     void validatesSyntaxError() {
-        tokenWipeTxn =
-                TransactionBody.newBuilder()
-                        .setTokenWipe(
-                                TokenWipeAccountTransactionBody.newBuilder()
-                                        .setToken(id)
-                                        .setAccount(accountID)
-                                        .addAllSerialNumbers(List.of(1L, 2L, 3L)))
-                        .build();
+        tokenWipeTxn = TransactionBody.newBuilder()
+                .setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
+                        .setToken(id)
+                        .setAccount(accountID)
+                        .addAllSerialNumbers(List.of(1L, 2L, 3L)))
+                .build();
 
         given(dynamicProperties.areNftsEnabled()).willReturn(true);
         given(dynamicProperties.maxBatchSizeWipe()).willReturn(1);
@@ -138,30 +142,25 @@ class WipeLogicTest {
     }
 
     private void givenValidCommonTxnCtx() {
-        tokenWipeTxn =
-                TransactionBody.newBuilder()
-                        .setTokenWipe(
-                                TokenWipeAccountTransactionBody.newBuilder()
-                                        .setToken(id)
-                                        .setAccount(accountID)
-                                        .setAmount(wipeAmount))
-                        .build();
+        tokenWipeTxn = TransactionBody.newBuilder()
+                .setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
+                        .setToken(id)
+                        .setAccount(accountID)
+                        .setAmount(wipeAmount))
+                .build();
         given(typedTokenStore.loadToken(any())).willReturn(token);
         given(token.getType()).willReturn(TokenType.FUNGIBLE_COMMON);
         given(accountStore.loadAccount(any())).willReturn(account);
-        given(typedTokenStore.loadTokenRelationship(token, account))
-                .willReturn(new TokenRelationship(token, account));
+        given(typedTokenStore.loadTokenRelationship(token, account)).willReturn(new TokenRelationship(token, account));
     }
 
     private void givenValidUniqueTxnCtx() {
-        tokenWipeTxn =
-                TransactionBody.newBuilder()
-                        .setTokenWipe(
-                                TokenWipeAccountTransactionBody.newBuilder()
-                                        .setToken(id)
-                                        .setAccount(accountID)
-                                        .addAllSerialNumbers(List.of(1L, 2L, 3L)))
-                        .build();
+        tokenWipeTxn = TransactionBody.newBuilder()
+                .setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
+                        .setToken(id)
+                        .setAccount(accountID)
+                        .addAllSerialNumbers(List.of(1L, 2L, 3L)))
+                .build();
         given(typedTokenStore.loadToken(any())).willReturn(token);
         given(token.getType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
     }

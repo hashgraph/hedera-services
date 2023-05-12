@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.files.interceptors;
 
 import static java.math.BigInteger.valueOf;
@@ -30,9 +31,7 @@ public class PureRatesValidation {
     }
 
     public static boolean isNormalIntradayChange(
-            final ExchangeRates midnightRates,
-            final ExchangeRateSet proposedRates,
-            final int limitPercent) {
+            final ExchangeRates midnightRates, final ExchangeRateSet proposedRates, final int limitPercent) {
         return canonicalTest(
                         limitPercent,
                         midnightRates.getCurrCentEquiv(),

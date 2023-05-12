@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.utils.sysfiles.domain;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -53,8 +54,7 @@ class KnownBlockValuesTest {
     })
     @ParameterizedTest
     void throwsIaeOnInvalid(String invalidLiteral) {
-        Assertions.assertThrows(
-                IllegalArgumentException.class, () -> KnownBlockValues.from(invalidLiteral));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> KnownBlockValues.from(invalidLiteral));
     }
 
     @Test
@@ -66,22 +66,13 @@ class KnownBlockValuesTest {
 
     @Test
     void objectMethodsAsExpected() {
-        final var a =
-                KnownBlockValues.from(
-                        "c9e37a7a454638ca62662bd1a06de49ef40b3444203fe329bbc81363604ea7f8@666");
-        final var b =
-                KnownBlockValues.from(
-                        "c9e37a7a454638ca62662bd1a06de49ef40b3444203fe329bbc81363604ea7f8@667");
-        final var c =
-                KnownBlockValues.from(
-                        "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc@666");
+        final var a = KnownBlockValues.from("c9e37a7a454638ca62662bd1a06de49ef40b3444203fe329bbc81363604ea7f8@666");
+        final var b = KnownBlockValues.from("c9e37a7a454638ca62662bd1a06de49ef40b3444203fe329bbc81363604ea7f8@667");
+        final var c = KnownBlockValues.from("cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc@666");
         final var d = a;
-        final var e =
-                KnownBlockValues.from(
-                        "c9e37a7a454638ca62662bd1a06de49ef40b3444203fe329bbc81363604ea7f8@666");
-        final var desired =
-                "KnownBlockValues{hash=c9e37a7a454638ca62662bd1a06de49ef40b3444203fe329bbc81363604ea7f8,"
-                    + " number=666}";
+        final var e = KnownBlockValues.from("c9e37a7a454638ca62662bd1a06de49ef40b3444203fe329bbc81363604ea7f8@666");
+        final var desired = "KnownBlockValues{hash=c9e37a7a454638ca62662bd1a06de49ef40b3444203fe329bbc81363604ea7f8,"
+                + " number=666}";
 
         assertEquals(a, d);
         assertNotEquals(a, null);

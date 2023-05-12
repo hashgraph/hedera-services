@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.consensus.txns;
 
 import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
@@ -38,8 +39,7 @@ public final class CreateTopicResourceUsage implements TxnResourceUsageEstimator
     }
 
     @Override
-    public FeeData usageGiven(
-            final TransactionBody txn, final SigValueObj sigUsage, final StateView view)
+    public FeeData usageGiven(final TransactionBody txn, final SigValueObj sigUsage, final StateView view)
             throws InvalidTxBodyException {
         return ConsensusServiceFeeBuilder.getConsensusCreateTopicFee(txn, sigUsage);
     }

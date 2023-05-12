@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.util;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PRNG_RANGE;
@@ -49,10 +50,18 @@ class UtilPrngTransitionLogicTest {
     private static final Hash aFullHash = new Hash(TxnUtils.randomUtf8Bytes(48));
 
     private SideEffectsTracker tracker = new SideEffectsTracker();
-    @Mock private RecordsRunningHashLeaf runningHashLeaf;
-    @Mock private TransactionContext txnCtx;
-    @Mock private SignedTxnAccessor accessor;
-    @Mock private GlobalDynamicProperties properties;
+
+    @Mock
+    private RecordsRunningHashLeaf runningHashLeaf;
+
+    @Mock
+    private TransactionContext txnCtx;
+
+    @Mock
+    private SignedTxnAccessor accessor;
+
+    @Mock
+    private GlobalDynamicProperties properties;
 
     private UtilPrngTransitionLogic subject;
     private TransactionBody utilPrngTxn;
@@ -201,8 +210,7 @@ class UtilPrngTransitionLogicTest {
         given(accessor.getTxn()).willReturn(utilPrngTxn);
         given(txnCtx.accessor()).willReturn(accessor);
 
-        final var msg =
-                assertThrows(IllegalStateException.class, () -> subject.doStateTransition());
+        final var msg = assertThrows(IllegalStateException.class, () -> subject.doStateTransition());
         assertTrue(msg.getMessage().contains("Interrupted when computing n-3 running hash"));
 
         verify(sideEffectsTracker, never()).trackRandomBytes(any());

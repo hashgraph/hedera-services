@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.files.sysfiles;
 
 import com.hedera.node.app.service.mono.fees.FeeCalculator;
@@ -32,8 +33,7 @@ public class CurrencyCallbacks {
     private final Supplier<ExchangeRates> midnightRates;
 
     @Inject
-    public CurrencyCallbacks(
-            FeeCalculator fees, HbarCentExchange exchange, Supplier<ExchangeRates> midnightRates) {
+    public CurrencyCallbacks(FeeCalculator fees, HbarCentExchange exchange, Supplier<ExchangeRates> midnightRates) {
         this.fees = fees;
         this.exchange = exchange;
         this.midnightRates = midnightRates;

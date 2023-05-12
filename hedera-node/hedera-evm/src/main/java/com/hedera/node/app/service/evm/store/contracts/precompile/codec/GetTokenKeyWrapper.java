@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.store.contracts.precompile.codec;
 
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
@@ -29,8 +30,7 @@ public record GetTokenKeyWrapper<T>(T token, long keyType) {
             case 16 -> TokenKeyType.SUPPLY_KEY;
             case 32 -> TokenKeyType.FEE_SCHEDULE_KEY;
             case 64 -> TokenKeyType.PAUSE_KEY;
-            default -> throw new InvalidTransactionException(
-                    ResponseCodeEnum.KEY_NOT_PROVIDED, true);
+            default -> throw new InvalidTransactionException(ResponseCodeEnum.KEY_NOT_PROVIDED, true);
         };
     }
 }

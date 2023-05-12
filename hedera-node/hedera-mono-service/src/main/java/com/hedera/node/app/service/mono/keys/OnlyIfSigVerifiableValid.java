@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.keys;
 
 import static com.swirlds.common.crypto.VerificationStatus.INVALID;
@@ -46,9 +47,7 @@ public class OnlyIfSigVerifiableValid implements BiPredicate<JKey, TransactionSi
                 sig.waitForFuture().get();
                 statusUnknown = false;
             } catch (final InterruptedException ignore) {
-                log.warn(
-                        "Interrupted while validating signature, this will be fatal outside"
-                                + " reconnect");
+                log.warn("Interrupted while validating signature, this will be fatal outside" + " reconnect");
                 Thread.currentThread().interrupt();
             } catch (final ExecutionException e) {
                 log.error("Erred while validating signature, this is likely fatal", e);

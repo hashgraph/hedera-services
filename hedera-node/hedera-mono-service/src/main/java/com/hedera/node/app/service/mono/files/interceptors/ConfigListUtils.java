@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.files.interceptors;
 
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -41,9 +42,7 @@ public class ConfigListUtils {
         try {
             return ServicesConfigurationList.parseFrom(data);
         } catch (InvalidProtocolBufferException impossible) {
-            log.warn(
-                    "Impossible to get this InvalidProtocolBufferException {}",
-                    impossible.getMessage());
+            log.warn("Impossible to get this InvalidProtocolBufferException {}", impossible.getMessage());
             return ServicesConfigurationList.getDefaultInstance();
         }
     }

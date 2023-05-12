@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.token;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -144,13 +145,11 @@ class TokenFreezeTransitionLogicTest {
     }
 
     private void givenValidTxnCtx() {
-        tokenFreezeTxn =
-                TransactionBody.newBuilder()
-                        .setTokenFreeze(
-                                TokenFreezeAccountTransactionBody.newBuilder()
-                                        .setAccount(accountID)
-                                        .setToken(tokenID))
-                        .build();
+        tokenFreezeTxn = TransactionBody.newBuilder()
+                .setTokenFreeze(TokenFreezeAccountTransactionBody.newBuilder()
+                        .setAccount(accountID)
+                        .setToken(tokenID))
+                .build();
         given(accessor.getTxn()).willReturn(tokenFreezeTxn);
         given(txnCtx.accessor()).willReturn(accessor);
         given(tokenStore.loadToken(tokenId)).willReturn(token);
@@ -159,18 +158,15 @@ class TokenFreezeTransitionLogicTest {
     }
 
     private void givenMissingToken() {
-        tokenFreezeTxn =
-                TransactionBody.newBuilder()
-                        .setTokenFreeze(TokenFreezeAccountTransactionBody.newBuilder())
-                        .build();
+        tokenFreezeTxn = TransactionBody.newBuilder()
+                .setTokenFreeze(TokenFreezeAccountTransactionBody.newBuilder())
+                .build();
     }
 
     private void givenMissingAccount() {
-        tokenFreezeTxn =
-                TransactionBody.newBuilder()
-                        .setTokenFreeze(
-                                TokenFreezeAccountTransactionBody.newBuilder().setToken(tokenID))
-                        .build();
+        tokenFreezeTxn = TransactionBody.newBuilder()
+                .setTokenFreeze(TokenFreezeAccountTransactionBody.newBuilder().setToken(tokenID))
+                .build();
     }
 
     private void assertFailsWith(Runnable something, ResponseCodeEnum status) {

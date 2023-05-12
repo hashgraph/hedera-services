@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.codec;
 
 import com.google.protobuf.ByteString;
@@ -51,12 +52,7 @@ public final class KeyValueWrapper {
             final byte[] ecdsaSecp256k1,
             final ContractID delegatableContractID) {
         var isKeyValid =
-                keyValidityCheck(
-                        shouldInheritAccountKey,
-                        contractID,
-                        ed25519,
-                        ecdsaSecp256k1,
-                        delegatableContractID);
+                keyValidityCheck(shouldInheritAccountKey, contractID, ed25519, ecdsaSecp256k1, delegatableContractID);
         this.shouldInheritAccountKey = shouldInheritAccountKey;
         this.contractID = contractID;
         this.ed25519 = ed25519;
@@ -100,8 +96,7 @@ public final class KeyValueWrapper {
         if (delegatableContractID != null) keyCount++;
         if (shouldInheritAccountKey) keyCount++;
         if (ed25519.length == JEd25519Key.ED25519_BYTE_LENGTH) keyCount++;
-        if (ecdsaSecp256k1.length == JECDSASecp256k1Key.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH)
-            keyCount++;
+        if (ecdsaSecp256k1.length == JECDSASecp256k1Key.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH) keyCount++;
         return keyCount == 1;
     }
 
@@ -122,13 +117,9 @@ public final class KeyValueWrapper {
                     ? KeyValueType.ED25519
                     : KeyValueType.INVALID_KEY;
         } else if (isEcdsaSecp256k1KeySet()) {
-            return !isDelegatableContractIdSet()
-                    ? KeyValueType.ECDSA_SECPK256K1
-                    : KeyValueType.INVALID_KEY;
+            return !isDelegatableContractIdSet() ? KeyValueType.ECDSA_SECPK256K1 : KeyValueType.INVALID_KEY;
         } else {
-            return isDelegatableContractIdSet()
-                    ? KeyValueType.DELEGATABLE_CONTRACT_ID
-                    : KeyValueType.INVALID_KEY;
+            return isDelegatableContractIdSet() ? KeyValueType.DELEGATABLE_CONTRACT_ID : KeyValueType.INVALID_KEY;
         }
     }
 
@@ -156,15 +147,16 @@ public final class KeyValueWrapper {
         return switch (keyValueType) {
             case INHERIT_ACCOUNT_KEY -> this.inheritedKey;
             case CONTRACT_ID -> Key.newBuilder().setContractID(contractID).build();
-            case ED25519 -> Key.newBuilder().setEd25519(ByteString.copyFrom(ed25519)).build();
+            case ED25519 -> Key.newBuilder()
+                    .setEd25519(ByteString.copyFrom(ed25519))
+                    .build();
             case ECDSA_SECPK256K1 -> Key.newBuilder()
                     .setECDSASecp256K1(ByteString.copyFrom(ecdsaSecp256k1))
                     .build();
             case DELEGATABLE_CONTRACT_ID -> Key.newBuilder()
                     .setDelegatableContractId(delegatableContractID)
                     .build();
-            default -> throw new InvalidTransactionException(
-                    "INVALID_KEY", ResponseCodeEnum.INVALID_TRANSACTION_BODY);
+            default -> throw new InvalidTransactionException("INVALID_KEY", ResponseCodeEnum.INVALID_TRANSACTION_BODY);
         };
     }
 }

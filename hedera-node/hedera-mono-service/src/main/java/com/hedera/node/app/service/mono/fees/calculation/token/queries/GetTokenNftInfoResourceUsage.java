@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.token.queries;
 
 import static com.hedera.node.app.service.mono.queries.token.GetTokenNftInfoAnswer.NFT_INFO_CTX_KEY;
@@ -31,8 +32,7 @@ import javax.inject.Singleton;
 
 @Singleton
 public final class GetTokenNftInfoResourceUsage implements QueryResourceUsageEstimator {
-    private static final Function<Query, TokenGetNftInfoUsage> factory =
-            TokenGetNftInfoUsage::newEstimate;
+    private static final Function<Query, TokenGetNftInfoUsage> factory = TokenGetNftInfoUsage::newEstimate;
 
     @Inject
     public GetTokenNftInfoResourceUsage() {
@@ -45,14 +45,14 @@ public final class GetTokenNftInfoResourceUsage implements QueryResourceUsageEst
     }
 
     @Override
-    public FeeData usageGiven(
-            final Query query, final StateView view, @Nullable final Map<String, Object> queryCtx) {
+    public FeeData usageGiven(final Query query, final StateView view, @Nullable final Map<String, Object> queryCtx) {
         final var op = query.getTokenGetNftInfo();
         final var optionalInfo = view.infoForNft(op.getNftID());
         if (optionalInfo.isPresent()) {
             final var info = optionalInfo.get();
             putIfNotNull(queryCtx, NFT_INFO_CTX_KEY, info);
-            final var estimate = factory.apply(query).givenMetadata(info.getMetadata().toString());
+            final var estimate =
+                    factory.apply(query).givenMetadata(info.getMetadata().toString());
             return estimate.get();
         } else {
             return FeeData.getDefaultInstance();

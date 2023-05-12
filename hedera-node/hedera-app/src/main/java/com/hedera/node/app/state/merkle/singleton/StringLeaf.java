@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.state.merkle.singleton;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -62,8 +63,7 @@ public class StringLeaf extends PartialMerkleLeaf implements Labeled, MerkleLeaf
 
     /** {@inheritDoc} */
     @Override
-    public void deserialize(final SerializableDataInputStream in, final int version)
-            throws IOException {
+    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         label = in.readNormalisedString(MAX_LABEL_LENGTH);
     }
 
@@ -82,8 +82,7 @@ public class StringLeaf extends PartialMerkleLeaf implements Labeled, MerkleLeaf
     /** Set the label. */
     public void setLabel(@NonNull final String label) {
         if (label.length() > MAX_LABEL_LENGTH) {
-            throw new IllegalArgumentException(
-                    "Label " + label + " exceeds maximum length of " + MAX_LABEL_LENGTH);
+            throw new IllegalArgumentException("Label " + label + " exceeds maximum length of " + MAX_LABEL_LENGTH);
         }
         this.label = label;
     }

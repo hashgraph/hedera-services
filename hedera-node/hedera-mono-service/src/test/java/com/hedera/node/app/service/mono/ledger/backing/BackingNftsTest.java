@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.backing;
 
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
@@ -23,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;
 import com.hedera.node.app.service.mono.state.migration.UniqueTokenAdapter;
 import com.hedera.node.app.service.mono.state.migration.UniqueTokenMapAdapter;
@@ -48,18 +50,12 @@ class BackingNftsTest extends ResponsibleVMapUser {
     private final NftId cNftId = new NftId(0, 0, 5, 6);
     private final EntityNumPair aKey = EntityNumPair.fromLongs(3, 4);
     private final EntityNumPair bKey = EntityNumPair.fromLongs(4, 5);
-    private final UniqueTokenAdapter aValue =
-            UniqueTokenAdapter.wrap(
-                    new MerkleUniqueToken(
-                            new EntityId(0, 0, 3),
-                            "abcdefgh".getBytes(),
-                            new RichInstant(1_234_567L, 1)));
+    private final UniqueTokenAdapter aValue = UniqueTokenAdapter.wrap(
+            new MerkleUniqueToken(new EntityId(0, 0, 3), "abcdefgh".getBytes(), new RichInstant(1_234_567L, 1)));
     private final MerkleUniqueToken theToken =
-            new MerkleUniqueToken(
-                    MISSING_ENTITY_ID, "HI".getBytes(StandardCharsets.UTF_8), MISSING_INSTANT);
+            new MerkleUniqueToken(MISSING_ENTITY_ID, "HI".getBytes(StandardCharsets.UTF_8), MISSING_INSTANT);
     private final MerkleUniqueToken notTheToken =
-            new MerkleUniqueToken(
-                    MISSING_ENTITY_ID, "IH".getBytes(StandardCharsets.UTF_8), MISSING_INSTANT);
+            new MerkleUniqueToken(MISSING_ENTITY_ID, "IH".getBytes(StandardCharsets.UTF_8), MISSING_INSTANT);
 
     private MerkleMap<EntityNumPair, MerkleUniqueToken> delegate;
 
@@ -87,12 +83,8 @@ class BackingNftsTest extends ResponsibleVMapUser {
 
     @Test
     void virtualMapDoesNotSupportIdSet() {
-        subject =
-                new BackingNfts(
-                        () ->
-                                UniqueTokenMapAdapter.wrap(
-                                        this.<UniqueTokenKey, UniqueTokenValue>trackedMap(
-                                                new VirtualMap<>())));
+        subject = new BackingNfts(() -> UniqueTokenMapAdapter.wrap(
+                VirtualMapLike.from(this.<UniqueTokenKey, UniqueTokenValue>trackedMap(new VirtualMap<>()))));
 
         // expect:
         assertThrows(UnsupportedOperationException.class, subject::idSet);
@@ -153,8 +145,7 @@ class BackingNftsTest extends ResponsibleVMapUser {
     void putVirtualToken() {
         subject.remove(aNftId);
         final var token =
-                UniqueTokenAdapter.wrap(
-                        new UniqueTokenValue(123L, 456L, "hello".getBytes(), MISSING_INSTANT));
+                UniqueTokenAdapter.wrap(new UniqueTokenValue(123L, 456L, "hello".getBytes(), MISSING_INSTANT));
         assertThrows(UnsupportedOperationException.class, () -> subject.put(aNftId, token));
     }
 }

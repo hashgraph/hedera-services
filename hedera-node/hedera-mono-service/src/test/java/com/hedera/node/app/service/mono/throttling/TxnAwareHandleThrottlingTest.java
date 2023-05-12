@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.throttling;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
@@ -44,9 +45,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class TxnAwareHandleThrottlingTest {
     private Instant consensusTime = Instant.ofEpochSecond(1_234_567L, 123);
 
-    @Mock private TimedFunctionalityThrottling delegate;
-    @Mock private TransactionContext txnCtx;
-    @Mock private Query query;
+    @Mock
+    private TimedFunctionalityThrottling delegate;
+
+    @Mock
+    private TransactionContext txnCtx;
+
+    @Mock
+    private Query query;
 
     private TxnAwareHandleThrottling subject;
 
@@ -59,8 +65,7 @@ class TxnAwareHandleThrottlingTest {
     void txnHandlingDoesntSupportQueries() {
         // expect:
         assertThrows(
-                UnsupportedOperationException.class,
-                () -> subject.shouldThrottleQuery(CryptoGetAccountBalance, query));
+                UnsupportedOperationException.class, () -> subject.shouldThrottleQuery(CryptoGetAccountBalance, query));
     }
 
     @Test
@@ -73,7 +78,8 @@ class TxnAwareHandleThrottlingTest {
     @Test
     void delegatesShouldThrottleNOfUnscaled() {
         given(txnCtx.consensusTime()).willReturn(consensusTime);
-        given(delegate.shouldThrottleNOfUnscaled(23, CryptoCreate, consensusTime)).willReturn(true);
+        given(delegate.shouldThrottleNOfUnscaled(23, CryptoCreate, consensusTime))
+                .willReturn(true);
 
         assertTrue(subject.shouldThrottleNOfUnscaled(23, CryptoCreate));
     }
@@ -140,8 +146,7 @@ class TxnAwareHandleThrottlingTest {
 
     @Test
     void gasLimitThrottleWorks() {
-        GasLimitDeterministicThrottle gasLimitDeterministicThrottle =
-                new GasLimitDeterministicThrottle(1234);
+        GasLimitDeterministicThrottle gasLimitDeterministicThrottle = new GasLimitDeterministicThrottle(1234);
         given(delegate.gasLimitThrottle()).willReturn(gasLimitDeterministicThrottle);
         GasLimitDeterministicThrottle gasLimitDeterministicThrottle1 = subject.gasLimitThrottle();
         assertEquals(gasLimitDeterministicThrottle, gasLimitDeterministicThrottle1);

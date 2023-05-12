@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -39,8 +40,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ProcessLogicTest {
     private static final Instant then = Instant.ofEpochSecond(1_234_567, 890);
 
-    @Mock private Round round;
-    @Mock private ProcessLogic subject;
+    @Mock
+    private Round round;
+
+    @Mock
+    private ProcessLogic subject;
 
     private List<ConsensusTransaction> mockTxns = new ArrayList<>();
 
@@ -54,35 +58,33 @@ class ProcessLogicTest {
     void incorporatesFullRound() {
         final var inOrder = Mockito.inOrder(subject);
 
-        final var roundMetadata =
-                List.of(
-                        Pair.of(then.plusNanos(1000), 0L),
-                        Pair.of(then.plusNanos(2000), 1L),
-                        Pair.of(then.plusNanos(3000), 2L));
+        final var roundMetadata = List.of(
+                Pair.of(then.plusNanos(1000), 0L),
+                Pair.of(then.plusNanos(2000), 1L),
+                Pair.of(then.plusNanos(3000), 2L));
         givenRoundWith(roundMetadata.toArray(Pair[]::new));
 
         subject.incorporateConsensus(round);
 
         for (int i = 0, n = roundMetadata.size(); i < n; i++) {
-            inOrder.verify(subject).incorporateConsensusTxn(null, roundMetadata.get(i).getRight());
+            inOrder.verify(subject)
+                    .incorporateConsensusTxn(null, roundMetadata.get(i).getRight());
         }
     }
 
     @SafeVarargs
     @SuppressWarnings("unchecked")
     private void givenRoundWith(Pair<Instant, Long>... metadata) {
-        Mockito.doAnswer(
-                        invocationOnMock -> {
-                            final var observer =
-                                    (BiConsumer<ConsensusEvent, ConsensusTransaction>)
-                                            invocationOnMock.getArgument(0);
-                            for (int i = 0; i < metadata.length; i++) {
-                                final var event = mock(ConsensusEvent.class);
-                                given(event.getCreatorId()).willReturn(metadata[i].getRight());
-                                observer.accept(event, null);
-                            }
-                            return null;
-                        })
+        Mockito.doAnswer(invocationOnMock -> {
+                    final var observer =
+                            (BiConsumer<ConsensusEvent, ConsensusTransaction>) invocationOnMock.getArgument(0);
+                    for (int i = 0; i < metadata.length; i++) {
+                        final var event = mock(ConsensusEvent.class);
+                        given(event.getCreatorId()).willReturn(metadata[i].getRight());
+                        observer.accept(event, null);
+                    }
+                    return null;
+                })
                 .when(round)
                 .forEachEventTransaction(any());
     }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.token;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -48,20 +49,30 @@ class TokenDissociateTransitionLogicTest {
     private final AccountID targetAccount = IdUtils.asAccount("1.2.3");
     private final TokenID firstTargetToken = IdUtils.asToken("2.3.4");
 
-    @Mock private TransactionContext txnCtx;
-    @Mock private SignedTxnAccessor accessor;
-    @Mock private OptionValidator validator;
-    @Mock private TypedTokenStore tokenStore;
-    @Mock private AccountStore accountStore;
-    @Mock private DissociationFactory dissociationFactory;
+    @Mock
+    private TransactionContext txnCtx;
+
+    @Mock
+    private SignedTxnAccessor accessor;
+
+    @Mock
+    private OptionValidator validator;
+
+    @Mock
+    private TypedTokenStore tokenStore;
+
+    @Mock
+    private AccountStore accountStore;
+
+    @Mock
+    private DissociationFactory dissociationFactory;
 
     private DissociateLogic dissociateLogic;
     private TokenDissociateTransitionLogic subject;
 
     @BeforeEach
     void setUp() {
-        dissociateLogic =
-                new DissociateLogic(validator, tokenStore, accountStore, dissociationFactory);
+        dissociateLogic = new DissociateLogic(validator, tokenStore, accountStore, dissociationFactory);
         subject = new TokenDissociateTransitionLogic(txnCtx, dissociateLogic);
     }
 
@@ -93,9 +104,7 @@ class TokenDissociateTransitionLogicTest {
         final var check = subject.semanticCheck();
 
         // expect:
-        assertEquals(
-                TOKEN_ID_REPEATED_IN_TOKEN_LIST,
-                check.apply(dissociateTxnWith(repeatedTokenIdOp())));
+        assertEquals(TOKEN_ID_REPEATED_IN_TOKEN_LIST, check.apply(dissociateTxnWith(repeatedTokenIdOp())));
     }
 
     @Test
@@ -111,7 +120,8 @@ class TokenDissociateTransitionLogicTest {
 
         verify(dissociateLogic)
                 .dissociate(
-                        accountId, txnCtx.accessor().getTxn().getTokenDissociate().getTokensList());
+                        accountId,
+                        txnCtx.accessor().getTxn().getTokenDissociate().getTokensList());
     }
 
     private TransactionBody validDissociateTxn() {
@@ -130,7 +140,9 @@ class TokenDissociateTransitionLogicTest {
     }
 
     private TokenDissociateTransactionBody missingAccountIdOp() {
-        return TokenDissociateTransactionBody.newBuilder().addTokens(firstTargetToken).build();
+        return TokenDissociateTransactionBody.newBuilder()
+                .addTokens(firstTargetToken)
+                .build();
     }
 
     private TokenDissociateTransactionBody repeatedTokenIdOp() {

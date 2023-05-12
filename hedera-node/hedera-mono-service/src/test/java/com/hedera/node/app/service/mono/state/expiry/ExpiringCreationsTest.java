@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.expiry;
 
 import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
@@ -81,30 +82,45 @@ class ExpiringCreationsTest {
     private static final ExpirableTxnRecord record = TxnUtils.recordOne();
     private static ExpirableTxnRecord expectedRecord;
 
-    @Mock private ExpiryManager expiries;
-    @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private RecordsStorageAdapter payerRecords;
-    @Mock private NarratedCharging narratedCharging;
-    @Mock private HederaLedger ledger;
-    @Mock private TxnAccessor accessor;
-    @Mock private SideEffectsTracker sideEffectsTracker;
-    @Mock private ExpandHandleSpanMapAccessor expandHandleSpanMapAccessor;
-    @Mock private EthTxData ethTxData;
+    @Mock
+    private ExpiryManager expiries;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
+
+    @Mock
+    private RecordsStorageAdapter payerRecords;
+
+    @Mock
+    private NarratedCharging narratedCharging;
+
+    @Mock
+    private HederaLedger ledger;
+
+    @Mock
+    private TxnAccessor accessor;
+
+    @Mock
+    private SideEffectsTracker sideEffectsTracker;
+
+    @Mock
+    private ExpandHandleSpanMapAccessor expandHandleSpanMapAccessor;
+
+    @Mock
+    private EthTxData ethTxData;
 
     private static final AccountID payer = asAccount("0.0.2");
     private static final AccountID created = asAccount("1.0.2");
     private static final AccountID another = asAccount("1.0.300");
-    private static final CurrencyAdjustments transfers =
-            CurrencyAdjustments.fromGrpc(
-                    withAdjustments(payer, -2L, created, 1L, another, 1L).getAccountAmountsList());
+    private static final CurrencyAdjustments transfers = CurrencyAdjustments.fromGrpc(
+            withAdjustments(payer, -2L, created, 1L, another, 1L).getAccountAmountsList());
     private static final TokenID tokenCreated = asToken("3.0.2");
     private static final List<AccountAmount> adjustments =
             withAdjustments(payer, -2L, created, 1L, another, 1L).getAccountAmountsList();
-    private static final TokenTransferList tokenTransfers =
-            TokenTransferList.newBuilder()
-                    .setToken(tokenCreated)
-                    .addAllTransfers(adjustments)
-                    .build();
+    private static final TokenTransferList tokenTransfers = TokenTransferList.newBuilder()
+            .setToken(tokenCreated)
+            .addAllTransfers(adjustments)
+            .build();
     private static final List<TokenTransferList> netTokenChanges = List.of(tokenTransfers);
 
     private static final String memo = "TEST_MEMO";
@@ -125,17 +141,13 @@ class ExpiringCreationsTest {
     private static final EntityId customFeeToken = new EntityId(0, 0, 123);
     private static final EntityId customFeeCollector = new EntityId(0, 0, 124);
     private static final List<FcAssessedCustomFee> customFeesCharged =
-            List.of(
-                    new FcAssessedCustomFee(
-                            customFeeCollector, customFeeToken, 123L, new long[] {123L}));
+            List.of(new FcAssessedCustomFee(customFeeCollector, customFeeToken, 123L, new long[] {123L}));
     private static final List<FcTokenAssociation> newTokenAssociations =
             List.of(new FcTokenAssociation(customFeeToken.num(), customFeeCollector.num()));
 
     @BeforeEach
     void setup() {
-        subject =
-                new ExpiringCreations(
-                        expiries, narratedCharging, dynamicProperties, () -> payerRecords);
+        subject = new ExpiringCreations(expiries, narratedCharging, dynamicProperties, () -> payerRecords);
         subject.setLedger(ledger);
 
         expectedRecord = record;
@@ -152,12 +164,10 @@ class ExpiringCreationsTest {
         setupTracker();
         given(sideEffectsTracker.hasTrackedContractCreation()).willReturn(true);
         given(sideEffectsTracker.getTrackedNewContractId()).willReturn(id);
-        given(sideEffectsTracker.getNewEntityAlias())
-                .willReturn(ByteString.copyFrom(addr.toArrayUnsafe()));
+        given(sideEffectsTracker.getNewEntityAlias()).willReturn(ByteString.copyFrom(addr.toArrayUnsafe()));
 
         final var record =
-                subject.createSuccessfulSyntheticRecord(
-                        Collections.emptyList(), sideEffectsTracker, EMPTY_MEMO);
+                subject.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffectsTracker, EMPTY_MEMO);
 
         final var createdId = EntityId.fromGrpcContractId(id);
         assertEquals(SUCCESS.toString(), record.getReceiptBuilder().getStatus());
@@ -173,9 +183,7 @@ class ExpiringCreationsTest {
         final var tokensExpected = List.of(EntityId.fromGrpcTokenId(tokenCreated));
         final var tokenAdjustmentsExpected = List.of(CurrencyAdjustments.fromGrpc(adjustments));
 
-        final var record =
-                subject.createSuccessfulSyntheticRecord(
-                        customFeesCharged, sideEffectsTracker, EMPTY_MEMO);
+        final var record = subject.createSuccessfulSyntheticRecord(customFeesCharged, sideEffectsTracker, EMPTY_MEMO);
 
         assertEquals(SUCCESS.toString(), record.getReceiptBuilder().getStatus());
         assertEquals(tokensExpected, record.getTokens());
@@ -187,7 +195,8 @@ class ExpiringCreationsTest {
     void createsFailedSyntheticRecordAsExpected() {
         final var record = subject.createUnsuccessfulSyntheticRecord(INSUFFICIENT_ACCOUNT_BALANCE);
         assertEquals(
-                INSUFFICIENT_ACCOUNT_BALANCE.toString(), record.getReceiptBuilder().getStatus());
+                INSUFFICIENT_ACCOUNT_BALANCE.toString(),
+                record.getReceiptBuilder().getStatus());
     }
 
     @Test
@@ -223,16 +232,9 @@ class ExpiringCreationsTest {
         given(sideEffectsTracker.hasTrackedNftMints()).willReturn(true);
         given(sideEffectsTracker.getTrackedNftMints()).willReturn(mockMints);
 
-        final var created =
-                subject.createTopLevelRecord(
-                                totalFee,
-                                hash,
-                                accessor,
-                                timestamp,
-                                receiptBuilder,
-                                customFeesCharged,
-                                sideEffectsTracker)
-                        .build();
+        final var created = subject.createTopLevelRecord(
+                        totalFee, hash, accessor, timestamp, receiptBuilder, customFeesCharged, sideEffectsTracker)
+                .build();
 
         assertArrayEquals(
                 mockMints.stream().mapToLong(l -> l).toArray(),
@@ -247,16 +249,9 @@ class ExpiringCreationsTest {
         given(sideEffectsTracker.hasTrackedAutoCreation()).willReturn(true);
         given(sideEffectsTracker.getTrackedAutoCreatedAccountId()).willReturn(effPayer);
 
-        final var created =
-                subject.createTopLevelRecord(
-                                totalFee,
-                                hash,
-                                accessor,
-                                timestamp,
-                                receiptBuilder,
-                                customFeesCharged,
-                                sideEffectsTracker)
-                        .build();
+        final var created = subject.createTopLevelRecord(
+                        totalFee, hash, accessor, timestamp, receiptBuilder, customFeesCharged, sideEffectsTracker)
+                .build();
 
         assertEquals(effPayer, created.getReceipt().getAccountId().toGrpcAccountId());
     }
@@ -266,9 +261,7 @@ class ExpiringCreationsTest {
         given(sideEffectsTracker.hasTrackedHollowAccountUpdate()).willReturn(true);
         given(sideEffectsTracker.getTrackedHollowAccountId()).willReturn(effPayer);
 
-        final var record =
-                subject.createSuccessfulSyntheticRecord(
-                        customFeesCharged, sideEffectsTracker, EMPTY_MEMO);
+        final var record = subject.createSuccessfulSyntheticRecord(customFeesCharged, sideEffectsTracker, EMPTY_MEMO);
 
         assertEquals(SUCCESS.toString(), record.getReceiptBuilder().getStatus());
         assertEquals(effPayer, record.getReceiptBuilder().getAccountId().toGrpcAccountId());
@@ -279,16 +272,9 @@ class ExpiringCreationsTest {
         setupTrackerNoUnitOrOwnershipChanges();
         setUpForExpiringRecordBuilder();
 
-        final var created =
-                subject.createTopLevelRecord(
-                                totalFee,
-                                hash,
-                                accessor,
-                                timestamp,
-                                receiptBuilder,
-                                customFeesCharged,
-                                sideEffectsTracker)
-                        .build();
+        final var created = subject.createTopLevelRecord(
+                        totalFee, hash, accessor, timestamp, receiptBuilder, customFeesCharged, sideEffectsTracker)
+                .build();
 
         assertEquals(totalFee, created.getFee());
         assertSame(hash, created.getTxnHash());
@@ -313,16 +299,9 @@ class ExpiringCreationsTest {
         given(sideEffectsTracker.hasTrackedTokenSupply()).willReturn(true);
         given(sideEffectsTracker.getTrackedTokenSupply()).willReturn(newTokenSupply);
 
-        final var created =
-                subject.createTopLevelRecord(
-                                totalFee,
-                                hash,
-                                accessor,
-                                timestamp,
-                                receiptBuilder,
-                                customFeesCharged,
-                                sideEffectsTracker)
-                        .build();
+        final var created = subject.createTopLevelRecord(
+                        totalFee, hash, accessor, timestamp, receiptBuilder, customFeesCharged, sideEffectsTracker)
+                .build();
 
         final var actualReceipt = created.getReceipt();
         assertEquals(EntityId.fromGrpcTokenId(newTokenId), actualReceipt.getTokenId());
@@ -348,16 +327,9 @@ class ExpiringCreationsTest {
         given(expandHandleSpanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
         given(ethTxData.getEthereumHash()).willReturn(mockHash);
 
-        final var created =
-                subject.createTopLevelRecord(
-                                totalFee,
-                                hash,
-                                accessor,
-                                timestamp,
-                                receiptBuilder,
-                                customFeesCharged,
-                                sideEffectsTracker)
-                        .build();
+        final var created = subject.createTopLevelRecord(
+                        totalFee, hash, accessor, timestamp, receiptBuilder, customFeesCharged, sideEffectsTracker)
+                .build();
 
         assertArrayEquals(mockHash, created.getEthereumHash());
     }
@@ -372,16 +344,9 @@ class ExpiringCreationsTest {
         given(sideEffectsTracker.getPseudorandomNumber()).willReturn(10);
         given(sideEffectsTracker.hasTrackedRandomData()).willReturn(true);
 
-        var created =
-                subject.createTopLevelRecord(
-                                totalFee,
-                                hash,
-                                accessor,
-                                timestamp,
-                                receiptBuilder,
-                                customFeesCharged,
-                                sideEffectsTracker)
-                        .build();
+        var created = subject.createTopLevelRecord(
+                        totalFee, hash, accessor, timestamp, receiptBuilder, customFeesCharged, sideEffectsTracker)
+                .build();
 
         assertEquals(10, created.getPseudoRandomNumber());
         assertEquals(0, created.getPseudoRandomBytes().length);
@@ -391,16 +356,9 @@ class ExpiringCreationsTest {
         given(sideEffectsTracker.getPseudorandomBytes()).willReturn(mockString.toByteArray());
         given(sideEffectsTracker.hasTrackedRandomData()).willReturn(true);
 
-        created =
-                subject.createTopLevelRecord(
-                                totalFee,
-                                hash,
-                                accessor,
-                                timestamp,
-                                receiptBuilder,
-                                customFeesCharged,
-                                sideEffectsTracker)
-                        .build();
+        created = subject.createTopLevelRecord(
+                        totalFee, hash, accessor, timestamp, receiptBuilder, customFeesCharged, sideEffectsTracker)
+                .build();
 
         assertEquals(-1, created.getPseudoRandomNumber());
         assertArrayEquals(mockString.toByteArray(), created.getPseudoRandomBytes());
@@ -409,8 +367,7 @@ class ExpiringCreationsTest {
     private void setupTracker() {
         given(sideEffectsTracker.getNetTrackedHbarChanges()).willReturn(transfers);
         given(sideEffectsTracker.getTrackedAutoAssociations()).willReturn(newTokenAssociations);
-        given(sideEffectsTracker.getNetTrackedTokenUnitAndOwnershipChanges())
-                .willReturn(netTokenChanges);
+        given(sideEffectsTracker.getNetTrackedTokenUnitAndOwnershipChanges()).willReturn(netTokenChanges);
     }
 
     private void setupTrackerNoUnitOrOwnershipChanges() {
@@ -419,8 +376,7 @@ class ExpiringCreationsTest {
         given(sideEffectsTracker.getNetTrackedTokenUnitAndOwnershipChanges()).willReturn(List.of());
     }
 
-    private void validateCommonFields(
-            final ExpirableTxnRecord actualRecord, final TxnReceipt.Builder receipt) {
+    private void validateCommonFields(final ExpirableTxnRecord actualRecord, final TxnReceipt.Builder receipt) {
         assertEquals(grpcTxnId, actualRecord.getTxnId().toGrpc());
         assertEquals(receipt.build(), actualRecord.getReceipt());
         assertEquals(memo, actualRecord.getMemo());

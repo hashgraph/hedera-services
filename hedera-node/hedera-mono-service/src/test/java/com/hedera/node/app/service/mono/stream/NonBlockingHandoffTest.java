@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.stream;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -31,9 +32,14 @@ class NonBlockingHandoffTest {
     private final int mockCap = 10;
     private final RecordStreamObject rso = new RecordStreamObject();
 
-    @Mock private ExecutorService executorService;
-    @Mock private RecordStreamManager recordStreamManager;
-    @Mock private NodeLocalProperties nodeLocalProperties;
+    @Mock
+    private ExecutorService executorService;
+
+    @Mock
+    private RecordStreamManager recordStreamManager;
+
+    @Mock
+    private NodeLocalProperties nodeLocalProperties;
 
     private NonBlockingHandoff subject;
 

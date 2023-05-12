@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -28,8 +29,7 @@ import org.junit.jupiter.api.Test;
 class EntityChangeSetTest {
     private static final TestAccount a = new TestAccount(666L, new Object(), false, 42L);
 
-    private EntityChangeSet<Long, TestAccount, TestAccountProperty> subject =
-            new EntityChangeSet<>();
+    private EntityChangeSet<Long, TestAccount, TestAccountProperty> subject = new EntityChangeSet<>();
 
     @Test
     void canAddChanges() {
@@ -87,15 +87,11 @@ class EntityChangeSetTest {
     }
 
     private void assertChangeAt(
-            final int i,
-            final long k,
-            final TestAccount a,
-            final Map<TestAccountProperty, Object> p) {
+            final int i, final long k, final TestAccount a, final Map<TestAccountProperty, Object> p) {
         assertEquals(k, subject.id(i));
         assertEquals(a, subject.entity(i));
         assertEquals(p, subject.changes(i));
     }
 
-    private static final Map<TestAccountProperty, Object> oneChanges =
-            Map.of(TestAccountProperty.FLAG, false);
+    private static final Map<TestAccountProperty, Object> oneChanges = Map.of(TestAccountProperty.FLAG, false);
 }

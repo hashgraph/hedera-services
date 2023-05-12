@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.consensus.txns;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -48,11 +49,8 @@ class DeleteMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
     void getFeeThrowsExceptionForBadTxBody() {
         final var nonDeleteTopicTx = TransactionBody.getDefaultInstance();
 
-        assertThrows(
-                InvalidTxBodyException.class, () -> subject.usageGiven(null, sigValueObj, view));
-        assertThrows(
-                InvalidTxBodyException.class,
-                () -> subject.usageGiven(nonDeleteTopicTx, sigValueObj, view));
+        assertThrows(InvalidTxBodyException.class, () -> subject.usageGiven(null, sigValueObj, view));
+        assertThrows(InvalidTxBodyException.class, () -> subject.usageGiven(nonDeleteTopicTx, sigValueObj, view));
     }
 
     @Test
@@ -70,6 +68,8 @@ class DeleteMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
     private TransactionBody makeTransactionBody(final TopicID topicId) {
         final var deleteTopicTxBody =
                 ConsensusDeleteTopicTransactionBody.newBuilder().setTopicID(topicId);
-        return TransactionBody.newBuilder().setConsensusDeleteTopic(deleteTopicTxBody).build();
+        return TransactionBody.newBuilder()
+                .setConsensusDeleteTopic(deleteTopicTxBody)
+                .build();
     }
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.network;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -27,8 +28,7 @@ import javax.inject.Singleton;
 
 @Singleton
 public class UncheckedSubmitTransitionLogic implements TransitionLogic {
-    private static final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_RUBBER_STAMP =
-            ignore -> OK;
+    private static final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_RUBBER_STAMP = ignore -> OK;
 
     @Inject
     public UncheckedSubmitTransitionLogic() {

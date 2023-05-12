@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.factories.scenarios;
 
 import static com.hedera.test.factories.txns.FileAppendFactory.MASTER_PAYER_ID;
@@ -47,7 +48,8 @@ public enum FileAppendScenarios implements TxnHandlingScenario {
     },
     IMMUTABLE_FILE_APPEND_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedFileAppend(IMMUTABLE_FILE_ID).get());
+            return PlatformTxnAccessor.from(
+                    newSignedFileAppend(IMMUTABLE_FILE_ID).get());
         }
     },
     FILE_APPEND_MISSING_TARGET_SCENARIO {

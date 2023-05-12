@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs;
 
 import static com.hedera.node.app.service.mono.keys.HederaKeyTraversal.visitSimpleKeys;
@@ -41,14 +42,10 @@ public final class PlatformSigOps {
      * @return the result of attempting this creation.
      */
     public static PlatformSigsCreationResult createCryptoSigsFrom(
-            final List<JKey> hederaKeys,
-            final PubKeyToSigBytes sigBytesFn,
-            final TxnScopedPlatformSigFactory factory) {
+            final List<JKey> hederaKeys, final PubKeyToSigBytes sigBytesFn, final TxnScopedPlatformSigFactory factory) {
         final var result = new PlatformSigsCreationResult();
         for (final var hederaKey : hederaKeys) {
-            visitSimpleKeys(
-                    hederaKey,
-                    primitiveKey -> createCryptoSigFor(primitiveKey, sigBytesFn, factory, result));
+            visitSimpleKeys(hederaKey, primitiveKey -> createCryptoSigFor(primitiveKey, sigBytesFn, factory, result));
         }
         return result;
     }
@@ -58,7 +55,7 @@ public final class PlatformSigOps {
             final PubKeyToSigBytes sigBytesFn,
             final TxnScopedPlatformSigFactory factory,
             final PlatformSigsCreationResult result) {
-        if (result.hasFailed() || primitiveKey.hasHollowKey()) {
+        if (result.hasFailed() || primitiveKey.hasWildcardECDSAKey()) {
             return;
         }
 
@@ -73,8 +70,7 @@ public final class PlatformSigOps {
                 final var key = primitiveKey.getECDSASecp256k1Key();
                 final var sig = sigBytesFn.sigBytesFor(key);
                 if (sig.length > 0) {
-                    result.getPlatformSigs()
-                            .add(factory.signKeccak256DigestWithSecp256k1(key, sig));
+                    result.getPlatformSigs().add(factory.signKeccak256DigestWithSecp256k1(key, sig));
                 }
             }
         } catch (KeyPrefixMismatchException kmpe) {

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage.state;
 
 import static com.hedera.node.app.hapi.fees.pricing.ResourceProvider.NETWORK;
@@ -49,8 +50,7 @@ class UsageAccumulatorTest {
     private final long baseVpt = sigUsage.numSigs();
     private final long baseBpt = BASIC_TX_BODY_SIZE + memoBytes + sigUsage.sigsSize();
     private final long baseRbs =
-            RECEIPT_STORAGE_TIME_SEC
-                    * (BASIC_TX_RECORD_SIZE + memoBytes + BASIC_ACCOUNT_AMT_SIZE * numTransfers);
+            RECEIPT_STORAGE_TIME_SEC * (BASIC_TX_RECORD_SIZE + memoBytes + BASIC_ACCOUNT_AMT_SIZE * numTransfers);
     private final long baseNetworkRbs = RECEIPT_STORAGE_TIME_SEC * BASIC_RECEIPT_SIZE;
 
     private final UsageAccumulator subject = new UsageAccumulator();
@@ -207,9 +207,8 @@ class UsageAccumulatorTest {
 
     @Test
     void toStringWorks() {
-        final var desired =
-                "UsageAccumulator{universalBpt=1, networkVpt=4, networkRbh=1, nodeBpr=2,"
-                        + " nodeSbpr=3, nodeVpt=0, serviceSbh=1, serviceRbh=1, gas=5, rbs=6}";
+        final var desired = "UsageAccumulator{universalBpt=1, networkVpt=4, networkRbh=1, nodeBpr=2,"
+                + " nodeSbpr=3, nodeVpt=0, serviceSbh=1, serviceRbh=1, gas=5, rbs=6}";
 
         // given:
         subject.addBpt(1);

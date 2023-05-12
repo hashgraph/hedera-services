@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.mocks;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
@@ -22,6 +23,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
@@ -33,7 +35,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.swirlds.merkle.map.MerkleMap;
 
 public enum TestContextValidator implements OptionValidator {
     TEST_VALIDATOR;
@@ -91,15 +92,13 @@ public enum TestContextValidator implements OptionValidator {
     }
 
     @Override
-    public ResponseCodeEnum expiryStatusGiven(
-            long balance, boolean isDetached, boolean isContract) {
+    public ResponseCodeEnum expiryStatusGiven(long balance, boolean isDetached, boolean isContract) {
         return OK;
     }
 
     @Override
     public ResponseCodeEnum expiryStatusGiven(
-            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts,
-            final AccountID id) {
+            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts, final AccountID id) {
         return id.getAccountNum() == 666_666L ? ACCOUNT_EXPIRED_AND_PENDING_REMOVAL : OK;
     }
 
@@ -134,8 +133,7 @@ public enum TestContextValidator implements OptionValidator {
     }
 
     @Override
-    public ResponseCodeEnum queryableTopicStatus(
-            TopicID id, MerkleMap<EntityNum, MerkleTopic> topics) {
+    public ResponseCodeEnum queryableTopicStatus(TopicID id, MerkleMapLike<EntityNum, MerkleTopic> topics) {
         throw new UnsupportedOperationException();
     }
 

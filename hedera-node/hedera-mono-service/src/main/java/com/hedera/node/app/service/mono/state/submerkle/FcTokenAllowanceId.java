@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.submerkle;
 
 import com.google.common.base.MoreObjects;
@@ -54,8 +55,7 @@ public class FcTokenAllowanceId implements SelfSerializable, Comparable<FcTokenA
     }
 
     public static FcTokenAllowanceId from(final TokenID tokenId, final AccountID accountId) {
-        return new FcTokenAllowanceId(
-                EntityNum.fromTokenId(tokenId), EntityNum.fromAccountId(accountId));
+        return new FcTokenAllowanceId(EntityNum.fromTokenId(tokenId), EntityNum.fromAccountId(accountId));
     }
 
     @Override

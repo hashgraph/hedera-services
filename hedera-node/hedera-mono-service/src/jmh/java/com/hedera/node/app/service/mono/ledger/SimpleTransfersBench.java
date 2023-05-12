@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger;
 
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.BALANCE;
@@ -89,10 +90,7 @@ public class SimpleTransfersBench {
         final var receiverId = ids[Constructables.FIRST_USER_I + Math.floorMod(i, userAccounts)];
 
         ledger.begin();
-        ledger.set(
-                Constructables.FUNDING_ID,
-                BALANCE,
-                (long) ledger.get(Constructables.FUNDING_ID, BALANCE) + 69_000);
+        ledger.set(Constructables.FUNDING_ID, BALANCE, (long) ledger.get(Constructables.FUNDING_ID, BALANCE) + 69_000);
         ledger.set(nodeId, BALANCE, (long) ledger.get(nodeId, BALANCE) + 420);
         ledger.set(senderId, BALANCE, (long) ledger.get(senderId, BALANCE) - 69_421);
         ledger.set(receiverId, BALANCE, (long) ledger.get(receiverId, BALANCE) + 1);

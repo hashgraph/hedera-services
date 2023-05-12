@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.grpc.marshalling;
 
 import com.hedera.node.app.service.mono.ledger.BalanceChange;
@@ -135,8 +136,7 @@ public class BalanceChangeManager {
     private void index(BalanceChange change) {
         if (!change.isForNft()) {
             if (change.isForHbar()) {
-                if (indexedChanges.put(Pair.of(change.getAccount(), Id.MISSING_ID), change)
-                        != null) {
+                if (indexedChanges.put(Pair.of(change.getAccount(), Id.MISSING_ID), change) != null) {
                     throw new IllegalArgumentException("Duplicate balance change :: " + change);
                 }
             } else {
@@ -149,8 +149,7 @@ public class BalanceChangeManager {
         if (candidate.isExemptFromCustomFees()) {
             return false;
         } else {
-            return candidate.isForNft()
-                    || (!candidate.isForHbar() && candidate.getAggregatedUnits() < 0);
+            return candidate.isForNft() || (!candidate.isForHbar() && candidate.getAggregatedUnits() < 0);
         }
     }
 }

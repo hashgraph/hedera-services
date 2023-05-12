@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.meta;
 
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_QUERY_HEADER;
@@ -31,12 +32,11 @@ public final class FixedUsageEstimates {
 
     private static final FeeComponents ZERO_USAGE = FeeComponents.getDefaultInstance();
 
-    static final FeeComponents GET_VERSION_INFO_NODE_USAGE =
-            FeeComponents.newBuilder()
-                    .setConstant(FEE_MATRICES_CONST)
-                    .setBpt(BASIC_QUERY_HEADER)
-                    .setBpr(BASIC_QUERY_RES_HEADER + 2 * BYTES_PER_SEMANTIC_VERSION)
-                    .build();
+    static final FeeComponents GET_VERSION_INFO_NODE_USAGE = FeeComponents.newBuilder()
+            .setConstant(FEE_MATRICES_CONST)
+            .setBpt(BASIC_QUERY_HEADER)
+            .setBpr(BASIC_QUERY_RES_HEADER + 2 * BYTES_PER_SEMANTIC_VERSION)
+            .build();
 
     public static FeeData getVersionInfoUsage() {
         return FeeData.newBuilder()

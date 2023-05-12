@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.tasks;
 
 import static com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext.*;
@@ -35,10 +36,17 @@ class SystemTaskManagerTest {
     private static final long ENTITY_NUM = 1234L;
     private static final Instant NOW = Instant.ofEpochSecond(1_234_567, 890);
 
-    @Mock private SystemTask aTask;
-    @Mock private SystemTask bTask;
-    @Mock private SystemTask cTask;
-    @Mock private MerkleNetworkContext networkCtx;
+    @Mock
+    private SystemTask aTask;
+
+    @Mock
+    private SystemTask bTask;
+
+    @Mock
+    private SystemTask cTask;
+
+    @Mock
+    private MerkleNetworkContext networkCtx;
 
     private SystemTaskManager subject;
 
@@ -50,8 +58,7 @@ class SystemTaskManagerTest {
     @Test
     void scanUpdatesAllScannedIfLastIsScannedAndNumReachesPostUpgradeLastScanned() {
         final var lastScanned = 1234L;
-        given(networkCtx.getPreExistingEntityScanStatus())
-                .willReturn(LAST_PRE_EXISTING_ENTITY_SCANNED);
+        given(networkCtx.getPreExistingEntityScanStatus()).willReturn(LAST_PRE_EXISTING_ENTITY_SCANNED);
         given(networkCtx.lastScannedPostUpgrade()).willReturn(lastScanned);
 
         subject.updatePreExistingScanStatus(lastScanned, networkCtx);
@@ -62,8 +69,7 @@ class SystemTaskManagerTest {
     @Test
     void scanUpdatesLastScannedIfNumPrecedesPostUpgradeSeqNo() {
         final var seqNo = 1234L;
-        given(networkCtx.getPreExistingEntityScanStatus())
-                .willReturn(LAST_PRE_EXISTING_ENTITY_NOT_SCANNED);
+        given(networkCtx.getPreExistingEntityScanStatus()).willReturn(LAST_PRE_EXISTING_ENTITY_NOT_SCANNED);
         given(networkCtx.seqNoPostUpgrade()).willReturn(seqNo);
 
         subject.updatePreExistingScanStatus(seqNo - 1, networkCtx);
@@ -73,8 +79,7 @@ class SystemTaskManagerTest {
 
     @Test
     void scanUpdateNoopIfAlreadyComplete() {
-        given(networkCtx.getPreExistingEntityScanStatus())
-                .willReturn(ALL_PRE_EXISTING_ENTITIES_SCANNED);
+        given(networkCtx.getPreExistingEntityScanStatus()).willReturn(ALL_PRE_EXISTING_ENTITIES_SCANNED);
 
         subject.updatePreExistingScanStatus(ENTITY_NUM, networkCtx);
 

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context.properties;
 
 import static com.hedera.node.app.service.mono.context.properties.Profile.DEV;
@@ -22,6 +23,8 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.DEV_ONLY_DEFAULT_NODE_LISTENS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.GRPC_PORT;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.GRPC_TLS_PORT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.GRPC_WORKFLOWS_PORT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.GRPC_WORKFLOWS_TLS_PORT;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_ACCOUNTS_EXPORT_PATH;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_EXPORT_ACCOUNTS_ON_STARTUP;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_PREFETCH_CODE_CACHE_TTL_SECS;
@@ -67,6 +70,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class NodeLocalPropertiesTest {
+
     private PropertySource properties;
 
     private NodeLocalProperties subject;
@@ -99,6 +103,8 @@ class NodeLocalPropertiesTest {
         assertEquals(30, subject.prefetchCodeCacheTtlSecs());
         assertEquals(List.of("80"), subject.consThrottlesToSample());
         assertEquals(List.of("81"), subject.hapiThrottlesToSample());
+        assertEquals(32, subject.workflowsPort());
+        assertEquals(33, subject.workflowsTlsPort());
     }
 
     @Test
@@ -125,7 +131,7 @@ class NodeLocalPropertiesTest {
         assertFalse(subject.devOnlyDefaultNodeListens());
         assertEquals("B", subject.accountsExportPath());
         assertFalse(subject.exportAccountsOnStartup());
-        assertEquals(Profile.PROD, subject.nettyMode());
+        assertEquals(PROD, subject.nettyMode());
         assertEquals(24L, subject.nettyStartRetryIntervalMs());
     }
 
@@ -152,6 +158,8 @@ class NodeLocalPropertiesTest {
         assertEquals(30, subject.prefetchThreadPoolSize());
         assertEquals(31, subject.prefetchCodeCacheTtlSecs());
         assertEquals(logDir(32), subject.sidecarDir());
+        assertEquals(33, subject.workflowsPort());
+        assertEquals(34, subject.workflowsTlsPort());
     }
 
     @Test
@@ -180,35 +188,32 @@ class NodeLocalPropertiesTest {
         assertTrue(subject.devOnlyDefaultNodeListens());
         assertEquals("A", subject.accountsExportPath());
         assertTrue(subject.exportAccountsOnStartup());
-        assertEquals(Profile.TEST, subject.nettyMode());
+        assertEquals(TEST, subject.nettyMode());
         assertEquals(25L, subject.nettyStartRetryIntervalMs());
         assertEquals(83L, subject.entityUtilStatsUpdateIntervalMs());
         assertEquals(84L, subject.throttleUtilStatsUpdateIntervalMs());
         assertEquals(logDir(32), subject.sidecarDir());
     }
 
-    private void givenPropsWithSeed(int i) {
+    private void givenPropsWithSeed(final int i) {
         given(properties.getIntProperty(GRPC_PORT)).willReturn(i);
         given(properties.getIntProperty(GRPC_TLS_PORT)).willReturn(i + 1);
         given(properties.getIntProperty("precheck.account.maxLookupRetries")).willReturn(i + 2);
         given(properties.getIntProperty("precheck.account.lookupRetryBackoffIncrementMs"))
                 .willReturn(i + 3);
-        given(properties.getProfileProperty(HEDERA_PROFILES_ACTIVE))
-                .willReturn(LEGACY_ENV_ORDER[(i + 4) % 3]);
+        given(properties.getProfileProperty(HEDERA_PROFILES_ACTIVE)).willReturn(LEGACY_ENV_ORDER[(i + 4) % 3]);
         given(properties.getLongProperty(STATS_HAPI_OPS_SPEEDOMETER_UPDATE_INTERVAL_MS))
                 .willReturn(i + 5L);
         given(properties.getDoubleProperty(STATS_SPEEDOMETER_HALF_LIFE_SECS)).willReturn(i + 6.0);
         given(properties.getDoubleProperty(STATS_RUNNING_AVG_HALF_LIFE_SECS)).willReturn(i + 7.0);
         given(properties.getStringProperty(HEDERA_RECORD_STREAM_LOG_DIR)).willReturn(logDir(i + 8));
         given(properties.getLongProperty(HEDERA_RECORD_STREAM_LOG_PERIOD)).willReturn(i + 9L);
-        given(properties.getBooleanProperty(HEDERA_RECORD_STREAM_IS_ENABLED))
-                .willReturn(i % 2 == 1);
+        given(properties.getBooleanProperty(HEDERA_RECORD_STREAM_IS_ENABLED)).willReturn(i % 2 == 1);
         given(properties.getIntProperty(HEDERA_RECORD_STREAM_QUEUE_CAPACITY)).willReturn(i + 11);
         given(properties.getIntProperty(QUERIES_BLOB_LOOK_UP_RETRIES)).willReturn(i + 12);
         given(properties.getLongProperty(NETTY_PROD_KEEP_ALIVE_TIME)).willReturn(i + 13L);
         given(properties.getStringProperty(NETTY_TLS_CERT_PATH)).willReturn("hedera" + i + ".crt");
-        given(properties.getStringProperty(NETTY_TLS_KEY_PATH))
-                .willReturn("hedera" + (i + 1) + ".key");
+        given(properties.getStringProperty(NETTY_TLS_KEY_PATH)).willReturn("hedera" + (i + 1) + ".key");
         given(properties.getLongProperty(NETTY_PROD_KEEP_ALIVE_TIMEOUT)).willReturn(i + 14L);
         given(properties.getLongProperty(NETTY_PROD_MAX_CONNECTION_AGE)).willReturn(i + 15L);
         given(properties.getLongProperty(NETTY_PROD_MAX_CONNECTION_AGE_GRACE)).willReturn(i + 16L);
@@ -218,10 +223,8 @@ class NodeLocalPropertiesTest {
         given(properties.getStringProperty(DEV_DEFAULT_LISTENING_NODE_ACCOUNT))
                 .willReturn(i % 2 == 0 ? "0.0.3" : "0.0.4");
         given(properties.getBooleanProperty(DEV_ONLY_DEFAULT_NODE_LISTENS)).willReturn(i % 2 == 0);
-        given(properties.getStringProperty(HEDERA_ACCOUNTS_EXPORT_PATH))
-                .willReturn(i % 2 == 0 ? "A" : "B");
-        given(properties.getBooleanProperty(HEDERA_EXPORT_ACCOUNTS_ON_STARTUP))
-                .willReturn(i % 2 == 0);
+        given(properties.getStringProperty(HEDERA_ACCOUNTS_EXPORT_PATH)).willReturn(i % 2 == 0 ? "A" : "B");
+        given(properties.getBooleanProperty(HEDERA_EXPORT_ACCOUNTS_ON_STARTUP)).willReturn(i % 2 == 0);
         given(properties.getProfileProperty(NETTY_MODE)).willReturn(LEGACY_ENV_ORDER[(i + 21) % 3]);
         given(properties.getIntProperty(NETTY_START_RETRIES)).willReturn(i + 22);
         given(properties.getLongProperty(NETTY_START_RETRY_INTERVAL_MS)).willReturn(i + 23L);
@@ -231,19 +234,18 @@ class NodeLocalPropertiesTest {
         given(properties.getIntProperty(HEDERA_PREFETCH_QUEUE_CAPACITY)).willReturn(i + 27);
         given(properties.getIntProperty(HEDERA_PREFETCH_THREAD_POOL_SIZE)).willReturn(i + 28);
         given(properties.getIntProperty(HEDERA_PREFETCH_CODE_CACHE_TTL_SECS)).willReturn(i + 29);
-        given(properties.getStringsProperty(STATS_CONS_THROTTLES_TO_SAMPLE))
-                .willReturn(List.of("" + (i + 79)));
-        given(properties.getStringsProperty(STATS_HAPI_THROTTLES_TO_SAMPLE))
-                .willReturn(List.of("" + (i + 80)));
+        given(properties.getStringsProperty(STATS_CONS_THROTTLES_TO_SAMPLE)).willReturn(List.of("" + (i + 79)));
+        given(properties.getStringsProperty(STATS_HAPI_THROTTLES_TO_SAMPLE)).willReturn(List.of("" + (i + 80)));
         given(properties.getLongProperty(STATS_ENTITY_UTILS_GAUGE_UPDATE_INTERVAL_MS))
                 .willReturn(i + 81L);
         given(properties.getLongProperty(STATS_THROTTLE_UTILS_GAUGE_UPDATE_INTERVAL_MS))
                 .willReturn(i + 82L);
-        given(properties.getStringProperty(HEDERA_RECORD_STREAM_SIDE_CAR_DIR))
-                .willReturn(logDir(i + 30));
+        given(properties.getStringProperty(HEDERA_RECORD_STREAM_SIDE_CAR_DIR)).willReturn(logDir(i + 30));
+        given(properties.getIntProperty(GRPC_WORKFLOWS_PORT)).willReturn(i + 31);
+        given(properties.getIntProperty(GRPC_WORKFLOWS_TLS_PORT)).willReturn(i + 32);
     }
 
-    static String logDir(int num) {
+    static String logDir(final int num) {
         return "myRecords/dir" + num;
     }
 }

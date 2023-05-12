@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs.factories;
 
 import static org.mockito.Mockito.doCallRealMethod;
@@ -41,9 +42,7 @@ class TxnScopedPlatformSigFactoryTest {
     void choosesAppropriateSignatureForSecp256k1() {
         final var subject = mock(TxnScopedPlatformSigFactory.class);
 
-        doCallRealMethod()
-                .when(subject)
-                .signAppropriately(KeyType.ECDSA_SECP256K1, mockKey, mockSig);
+        doCallRealMethod().when(subject).signAppropriately(KeyType.ECDSA_SECP256K1, mockKey, mockSig);
 
         subject.signAppropriately(KeyType.ECDSA_SECP256K1, mockKey, mockSig);
 

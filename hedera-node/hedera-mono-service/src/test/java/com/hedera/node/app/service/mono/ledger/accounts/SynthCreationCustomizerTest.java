@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.accounts;
 
 import static com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer.STAKED_ACCOUNT_ID_CASE;
@@ -47,7 +48,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class SynthCreationCustomizerTest {
-    @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
+    @Mock
+    private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
 
     private SynthCreationCustomizer subject;
 
@@ -63,16 +65,13 @@ class SynthCreationCustomizerTest {
         given(accountsLedger.get(callerId, EXPIRY)).willReturn(expiry);
         given(accountsLedger.get(callerId, AUTO_RENEW_PERIOD)).willReturn(autoRenewPeriod);
         given(accountsLedger.get(callerId, AUTO_RENEW_ACCOUNT_ID)).willReturn(autoRenewAccount);
-        given(accountsLedger.get(callerId, MAX_AUTOMATIC_ASSOCIATIONS))
-                .willReturn(maxAutoAssociations);
+        given(accountsLedger.get(callerId, MAX_AUTOMATIC_ASSOCIATIONS)).willReturn(maxAutoAssociations);
         given(accountsLedger.get(callerId, STAKED_ID)).willReturn(stakedId);
         given(accountsLedger.get(callerId, DECLINE_REWARD)).willReturn(declineReward);
 
-        final var origCreation =
-                TransactionBody.newBuilder()
-                        .setContractCreateInstance(
-                                ContractCreateTransactionBody.getDefaultInstance())
-                        .build();
+        final var origCreation = TransactionBody.newBuilder()
+                .setContractCreateInstance(ContractCreateTransactionBody.getDefaultInstance())
+                .build();
         final var customCreation = subject.customize(origCreation, callerId, true);
 
         final var customOp = customCreation.getContractCreateInstance();
@@ -92,16 +91,13 @@ class SynthCreationCustomizerTest {
         given(accountsLedger.get(callerId, EXPIRY)).willReturn(expiry);
         given(accountsLedger.get(callerId, AUTO_RENEW_PERIOD)).willReturn(autoRenewPeriod);
         given(accountsLedger.get(callerId, AUTO_RENEW_ACCOUNT_ID)).willReturn(autoRenewAccount);
-        given(accountsLedger.get(callerId, MAX_AUTOMATIC_ASSOCIATIONS))
-                .willReturn(maxAutoAssociations);
+        given(accountsLedger.get(callerId, MAX_AUTOMATIC_ASSOCIATIONS)).willReturn(maxAutoAssociations);
         given(accountsLedger.get(callerId, STAKED_ID)).willReturn(stakedId);
         given(accountsLedger.get(callerId, DECLINE_REWARD)).willReturn(declineReward);
 
-        final var origCreation =
-                TransactionBody.newBuilder()
-                        .setContractCreateInstance(
-                                ContractCreateTransactionBody.getDefaultInstance())
-                        .build();
+        final var origCreation = TransactionBody.newBuilder()
+                .setContractCreateInstance(ContractCreateTransactionBody.getDefaultInstance())
+                .build();
         final var customCreation = subject.customize(origCreation, callerId, false);
 
         final var customOp = customCreation.getContractCreateInstance();
@@ -114,8 +110,7 @@ class SynthCreationCustomizerTest {
         assertEquals(declineReward, customOp.getDeclineReward());
     }
 
-    private static final JKey cryptoAdminKey =
-            new JEd25519Key("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes());
+    private static final JKey cryptoAdminKey = new JEd25519Key("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes());
     private static final Key grpcCryptoAdminKey = MiscUtils.asKeyUnchecked(cryptoAdminKey);
     private static final AccountID callerId = asAccount("0.0.666");
     private static final long expiry = 1_234_567L;

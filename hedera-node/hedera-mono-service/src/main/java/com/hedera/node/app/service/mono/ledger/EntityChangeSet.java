@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger;
 
 import static com.hedera.node.app.service.mono.ledger.TransactionalLedger.MAX_ENTITIES_CONCEIVABLY_TOUCHED_IN_LEDGER_TXN;
@@ -38,10 +39,8 @@ public class EntityChangeSet<K, A, P extends Enum<P> & BeanProperty<A>> {
     // entities
     // list has a null value at an index, it means the change at that index was a creation
     private final List<K> ids = new ArrayList<>(MAX_ENTITIES_CONCEIVABLY_TOUCHED_IN_LEDGER_TXN);
-    private final List<A> entities =
-            new ArrayList<>(MAX_ENTITIES_CONCEIVABLY_TOUCHED_IN_LEDGER_TXN);
-    private final List<Map<P, Object>> changes =
-            new ArrayList<>(MAX_ENTITIES_CONCEIVABLY_TOUCHED_IN_LEDGER_TXN);
+    private final List<A> entities = new ArrayList<>(MAX_ENTITIES_CONCEIVABLY_TOUCHED_IN_LEDGER_TXN);
+    private final List<Map<P, Object>> changes = new ArrayList<>(MAX_ENTITIES_CONCEIVABLY_TOUCHED_IN_LEDGER_TXN);
 
     private int numRetainedChanges = 0;
 

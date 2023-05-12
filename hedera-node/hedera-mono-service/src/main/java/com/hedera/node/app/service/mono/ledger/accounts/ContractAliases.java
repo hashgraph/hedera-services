@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.accounts;
 
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asTypedEvmAddress;
@@ -44,7 +45,8 @@ public interface ContractAliases {
 
     default Address currentAddress(final ContractID idOrAlias) {
         if (isAlias(idOrAlias)) {
-            return resolveForEvm(Address.wrap(Bytes.wrap(idOrAlias.getEvmAddress().toByteArray())));
+            return resolveForEvm(
+                    Address.wrap(Bytes.wrap(idOrAlias.getEvmAddress().toByteArray())));
         }
         return asTypedEvmAddress(idOrAlias);
     }

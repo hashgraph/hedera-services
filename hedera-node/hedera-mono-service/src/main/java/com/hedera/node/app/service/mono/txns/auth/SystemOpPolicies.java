@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.auth;
 
 import static com.hedera.node.app.service.mono.txns.auth.SystemOpAuthorization.AUTHORIZED;
@@ -49,9 +50,7 @@ import javax.inject.Singleton;
 public class SystemOpPolicies {
     private final EntityNumbers entityNums;
 
-    private final EnumMap<
-                    HederaFunctionality,
-                    BiFunction<TransactionBody, AccountID, SystemOpAuthorization>>
+    private final EnumMap<HederaFunctionality, BiFunction<TransactionBody, AccountID, SystemOpAuthorization>>
             functionPolicies;
 
     @Inject
@@ -89,19 +88,16 @@ public class SystemOpPolicies {
                 .orElse(UNNECESSARY);
     }
 
-    private SystemOpAuthorization checkUncheckedSubmit(
-            final TransactionBody txn, final AccountID payer) {
+    private SystemOpAuthorization checkUncheckedSubmit(final TransactionBody txn, final AccountID payer) {
         return entityNums.accounts().isSuperuser(payerFor(txn, payer)) ? AUTHORIZED : UNAUTHORIZED;
     }
 
-    private SystemOpAuthorization checkEthereumTransaction(
-            final TransactionBody txn, final AccountID payer) {
+    private SystemOpAuthorization checkEthereumTransaction(final TransactionBody txn, final AccountID payer) {
         // Apply more fine-tuned logic
         return UNNECESSARY;
     }
 
-    private SystemOpAuthorization checkSystemUndelete(
-            final TransactionBody txn, final AccountID payer) {
+    private SystemOpAuthorization checkSystemUndelete(final TransactionBody txn, final AccountID payer) {
         final var op = txn.getSystemUndelete();
         final long thePayer = payerFor(txn, payer);
         if (op.hasFileID()) {
@@ -111,8 +107,7 @@ public class SystemOpPolicies {
         }
     }
 
-    private SystemOpAuthorization checkSystemDelete(
-            final TransactionBody txn, final AccountID payer) {
+    private SystemOpAuthorization checkSystemDelete(final TransactionBody txn, final AccountID payer) {
         final var op = txn.getSystemDelete();
         final long thePayer = payerFor(txn, payer);
         if (op.hasFileID()) {
@@ -122,16 +117,14 @@ public class SystemOpPolicies {
         }
     }
 
-    private SystemOpAuthorization checkSystemUndeleteFile(
-            final long payerAccount, final FileID id) {
+    private SystemOpAuthorization checkSystemUndeleteFile(final long payerAccount, final FileID id) {
         if (entityNums.isSystemFile(id)) {
             return IMPERMISSIBLE;
         }
         return hasSysUndelPrivileges(payerAccount) ? AUTHORIZED : UNAUTHORIZED;
     }
 
-    private SystemOpAuthorization checkSystemUndeleteContract(
-            final long payerAccount, final ContractID id) {
+    private SystemOpAuthorization checkSystemUndeleteContract(final long payerAccount, final ContractID id) {
         if (entityNums.isSystemContract(id)) {
             return IMPERMISSIBLE;
         }
@@ -145,8 +138,7 @@ public class SystemOpPolicies {
         return hasSysDelPrivileges(payerAccount) ? AUTHORIZED : UNAUTHORIZED;
     }
 
-    private SystemOpAuthorization checkSystemDeleteContract(
-            final long payerAccount, final ContractID id) {
+    private SystemOpAuthorization checkSystemDeleteContract(final long payerAccount, final ContractID id) {
         if (entityNums.isSystemContract(id)) {
             return IMPERMISSIBLE;
         }
@@ -165,48 +157,37 @@ public class SystemOpPolicies {
 
     private SystemOpAuthorization checkFreeze(final TransactionBody txn, final AccountID payer) {
         final var thePayer = payerFor(txn, payer);
-        final boolean isAuthorized =
-                thePayer == entityNums.accounts().treasury()
-                        || thePayer == entityNums.accounts().systemAdmin()
-                        || thePayer == entityNums.accounts().freezeAdmin();
+        final boolean isAuthorized = thePayer == entityNums.accounts().treasury()
+                || thePayer == entityNums.accounts().systemAdmin()
+                || thePayer == entityNums.accounts().freezeAdmin();
         return isAuthorized ? AUTHORIZED : UNAUTHORIZED;
     }
 
-    private SystemOpAuthorization checkContractUpdate(
-            final TransactionBody txn, final AccountID payer) {
+    private SystemOpAuthorization checkContractUpdate(final TransactionBody txn, final AccountID payer) {
         final var target = txn.getContractUpdateInstance().getContractID();
         if (!entityNums.isSystemContract(target)) {
             return UNNECESSARY;
         }
-        return canPerformNonCryptoUpdate(payerFor(txn, payer), target.getContractNum())
-                ? AUTHORIZED
-                : UNAUTHORIZED;
+        return canPerformNonCryptoUpdate(payerFor(txn, payer), target.getContractNum()) ? AUTHORIZED : UNAUTHORIZED;
     }
 
-    private SystemOpAuthorization checkFileUpdate(
-            final TransactionBody txn, final AccountID payer) {
+    private SystemOpAuthorization checkFileUpdate(final TransactionBody txn, final AccountID payer) {
         final var target = txn.getFileUpdate().getFileID();
         if (!entityNums.isSystemFile(target)) {
             return UNNECESSARY;
         }
-        return canPerformNonCryptoUpdate(payerFor(txn, payer), target.getFileNum())
-                ? AUTHORIZED
-                : UNAUTHORIZED;
+        return canPerformNonCryptoUpdate(payerFor(txn, payer), target.getFileNum()) ? AUTHORIZED : UNAUTHORIZED;
     }
 
-    private SystemOpAuthorization checkFileAppend(
-            final TransactionBody txn, final AccountID payer) {
+    private SystemOpAuthorization checkFileAppend(final TransactionBody txn, final AccountID payer) {
         final var target = txn.getFileAppend().getFileID();
         if (!entityNums.isSystemFile(target)) {
             return UNNECESSARY;
         }
-        return canPerformNonCryptoUpdate(payerFor(txn, payer), target.getFileNum())
-                ? AUTHORIZED
-                : UNAUTHORIZED;
+        return canPerformNonCryptoUpdate(payerFor(txn, payer), target.getFileNum()) ? AUTHORIZED : UNAUTHORIZED;
     }
 
-    private SystemOpAuthorization checkCryptoUpdate(
-            final TransactionBody txn, final AccountID payer) {
+    private SystemOpAuthorization checkCryptoUpdate(final TransactionBody txn, final AccountID payer) {
         final var target = txn.getCryptoUpdateAccount().getAccountIDToUpdate();
         if (!entityNums.isSystemAccount(target)) {
             return UNNECESSARY;
@@ -215,36 +196,25 @@ public class SystemOpPolicies {
             if (thePayer == entityNums.accounts().treasury()) {
                 return AUTHORIZED;
             } else if (thePayer == entityNums.accounts().systemAdmin()) {
-                return (target.getAccountNum() == entityNums.accounts().treasury())
-                        ? UNAUTHORIZED
-                        : AUTHORIZED;
+                return (target.getAccountNum() == entityNums.accounts().treasury()) ? UNAUTHORIZED : AUTHORIZED;
             } else {
-                return (target.getAccountNum() == entityNums.accounts().treasury())
-                        ? UNAUTHORIZED
-                        : UNNECESSARY;
+                return (target.getAccountNum() == entityNums.accounts().treasury()) ? UNAUTHORIZED : UNNECESSARY;
             }
         }
     }
 
-    private SystemOpAuthorization checkContractDelete(
-            final TransactionBody txn, final AccountID payer) {
+    private SystemOpAuthorization checkContractDelete(final TransactionBody txn, final AccountID payer) {
         return entityNums.isSystemContract(txn.getContractDeleteInstance().getContractID())
                 ? IMPERMISSIBLE
                 : UNNECESSARY;
     }
 
-    private SystemOpAuthorization checkCryptoDelete(
-            final TransactionBody txn, final AccountID payer) {
-        return entityNums.isSystemAccount(txn.getCryptoDelete().getDeleteAccountID())
-                ? IMPERMISSIBLE
-                : UNNECESSARY;
+    private SystemOpAuthorization checkCryptoDelete(final TransactionBody txn, final AccountID payer) {
+        return entityNums.isSystemAccount(txn.getCryptoDelete().getDeleteAccountID()) ? IMPERMISSIBLE : UNNECESSARY;
     }
 
-    private SystemOpAuthorization checkFileDelete(
-            final TransactionBody txn, final AccountID payer) {
-        return entityNums.isSystemFile(txn.getFileDelete().getFileID())
-                ? IMPERMISSIBLE
-                : UNNECESSARY;
+    private SystemOpAuthorization checkFileDelete(final TransactionBody txn, final AccountID payer) {
+        return entityNums.isSystemFile(txn.getFileDelete().getFileID()) ? IMPERMISSIBLE : UNNECESSARY;
     }
 
     private long payerFor(final TransactionBody txn, final AccountID payer) {

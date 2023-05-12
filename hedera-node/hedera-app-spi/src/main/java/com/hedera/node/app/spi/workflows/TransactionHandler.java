@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,9 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi.workflows;
+
+import com.hedera.node.app.spi.records.RecordBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A {@code TransactionHandler} contains all methods for the different stages of a single operation.
  */
-public interface TransactionHandler {}
+public interface TransactionHandler {
+
+    /**
+     * Pre-handles a transaction, extracting all non-payer keys, which signatures need to be validated
+     *
+     * @param context the {@link PreHandleContext} which collects all information
+     * @throws NullPointerException if one of the arguments is {@code null}
+     * @throws PreCheckException if the transaction is invalid
+     */
+    void preHandle(@NonNull final PreHandleContext context) throws PreCheckException;
+
+    /**
+     * Returns an instance of the transaction-specific {@link RecordBuilder}.
+     *
+     * @return an instance of the transaction-specific {@link RecordBuilder}
+     * @param <R> the type of the transaction-specific {@link RecordBuilder}
+     */
+    default <R extends RecordBuilder<R>> R newRecordBuilder() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+}

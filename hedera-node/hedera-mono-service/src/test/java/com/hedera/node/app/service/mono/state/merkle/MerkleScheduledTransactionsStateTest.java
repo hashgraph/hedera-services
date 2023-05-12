@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.merkle;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -21,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.exceptions.MutabilityException;
+import com.swirlds.base.state.MutabilityException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -84,8 +85,7 @@ class MerkleScheduledTransactionsStateTest {
     void merkleMethodsWork() {
         assertEquals(MerkleScheduledTransactionsState.RELEASE_0270_VERSION, subject.getVersion());
         assertEquals(MerkleScheduledTransactionsState.CURRENT_VERSION, subject.getVersion());
-        assertEquals(
-                MerkleScheduledTransactionsState.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
+        assertEquals(MerkleScheduledTransactionsState.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
         assertTrue(subject.isLeaf());
     }
 

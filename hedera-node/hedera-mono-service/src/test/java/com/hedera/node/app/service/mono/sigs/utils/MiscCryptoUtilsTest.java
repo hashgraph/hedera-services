@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs.utils;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -29,8 +30,7 @@ class MiscCryptoUtilsTest {
     void computesExpectedHashes() {
         final var data = "AHOTMESS".getBytes();
 
-        final var expectedHexedHash =
-                "9eed2a3d8a3987c15d6ec326012c8a3b91346341921a09cc75eb38df28101e8d";
+        final var expectedHexedHash = "9eed2a3d8a3987c15d6ec326012c8a3b91346341921a09cc75eb38df28101e8d";
 
         final var actualHexedHash = CommonUtils.hex(MiscCryptoUtils.keccak256DigestOf(data));
 
@@ -44,8 +44,18 @@ class MiscCryptoUtilsTest {
         final var compressed = q.getEncoded(true);
         final var uncompressed = q.getEncoded(false);
 
-        assertArrayEquals(
-                Arrays.copyOfRange(uncompressed, 1, 65),
-                MiscCryptoUtils.decompressSecp256k1(compressed));
+        assertArrayEquals(Arrays.copyOfRange(uncompressed, 1, 65), MiscCryptoUtils.decompressSecp256k1(compressed));
+    }
+
+    @Test
+    void extractsCorrectEvmAddress() {
+        final var key = "dd7da872d68c71d055940129e19181eb2b9bc2c3eaa329934827722e86250037".getBytes();
+        final var keccak256DigestOf = MiscCryptoUtils.keccak256DigestOf(key);
+        final var expectedAddress =
+                Arrays.copyOfRange(keccak256DigestOf, keccak256DigestOf.length - 20, keccak256DigestOf.length);
+
+        final var actualAddress = MiscCryptoUtils.extractEvmAddressFromDecompressedECDSAKey(key);
+
+        assertArrayEquals(expectedAddress, actualAddress);
     }
 }

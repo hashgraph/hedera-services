@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs.order;
 
 import static com.hedera.node.app.service.mono.txns.auth.SystemOpAuthorization.AUTHORIZED;
@@ -70,8 +71,7 @@ public class PolicyBasedSigWaivers implements SignatureWaivers {
     }
 
     @Override
-    public boolean isTargetAccountKeyWaived(
-            TransactionBody cryptoUpdateTxn, final AccountID payer) {
+    public boolean isTargetAccountKeyWaived(TransactionBody cryptoUpdateTxn, final AccountID payer) {
         assertTypeExpectation(cryptoUpdateTxn.hasCryptoUpdateAccount());
         return opPolicies.checkKnownTxn(cryptoUpdateTxn, CryptoUpdate, payer) == AUTHORIZED;
     }
@@ -79,13 +79,14 @@ public class PolicyBasedSigWaivers implements SignatureWaivers {
     @Override
     public boolean isNewAccountKeyWaived(TransactionBody cryptoUpdateTxn, final AccountID payer) {
         assertTypeExpectation(cryptoUpdateTxn.hasCryptoUpdateAccount());
-        final var isAuthorized =
-                opPolicies.checkKnownTxn(cryptoUpdateTxn, CryptoUpdate, payer) == AUTHORIZED;
+        final var isAuthorized = opPolicies.checkKnownTxn(cryptoUpdateTxn, CryptoUpdate, payer) == AUTHORIZED;
         if (!isAuthorized) {
             return false;
         } else {
-            final var targetNum =
-                    cryptoUpdateTxn.getCryptoUpdateAccount().getAccountIDToUpdate().getAccountNum();
+            final var targetNum = cryptoUpdateTxn
+                    .getCryptoUpdateAccount()
+                    .getAccountIDToUpdate()
+                    .getAccountNum();
             return targetNum != accountNums.treasury();
         }
     }

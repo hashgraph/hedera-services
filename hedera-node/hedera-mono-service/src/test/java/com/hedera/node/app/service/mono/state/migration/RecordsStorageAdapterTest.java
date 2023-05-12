@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.migration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -23,6 +24,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerklePayerRecords;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
@@ -42,11 +44,20 @@ class RecordsStorageAdapterTest {
     private static final EntityNum SOME_NUM = EntityNum.fromInt(1234);
     private static final EntityNum SOME_MISSING_NUM = EntityNum.fromInt(4321);
 
-    @Mock private @Nullable MerkleMap<EntityNum, MerkleAccount> accounts;
-    @Mock private @Nullable MerkleMap<EntityNum, MerklePayerRecords> payerRecords;
-    @Mock private MerkleAccount account;
-    @Mock private MerklePayerRecords accountRecords;
-    @Mock private BiConsumer<EntityNum, FCQueue<ExpirableTxnRecord>> observer;
+    @Mock
+    private @Nullable MerkleMap<EntityNum, MerkleAccount> accounts;
+
+    @Mock
+    private @Nullable MerkleMap<EntityNum, MerklePayerRecords> payerRecords;
+
+    @Mock
+    private MerkleAccount account;
+
+    @Mock
+    private MerklePayerRecords accountRecords;
+
+    @Mock
+    private BiConsumer<EntityNum, FCQueue<ExpirableTxnRecord>> observer;
 
     private RecordsStorageAdapter subject;
 
@@ -120,9 +131,7 @@ class RecordsStorageAdapterTest {
         given(accountRecords.asQueryableRecords()).willReturn(queryable);
 
         assertSame(queryable, subject.getReadOnlyPayerRecords(SOME_NUM));
-        assertSame(
-                QueryableRecords.NO_QUERYABLE_RECORDS,
-                subject.getReadOnlyPayerRecords(SOME_MISSING_NUM));
+        assertSame(QueryableRecords.NO_QUERYABLE_RECORDS, subject.getReadOnlyPayerRecords(SOME_MISSING_NUM));
     }
 
     @Test
@@ -136,9 +145,7 @@ class RecordsStorageAdapterTest {
 
         final var queryable = subject.getReadOnlyPayerRecords(SOME_NUM);
         assertEquals(1, queryable.expectedSize());
-        assertSame(
-                QueryableRecords.NO_QUERYABLE_RECORDS,
-                subject.getReadOnlyPayerRecords(SOME_MISSING_NUM));
+        assertSame(QueryableRecords.NO_QUERYABLE_RECORDS, subject.getReadOnlyPayerRecords(SOME_MISSING_NUM));
     }
 
     @Test
@@ -184,10 +191,10 @@ class RecordsStorageAdapterTest {
     }
 
     private void withLegacySubject() {
-        subject = RecordsStorageAdapter.fromLegacy(accounts);
+        subject = RecordsStorageAdapter.fromLegacy(MerkleMapLike.from(accounts));
     }
 
     private void withDedicatedSubject() {
-        subject = RecordsStorageAdapter.fromDedicated(payerRecords);
+        subject = RecordsStorageAdapter.fromDedicated(MerkleMapLike.from(payerRecords));
     }
 }

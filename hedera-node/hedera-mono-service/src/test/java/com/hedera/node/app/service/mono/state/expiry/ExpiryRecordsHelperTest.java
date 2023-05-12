@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.expiry;
 
 import static com.hedera.node.app.hapi.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
@@ -70,28 +71,33 @@ class ExpiryRecordsHelperTest {
     private final AccountID removedId = IdUtils.asAccount("0.0.3");
     private final AccountID funding = IdUtils.asAccount("0.0.98");
     private final EntityNum expiredNum = EntityNum.fromAccountId(removedId);
-    private final TransactionID mockSystemTxnId =
-            TransactionID.newBuilder().setAccountID(IdUtils.asAccount("0.0.789")).build();
+    private final TransactionID mockSystemTxnId = TransactionID.newBuilder()
+            .setAccountID(IdUtils.asAccount("0.0.789"))
+            .build();
     private final TransactionBody.Builder mockBody =
             TransactionBody.newBuilder().setTransactionID(mockSystemTxnId);
 
-    @Mock private RecordStreaming recordStreaming;
-    @Mock private SyntheticTxnFactory syntheticTxnFactory;
-    @Mock private ConsensusTimeTracker consensusTimeTracker;
-    @Mock private SideEffectsTracker sideEffectsTracker;
-    @Mock private RecordsHistorian recordsHistorian;
+    @Mock
+    private RecordStreaming recordStreaming;
+
+    @Mock
+    private SyntheticTxnFactory syntheticTxnFactory;
+
+    @Mock
+    private ConsensusTimeTracker consensusTimeTracker;
+
+    @Mock
+    private SideEffectsTracker sideEffectsTracker;
+
+    @Mock
+    private RecordsHistorian recordsHistorian;
 
     private ExpiryRecordsHelper subject;
 
     @BeforeEach
     void setUp() {
-        subject =
-                new ExpiryRecordsHelper(
-                        recordStreaming,
-                        recordsHistorian,
-                        syntheticTxnFactory,
-                        consensusTimeTracker,
-                        sideEffectsTracker);
+        subject = new ExpiryRecordsHelper(
+                recordStreaming, recordsHistorian, syntheticTxnFactory, consensusTimeTracker, sideEffectsTracker);
     }
 
     @Test
@@ -107,31 +113,26 @@ class ExpiryRecordsHelperTest {
         final var aBalance = 100L;
         final var bBalance = 200L;
         final var removalTime = instantNow.plusNanos(0);
-        final var displacements =
-                List.of(
-                        ttlOf(aToken, from, firstTo, aBalance),
-                        ttlOf(bToken, from, secondTo, bBalance),
-                        exchangeOf(nfToken, sender, receiver, 1L));
-        final var rso =
-                expectedRso(
-                        cryptoRemovalRecord(false, true, removedId, removalTime, displacements), 0);
+        final var displacements = List.of(
+                ttlOf(aToken, from, firstTo, aBalance),
+                ttlOf(bToken, from, secondTo, bBalance),
+                exchangeOf(nfToken, sender, receiver, 1L));
+        final var rso = expectedRso(cryptoRemovalRecord(false, true, removedId, removalTime, displacements), 0);
 
-        given(recordsHistorian.computeNextSystemTransactionId())
-                .willReturn(TxnId.fromGrpc(mockSystemTxnId));
+        given(recordsHistorian.computeNextSystemTransactionId()).willReturn(TxnId.fromGrpc(mockSystemTxnId));
         given(syntheticTxnFactory.synthAccountAutoRemove(expiredNum)).willReturn(mockBody);
         given(consensusTimeTracker.nextStandaloneRecordTime()).willReturn(instantNow);
 
-        final var returns =
-                new CryptoGcOutcome(
-                        new FungibleTreasuryReturns(
-                                tokensFrom(displacements).subList(0, 2),
-                                adjustmentsFrom(displacements).subList(0, 2),
-                                true),
-                        new NonFungibleTreasuryReturns(
-                                tokensFrom(displacements).subList(2, 3),
-                                exchangesFrom(displacements).subList(2, 3),
-                                true),
-                        true);
+        final var returns = new CryptoGcOutcome(
+                new FungibleTreasuryReturns(
+                        tokensFrom(displacements).subList(0, 2),
+                        adjustmentsFrom(displacements).subList(0, 2),
+                        true),
+                new NonFungibleTreasuryReturns(
+                        tokensFrom(displacements).subList(2, 3),
+                        exchangesFrom(displacements).subList(2, 3),
+                        true),
+                true);
         subject.streamCryptoRemovalStep(false, expiredNum, returns);
 
         // then:
@@ -152,31 +153,26 @@ class ExpiryRecordsHelperTest {
         final var aBalance = 100L;
         final var bBalance = 200L;
         final var removalTime = instantNow.plusNanos(0);
-        final var displacements =
-                List.of(
-                        ttlOf(aToken, from, firstTo, aBalance),
-                        ttlOf(bToken, from, secondTo, bBalance),
-                        exchangeOf(nfToken, sender, receiver, 1L));
-        final var rso =
-                expectedRso(
-                        cryptoRemovalRecord(true, true, removedId, removalTime, displacements), 0);
+        final var displacements = List.of(
+                ttlOf(aToken, from, firstTo, aBalance),
+                ttlOf(bToken, from, secondTo, bBalance),
+                exchangeOf(nfToken, sender, receiver, 1L));
+        final var rso = expectedRso(cryptoRemovalRecord(true, true, removedId, removalTime, displacements), 0);
 
-        given(recordsHistorian.computeNextSystemTransactionId())
-                .willReturn(TxnId.fromGrpc(mockSystemTxnId));
+        given(recordsHistorian.computeNextSystemTransactionId()).willReturn(TxnId.fromGrpc(mockSystemTxnId));
         given(syntheticTxnFactory.synthContractAutoRemove(expiredNum)).willReturn(mockBody);
         given(consensusTimeTracker.nextStandaloneRecordTime()).willReturn(instantNow);
 
-        final var returns =
-                new CryptoGcOutcome(
-                        new FungibleTreasuryReturns(
-                                tokensFrom(displacements).subList(0, 2),
-                                adjustmentsFrom(displacements).subList(0, 2),
-                                true),
-                        new NonFungibleTreasuryReturns(
-                                tokensFrom(displacements).subList(2, 3),
-                                exchangesFrom(displacements).subList(2, 3),
-                                true),
-                        true);
+        final var returns = new CryptoGcOutcome(
+                new FungibleTreasuryReturns(
+                        tokensFrom(displacements).subList(0, 2),
+                        adjustmentsFrom(displacements).subList(0, 2),
+                        true),
+                new NonFungibleTreasuryReturns(
+                        tokensFrom(displacements).subList(2, 3),
+                        exchangesFrom(displacements).subList(2, 3),
+                        true),
+                true);
         subject.streamCryptoRemovalStep(true, expiredNum, returns);
 
         // then:
@@ -197,31 +193,26 @@ class ExpiryRecordsHelperTest {
         final var aBalance = 100L;
         final var bBalance = 200L;
         final var removalTime = instantNow.plusNanos(0);
-        final var displacements =
-                List.of(
-                        ttlOf(aToken, from, firstTo, aBalance),
-                        ttlOf(bToken, from, secondTo, bBalance),
-                        exchangeOf(nfToken, sender, receiver, 1L));
-        final var rso =
-                expectedRso(
-                        cryptoRemovalRecord(true, false, removedId, removalTime, displacements), 0);
+        final var displacements = List.of(
+                ttlOf(aToken, from, firstTo, aBalance),
+                ttlOf(bToken, from, secondTo, bBalance),
+                exchangeOf(nfToken, sender, receiver, 1L));
+        final var rso = expectedRso(cryptoRemovalRecord(true, false, removedId, removalTime, displacements), 0);
 
         given(consensusTimeTracker.nextStandaloneRecordTime()).willReturn(instantNow);
 
-        final var returns =
-                new CryptoGcOutcome(
-                        new FungibleTreasuryReturns(
-                                tokensFrom(displacements).subList(0, 2),
-                                adjustmentsFrom(displacements).subList(0, 2),
-                                true),
-                        new NonFungibleTreasuryReturns(
-                                tokensFrom(displacements).subList(2, 3),
-                                exchangesFrom(displacements).subList(2, 3),
-                                true),
-                        false);
+        final var returns = new CryptoGcOutcome(
+                new FungibleTreasuryReturns(
+                        tokensFrom(displacements).subList(0, 2),
+                        adjustmentsFrom(displacements).subList(0, 2),
+                        true),
+                new NonFungibleTreasuryReturns(
+                        tokensFrom(displacements).subList(2, 3),
+                        exchangesFrom(displacements).subList(2, 3),
+                        true),
+                false);
         given(syntheticTxnFactory.synthTokenTransfer(returns)).willReturn(mockBody);
-        given(recordsHistorian.computeNextSystemTransactionId())
-                .willReturn(TxnId.fromGrpc(mockSystemTxnId));
+        given(recordsHistorian.computeNextSystemTransactionId()).willReturn(TxnId.fromGrpc(mockSystemTxnId));
         subject.streamCryptoRemovalStep(true, expiredNum, returns);
 
         // then:
@@ -233,19 +224,12 @@ class ExpiryRecordsHelperTest {
     void streamsExpectedAccountRenewalRecord() {
         final var renewalTime = instantNow.plusNanos(0);
         final var rso =
-                expectedRso(
-                        cryptoRenewalRecord(
-                                removedId, renewalTime, removedId, fee, newExpiry, funding, false),
-                        0);
-        given(syntheticTxnFactory.synthAccountAutoRenew(expiredNum, newExpiry))
-                .willReturn(mockBody);
-        given(recordsHistorian.computeNextSystemTransactionId())
-                .willReturn(TxnId.fromGrpc(mockSystemTxnId));
+                expectedRso(cryptoRenewalRecord(removedId, renewalTime, removedId, fee, newExpiry, funding, false), 0);
+        given(syntheticTxnFactory.synthAccountAutoRenew(expiredNum, newExpiry)).willReturn(mockBody);
+        given(recordsHistorian.computeNextSystemTransactionId()).willReturn(TxnId.fromGrpc(mockSystemTxnId));
         given(consensusTimeTracker.nextStandaloneRecordTime()).willReturn(rso.getTimestamp());
         given(sideEffectsTracker.getNetTrackedHbarChanges())
-                .willReturn(
-                        new CurrencyAdjustments(
-                                new long[] {fee, -fee}, new long[] {funding.getAccountNum(), 3}));
+                .willReturn(new CurrencyAdjustments(new long[] {fee, -fee}, new long[] {funding.getAccountNum(), 3}));
 
         subject.streamCryptoRenewal(expiredNum, fee, newExpiry, false);
 
@@ -258,19 +242,12 @@ class ExpiryRecordsHelperTest {
     void streamsExpectedContractRenewalRecord() {
         final var renewalTime = instantNow.plusNanos(0);
         final var rso =
-                expectedRso(
-                        cryptoRenewalRecord(
-                                removedId, renewalTime, removedId, fee, newExpiry, funding, true),
-                        0);
-        given(syntheticTxnFactory.synthContractAutoRenew(expiredNum, newExpiry))
-                .willReturn(mockBody);
-        given(recordsHistorian.computeNextSystemTransactionId())
-                .willReturn(TxnId.fromGrpc(mockSystemTxnId));
+                expectedRso(cryptoRenewalRecord(removedId, renewalTime, removedId, fee, newExpiry, funding, true), 0);
+        given(syntheticTxnFactory.synthContractAutoRenew(expiredNum, newExpiry)).willReturn(mockBody);
+        given(recordsHistorian.computeNextSystemTransactionId()).willReturn(TxnId.fromGrpc(mockSystemTxnId));
         given(consensusTimeTracker.nextStandaloneRecordTime()).willReturn(rso.getTimestamp());
         given(sideEffectsTracker.getNetTrackedHbarChanges())
-                .willReturn(
-                        new CurrencyAdjustments(
-                                new long[] {fee, -fee}, new long[] {funding.getAccountNum(), 3}));
+                .willReturn(new CurrencyAdjustments(new long[] {fee, -fee}, new long[] {funding.getAccountNum(), 3}));
 
         subject.streamCryptoRenewal(expiredNum, fee, newExpiry, true);
 
@@ -289,16 +266,12 @@ class ExpiryRecordsHelperTest {
     private RecordStreamObject expectedRso(TransactionRecord record, final int nanosOffset) {
         mockBody.setTransactionID(mockSystemTxnId);
         final var synthTxn = synthFromBody(mockBody.build());
-        final var synthHash =
-                noThrowSha384HashOf(unwrapUnsafelyIfPossible(synthTxn.getSignedTransactionBytes()));
-        record =
-                record.toBuilder()
-                        .setTransactionHash(ByteStringUtils.wrapUnsafely(synthHash))
-                        .build();
+        final var synthHash = noThrowSha384HashOf(unwrapUnsafelyIfPossible(synthTxn.getSignedTransactionBytes()));
+        record = record.toBuilder()
+                .setTransactionHash(ByteStringUtils.wrapUnsafely(synthHash))
+                .build();
         return new RecordStreamObject(
-                ExpirableTxnRecordTestHelper.fromGprc(record),
-                synthTxn,
-                instantNow.plusNanos(nanosOffset));
+                ExpirableTxnRecordTestHelper.fromGprc(record), synthTxn, instantNow.plusNanos(nanosOffset));
     }
 
     private TransactionRecord cryptoRemovalRecord(
@@ -313,14 +286,11 @@ class ExpiryRecordsHelperTest {
                 .setReceipt(receipt)
                 .setConsensusTimestamp(asTimestamp(removedAt))
                 .setTransactionID(mockSystemTxnId)
-                .setMemo(
-                        String.format(
-                                "%s %s %s",
-                                (isContract ? "Contract" : "Account"),
-                                asLiteralString(accountRemoved),
-                                (isFinished
-                                        ? "was automatically deleted"
-                                        : "returned treasury assets")))
+                .setMemo(String.format(
+                        "%s %s %s",
+                        (isContract ? "Contract" : "Account"),
+                        asLiteralString(accountRemoved),
+                        (isFinished ? "was automatically deleted" : "returned treasury assets")))
                 .setTransactionFee(0L)
                 .addAllTokenTransferLists(displacements)
                 .build();
@@ -335,24 +305,21 @@ class ExpiryRecordsHelperTest {
             final AccountID feeCollector,
             final boolean isContract) {
         final var receipt = TransactionReceipt.newBuilder().setStatus(SUCCESS).build();
-        final var memo =
-                String.format(
-                        "%s %s was automatically renewed; new expiration time: %d",
-                        isContract ? "Contract" : "Account",
-                        asLiteralString(accountRenewed),
-                        newExpirationTime);
-        final var payerAmount =
-                AccountAmount.newBuilder()
-                        .setAccountID(autoRenewAccount)
-                        .setAmount(-1 * fee)
-                        .build();
-        final var payeeAmount =
-                AccountAmount.newBuilder().setAccountID(feeCollector).setAmount(fee).build();
-        final var transferList =
-                TransferList.newBuilder()
-                        .addAccountAmounts(payeeAmount)
-                        .addAccountAmounts(payerAmount)
-                        .build();
+        final var memo = String.format(
+                "%s %s was automatically renewed; new expiration time: %d",
+                isContract ? "Contract" : "Account", asLiteralString(accountRenewed), newExpirationTime);
+        final var payerAmount = AccountAmount.newBuilder()
+                .setAccountID(autoRenewAccount)
+                .setAmount(-1 * fee)
+                .build();
+        final var payeeAmount = AccountAmount.newBuilder()
+                .setAccountID(feeCollector)
+                .setAmount(fee)
+                .build();
+        final var transferList = TransferList.newBuilder()
+                .addAccountAmounts(payeeAmount)
+                .addAccountAmounts(payerAmount)
+                .build();
 
         return TransactionRecord.newBuilder()
                 .setReceipt(receipt)

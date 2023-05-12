@@ -1,0 +1,92 @@
+<!--
+  ~ Copyright 2016-2022 Hedera Hashgraph, LLC
+  ~
+  ~ This software is the confidential and proprietary information of
+  ~ Hedera Hashgraph, LLC. ("Confidential Information"). You shall not
+  ~ disclose such Confidential Information and shall use it only in
+  ~ accordance with the terms of the license agreement you entered into
+  ~ with Hedera Hashgraph.
+  ~
+  ~ HEDERA HASHGRAPH MAKES NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF
+  ~ THE SOFTWARE, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+  ~ TO THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+  ~ PARTICULAR PURPOSE, OR NON-INFRINGEMENT. HEDERA HASHGRAPH SHALL NOT BE LIABLE FOR
+  ~ ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, MODIFYING OR
+  ~ DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
+  -->
+
+<html>
+<head>
+	<style>
+		pre {
+			font-family: "Courier 10 Pitch", Courier, monospace;
+			margin-bottom: 1.6em;
+			max-width: 100%;
+			overflow: auto;
+			background-color: #efefef;
+		}
+	</style>
+</head>
+<body>
+
+<h1>Intalling Swirlds on Raspbian</h1>
+<p>To make Swirlds work on Raspbian, the appropriate version of Java needs to be installed and the hardware random
+	number generator needs to be confgured for TLS to work</p>
+
+<h2>Intalling Java</h2>
+<p>
+	Frist verify if the Java installed is the appropriate one, we need Oracle Java version 8. To verify, type the
+	following in the terminal:
+</p>
+<pre>java -version</pre>
+<p>The version should be 1.8 and it should be by Oracle(HotSpot). Here is an example of what it should look like:</p>
+<pre>java version "1.8.0_65"
+Java(TM) SE Runtime Environment (build 1.8.0_65-b17)
+Java HotSpot(TM) Client VM (build 25.65-b01, mixed mode)</pre>
+<p>
+	If you do not have the appropriate Java, follow these steps to install it:<br/>
+	Visit <a href="http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html" target="_blank"
+			 style="color: blue; text-decoration:none;">http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html</a>.<br/>
+	Click the download button of Java Platform (JDK) 8.<br/>
+	Click to Accept License Agreement.<br/>
+	Download jdk-8-linux-arm-vfp-hflt.tar.gz for Linux ARM v6/v7 Hard Float ABI.<br/>
+	Log-in Raspberry Pi, enter the command to extract jdk-8-linux-arm-vfp-hflt.tar.gz to /opt directory:
+</p>
+<pre>sudo tar zxvf jdk-8-linux-arm-vfp-hflt.tar.gz -C /opt</pre>
+<p>Set default java and javac to the new installed jdk8:</p>
+<pre>sudo update-alternatives --install /usr/bin/javac javac /opt/jdk1.8.0/bin/javac 1
+sudo update-alternatives --install /usr/bin/java java /opt/jdk1.8.0/bin/java 1
+sudo update-alternatives --config javac
+sudo update-alternatives --config java</pre>
+<p>
+	Now verify the Java again:
+</p>
+<pre>java -version</pre>
+
+<h2>Setting up the hardware random number generator</h2>
+<p>
+	Raspberry Pi has a hardware random number generator that needs to be set up in order for Java to use it for
+	TLS.<br/>
+	Depending on your version of the hardware and software, you might need to enable the module(it is enabled by default
+	on newer systems):
+</p>
+<pre>sudo modprobe bcm2708-rng</pre>
+<p>
+	After it is enabled, you need to install rng-tools for it to feed the random data to /dev/random:
+</p>
+<pre>sudo apt-get install rng-tools</pre>
+<p>
+	To check whether it works, run the following command in the terminal:
+</p>
+<pre>sudo dd if=/dev/random of=random bs=128 count=1024</pre>
+<p>
+	It shouldn't take more than a few seconds, and the output should look something like:
+</p>
+<pre>0+1024 records in
+0+1024 records out
+41306 bytes (41 kB) copied, 0.716273 s, 57.7 kB/s</pre>
+
+<p>
+	<a href="index.html">Back</a>
+</p>
+</body>

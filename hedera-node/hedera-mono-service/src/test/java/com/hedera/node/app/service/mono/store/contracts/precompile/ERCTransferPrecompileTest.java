@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.ERCTransferPrecompile.decodeERCTransfer;
@@ -39,41 +40,31 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ERCTransferPrecompileTest {
-    private static final Bytes TRANSFER_INPUT =
-            Bytes.fromHexString(
-                    "0xa9059cbb00000000000000000000000000000000000000000000000000000000000005a50000000000000000000000000000000000000000000000000000000000000002");
-    private static final Bytes TRANSFER_LONG_OVERFLOWN =
-            Bytes.fromHexString(
-                    "0xa9059cbb00000000000000000000000000000000000000000000000000000000000003ea0000000000000000000000000000000000000000000000010000000000000002");
-    private static final Bytes TRANSFER_FROM_FUNGIBLE_INPUT =
-            Bytes.fromHexString(
-                    "0x23b872dd00000000000000000000000000000000000000000000000000000000000005aa00000000000000000000000000000000000000000000000000000000000005ab0000000000000000000000000000000000000000000000000000000000000005");
-    private static final Bytes TRANSFER_FROM_NON_FUNGIBLE_INPUT =
-            Bytes.fromHexString(
-                    "0x23b872dd00000000000000000000000000000000000000000000000000000000000003e900000000000000000000000000000000000000000000000000000000000003ea0000000000000000000000000000000000000000000000000000000000000001");
-    private static final Bytes TRANSFER_FROM_LONG_OVERFLOWN =
-            Bytes.fromHexString(
-                    "0x23b872dd00000000000000000000000000000000000000000000000000000000000003ef00000000000000000000000000000000000000000000000000000000000003f00000000000000000000000000000000000000000000000010000000000000002");
-    private static final Bytes HAPI_TRANSFER_FROM_FUNGIBLE_INPUT =
-            Bytes.fromHexString(
-                    "0x15dacbea000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000005aa00000000000000000000000000000000000000000000000000000000000005ab0000000000000000000000000000000000000000000000000000000000000005");
-    private static final Bytes HAPI_TRANSFER_FROM_NFT_INPUT =
-            Bytes.fromHexString(
-                    "0x9b23d3d9000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000005aa00000000000000000000000000000000000000000000000000000000000005ab0000000000000000000000000000000000000000000000000000000000000005");
+    private static final Bytes TRANSFER_INPUT = Bytes.fromHexString(
+            "0xa9059cbb00000000000000000000000000000000000000000000000000000000000005a50000000000000000000000000000000000000000000000000000000000000002");
+    private static final Bytes TRANSFER_LONG_OVERFLOWN = Bytes.fromHexString(
+            "0xa9059cbb00000000000000000000000000000000000000000000000000000000000003ea0000000000000000000000000000000000000000000000010000000000000002");
+    private static final Bytes TRANSFER_FROM_FUNGIBLE_INPUT = Bytes.fromHexString(
+            "0x23b872dd00000000000000000000000000000000000000000000000000000000000005aa00000000000000000000000000000000000000000000000000000000000005ab0000000000000000000000000000000000000000000000000000000000000005");
+    private static final Bytes TRANSFER_FROM_NON_FUNGIBLE_INPUT = Bytes.fromHexString(
+            "0x23b872dd00000000000000000000000000000000000000000000000000000000000003e900000000000000000000000000000000000000000000000000000000000003ea0000000000000000000000000000000000000000000000000000000000000001");
+    private static final Bytes TRANSFER_FROM_LONG_OVERFLOWN = Bytes.fromHexString(
+            "0x23b872dd00000000000000000000000000000000000000000000000000000000000003ef00000000000000000000000000000000000000000000000000000000000003f00000000000000000000000000000000000000000000000010000000000000002");
+    private static final Bytes HAPI_TRANSFER_FROM_FUNGIBLE_INPUT = Bytes.fromHexString(
+            "0x15dacbea000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000005aa00000000000000000000000000000000000000000000000000000000000005ab0000000000000000000000000000000000000000000000000000000000000005");
+    private static final Bytes HAPI_TRANSFER_FROM_NFT_INPUT = Bytes.fromHexString(
+            "0x9b23d3d9000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000005aa00000000000000000000000000000000000000000000000000000000000005ab0000000000000000000000000000000000000000000000000000000000000005");
     private static final long TOKEN_NUM_HAPI_TOKEN = 0x1234;
     private static final TokenID TOKEN_ID =
             TokenID.newBuilder().setTokenNum(TOKEN_NUM_HAPI_TOKEN).build();
-    @Mock private WorldLedgers ledgers;
+
+    @Mock
+    private WorldLedgers ledgers;
 
     @Test
     void decodeTransferInput() {
         final var decodedInput =
-                decodeERCTransfer(
-                        TRANSFER_INPUT,
-                        TOKEN_ID,
-                        AccountID.getDefaultInstance(),
-                        identity(),
-                        k -> true);
+                decodeERCTransfer(TRANSFER_INPUT, TOKEN_ID, AccountID.getDefaultInstance(), identity(), k -> true);
         final var fungibleTransfer =
                 decodedInput.tokenTransferWrappers().get(0).fungibleTransfers().get(0);
 
@@ -88,30 +79,16 @@ class ERCTransferPrecompileTest {
 
         assertThrows(
                 ArithmeticException.class,
-                () ->
-                        decodeERCTransfer(
-                                TRANSFER_LONG_OVERFLOWN,
-                                TOKEN_ID,
-                                accId,
-                                aliasResolver,
-                                k -> true));
+                () -> decodeERCTransfer(TRANSFER_LONG_OVERFLOWN, TOKEN_ID, accId, aliasResolver, k -> true));
     }
 
     @Test
     void decodeTransferFromFungibleInputUsingApprovalIfNotOwner() {
         final var notOwner = new EntityId(0, 0, 1002);
 
-        final var decodedInput =
-                decodeERCTransferFrom(
-                        TRANSFER_FROM_FUNGIBLE_INPUT,
-                        TOKEN_ID,
-                        true,
-                        identity(),
-                        ledgers,
-                        notOwner,
-                        k -> true);
-        final var fungibleTransfer =
-                decodedInput.tokenTransferWrappers().get(0).fungibleTransfers();
+        final var decodedInput = decodeERCTransferFrom(
+                TRANSFER_FROM_FUNGIBLE_INPUT, TOKEN_ID, true, identity(), ledgers, notOwner, k -> true);
+        final var fungibleTransfer = decodedInput.tokenTransferWrappers().get(0).fungibleTransfers();
 
         assertTrue(fungibleTransfer.get(0).receiver().getAccountNum() > 0);
         assertTrue(fungibleTransfer.get(1).sender().getAccountNum() > 0);
@@ -123,17 +100,9 @@ class ERCTransferPrecompileTest {
     void decodeHapiTransferFromFungibleInputUsingApprovalIfNotOwner() {
         final var notOwner = new EntityId(0, 0, 1002);
 
-        final var decodedInput =
-                decodeERCTransferFrom(
-                        HAPI_TRANSFER_FROM_FUNGIBLE_INPUT,
-                        null,
-                        true,
-                        identity(),
-                        ledgers,
-                        notOwner,
-                        k -> true);
-        final var fungibleTransfer =
-                decodedInput.tokenTransferWrappers().get(0).fungibleTransfers();
+        final var decodedInput = decodeERCTransferFrom(
+                HAPI_TRANSFER_FROM_FUNGIBLE_INPUT, null, true, identity(), ledgers, notOwner, k -> true);
+        final var fungibleTransfer = decodedInput.tokenTransferWrappers().get(0).fungibleTransfers();
 
         assertEquals(IdUtils.asToken("0.0.1"), fungibleTransfer.get(0).getDenomination());
         assertEquals(fungibleTransfer.get(1).sender(), IdUtils.asAccount("0.0.1450"));
@@ -143,46 +112,30 @@ class ERCTransferPrecompileTest {
     }
 
     @Test
-    void decodeTransferFromFungibleInputDoesntUseApprovalIfFromIsOperator() {
+    void decodeTransferFromFungibleInputStillUsesApprovalIfFromIsOperator() {
         final var fromOp = new EntityId(0, 0, 1450);
 
-        final var decodedInput =
-                decodeERCTransferFrom(
-                        TRANSFER_FROM_FUNGIBLE_INPUT,
-                        TOKEN_ID,
-                        true,
-                        identity(),
-                        ledgers,
-                        fromOp,
-                        k -> true);
-        final var fungibleTransfer =
-                decodedInput.tokenTransferWrappers().get(0).fungibleTransfers();
+        final var decodedInput = decodeERCTransferFrom(
+                TRANSFER_FROM_FUNGIBLE_INPUT, TOKEN_ID, true, identity(), ledgers, fromOp, k -> true);
+        final var fungibleTransfer = decodedInput.tokenTransferWrappers().get(0).fungibleTransfers();
 
         assertTrue(fungibleTransfer.get(0).receiver().getAccountNum() > 0);
         assertTrue(fungibleTransfer.get(1).sender().getAccountNum() > 0);
-        assertFalse(fungibleTransfer.get(1).isApproval());
+        assertTrue(fungibleTransfer.get(1).isApproval());
         assertEquals(5, fungibleTransfer.get(0).amount());
     }
 
     @Test
-    void decodeHapiTransferFromFungibleInputDoesntUseApprovalIfFromIsOperator() {
+    void decodeHapiTransferFromFungibleInputStillUsesApprovalIfFromIsOperator() {
         final var fromOp = new EntityId(0, 0, 1450);
 
-        final var decodedInput =
-                decodeERCTransferFrom(
-                        HAPI_TRANSFER_FROM_FUNGIBLE_INPUT,
-                        null,
-                        true,
-                        identity(),
-                        ledgers,
-                        fromOp,
-                        k -> true);
-        final var fungibleTransfer =
-                decodedInput.tokenTransferWrappers().get(0).fungibleTransfers();
+        final var decodedInput = decodeERCTransferFrom(
+                HAPI_TRANSFER_FROM_FUNGIBLE_INPUT, null, true, identity(), ledgers, fromOp, k -> true);
+        final var fungibleTransfer = decodedInput.tokenTransferWrappers().get(0).fungibleTransfers();
 
         assertEquals(IdUtils.asToken("0.0.1"), fungibleTransfer.get(0).getDenomination());
         assertEquals(fungibleTransfer.get(1).sender(), IdUtils.asAccount("0.0.1450"));
-        assertFalse(fungibleTransfer.get(1).isApproval());
+        assertTrue(fungibleTransfer.get(1).isApproval());
         assertEquals(fungibleTransfer.get(0).receiver(), IdUtils.asAccount("0.0.1451"));
         assertEquals(5, fungibleTransfer.get(0).amount());
     }
@@ -191,17 +144,14 @@ class ERCTransferPrecompileTest {
     void decodeTransferFromNonFungibleInputUsingApprovalIfNotOwner() {
         final var notOwner = new EntityId(0, 0, 1002);
 
-        final var decodedInput =
-                decodeERCTransferFrom(
-                        TRANSFER_FROM_NON_FUNGIBLE_INPUT,
-                        TOKEN_ID,
-                        false,
-                        identity(),
-                        ledgers,
-                        notOwner,
-                        k -> true);
-        final var nftTransfer =
-                decodedInput.tokenTransferWrappers().get(0).nftExchanges().get(0).asGrpc();
+        final var decodedInput = decodeERCTransferFrom(
+                TRANSFER_FROM_NON_FUNGIBLE_INPUT, TOKEN_ID, false, identity(), ledgers, notOwner, k -> true);
+        final var nftTransfer = decodedInput
+                .tokenTransferWrappers()
+                .get(0)
+                .nftExchanges()
+                .get(0)
+                .asGrpc();
 
         assertTrue(nftTransfer.getSenderAccountID().getAccountNum() > 0);
         assertTrue(nftTransfer.getReceiverAccountID().getAccountNum() > 0);
@@ -213,16 +163,10 @@ class ERCTransferPrecompileTest {
     void decodeHapiTransferFromNFTInputUsingApprovalIfNotOwner() {
         final var notOwner = new EntityId(0, 0, 1002);
 
-        final var decodedInput =
-                decodeERCTransferFrom(
-                        HAPI_TRANSFER_FROM_NFT_INPUT,
-                        null,
-                        false,
-                        identity(),
-                        ledgers,
-                        notOwner,
-                        k -> true);
-        final var nftTransfer = decodedInput.tokenTransferWrappers().get(0).nftExchanges().get(0);
+        final var decodedInput = decodeERCTransferFrom(
+                HAPI_TRANSFER_FROM_NFT_INPUT, null, false, identity(), ledgers, notOwner, k -> true);
+        final var nftTransfer =
+                decodedInput.tokenTransferWrappers().get(0).nftExchanges().get(0);
 
         assertEquals(IdUtils.asToken("0.0.1"), nftTransfer.getTokenType());
         final var nftTransferAsGrpc = nftTransfer.asGrpc();
@@ -237,17 +181,14 @@ class ERCTransferPrecompileTest {
         final var callerId = new EntityId(0, 0, 1001);
         given(ledgers.ownerIfPresent(any())).willReturn(callerId);
 
-        final var decodedInput =
-                decodeERCTransferFrom(
-                        TRANSFER_FROM_NON_FUNGIBLE_INPUT,
-                        TOKEN_ID,
-                        false,
-                        identity(),
-                        ledgers,
-                        callerId,
-                        k -> true);
-        final var nftTransfer =
-                decodedInput.tokenTransferWrappers().get(0).nftExchanges().get(0).asGrpc();
+        final var decodedInput = decodeERCTransferFrom(
+                TRANSFER_FROM_NON_FUNGIBLE_INPUT, TOKEN_ID, false, identity(), ledgers, callerId, k -> true);
+        final var nftTransfer = decodedInput
+                .tokenTransferWrappers()
+                .get(0)
+                .nftExchanges()
+                .get(0)
+                .asGrpc();
 
         assertTrue(nftTransfer.getSenderAccountID().getAccountNum() > 0);
         assertTrue(nftTransfer.getReceiverAccountID().getAccountNum() > 0);
@@ -261,15 +202,9 @@ class ERCTransferPrecompileTest {
         given(ledgers.ownerIfPresent(any())).willReturn(owner);
 
         final var decodedInput =
-                decodeERCTransferFrom(
-                        HAPI_TRANSFER_FROM_NFT_INPUT,
-                        null,
-                        false,
-                        identity(),
-                        ledgers,
-                        owner,
-                        k -> true);
-        final var nftTransfer = decodedInput.tokenTransferWrappers().get(0).nftExchanges().get(0);
+                decodeERCTransferFrom(HAPI_TRANSFER_FROM_NFT_INPUT, null, false, identity(), ledgers, owner, k -> true);
+        final var nftTransfer =
+                decodedInput.tokenTransferWrappers().get(0).nftExchanges().get(0);
 
         assertEquals(IdUtils.asToken("0.0.1"), nftTransfer.getTokenType());
         final var nftTransferAsGrpc = nftTransfer.asGrpc();
@@ -286,14 +221,7 @@ class ERCTransferPrecompileTest {
 
         assertThrows(
                 ArithmeticException.class,
-                () ->
-                        decodeERCTransferFrom(
-                                TRANSFER_FROM_LONG_OVERFLOWN,
-                                TOKEN_ID,
-                                true,
-                                aliasResolver,
-                                ledgers,
-                                fromOp,
-                                k -> true));
+                () -> decodeERCTransferFrom(
+                        TRANSFER_FROM_LONG_OVERFLOWN, TOKEN_ID, true, aliasResolver, ledgers, fromOp, k -> true));
     }
 }

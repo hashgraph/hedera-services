@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.throttling;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -67,8 +68,12 @@ class ThrottleReqsManagerTest {
         // then:
         assertTrue(result);
         // and:
-        assertEquals(modifiedAReq * BucketThrottle.capacityUnitsPerTxn(), a.usageSnapshot().used());
-        assertEquals(modifiedBReq * BucketThrottle.capacityUnitsPerTxn(), b.usageSnapshot().used());
+        assertEquals(
+                modifiedAReq * BucketThrottle.capacityUnitsPerTxn(),
+                a.usageSnapshot().used());
+        assertEquals(
+                modifiedBReq * BucketThrottle.capacityUnitsPerTxn(),
+                b.usageSnapshot().used());
     }
 
     @Test
@@ -79,8 +84,10 @@ class ThrottleReqsManagerTest {
         // then:
         assertTrue(result);
         // and:
-        assertEquals(aReq * BucketThrottle.capacityUnitsPerTxn(), a.usageSnapshot().used());
-        assertEquals(bReq * BucketThrottle.capacityUnitsPerTxn(), b.usageSnapshot().used());
+        assertEquals(
+                aReq * BucketThrottle.capacityUnitsPerTxn(), a.usageSnapshot().used());
+        assertEquals(
+                bReq * BucketThrottle.capacityUnitsPerTxn(), b.usageSnapshot().used());
     }
 
     @Test
@@ -96,8 +103,7 @@ class ThrottleReqsManagerTest {
         assertFalse(result);
         // and:
         assertEquals(
-                (aReq * BucketThrottle.capacityUnitsPerTxn()
-                                - nanosSinceLastDecision * aTps * 1_000)
+                (aReq * BucketThrottle.capacityUnitsPerTxn() - nanosSinceLastDecision * aTps * 1_000)
                         + (aReq * BucketThrottle.capacityUnitsPerTxn()),
                 a.usageSnapshot().used());
         assertEquals(

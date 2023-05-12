@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger;
 
 import static com.hedera.node.app.service.mono.ledger.BalanceChange.changingNftOwnership;
@@ -95,31 +96,52 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class LedgerBalanceChangesTest {
     private final BackingStore<NftId, UniqueTokenAdapter> backingNfts = new HashMapBackingNfts();
-    private final BackingStore<AccountID, HederaAccount> backingAccounts =
-            new HashMapBackingAccounts();
+    private final BackingStore<AccountID, HederaAccount> backingAccounts = new HashMapBackingAccounts();
     private final BackingStore<TokenID, MerkleToken> backingTokens = new HashMapBackingTokens();
-    private final BackingStore<Pair<AccountID, TokenID>, HederaTokenRel> backingRels =
-            new HashMapBackingTokenRels();
+    private final BackingStore<Pair<AccountID, TokenID>, HederaTokenRel> backingRels = new HashMapBackingTokenRels();
     private HederaTokenStore tokenStore;
     private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
     private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
-    private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
-            tokenRelsLedger;
+    private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel> tokenRelsLedger;
     private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger;
     private TransferLogic transferLogic;
 
-    @Mock private EntityIdSource ids;
-    @Mock private UsageLimits usageLimits;
-    @Mock private EntityCreator creator;
-    @Mock private OptionValidator validator;
-    @Mock private RecordsHistorian historian;
-    @Mock private MutableEntityAccess mutableEntityAccess;
-    @Mock private AutoCreationLogic autoCreationLogic;
-    @Mock private AutoAssocTokenRelsCommitInterceptor autoAssocTokenRelsCommitInterceptor;
-    @Mock private AccountsCommitInterceptor accountsCommitInterceptor;
-    @Mock private LinkAwareUniqueTokensCommitInterceptor linkAwareUniqueTokensCommitInterceptor;
-    @Mock private TransactionContext txnCtx;
-    @Mock private AliasManager aliasManager;
+    @Mock
+    private EntityIdSource ids;
+
+    @Mock
+    private UsageLimits usageLimits;
+
+    @Mock
+    private EntityCreator creator;
+
+    @Mock
+    private OptionValidator validator;
+
+    @Mock
+    private RecordsHistorian historian;
+
+    @Mock
+    private MutableEntityAccess mutableEntityAccess;
+
+    @Mock
+    private AutoCreationLogic autoCreationLogic;
+
+    @Mock
+    private AutoAssocTokenRelsCommitInterceptor autoAssocTokenRelsCommitInterceptor;
+
+    @Mock
+    private AccountsCommitInterceptor accountsCommitInterceptor;
+
+    @Mock
+    private LinkAwareUniqueTokensCommitInterceptor linkAwareUniqueTokensCommitInterceptor;
+
+    @Mock
+    private TransactionContext txnCtx;
+
+    @Mock
+    private AliasManager aliasManager;
+
     private GlobalDynamicProperties dynamicProperties = new MockGlobalDynamicProps();
     private HederaAccountNumbers accountNums = new MockAccountNumbers();
     private FeeDistribution feeDistribution = new FeeDistribution(accountNums, dynamicProperties);
@@ -129,32 +151,16 @@ class LedgerBalanceChangesTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.initMocks(this);
-        accountsLedger =
-                new TransactionalLedger<>(
-                        AccountProperty.class,
-                        MerkleAccount::new,
-                        backingAccounts,
-                        new ChangeSummaryManager<>());
+        accountsLedger = new TransactionalLedger<>(
+                AccountProperty.class, MerkleAccount::new, backingAccounts, new ChangeSummaryManager<>());
         accountsLedger.setCommitInterceptor(accountsCommitInterceptor);
-        tokenRelsLedger =
-                new TransactionalLedger<>(
-                        TokenRelProperty.class,
-                        MerkleTokenRelStatus::new,
-                        backingRels,
-                        new ChangeSummaryManager<>());
-        nftsLedger =
-                new TransactionalLedger<>(
-                        NftProperty.class,
-                        UniqueTokenAdapter::newEmptyMerkleToken,
-                        backingNfts,
-                        new ChangeSummaryManager<>());
+        tokenRelsLedger = new TransactionalLedger<>(
+                TokenRelProperty.class, MerkleTokenRelStatus::new, backingRels, new ChangeSummaryManager<>());
+        nftsLedger = new TransactionalLedger<>(
+                NftProperty.class, UniqueTokenAdapter::newEmptyMerkleToken, backingNfts, new ChangeSummaryManager<>());
         nftsLedger.setCommitInterceptor(linkAwareUniqueTokensCommitInterceptor);
-        tokensLedger =
-                new TransactionalLedger<>(
-                        TokenProperty.class,
-                        MerkleToken::new,
-                        backingTokens,
-                        new ChangeSummaryManager<>());
+        tokensLedger = new TransactionalLedger<>(
+                TokenProperty.class, MerkleToken::new, backingTokens, new ChangeSummaryManager<>());
 
         tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
         tokenRelsLedger.setCommitInterceptor(autoAssocTokenRelsCommitInterceptor);
@@ -166,42 +172,39 @@ class LedgerBalanceChangesTest {
         backingTokens.put(bNftKey.toGrpcTokenId(), nonFungibleTokenWithTreasury(bModel));
 
         final var sideEffectsTracker = new SideEffectsTracker();
-        tokenStore =
-                new HederaTokenStore(
-                        ids,
-                        usageLimits,
-                        validator,
-                        sideEffectsTracker,
-                        dynamicProperties,
-                        tokenRelsLedger,
-                        nftsLedger,
-                        backingTokens);
-        transferLogic =
-                new TransferLogic(
-                        accountsLedger,
-                        nftsLedger,
-                        tokenRelsLedger,
-                        tokenStore,
-                        sideEffectsTracker,
-                        validator,
-                        autoCreationLogic,
-                        historian,
-                        txnCtx,
-                        aliasManager,
-                        feeDistribution);
+        tokenStore = new HederaTokenStore(
+                ids,
+                usageLimits,
+                validator,
+                sideEffectsTracker,
+                dynamicProperties,
+                tokenRelsLedger,
+                nftsLedger,
+                backingTokens);
+        transferLogic = new TransferLogic(
+                accountsLedger,
+                nftsLedger,
+                tokenRelsLedger,
+                tokenStore,
+                sideEffectsTracker,
+                validator,
+                autoCreationLogic,
+                historian,
+                txnCtx,
+                aliasManager,
+                feeDistribution);
 
-        subject =
-                new HederaLedger(
-                        tokenStore,
-                        ids,
-                        creator,
-                        validator,
-                        sideEffectsTracker,
-                        historian,
-                        tokensLedger,
-                        accountsLedger,
-                        transferLogic,
-                        autoCreationLogic);
+        subject = new HederaLedger(
+                tokenStore,
+                ids,
+                creator,
+                validator,
+                sideEffectsTracker,
+                historian,
+                tokensLedger,
+                accountsLedger,
+                transferLogic,
+                autoCreationLogic);
         subject.setMutableEntityAccess(mutableEntityAccess);
         subject.setTokenRelsLedger(tokenRelsLedger);
     }
@@ -214,8 +217,7 @@ class LedgerBalanceChangesTest {
         // when:
         subject.begin();
         // and:
-        assertFailsWith(
-                () -> subject.doZeroSum(fixtureChanges()), ResponseCodeEnum.INVALID_ACCOUNT_ID);
+        assertFailsWith(() -> subject.doZeroSum(fixtureChanges()), ResponseCodeEnum.INVALID_ACCOUNT_ID);
 
         subject.commit();
 
@@ -232,23 +234,20 @@ class LedgerBalanceChangesTest {
         subject.begin();
         accountsLedger.create(AccountID.newBuilder().setAccountNum(1).build());
 
-        assertFailsWith(
-                () -> subject.doZeroSum(fixtureChanges()), ResponseCodeEnum.INVALID_ACCOUNT_ID);
+        assertFailsWith(() -> subject.doZeroSum(fixtureChanges()), ResponseCodeEnum.INVALID_ACCOUNT_ID);
         assertTrue(accountsLedger.getCreatedKeys().isEmpty());
     }
 
     @Test
     void rejectsDetachedAccount() {
         givenInitialBalancesAndOwnership();
-        given(validator.expiryStatusGiven(any(), any()))
-                .willReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+        given(validator.expiryStatusGiven(any(), any())).willReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 
         // when:
         subject.begin();
         // and:
         assertFailsWith(
-                () -> subject.doZeroSum(fixtureChanges()),
-                ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+                () -> subject.doZeroSum(fixtureChanges()), ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 
         subject.commit();
 
@@ -267,8 +266,7 @@ class LedgerBalanceChangesTest {
         // when:
         subject.begin();
         // and:
-        assertFailsWith(
-                () -> subject.doZeroSum(fixtureChanges()), ResponseCodeEnum.ACCOUNT_DELETED);
+        assertFailsWith(() -> subject.doZeroSum(fixtureChanges()), ResponseCodeEnum.ACCOUNT_DELETED);
 
         subject.commit();
 
@@ -280,42 +278,39 @@ class LedgerBalanceChangesTest {
     void rejectsMissingToken() {
         backingTokens.remove(bNft.asGrpcToken());
         final var sideEffectsTracker = new SideEffectsTracker();
-        tokenStore =
-                new HederaTokenStore(
-                        ids,
-                        usageLimits,
-                        validator,
-                        sideEffectsTracker,
-                        dynamicProperties,
-                        tokenRelsLedger,
-                        nftsLedger,
-                        backingTokens);
+        tokenStore = new HederaTokenStore(
+                ids,
+                usageLimits,
+                validator,
+                sideEffectsTracker,
+                dynamicProperties,
+                tokenRelsLedger,
+                nftsLedger,
+                backingTokens);
 
-        transferLogic =
-                new TransferLogic(
-                        accountsLedger,
-                        nftsLedger,
-                        tokenRelsLedger,
-                        tokenStore,
-                        sideEffectsTracker,
-                        validator,
-                        autoCreationLogic,
-                        historian,
-                        txnCtx,
-                        aliasManager,
-                        feeDistribution);
-        subject =
-                new HederaLedger(
-                        tokenStore,
-                        ids,
-                        creator,
-                        validator,
-                        sideEffectsTracker,
-                        historian,
-                        tokensLedger,
-                        accountsLedger,
-                        transferLogic,
-                        autoCreationLogic);
+        transferLogic = new TransferLogic(
+                accountsLedger,
+                nftsLedger,
+                tokenRelsLedger,
+                tokenStore,
+                sideEffectsTracker,
+                validator,
+                autoCreationLogic,
+                historian,
+                txnCtx,
+                aliasManager,
+                feeDistribution);
+        subject = new HederaLedger(
+                tokenStore,
+                ids,
+                creator,
+                validator,
+                sideEffectsTracker,
+                historian,
+                tokensLedger,
+                accountsLedger,
+                transferLogic,
+                autoCreationLogic);
         subject.setTokenRelsLedger(tokenRelsLedger);
         subject.setMutableEntityAccess(mutableEntityAccess);
         givenUnexpiredEntities();
@@ -326,8 +321,7 @@ class LedgerBalanceChangesTest {
         // when:
         subject.begin();
         // and:
-        assertFailsWith(
-                () -> subject.doZeroSum(fixtureChanges()), ResponseCodeEnum.INVALID_TOKEN_ID);
+        assertFailsWith(() -> subject.doZeroSum(fixtureChanges()), ResponseCodeEnum.INVALID_TOKEN_ID);
 
         subject.commit();
 
@@ -351,11 +345,14 @@ class LedgerBalanceChangesTest {
 
         // and:
         assertEquals(
-                aStartBalance + aHbarChange, backingAccounts.getImmutableRef(aModel).getBalance());
+                aStartBalance + aHbarChange,
+                backingAccounts.getImmutableRef(aModel).getBalance());
         assertEquals(
-                bStartBalance + bHbarChange, backingAccounts.getImmutableRef(bModel).getBalance());
+                bStartBalance + bHbarChange,
+                backingAccounts.getImmutableRef(bModel).getBalance());
         assertEquals(
-                cStartBalance + cHbarChange, backingAccounts.getImmutableRef(cModel).getBalance());
+                cStartBalance + cHbarChange,
+                backingAccounts.getImmutableRef(cModel).getBalance());
         // and:
         assertEquals(
                 bTokenStartBalance + bTokenChange,
@@ -386,36 +383,46 @@ class LedgerBalanceChangesTest {
     void happyPathTransfersWithAutoCreation() {
         final var payerBalance = 500;
         final Key aliasA = KeyFactory.getDefaultInstance().newEd25519();
-        final AccountID a =
-                AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(10L).build();
+        final AccountID a = AccountID.newBuilder()
+                .setShardNum(0)
+                .setRealmNum(0)
+                .setAccountNum(10L)
+                .build();
         final AccountID validAliasAccountWithAlias =
                 AccountID.newBuilder().setAlias(aliasA.toByteString()).build();
-        final AccountID validAliasAccountWithId =
-                AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(11L).build();
-        final AccountID funding =
-                AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(98L).build();
+        final AccountID validAliasAccountWithId = AccountID.newBuilder()
+                .setShardNum(0)
+                .setRealmNum(0)
+                .setAccountNum(11L)
+                .build();
+        final AccountID funding = AccountID.newBuilder()
+                .setShardNum(0)
+                .setRealmNum(0)
+                .setAccountNum(98L)
+                .build();
         final EntityNum validAliasEntityNum = new EntityNum(11);
         List<BalanceChange> changes = new ArrayList<>();
         changes.add(hbarChange(a, -100));
         changes.add(hbarChange(validAliasAccountWithAlias, 0));
         final var validAliasAccount = MerkleAccountFactory.newAccount().get();
         final var fundingAccount = MerkleAccountFactory.newAccount().get();
-        final var aAccount = MerkleAccountFactory.newAccount().balance(aStartBalance).get();
-        final var payerAccount = MerkleAccountFactory.newAccount().balance(payerBalance).get();
+        final var aAccount =
+                MerkleAccountFactory.newAccount().balance(aStartBalance).get();
+        final var payerAccount =
+                MerkleAccountFactory.newAccount().balance(payerBalance).get();
         backingAccounts.put(a, aAccount);
         backingAccounts.put(validAliasAccountWithId, validAliasAccount);
         backingAccounts.put(funding, fundingAccount);
         backingAccounts.put(payer, payerAccount);
 
         given(txnCtx.activePayer()).willReturn(payer);
-        given(autoCreationLogic.create(any(), eq(accountsLedger), any()))
-                .willAnswer(
-                        invocationOnMock -> {
-                            final var change = (BalanceChange) invocationOnMock.getArgument(0);
-                            change.replaceNonEmptyAliasWith(validAliasEntityNum);
-                            return Pair.of(OK, 100L);
-                        });
-        given(validator.expiryStatusGiven(anyLong(), anyBoolean(), anyBoolean())).willReturn(OK);
+        given(autoCreationLogic.create(any(), eq(accountsLedger), any())).willAnswer(invocationOnMock -> {
+            final var change = (BalanceChange) invocationOnMock.getArgument(0);
+            change.replaceNonEmptyAliasWith(validAliasEntityNum);
+            return Pair.of(OK, 100L);
+        });
+        given(validator.expiryStatusGiven(anyLong(), anyBoolean(), anyBoolean()))
+                .willReturn(OK);
         given(aliasManager.lookupIdBy(aliasA.toByteString())).willReturn(EntityNum.MISSING_NUM);
 
         subject.begin();
@@ -442,7 +449,8 @@ class LedgerBalanceChangesTest {
 
     private void assertInitialBalanceUnchanged(long modifiedABalance, long modifiedBTokenBalance) {
         if (modifiedABalance >= 0L) {
-            assertEquals(modifiedABalance, backingAccounts.getImmutableRef(aModel).getBalance());
+            assertEquals(
+                    modifiedABalance, backingAccounts.getImmutableRef(aModel).getBalance());
         }
         assertEquals(bStartBalance, backingAccounts.getImmutableRef(bModel).getBalance());
         assertEquals(cStartBalance, backingAccounts.getImmutableRef(cModel).getBalance());
@@ -451,7 +459,8 @@ class LedgerBalanceChangesTest {
                 modifiedBTokenBalance,
                 backingRels.getImmutableRef(rel(bModel, token)).getBalance());
         assertEquals(
-                cTokenStartBalance, backingRels.getImmutableRef(rel(cModel, token)).getBalance());
+                cTokenStartBalance,
+                backingRels.getImmutableRef(rel(cModel, token)).getBalance());
         // and:
         assertEquals(
                 aAnotherTokenStartBalance,
@@ -473,15 +482,19 @@ class LedgerBalanceChangesTest {
 
     private void givenUnexpiredEntities() {
         given(validator.expiryStatusGiven(eq(accountsLedger), any())).willReturn(OK);
-        given(validator.expiryStatusGiven(anyLong(), anyBoolean(), anyBoolean())).willReturn(OK);
+        given(validator.expiryStatusGiven(anyLong(), anyBoolean(), anyBoolean()))
+                .willReturn(OK);
     }
 
     private void givenInitialBalancesAndOwnership() {
-        final var aAccount = MerkleAccountFactory.newAccount().balance(aStartBalance).get();
+        final var aAccount =
+                MerkleAccountFactory.newAccount().balance(aStartBalance).get();
         backingAccounts.put(aModel, aAccount);
-        final var bAccount = MerkleAccountFactory.newAccount().balance(bStartBalance).get();
+        final var bAccount =
+                MerkleAccountFactory.newAccount().balance(bStartBalance).get();
         backingAccounts.put(bModel, bAccount);
-        final var cAccount = MerkleAccountFactory.newAccount().balance(cStartBalance).get();
+        final var cAccount =
+                MerkleAccountFactory.newAccount().balance(cStartBalance).get();
         backingAccounts.put(cModel, cAccount);
 
         Pair<AccountID, TokenID> bTokenKey = rel(bModel, token);
@@ -491,24 +504,19 @@ class LedgerBalanceChangesTest {
         final var cTokenRel = new MerkleTokenRelStatus(cTokenStartBalance, false, true, false);
         backingRels.put(cTokenKey, cTokenRel);
         Pair<AccountID, TokenID> aAnotherTokenKey = rel(aModel, anotherToken);
-        final var aAnotherTokenRel =
-                new MerkleTokenRelStatus(aAnotherTokenStartBalance, false, true, true);
+        final var aAnotherTokenRel = new MerkleTokenRelStatus(aAnotherTokenStartBalance, false, true, true);
         backingRels.put(aAnotherTokenKey, aAnotherTokenRel);
         Pair<AccountID, TokenID> bAnotherTokenKey = rel(bModel, anotherToken);
-        final var bAnotherTokenRel =
-                new MerkleTokenRelStatus(bAnotherTokenStartBalance, false, true, false);
+        final var bAnotherTokenRel = new MerkleTokenRelStatus(bAnotherTokenStartBalance, false, true, false);
         backingRels.put(bAnotherTokenKey, bAnotherTokenRel);
         Pair<AccountID, TokenID> cAnotherTokenKey = rel(cModel, anotherToken);
-        final var cAnotherTokenRel =
-                new MerkleTokenRelStatus(cAnotherTokenStartBalance, false, true, true);
+        final var cAnotherTokenRel = new MerkleTokenRelStatus(cAnotherTokenStartBalance, false, true, true);
         backingRels.put(cAnotherTokenKey, cAnotherTokenRel);
         Pair<AccountID, TokenID> aYaTokenKey = rel(aModel, yetAnotherToken);
-        final var aYaTokenRel =
-                new MerkleTokenRelStatus(aYetAnotherTokenBalance, false, true, false);
+        final var aYaTokenRel = new MerkleTokenRelStatus(aYetAnotherTokenBalance, false, true, false);
         backingRels.put(aYaTokenKey, aYaTokenRel);
         Pair<AccountID, TokenID> bYaTokenKey = rel(bModel, yetAnotherToken);
-        final var bYaTokenRel =
-                new MerkleTokenRelStatus(bYetAnotherTokenBalance, false, true, false);
+        final var bYaTokenRel = new MerkleTokenRelStatus(bYetAnotherTokenBalance, false, true, false);
         backingRels.put(bYaTokenKey, bYaTokenRel);
 
         Pair<AccountID, TokenID> aaNftTokenKey = rel(aModel, aNft);
@@ -533,24 +541,15 @@ class LedgerBalanceChangesTest {
         backingNfts.put(
                 aaNft,
                 UniqueTokenAdapter.wrap(
-                        new MerkleUniqueToken(
-                                EntityId.fromGrpcAccountId(aModel),
-                                "aa".getBytes(),
-                                MISSING_INSTANT)));
+                        new MerkleUniqueToken(EntityId.fromGrpcAccountId(aModel), "aa".getBytes(), MISSING_INSTANT)));
         backingNfts.put(
                 baNft,
                 UniqueTokenAdapter.wrap(
-                        new MerkleUniqueToken(
-                                EntityId.fromGrpcAccountId(bModel),
-                                "ba".getBytes(),
-                                MISSING_INSTANT)));
+                        new MerkleUniqueToken(EntityId.fromGrpcAccountId(bModel), "ba".getBytes(), MISSING_INSTANT)));
         backingNfts.put(
                 bbNft,
                 UniqueTokenAdapter.wrap(
-                        new MerkleUniqueToken(
-                                EntityId.fromGrpcAccountId(cModel),
-                                "bb".getBytes(),
-                                MISSING_INSTANT)));
+                        new MerkleUniqueToken(EntityId.fromGrpcAccountId(cModel), "bb".getBytes(), MISSING_INSTANT)));
 
         backingRels.rebuildFromSources();
     }
@@ -567,12 +566,9 @@ class LedgerBalanceChangesTest {
                 tokenChange(token, cModel, cTokenChange),
                 tokenChange(anotherToken, bModel, bAnotherTokenChange),
                 tokenChange(yetAnotherToken, bModel, bYetAnotherTokenChange),
-                changingNftOwnership(
-                        aNft, aNft.asGrpcToken(), nftXfer(aModel, bModel, aSerialNo), payer),
-                changingNftOwnership(
-                        bNft, bNft.asGrpcToken(), nftXfer(bModel, cModel, aSerialNo), payer),
-                changingNftOwnership(
-                        bNft, bNft.asGrpcToken(), nftXfer(cModel, aModel, aSerialNo), payer));
+                changingNftOwnership(aNft, aNft.asGrpcToken(), nftXfer(aModel, bModel, aSerialNo), payer),
+                changingNftOwnership(bNft, bNft.asGrpcToken(), nftXfer(bModel, cModel, aSerialNo), payer),
+                changingNftOwnership(bNft, bNft.asGrpcToken(), nftXfer(cModel, aModel, aSerialNo), payer));
     }
 
     private Pair<AccountID, TokenID> rel(AccountID account, Id token) {
@@ -589,18 +585,14 @@ class LedgerBalanceChangesTest {
 
     private MerkleToken fungibleTokenWithTreasury(AccountID treasury) {
         final var token = new MerkleToken();
-        token.setTreasury(
-                new EntityId(
-                        treasury.getShardNum(), treasury.getRealmNum(), treasury.getAccountNum()));
+        token.setTreasury(new EntityId(treasury.getShardNum(), treasury.getRealmNum(), treasury.getAccountNum()));
         token.setTokenType(TokenType.FUNGIBLE_COMMON);
         return token;
     }
 
     private MerkleToken nonFungibleTokenWithTreasury(AccountID treasury) {
         final var token = new MerkleToken();
-        token.setTreasury(
-                new EntityId(
-                        treasury.getShardNum(), treasury.getRealmNum(), treasury.getAccountNum()));
+        token.setTreasury(new EntityId(treasury.getShardNum(), treasury.getRealmNum(), treasury.getAccountNum()));
         token.setTokenType(TokenType.NON_FUNGIBLE_UNIQUE);
         return token;
     }

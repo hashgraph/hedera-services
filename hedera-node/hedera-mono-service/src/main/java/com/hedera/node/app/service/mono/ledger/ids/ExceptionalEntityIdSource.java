@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.ids;
 
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -31,7 +32,12 @@ public enum ExceptionalEntityIdSource implements EntityIdSource {
     }
 
     @Override
-    public AccountID newAccountId(AccountID newAccountSponsor) {
+    public AccountID newAccountId() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long newAccountNumber() {
         throw new UnsupportedOperationException();
     }
 

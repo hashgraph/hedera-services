@@ -13,12 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.interceptors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
@@ -38,10 +40,9 @@ class TokenRelsLinkManagerTest {
 
     @BeforeEach
     void setUp() {
-        subject =
-                new TokenRelsLinkManager(
-                        () -> AccountStorageAdapter.fromInMemory(accounts),
-                        () -> TokenRelStorageAdapter.fromInMemory(tokenRels));
+        subject = new TokenRelsLinkManager(
+                () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)),
+                () -> TokenRelStorageAdapter.fromInMemory(tokenRels));
     }
 
     @Test

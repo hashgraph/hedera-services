@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.files.store;
 
 import static com.hedera.node.app.service.mono.files.store.FcBlobsBytesStore.getEntityNumFromPath;
@@ -26,6 +27,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey.Type;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
@@ -52,7 +54,7 @@ class FcBlobsBytesStoreTest {
         pathedBlobs = mock(VirtualMap.class);
 
         givenMockBlobs();
-        subject = new FcBlobsBytesStore(() -> pathedBlobs);
+        subject = new FcBlobsBytesStore(() -> VirtualMapLike.from(pathedBlobs));
 
         pathAKey = subject.at(dataPath);
     }
@@ -140,9 +142,7 @@ class FcBlobsBytesStoreTest {
         assertEquals(new VirtualBlobKey(Type.FILE_DATA, 112), subject.at(dataPath));
         assertEquals(new VirtualBlobKey(Type.FILE_METADATA, 3), subject.at(metadataPath));
         assertEquals(new VirtualBlobKey(Type.CONTRACT_BYTECODE, 4), subject.at(bytecodePath));
-        assertEquals(
-                new VirtualBlobKey(Type.SYSTEM_DELETED_ENTITY_EXPIRY, 5),
-                subject.at(expiryTimePath));
+        assertEquals(new VirtualBlobKey(Type.SYSTEM_DELETED_ENTITY_EXPIRY, 5), subject.at(expiryTimePath));
     }
 
     @Test

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.token;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
@@ -31,8 +32,7 @@ public class TokenRevokeKycTransitionLogic implements TransitionLogic {
     private final RevokeKycLogic revokeKycLogic;
 
     @Inject
-    public TokenRevokeKycTransitionLogic(
-            final TransactionContext txnCtx, final RevokeKycLogic revokeKycLogic) {
+    public TokenRevokeKycTransitionLogic(final TransactionContext txnCtx, final RevokeKycLogic revokeKycLogic) {
         this.txnCtx = txnCtx;
         this.revokeKycLogic = revokeKycLogic;
     }

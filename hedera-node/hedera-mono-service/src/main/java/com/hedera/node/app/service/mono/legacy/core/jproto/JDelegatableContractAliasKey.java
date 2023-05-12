@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.legacy.core.jproto;
 
 import static com.swirlds.common.utility.CommonUtils.hex;
@@ -24,8 +25,7 @@ public class JDelegatableContractAliasKey extends JContractAliasKey {
         super(contractID);
     }
 
-    public JDelegatableContractAliasKey(
-            final long shard, final long realm, final byte[] evmAddress) {
+    public JDelegatableContractAliasKey(final long shard, final long realm, final byte[] evmAddress) {
         super(shard, realm, evmAddress);
     }
 
@@ -46,12 +46,6 @@ public class JDelegatableContractAliasKey extends JContractAliasKey {
 
     @Override
     public String toString() {
-        return "<JDelegatableContractAlias: "
-                + getShardNum()
-                + "."
-                + getRealmNum()
-                + "."
-                + hex(getEvmAddress())
-                + ">";
+        return "<JDelegatableContractAlias: " + getShardNum() + "." + getRealmNum() + "." + hex(getEvmAddress()) + ">";
     }
 }

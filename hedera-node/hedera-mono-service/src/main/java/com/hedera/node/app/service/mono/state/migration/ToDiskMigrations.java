@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.migration;
 
 public record ToDiskMigrations(boolean doAccounts, boolean doTokenRels) {}

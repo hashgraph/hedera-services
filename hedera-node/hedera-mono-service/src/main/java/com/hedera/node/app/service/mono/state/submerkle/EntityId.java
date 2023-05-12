@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.submerkle;
 
 import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.codeFromNum;
@@ -115,8 +116,7 @@ public class EntityId implements SelfSerializable {
     }
 
     @Override
-    public void deserialize(final SerializableDataInputStream in, final int version)
-            throws IOException {
+    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         shard = in.readLong();
         realm = in.readLong();
         num = in.readLong();
@@ -143,9 +143,7 @@ public class EntityId implements SelfSerializable {
     }
 
     public boolean matches(final AccountID aId) {
-        return shard == aId.getShardNum()
-                && realm == aId.getRealmNum()
-                && num == aId.getAccountNum();
+        return shard == aId.getShardNum() && realm == aId.getRealmNum() && num == aId.getAccountNum();
     }
 
     public boolean matches(final Id id) {
@@ -250,7 +248,11 @@ public class EntityId implements SelfSerializable {
     }
 
     public TokenID toGrpcTokenId() {
-        return TokenID.newBuilder().setShardNum(shard).setRealmNum(realm).setTokenNum(num).build();
+        return TokenID.newBuilder()
+                .setShardNum(shard)
+                .setRealmNum(realm)
+                .setTokenNum(num)
+                .build();
     }
 
     public ScheduleID toGrpcScheduleId() {
@@ -269,6 +271,14 @@ public class EntityId implements SelfSerializable {
                 .build();
     }
 
+    public com.hedera.hapi.node.base.AccountID toPbjAccountId() {
+        return com.hedera.hapi.node.base.AccountID.newBuilder()
+                .shardNum(shard)
+                .realmNum(realm)
+                .accountNum(num)
+                .build();
+    }
+
     public EntityNum asNum() {
         return EntityNum.fromLong(num);
     }
@@ -278,7 +288,7 @@ public class EntityId implements SelfSerializable {
     }
 
     public Address toEvmAddress() {
-        final var evmAddress = asEvmAddress((int) shard, realm, num);
+        final var evmAddress = asEvmAddress(num);
         return Address.wrap(Bytes.wrap(evmAddress));
     }
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.logic;
 
 import static com.swirlds.common.system.PlatformStatus.ACTIVE;
@@ -42,35 +43,35 @@ class StatusChangeListenerTest {
     private static final long sequence = 123L;
     private static final Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 890);
 
-    @Mock private PlatformStatusChangeNotification notification;
-    @Mock private CurrentPlatformStatus currentStatus;
-    @Mock private RecordStreamManager recordStreamManager;
+    @Mock
+    private PlatformStatusChangeNotification notification;
 
-    @LoggingTarget private LogCaptor logCaptor;
-    @LoggingSubject private StatusChangeListener subject;
+    @Mock
+    private CurrentPlatformStatus currentStatus;
+
+    @Mock
+    private RecordStreamManager recordStreamManager;
+
+    @LoggingTarget
+    private LogCaptor logCaptor;
+
+    @LoggingSubject
+    private StatusChangeListener subject;
 
     @BeforeEach
     void setUp() {
-        subject =
-                new StatusChangeListener(currentStatus, new NodeId(false, 3L), recordStreamManager);
+        subject = new StatusChangeListener(currentStatus, new NodeId(false, 3L), recordStreamManager);
     }
 
     @Test
     void notifiesWhenActive() {
         given(notification.getNewStatus()).willReturn(ACTIVE);
         subject.notify(notification);
-        assertTrue(
-                logCaptor
-                        .infoLogs()
-                        .get(0)
-                        .contains(
-                                "Notification Received: Current Platform status changed to"
-                                        + " ACTIVE"));
-        assertTrue(
-                logCaptor
-                        .infoLogs()
-                        .get(1)
-                        .contains("Now current platform status = ACTIVE in HederaNode#3"));
+        assertTrue(logCaptor
+                .infoLogs()
+                .get(0)
+                .contains("Notification Received: Current Platform status changed to" + " ACTIVE"));
+        assertTrue(logCaptor.infoLogs().get(1).contains("Now current platform status = ACTIVE in HederaNode#3"));
         verify(currentStatus).set(ACTIVE);
         verify(recordStreamManager).setInFreeze(false);
     }
@@ -79,18 +80,12 @@ class StatusChangeListenerTest {
     void notifiesWhenFrozen() {
         given(notification.getNewStatus()).willReturn(FREEZE_COMPLETE);
         subject.notify(notification);
+        assertTrue(logCaptor
+                .infoLogs()
+                .get(0)
+                .contains("Notification Received: Current Platform status changed to" + " FREEZE_COMPLETE"));
         assertTrue(
-                logCaptor
-                        .infoLogs()
-                        .get(0)
-                        .contains(
-                                "Notification Received: Current Platform status changed to"
-                                        + " FREEZE_COMPLETE"));
-        assertTrue(
-                logCaptor
-                        .infoLogs()
-                        .get(1)
-                        .contains("Now current platform status = FREEZE_COMPLETE in HederaNode#3"));
+                logCaptor.infoLogs().get(1).contains("Now current platform status = FREEZE_COMPLETE in HederaNode#3"));
         verify(currentStatus).set(FREEZE_COMPLETE);
         verify(recordStreamManager).setInFreeze(true);
     }

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 ########################################################################################################################
-# Copyright 2016-2021 Swirlds, Inc.                                                                                    #
+# Copyright 2016-2022 Hedera Hashgraph, LLC                                                                            #
 #                                                                                                                      #
 # Licensed under the Apache License, Version 2.0 (the "License");                                                      #
 # you may not use this file except in compliance with the License.                                                     #
@@ -46,7 +46,7 @@
 #   * The underlying framework will ensure that the containers are stopped and that a docker container image exists for
 #       the currently deployed container versions prior to the methods below being invoked.
 #
-#   * The underlying framework will handle copying the `data/lib/*.jar`,`data/apps/*.jar`, `data/backup/*.sh` files
+#   * The underlying framework will handle copying the `data/lib/*.jar` and `data/apps/*.jar` files
 #       (if present in the upgrade package) into the docker container.
 #
 #   * The underlying framework will handle copying the `data/config/*`, `data/onboard/*`, `log4j2.xml`, `settings.txt`,
@@ -62,40 +62,6 @@
 #      !!!        PHASE 1 NOTES        !!!     #
 ################################################
 
-
-################################################
-# uploader_mirror_apply_staged_update: applies previously staged update of compose .env file
-################################################
-function uploader_mirror_apply_staged_update {
-  local -r uploader_mirror_compose_path="/opt/hgcapp/uploader-mirror"
-  local -r uploader_mirror_staged_env_path="${uploader_mirror_compose_path}/record.env.staged"
-  local -r uploader_mirror_active_env_path="${uploader_mirror_compose_path}/record.env"
-  local -r retries=1
-  local exit_code
-
-  if [ -f $uploader_mirror_staged_env_path ]; then
-    log_info "${LOG_MARKER_UPGRADE}" "Uploader Install: Detected staged .env update for uploader-mirror at ${uploader_mirror_staged_env_path}"
-
-    cp $uploader_mirror_staged_env_path $uploader_mirror_active_env_path
-
-    if [[ ! -d "${uploader_mirror_compose_path}" || ! -f "${uploader_mirror_compose_path}/${DKRC_DEFAULT_COMPOSE_FILE}" ]]; then
-      log_error "${LOG_MARKER_SETUP}" "Definition: Compose Definition Not Found [ file = '${uploader_mirror_compose_path}/${DKRC_DEFAULT_COMPOSE_FILE}' ]"
-      exit_code="${EX_OK}"
-    fi
-
-    dkrc_execute_std_command_ex "${uploader_mirror_compose_path}" up "" ${retries} 1 --detach "${@}"
-    exit_code="${?}"
-
-    rm $uploader_mirror_staged_env_path
-
-  else
-    log_info "${LOG_MARKER_UPGRADE}" "Uploader Install: No staged .env update for uploader-mirror detected; no changes to uploader-mirror deployment will occur"
-    exit_code="${EX_OK}"
-  fi
-
-  return "${exit_code}"
-}
-
 ################################################
 # xr_insecure_perform_freeze_upgrade: TODO - Provide docs
 ################################################
@@ -105,8 +71,6 @@ function xr_insecure_perform_freeze_upgrade {
   local host_application_root_path="${3}"
   local current_application_version="${4}"
   local new_application_version="${5}"
-
-  uploader_mirror_apply_staged_update
 
   return "${EX_OK}"
 }

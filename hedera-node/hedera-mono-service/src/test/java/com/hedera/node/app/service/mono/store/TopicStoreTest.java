@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -21,6 +22,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.records.TransactionRecordService;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.store.models.Id;
@@ -35,14 +37,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class TopicStoreTest {
-    @Mock private MerkleMap<EntityNum, MerkleTopic> topics;
-    @Mock private TransactionRecordService transactionRecordService;
+    @Mock
+    private MerkleMap<EntityNum, MerkleTopic> topics;
+
+    @Mock
+    private TransactionRecordService transactionRecordService;
 
     private TopicStore subject;
 
     @BeforeEach
     void setup() {
-        subject = new TopicStore(() -> topics, transactionRecordService);
+        subject = new TopicStore(() -> MerkleMapLike.from(topics), transactionRecordService);
     }
 
     @Test

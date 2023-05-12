@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.token;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
@@ -53,24 +54,42 @@ class TokenFeeScheduleUpdateTransitionLogicTest {
     private final TokenID target = IdUtils.asToken("0.0.666");
     private TransactionBody tokenFeeScheduleUpdateTxnBody;
 
-    @Mock private Token token;
-    @Mock private AccountStore accountStore;
-    @Mock private TypedTokenStore tokenStore;
-    @Mock private TransactionContext txnCtx;
-    @Mock private SignedTxnAccessor accessor;
-    @Mock private Function<CustomFee, FcCustomFee> grpcFeeConverter;
-    @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private FcCustomFee firstMockFee;
-    @Mock private FcCustomFee secondMockFee;
-    @Mock private SigImpactHistorian sigImpactHistorian;
+    @Mock
+    private Token token;
+
+    @Mock
+    private AccountStore accountStore;
+
+    @Mock
+    private TypedTokenStore tokenStore;
+
+    @Mock
+    private TransactionContext txnCtx;
+
+    @Mock
+    private SignedTxnAccessor accessor;
+
+    @Mock
+    private Function<CustomFee, FcCustomFee> grpcFeeConverter;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
+
+    @Mock
+    private FcCustomFee firstMockFee;
+
+    @Mock
+    private FcCustomFee secondMockFee;
+
+    @Mock
+    private SigImpactHistorian sigImpactHistorian;
 
     private TokenFeeScheduleUpdateTransitionLogic subject;
 
     @BeforeEach
     void setup() {
-        subject =
-                new TokenFeeScheduleUpdateTransitionLogic(
-                        tokenStore, txnCtx, accountStore, sigImpactHistorian, dynamicProperties);
+        subject = new TokenFeeScheduleUpdateTransitionLogic(
+                tokenStore, txnCtx, accountStore, sigImpactHistorian, dynamicProperties);
     }
 
     @Test
@@ -112,9 +131,7 @@ class TokenFeeScheduleUpdateTransitionLogicTest {
 
     @Test
     void rejectsInvalidTokenId() {
-        assertEquals(
-                INVALID_TOKEN_ID,
-                subject.semanticCheck().apply(TransactionBody.getDefaultInstance()));
+        assertEquals(INVALID_TOKEN_ID, subject.semanticCheck().apply(TransactionBody.getDefaultInstance()));
     }
 
     @Test
@@ -133,12 +150,10 @@ class TokenFeeScheduleUpdateTransitionLogicTest {
     }
 
     private void givenValidTokenId() {
-        tokenFeeScheduleUpdateTxnBody =
-                TransactionBody.newBuilder()
-                        .setTokenFeeScheduleUpdate(
-                                TokenFeeScheduleUpdateTransactionBody.newBuilder()
-                                        .setTokenId(target))
-                        .build();
+        tokenFeeScheduleUpdateTxnBody = TransactionBody.newBuilder()
+                .setTokenFeeScheduleUpdate(
+                        TokenFeeScheduleUpdateTransactionBody.newBuilder().setTokenId(target))
+                .build();
     }
 
     private void givenTxnCtx() {
@@ -149,10 +164,9 @@ class TokenFeeScheduleUpdateTransitionLogicTest {
                         .addCustomFees(CustomFee.getDefaultInstance())
                         .build();
 
-        final var txn =
-                TransactionBody.newBuilder()
-                        .setTokenFeeScheduleUpdate(tokenFeeScheduleUpdateTxn)
-                        .build();
+        final var txn = TransactionBody.newBuilder()
+                .setTokenFeeScheduleUpdate(tokenFeeScheduleUpdateTxn)
+                .build();
         given(txnCtx.accessor()).willReturn(accessor);
         given(accessor.getTxn()).willReturn(txn);
         given(tokenStore.loadToken(Id.fromGrpcToken(target))).willReturn(token);

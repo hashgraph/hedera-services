@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger;
 
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.NUM_ASSOCIATIONS;
@@ -112,13 +113,12 @@ class HederaLedgerTokensTest extends BaseHederaLedgerTestHelper {
         verify(tokenRelsLedger).rollback();
         verify(nftsLedger).rollback();
         verify(accountsLedger)
-                .undoChangesOfType(
-                        List.of(
-                                NUM_POSITIVE_BALANCES,
-                                NUM_ASSOCIATIONS,
-                                NUM_NFTS_OWNED,
-                                USED_AUTOMATIC_ASSOCIATIONS,
-                                NUM_TREASURY_TITLES));
+                .undoChangesOfType(List.of(
+                        NUM_POSITIVE_BALANCES,
+                        NUM_ASSOCIATIONS,
+                        NUM_NFTS_OWNED,
+                        USED_AUTOMATIC_ASSOCIATIONS,
+                        NUM_TREASURY_TITLES));
         verify(sideEffectsTracker).resetTrackedTokenChanges();
     }
 

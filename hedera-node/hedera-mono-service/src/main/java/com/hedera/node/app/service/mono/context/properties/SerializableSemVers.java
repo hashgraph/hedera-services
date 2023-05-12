@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context.properties;
 
 import static com.hedera.node.app.service.mono.context.properties.SemanticVersions.asSemVer;
@@ -35,17 +36,18 @@ public class SerializableSemVers implements SoftwareVersion {
     public static final int RELEASE_027_VERSION = 1;
     public static final long CLASS_ID = 0x6f2b1bc2df8cbd0bL;
 
-    public static final Comparator<SemanticVersion> SEM_VER_COMPARATOR =
-            Comparator.comparingInt(SemanticVersion::getMajor)
-                    .thenComparingInt(SemanticVersion::getMinor)
-                    .thenComparingInt(SemanticVersion::getPatch)
-                    .thenComparingInt(semver -> alphaNumberOf(semver.getPre()))
-                    // We never deploy versions with `build` parts to prod envs, so
-                    // just give precedence to the version that doesn't have one
-                    .thenComparingInt(semver -> semver.getBuild().isBlank() ? 1 : 0);
-    public static final Comparator<SerializableSemVers> FULL_COMPARATOR =
-            Comparator.comparing(SerializableSemVers::getServices, SEM_VER_COMPARATOR)
-                    .thenComparing(SerializableSemVers::getProto, SEM_VER_COMPARATOR);
+    public static final Comparator<SemanticVersion> SEM_VER_COMPARATOR = Comparator.comparingInt(
+                    SemanticVersion::getMajor)
+            .thenComparingInt(SemanticVersion::getMinor)
+            .thenComparingInt(SemanticVersion::getPatch)
+            .thenComparingInt(semver -> alphaNumberOf(semver.getPre()))
+            // Whenever there is a need for doing an upgrade with config-only changes,
+            // we set the build portion on semver. This is needed to trigger platform
+            // upgrade code, which is otherwise not triggered for config-only changes.
+            .thenComparing(SemanticVersion::getBuild);
+    public static final Comparator<SerializableSemVers> FULL_COMPARATOR = Comparator.comparing(
+                    SerializableSemVers::getServices, SEM_VER_COMPARATOR)
+            .thenComparing(SerializableSemVers::getProto, SEM_VER_COMPARATOR);
 
     private SemanticVersion proto;
     private SemanticVersion services;
@@ -62,14 +64,12 @@ public class SerializableSemVers implements SoftwareVersion {
         return services;
     }
 
-    public SerializableSemVers(
-            @NonNull final SemanticVersion proto, @NonNull final SemanticVersion services) {
+    public SerializableSemVers(@NonNull final SemanticVersion proto, @NonNull final SemanticVersion services) {
         this.proto = proto;
         this.services = services;
     }
 
-    public static SerializableSemVers forHapiAndHedera(
-            @NonNull final String proto, @NonNull final String services) {
+    public static SerializableSemVers forHapiAndHedera(@NonNull final String proto, @NonNull final String services) {
         return new SerializableSemVers(asSemVer(proto), asSemVer(services));
     }
 
@@ -88,21 +88,41 @@ public class SerializableSemVers implements SoftwareVersion {
         return RELEASE_027_VERSION;
     }
 
+    // The software version can be null here because we use deserializedVersion as null
+    // on genesis initialization.
     public boolean isAfter(@Nullable final SoftwareVersion other) {
         return compareTo(other) > 0;
     }
 
+    // The software version can be null here because we use deserializedVersion as null
+    // on genesis initialization.
     public boolean isBefore(@Nullable final SoftwareVersion other) {
         return compareTo(other) < 0;
     }
 
+    // The software version can be null here because we use deserializedVersion as null
+    // on genesis initialization.
     public boolean hasMigrationRecordsFrom(@Nullable final SoftwareVersion other) {
-        return isNonPatchUpgradeFrom(other)
-                || (this.isAfter(other) && currentVersionHasPatchMigrationRecords);
+        return isNonPatchUpgradeFrom(other) || (this.isAfter(other) && currentVersionHasPatchMigrationRecords);
+    }
+
+    public boolean isNonConfigUpgrade(@Nullable final SoftwareVersion other) {
+        // The software version can be null here because we use deserializedVersion as null
+        // on genesis initialization.
+        if (other == null) {
+            return true;
+        }
+        if (other instanceof SerializableSemVers that) {
+            return this.isAfter(that) && haveDifferentNonBuildVersions(this, that);
+        } else {
+            throw new IllegalArgumentException("Version " + this + IS_INCOMPARABLE_MSG + other);
+        }
     }
 
     @VisibleForTesting
     boolean isNonPatchUpgradeFrom(@Nullable final SoftwareVersion other) {
+        // The software version can be null here because we use deserializedVersion as null
+        // on genesis initialization.
         if (other == null) {
             return true;
         }
@@ -115,15 +135,20 @@ public class SerializableSemVers implements SoftwareVersion {
 
     private boolean haveDifferentMajorAndMinorVersions(
             @NonNull final SerializableSemVers a, @NonNull final SerializableSemVers b) {
-        return a.services.getMajor() != b.services.getMajor()
-                || a.services.getMinor() != b.services.getMinor();
+        return a.services.getMajor() != b.services.getMajor() || a.services.getMinor() != b.services.getMinor();
+    }
+
+    private boolean haveDifferentNonBuildVersions(
+            @NonNull final SerializableSemVers a, @NonNull final SerializableSemVers b) {
+        return haveDifferentMajorAndMinorVersions(a, b)
+                || a.services.getPatch() != b.services.getPatch()
+                || !a.services.getPre().equals(b.services.getPre());
     }
 
     @Override
     public int compareTo(@Nullable final SoftwareVersion other) {
         if (proto == null || services == null) {
-            throw new IllegalStateException(
-                    "Uninitialized version " + this + IS_INCOMPARABLE_MSG + other);
+            throw new IllegalStateException("Uninitialized version " + this + IS_INCOMPARABLE_MSG + other);
         }
         if (other == SoftwareVersion.NO_VERSION) {
             // We are later than any unknown version
@@ -137,8 +162,7 @@ public class SerializableSemVers implements SoftwareVersion {
     }
 
     @Override
-    public void deserialize(final SerializableDataInputStream in, final int version)
-            throws IOException {
+    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         proto = deserializeSemVer(in);
         services = deserializeSemVer(in);
     }
@@ -154,8 +178,7 @@ public class SerializableSemVers implements SoftwareVersion {
         return "Services @ " + readable(services) + " | HAPI @ " + readable(proto);
     }
 
-    private static void serializeSemVer(
-            final SemanticVersion semVer, final SerializableDataOutputStream out)
+    private static void serializeSemVer(final SemanticVersion semVer, final SerializableDataOutputStream out)
             throws IOException {
         out.writeInt(semVer.getMajor());
         out.writeInt(semVer.getMinor());
@@ -164,8 +187,8 @@ public class SerializableSemVers implements SoftwareVersion {
         serializeIfUsed(semVer.getBuild(), out);
     }
 
-    private static void serializeIfUsed(
-            final String semVerPart, final SerializableDataOutputStream out) throws IOException {
+    private static void serializeIfUsed(final String semVerPart, final SerializableDataOutputStream out)
+            throws IOException {
         if (semVerPart.isBlank()) {
             out.writeBoolean(false);
         } else {
@@ -174,8 +197,7 @@ public class SerializableSemVers implements SoftwareVersion {
         }
     }
 
-    private static SemanticVersion deserializeSemVer(final SerializableDataInputStream in)
-            throws IOException {
+    private static SemanticVersion deserializeSemVer(final SerializableDataInputStream in) throws IOException {
         final var ans = SemanticVersion.newBuilder();
         ans.setMajor(in.readInt()).setMinor(in.readInt()).setPatch(in.readInt());
         if (in.readBoolean()) {
@@ -191,13 +213,12 @@ public class SerializableSemVers implements SoftwareVersion {
         if (semVer == null) {
             return "<N/A>";
         }
-        final var sb =
-                new StringBuilder()
-                        .append(semVer.getMajor())
-                        .append(".")
-                        .append(semVer.getMinor())
-                        .append(".")
-                        .append(semVer.getPatch());
+        final var sb = new StringBuilder()
+                .append(semVer.getMajor())
+                .append(".")
+                .append(semVer.getMinor())
+                .append(".")
+                .append(semVer.getPatch());
         if (!semVer.getPre().isBlank()) {
             sb.append("-").append(semVer.getPre());
         }
@@ -224,9 +245,7 @@ public class SerializableSemVers implements SoftwareVersion {
     }
 
     @VisibleForTesting
-    static void setCurrentVersionHasPatchMigrationRecords(
-            final boolean currentVersionHasPatchMigrationRecords) {
-        SerializableSemVers.currentVersionHasPatchMigrationRecords =
-                currentVersionHasPatchMigrationRecords;
+    static void setCurrentVersionHasPatchMigrationRecords(final boolean currentVersionHasPatchMigrationRecords) {
+        SerializableSemVers.currentVersionHasPatchMigrationRecords = currentVersionHasPatchMigrationRecords;
     }
 }

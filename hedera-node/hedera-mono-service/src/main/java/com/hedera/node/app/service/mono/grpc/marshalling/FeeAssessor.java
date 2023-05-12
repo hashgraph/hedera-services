@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.grpc.marshalling;
 
 import static com.hedera.node.app.service.mono.grpc.marshalling.FixedFeeResult.ASSESSMENT_FAILED_WITH_TOO_MANY_ADJUSTMENTS_REQUIRED;
@@ -37,6 +38,9 @@ public class FeeAssessor {
     private final FixedFeeAssessor fixedFeeAssessor;
     private final RoyaltyFeeAssessor royaltyFeeAssessor;
     private final FractionalFeeAssessor fractionalFeeAssessor;
+
+    public static final boolean IS_NOT_FALLBACK_FEE = false;
+    public static final boolean IS_FALLBACK_FEE = true;
 
     @Inject
     public FeeAssessor(
@@ -68,8 +72,7 @@ public class FeeAssessor {
         }
 
         final var maxBalanceChanges = props.maxXferBalanceChanges();
-        final var fixedFeeResult =
-                assessFixedFees(feeMeta, payer, changeManager, accumulator, maxBalanceChanges);
+        final var fixedFeeResult = assessFixedFees(feeMeta, payer, changeManager, accumulator, maxBalanceChanges);
         if (fixedFeeResult == ASSESSMENT_FAILED_WITH_TOO_MANY_ADJUSTMENTS_REQUIRED) {
             return CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
         }
@@ -79,15 +82,13 @@ public class FeeAssessor {
         So these two if clauses are mutually exclusive. */
         if (fixedFeeResult == FRACTIONAL_FEE_ASSESSMENT_PENDING) {
             final var fractionalValidity =
-                    fractionalFeeAssessor.assessAllFractional(
-                            change, feeMeta, changeManager, accumulator);
+                    fractionalFeeAssessor.assessAllFractional(change, feeMeta, changeManager, accumulator);
             if (fractionalValidity != OK) {
                 return fractionalValidity;
             }
         } else if (fixedFeeResult == ROYALTY_FEE_ASSESSMENT_PENDING) {
             final var royaltyValidity =
-                    royaltyFeeAssessor.assessAllRoyalties(
-                            change, feeMeta, changeManager, accumulator);
+                    royaltyFeeAssessor.assessAllRoyalties(change, feeMeta, changeManager, accumulator);
             if (royaltyValidity != OK) {
                 return royaltyValidity;
             }
@@ -111,7 +112,8 @@ public class FeeAssessor {
                 continue;
             }
             if (fee.getFeeType() == FIXED_FEE) {
-                fixedFeeAssessor.assess(payer, feeMeta, fee, balanceChangeManager, accumulator);
+                // This is a top-level fixed fee, not a fallback royalty fee
+                fixedFeeAssessor.assess(payer, feeMeta, fee, balanceChangeManager, accumulator, IS_NOT_FALLBACK_FEE);
                 if (balanceChangeManager.numChangesSoFar() > maxBalanceChanges) {
                     return ASSESSMENT_FAILED_WITH_TOO_MANY_ADJUSTMENTS_REQUIRED;
                 }

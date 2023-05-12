@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.network;
 
 import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
@@ -48,8 +49,7 @@ public class UpgradeActions {
 
     private static final String PREPARE_UPGRADE_DESC = "software";
     private static final String TELEMETRY_UPGRADE_DESC = "telemetry";
-    private static final String MANUAL_REMEDIATION_ALERT =
-            "Manual remediation may be necessary to avoid node ISS";
+    private static final String MANUAL_REMEDIATION_ALERT = "Manual remediation may be necessary to avoid node ISS";
 
     public static final String NOW_FROZEN_MARKER = "now_frozen.mf";
     public static final String EXEC_IMMEDIATE_MARKER = "execute_immediate.mf";
@@ -91,8 +91,7 @@ public class UpgradeActions {
         }
     }
 
-    public CompletableFuture<Void> extractTelemetryUpgrade(
-            final byte[] archiveData, final Instant now) {
+    public CompletableFuture<Void> extractTelemetryUpgrade(final byte[] archiveData, final Instant now) {
         return extractNow(archiveData, TELEMETRY_UPGRADE_DESC, EXEC_TELEMETRY_MARKER, now);
     }
 
@@ -105,31 +104,25 @@ public class UpgradeActions {
     }
 
     public void scheduleFreezeUpgradeAt(final Instant freezeTime) {
-        withNonNullDualState(
-                "schedule freeze",
-                ds -> {
-                    ds.setFreezeTime(freezeTime);
-                    writeSecondMarker(FREEZE_SCHEDULED_MARKER, freezeTime);
-                });
+        withNonNullDualState("schedule freeze", ds -> {
+            ds.setFreezeTime(freezeTime);
+            writeSecondMarker(FREEZE_SCHEDULED_MARKER, freezeTime);
+        });
     }
 
     public void abortScheduledFreeze() {
-        withNonNullDualState(
-                "abort freeze",
-                ds -> {
-                    ds.setFreezeTime(null);
-                    writeCheckMarker(FREEZE_ABORTED_MARKER);
-                });
+        withNonNullDualState("abort freeze", ds -> {
+            ds.setFreezeTime(null);
+            writeCheckMarker(FREEZE_ABORTED_MARKER);
+        });
     }
 
     public boolean isFreezeScheduled() {
         final var ans = new AtomicBoolean();
-        withNonNullDualState(
-                "check freeze schedule",
-                ds -> {
-                    final var freezeTime = ds.getFreezeTime();
-                    ans.set(freezeTime != null && !freezeTime.equals(ds.getLastFrozenTime()));
-                });
+        withNonNullDualState("check freeze schedule", ds -> {
+            final var freezeTime = ds.getFreezeTime();
+            ans.set(freezeTime != null && !freezeTime.equals(ds.getLastFrozenTime()));
+        });
         return ans.get();
     }
 
@@ -141,29 +134,21 @@ public class UpgradeActions {
     /* --- Internal methods --- */
 
     private CompletableFuture<Void> extractNow(
-            final byte[] archiveData,
-            final String desc,
-            final String marker,
-            @Nullable final Instant now) {
+            final byte[] archiveData, final String desc, final String marker, @Nullable final Instant now) {
         final var size = archiveData.length;
         final var artifactsLoc = dynamicProperties.upgradeArtifactsLoc();
         log.info("About to unzip {} bytes for {} update into {}", size, desc, artifactsLoc);
-        return runAsync(
-                () -> {
-                    try {
-                        FileUtils.cleanDirectory(new File(artifactsLoc));
-                        unzipAction.unzip(archiveData, artifactsLoc);
-                        log.info(
-                                "Finished unzipping {} bytes for {} update into {}",
-                                size,
-                                desc,
-                                artifactsLoc);
-                        writeSecondMarker(marker, now);
-                    } catch (final IOException e) {
-                        log.error("Failed to unzip archive for NMT consumption", e);
-                        log.error(MANUAL_REMEDIATION_ALERT);
-                    }
-                });
+        return runAsync(() -> {
+            try {
+                FileUtils.cleanDirectory(new File(artifactsLoc));
+                unzipAction.unzip(archiveData, artifactsLoc);
+                log.info("Finished unzipping {} bytes for {} update into {}", size, desc, artifactsLoc);
+                writeSecondMarker(marker, now);
+            } catch (final IOException e) {
+                log.error("Failed to unzip archive for NMT consumption", e);
+                log.error(MANUAL_REMEDIATION_ALERT);
+            }
+        });
     }
 
     private void catchUpOnMissedFreezeScheduling() {
@@ -198,11 +183,9 @@ public class UpgradeActions {
         extractSoftwareUpgrade(archiveData).join();
     }
 
-    private void withNonNullDualState(
-            final String actionDesc, final Consumer<SwirldDualState> action) {
+    private void withNonNullDualState(final String actionDesc, final Consumer<SwirldDualState> action) {
         final var curDualState = dualState.get();
-        Objects.requireNonNull(
-                curDualState, "Cannot " + actionDesc + " without access to the dual state");
+        Objects.requireNonNull(curDualState, "Cannot " + actionDesc + " without access to the dual state");
         action.accept(curDualState);
     }
 

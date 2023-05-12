@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -47,8 +48,7 @@ public class UniqueTokenKeySerializer implements KeySerializer<UniqueTokenKey> {
     }
 
     @Override
-    public UniqueTokenKey deserialize(final ByteBuffer buffer, final long dataVersion)
-            throws IOException {
+    public UniqueTokenKey deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
         Objects.requireNonNull(buffer);
         final UniqueTokenKey tokenKey = new UniqueTokenKey();
         tokenKey.deserialize(buffer, (int) dataVersion);
@@ -56,8 +56,7 @@ public class UniqueTokenKeySerializer implements KeySerializer<UniqueTokenKey> {
     }
 
     @Override
-    public int serialize(
-            final UniqueTokenKey tokenKey, final SerializableDataOutputStream outputStream)
+    public int serialize(final UniqueTokenKey tokenKey, final SerializableDataOutputStream outputStream)
             throws IOException {
         Objects.requireNonNull(tokenKey);
         Objects.requireNonNull(outputStream);
@@ -70,8 +69,7 @@ public class UniqueTokenKeySerializer implements KeySerializer<UniqueTokenKey> {
     }
 
     @Override
-    public boolean equals(
-            final ByteBuffer byteBuffer, final int dataVersion, final UniqueTokenKey uniqueTokenKey)
+    public boolean equals(final ByteBuffer byteBuffer, final int dataVersion, final UniqueTokenKey uniqueTokenKey)
             throws IOException {
         return uniqueTokenKey.equalsTo(byteBuffer);
     }
@@ -82,15 +80,13 @@ public class UniqueTokenKeySerializer implements KeySerializer<UniqueTokenKey> {
     }
 
     @Override
-    public void deserialize(
-            final SerializableDataInputStream serializableDataInputStream, final int i)
+    public void deserialize(final SerializableDataInputStream serializableDataInputStream, final int i)
             throws IOException {
         /* no state to load, so no-op */
     }
 
     @Override
-    public void serialize(final SerializableDataOutputStream serializableDataOutputStream)
-            throws IOException {
+    public void serialize(final SerializableDataOutputStream serializableDataOutputStream) throws IOException {
         /* no state to save, so no-op */
     }
 

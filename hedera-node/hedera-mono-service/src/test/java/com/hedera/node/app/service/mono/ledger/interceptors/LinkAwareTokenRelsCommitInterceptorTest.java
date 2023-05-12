@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.interceptors;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
@@ -49,20 +50,30 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class LinkAwareTokenRelsCommitInterceptorTest {
-    @Mock private UsageLimits usageLimits;
-    @Mock private TxnAccessor accessor;
-    @Mock private TransactionContext txnCtx;
-    @Mock private SideEffectsTracker sideEffectsTracker;
-    @Mock private TokenRelsLinkManager relsLinkManager;
-    @Mock private Supplier<HederaTokenRel> tokenRelSupplier;
+    @Mock
+    private UsageLimits usageLimits;
+
+    @Mock
+    private TxnAccessor accessor;
+
+    @Mock
+    private TransactionContext txnCtx;
+
+    @Mock
+    private SideEffectsTracker sideEffectsTracker;
+
+    @Mock
+    private TokenRelsLinkManager relsLinkManager;
+
+    @Mock
+    private Supplier<HederaTokenRel> tokenRelSupplier;
 
     private LinkAwareTokenRelsCommitInterceptor subject;
 
     @BeforeEach
     void setUp() {
-        subject =
-                new LinkAwareTokenRelsCommitInterceptor(
-                        usageLimits, txnCtx, sideEffectsTracker, relsLinkManager, tokenRelSupplier);
+        subject = new LinkAwareTokenRelsCommitInterceptor(
+                usageLimits, txnCtx, sideEffectsTracker, relsLinkManager, tokenRelSupplier);
     }
 
     @Test
@@ -72,8 +83,7 @@ class LinkAwareTokenRelsCommitInterceptorTest {
 
     @Test
     void noChangesAreNoop() {
-        final var changes =
-                new EntityChangeSet<Pair<AccountID, TokenID>, HederaTokenRel, TokenRelProperty>();
+        final var changes = new EntityChangeSet<Pair<AccountID, TokenID>, HederaTokenRel, TokenRelProperty>();
 
         subject.preview(changes);
 
@@ -113,28 +123,23 @@ class LinkAwareTokenRelsCommitInterceptorTest {
         given(tokenRelSupplier.get()).willReturn(new OnDiskTokenRel());
 
         final var expectedNewRel = new OnDiskTokenRel();
-        expectedNewRel.setKey(
-                EntityNumPair.fromLongs(aAccountId.getAccountNum(), newAssocTokenId.getTokenNum()));
+        expectedNewRel.setKey(EntityNumPair.fromLongs(aAccountId.getAccountNum(), newAssocTokenId.getTokenNum()));
         final var changes = someChanges();
 
         subject.preview(changes);
         assertNotNull(changes.entity(1));
 
-        verify(relsLinkManager)
-                .updateLinks(accountNum, List.of(tbdTokenNum), List.of(expectedNewRel));
+        verify(relsLinkManager).updateLinks(accountNum, List.of(tbdTokenNum), List.of(expectedNewRel));
 
         subject.postCommit();
         verify(usageLimits).refreshTokenRels();
     }
 
-    private EntityChangeSet<Pair<AccountID, TokenID>, HederaTokenRel, TokenRelProperty>
-            someChanges() {
-        final var changes =
-                new EntityChangeSet<Pair<AccountID, TokenID>, HederaTokenRel, TokenRelProperty>();
+    private EntityChangeSet<Pair<AccountID, TokenID>, HederaTokenRel, TokenRelProperty> someChanges() {
+        final var changes = new EntityChangeSet<Pair<AccountID, TokenID>, HederaTokenRel, TokenRelProperty>();
         changes.include(Pair.of(aAccountId, alreadyAssocTokenId), extantRel, Map.of());
         changes.include(Pair.of(aAccountId, newAssocTokenId), null, Map.of());
-        tbdExtantRel.setKey(
-                EntityNumPair.fromLongs(aAccountId.getAccountNum(), tbdAssocTokenId.getTokenNum()));
+        tbdExtantRel.setKey(EntityNumPair.fromLongs(aAccountId.getAccountNum(), tbdAssocTokenId.getTokenNum()));
         changes.include(Pair.of(aAccountId, newAssocTokenId), tbdExtantRel, null);
         return changes;
     }

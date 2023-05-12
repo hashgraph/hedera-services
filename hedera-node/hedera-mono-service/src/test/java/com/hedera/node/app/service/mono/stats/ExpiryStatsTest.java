@@ -13,13 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.stats;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
@@ -34,11 +37,20 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ExpiryStatsTest {
     private static final double halfLife = 10.0;
 
-    @Mock private Platform platform;
-    @Mock private RunningAverageMetric idsScannedPerConsSec;
-    @Mock private Counter contractsRemoved;
-    @Mock private Counter contractsRenewed;
-    @Mock private Metrics metrics;
+    @Mock
+    private Platform platform;
+
+    @Mock
+    private RunningAverageMetric idsScannedPerConsSec;
+
+    @Mock
+    private Counter contractsRemoved;
+
+    @Mock
+    private Counter contractsRenewed;
+
+    @Mock
+    private Metrics metrics;
 
     private ExpiryStats subject;
 
@@ -50,7 +62,9 @@ class ExpiryStatsTest {
     @Test
     void registersExpectedStatEntries() {
         setMocks();
-        given(platform.getMetrics()).willReturn(metrics);
+        final var platformContext = mock(PlatformContext.class);
+        given(platform.getContext()).willReturn(platformContext);
+        given(platformContext.getMetrics()).willReturn(metrics);
 
         subject.registerWith(platform);
 

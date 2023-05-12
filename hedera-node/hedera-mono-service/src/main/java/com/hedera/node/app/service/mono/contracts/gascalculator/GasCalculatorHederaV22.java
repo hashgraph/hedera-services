@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.gascalculator;
 
 /*
@@ -68,10 +69,7 @@ public class GasCalculatorHederaV22 extends GasCalculatorHederaV19 {
         }
         final int nonZeros = payload.size() - zeros;
 
-        long cost =
-                TX_BASE_COST
-                        + TX_DATA_ZERO_COST * zeros
-                        + ISTANBUL_TX_DATA_NON_ZERO_COST * nonZeros;
+        long cost = TX_BASE_COST + TX_DATA_ZERO_COST * zeros + ISTANBUL_TX_DATA_NON_ZERO_COST * nonZeros;
 
         return isContractCreation ? (cost + txCreateExtraGasCost()) : cost;
     }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.setup;
 
 import com.google.common.primitives.Ints;
@@ -40,17 +41,15 @@ public class EvmKeyValueSource {
     }
 
     public static KvMutationBatch randomMutationBatch(
-            final int size,
-            final int maxContractNum,
-            final int maxKvPerContract,
-            final double removalProb) {
+            final int size, final int maxContractNum, final int maxKvPerContract, final double removalProb) {
         final var contracts = new AccountID[size];
         final var keys = new UInt256[size];
         final var values = new UInt256[size];
 
         for (int i = 0; i < size; i++) {
-            contracts[i] =
-                    AccountID.newBuilder().setAccountNum(r.nextInt(maxContractNum) + 1L).build();
+            contracts[i] = AccountID.newBuilder()
+                    .setAccountNum(r.nextInt(maxContractNum) + 1L)
+                    .build();
             keys[i] = uniqueKey(r.nextInt(maxKvPerContract));
             values[i] = (r.nextDouble() < removalProb) ? UInt256.ZERO : keys[i];
         }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.submerkle;
 
 import static java.util.stream.Collectors.toList;
@@ -66,32 +67,29 @@ class EvmFnResultTest {
     private static final List<ContractID> grpcCreatedContractIds =
             createdContractIds.stream().map(EntityId::toGrpcContractId).toList();
     private final List<EvmLog> logs = List.of(logFrom(0), logFrom(1));
-    private final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges =
-            new TreeMap<>(
-                    Map.of(
-                            Address.fromHexString("0x6"),
-                            Map.of(Bytes.of(7), Pair.of(Bytes.of(8), null)),
-                            Address.fromHexString("0x9"),
-                            Map.of(Bytes.of(10), Pair.of(Bytes.of(11), Bytes.of(12)))));
+    private final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges = new TreeMap<>(Map.of(
+            Address.fromHexString("0x6"),
+            Map.of(Bytes.of(7), Pair.of(Bytes.of(8), null)),
+            Address.fromHexString("0x9"),
+            Map.of(Bytes.of(10), Pair.of(Bytes.of(11), Bytes.of(12)))));
 
     private EvmFnResult subject;
 
     @BeforeEach
     void setup() {
-        subject =
-                new EvmFnResult(
-                        contractId,
-                        result,
-                        error,
-                        bloom,
-                        gasUsed,
-                        logs,
-                        createdContractIds,
-                        evmAddress,
-                        gas,
-                        amount,
-                        functionParameters,
-                        senderId);
+        subject = new EvmFnResult(
+                contractId,
+                result,
+                error,
+                bloom,
+                gasUsed,
+                logs,
+                createdContractIds,
+                evmAddress,
+                gas,
+                amount,
+                functionParameters,
+                senderId);
     }
 
     @Test
@@ -113,30 +111,28 @@ class EvmFnResultTest {
     @Test
     void besuParsingWorksForRevertFailure() {
         final var revertReason = HederaMessageCallProcessor.INVALID_TRANSFER.toString();
-        final var expected =
-                new EvmFnResult(
-                        null,
-                        new byte[0],
-                        revertReason,
-                        new byte[0],
-                        gasUsed,
-                        Collections.emptyList(),
-                        Collections.emptyList(),
-                        new byte[0],
-                        0L,
-                        0L,
-                        new byte[0],
-                        null);
+        final var expected = new EvmFnResult(
+                null,
+                new byte[0],
+                revertReason,
+                new byte[0],
+                gasUsed,
+                Collections.emptyList(),
+                Collections.emptyList(),
+                new byte[0],
+                0L,
+                0L,
+                new byte[0],
+                null);
 
-        final var input =
-                TransactionProcessingResult.failed(
-                        gasUsed,
-                        0,
-                        0,
-                        Optional.of(HederaMessageCallProcessor.INVALID_TRANSFER),
-                        Optional.empty(),
-                        Collections.emptyMap(),
-                        Collections.emptyList());
+        final var input = TransactionProcessingResult.failed(
+                gasUsed,
+                0,
+                0,
+                Optional.of(HederaMessageCallProcessor.INVALID_TRANSFER),
+                Optional.empty(),
+                Collections.emptyMap(),
+                Collections.emptyList());
 
         final var actual = EvmFnResult.fromCall(input);
 
@@ -145,31 +141,29 @@ class EvmFnResultTest {
 
     @Test
     void besuParsingWorksForCallSuccess() {
-        final var expected =
-                new EvmFnResult(
-                        contractId,
-                        result,
-                        null,
-                        realBloom,
-                        gasUsed,
-                        EvmLog.fromBesu(besuLogs),
-                        createdContractIds,
-                        new byte[0],
-                        0L,
-                        0L,
-                        new byte[0],
-                        null);
+        final var expected = new EvmFnResult(
+                contractId,
+                result,
+                null,
+                realBloom,
+                gasUsed,
+                EvmLog.fromBesu(besuLogs),
+                createdContractIds,
+                new byte[0],
+                0L,
+                0L,
+                new byte[0],
+                null);
 
-        final var input =
-                TransactionProcessingResult.successful(
-                        besuLogs,
-                        gasUsed,
-                        0,
-                        0,
-                        Bytes.wrap(result),
-                        recipient,
-                        Collections.emptyMap(),
-                        Collections.emptyList());
+        final var input = TransactionProcessingResult.successful(
+                besuLogs,
+                gasUsed,
+                0,
+                0,
+                Bytes.wrap(result),
+                recipient,
+                Collections.emptyMap(),
+                Collections.emptyList());
         input.setCreatedContracts(grpcCreatedContractIds);
 
         final var actual = EvmFnResult.fromCall(input);
@@ -188,31 +182,29 @@ class EvmFnResultTest {
 
     @Test
     void besuParsingWorksForCreateSuccess() {
-        final var expected =
-                new EvmFnResult(
-                        contractId,
-                        result,
-                        null,
-                        realBloom,
-                        gasUsed,
-                        EvmLog.fromBesu(besuLogs),
-                        createdContractIds,
-                        evmAddress,
-                        0L,
-                        0L,
-                        new byte[0],
-                        null);
+        final var expected = new EvmFnResult(
+                contractId,
+                result,
+                null,
+                realBloom,
+                gasUsed,
+                EvmLog.fromBesu(besuLogs),
+                createdContractIds,
+                evmAddress,
+                0L,
+                0L,
+                new byte[0],
+                null);
 
-        final var input =
-                TransactionProcessingResult.successful(
-                        besuLogs,
-                        gasUsed,
-                        0,
-                        0,
-                        Bytes.wrap(result),
-                        recipient,
-                        Collections.emptyMap(),
-                        Collections.emptyList());
+        final var input = TransactionProcessingResult.successful(
+                besuLogs,
+                gasUsed,
+                0,
+                0,
+                Bytes.wrap(result),
+                recipient,
+                Collections.emptyMap(),
+                Collections.emptyList());
         input.setCreatedContracts(grpcCreatedContractIds);
 
         final var actual = EvmFnResult.fromCreate(input, evmAddress);
@@ -223,118 +215,110 @@ class EvmFnResultTest {
     @Test
     void objectContractWorks() {
         final var one = subject;
-        final var two =
-                new EvmFnResult(
-                        contractId,
-                        otherResult,
-                        error,
-                        bloom,
-                        gasUsed,
-                        logs,
-                        createdContractIds,
-                        evmAddress,
-                        gas,
-                        amount,
-                        functionParameters,
-                        senderId);
-        final var three =
-                new EvmFnResult(
-                        contractId,
-                        result,
-                        error,
-                        bloom,
-                        gasUsed,
-                        logs,
-                        createdContractIds,
-                        evmAddress,
-                        gas,
-                        amount,
-                        functionParameters,
-                        senderId);
-        final var four =
-                new EvmFnResult(
-                        contractId,
-                        result,
-                        error,
-                        bloom,
-                        gasUsed,
-                        logs,
-                        createdContractIds,
-                        Address.ZERO.toArray(),
-                        gas,
-                        amount,
-                        functionParameters,
-                        senderId);
-        final var five =
-                new EvmFnResult(
-                        contractId,
-                        result,
-                        "AnotherError",
-                        bloom,
-                        gasUsed,
-                        logs,
-                        createdContractIds,
-                        evmAddress,
-                        gas,
-                        amount,
-                        functionParameters,
-                        senderId);
-        final var six =
-                new EvmFnResult(
-                        contractId,
-                        result,
-                        error,
-                        bloom,
-                        gasUsed,
-                        List.of(logFrom(1)),
-                        createdContractIds,
-                        evmAddress,
-                        gas,
-                        amount,
-                        functionParameters,
-                        senderId);
-        final var seven =
-                new EvmFnResult(
-                        contractId,
-                        result,
-                        error,
-                        bloom,
-                        gasUsed,
-                        logs,
-                        List.of(new EntityId(1L, 1L, 42L)),
-                        evmAddress,
-                        gas,
-                        amount,
-                        functionParameters,
-                        senderId);
-        final var nine =
-                new EvmFnResult(
-                        contractId,
-                        result,
-                        error,
-                        bloom,
-                        gasUsed,
-                        logs,
-                        createdContractIds,
-                        evmAddress,
-                        gas,
-                        amount,
-                        "randomParameters".getBytes(),
-                        senderId);
-        final var ten =
-                new EvmFnResult(
-                        contractId,
-                        result,
-                        error,
-                        bloom,
-                        gasUsed,
-                        logs,
-                        createdContractIds,
-                        evmAddress,
-                        gas,
-                        amount,
-                        "randomParameters".getBytes(),
-                        null);
+        final var two = new EvmFnResult(
+                contractId,
+                otherResult,
+                error,
+                bloom,
+                gasUsed,
+                logs,
+                createdContractIds,
+                evmAddress,
+                gas,
+                amount,
+                functionParameters,
+                senderId);
+        final var three = new EvmFnResult(
+                contractId,
+                result,
+                error,
+                bloom,
+                gasUsed,
+                logs,
+                createdContractIds,
+                evmAddress,
+                gas,
+                amount,
+                functionParameters,
+                senderId);
+        final var four = new EvmFnResult(
+                contractId,
+                result,
+                error,
+                bloom,
+                gasUsed,
+                logs,
+                createdContractIds,
+                Address.ZERO.toArray(),
+                gas,
+                amount,
+                functionParameters,
+                senderId);
+        final var five = new EvmFnResult(
+                contractId,
+                result,
+                "AnotherError",
+                bloom,
+                gasUsed,
+                logs,
+                createdContractIds,
+                evmAddress,
+                gas,
+                amount,
+                functionParameters,
+                senderId);
+        final var six = new EvmFnResult(
+                contractId,
+                result,
+                error,
+                bloom,
+                gasUsed,
+                List.of(logFrom(1)),
+                createdContractIds,
+                evmAddress,
+                gas,
+                amount,
+                functionParameters,
+                senderId);
+        final var seven = new EvmFnResult(
+                contractId,
+                result,
+                error,
+                bloom,
+                gasUsed,
+                logs,
+                List.of(new EntityId(1L, 1L, 42L)),
+                evmAddress,
+                gas,
+                amount,
+                functionParameters,
+                senderId);
+        final var nine = new EvmFnResult(
+                contractId,
+                result,
+                error,
+                bloom,
+                gasUsed,
+                logs,
+                createdContractIds,
+                evmAddress,
+                gas,
+                amount,
+                "randomParameters".getBytes(),
+                senderId);
+        final var ten = new EvmFnResult(
+                contractId,
+                result,
+                error,
+                bloom,
+                gasUsed,
+                logs,
+                createdContractIds,
+                evmAddress,
+                gas,
+                amount,
+                "randomParameters".getBytes(),
+                null);
 
         assertNotEquals(null, one);
         assertNotEquals(new Object(), one);
@@ -417,70 +401,64 @@ class EvmFnResultTest {
 
     @Test
     void grpcFactoryWorksWithEverythingSet() {
-        subject =
-                new EvmFnResult(
-                        contractId,
-                        result,
-                        error,
-                        bloom,
-                        gasUsed,
-                        logs,
-                        createdContractIds,
-                        evmAddress,
-                        gas,
-                        amount,
-                        functionParameters,
-                        senderId);
+        subject = new EvmFnResult(
+                contractId,
+                result,
+                error,
+                bloom,
+                gasUsed,
+                logs,
+                createdContractIds,
+                evmAddress,
+                gas,
+                amount,
+                functionParameters,
+                senderId);
 
-        final var grpc =
-                ContractFunctionResult.newBuilder()
-                        .setGasUsed(gasUsed)
-                        .setContractCallResult(ByteString.copyFrom(result))
-                        .setBloom(ByteString.copyFrom(bloom))
-                        .setErrorMessage(error)
-                        .setContractID(contractId.toGrpcContractId())
-                        .addAllCreatedContractIDs(
-                                createdContractIds.stream()
-                                        .map(EntityId::toGrpcContractId)
-                                        .collect(toList()))
-                        .addAllLogInfo(logs.stream().map(EvmLog::toGrpc).collect(toList()))
-                        .setEvmAddress(
-                                BytesValue.newBuilder().setValue(ByteString.copyFrom(evmAddress)))
-                        .setGas(gas)
-                        .setAmount(amount)
-                        .setFunctionParameters(ByteString.copyFrom(functionParameters))
-                        .setSenderId(senderId.toGrpcAccountId())
-                        .build();
+        final var grpc = ContractFunctionResult.newBuilder()
+                .setGasUsed(gasUsed)
+                .setContractCallResult(ByteString.copyFrom(result))
+                .setBloom(ByteString.copyFrom(bloom))
+                .setErrorMessage(error)
+                .setContractID(contractId.toGrpcContractId())
+                .addAllCreatedContractIDs(createdContractIds.stream()
+                        .map(EntityId::toGrpcContractId)
+                        .collect(toList()))
+                .addAllLogInfo(logs.stream().map(EvmLog::toGrpc).collect(toList()))
+                .setEvmAddress(BytesValue.newBuilder().setValue(ByteString.copyFrom(evmAddress)))
+                .setGas(gas)
+                .setAmount(amount)
+                .setFunctionParameters(ByteString.copyFrom(functionParameters))
+                .setSenderId(senderId.toGrpcAccountId())
+                .build();
 
         assertEquals(grpc, subject.toGrpc());
     }
 
     @Test
     void grpcFactoryWorksWithSomeFieldsMissing() {
-        subject =
-                new EvmFnResult(
-                        null,
-                        result,
-                        null,
-                        bloom,
-                        gasUsed,
-                        Collections.emptyList(),
-                        Collections.emptyList(),
-                        EvmFnResult.EMPTY,
-                        gas,
-                        0L,
-                        functionParameters,
-                        senderId);
+        subject = new EvmFnResult(
+                null,
+                result,
+                null,
+                bloom,
+                gasUsed,
+                Collections.emptyList(),
+                Collections.emptyList(),
+                EvmFnResult.EMPTY,
+                gas,
+                0L,
+                functionParameters,
+                senderId);
 
-        final var grpc =
-                ContractFunctionResult.newBuilder()
-                        .setGasUsed(gasUsed)
-                        .setContractCallResult(ByteString.copyFrom(result))
-                        .setBloom(ByteString.copyFrom(bloom))
-                        .setGas(gas)
-                        .setFunctionParameters(ByteString.copyFrom(functionParameters))
-                        .setSenderId(senderId.toGrpcAccountId())
-                        .build();
+        final var grpc = ContractFunctionResult.newBuilder()
+                .setGasUsed(gasUsed)
+                .setContractCallResult(ByteString.copyFrom(result))
+                .setBloom(ByteString.copyFrom(bloom))
+                .setGas(gas)
+                .setFunctionParameters(ByteString.copyFrom(functionParameters))
+                .setSenderId(senderId.toGrpcAccountId())
+                .build();
 
         assertEquals(grpc, subject.toGrpc());
     }
@@ -488,25 +466,22 @@ class EvmFnResultTest {
     @Test
     void viewWorks() {
         final var actual = subject.toGrpc();
-        final var expected =
-                ContractFunctionResult.newBuilder()
-                        .setGasUsed(gasUsed)
-                        .setContractCallResult(ByteString.copyFrom(result))
-                        .setBloom(ByteString.copyFrom(bloom))
-                        .setErrorMessage(error)
-                        .setContractID(contractId.toGrpcContractId())
-                        .addAllCreatedContractIDs(
-                                createdContractIds.stream()
-                                        .map(EntityId::toGrpcContractId)
-                                        .collect(toList()))
-                        .addAllLogInfo(logs.stream().map(EvmLog::toGrpc).collect(toList()))
-                        .setEvmAddress(
-                                BytesValue.newBuilder().setValue(ByteString.copyFrom(evmAddress)))
-                        .setGas(gas)
-                        .setAmount(amount)
-                        .setFunctionParameters(ByteString.copyFrom(functionParameters))
-                        .setSenderId(senderId.toGrpcAccountId())
-                        .build();
+        final var expected = ContractFunctionResult.newBuilder()
+                .setGasUsed(gasUsed)
+                .setContractCallResult(ByteString.copyFrom(result))
+                .setBloom(ByteString.copyFrom(bloom))
+                .setErrorMessage(error)
+                .setContractID(contractId.toGrpcContractId())
+                .addAllCreatedContractIDs(createdContractIds.stream()
+                        .map(EntityId::toGrpcContractId)
+                        .collect(toList()))
+                .addAllLogInfo(logs.stream().map(EvmLog::toGrpc).collect(toList()))
+                .setEvmAddress(BytesValue.newBuilder().setValue(ByteString.copyFrom(evmAddress)))
+                .setGas(gas)
+                .setAmount(amount)
+                .setFunctionParameters(ByteString.copyFrom(functionParameters))
+                .setSenderId(senderId.toGrpcAccountId())
+                .build();
 
         assertEquals(expected, actual);
     }
@@ -521,24 +496,23 @@ class EvmFnResultTest {
     void updateFromEvmCallContextWorks() {
         var oneByte = new byte[] {1};
         var senderId = EntityId.fromIdentityCode(42);
-        EthTxData ethTxData =
-                new EthTxData(
-                        oneByte,
-                        EthTxData.EthTransactionType.EIP2930,
-                        oneByte,
-                        1,
-                        oneByte,
-                        oneByte,
-                        oneByte,
-                        5678,
-                        oneByte,
-                        BigInteger.valueOf(34_000_000_000L),
-                        oneByte,
-                        null,
-                        1,
-                        oneByte,
-                        oneByte,
-                        oneByte);
+        EthTxData ethTxData = new EthTxData(
+                oneByte,
+                EthTxData.EthTransactionType.EIP2930,
+                oneByte,
+                1,
+                oneByte,
+                oneByte,
+                oneByte,
+                5678,
+                oneByte,
+                BigInteger.valueOf(34_000_000_000L),
+                oneByte,
+                null,
+                1,
+                oneByte,
+                oneByte,
+                oneByte);
 
         subject.updateForEvmCall(ethTxData, senderId);
 
@@ -552,34 +526,29 @@ class EvmFnResultTest {
         return new EvmLog(contracts[s], blooms[s], List.of(topics[s], topics[s + 1 % 3]), data[s]);
     }
 
-    private static final EntityId[] contracts =
-            new EntityId[] {
-                new EntityId(1L, 2L, 3L), new EntityId(2L, 3L, 4L), new EntityId(3L, 4L, 5L),
-            };
+    private static final EntityId[] contracts = new EntityId[] {
+        new EntityId(1L, 2L, 3L), new EntityId(2L, 3L, 4L), new EntityId(3L, 4L, 5L),
+    };
 
-    private static final byte[][] topics =
-            new byte[][] {
-                "alpha000000000000000000000000000".getBytes(),
-                "bravo000000000000000000000000000".getBytes(),
-                "charlie0000000000000000000000000".getBytes(),
-            };
+    private static final byte[][] topics = new byte[][] {
+        "alpha000000000000000000000000000".getBytes(),
+        "bravo000000000000000000000000000".getBytes(),
+        "charlie0000000000000000000000000".getBytes(),
+    };
 
-    private static final byte[][] otherTopics =
-            new byte[][] {
-                "alpha999999999999999999999999999".getBytes(),
-                "bravo999999999999999999999999999".getBytes(),
-                "charlie9999999999999999999999999".getBytes(),
-            };
+    private static final byte[][] otherTopics = new byte[][] {
+        "alpha999999999999999999999999999".getBytes(),
+        "bravo999999999999999999999999999".getBytes(),
+        "charlie9999999999999999999999999".getBytes(),
+    };
 
-    private static final byte[][] blooms =
-            new byte[][] {
-                "tulip".getBytes(), "lily".getBytes(), "cynthia".getBytes(),
-            };
+    private static final byte[][] blooms = new byte[][] {
+        "tulip".getBytes(), "lily".getBytes(), "cynthia".getBytes(),
+    };
 
-    private static final byte[][] data =
-            new byte[][] {
-                "one".getBytes(), "two".getBytes(), "three".getBytes(),
-            };
+    private static final byte[][] data = new byte[][] {
+        "one".getBytes(), "two".getBytes(), "three".getBytes(),
+    };
 
     private static final Log aLog = besuLog(123L, data[0], topics);
     private static final Log bLog = besuLog(456L, data[1], otherTopics);
@@ -588,13 +557,12 @@ class EvmFnResultTest {
 
     private static Log besuLog(final long num, byte[] data, byte[][] topics) {
         final var logger = EntityNum.fromLong(num);
-        final var l =
-                new Log(
-                        logger.toEvmAddress(),
-                        Bytes.wrap(data),
-                        Arrays.stream(topics)
-                                .map(bytes -> LogTopic.of(Bytes.wrap(bytes)))
-                                .toList());
+        final var l = new Log(
+                logger.toEvmAddress(),
+                Bytes.wrap(data),
+                Arrays.stream(topics)
+                        .map(bytes -> LogTopic.of(Bytes.wrap(bytes)))
+                        .toList());
         return l;
     }
 

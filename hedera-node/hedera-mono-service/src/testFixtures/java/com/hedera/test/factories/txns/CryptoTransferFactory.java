@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.factories.txns;
 
 import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
@@ -61,7 +62,8 @@ public class CryptoTransferFactory extends SignedTxnFactory<CryptoTransferFactor
 
     public CryptoTransferFactory adjustingHbars(AccountID aId, long amount) {
         usesTokenBuilders = true;
-        hbarAdjustments.add(AccountAmount.newBuilder().setAccountID(aId).setAmount(amount).build());
+        hbarAdjustments.add(
+                AccountAmount.newBuilder().setAccountID(aId).setAmount(amount).build());
         return this;
     }
 
@@ -77,8 +79,7 @@ public class CryptoTransferFactory extends SignedTxnFactory<CryptoTransferFactor
         return this;
     }
 
-    public CryptoTransferFactory approvedChangingOwner(
-            NftID nft, AccountID sender, AccountID receiver) {
+    public CryptoTransferFactory approvedChangingOwner(NftID nft, AccountID sender, AccountID receiver) {
         usesTokenBuilders = true;
         ownershipChanges.put(
                 nft,
@@ -95,7 +96,10 @@ public class CryptoTransferFactory extends SignedTxnFactory<CryptoTransferFactor
         usesTokenBuilders = true;
         adjustments
                 .computeIfAbsent(tId, ignore -> new ArrayList<>())
-                .add(AccountAmount.newBuilder().setAccountID(aId).setAmount(amount).build());
+                .add(AccountAmount.newBuilder()
+                        .setAccountID(aId)
+                        .setAmount(amount)
+                        .build());
         return this;
     }
 
@@ -103,14 +107,12 @@ public class CryptoTransferFactory extends SignedTxnFactory<CryptoTransferFactor
         usesTokenBuilders = true;
         adjustments
                 .computeIfAbsent(tId, ignore -> new ArrayList<>())
-                .add(
-                        AccountAmount.newBuilder()
-                                .setAccountID(
-                                        AccountID.newBuilder()
-                                                .setAlias(ByteString.copyFromUtf8(alias))
-                                                .build())
-                                .setAmount(amount)
-                                .build());
+                .add(AccountAmount.newBuilder()
+                        .setAccountID(AccountID.newBuilder()
+                                .setAlias(ByteString.copyFromUtf8(alias))
+                                .build())
+                        .setAmount(amount)
+                        .build());
         return this;
     }
 
@@ -118,12 +120,11 @@ public class CryptoTransferFactory extends SignedTxnFactory<CryptoTransferFactor
         usesTokenBuilders = true;
         adjustments
                 .computeIfAbsent(tId, ignore -> new ArrayList<>())
-                .add(
-                        AccountAmount.newBuilder()
-                                .setAccountID(aId)
-                                .setAmount(amount)
-                                .setIsApproval(true)
-                                .build());
+                .add(AccountAmount.newBuilder()
+                        .setAccountID(aId)
+                        .setAmount(amount)
+                        .setIsApproval(true)
+                        .build());
         return this;
     }
 
@@ -141,27 +142,21 @@ public class CryptoTransferFactory extends SignedTxnFactory<CryptoTransferFactor
     protected void customizeTxn(TransactionBody.Builder txn) {
         if (!usesTokenBuilders) {
             CryptoTransferTransactionBody.Builder op = CryptoTransferTransactionBody.newBuilder();
-            op.setTransfers(
-                    TransferList.newBuilder().addAllAccountAmounts(transfersAsAccountAmounts()));
+            op.setTransfers(TransferList.newBuilder().addAllAccountAmounts(transfersAsAccountAmounts()));
             txn.setCryptoTransfer(op);
         } else {
             if (!adjustmentsAreSet) {
                 adjustments.entrySet().stream()
-                        .forEach(
-                                entry ->
-                                        xfers.addTokenTransfers(
-                                                TokenTransferList.newBuilder()
-                                                        .setToken(entry.getKey())
-                                                        .addAllTransfers(entry.getValue())
-                                                        .build()));
+                        .forEach(entry -> xfers.addTokenTransfers(TokenTransferList.newBuilder()
+                                .setToken(entry.getKey())
+                                .addAllTransfers(entry.getValue())
+                                .build()));
                 ownershipChanges.entrySet().stream()
-                        .sorted(comparingLong(entry -> entry.getKey().getTokenID().getTokenNum()))
-                        .forEach(
-                                entry ->
-                                        xfers.addTokenTransfers(
-                                                TokenTransferList.newBuilder()
-                                                        .setToken(entry.getKey().getTokenID())
-                                                        .addNftTransfers(entry.getValue())));
+                        .sorted(comparingLong(
+                                entry -> entry.getKey().getTokenID().getTokenNum()))
+                        .forEach(entry -> xfers.addTokenTransfers(TokenTransferList.newBuilder()
+                                .setToken(entry.getKey().getTokenID())
+                                .addNftTransfers(entry.getValue())));
                 xfers.setTransfers(TransferList.newBuilder().addAllAccountAmounts(hbarAdjustments));
                 adjustmentsAreSet = true;
             }
@@ -171,19 +166,17 @@ public class CryptoTransferFactory extends SignedTxnFactory<CryptoTransferFactor
 
     private List<AccountAmount> transfersAsAccountAmounts() {
         return transfers.stream()
-                .flatMap(
-                        fromTo ->
-                                List.of(
-                                        AccountAmount.newBuilder()
-                                                .setAccountID(fromTo.payerId())
-                                                .setAmount(-1 * fromTo.getAmount())
-                                                .setIsApproval(fromTo.isApproval())
-                                                .build(),
-                                        AccountAmount.newBuilder()
-                                                .setAccountID(fromTo.payeeId())
-                                                .setAmount(fromTo.getAmount())
-                                                .build())
-                                        .stream())
+                .flatMap(fromTo -> List.of(
+                        AccountAmount.newBuilder()
+                                .setAccountID(fromTo.payerId())
+                                .setAmount(-1 * fromTo.getAmount())
+                                .setIsApproval(fromTo.isApproval())
+                                .build(),
+                        AccountAmount.newBuilder()
+                                .setAccountID(fromTo.payeeId())
+                                .setAmount(fromTo.getAmount())
+                                .build())
+                        .stream())
                 .collect(toList());
     }
 }

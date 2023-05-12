@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.schedule;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -79,9 +80,7 @@ public class ScheduleSignTransitionLogic implements TransitionLogic {
             transitionFor(accessor.getSigMap(), accessor.getTxn().getScheduleSign());
         } catch (Exception e) {
             log.warn(
-                    "Unhandled error while processing :: {}!",
-                    txnCtx.accessor().getSignedTxnWrapper(),
-                    e);
+                    "Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxnWrapper(), e);
             txnCtx.setStatus(FAIL_INVALID);
         }
     }
@@ -90,9 +89,7 @@ public class ScheduleSignTransitionLogic implements TransitionLogic {
             throws InvalidProtocolBufferException {
         var scheduleId = op.getScheduleID();
         var origSchedule =
-                properties.schedulingLongTermEnabled()
-                        ? store.getNoError(scheduleId)
-                        : store.get(scheduleId);
+                properties.schedulingLongTermEnabled() ? store.getNoError(scheduleId) : store.get(scheduleId);
         if (origSchedule == null) {
             txnCtx.setStatus(INVALID_SCHEDULE_ID);
             return;
@@ -105,7 +102,8 @@ public class ScheduleSignTransitionLogic implements TransitionLogic {
             txnCtx.setStatus(SCHEDULE_ALREADY_DELETED);
             return;
         }
-        if (txnCtx.consensusTime().isAfter(origSchedule.calculatedExpirationTime().toJava())) {
+        if (txnCtx.consensusTime()
+                .isAfter(origSchedule.calculatedExpirationTime().toJava())) {
             if (!properties.schedulingLongTermEnabled()) {
                 txnCtx.setStatus(INVALID_SCHEDULE_ID);
                 return;
@@ -114,20 +112,17 @@ public class ScheduleSignTransitionLogic implements TransitionLogic {
             return;
         }
 
-        var validScheduleKeys =
-                classifier.validScheduleKeys(
-                        List.of(txnCtx.activePayerKey()),
-                        sigMap,
-                        activationHelper.currentSigsFn(),
-                        activationHelper::visitScheduledCryptoSigs);
-        var signingOutcome =
-                replSigningsWitness.observeInScope(
-                        scheduleId,
-                        store,
-                        validScheduleKeys,
-                        activationHelper,
-                        properties.schedulingLongTermEnabled()
-                                && origSchedule.calculatedWaitForExpiry());
+        var validScheduleKeys = classifier.validScheduleKeys(
+                List.of(txnCtx.activePayerKey()),
+                sigMap,
+                activationHelper.currentSigsFn(),
+                activationHelper::visitScheduledCryptoSigs);
+        var signingOutcome = replSigningsWitness.observeInScope(
+                scheduleId,
+                store,
+                validScheduleKeys,
+                activationHelper,
+                properties.schedulingLongTermEnabled() && origSchedule.calculatedWaitForExpiry());
 
         var outcome = signingOutcome.getLeft();
         if (outcome == OK) {
@@ -160,8 +155,7 @@ public class ScheduleSignTransitionLogic implements TransitionLogic {
 
         // If long term scheduled transactions are enabled, the schedule must exist at the HAPI
         // level to allow deep throttle checks
-        if (properties.schedulingLongTermEnabled()
-                && store.getNoError(op.getScheduleID()) == null) {
+        if (properties.schedulingLongTermEnabled() && store.getNoError(op.getScheduleID()) == null) {
             return INVALID_SCHEDULE_ID;
         }
 

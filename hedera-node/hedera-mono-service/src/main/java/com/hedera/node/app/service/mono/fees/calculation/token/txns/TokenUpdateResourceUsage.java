@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.token.txns;
 
 import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
@@ -34,8 +35,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
-public class TokenUpdateResourceUsage extends AbstractTokenResourceUsage
-        implements TxnResourceUsageEstimator {
+public class TokenUpdateResourceUsage extends AbstractTokenResourceUsage implements TxnResourceUsageEstimator {
     private static final BiFunction<TransactionBody, TxnUsageEstimator, TokenUpdateUsage> factory =
             TokenUpdateUsage::newEstimate;
 
@@ -50,41 +50,26 @@ public class TokenUpdateResourceUsage extends AbstractTokenResourceUsage
     }
 
     @Override
-    public FeeData usageGiven(
-            final TransactionBody txn, final SigValueObj svo, final StateView view)
+    public FeeData usageGiven(final TransactionBody txn, final SigValueObj svo, final StateView view)
             throws InvalidTxBodyException {
         final var op = txn.getTokenUpdate();
-        final var sigUsage =
-                new SigUsage(
-                        svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
+        final var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
         final var optionalInfo = view.infoForToken(op.getToken());
         if (optionalInfo.isPresent()) {
             final var info = optionalInfo.get();
-            final var estimate =
-                    factory.apply(txn, estimatorFactory.get(sigUsage, txn, ESTIMATOR_UTILS))
-                            .givenCurrentExpiry(info.getExpiry().getSeconds())
-                            .givenCurrentAdminKey(
-                                    ifPresent(info, TokenInfo::hasAdminKey, TokenInfo::getAdminKey))
-                            .givenCurrentFreezeKey(
-                                    ifPresent(
-                                            info, TokenInfo::hasFreezeKey, TokenInfo::getFreezeKey))
-                            .givenCurrentWipeKey(
-                                    ifPresent(info, TokenInfo::hasWipeKey, TokenInfo::getWipeKey))
-                            .givenCurrentSupplyKey(
-                                    ifPresent(
-                                            info, TokenInfo::hasSupplyKey, TokenInfo::getSupplyKey))
-                            .givenCurrentKycKey(
-                                    ifPresent(info, TokenInfo::hasKycKey, TokenInfo::getKycKey))
-                            .givenCurrentFeeScheduleKey(
-                                    ifPresent(
-                                            info,
-                                            TokenInfo::hasFeeScheduleKey,
-                                            TokenInfo::getFeeScheduleKey))
-                            .givenCurrentPauseKey(
-                                    ifPresent(info, TokenInfo::hasPauseKey, TokenInfo::getPauseKey))
-                            .givenCurrentMemo(info.getMemo())
-                            .givenCurrentName(info.getName())
-                            .givenCurrentSymbol(info.getSymbol());
+            final var estimate = factory.apply(txn, estimatorFactory.get(sigUsage, txn, ESTIMATOR_UTILS))
+                    .givenCurrentExpiry(info.getExpiry().getSeconds())
+                    .givenCurrentAdminKey(ifPresent(info, TokenInfo::hasAdminKey, TokenInfo::getAdminKey))
+                    .givenCurrentFreezeKey(ifPresent(info, TokenInfo::hasFreezeKey, TokenInfo::getFreezeKey))
+                    .givenCurrentWipeKey(ifPresent(info, TokenInfo::hasWipeKey, TokenInfo::getWipeKey))
+                    .givenCurrentSupplyKey(ifPresent(info, TokenInfo::hasSupplyKey, TokenInfo::getSupplyKey))
+                    .givenCurrentKycKey(ifPresent(info, TokenInfo::hasKycKey, TokenInfo::getKycKey))
+                    .givenCurrentFeeScheduleKey(
+                            ifPresent(info, TokenInfo::hasFeeScheduleKey, TokenInfo::getFeeScheduleKey))
+                    .givenCurrentPauseKey(ifPresent(info, TokenInfo::hasPauseKey, TokenInfo::getPauseKey))
+                    .givenCurrentMemo(info.getMemo())
+                    .givenCurrentName(info.getName())
+                    .givenCurrentSymbol(info.getSymbol());
             if (info.hasAutoRenewAccount()) {
                 estimate.givenCurrentlyUsingAutoRenewAccount();
             }

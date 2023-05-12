@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.grpc.marshalling;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -63,15 +64,14 @@ class CustomFeeMetaTest {
         final var subject = new CustomFeeMeta(aToken, aTreasury, List.of(hbarFee, htsFee));
 
         // given:
-        final var desired =
-                "CustomFeeMeta[tokenId=1.1.1, treasuryId=9.9.9,"
-                        + " customFees=[FcCustomFee{feeType=FIXED_FEE,"
-                        + " fixedFee=FixedFeeSpec{unitsToCollect=100000, tokenDenomination=ℏ},"
-                        + " feeCollector=EntityId{shard=2, realm=3, num=4},"
-                        + " allCollectorsAreExempt=false}, FcCustomFee{feeType=FIXED_FEE,"
-                        + " fixedFee=FixedFeeSpec{unitsToCollect=10, tokenDenomination=6.6.6},"
-                        + " feeCollector=EntityId{shard=3, realm=4, num=5},"
-                        + " allCollectorsAreExempt=false}]]";
+        final var desired = "CustomFeeMeta[tokenId=1.1.1, treasuryId=9.9.9,"
+                + " customFees=[FcCustomFee{feeType=FIXED_FEE,"
+                + " fixedFee=FixedFeeSpec{unitsToCollect=100000, tokenDenomination=ℏ},"
+                + " feeCollector=EntityId{shard=2, realm=3, num=4},"
+                + " allCollectorsAreExempt=false}, FcCustomFee{feeType=FIXED_FEE,"
+                + " fixedFee=FixedFeeSpec{unitsToCollect=10, tokenDenomination=6.6.6},"
+                + " feeCollector=EntityId{shard=3, realm=4, num=5},"
+                + " allCollectorsAreExempt=false}]]";
 
         // expect:
         assertEquals(desired, subject.toString());
@@ -89,6 +89,5 @@ class CustomFeeMetaTest {
     private final FcCustomFee hbarFee =
             FcCustomFee.fixedFee(amountOfHbarFee, null, hbarFeeCollector.asEntityId(), false);
     private final FcCustomFee htsFee =
-            FcCustomFee.fixedFee(
-                    amountOfHtsFee, feeDenom.asEntityId(), htsFeeCollector.asEntityId(), false);
+            FcCustomFee.fixedFee(amountOfHtsFee, feeDenom.asEntityId(), htsFeeCollector.asEntityId(), false);
 }

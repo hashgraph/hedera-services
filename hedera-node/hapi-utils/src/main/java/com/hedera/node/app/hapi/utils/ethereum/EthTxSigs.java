@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.utils.ethereum;
 
 import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType.LEGACY_ETHEREUM;
@@ -51,12 +52,7 @@ public record EthTxSigs(byte[] publicKey, byte[] address) {
         final LibSecp256k1.secp256k1_ecdsa_recoverable_signature signature =
                 new LibSecp256k1.secp256k1_ecdsa_recoverable_signature();
         LibSecp256k1.secp256k1_ecdsa_sign_recoverable(
-                CONTEXT,
-                signature,
-                new Keccak.Digest256().digest(signableMessage),
-                privateKey,
-                null,
-                null);
+                CONTEXT, signature, new Keccak.Digest256().digest(signableMessage), privateKey, null, null);
 
         final ByteBuffer compactSig = ByteBuffer.allocate(64);
         final IntByReference recId = new IntByReference(0);
@@ -76,9 +72,8 @@ public record EthTxSigs(byte[] publicKey, byte[] address) {
             if (ethTx.chainId() == null || ethTx.chainId().length == 0) {
                 v = BigInteger.valueOf(27L + recId.getValue());
             } else {
-                v =
-                        BigInteger.valueOf(35L + recId.getValue())
-                                .add(new BigInteger(1, ethTx.chainId()).multiply(BigInteger.TWO));
+                v = BigInteger.valueOf(35L + recId.getValue())
+                        .add(new BigInteger(1, ethTx.chainId()).multiply(BigInteger.TWO));
             }
         } else {
             v = null;
@@ -123,21 +118,18 @@ public record EthTxSigs(byte[] publicKey, byte[] address) {
                             ethTx.to(),
                             Integers.toBytesUnsigned(ethTx.value()),
                             ethTx.callData());
-            case EIP1559 -> RLPEncoder.encodeSequentially(
-                    Integers.toBytes(2),
-                    new Object[] {
-                        ethTx.chainId(),
-                        Integers.toBytes(ethTx.nonce()),
-                        ethTx.maxPriorityGas(),
-                        ethTx.maxGas(),
-                        Integers.toBytes(ethTx.gasLimit()),
-                        ethTx.to(),
-                        Integers.toBytesUnsigned(ethTx.value()),
-                        ethTx.callData(),
-                        new Object[0]
-                    });
-            case EIP2930 -> throw new IllegalArgumentException(
-                    "Unsupported transaction type " + ethTx.type());
+            case EIP1559 -> RLPEncoder.encodeSequentially(Integers.toBytes(2), new Object[] {
+                ethTx.chainId(),
+                Integers.toBytes(ethTx.nonce()),
+                ethTx.maxPriorityGas(),
+                ethTx.maxGas(),
+                Integers.toBytes(ethTx.gasLimit()),
+                ethTx.to(),
+                Integers.toBytesUnsigned(ethTx.value()),
+                ethTx.callData(),
+                new Object[0]
+            });
+            case EIP2930 -> throw new IllegalArgumentException("Unsupported transaction type " + ethTx.type());
         };
     }
 
@@ -149,8 +141,7 @@ public record EthTxSigs(byte[] publicKey, byte[] address) {
         return recoveredFullKey.array();
     }
 
-    private static LibSecp256k1.secp256k1_pubkey extractSig(
-            int recId, byte[] r, byte[] s, byte[] message) {
+    private static LibSecp256k1.secp256k1_pubkey extractSig(int recId, byte[] r, byte[] s, byte[] message) {
         byte[] dataHash = new Keccak.Digest256().digest(message);
 
         // The RLP library output won't include leading zeros, which means
@@ -160,9 +151,7 @@ public record EthTxSigs(byte[] publicKey, byte[] address) {
         final LibSecp256k1.secp256k1_ecdsa_recoverable_signature parsedSignature =
                 new LibSecp256k1.secp256k1_ecdsa_recoverable_signature();
 
-        if (secp256k1_ecdsa_recoverable_signature_parse_compact(
-                        CONTEXT, parsedSignature, signature, recId)
-                == 0) {
+        if (secp256k1_ecdsa_recoverable_signature_parse_compact(CONTEXT, parsedSignature, signature, recId) == 0) {
             throw new IllegalArgumentException("Could not parse signature");
         }
         final LibSecp256k1.secp256k1_pubkey newPubKey = new LibSecp256k1.secp256k1_pubkey();

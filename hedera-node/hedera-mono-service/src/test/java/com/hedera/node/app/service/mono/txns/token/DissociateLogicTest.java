@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.token;
 
 import static org.mockito.ArgumentMatchers.anyList;
@@ -49,15 +50,32 @@ class DissociateLogicTest {
     private final Id accountId = new Id(1, 2, 3);
     private final Id tokenId = new Id(2, 3, 4);
 
-    @Mock private SignedTxnAccessor accessor;
-    @Mock private TransactionContext txnCtx;
-    @Mock private AccountStore accountStore;
-    @Mock private Account account;
-    @Mock private DissociationFactory relsFactory;
-    @Mock private TypedTokenStore tokenStore;
-    @Mock private Dissociation dissociation;
-    @Mock private TokenRelationship tokenRelationship;
-    @Mock private OptionValidator validator;
+    @Mock
+    private SignedTxnAccessor accessor;
+
+    @Mock
+    private TransactionContext txnCtx;
+
+    @Mock
+    private AccountStore accountStore;
+
+    @Mock
+    private Account account;
+
+    @Mock
+    private DissociationFactory relsFactory;
+
+    @Mock
+    private TypedTokenStore tokenStore;
+
+    @Mock
+    private Dissociation dissociation;
+
+    @Mock
+    private TokenRelationship tokenRelationship;
+
+    @Mock
+    private OptionValidator validator;
 
     private DissociateLogic subject;
 
@@ -74,12 +92,10 @@ class DissociateLogicTest {
         given(accountStore.loadAccount(accountId)).willReturn(account);
         // and:
         given(relsFactory.loadFrom(tokenStore, account, tokenId)).willReturn(dissociation);
-        willAnswer(
-                        invocationOnMock -> {
-                            ((List<TokenRelationship>) invocationOnMock.getArgument(0))
-                                    .add(tokenRelationship);
-                            return null;
-                        })
+        willAnswer(invocationOnMock -> {
+                    ((List<TokenRelationship>) invocationOnMock.getArgument(0)).add(tokenRelationship);
+                    return null;
+                })
                 .given(dissociation)
                 .addUpdatedModelRelsTo(anyList());
 

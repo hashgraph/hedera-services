@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs.factories;
 
 import static com.hedera.node.app.service.mono.sigs.factories.PlatformSigFactory.allVaryingMaterialEquals;
@@ -44,8 +45,7 @@ public class PlatformSigFactoryTest {
     static final byte[] data = DATA.getBytes();
     public static final byte[] pk = PK.getBytes();
     public static final TransactionSignature EXPECTED_SIG =
-            new TransactionSignature(
-                    CONTENTS.getBytes(), 0, sig.length, pk, 0, pk.length, sig.length, data.length);
+            new TransactionSignature(CONTENTS.getBytes(), 0, sig.length, pk, 0, pk.length, sig.length, data.length);
 
     @Test
     void createsExpectedSig() {
@@ -103,13 +103,9 @@ public class PlatformSigFactoryTest {
     void pkSigReprWorks() {
         final var a = ed25519Sig(pk, sig, data);
         final var b = ed25519Sig(differentPk, differentSig, data);
-        final var expected =
-                String.format(
-                        "(PK = %s | SIG = %s | UNKNOWN), (PK = %s | SIG = %s | UNKNOWN)",
-                        CommonUtils.hex(pk),
-                        CommonUtils.hex(sig),
-                        CommonUtils.hex(differentPk),
-                        CommonUtils.hex(differentSig));
+        final var expected = String.format(
+                "(PK = %s | SIG = %s | UNKNOWN), (PK = %s | SIG = %s | UNKNOWN)",
+                CommonUtils.hex(pk), CommonUtils.hex(sig), CommonUtils.hex(differentPk), CommonUtils.hex(differentSig));
         final var sigs = List.of(a, b);
 
         final var repr = pkSigRepr(sigs);

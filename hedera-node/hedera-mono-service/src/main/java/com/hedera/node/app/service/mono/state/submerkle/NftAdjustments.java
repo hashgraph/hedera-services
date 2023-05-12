@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.submerkle;
 
 import static com.hedera.node.app.service.mono.utils.MiscUtils.readableNftTransferList;
@@ -47,16 +48,13 @@ public class NftAdjustments implements SelfSerializable {
     }
 
     public NftAdjustments(
-            final long[] serialNums,
-            final List<EntityId> senderAccIds,
-            final List<EntityId> receiverAccIds) {
+            final long[] serialNums, final List<EntityId> senderAccIds, final List<EntityId> receiverAccIds) {
         this.serialNums = serialNums;
         this.senderAccIds = senderAccIds;
         this.receiverAccIds = receiverAccIds;
     }
 
-    public void appendAdjust(
-            final EntityId senderId, final EntityId receiverId, final long serialNo) {
+    public void appendAdjust(final EntityId senderId, final EntityId receiverId, final long serialNo) {
         final var newSerialNums = new long[serialNums.length + 1];
         System.arraycopy(serialNums, 0, newSerialNums, 0, serialNums.length);
         newSerialNums[serialNums.length] = serialNo;
@@ -125,9 +123,7 @@ public class NftAdjustments implements SelfSerializable {
     /* --- Helpers --- */
     public TokenTransferList toGrpc() {
         var grpc = TokenTransferList.newBuilder();
-        IntStream.range(0, serialNums.length)
-                .mapToObj(this::transferBuilderFor)
-                .forEach(grpc::addNftTransfers);
+        IntStream.range(0, serialNums.length).mapToObj(this::transferBuilderFor).forEach(grpc::addNftTransfers);
 
         return grpc.build();
     }

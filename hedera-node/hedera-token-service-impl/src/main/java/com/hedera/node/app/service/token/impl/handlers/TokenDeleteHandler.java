@@ -13,39 +13,45 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl.handlers;
 
-import com.hedera.node.app.spi.meta.TransactionMetadata;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static java.util.Objects.requireNonNull;
+
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.node.app.service.token.ReadableTokenStore;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#TokenDelete}.
+ * HederaFunctionality#TOKEN_DELETE}.
  */
+@Singleton
 public class TokenDeleteHandler implements TransactionHandler {
+    @Inject
+    public TokenDeleteHandler() {
+        // Exists for injection
+    }
 
-    /**
-     * This method is called during the pre-handle workflow.
-     *
-     * <p>Typically, this method validates the {@link TransactionBody} semantically, gathers all
-     * required keys, warms the cache, and creates the {@link TransactionMetadata} that is used in
-     * the handle stage.
-     *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
-     *
-     * @param txBody the {@link TransactionBody} with the transaction data
-     * @param payer the {@link AccountID} of the payer
-     * @return the {@link TransactionMetadata} with all information that needs to be passed to
-     *     {@link #handle(TransactionMetadata)}
-     * @throws NullPointerException if one of the arguments is {@code null}
-     */
-    public TransactionMetadata preHandle(
-            @NonNull final TransactionBody txBody, @NonNull final AccountID payer) {
-        throw new UnsupportedOperationException("Not implemented");
+    @Override
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
+        requireNonNull(context);
+        final var op = context.body().tokenDeletionOrThrow();
+        final var tokenId = op.tokenOrElse(TokenID.DEFAULT);
+        final var tokenStore = context.createStore(ReadableTokenStore.class);
+        final var tokenMetadata = tokenStore.getTokenMeta(tokenId);
+        if (tokenMetadata == null) throw new PreCheckException(INVALID_TOKEN_ID);
+        // we will fail in handle() if token has no admin key
+        if (tokenMetadata.hasAdminKey()) {
+            context.requireKey(tokenMetadata.adminKey());
+        }
     }
 
     /**
@@ -54,10 +60,9 @@ public class TokenDeleteHandler implements TransactionHandler {
      * <p>Please note: the method signature is just a placeholder which is most likely going to
      * change.
      *
-     * @param metadata the {@link TransactionMetadata} that was generated during pre-handle.
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void handle(@NonNull final TransactionMetadata metadata) {
+    public void handle() {
         throw new UnsupportedOperationException("Not implemented");
     }
 }

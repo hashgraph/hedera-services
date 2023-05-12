@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.schedule;
 
 import static com.hedera.node.app.service.mono.keys.HederaKeyActivation.INVALID_MISSING_SIG;
@@ -98,18 +99,17 @@ public class SigMapScheduleClassifier {
             final List<JKey> valid,
             final MutableSigClassification classification,
             final Consumer<BiConsumer<JKey, TransactionSignature>> scheduleCryptoSigs) {
-        scheduleCryptoSigs.accept(
-                (key, sig) -> {
-                    final var pk = key.primitiveKeyIfPresent();
-                    if (beginsWith(pk, prefix) && sig != INVALID_MISSING_SIG) {
-                        if (sig.getSignatureStatus() == VALID) {
-                            classification.considerSetting(VALID_SCHEDULED_TXN_MATCH);
-                            valid.add(key);
-                        } else {
-                            classification.considerSetting(INVALID_SCHEDULED_TXN_MATCH);
-                        }
-                    }
-                });
+        scheduleCryptoSigs.accept((key, sig) -> {
+            final var pk = key.primitiveKeyIfPresent();
+            if (beginsWith(pk, prefix) && sig != INVALID_MISSING_SIG) {
+                if (sig.getSignatureStatus() == VALID) {
+                    classification.considerSetting(VALID_SCHEDULED_TXN_MATCH);
+                    valid.add(key);
+                } else {
+                    classification.considerSetting(INVALID_SCHEDULED_TXN_MATCH);
+                }
+            }
+        });
     }
 
     private void updateForTopLevel(
@@ -117,17 +117,15 @@ public class SigMapScheduleClassifier {
             byte[] prefix,
             MutableSigClassification classification,
             Function<byte[], TransactionSignature> sigsFn) {
-        visitSimpleKeys(
-                topLevelKey,
-                key -> {
-                    final var pk = key.primitiveKeyIfPresent();
-                    if (beginsWith(pk, prefix)) {
-                        var sig = sigsFn.apply(pk);
-                        if (sig != INVALID_MISSING_SIG) {
-                            classification.considerSetting(TOP_LEVEL_MATCH);
-                        }
-                    }
-                });
+        visitSimpleKeys(topLevelKey, key -> {
+            final var pk = key.primitiveKeyIfPresent();
+            if (beginsWith(pk, prefix)) {
+                var sig = sigsFn.apply(pk);
+                if (sig != INVALID_MISSING_SIG) {
+                    classification.considerSetting(TOP_LEVEL_MATCH);
+                }
+            }
+        });
     }
 
     private static class MutableSigClassification {

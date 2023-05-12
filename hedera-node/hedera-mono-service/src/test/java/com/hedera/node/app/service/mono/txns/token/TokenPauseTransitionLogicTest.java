@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.token;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -112,20 +113,18 @@ class TokenPauseTransitionLogicTest {
     }
 
     private void givenValidTxnCtx() {
-        tokenPauseTxn =
-                TransactionBody.newBuilder()
-                        .setTokenPause(TokenPauseTransactionBody.newBuilder().setToken(tokenID))
-                        .build();
+        tokenPauseTxn = TransactionBody.newBuilder()
+                .setTokenPause(TokenPauseTransactionBody.newBuilder().setToken(tokenID))
+                .build();
         given(accessor.getTxn()).willReturn(tokenPauseTxn);
         given(txnCtx.accessor()).willReturn(accessor);
         given(tokenStore.loadPossiblyPausedToken(tokenId)).willReturn(token);
     }
 
     private void givenMissingToken() {
-        tokenPauseTxn =
-                TransactionBody.newBuilder()
-                        .setTokenPause(TokenPauseTransactionBody.newBuilder())
-                        .build();
+        tokenPauseTxn = TransactionBody.newBuilder()
+                .setTokenPause(TokenPauseTransactionBody.newBuilder())
+                .build();
     }
 
     private void assertFailsWith(Runnable something, ResponseCodeEnum status) {

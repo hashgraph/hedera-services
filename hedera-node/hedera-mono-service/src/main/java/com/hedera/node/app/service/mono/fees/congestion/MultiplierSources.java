@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.congestion;
 
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
@@ -23,16 +24,13 @@ public class MultiplierSources {
     private final FeeMultiplierSource genericFeeMultiplier;
 
     public MultiplierSources(
-            final FeeMultiplierSource genericFeeMultiplier,
-            final FeeMultiplierSource gasFeeMultiplier) {
+            final FeeMultiplierSource genericFeeMultiplier, final FeeMultiplierSource gasFeeMultiplier) {
         this.genericFeeMultiplier = genericFeeMultiplier;
         this.gasFeeMultiplier = gasFeeMultiplier;
     }
 
     public long maxCurrentMultiplier(final TxnAccessor accessor) {
-        return Math.max(
-                gasFeeMultiplier.currentMultiplier(accessor),
-                genericFeeMultiplier.currentMultiplier(accessor));
+        return Math.max(gasFeeMultiplier.currentMultiplier(accessor), genericFeeMultiplier.currentMultiplier(accessor));
     }
 
     public void updateMultiplier(final TxnAccessor accessor, final Instant consensusNow) {

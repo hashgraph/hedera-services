@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.utils;
 
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
@@ -35,14 +36,8 @@ class ResourceUsageSubtypeHelperTest {
     @Test
     void presentValuesAreAsExpected() {
         // expect:
-        assertEquals(
-                TOKEN_FUNGIBLE_COMMON,
-                subject.determineTokenType(Optional.of(TokenType.UNRECOGNIZED)));
-        assertEquals(
-                TOKEN_FUNGIBLE_COMMON,
-                subject.determineTokenType(Optional.of(TokenType.FUNGIBLE_COMMON)));
-        assertEquals(
-                TOKEN_NON_FUNGIBLE_UNIQUE,
-                subject.determineTokenType(Optional.of(TokenType.NON_FUNGIBLE_UNIQUE)));
+        assertEquals(TOKEN_FUNGIBLE_COMMON, subject.determineTokenType(Optional.of(TokenType.UNRECOGNIZED)));
+        assertEquals(TOKEN_FUNGIBLE_COMMON, subject.determineTokenType(Optional.of(TokenType.FUNGIBLE_COMMON)));
+        assertEquals(TOKEN_NON_FUNGIBLE_UNIQUE, subject.determineTokenType(Optional.of(TokenType.NON_FUNGIBLE_UNIQUE)));
     }
 }

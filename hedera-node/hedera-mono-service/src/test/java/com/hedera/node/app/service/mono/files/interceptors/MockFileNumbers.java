@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.files.interceptors;
 
 import com.hedera.node.app.service.mono.config.FileNumbers;
@@ -80,6 +81,10 @@ public class MockFileNumbers extends FileNumbers {
 
     @Override
     public FileID toFid(final long num) {
-        return FileID.newBuilder().setShardNum(shard).setRealmNum(realm).setFileNum(num).build();
+        return FileID.newBuilder()
+                .setShardNum(shard)
+                .setRealmNum(realm)
+                .setFileNum(num)
+                .build();
     }
 }

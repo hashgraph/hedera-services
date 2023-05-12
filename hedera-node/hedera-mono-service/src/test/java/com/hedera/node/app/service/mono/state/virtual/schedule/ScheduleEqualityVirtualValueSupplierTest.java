@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual.schedule;
 
 import static com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEqualityVirtualValueSupplier.CLASS_ID;
@@ -23,8 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.Test;
 
 class ScheduleEqualityVirtualValueSupplierTest {
-    private ScheduleEqualityVirtualValueSupplier subject =
-            new ScheduleEqualityVirtualValueSupplier();
+    private ScheduleEqualityVirtualValueSupplier subject = new ScheduleEqualityVirtualValueSupplier();
 
     @Test
     void gettersWork() {
@@ -36,8 +36,7 @@ class ScheduleEqualityVirtualValueSupplierTest {
     void delegatesAsExpected() {
         final var virtualValue = subject.get();
 
-        assertEquals(
-                ScheduleEqualityVirtualValue.RUNTIME_CONSTRUCTABLE_ID, virtualValue.getClassId());
+        assertEquals(ScheduleEqualityVirtualValue.RUNTIME_CONSTRUCTABLE_ID, virtualValue.getClassId());
     }
 
     @Test

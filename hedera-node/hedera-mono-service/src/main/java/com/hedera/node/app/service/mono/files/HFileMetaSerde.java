@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.files;
 
 import static com.hedera.node.app.service.mono.state.serdes.IoUtils.byteStream;
@@ -35,15 +36,14 @@ public class HFileMetaSerde {
     public static final long MEMO_VERSION = 2;
 
     public static byte[] serialize(HFileMeta meta) throws IOException {
-        return byteStream(
-                out -> {
-                    final var serOut = new SerializableDataOutputStream(out);
-                    serOut.writeLong(MEMO_VERSION);
-                    serOut.writeBoolean(meta.isDeleted());
-                    serOut.writeLong(meta.getExpiry());
-                    serOut.writeNormalisedString(meta.getMemo());
-                    writeNullable(meta.getWacl(), serOut, IoUtils::serializeKey);
-                });
+        return byteStream(out -> {
+            final var serOut = new SerializableDataOutputStream(out);
+            serOut.writeLong(MEMO_VERSION);
+            serOut.writeBoolean(meta.isDeleted());
+            serOut.writeLong(meta.getExpiry());
+            serOut.writeNormalisedString(meta.getMemo());
+            writeNullable(meta.getWacl(), serOut, IoUtils::serializeKey);
+        });
     }
 
     public static HFileMeta deserialize(DataInputStream in) throws IOException {
@@ -58,8 +58,7 @@ public class HFileMetaSerde {
     static HFileMeta readPreMemoMeta(DataInputStream in) throws IOException {
         long objectType = in.readLong();
         if (objectType != JObjectType.FC_FILE_INFO.longValue()) {
-            throw new IllegalStateException(
-                    String.format("Read illegal object type '%d'!", objectType));
+            throw new IllegalStateException(String.format("Read illegal object type '%d'!", objectType));
         }
         // Unused legacy length information.
         in.readLong();
@@ -79,9 +78,7 @@ public class HFileMetaSerde {
         boolean deleted = stream.readBoolean();
         long expirationTime = stream.readLong();
         byte[] key = stream.readAllBytes();
-        JKey wacl =
-                JKeySerializer.deserialize(
-                        new SerializableDataInputStream(new ByteArrayInputStream(key)));
+        JKey wacl = JKeySerializer.deserialize(new SerializableDataInputStream(new ByteArrayInputStream(key)));
         return new HFileMeta(deleted, wacl, expirationTime);
     }
 

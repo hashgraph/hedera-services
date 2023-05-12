@@ -1,0 +1,5 @@
+crypto.cpuVerifierThreadRatio, 0.75
+crypto.cpuDigestThreadRatio, 0.25
+crypto.cpuVerifierQueueSize, 150
+crypto.cpuDigestQueueSize, 150
+crypto.forceCpu, false

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.operation;
 
 import static com.hedera.node.app.service.mono.contracts.operation.HederaSStoreOperation.ILLEGAL_STATE_CHANGE_RESULT;
@@ -48,13 +49,26 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class HederaSStoreOperationTest {
-    @Mock private EVM evm;
-    @Mock private EvmAccount evmAccount;
-    @Mock private GasCalculator gasCalculator;
-    @Mock private MessageFrame frame;
-    @Mock private MutableAccount mutableAccount;
-    @Mock private HederaWorldUpdater updater;
-    @Mock private GlobalDynamicProperties dynamicProperties;
+    @Mock
+    private EVM evm;
+
+    @Mock
+    private EvmAccount evmAccount;
+
+    @Mock
+    private GasCalculator gasCalculator;
+
+    @Mock
+    private MessageFrame frame;
+
+    @Mock
+    private MutableAccount mutableAccount;
+
+    @Mock
+    private HederaWorldUpdater updater;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
 
     private HederaSStoreOperation subject;
 
@@ -78,8 +92,7 @@ class HederaSStoreOperationTest {
         givenColdSlot();
         given(frame.isStatic()).willReturn(true);
 
-        final var expected =
-                new Operation.OperationResult(storageCost + coldSloadCost, ILLEGAL_STATE_CHANGE);
+        final var expected = new Operation.OperationResult(storageCost + coldSloadCost, ILLEGAL_STATE_CHANGE);
 
         final var actual = subject.execute(frame, evm);
 
@@ -104,8 +117,7 @@ class HederaSStoreOperationTest {
         givenStackItemsAndMutableRecipientAccount();
         givenColdSlot();
         givenRemainingGas(storageCost);
-        final var expected =
-                new Operation.OperationResult(storageCost + coldSloadCost, INSUFFICIENT_GAS);
+        final var expected = new Operation.OperationResult(storageCost + coldSloadCost, INSUFFICIENT_GAS);
 
         final var actual = subject.execute(frame, evm);
 
@@ -117,8 +129,7 @@ class HederaSStoreOperationTest {
         givenStackItemsAndMutableRecipientAccount();
         givenColdSlot();
         givenRemainingGas(sufficientRemainingGas);
-        given(gasCalculator.calculateStorageRefundAmount(mutableAccount, key, value))
-                .willReturn(storageRefundAmount);
+        given(gasCalculator.calculateStorageRefundAmount(any(), any(), any())).willReturn(storageRefundAmount);
         final var expected = new Operation.OperationResult(storageCost + coldSloadCost, null);
 
         final var actual = subject.execute(frame, evm);
@@ -135,8 +146,7 @@ class HederaSStoreOperationTest {
         givenStackItemsAndMutableRecipientAccount();
         givenColdSlot();
         givenRemainingGas(sufficientRemainingGas);
-        given(gasCalculator.calculateStorageRefundAmount(mutableAccount, key, value))
-                .willReturn(storageRefundAmount);
+        given(gasCalculator.calculateStorageRefundAmount(any(), any(), any())).willReturn(storageRefundAmount);
         final var expected = new Operation.OperationResult(storageCost + coldSloadCost, null);
         final var messageStack = new ArrayDeque<MessageFrame>();
         messageStack.add(frame);
@@ -176,8 +186,7 @@ class HederaSStoreOperationTest {
         given(gasCalculator.getColdSloadCost()).willReturn(coldSloadCost);
     }
 
-    private void assertResultsEqual(
-            final Operation.OperationResult expected, final Operation.OperationResult actual) {
+    private void assertResultsEqual(final Operation.OperationResult expected, final Operation.OperationResult actual) {
         assertEquals(expected.getGasCost(), actual.getGasCost());
         assertEquals(expected.getHaltReason(), actual.getHaltReason());
     }

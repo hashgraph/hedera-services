@@ -1,0 +1,142 @@
+##
+# Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+##
+
+name: "Z-Platform XF: JRS Daily (Interval: 3)"
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "The branch, tag or SHA to checkout."
+        required: true
+        type: string
+      branch-name:
+        description: ""
+        required: false
+        type: string
+      concurrency-group:
+        description: "The concurrency group name to limit simultaneous workflows."
+        required: false
+        type: string
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: ${{ github.event.inputs.concurrency-group || format('{0}-{1}-flow-jrs-daily-interval-groups', github.ref_name, github.sha) }}
+
+# Panel Definition & Timings:
+#   "configs/suites/daily/8N/GCP-Daily-NetError-4N.json"                ----             8m
+#   "configs/suites/daily/7N/GCP-Daily-MultiSBReconnect-2R-7N.json"     ----            20m
+#   "configs/suites/daily/7N/GCP-Daily-MultiNIReconnect-7N.json"        ----           140m
+#   "configs/suites/daily/10N/GCP-Daily-MultiSBReconnect-3R-10N.json"   ----            20m
+#   "configs/suites/daily/10N/GCP-Daily-MultiNIReconnect-10N.json"      ----           210m
+#   "configs/suites/daily/10N/GCP-Daily-MultiNDReconnect-10N.json"      ----           186m
+#   TOTAL RUN TIME:             584 minutes, 9.73 hours
+jobs:
+  neterror:
+    name: NetError
+    uses: ./.github/workflows/zxc-jrs-regression.yaml
+    with:
+      ref: ${{ github.event.inputs.ref }}
+      branch-name: ${{ github.event.inputs.branch-name }}
+      panel-config: "configs/suites/daily/4N/GCP-Daily-NetError-4N.json"
+    secrets:
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+      jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
+      jrs-ssh-key-file: ${{ secrets.PLATFORM_JRS_SSH_KEY_FILE }}
+      gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
+      gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
+      slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
+  multisbreconnect-2r:
+    name: MultiSBReconnect-2R
+    uses: ./.github/workflows/zxc-jrs-regression.yaml
+    with:
+      ref: ${{ github.event.inputs.ref }}
+      branch-name: ${{ github.event.inputs.branch-name }}
+      panel-config: "configs/suites/daily/7N/GCP-Daily-MultiSBReconnect-2R-7N.json"
+    secrets:
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+      jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
+      jrs-ssh-key-file: ${{ secrets.PLATFORM_JRS_SSH_KEY_FILE }}
+      gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
+      gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
+      slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
+    needs:
+      - neterror
+    if: ${{ !cancelled() && always() }}
+  multinireconnect-7n:
+    name: MultiNIReconnect-7N
+    uses: ./.github/workflows/zxc-jrs-regression.yaml
+    with:
+      ref: ${{ github.event.inputs.ref }}
+      branch-name: ${{ github.event.inputs.branch-name }}
+      panel-config: "configs/suites/daily/7N/GCP-Daily-MultiNIReconnect-7N.json"
+    secrets:
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+      jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
+      jrs-ssh-key-file: ${{ secrets.PLATFORM_JRS_SSH_KEY_FILE }}
+      gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
+      gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
+      slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
+    if: ${{ !cancelled() && always() }}
+  multisbreconnect-3r:
+    name: MultiSBReconnect-3R-10N
+    uses: ./.github/workflows/zxc-jrs-regression.yaml
+    with:
+      ref: ${{ github.event.inputs.ref }}
+      branch-name: ${{ github.event.inputs.branch-name }}
+      panel-config: "configs/suites/daily/10N/GCP-Daily-MultiSBReconnect-3R-10N.json"
+    secrets:
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+      jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
+      jrs-ssh-key-file: ${{ secrets.PLATFORM_JRS_SSH_KEY_FILE }}
+      gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
+      gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
+      slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
+    needs:
+      - multinireconnect-7n
+    if: ${{ !cancelled() && always() }}
+  multinireconnect-10n:
+    name: MultiNIReconnect-10N
+    uses: ./.github/workflows/zxc-jrs-regression.yaml
+    with:
+      ref: ${{ github.event.inputs.ref }}
+      branch-name: ${{ github.event.inputs.branch-name }}
+      panel-config: "configs/suites/daily/10N/GCP-Daily-MultiNIReconnect-10N.json"
+    secrets:
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+      jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
+      jrs-ssh-key-file: ${{ secrets.PLATFORM_JRS_SSH_KEY_FILE }}
+      gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
+      gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
+      slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
+    if: ${{ !cancelled() && always() }}
+  multindreconnect-10n:
+    name: MultiNDReconnect-10N
+    uses: ./.github/workflows/zxc-jrs-regression.yaml
+    with:
+      ref: ${{ github.event.inputs.ref }}
+      branch-name: ${{ github.event.inputs.branch-name }}
+      panel-config: "configs/suites/daily/10N/GCP-Daily-MultiNDReconnect-10N.json"
+    secrets:
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+      jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
+      jrs-ssh-key-file: ${{ secrets.PLATFORM_JRS_SSH_KEY_FILE }}
+      gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
+      gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
+      slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
+    if: ${{ !cancelled() && always() }}

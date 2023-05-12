@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs.utils;
 
 import static com.hedera.test.factories.txns.CryptoTransferFactory.newSignedCryptoTransfer;
@@ -38,7 +39,8 @@ class PrecheckUtilsTest {
     private static final String nodeId = SignedTxnFactory.DEFAULT_NODE_ID;
     private static final AccountID node = SignedTxnFactory.DEFAULT_NODE;
 
-    @Mock private NodeInfo nodeInfo;
+    @Mock
+    private NodeInfo nodeInfo;
 
     private Predicate<TransactionBody> subject;
 
@@ -49,7 +51,8 @@ class PrecheckUtilsTest {
 
     @Test
     void queryPaymentsMustBeCryptoTransfers() throws Throwable {
-        final var txn = PlatformTxnAccessor.from(newSignedCryptoUpdate("0.0.2").get()).getTxn();
+        final var txn =
+                PlatformTxnAccessor.from(newSignedCryptoUpdate("0.0.2").get()).getTxn();
 
         assertFalse(subject.test(txn));
     }
@@ -57,12 +60,10 @@ class PrecheckUtilsTest {
     @Test
     void transferWithoutTargetNodeIsNotQueryPayment() throws Throwable {
         given(nodeInfo.selfAccount()).willReturn(node);
-        final var txn =
-                PlatformTxnAccessor.from(
-                                newSignedCryptoTransfer()
-                                        .transfers(tinyBarsFromTo("0.0.1024", "0.0.2048", 1_000L))
-                                        .get())
-                        .getTxn();
+        final var txn = PlatformTxnAccessor.from(newSignedCryptoTransfer()
+                        .transfers(tinyBarsFromTo("0.0.1024", "0.0.2048", 1_000L))
+                        .get())
+                .getTxn();
 
         assertFalse(subject.test(txn));
     }
@@ -70,12 +71,10 @@ class PrecheckUtilsTest {
     @Test
     void queryPaymentTransfersToTargetNode() throws Throwable {
         given(nodeInfo.selfAccount()).willReturn(node);
-        final var txn =
-                PlatformTxnAccessor.from(
-                                newSignedCryptoTransfer()
-                                        .transfers(tinyBarsFromTo(nodeId, "0.0.2048", 1_000L))
-                                        .get())
-                        .getTxn();
+        final var txn = PlatformTxnAccessor.from(newSignedCryptoTransfer()
+                        .transfers(tinyBarsFromTo(nodeId, "0.0.2048", 1_000L))
+                        .get())
+                .getTxn();
 
         assertFalse(subject.test(txn));
     }

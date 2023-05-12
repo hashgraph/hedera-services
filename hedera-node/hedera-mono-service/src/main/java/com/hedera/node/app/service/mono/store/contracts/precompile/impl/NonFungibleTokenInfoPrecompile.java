@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
@@ -60,26 +61,25 @@ public class NonFungibleTokenInfoPrecompile extends AbstractTokenInfoPrecompile
 
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-        final var tokenInfo =
-                ledgers.evmInfoForToken(tokenId, stateView.getNetworkInfo().ledgerId())
-                        .orElse(null);
+        final var tokenInfo = ledgers.evmInfoForToken(
+                        tokenId, stateView.getNetworkInfo().ledgerId())
+                .orElse(null);
         validateTrue(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
 
-        final var nftID =
-                NftID.newBuilder().setTokenID(tokenId).setSerialNumber(serialNumber).build();
+        final var nftID = NftID.newBuilder()
+                .setTokenID(tokenId)
+                .setSerialNumber(serialNumber)
+                .build();
         final var nonFungibleTokenInfo =
                 ledgers.evmNftInfo(nftID, stateView.getNetworkInfo().ledgerId()).orElse(null);
-        validateTrue(
-                nonFungibleTokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER);
+        validateTrue(nonFungibleTokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER);
 
         return evmEncoder.encodeGetNonFungibleTokenInfo(tokenInfo, nonFungibleTokenInfo);
     }
 
     public static TokenInfoWrapper<TokenID> decodeGetNonFungibleTokenInfo(final Bytes input) {
-        final var rawTokenInfoWrapper =
-                EvmNonFungibleTokenInfoPrecompile.decodeGetNonFungibleTokenInfo(input);
+        final var rawTokenInfoWrapper = EvmNonFungibleTokenInfoPrecompile.decodeGetNonFungibleTokenInfo(input);
         return TokenInfoWrapper.forNonFungibleToken(
-                convertAddressBytesToTokenID(rawTokenInfoWrapper.token()),
-                rawTokenInfoWrapper.serialNumber());
+                convertAddressBytesToTokenID(rawTokenInfoWrapper.token()), rawTokenInfoWrapper.serialNumber());
     }
 }

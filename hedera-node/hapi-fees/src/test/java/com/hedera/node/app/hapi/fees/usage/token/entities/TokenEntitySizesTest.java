@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage.token.entities;
 
 import static com.hedera.node.app.hapi.fees.usage.token.entities.TokenEntitySizes.NUM_ENTITY_ID_FIELDS_IN_BASE_TOKEN_REPRESENTATION;
@@ -33,11 +34,10 @@ class TokenEntitySizesTest {
     @Test
     void sizesFixedAsExpected() {
         // setup:
-        final long expected =
-                NUM_FLAGS_IN_BASE_TOKEN_REPRESENTATION * BOOL_SIZE
-                        + NUM_INT_FIELDS_IN_BASE_TOKEN_REPRESENTATION * 4
-                        + NUM_LONG_FIELDS_IN_BASE_TOKEN_REPRESENTATION * 8
-                        + NUM_ENTITY_ID_FIELDS_IN_BASE_TOKEN_REPRESENTATION * BASIC_ENTITY_ID_SIZE;
+        final long expected = NUM_FLAGS_IN_BASE_TOKEN_REPRESENTATION * BOOL_SIZE
+                + NUM_INT_FIELDS_IN_BASE_TOKEN_REPRESENTATION * 4
+                + NUM_LONG_FIELDS_IN_BASE_TOKEN_REPRESENTATION * 8
+                + NUM_ENTITY_ID_FIELDS_IN_BASE_TOKEN_REPRESENTATION * BASIC_ENTITY_ID_SIZE;
 
         // given:
         final long actual = subject.fixedBytesInTokenRepr();
@@ -51,13 +51,12 @@ class TokenEntitySizesTest {
         // setup:
         final var symbol = "ABCDEFGH";
         final var name = "WhyWouldINameItThis";
-        final long expected =
-                NUM_FLAGS_IN_BASE_TOKEN_REPRESENTATION * 4
-                        + NUM_INT_FIELDS_IN_BASE_TOKEN_REPRESENTATION * 4
-                        + NUM_LONG_FIELDS_IN_BASE_TOKEN_REPRESENTATION * 8
-                        + NUM_ENTITY_ID_FIELDS_IN_BASE_TOKEN_REPRESENTATION * BASIC_ENTITY_ID_SIZE
-                        + symbol.getBytes().length
-                        + name.getBytes().length;
+        final long expected = NUM_FLAGS_IN_BASE_TOKEN_REPRESENTATION * 4
+                + NUM_INT_FIELDS_IN_BASE_TOKEN_REPRESENTATION * 4
+                + NUM_LONG_FIELDS_IN_BASE_TOKEN_REPRESENTATION * 8
+                + NUM_ENTITY_ID_FIELDS_IN_BASE_TOKEN_REPRESENTATION * BASIC_ENTITY_ID_SIZE
+                + symbol.getBytes().length
+                + name.getBytes().length;
 
         // given:
         final long actual = subject.totalBytesInTokenReprGiven(symbol, name);
@@ -75,15 +74,11 @@ class TokenEntitySizesTest {
 
         // given:
         final var expected =
-                3 * BASIC_ENTITY_ID_SIZE
-                        + 8 * (8 + BASIC_ENTITY_ID_SIZE)
-                        + 2 * (8 + 2 * BASIC_ENTITY_ID_SIZE);
+                3 * BASIC_ENTITY_ID_SIZE + 8 * (8 + BASIC_ENTITY_ID_SIZE) + 2 * (8 + 2 * BASIC_ENTITY_ID_SIZE);
 
         // then:
         assertEquals(
-                expected,
-                subject.bytesUsedToRecordTokenTransfers(
-                        numTokens, fungibleNumTransfers, uniqueNumTransfers));
+                expected, subject.bytesUsedToRecordTokenTransfers(numTokens, fungibleNumTransfers, uniqueNumTransfers));
     }
 
     @Test

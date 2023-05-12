@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.submerkle;
 
 import com.google.common.primitives.Longs;
@@ -63,16 +64,15 @@ public class RandomFactory {
         // TODO(Nathan): An 8th argument was added to the method but this code was no updated. I
         // added Collections.emptyList() to achieve successful compilation, but this logic may not
         // be correct.
-        final var ans =
-                TransactionProcessingResult.successful(
-                        logs,
-                        randomNonNegativeLong(),
-                        randomNonNegativeLong(),
-                        randomNonNegativeLong(),
-                        output,
-                        randomAddress(),
-                        randomStateChanges(params),
-                        Collections.emptyList());
+        final var ans = TransactionProcessingResult.successful(
+                logs,
+                randomNonNegativeLong(),
+                randomNonNegativeLong(),
+                randomNonNegativeLong(),
+                output,
+                randomAddress(),
+                randomStateChanges(params),
+                Collections.emptyList());
         if (r.nextDouble() < params.creationProbability()) {
             ans.setCreatedContracts(randomCreations(params.maxCreations()));
         }
@@ -109,11 +109,9 @@ public class RandomFactory {
                 Collections.emptyList());
     }
 
-    private Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> randomStateChanges(
-            final EvmResultRandomParams params) {
+    private Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> randomStateChanges(final EvmResultRandomParams params) {
         return params.enableTraceability()
-                ? randomStateChanges(
-                        params.numAddressesWithChanges(), params.numStateChangesPerAddress())
+                ? randomStateChanges(params.numAddressesWithChanges(), params.numStateChangesPerAddress())
                 : Collections.emptyMap();
     }
 

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.store.contracts.precompile.codec;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -26,27 +27,13 @@ class TokenKeyTypeTest {
 
     @Test
     void test() {
-        assertEquals(
-                TokenKeyType.ADMIN_KEY,
-                new GetTokenKeyWrapper<>(Bytes.EMPTY.toArray(), 1).tokenKeyType());
-        assertEquals(
-                TokenKeyType.KYC_KEY,
-                new GetTokenKeyWrapper<>(Bytes.EMPTY.toArray(), 2).tokenKeyType());
-        assertEquals(
-                TokenKeyType.FREEZE_KEY,
-                new GetTokenKeyWrapper<>(Bytes.EMPTY.toArray(), 4).tokenKeyType());
-        assertEquals(
-                TokenKeyType.WIPE_KEY,
-                new GetTokenKeyWrapper<>(Bytes.EMPTY.toArray(), 8).tokenKeyType());
-        assertEquals(
-                TokenKeyType.SUPPLY_KEY,
-                new GetTokenKeyWrapper<>(Bytes.EMPTY.toArray(), 16).tokenKeyType());
-        assertEquals(
-                TokenKeyType.FEE_SCHEDULE_KEY,
-                new GetTokenKeyWrapper<>(Bytes.EMPTY.toArray(), 32).tokenKeyType());
-        assertEquals(
-                TokenKeyType.PAUSE_KEY,
-                new GetTokenKeyWrapper<>(Bytes.EMPTY.toArray(), 64).tokenKeyType());
+        assertEquals(TokenKeyType.ADMIN_KEY, new GetTokenKeyWrapper<>(Bytes.EMPTY.toArray(), 1).tokenKeyType());
+        assertEquals(TokenKeyType.KYC_KEY, new GetTokenKeyWrapper<>(Bytes.EMPTY.toArray(), 2).tokenKeyType());
+        assertEquals(TokenKeyType.FREEZE_KEY, new GetTokenKeyWrapper<>(Bytes.EMPTY.toArray(), 4).tokenKeyType());
+        assertEquals(TokenKeyType.WIPE_KEY, new GetTokenKeyWrapper<>(Bytes.EMPTY.toArray(), 8).tokenKeyType());
+        assertEquals(TokenKeyType.SUPPLY_KEY, new GetTokenKeyWrapper<>(Bytes.EMPTY.toArray(), 16).tokenKeyType());
+        assertEquals(TokenKeyType.FEE_SCHEDULE_KEY, new GetTokenKeyWrapper<>(Bytes.EMPTY.toArray(), 32).tokenKeyType());
+        assertEquals(TokenKeyType.PAUSE_KEY, new GetTokenKeyWrapper<>(Bytes.EMPTY.toArray(), 64).tokenKeyType());
 
         final var wrapper = new GetTokenKeyWrapper<>(Bytes.EMPTY.toArray(), 5);
         assertThrows(InvalidTransactionException.class, wrapper::tokenKeyType);

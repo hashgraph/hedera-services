@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.schedule;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -45,9 +46,7 @@ public final class ScheduleDeleteTransitionLogic implements TransitionLogic {
 
     @Inject
     public ScheduleDeleteTransitionLogic(
-            final ScheduleStore store,
-            final TransactionContext txnCtx,
-            final SigImpactHistorian sigImpactHistorian) {
+            final ScheduleStore store, final TransactionContext txnCtx, final SigImpactHistorian sigImpactHistorian) {
         this.store = store;
         this.txnCtx = txnCtx;
         this.sigImpactHistorian = sigImpactHistorian;
@@ -59,15 +58,12 @@ public final class ScheduleDeleteTransitionLogic implements TransitionLogic {
             transitionFor(txnCtx.accessor().getTxn().getScheduleDelete(), txnCtx.consensusTime());
         } catch (final Exception e) {
             log.warn(
-                    "Unhandled error while processing :: {}!",
-                    txnCtx.accessor().getSignedTxnWrapper(),
-                    e);
+                    "Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxnWrapper(), e);
             txnCtx.setStatus(FAIL_INVALID);
         }
     }
 
-    private void transitionFor(
-            final ScheduleDeleteTransactionBody op, final Instant consensusTime) {
+    private void transitionFor(final ScheduleDeleteTransactionBody op, final Instant consensusTime) {
         final var target = op.getScheduleID();
         final var outcome = store.deleteAt(target, consensusTime);
         if (outcome == OK) {

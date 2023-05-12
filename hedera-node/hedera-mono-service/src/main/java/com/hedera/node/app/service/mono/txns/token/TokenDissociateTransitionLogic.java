@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.token;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
@@ -32,8 +33,7 @@ public class TokenDissociateTransitionLogic implements TransitionLogic {
     private final DissociateLogic dissociateLogic;
 
     @Inject
-    public TokenDissociateTransitionLogic(
-            TransactionContext txnCtx, DissociateLogic dissociateLogic) {
+    public TokenDissociateTransitionLogic(TransactionContext txnCtx, DissociateLogic dissociateLogic) {
         this.txnCtx = txnCtx;
         this.dissociateLogic = dissociateLogic;
     }

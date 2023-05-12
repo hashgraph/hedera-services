@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.network;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
@@ -90,8 +91,7 @@ public class FreezeTransitionLogic implements TransitionLogic {
                 break;
             case TELEMETRY_UPGRADE:
                 final var telemetryUpdateZip = specialFiles.get().get(op.getUpdateFile());
-                upgradeActions.extractTelemetryUpgrade(
-                        telemetryUpdateZip, timestampToInstant(op.getStartTime()));
+                upgradeActions.extractTelemetryUpgrade(telemetryUpdateZip, timestampToInstant(op.getStartTime()));
                 break;
             default:
             case FREEZE_ONLY:
@@ -113,15 +113,11 @@ public class FreezeTransitionLogic implements TransitionLogic {
     private ResponseCodeEnum validateBasics(final TransactionBody freezeTxn) {
         final var op = freezeTxn.getFreeze();
 
-        if (op.getStartHour() != 0
-                || op.getStartMin() != 0
-                || op.getEndHour() != 0
-                || op.getEndMin() != 0) {
+        if (op.getStartHour() != 0 || op.getStartMin() != 0 || op.getEndHour() != 0 || op.getEndMin() != 0) {
             return INVALID_FREEZE_TRANSACTION_BODY;
         }
 
-        final var effectiveNow =
-                timestampToInstant(freezeTxn.getTransactionID().getTransactionValidStart());
+        final var effectiveNow = timestampToInstant(freezeTxn.getTransactionID().getTransactionValidStart());
         switch (op.getFreezeType()) {
             case FREEZE_ABORT:
                 return OK;
@@ -162,8 +158,7 @@ public class FreezeTransitionLogic implements TransitionLogic {
         return OK;
     }
 
-    private ResponseCodeEnum freezeTimeValidity(
-            final Timestamp freezeStartTime, final Instant now) {
+    private ResponseCodeEnum freezeTimeValidity(final Timestamp freezeStartTime, final Instant now) {
         return isInTheFuture(freezeStartTime, now) ? OK : FREEZE_START_TIME_MUST_BE_FUTURE;
     }
 
@@ -188,10 +183,7 @@ public class FreezeTransitionLogic implements TransitionLogic {
                 break;
             default:
                 throw new InvalidTransactionException(
-                        "Transaction type '"
-                                + freezeType
-                                + "' should have been rejected in precheck",
-                        FAIL_INVALID);
+                        "Transaction type '" + freezeType + "' should have been rejected in precheck", FAIL_INVALID);
         }
     }
 
@@ -218,12 +210,10 @@ public class FreezeTransitionLogic implements TransitionLogic {
         final var curNetworkCtx = networkCtx.get();
         validateTrue(curNetworkCtx.hasPreparedUpgrade(), NO_UPGRADE_HAS_BEEN_PREPARED);
 
-        final var fileMatches =
-                op.getUpdateFile().getFileNum() == curNetworkCtx.getPreparedUpdateFileNum();
+        final var fileMatches = op.getUpdateFile().getFileNum() == curNetworkCtx.getPreparedUpdateFileNum();
         validateTrue(fileMatches, UPDATE_FILE_ID_DOES_NOT_MATCH_PREPARED);
         final var hashMatches =
-                Arrays.equals(
-                        op.getFileHash().toByteArray(), curNetworkCtx.getPreparedUpdateFileHash());
+                Arrays.equals(op.getFileHash().toByteArray(), curNetworkCtx.getPreparedUpdateFileHash());
         validateTrue(hashMatches, UPDATE_FILE_HASH_DOES_NOT_MATCH_PREPARED);
 
         final var isHashUnchanged = curNetworkCtx.isPreparedFileHashValidGiven(specialFiles.get());
@@ -236,9 +226,7 @@ public class FreezeTransitionLogic implements TransitionLogic {
     }
 
     private void assertValidStartTime(final FreezeTransactionBody op) {
-        validateTrue(
-                isInTheFuture(op.getStartTime(), txnCtx.consensusTime()),
-                FREEZE_START_TIME_MUST_BE_FUTURE);
+        validateTrue(isInTheFuture(op.getStartTime(), txnCtx.consensusTime()), FREEZE_START_TIME_MUST_BE_FUTURE);
     }
 
     private void assertUpdateHashMatches(final FreezeTransactionBody op) {

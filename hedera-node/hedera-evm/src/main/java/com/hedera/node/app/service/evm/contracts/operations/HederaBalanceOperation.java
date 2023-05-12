@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.contracts.operations;
 
 /*
@@ -55,8 +56,7 @@ public class HederaBalanceOperation extends BalanceOperation {
 
     private BiPredicate<Address, MessageFrame> addressValidator;
 
-    public HederaBalanceOperation(
-            GasCalculator gasCalculator, BiPredicate<Address, MessageFrame> addressValidator) {
+    public HederaBalanceOperation(GasCalculator gasCalculator, BiPredicate<Address, MessageFrame> addressValidator) {
         super(gasCalculator);
         this.addressValidator = addressValidator;
     }

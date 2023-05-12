@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage.schedule;
 
 import static com.hedera.node.app.hapi.fees.test.UsageUtils.A_USAGES_MATRIX;
@@ -71,18 +72,15 @@ class ScheduleOpsUsageTest {
     private final ScheduleID id = IdUtils.asSchedule("0.0.1");
     private final String memo = "This is just a memo?";
     private final AccountID payer = IdUtils.asAccount("0.0.2");
-    private final SchedulableTransactionBody scheduledTxn =
-            SchedulableTransactionBody.newBuilder()
-                    .setTransactionFee(1_234_567L)
-                    .setCryptoDelete(
-                            CryptoDeleteTransactionBody.newBuilder().setDeleteAccountID(payer))
-                    .build();
+    private final SchedulableTransactionBody scheduledTxn = SchedulableTransactionBody.newBuilder()
+            .setTransactionFee(1_234_567L)
+            .setCryptoDelete(CryptoDeleteTransactionBody.newBuilder().setDeleteAccountID(payer))
+            .build();
 
-    private final SchedulableTransactionBody scheduledTxnWithContractCall =
-            SchedulableTransactionBody.newBuilder()
-                    .setTransactionFee(1_234_567L)
-                    .setContractCall(ContractCallTransactionBody.newBuilder())
-                    .build();
+    private final SchedulableTransactionBody scheduledTxnWithContractCall = SchedulableTransactionBody.newBuilder()
+            .setTransactionFee(1_234_567L)
+            .setContractCall(ContractCallTransactionBody.newBuilder())
+            .build();
 
     private EstimatorFactory factory;
     private TxnUsageEstimator base;
@@ -122,8 +120,7 @@ class ScheduleOpsUsageTest {
         // and:
         verify(base).addBpt(BASIC_ENTITY_ID_SIZE);
         verify(base).addRbs(2 * KEY_SIZE * lifetimeSecs);
-        verify(base)
-                .addNetworkRbs(scheduledTxnIdSize * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+        verify(base).addNetworkRbs(scheduledTxnIdSize * USAGE_PROPERTIES.legacyReceiptStorageSecs());
     }
 
     @Test
@@ -132,8 +129,7 @@ class ScheduleOpsUsageTest {
         final long lifetimeSecs = 1800L;
 
         // when:
-        final var estimate =
-                subject.scheduleDeleteUsage(deletionTxn(), sigUsage, now + lifetimeSecs);
+        final var estimate = subject.scheduleDeleteUsage(deletionTxn(), sigUsage, now + lifetimeSecs);
 
         // then:
         assertSame(A_USAGES_MATRIX, estimate);
@@ -145,25 +141,22 @@ class ScheduleOpsUsageTest {
     @Test
     void estimatesCreateAsExpected() {
         // given:
-        final var createdCtx =
-                ExtantScheduleContext.newBuilder()
-                        .setAdminKey(adminKey)
-                        .setMemo(memo)
-                        .setScheduledTxn(scheduledTxn)
-                        .setNumSigners(SCHEDULE_ENTITY_SIZES.estimatedScheduleSigs(sigUsage))
-                        .setResolved(false)
-                        .build();
+        final var createdCtx = ExtantScheduleContext.newBuilder()
+                .setAdminKey(adminKey)
+                .setMemo(memo)
+                .setScheduledTxn(scheduledTxn)
+                .setNumSigners(SCHEDULE_ENTITY_SIZES.estimatedScheduleSigs(sigUsage))
+                .setResolved(false)
+                .build();
         final var expectedRamBytes = createdCtx.nonBaseRb();
         // and:
-        final var expectedTxBytes =
-                scheduledTxn.getSerializedSize()
-                        + getAccountKeyStorageSize(adminKey)
-                        + memo.length()
-                        + BASIC_ENTITY_ID_SIZE;
+        final var expectedTxBytes = scheduledTxn.getSerializedSize()
+                + getAccountKeyStorageSize(adminKey)
+                + memo.length()
+                + BASIC_ENTITY_ID_SIZE;
 
         // when:
-        final var estimate =
-                subject.scheduleCreateUsage(creationTxn(scheduledTxn), sigUsage, lifetimeSecs);
+        final var estimate = subject.scheduleCreateUsage(creationTxn(scheduledTxn), sigUsage, lifetimeSecs);
 
         // then:
         assertSame(A_USAGES_MATRIX, estimate);
@@ -172,33 +165,29 @@ class ScheduleOpsUsageTest {
         verify(base).addRbs(expectedRamBytes * lifetimeSecs);
         verify(base)
                 .addNetworkRbs(
-                        (BASIC_ENTITY_ID_SIZE + scheduledTxnIdSize)
-                                * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+                        (BASIC_ENTITY_ID_SIZE + scheduledTxnIdSize) * USAGE_PROPERTIES.legacyReceiptStorageSecs());
     }
 
     @Test
     void estimatesCreateWithContractCallAsExpected() {
         // given:
-        final var createdCtx =
-                ExtantScheduleContext.newBuilder()
-                        .setAdminKey(adminKey)
-                        .setMemo(memo)
-                        .setScheduledTxn(scheduledTxnWithContractCall)
-                        .setNumSigners(SCHEDULE_ENTITY_SIZES.estimatedScheduleSigs(sigUsage))
-                        .setResolved(false)
-                        .build();
+        final var createdCtx = ExtantScheduleContext.newBuilder()
+                .setAdminKey(adminKey)
+                .setMemo(memo)
+                .setScheduledTxn(scheduledTxnWithContractCall)
+                .setNumSigners(SCHEDULE_ENTITY_SIZES.estimatedScheduleSigs(sigUsage))
+                .setResolved(false)
+                .build();
         final var expectedRamBytes = createdCtx.nonBaseRb();
         // and:
-        final var expectedTxBytes =
-                scheduledTxnWithContractCall.getSerializedSize()
-                        + getAccountKeyStorageSize(adminKey)
-                        + memo.length()
-                        + BASIC_ENTITY_ID_SIZE;
+        final var expectedTxBytes = scheduledTxnWithContractCall.getSerializedSize()
+                + getAccountKeyStorageSize(adminKey)
+                + memo.length()
+                + BASIC_ENTITY_ID_SIZE;
 
         // when:
         final var estimate =
-                subject.scheduleCreateUsage(
-                        creationTxn(scheduledTxnWithContractCall), sigUsage, lifetimeSecs);
+                subject.scheduleCreateUsage(creationTxn(scheduledTxnWithContractCall), sigUsage, lifetimeSecs);
 
         // then:
         assertSame(A_USAGES_MATRIX, estimate);
@@ -207,21 +196,19 @@ class ScheduleOpsUsageTest {
         verify(base).addRbs(expectedRamBytes * lifetimeSecs);
         verify(base)
                 .addNetworkRbs(
-                        (BASIC_ENTITY_ID_SIZE + scheduledTxnIdSize)
-                                * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+                        (BASIC_ENTITY_ID_SIZE + scheduledTxnIdSize) * USAGE_PROPERTIES.legacyReceiptStorageSecs());
     }
 
     @Test
     void estimatesGetInfoAsExpected() {
         // given:
-        final var ctx =
-                ExtantScheduleContext.newBuilder()
-                        .setAdminKey(adminKey)
-                        .setMemo(memo)
-                        .setNumSigners(2)
-                        .setResolved(true)
-                        .setScheduledTxn(scheduledTxn)
-                        .build();
+        final var ctx = ExtantScheduleContext.newBuilder()
+                .setAdminKey(adminKey)
+                .setMemo(memo)
+                .setNumSigners(2)
+                .setResolved(true)
+                .setScheduledTxn(scheduledTxn)
+                .build();
 
         // when:
         final var estimate = subject.scheduleInfoUsage(scheduleQuery(), ctx);
@@ -234,14 +221,12 @@ class ScheduleOpsUsageTest {
     }
 
     private Query scheduleQuery() {
-        final var op =
-                ScheduleGetInfoQuery.newBuilder()
-                        .setHeader(
-                                QueryHeader.newBuilder()
-                                        .setResponseType(ANSWER_STATE_PROOF)
-                                        .build())
-                        .setScheduleID(id)
-                        .build();
+        final var op = ScheduleGetInfoQuery.newBuilder()
+                .setHeader(QueryHeader.newBuilder()
+                        .setResponseType(ANSWER_STATE_PROOF)
+                        .build())
+                .setScheduleID(id)
+                .build();
         return Query.newBuilder().setScheduleGetInfo(op).build();
     }
 
@@ -259,10 +244,9 @@ class ScheduleOpsUsageTest {
 
     private TransactionBody.Builder baseTxn() {
         return TransactionBody.newBuilder()
-                .setTransactionID(
-                        TransactionID.newBuilder()
-                                .setTransactionValidStart(Timestamp.newBuilder().setSeconds(now))
-                                .build());
+                .setTransactionID(TransactionID.newBuilder()
+                        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(now))
+                        .build());
     }
 
     private ScheduleCreateTransactionBody creationOp(final SchedulableTransactionBody body) {

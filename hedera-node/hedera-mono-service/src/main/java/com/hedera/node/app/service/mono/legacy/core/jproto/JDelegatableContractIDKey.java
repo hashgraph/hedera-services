@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.legacy.core.jproto;
 
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -23,8 +24,7 @@ public class JDelegatableContractIDKey extends JContractIDKey {
         super(contractID);
     }
 
-    public JDelegatableContractIDKey(
-            final long shardNum, final long realmNum, final long contractNum) {
+    public JDelegatableContractIDKey(final long shardNum, final long realmNum, final long contractNum) {
         super(shardNum, realmNum, contractNum);
     }
 
@@ -50,12 +50,6 @@ public class JDelegatableContractIDKey extends JContractIDKey {
 
     @Override
     public String toString() {
-        return "<JDelegatableContractId: "
-                + getShardNum()
-                + "."
-                + getRealmNum()
-                + "."
-                + getContractNum()
-                + ">";
+        return "<JDelegatableContractId: " + getShardNum() + "." + getRealmNum() + "." + getContractNum() + ">";
     }
 }

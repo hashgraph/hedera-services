@@ -1,0 +1,11 @@
+chatter.useChatter, true
+chatter.attemptedChatterEventPerSecond, 60
+chatter.chatteringCreationThreshold, 0.75
+chatter.chatterIntakeThrottle, 30
+chatter.otherEventDelay, 600millis
+chatter.selfEventQueueCapacity, 2000
+chatter.otherEventQueueCapacity, 50000
+chatter.descriptorQueueCapacity, 50000
+chatter.processingTimeInterval, 200millis
+chatter.heartbeatInterval, 2secs
+chatter.futureGenerationLimit, 150000

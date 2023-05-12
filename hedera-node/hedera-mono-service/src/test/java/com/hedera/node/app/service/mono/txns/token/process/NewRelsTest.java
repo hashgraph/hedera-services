@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.token.process;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -41,16 +42,35 @@ class NewRelsTest {
     private static final Id treasuryId = new Id(0, 0, 777);
     private static final Id collectorId = new Id(0, 0, 888);
 
-    @Mock private Token provisionalToken;
-    @Mock private Account treasury;
-    @Mock private Account collector;
-    @Mock private FcCustomFee feeNoCollectorAssociationRequired;
-    @Mock private FcCustomFee feeCollectorAssociationRequired;
-    @Mock private FcCustomFee feeSameCollectorAssociationRequired;
-    @Mock private TokenRelationship treasuryRel;
-    @Mock private TokenRelationship collectorRel;
-    @Mock private TypedTokenStore tokenStore;
-    @Mock private GlobalDynamicProperties dynamicProperties;
+    @Mock
+    private Token provisionalToken;
+
+    @Mock
+    private Account treasury;
+
+    @Mock
+    private Account collector;
+
+    @Mock
+    private FcCustomFee feeNoCollectorAssociationRequired;
+
+    @Mock
+    private FcCustomFee feeCollectorAssociationRequired;
+
+    @Mock
+    private FcCustomFee feeSameCollectorAssociationRequired;
+
+    @Mock
+    private TokenRelationship treasuryRel;
+
+    @Mock
+    private TokenRelationship collectorRel;
+
+    @Mock
+    private TypedTokenStore tokenStore;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
 
     @Test
     void associatesAsExpected() {
@@ -59,26 +79,22 @@ class NewRelsTest {
         given(provisionalToken.getTreasury()).willReturn(treasury);
         given(treasury.associateWith(anyList(), any(), anyBoolean(), anyBoolean(), any()))
                 .willReturn(List.of(treasuryRel, collectorRel));
-        given(feeCollectorAssociationRequired.requiresCollectorAutoAssociation()).willReturn(true);
+        given(feeCollectorAssociationRequired.requiresCollectorAutoAssociation())
+                .willReturn(true);
         given(feeCollectorAssociationRequired.getValidatedCollector()).willReturn(collector);
         given(feeSameCollectorAssociationRequired.requiresCollectorAutoAssociation())
                 .willReturn(true);
         given(feeSameCollectorAssociationRequired.getValidatedCollector()).willReturn(collector);
         given(provisionalToken.getCustomFees())
-                .willReturn(
-                        List.of(
-                                feeCollectorAssociationRequired,
-                                feeNoCollectorAssociationRequired,
-                                feeSameCollectorAssociationRequired));
+                .willReturn(List.of(
+                        feeCollectorAssociationRequired,
+                        feeNoCollectorAssociationRequired,
+                        feeSameCollectorAssociationRequired));
 
         final var ans = NewRels.listFrom(provisionalToken, tokenStore, dynamicProperties);
 
         assertEquals(List.of(treasuryRel, collectorRel), ans);
-        verify(treasury)
-                .associateWith(
-                        List.of(provisionalToken), tokenStore, false, true, dynamicProperties);
-        verify(collector)
-                .associateWith(
-                        List.of(provisionalToken), tokenStore, false, true, dynamicProperties);
+        verify(treasury).associateWith(List.of(provisionalToken), tokenStore, false, true, dynamicProperties);
+        verify(collector).associateWith(List.of(provisionalToken), tokenStore, false, true, dynamicProperties);
     }
 }

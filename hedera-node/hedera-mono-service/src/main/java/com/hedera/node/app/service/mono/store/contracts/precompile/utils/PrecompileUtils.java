@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.utils;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
@@ -43,22 +44,19 @@ public class PrecompileUtils {
             final boolean traceabilityOn,
             final Address senderAddress) {
         if (shouldExportPrecompileResults) {
-            final var evmFnResult =
-                    new EvmFnResult(
-                            HTS_PRECOMPILE_MIRROR_ENTITY_ID,
-                            result != null ? result.toArrayUnsafe() : EvmFnResult.EMPTY,
-                            errorStatus.map(ResponseCodeEnum::name).orElse(null),
-                            EvmFnResult.EMPTY,
-                            gasRequirement,
-                            Collections.emptyList(),
-                            Collections.emptyList(),
-                            EvmFnResult.EMPTY,
-                            traceabilityOn ? messageFrame.getRemainingGas() : 0L,
-                            traceabilityOn ? messageFrame.getValue().toLong() : 0L,
-                            traceabilityOn
-                                    ? messageFrame.getInputData().toArrayUnsafe()
-                                    : EvmFnResult.EMPTY,
-                            EntityId.fromAddress(senderAddress));
+            final var evmFnResult = new EvmFnResult(
+                    HTS_PRECOMPILE_MIRROR_ENTITY_ID,
+                    result != null ? result.toArrayUnsafe() : EvmFnResult.EMPTY,
+                    errorStatus.map(ResponseCodeEnum::name).orElse(null),
+                    EvmFnResult.EMPTY,
+                    gasRequirement,
+                    Collections.emptyList(),
+                    Collections.emptyList(),
+                    EvmFnResult.EMPTY,
+                    traceabilityOn ? messageFrame.getRemainingGas() : 0L,
+                    traceabilityOn ? messageFrame.getValue().toLong() : 0L,
+                    traceabilityOn ? messageFrame.getInputData().toArrayUnsafe() : EvmFnResult.EMPTY,
+                    EntityId.fromAddress(senderAddress));
             childRecord.setContractCallResult(evmFnResult);
         }
     }
@@ -66,20 +64,13 @@ public class PrecompileUtils {
     public static KeyValueWrapper buildKeyValueWrapper(JKey key) {
         validateTrue(key != null, ResponseCodeEnum.KEY_NOT_PROVIDED);
         ContractID contractID =
-                key.hasContractID()
-                        ? key.getContractIDKey().getContractID()
-                        : ContractID.getDefaultInstance();
-        ContractID delegatableContractID =
-                key.hasDelegatableContractId()
-                        ? key.getDelegatableContractIdKey().getContractID()
-                        : ContractID.getDefaultInstance();
+                key.hasContractID() ? key.getContractIDKey().getContractID() : ContractID.getDefaultInstance();
+        ContractID delegatableContractID = key.hasDelegatableContractId()
+                ? key.getDelegatableContractIdKey().getContractID()
+                : ContractID.getDefaultInstance();
 
         return new KeyValueWrapper(
-                false,
-                contractID,
-                key.getEd25519(),
-                key.getECDSASecp256k1Key(),
-                delegatableContractID);
+                false, contractID, key.getEd25519(), key.getECDSASecp256k1Key(), delegatableContractID);
     }
 
     private PrecompileUtils() {

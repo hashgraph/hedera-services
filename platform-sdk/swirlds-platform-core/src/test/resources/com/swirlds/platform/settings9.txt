@@ -1,0 +1,11 @@
+virtualMap.numHashThreads, 1
+virtualMap.percentHashThreads, 75.0
+virtualMap.numCleanerThreads, 1
+virtualMap.percentCleanerThreads, 50.0
+virtualMap.maximumVirtualMapSize, 10
+virtualMap.virtualMapWarningThreshold, 7500000
+virtualMap.virtualMapWarningInterval, 150000
+virtualMap.flushInterval, 30
+virtualMap.preferredFlushQueueSize, 3
+virtualMap.flushThrottleStepSize, 300millis
+virtualMap.maximumFlushThrottlePeriod, 6secs

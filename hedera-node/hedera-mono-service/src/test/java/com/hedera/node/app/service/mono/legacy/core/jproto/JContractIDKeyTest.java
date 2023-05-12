@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.legacy.core.jproto;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -31,14 +32,16 @@ class JContractIDKeyTest {
 
     @Test
     void nonZeroContractIDKeyTest() {
-        JContractIDKey key = new JContractIDKey(ContractID.newBuilder().setContractNum(1L).build());
+        JContractIDKey key =
+                new JContractIDKey(ContractID.newBuilder().setContractNum(1L).build());
         assertFalse(key.isEmpty());
         assertTrue(key.isValid());
     }
 
     @Test
     void scheduleOpsAsExpected() {
-        var subject = new JContractIDKey(ContractID.newBuilder().setContractNum(1L).build());
+        var subject =
+                new JContractIDKey(ContractID.newBuilder().setContractNum(1L).build());
         assertFalse(subject.isForScheduledTxn());
         subject.setForScheduledTxn(true);
         assertTrue(subject.isForScheduledTxn());

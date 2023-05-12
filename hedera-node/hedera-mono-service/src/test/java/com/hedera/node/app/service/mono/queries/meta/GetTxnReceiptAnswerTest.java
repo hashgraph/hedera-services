@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.meta;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
@@ -51,13 +52,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class GetTxnReceiptAnswerTest {
-    private final TransactionID validTxnId =
-            TransactionID.newBuilder()
-                    .setAccountID(asAccount("0.0.2"))
-                    .setTransactionValidStart(Timestamp.newBuilder().setSeconds(1_234L))
-                    .build();
-    private final TxnReceipt receipt =
-            TxnReceipt.newBuilder().setStatus(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS.name()).build();
+    private final TransactionID validTxnId = TransactionID.newBuilder()
+            .setAccountID(asAccount("0.0.2"))
+            .setTransactionValidStart(Timestamp.newBuilder().setSeconds(1_234L))
+            .build();
+    private final TxnReceipt receipt = TxnReceipt.newBuilder()
+            .setStatus(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS.name())
+            .build();
     private final TxnReceipt duplicateReceipt =
             TxnReceipt.newBuilder().setStatus(DUPLICATE_TRANSACTION.name()).build();
     private final TxnReceipt unclassifiableReceipt =
@@ -80,8 +81,7 @@ class GetTxnReceiptAnswerTest {
     void returnsChildrenIfRequested() {
         // setup:
         final Query sensibleQuery = queryWith(validTxnId, ANSWER_ONLY, false, true);
-        final var childReceipts =
-                List.of(duplicateReceipt.toGrpc(), unclassifiableReceipt.toGrpc());
+        final var childReceipts = List.of(duplicateReceipt.toGrpc(), unclassifiableReceipt.toGrpc());
 
         given(recordCache.getPriorityReceipt(validTxnId)).willReturn(receipt);
         given(recordCache.getChildReceipts(validTxnId)).willReturn(childReceipts);
@@ -101,17 +101,14 @@ class GetTxnReceiptAnswerTest {
     @Test
     void requiresNothing() {
         // setup:
-        final TransactionGetReceiptQuery costAnswerOp =
-                TransactionGetReceiptQuery.newBuilder()
-                        .setHeader(
-                                QueryHeader.newBuilder().setResponseType(ResponseType.COST_ANSWER))
-                        .build();
+        final TransactionGetReceiptQuery costAnswerOp = TransactionGetReceiptQuery.newBuilder()
+                .setHeader(QueryHeader.newBuilder().setResponseType(ResponseType.COST_ANSWER))
+                .build();
         final Query costAnswerQuery =
                 Query.newBuilder().setTransactionGetReceipt(costAnswerOp).build();
-        final TransactionGetReceiptQuery answerOnlyOp =
-                TransactionGetReceiptQuery.newBuilder()
-                        .setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY))
-                        .build();
+        final TransactionGetReceiptQuery answerOnlyOp = TransactionGetReceiptQuery.newBuilder()
+                .setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY))
+                .build();
         final Query answerOnlyQuery =
                 Query.newBuilder().setTransactionGetReceipt(answerOnlyOp).build();
 
@@ -141,8 +138,7 @@ class GetTxnReceiptAnswerTest {
     void returnsDuplicatesIfRequested() {
         // setup:
         final Query sensibleQuery = queryWith(validTxnId, ANSWER_ONLY, true);
-        final var duplicateReceipts =
-                List.of(duplicateReceipt.toGrpc(), unclassifiableReceipt.toGrpc());
+        final var duplicateReceipts = List.of(duplicateReceipt.toGrpc(), unclassifiableReceipt.toGrpc());
 
         given(recordCache.getPriorityReceipt(validTxnId)).willReturn(receipt);
         given(recordCache.getDuplicateReceipts(validTxnId)).willReturn(duplicateReceipts);
@@ -182,14 +178,10 @@ class GetTxnReceiptAnswerTest {
     @Test
     void getsValidity() {
         // given:
-        final Response response =
-                Response.newBuilder()
-                        .setTransactionGetReceipt(
-                                TransactionGetReceiptResponse.newBuilder()
-                                        .setHeader(
-                                                subject.answerOnlyHeader(
-                                                        RESULT_SIZE_LIMIT_EXCEEDED)))
-                        .build();
+        final Response response = Response.newBuilder()
+                .setTransactionGetReceipt(TransactionGetReceiptResponse.newBuilder()
+                        .setHeader(subject.answerOnlyHeader(RESULT_SIZE_LIMIT_EXCEEDED)))
+                .build();
 
         // expect:
         assertEquals(RESULT_SIZE_LIMIT_EXCEEDED, subject.extractValidityFrom(response));
@@ -201,8 +193,7 @@ class GetTxnReceiptAnswerTest {
         final Query sensibleQuery = queryWith(validTxnId);
 
         // when:
-        final Response response =
-                subject.responseGiven(sensibleQuery, view, INVALID_TRANSACTION, 0L);
+        final Response response = subject.responseGiven(sensibleQuery, view, INVALID_TRANSACTION, 0L);
 
         // then:
         final TransactionGetReceiptResponse opResponse = response.getTransactionGetReceipt();
@@ -234,22 +225,17 @@ class GetTxnReceiptAnswerTest {
         assertFalse(subject.extractPaymentFrom(mock(Query.class)).isPresent());
     }
 
-    private Query queryWith(
-            final TransactionID txnId, final ResponseType type, final boolean duplicates) {
+    private Query queryWith(final TransactionID txnId, final ResponseType type, final boolean duplicates) {
         return queryWith(txnId, type, duplicates, false);
     }
 
     private Query queryWith(
-            final TransactionID txnId,
-            final ResponseType type,
-            final boolean duplicates,
-            final boolean children) {
-        final TransactionGetReceiptQuery.Builder op =
-                TransactionGetReceiptQuery.newBuilder()
-                        .setHeader(QueryHeader.newBuilder().setResponseType(type))
-                        .setTransactionID(txnId)
-                        .setIncludeDuplicates(duplicates)
-                        .setIncludeChildReceipts(children);
+            final TransactionID txnId, final ResponseType type, final boolean duplicates, final boolean children) {
+        final TransactionGetReceiptQuery.Builder op = TransactionGetReceiptQuery.newBuilder()
+                .setHeader(QueryHeader.newBuilder().setResponseType(type))
+                .setTransactionID(txnId)
+                .setIncludeDuplicates(duplicates)
+                .setIncludeChildReceipts(children);
         return Query.newBuilder().setTransactionGetReceipt(op).build();
     }
 

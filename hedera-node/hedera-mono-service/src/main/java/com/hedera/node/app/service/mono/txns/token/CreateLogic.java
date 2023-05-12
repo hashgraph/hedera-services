@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.token;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -63,12 +64,10 @@ public class CreateLogic {
         this.validator = validator;
     }
 
-    public void create(
-            final long now, final AccountID activePayer, final TokenCreateTransactionBody op) {
+    public void create(final long now, final AccountID activePayer, final TokenCreateTransactionBody op) {
         usageLimits.assertCreatableTokens(1);
 
-        final var creation =
-                creationFactory.processFrom(accountStore, tokenStore, dynamicProperties, op);
+        final var creation = creationFactory.processFrom(accountStore, tokenStore, dynamicProperties, op);
 
         // --- Create the model objects ---
         creation.loadModelsWith(activePayer, ids, validator);

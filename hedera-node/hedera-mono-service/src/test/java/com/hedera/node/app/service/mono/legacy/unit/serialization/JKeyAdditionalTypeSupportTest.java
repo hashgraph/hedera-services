@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.legacy.unit.serialization;
 
 import static com.swirlds.common.utility.CommonUtils.unhex;
@@ -51,8 +52,9 @@ class JKeyAdditionalTypeSupportTest {
     @Test
     void canMapAndUnmapContractAliasKeys() throws DecoderException {
         final byte[] mockAddr = unhex("aaaaaaaaaaaaaaaaaaaaaaaa9abcdefabcdefbbb");
-        final var input =
-                ContractID.newBuilder().setEvmAddress(ByteString.copyFrom(mockAddr)).build();
+        final var input = ContractID.newBuilder()
+                .setEvmAddress(ByteString.copyFrom(mockAddr))
+                .build();
         final var subject = new JContractAliasKey(input);
 
         final var asGrpc = JKey.mapJKey(subject);
@@ -65,8 +67,9 @@ class JKeyAdditionalTypeSupportTest {
     @Test
     void canMapAndUnmapContractDelegateAliasKeys() throws DecoderException {
         final byte[] mockAddr = unhex("aaaaaaaaaaaaaaaaaaaaaaaa9abcdefabcdefbbb");
-        final var input =
-                ContractID.newBuilder().setEvmAddress(ByteString.copyFrom(mockAddr)).build();
+        final var input = ContractID.newBuilder()
+                .setEvmAddress(ByteString.copyFrom(mockAddr))
+                .build();
         final var subject = new JDelegatableContractAliasKey(input);
 
         final var asGrpc = JKey.mapJKey(subject);

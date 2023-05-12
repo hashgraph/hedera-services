@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
@@ -31,8 +32,7 @@ import java.util.Objects;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
-public class GetTokenDefaultKycStatus extends AbstractReadOnlyPrecompile
-        implements EvmGetTokenDefaultKycStatus {
+public class GetTokenDefaultKycStatus extends AbstractReadOnlyPrecompile implements EvmGetTokenDefaultKycStatus {
 
     private GetTokenDefaultKycStatusWrapper<TokenID> defaultKycStatusWrapper;
 
@@ -46,26 +46,21 @@ public class GetTokenDefaultKycStatus extends AbstractReadOnlyPrecompile
     }
 
     @Override
-    public TransactionBody.Builder body(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         defaultKycStatusWrapper = decodeTokenDefaultKycStatus(input);
         return super.body(input, aliasResolver);
     }
 
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-        Objects.requireNonNull(
-                defaultKycStatusWrapper,
-                "`body` method should be called before `getSuccessResultsFor`");
+        Objects.requireNonNull(defaultKycStatusWrapper, "`body` method should be called before `getSuccessResultsFor`");
 
         final var defaultKycStatus = ledgers.defaultKycStatus(defaultKycStatusWrapper.token());
         return evmEncoder.encodeGetTokenDefaultKycStatus(defaultKycStatus);
     }
 
-    public static GetTokenDefaultKycStatusWrapper<TokenID> decodeTokenDefaultKycStatus(
-            final Bytes input) {
-        final var rawGetTokenDefaultKycStatusWrapper =
-                EvmGetTokenDefaultKycStatus.decodeTokenDefaultKycStatus(input);
+    public static GetTokenDefaultKycStatusWrapper<TokenID> decodeTokenDefaultKycStatus(final Bytes input) {
+        final var rawGetTokenDefaultKycStatusWrapper = EvmGetTokenDefaultKycStatus.decodeTokenDefaultKycStatus(input);
         return new GetTokenDefaultKycStatusWrapper<>(
                 convertAddressBytesToTokenID(rawGetTokenDefaultKycStatusWrapper.token()));
     }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.merkle;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
@@ -171,8 +172,7 @@ public class MerkleSpecialFiles extends PartialMerkleLeaf implements MerkleLeaf 
 
     /** {@inheritDoc} */
     @Override
-    public synchronized void deserialize(final SerializableDataInputStream in, final int version)
-            throws IOException {
+    public synchronized void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         var numFiles = in.readInt();
         while (numFiles-- > 0) {
             final var fidNum = in.readLong();
@@ -249,8 +249,9 @@ public class MerkleSpecialFiles extends PartialMerkleLeaf implements MerkleLeaf 
     }
 
     private byte[] hashOfKnown(final FileID fid) {
-        return hashCache.computeIfAbsent(
-                fid, missingFid -> CryptographyHolder.get().digestSync(get(missingFid)).getValue());
+        return hashCache.computeIfAbsent(fid, missingFid -> CryptographyHolder.get()
+                .digestSync(get(missingFid))
+                .getValue());
     }
 
     private FCQueue<BytesElement> newFcqWith(final byte[] initialContents) {

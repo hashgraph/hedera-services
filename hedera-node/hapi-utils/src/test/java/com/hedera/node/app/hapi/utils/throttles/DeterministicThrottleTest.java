@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.utils.throttles;
 
 import static com.hedera.node.app.hapi.utils.throttles.BucketThrottle.CAPACITY_UNITS_PER_NANO_TXN;
@@ -43,29 +44,27 @@ class DeterministicThrottleTest {
         final var fromTps = DeterministicThrottle.withTps(tps);
         final var fromMtps = DeterministicThrottle.withMtps(tps * MTPS_PER_TPS);
         final var fromTpsAndBurstPeriod = DeterministicThrottle.withTpsAndBurstPeriod(tps / 2, 2);
-        final var fromMtpsAndBurstPeriod =
-                DeterministicThrottle.withMtpsAndBurstPeriod(tps / 2 * MTPS_PER_TPS, 2);
+        final var fromMtpsAndBurstPeriod = DeterministicThrottle.withMtpsAndBurstPeriod(tps / 2 * MTPS_PER_TPS, 2);
         final var fromTpsNamed = DeterministicThrottle.withTpsNamed(tps, name);
         final var fromMtpsNamed = DeterministicThrottle.withMtpsNamed(tps * MTPS_PER_TPS, name);
-        final var fromTpsAndBurstPeriodNamed =
-                DeterministicThrottle.withTpsAndBurstPeriodNamed(tps / 2, 2, name);
+        final var fromTpsAndBurstPeriodNamed = DeterministicThrottle.withTpsAndBurstPeriodNamed(tps / 2, 2, name);
         final var fromMtpsAndBurstPeriodNamed =
                 DeterministicThrottle.withMtpsAndBurstPeriodNamed(tps / 2 * MTPS_PER_TPS, 2, name);
-        final var fromTpsAndBurstPeriodMs =
-                DeterministicThrottle.withTpsAndBurstPeriodMs(tps / 2, 2_000);
+        final var fromTpsAndBurstPeriodMs = DeterministicThrottle.withTpsAndBurstPeriodMs(tps / 2, 2_000);
         final var fromMtpsAndBurstPeriodMs =
                 DeterministicThrottle.withMtpsAndBurstPeriodMs(tps / 2 * MTPS_PER_TPS, 2_000);
         final var fromTpsAndBurstPeriodMsNamed =
                 DeterministicThrottle.withTpsAndBurstPeriodMsNamed(tps / 2, 2_000, name);
         final var fromMtpsAndBurstPeriodMsNamed =
-                DeterministicThrottle.withMtpsAndBurstPeriodMsNamed(
-                        tps / 2 * MTPS_PER_TPS, 2_000, name);
+                DeterministicThrottle.withMtpsAndBurstPeriodMsNamed(tps / 2 * MTPS_PER_TPS, 2_000, name);
 
         assertEquals(expectedCapacity, fromTps.delegate().bucket().totalCapacity());
         assertEquals(expectedCapacity, fromMtps.delegate().bucket().totalCapacity());
         assertEquals(expectedCapacity, fromTpsAndBurstPeriod.delegate().bucket().totalCapacity());
-        assertEquals(expectedCapacity, fromTpsAndBurstPeriodMs.delegate().bucket().totalCapacity());
-        assertEquals(expectedCapacity, fromMtpsAndBurstPeriod.delegate().bucket().totalCapacity());
+        assertEquals(
+                expectedCapacity, fromTpsAndBurstPeriodMs.delegate().bucket().totalCapacity());
+        assertEquals(
+                expectedCapacity, fromMtpsAndBurstPeriod.delegate().bucket().totalCapacity());
         assertEquals(
                 expectedCapacity, fromMtpsAndBurstPeriodMs.delegate().bucket().totalCapacity());
         assertEquals(expectedCapacity, fromTpsNamed.delegate().bucket().totalCapacity());
@@ -73,9 +72,11 @@ class DeterministicThrottleTest {
         assertEquals(
                 expectedCapacity, fromTpsAndBurstPeriodNamed.delegate().bucket().totalCapacity());
         assertEquals(
-                expectedCapacity, fromTpsAndBurstPeriodMsNamed.delegate().bucket().totalCapacity());
+                expectedCapacity,
+                fromTpsAndBurstPeriodMsNamed.delegate().bucket().totalCapacity());
         assertEquals(
-                expectedCapacity, fromMtpsAndBurstPeriodNamed.delegate().bucket().totalCapacity());
+                expectedCapacity,
+                fromMtpsAndBurstPeriodNamed.delegate().bucket().totalCapacity());
         assertEquals(
                 expectedCapacity,
                 fromMtpsAndBurstPeriodMsNamed.delegate().bucket().totalCapacity());
@@ -136,9 +137,8 @@ class DeterministicThrottleTest {
         final long mtps = 123_456L;
         final var subject = DeterministicThrottle.withMtps(mtps);
         final double expectedTps = (1.0 * mtps) / 1_000;
-        subject.resetUsageTo(
-                new DeterministicThrottle.UsageSnapshot(
-                        subject.capacity() - DeterministicThrottle.capacityRequiredFor(1), null));
+        subject.resetUsageTo(new DeterministicThrottle.UsageSnapshot(
+                subject.capacity() - DeterministicThrottle.capacityRequiredFor(1), null));
 
         final var helper = new ConcurrentThrottleTestHelper(10, 10, 2);
         helper.runWith(subject);
@@ -150,8 +150,7 @@ class DeterministicThrottleTest {
     void usesZeroElapsedNanosOnFirstDecision() {
         final int tps = 1;
         final int burstPeriod = 5;
-        final long internalCapacity =
-                tps * NTPS_PER_TPS * CAPACITY_UNITS_PER_NANO_TXN * burstPeriod;
+        final long internalCapacity = tps * NTPS_PER_TPS * CAPACITY_UNITS_PER_NANO_TXN * burstPeriod;
         final var now = Instant.ofEpochSecond(1_234_567L);
         final var subject = DeterministicThrottle.withTpsAndBurstPeriod(tps, burstPeriod);
 
@@ -200,8 +199,7 @@ class DeterministicThrottleTest {
     void usesCorrectElapsedNanosOnSubsequentDecision() {
         final int tps = 1;
         final int burstPeriod = 5;
-        final long internalCapacity =
-                tps * NTPS_PER_TPS * CAPACITY_UNITS_PER_NANO_TXN * burstPeriod;
+        final long internalCapacity = tps * NTPS_PER_TPS * CAPACITY_UNITS_PER_NANO_TXN * burstPeriod;
         final long elapsedNanos = 1_234;
         final var originalDecision = Instant.ofEpochSecond(1_234_567L, 0);
         final var now = Instant.ofEpochSecond(1_234_567L, elapsedNanos);
@@ -240,8 +238,7 @@ class DeterministicThrottleTest {
         final var originalDecision = Instant.ofEpochSecond(1_234_567L, 0);
 
         final var subject = DeterministicThrottle.withMtpsAndBurstPeriod(mtps, burstPeriod);
-        final var comparisonSubject =
-                DeterministicThrottle.withMtpsAndBurstPeriod(mtps, burstPeriod);
+        final var comparisonSubject = DeterministicThrottle.withMtpsAndBurstPeriod(mtps, burstPeriod);
 
         subject.leakUntil(originalDecision);
         assertTrue(subject.allowInstantaneous(1));
@@ -274,8 +271,7 @@ class DeterministicThrottleTest {
     void resetsAsExpected() {
         final int mtps = 333;
         final int burstPeriod = 6;
-        final long internalCapacity =
-                mtps * NTPS_PER_MTPS * CAPACITY_UNITS_PER_NANO_TXN * burstPeriod;
+        final long internalCapacity = mtps * NTPS_PER_MTPS * CAPACITY_UNITS_PER_NANO_TXN * burstPeriod;
         final long used = internalCapacity / 2;
         final var originalDecision = Instant.ofEpochSecond(1_234_567L, 0);
         final var subject = DeterministicThrottle.withMtpsAndBurstPeriod(mtps, burstPeriod);
@@ -340,31 +336,18 @@ class DeterministicThrottleTest {
     void toStringWorks() {
         final int mtps = 333;
         final int burstPeriod = 6;
-        final long internalCapacity =
-                mtps * NTPS_PER_MTPS * CAPACITY_UNITS_PER_NANO_TXN * burstPeriod;
+        final long internalCapacity = mtps * NTPS_PER_MTPS * CAPACITY_UNITS_PER_NANO_TXN * burstPeriod;
         final var originalDecision = Instant.ofEpochSecond(1_234_567L, 0);
         final String name = "Testing123";
-        final var expectedForAnonymous =
-                String.format(
-                        "DeterministicThrottle{mtps=%d, capacity=%d (used=%d), last decision @ %s}",
-                        mtps,
-                        internalCapacity,
-                        DeterministicThrottle.capacityRequiredFor(1),
-                        originalDecision);
-        final var expectedForDisclosed =
-                String.format(
-                        "DeterministicThrottle{name='%s', mtps=%d, capacity=%d (used=%d), last"
-                                + " decision @ %s}",
-                        name,
-                        mtps,
-                        internalCapacity,
-                        DeterministicThrottle.capacityRequiredFor(1),
-                        originalDecision);
+        final var expectedForAnonymous = String.format(
+                "DeterministicThrottle{mtps=%d, capacity=%d (used=%d), last decision @ %s}",
+                mtps, internalCapacity, DeterministicThrottle.capacityRequiredFor(1), originalDecision);
+        final var expectedForDisclosed = String.format(
+                "DeterministicThrottle{name='%s', mtps=%d, capacity=%d (used=%d), last" + " decision @ %s}",
+                name, mtps, internalCapacity, DeterministicThrottle.capacityRequiredFor(1), originalDecision);
 
-        final var anonymousSubject =
-                DeterministicThrottle.withMtpsAndBurstPeriod(mtps, burstPeriod);
-        final var disclosedSubject =
-                DeterministicThrottle.withMtpsAndBurstPeriodNamed(mtps, burstPeriod, name);
+        final var anonymousSubject = DeterministicThrottle.withMtpsAndBurstPeriod(mtps, burstPeriod);
+        final var disclosedSubject = DeterministicThrottle.withMtpsAndBurstPeriodNamed(mtps, burstPeriod, name);
         anonymousSubject.allow(1, originalDecision);
         disclosedSubject.allow(1, originalDecision);
 
@@ -388,13 +371,10 @@ class DeterministicThrottleTest {
         assertNotEquals(a, new DeterministicThrottle.UsageSnapshot(aUsed, bLast));
 
         assertEquals(a.hashCode(), a.hashCode());
-        assertEquals(
-                a.hashCode(), new DeterministicThrottle.UsageSnapshot(aUsed, aLast).hashCode());
+        assertEquals(a.hashCode(), new DeterministicThrottle.UsageSnapshot(aUsed, aLast).hashCode());
         assertNotEquals(a.hashCode(), new Object().hashCode());
-        assertNotEquals(
-                a.hashCode(), new DeterministicThrottle.UsageSnapshot(bUsed, aLast).hashCode());
-        assertNotEquals(
-                a.hashCode(), new DeterministicThrottle.UsageSnapshot(aUsed, bLast).hashCode());
+        assertNotEquals(a.hashCode(), new DeterministicThrottle.UsageSnapshot(bUsed, aLast).hashCode());
+        assertNotEquals(a.hashCode(), new DeterministicThrottle.UsageSnapshot(aUsed, bLast).hashCode());
     }
 
     @Test
@@ -405,8 +385,7 @@ class DeterministicThrottleTest {
         final var aNoLast = new DeterministicThrottle.UsageSnapshot(aUsed, null);
         final var aWithLast = new DeterministicThrottle.UsageSnapshot(aUsed, aLast);
         final var desiredWithLastDecision =
-                "DeterministicThrottle.UsageSnapshot{used=123, "
-                        + "last decision @ 1970-01-15T06:56:07.000000890Z}";
+                "DeterministicThrottle.UsageSnapshot{used=123, " + "last decision @ 1970-01-15T06:56:07.000000890Z}";
         final var desiredWithNoLastDecision =
                 "DeterministicThrottle.UsageSnapshot{used=123, " + "last decision @ <N/A>}";
 

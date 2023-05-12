@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.grpc.controllers;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
@@ -64,8 +65,7 @@ class ConsensusControllerTest {
 
         // expect:
         verify(hcsAnswers).topicInfo();
-        verify(queryResponseHelper)
-                .answer(query, queryObserver, null, HederaFunctionality.ConsensusGetTopicInfo);
+        verify(queryResponseHelper).answer(query, queryObserver, null, HederaFunctionality.ConsensusGetTopicInfo);
     }
 
     @Test

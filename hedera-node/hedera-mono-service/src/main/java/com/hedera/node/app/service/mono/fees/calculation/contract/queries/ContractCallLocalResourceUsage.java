@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.contract.queries;
 
 import static com.hedera.node.app.service.mono.queries.contract.ContractCallLocalAnswer.CONTRACT_CALL_LOCAL_CTX_KEY;
@@ -91,16 +92,13 @@ public final class ContractCallLocalResourceUsage implements QueryResourceUsageE
     }
 
     @Override
-    public FeeData usageGivenType(
-            final Query query, final StateView view, final ResponseType type) {
+    public FeeData usageGivenType(final Query query, final StateView view, final ResponseType type) {
         return usageFor(query, type, view, null);
     }
 
     @Override
-    public FeeData usageGiven(
-            final Query query, final StateView view, @Nullable final Map<String, Object> queryCtx) {
-        return usageFor(
-                query, query.getContractCallLocal().getHeader().getResponseType(), view, queryCtx);
+    public FeeData usageGiven(final Query query, final StateView view, @Nullable final Map<String, Object> queryCtx) {
+        return usageFor(query, query.getContractCallLocal().getHeader().getResponseType(), view, queryCtx);
     }
 
     private FeeData usageFor(
@@ -121,20 +119,16 @@ public final class ContractCallLocalResourceUsage implements QueryResourceUsageE
                 } else {
                     final var entityAccess = new StaticEntityAccess(view, aliasManager, validator);
                     final var codeCache = new CodeCache(nodeProperties, entityAccess);
-                    final var worldState =
-                            new HederaWorldState(ids, entityAccess, codeCache, properties);
+                    final var worldState = new HederaWorldState(ids, entityAccess, codeCache, properties);
                     final var evmTxProcessor = evmTxProcessorProvider.get();
                     evmTxProcessor.setWorldState(worldState);
                     evmTxProcessor.setBlockMetaSource(blockMetaSource.get());
-                    response =
-                            CallLocalExecutor.execute(
-                                    accountStore, evmTxProcessor, op, aliasManager, entityAccess);
+                    response = CallLocalExecutor.execute(accountStore, evmTxProcessor, op, aliasManager, entityAccess);
                     queryCtx.put(CONTRACT_CALL_LOCAL_CTX_KEY, response);
                 }
             }
-            final var nonGasUsage =
-                    usageEstimator.getContractCallLocalFeeMatrices(
-                            op.getFunctionParameters().size(), response.getFunctionResult(), type);
+            final var nonGasUsage = usageEstimator.getContractCallLocalFeeMatrices(
+                    op.getFunctionParameters().size(), response.getFunctionResult(), type);
             return nonGasUsage.toBuilder()
                     .setNodedata(nonGasUsage.getNodedata().toBuilder().setGas(op.getGas()))
                     .build();
@@ -146,12 +140,9 @@ public final class ContractCallLocalResourceUsage implements QueryResourceUsageE
 
     ContractCallLocalResponse dummyResponse(final ContractID target) {
         return ContractCallLocalResponse.newBuilder()
-                .setFunctionResult(
-                        ContractFunctionResult.newBuilder()
-                                .setContractCallResult(
-                                        ByteString.copyFrom(
-                                                new byte[properties.localCallEstRetBytes()]))
-                                .setContractID(target))
+                .setFunctionResult(ContractFunctionResult.newBuilder()
+                        .setContractCallResult(ByteString.copyFrom(new byte[properties.localCallEstRetBytes()]))
+                        .setContractID(target))
                 .setHeader(ResponseHeader.newBuilder().setNodeTransactionPrecheckCode(OK))
                 .build();
     }

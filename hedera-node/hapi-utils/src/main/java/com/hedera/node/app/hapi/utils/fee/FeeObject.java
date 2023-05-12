@@ -13,41 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.utils.fee;
 
-public class FeeObject {
+public record FeeObject(long nodeFee, long networkFee, long serviceFee) {
 
-    private long nodeFee;
-    private long networkFee;
-    private long serviceFee;
-
-    public FeeObject(long nodeFee, long networkFee, long serviceFee) {
-        this.nodeFee = nodeFee;
-        this.networkFee = networkFee;
-        this.serviceFee = serviceFee;
-    }
-
-    public long getNodeFee() {
-        return nodeFee;
-    }
-
-    public long getNetworkFee() {
-        return networkFee;
-    }
-
-    public long getServiceFee() {
-        return serviceFee;
-    }
-
-    @Override
-    public String toString() {
-        return "FeeObject{"
-                + "nodeFee="
-                + nodeFee
-                + ", networkFee="
-                + networkFee
-                + ", serviceFee="
-                + serviceFee
-                + '}';
+    public long totalFee() {
+        return networkFee() + serviceFee() + nodeFee();
     }
 }

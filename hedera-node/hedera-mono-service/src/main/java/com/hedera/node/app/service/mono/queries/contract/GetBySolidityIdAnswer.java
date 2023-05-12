@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.contract;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetBySolidityID;
@@ -39,17 +40,13 @@ public class GetBySolidityIdAnswer extends AbstractAnswer {
                 GetBySolidityID,
                 query -> null,
                 query -> query.getGetBySolidityID().getHeader().getResponseType(),
-                response ->
-                        response.getGetBySolidityID().getHeader().getNodeTransactionPrecheckCode(),
+                response -> response.getGetBySolidityID().getHeader().getNodeTransactionPrecheckCode(),
                 (query, view) -> NOT_SUPPORTED);
     }
 
     @Override
     public Response responseGiven(
-            final Query query,
-            @Nullable final StateView view,
-            final ResponseCodeEnum validity,
-            final long cost) {
+            final Query query, @Nullable final StateView view, final ResponseCodeEnum validity, final long cost) {
         final GetBySolidityIDQuery op = query.getGetBySolidityID();
         final ResponseType type = op.getHeader().getResponseType();
 

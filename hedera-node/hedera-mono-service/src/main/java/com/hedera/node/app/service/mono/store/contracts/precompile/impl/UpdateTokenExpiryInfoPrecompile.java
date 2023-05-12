@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.BYTES32;
@@ -86,16 +87,10 @@ public class UpdateTokenExpiryInfoPrecompile extends AbstractTokenUpdatePrecompi
 
     @Override
     public Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
-        updateExpiryInfoOp =
-                switch (functionId) {
-                    case AbiConstants
-                            .ABI_ID_UPDATE_TOKEN_EXPIRY_INFO -> decodeUpdateTokenExpiryInfo(
-                            input, aliasResolver);
-                    case AbiConstants
-                            .ABI_ID_UPDATE_TOKEN_EXPIRY_INFO_V2 -> decodeUpdateTokenExpiryInfoV2(
-                            input, aliasResolver);
-                    default -> null;
-                };
+        updateExpiryInfoOp = switch (functionId) {
+            case AbiConstants.ABI_ID_UPDATE_TOKEN_EXPIRY_INFO -> decodeUpdateTokenExpiryInfo(input, aliasResolver);
+            case AbiConstants.ABI_ID_UPDATE_TOKEN_EXPIRY_INFO_V2 -> decodeUpdateTokenExpiryInfoV2(input, aliasResolver);
+            default -> null;};
 
         transactionBody = syntheticTxnFactory.createTokenUpdateExpiryInfo(updateExpiryInfoOp);
         return transactionBody;
@@ -112,21 +107,18 @@ public class UpdateTokenExpiryInfoPrecompile extends AbstractTokenUpdatePrecompi
 
     public static TokenUpdateExpiryInfoWrapper decodeUpdateTokenExpiryInfo(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        return getTokenUpdateExpiryInfoWrapper(
-                input, aliasResolver, TOKEN_UPDATE_EXPIRY_INFO_SELECTOR);
+        return getTokenUpdateExpiryInfoWrapper(input, aliasResolver, TOKEN_UPDATE_EXPIRY_INFO_SELECTOR);
     }
 
     public static TokenUpdateExpiryInfoWrapper decodeUpdateTokenExpiryInfoV2(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        return getTokenUpdateExpiryInfoWrapper(
-                input, aliasResolver, TOKEN_UPDATE_EXPIRY_INFO_SELECTOR_V2);
+        return getTokenUpdateExpiryInfoWrapper(input, aliasResolver, TOKEN_UPDATE_EXPIRY_INFO_SELECTOR_V2);
     }
 
     private static TokenUpdateExpiryInfoWrapper getTokenUpdateExpiryInfoWrapper(
             Bytes input, UnaryOperator<byte[]> aliasResolver, Bytes tokenUpdateExpiryInfoSelector) {
         final Tuple decodedArguments =
-                decodeFunctionCall(
-                        input, tokenUpdateExpiryInfoSelector, TOKEN_UPDATE_EXPIRY_INFO_DECODER);
+                decodeFunctionCall(input, tokenUpdateExpiryInfoSelector, TOKEN_UPDATE_EXPIRY_INFO_DECODER);
 
         final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
         final Tuple tokenExpiryStruct = decodedArguments.get(1);

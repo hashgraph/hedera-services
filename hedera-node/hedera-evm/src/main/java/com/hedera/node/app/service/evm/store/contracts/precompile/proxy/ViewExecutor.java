@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.store.contracts.precompile.proxy;
 
 import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_GET_FUNGIBLE_TOKEN_INFO;
@@ -96,34 +97,29 @@ public class ViewExecutor {
         switch (selector) {
             case ABI_ID_GET_TOKEN_INFO -> {
                 final var wrapper = EvmTokenInfoPrecompile.decodeGetTokenInfo(input);
-                final var tokenInfo =
-                        tokenAccessor
-                                .evmInfoForToken(addressFromBytes(wrapper.token()))
-                                .orElse(null);
+                final var tokenInfo = tokenAccessor
+                        .evmInfoForToken(addressFromBytes(wrapper.token()))
+                        .orElse(null);
 
                 validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
 
                 return evmEncoder.encodeGetTokenInfo(tokenInfo);
             }
             case ABI_ID_GET_FUNGIBLE_TOKEN_INFO -> {
-                final var wrapper =
-                        EvmFungibleTokenInfoPrecompile.decodeGetFungibleTokenInfo(input);
-                final var tokenInfo =
-                        tokenAccessor
-                                .evmInfoForToken(addressFromBytes(wrapper.token()))
-                                .orElse(null);
+                final var wrapper = EvmFungibleTokenInfoPrecompile.decodeGetFungibleTokenInfo(input);
+                final var tokenInfo = tokenAccessor
+                        .evmInfoForToken(addressFromBytes(wrapper.token()))
+                        .orElse(null);
 
                 validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
 
                 return evmEncoder.encodeGetFungibleTokenInfo(tokenInfo);
             }
             case ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO -> {
-                final var wrapper =
-                        EvmNonFungibleTokenInfoPrecompile.decodeGetNonFungibleTokenInfo(input);
-                final var tokenInfo =
-                        tokenAccessor
-                                .evmInfoForToken(addressFromBytes(wrapper.token()))
-                                .orElse(null);
+                final var wrapper = EvmNonFungibleTokenInfoPrecompile.decodeGetNonFungibleTokenInfo(input);
+                final var tokenInfo = tokenAccessor
+                        .evmInfoForToken(addressFromBytes(wrapper.token()))
+                        .orElse(null);
 
                 validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
                 final var nftAddress = addressFromBytes(wrapper.token());
@@ -131,9 +127,7 @@ public class ViewExecutor {
 
                 final var nonFungibleTokenInfo =
                         tokenAccessor.evmNftInfo(nftAddress, serialNo).orElse(null);
-                validateTrueOrRevert(
-                        nonFungibleTokenInfo != null,
-                        ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER);
+                validateTrueOrRevert(nonFungibleTokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER);
 
                 return evmEncoder.encodeGetNonFungibleTokenInfo(tokenInfo, nonFungibleTokenInfo);
             }
@@ -145,21 +139,17 @@ public class ViewExecutor {
                         ResponseCodeEnum.INVALID_TOKEN_ID);
 
                 final var isFrozen =
-                        tokenAccessor.isFrozen(
-                                addressFromBytes(wrapper.account()),
-                                addressFromBytes(wrapper.token()));
+                        tokenAccessor.isFrozen(addressFromBytes(wrapper.account()), addressFromBytes(wrapper.token()));
                 return evmEncoder.encodeIsFrozen(isFrozen);
             }
             case ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS -> {
-                final var wrapper =
-                        EvmGetTokenDefaultFreezeStatus.decodeTokenDefaultFreezeStatus(input);
+                final var wrapper = EvmGetTokenDefaultFreezeStatus.decodeTokenDefaultFreezeStatus(input);
 
                 validateTrueOrRevert(
                         tokenAccessor.isTokenAddress(addressFromBytes(wrapper.token())),
                         ResponseCodeEnum.INVALID_TOKEN_ID);
 
-                final var defaultFreezeStatus =
-                        tokenAccessor.defaultFreezeStatus(addressFromBytes(wrapper.token()));
+                final var defaultFreezeStatus = tokenAccessor.defaultFreezeStatus(addressFromBytes(wrapper.token()));
                 return evmEncoder.encodeGetTokenDefaultFreezeStatus(defaultFreezeStatus);
             }
             case ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS -> {
@@ -169,8 +159,7 @@ public class ViewExecutor {
                         tokenAccessor.isTokenAddress(addressFromBytes(wrapper.token())),
                         ResponseCodeEnum.INVALID_TOKEN_ID);
 
-                final var defaultKycStatus =
-                        tokenAccessor.defaultKycStatus(addressFromBytes(wrapper.token()));
+                final var defaultKycStatus = tokenAccessor.defaultKycStatus(addressFromBytes(wrapper.token()));
                 return evmEncoder.encodeGetTokenDefaultKycStatus(defaultKycStatus);
             }
             case ABI_ID_IS_KYC -> {
@@ -181,17 +170,14 @@ public class ViewExecutor {
                         ResponseCodeEnum.INVALID_TOKEN_ID);
 
                 final var isKyc =
-                        tokenAccessor.isKyc(
-                                addressFromBytes(wrapper.account()),
-                                addressFromBytes(wrapper.token()));
+                        tokenAccessor.isKyc(addressFromBytes(wrapper.account()), addressFromBytes(wrapper.token()));
                 return evmEncoder.encodeIsKyc(isKyc);
             }
             case ABI_ID_GET_TOKEN_CUSTOM_FEES -> {
                 final var wrapper = EvmTokenGetCustomFeesPrecompile.decodeTokenGetCustomFees(input);
-                final var customFees =
-                        tokenAccessor
-                                .infoForTokenCustomFees(addressFromBytes(wrapper.token()))
-                                .orElse(null);
+                final var customFees = tokenAccessor
+                        .infoForTokenCustomFees(addressFromBytes(wrapper.token()))
+                        .orElse(null);
 
                 validateTrueOrRevert(customFees != null, ResponseCodeEnum.INVALID_TOKEN_ID);
 
@@ -204,8 +190,7 @@ public class ViewExecutor {
                         tokenAccessor.isTokenAddress(addressFromBytes(wrapper.token())),
                         ResponseCodeEnum.INVALID_TOKEN_ID);
 
-                final var isToken =
-                        tokenAccessor.isTokenAddress(addressFromBytes((wrapper.token())));
+                final var isToken = tokenAccessor.isTokenAddress(addressFromBytes((wrapper.token())));
                 return evmEncoder.encodeIsToken(isToken);
             }
             case ABI_ID_GET_TOKEN_TYPE -> {
@@ -220,18 +205,14 @@ public class ViewExecutor {
             }
             case ABI_ID_GET_TOKEN_EXPIRY_INFO -> {
                 final var wrapper = EvmGetTokenExpiryInfoPrecompile.decodeGetTokenExpiryInfo(input);
-                final var tokenInfo =
-                        tokenAccessor
-                                .evmInfoForToken(addressFromBytes(wrapper.token()))
-                                .orElse(null);
+                final var tokenInfo = tokenAccessor
+                        .evmInfoForToken(addressFromBytes(wrapper.token()))
+                        .orElse(null);
 
                 validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
                 Objects.requireNonNull(tokenInfo);
-                final var expiryInfo =
-                        new TokenExpiryInfo(
-                                tokenInfo.getExpiry(),
-                                tokenInfo.getAutoRenewAccount(),
-                                tokenInfo.getAutoRenewPeriod());
+                final var expiryInfo = new TokenExpiryInfo(
+                        tokenInfo.getExpiry(), tokenInfo.getAutoRenewAccount(), tokenInfo.getAutoRenewPeriod());
 
                 return evmEncoder.encodeGetTokenExpiryInfo(expiryInfo);
             }
@@ -242,9 +223,7 @@ public class ViewExecutor {
                         tokenAccessor.isTokenAddress(addressFromBytes(wrapper.token())),
                         ResponseCodeEnum.INVALID_TOKEN_ID);
 
-                final var evmKey =
-                        tokenAccessor.keyOf(
-                                addressFromBytes(wrapper.token()), wrapper.tokenKeyType());
+                final var evmKey = tokenAccessor.keyOf(addressFromBytes(wrapper.token()), wrapper.tokenKeyType());
                 return evmEncoder.encodeGetTokenKey(evmKey);
             }
                 // Only view functions can be used inside a ContractCallLocal

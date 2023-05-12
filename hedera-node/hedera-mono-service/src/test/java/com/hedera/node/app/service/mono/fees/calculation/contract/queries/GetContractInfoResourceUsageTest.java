@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.contract.queries;
 
 import static com.hedera.test.utils.IdUtils.asContract;
@@ -56,19 +57,18 @@ class GetContractInfoResourceUsageTest {
     private static final String memo = "Stay cold...";
     private static final ContractID target = asContract("0.0.123");
     private static final ByteString ledgerId = ByteString.copyFromUtf8("0xff");
-    private static final Key aKey =
-            Key.newBuilder().setEd25519(ByteString.copyFrom("NONSENSE".getBytes())).build();
-    private static final ContractGetInfoResponse.ContractInfo info =
-            ContractGetInfoResponse.ContractInfo.newBuilder()
-                    .setLedgerId(ledgerId)
-                    .setAdminKey(aKey)
-                    .addAllTokenRelationships(
-                            List.of(
-                                    TokenRelationship.getDefaultInstance(),
-                                    TokenRelationship.getDefaultInstance(),
-                                    TokenRelationship.getDefaultInstance()))
-                    .setMemo(memo)
-                    .build();
+    private static final Key aKey = Key.newBuilder()
+            .setEd25519(ByteString.copyFrom("NONSENSE".getBytes()))
+            .build();
+    private static final ContractGetInfoResponse.ContractInfo info = ContractGetInfoResponse.ContractInfo.newBuilder()
+            .setLedgerId(ledgerId)
+            .setAdminKey(aKey)
+            .addAllTokenRelationships(List.of(
+                    TokenRelationship.getDefaultInstance(),
+                    TokenRelationship.getDefaultInstance(),
+                    TokenRelationship.getDefaultInstance()))
+            .setMemo(memo)
+            .build();
     private static final Query satisfiableAnswerOnly = contractInfoQuery(target, ANSWER_ONLY);
 
     private StateView view;
@@ -90,9 +90,7 @@ class GetContractInfoResourceUsageTest {
 
         view = mock(StateView.class);
         given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokensPerContractInfo);
-        given(
-                        view.infoForContract(
-                                target, aliasManager, maxTokensPerContractInfo, rewardCalculator))
+        given(view.infoForContract(target, aliasManager, maxTokensPerContractInfo, rewardCalculator))
                 .willReturn(Optional.of(info));
 
         estimator = mock(ContractGetInfoUsage.class);
@@ -106,8 +104,7 @@ class GetContractInfoResourceUsageTest {
         given(estimator.givenCurrentTokenAssocs(3)).willReturn(estimator);
         given(estimator.get()).willReturn(expected);
 
-        subject =
-                new GetContractInfoResourceUsage(aliasManager, dynamicProperties, rewardCalculator);
+        subject = new GetContractInfoResourceUsage(aliasManager, dynamicProperties, rewardCalculator);
     }
 
     @AfterEach
@@ -146,9 +143,7 @@ class GetContractInfoResourceUsageTest {
     @Test
     void onlySetsContractInfoInQueryCxtIfFound() {
         final var queryCtx = new HashMap<String, Object>();
-        given(
-                        view.infoForContract(
-                                target, aliasManager, maxTokensPerContractInfo, rewardCalculator))
+        given(view.infoForContract(target, aliasManager, maxTokensPerContractInfo, rewardCalculator))
                 .willReturn(Optional.empty());
 
         final var actual = subject.usageGiven(satisfiableAnswerOnly, view, queryCtx);
@@ -158,10 +153,9 @@ class GetContractInfoResourceUsageTest {
     }
 
     private static final Query contractInfoQuery(final ContractID id, final ResponseType type) {
-        final var op =
-                ContractGetInfoQuery.newBuilder()
-                        .setContractID(id)
-                        .setHeader(QueryHeader.newBuilder().setResponseType(type));
+        final var op = ContractGetInfoQuery.newBuilder()
+                .setContractID(id)
+                .setHeader(QueryHeader.newBuilder().setResponseType(type));
         return Query.newBuilder().setContractGetInfo(op).build();
     }
 }

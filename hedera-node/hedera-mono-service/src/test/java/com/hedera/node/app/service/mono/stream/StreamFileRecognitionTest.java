@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.stream;
 
 import static com.hedera.node.app.service.mono.stream.Release023xStreamType.RELEASE_023x_STREAM_TYPE;
@@ -41,78 +42,46 @@ class StreamFileRecognitionTest {
     public static final String NON_STREAM_FILE_NAME = "test.soc";
     public static final File NON_STREAM_FILE = new File(NON_STREAM_FILE_NAME);
 
-    private static final String IS_STREAM_FILE_ERROR_MSG =
-            "isStreamFile() returns unexpected result";
-    private static final String IS_STREAM_SIG_FILE_ERROR_MSG =
-            "isStreamSigFile() returns unexpected result";
+    private static final String IS_STREAM_FILE_ERROR_MSG = "isStreamFile() returns unexpected result";
+    private static final String IS_STREAM_SIG_FILE_ERROR_MSG = "isStreamSigFile() returns unexpected result";
 
     @Test
     void isStreamFileTest() {
         assertFalse(RELEASE_023x_STREAM_TYPE.isStreamFile(NULL_FILE), IS_STREAM_FILE_ERROR_MSG);
 
-        assertTrue(
-                RELEASE_023x_STREAM_TYPE.isStreamFile(RECORD_FILE_NAME), IS_STREAM_FILE_ERROR_MSG);
+        assertTrue(RELEASE_023x_STREAM_TYPE.isStreamFile(RECORD_FILE_NAME), IS_STREAM_FILE_ERROR_MSG);
         assertTrue(RELEASE_023x_STREAM_TYPE.isStreamFile(RECORD_FILE), IS_STREAM_FILE_ERROR_MSG);
 
-        assertFalse(
-                RELEASE_023x_STREAM_TYPE.isStreamFile(RECORD_SIG_FILE_NAME),
-                IS_STREAM_FILE_ERROR_MSG);
-        assertFalse(
-                RELEASE_023x_STREAM_TYPE.isStreamFile(RECORD_SIG_FILE), IS_STREAM_FILE_ERROR_MSG);
+        assertFalse(RELEASE_023x_STREAM_TYPE.isStreamFile(RECORD_SIG_FILE_NAME), IS_STREAM_FILE_ERROR_MSG);
+        assertFalse(RELEASE_023x_STREAM_TYPE.isStreamFile(RECORD_SIG_FILE), IS_STREAM_FILE_ERROR_MSG);
 
-        assertFalse(
-                RELEASE_023x_STREAM_TYPE.isStreamFile(NON_STREAM_FILE_NAME),
-                IS_STREAM_FILE_ERROR_MSG);
-        assertFalse(
-                RELEASE_023x_STREAM_TYPE.isStreamFile(NON_STREAM_FILE), IS_STREAM_FILE_ERROR_MSG);
+        assertFalse(RELEASE_023x_STREAM_TYPE.isStreamFile(NON_STREAM_FILE_NAME), IS_STREAM_FILE_ERROR_MSG);
+        assertFalse(RELEASE_023x_STREAM_TYPE.isStreamFile(NON_STREAM_FILE), IS_STREAM_FILE_ERROR_MSG);
 
-        assertFalse(
-                RELEASE_023x_STREAM_TYPE.isStreamFile(EVENT_FILE_NAME), IS_STREAM_FILE_ERROR_MSG);
+        assertFalse(RELEASE_023x_STREAM_TYPE.isStreamFile(EVENT_FILE_NAME), IS_STREAM_FILE_ERROR_MSG);
         assertFalse(RELEASE_023x_STREAM_TYPE.isStreamFile(EVENT_FILE), IS_STREAM_FILE_ERROR_MSG);
 
-        assertFalse(
-                RELEASE_023x_STREAM_TYPE.isStreamFile(EVENT_SIG_FILE_NAME),
-                IS_STREAM_FILE_ERROR_MSG);
-        assertFalse(
-                RELEASE_023x_STREAM_TYPE.isStreamFile(EVENT_SIG_FILE), IS_STREAM_FILE_ERROR_MSG);
+        assertFalse(RELEASE_023x_STREAM_TYPE.isStreamFile(EVENT_SIG_FILE_NAME), IS_STREAM_FILE_ERROR_MSG);
+        assertFalse(RELEASE_023x_STREAM_TYPE.isStreamFile(EVENT_SIG_FILE), IS_STREAM_FILE_ERROR_MSG);
     }
 
     @Test
     void isStreamSigFileTest() {
         assertFalse(RELEASE_023x_STREAM_TYPE.isStreamFile(NULL_FILE), IS_STREAM_SIG_FILE_ERROR_MSG);
 
-        assertTrue(
-                RELEASE_023x_STREAM_TYPE.isStreamSigFile(RECORD_SIG_FILE_NAME),
-                IS_STREAM_SIG_FILE_ERROR_MSG);
-        assertTrue(
-                RELEASE_023x_STREAM_TYPE.isStreamSigFile(RECORD_SIG_FILE),
-                IS_STREAM_SIG_FILE_ERROR_MSG);
+        assertTrue(RELEASE_023x_STREAM_TYPE.isStreamSigFile(RECORD_SIG_FILE_NAME), IS_STREAM_SIG_FILE_ERROR_MSG);
+        assertTrue(RELEASE_023x_STREAM_TYPE.isStreamSigFile(RECORD_SIG_FILE), IS_STREAM_SIG_FILE_ERROR_MSG);
 
-        assertFalse(
-                RELEASE_023x_STREAM_TYPE.isStreamSigFile(RECORD_FILE_NAME),
-                IS_STREAM_SIG_FILE_ERROR_MSG);
-        assertFalse(
-                RELEASE_023x_STREAM_TYPE.isStreamSigFile(RECORD_FILE),
-                IS_STREAM_SIG_FILE_ERROR_MSG);
+        assertFalse(RELEASE_023x_STREAM_TYPE.isStreamSigFile(RECORD_FILE_NAME), IS_STREAM_SIG_FILE_ERROR_MSG);
+        assertFalse(RELEASE_023x_STREAM_TYPE.isStreamSigFile(RECORD_FILE), IS_STREAM_SIG_FILE_ERROR_MSG);
 
-        assertFalse(
-                RELEASE_023x_STREAM_TYPE.isStreamSigFile(EVENT_FILE_NAME),
-                IS_STREAM_SIG_FILE_ERROR_MSG);
-        assertFalse(
-                RELEASE_023x_STREAM_TYPE.isStreamSigFile(EVENT_FILE), IS_STREAM_SIG_FILE_ERROR_MSG);
+        assertFalse(RELEASE_023x_STREAM_TYPE.isStreamSigFile(EVENT_FILE_NAME), IS_STREAM_SIG_FILE_ERROR_MSG);
+        assertFalse(RELEASE_023x_STREAM_TYPE.isStreamSigFile(EVENT_FILE), IS_STREAM_SIG_FILE_ERROR_MSG);
 
-        assertFalse(
-                RELEASE_023x_STREAM_TYPE.isStreamSigFile(EVENT_SIG_FILE_NAME),
-                IS_STREAM_SIG_FILE_ERROR_MSG);
-        assertFalse(
-                RELEASE_023x_STREAM_TYPE.isStreamSigFile(EVENT_SIG_FILE),
-                IS_STREAM_SIG_FILE_ERROR_MSG);
+        assertFalse(RELEASE_023x_STREAM_TYPE.isStreamSigFile(EVENT_SIG_FILE_NAME), IS_STREAM_SIG_FILE_ERROR_MSG);
+        assertFalse(RELEASE_023x_STREAM_TYPE.isStreamSigFile(EVENT_SIG_FILE), IS_STREAM_SIG_FILE_ERROR_MSG);
 
-        assertFalse(
-                RELEASE_023x_STREAM_TYPE.isStreamSigFile(NON_STREAM_FILE_NAME),
-                IS_STREAM_SIG_FILE_ERROR_MSG);
-        assertFalse(
-                RELEASE_023x_STREAM_TYPE.isStreamSigFile(NON_STREAM_FILE),
-                IS_STREAM_SIG_FILE_ERROR_MSG);
+        assertFalse(RELEASE_023x_STREAM_TYPE.isStreamSigFile(NON_STREAM_FILE_NAME), IS_STREAM_SIG_FILE_ERROR_MSG);
+        assertFalse(RELEASE_023x_STREAM_TYPE.isStreamSigFile(NON_STREAM_FILE), IS_STREAM_SIG_FILE_ERROR_MSG);
     }
 }

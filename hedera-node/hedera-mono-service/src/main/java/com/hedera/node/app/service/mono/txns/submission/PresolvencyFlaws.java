@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.submission;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
@@ -26,8 +27,8 @@ import org.apache.commons.lang3.tuple.Pair;
 
 /** Error response factory that caches well-known responses by status code. */
 public final class PresolvencyFlaws {
-    static final Map<ResponseCodeEnum, Pair<TxnValidityAndFeeReq, SignedTxnAccessor>>
-            WELL_KNOWN_FLAWS = new EnumMap<>(ResponseCodeEnum.class);
+    static final Map<ResponseCodeEnum, Pair<TxnValidityAndFeeReq, SignedTxnAccessor>> WELL_KNOWN_FLAWS =
+            new EnumMap<>(ResponseCodeEnum.class);
 
     static {
         putTo(WELL_KNOWN_FLAWS, PLATFORM_NOT_ACTIVE);
@@ -51,8 +52,7 @@ public final class PresolvencyFlaws {
         putTo(WELL_KNOWN_FLAWS, DUPLICATE_TRANSACTION);
     }
 
-    static Pair<TxnValidityAndFeeReq, SignedTxnAccessor> responseForFlawed(
-            final ResponseCodeEnum status) {
+    static Pair<TxnValidityAndFeeReq, SignedTxnAccessor> responseForFlawed(final ResponseCodeEnum status) {
         final var response = WELL_KNOWN_FLAWS.get(status);
         return (null != response) ? response : failureWithUnknownFeeReq(status);
     }

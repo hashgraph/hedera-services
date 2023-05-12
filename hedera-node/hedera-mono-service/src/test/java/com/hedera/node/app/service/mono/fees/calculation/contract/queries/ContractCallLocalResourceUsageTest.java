@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.contract.queries;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -85,34 +86,54 @@ class ContractCallLocalResourceUsageTest {
     private static final Query satisfiableAnswerOnly = localCallQuery(target, ANSWER_ONLY);
     private static final GlobalDynamicProperties properties = new MockGlobalDynamicProps();
 
-    @Mock private AccountStore accountStore;
-    @Mock private StateView view;
-    @Mock private SmartContractFeeBuilder usageEstimator;
-    @Mock private CallLocalEvmTxProcessor evmTxProcessor;
-    @Mock private EntityIdSource ids;
-    @Mock private OptionValidator validator;
-    @Mock private NodeLocalProperties nodeLocalProperties;
-    @Mock private AliasManager aliasManager;
-    @Mock private BlockMetaSource blockMetaSource;
-    @Mock private StaticBlockMetaProvider blockMetaProvider;
+    @Mock
+    private AccountStore accountStore;
 
-    @LoggingTarget private LogCaptor logCaptor;
+    @Mock
+    private StateView view;
 
-    @LoggingSubject private ContractCallLocalResourceUsage subject;
+    @Mock
+    private SmartContractFeeBuilder usageEstimator;
+
+    @Mock
+    private CallLocalEvmTxProcessor evmTxProcessor;
+
+    @Mock
+    private EntityIdSource ids;
+
+    @Mock
+    private OptionValidator validator;
+
+    @Mock
+    private NodeLocalProperties nodeLocalProperties;
+
+    @Mock
+    private AliasManager aliasManager;
+
+    @Mock
+    private BlockMetaSource blockMetaSource;
+
+    @Mock
+    private StaticBlockMetaProvider blockMetaProvider;
+
+    @LoggingTarget
+    private LogCaptor logCaptor;
+
+    @LoggingSubject
+    private ContractCallLocalResourceUsage subject;
 
     @BeforeEach
     void setup() {
-        subject =
-                new ContractCallLocalResourceUsage(
-                        usageEstimator,
-                        properties,
-                        nodeLocalProperties,
-                        accountStore,
-                        () -> evmTxProcessor,
-                        ids,
-                        validator,
-                        aliasManager,
-                        blockMetaProvider);
+        subject = new ContractCallLocalResourceUsage(
+                usageEstimator,
+                properties,
+                nodeLocalProperties,
+                accountStore,
+                () -> evmTxProcessor,
+                ids,
+                validator,
+                aliasManager,
+                blockMetaProvider);
     }
 
     @Test
@@ -127,32 +148,27 @@ class ContractCallLocalResourceUsageTest {
     @Test
     void setsResultInQueryCxtIfPresent() {
         final var queryCtx = new HashMap<String, Object>();
-        final var transactionProcessingResult =
-                TransactionProcessingResult.successful(
-                        new ArrayList<>(),
-                        0,
-                        0,
-                        1,
-                        Bytes.EMPTY,
-                        callerID.asEvmAddress(),
-                        Collections.emptyMap(),
-                        Collections.emptyList());
+        final var transactionProcessingResult = TransactionProcessingResult.successful(
+                new ArrayList<>(),
+                0,
+                0,
+                1,
+                Bytes.EMPTY,
+                callerID.asEvmAddress(),
+                Collections.emptyMap(),
+                Collections.emptyList());
         final var response = okResponse(transactionProcessingResult);
         final var estimateResponse = subject.dummyResponse(target);
         final var expected = expectedUsage();
 
         given(accountStore.loadAccount(any())).willReturn(new Account(Id.fromGrpcContract(target)));
-        given(accountStore.loadContract(any()))
-                .willReturn(new Account(Id.fromGrpcContract(target)));
+        given(accountStore.loadContract(any())).willReturn(new Account(Id.fromGrpcContract(target)));
         given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any()))
                 .willReturn(transactionProcessingResult);
-        given(
-                        usageEstimator.getContractCallLocalFeeMatrices(
-                                params.size(), response.getFunctionResult(), ANSWER_ONLY))
+        given(usageEstimator.getContractCallLocalFeeMatrices(params.size(), response.getFunctionResult(), ANSWER_ONLY))
                 .willReturn(nonGasUsage);
-        given(
-                        usageEstimator.getContractCallLocalFeeMatrices(
-                                params.size(), estimateResponse.getFunctionResult(), ANSWER_ONLY))
+        given(usageEstimator.getContractCallLocalFeeMatrices(
+                        params.size(), estimateResponse.getFunctionResult(), ANSWER_ONLY))
                 .willReturn(nonGasUsage);
         given(blockMetaProvider.getSource()).willReturn(Optional.of(blockMetaSource));
 
@@ -170,9 +186,7 @@ class ContractCallLocalResourceUsageTest {
     void treatsAnswerOnlyEstimateAsExpected() {
         final var response = subject.dummyResponse(target);
         final var expected = expectedUsage();
-        given(
-                        usageEstimator.getContractCallLocalFeeMatrices(
-                                params.size(), response.getFunctionResult(), ANSWER_ONLY))
+        given(usageEstimator.getContractCallLocalFeeMatrices(params.size(), response.getFunctionResult(), ANSWER_ONLY))
                 .willReturn(nonGasUsage);
 
         final var actualUsage = subject.usageGivenType(satisfiableCostAnswer, view, ANSWER_ONLY);
@@ -185,13 +199,9 @@ class ContractCallLocalResourceUsageTest {
     void translatesExecutionException() {
         final var queryCtx = new HashMap<String, Object>();
 
-        assertThrows(
-                IllegalStateException.class,
-                () -> subject.usageGiven(satisfiableAnswerOnly, view, queryCtx));
+        assertThrows(IllegalStateException.class, () -> subject.usageGiven(satisfiableAnswerOnly, view, queryCtx));
         assertFalse(queryCtx.containsKey(ContractCallLocalAnswer.CONTRACT_CALL_LOCAL_CTX_KEY));
-        assertThat(
-                logCaptor.warnLogs(),
-                contains(startsWith("Usage estimation unexpectedly failed for")));
+        assertThat(logCaptor.warnLogs(), contains(startsWith("Usage estimation unexpectedly failed for")));
     }
 
     @Test
@@ -206,12 +216,11 @@ class ContractCallLocalResourceUsageTest {
     }
 
     private static Query localCallQuery(final ContractID id, final ResponseType type) {
-        final var op =
-                ContractCallLocalQuery.newBuilder()
-                        .setContractID(id)
-                        .setGas(gas)
-                        .setFunctionParameters(params)
-                        .setHeader(QueryHeader.newBuilder().setResponseType(type).build());
+        final var op = ContractCallLocalQuery.newBuilder()
+                .setContractID(id)
+                .setGas(gas)
+                .setFunctionParameters(params)
+                .setHeader(QueryHeader.newBuilder().setResponseType(type).build());
         return Query.newBuilder().setContractCallLocal(op).build();
     }
 
@@ -221,33 +230,30 @@ class ContractCallLocalResourceUsageTest {
 
     private ContractCallLocalResponse response(final TransactionProcessingResult result) {
         return ContractCallLocalResponse.newBuilder()
-                .setHeader(
-                        ResponseHeader.newBuilder()
-                                .setNodeTransactionPrecheckCode(ResponseCodeEnum.OK))
+                .setHeader(ResponseHeader.newBuilder().setNodeTransactionPrecheckCode(ResponseCodeEnum.OK))
                 .setFunctionResult(result.toGrpc())
                 .build();
     }
 
-    private static final FeeData nonGasUsage =
-            FeeData.newBuilder()
-                    .setNodedata(
-                            FeeComponents.newBuilder()
-                                    .setMin(1)
-                                    .setMax(1_000_000)
-                                    .setConstant(1)
-                                    .setBpt(1)
-                                    .setVpt(1)
-                                    .setRbh(1)
-                                    .setSbh(1)
-                                    .setGas(0)
-                                    .setTv(1)
-                                    .setBpr(1)
-                                    .setSbpr(1))
-                    .build();
+    private static final FeeData nonGasUsage = FeeData.newBuilder()
+            .setNodedata(FeeComponents.newBuilder()
+                    .setMin(1)
+                    .setMax(1_000_000)
+                    .setConstant(1)
+                    .setBpt(1)
+                    .setVpt(1)
+                    .setRbh(1)
+                    .setSbh(1)
+                    .setGas(0)
+                    .setTv(1)
+                    .setBpr(1)
+                    .setSbpr(1))
+            .build();
 
     private static final FeeData expectedUsage() {
         return nonGasUsage.toBuilder()
-                .setNodedata(nonGasUsage.toBuilder().getNodedataBuilder().setGas(gas).build())
+                .setNodedata(
+                        nonGasUsage.toBuilder().getNodedataBuilder().setGas(gas).build())
                 .build();
     }
 }

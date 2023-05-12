@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.throttling;
 
 import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions;
@@ -40,8 +41,7 @@ public class HapiThrottling implements FunctionalityThrottling {
     }
 
     @Override
-    public synchronized boolean shouldThrottleQuery(
-            HederaFunctionality queryFunction, Query query) {
+    public synchronized boolean shouldThrottleQuery(HederaFunctionality queryFunction, Query query) {
         return delegate.shouldThrottleQuery(queryFunction, Instant.now(), query);
     }
 

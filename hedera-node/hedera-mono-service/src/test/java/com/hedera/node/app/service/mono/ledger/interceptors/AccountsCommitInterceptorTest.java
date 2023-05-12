@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.interceptors;
 
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.BALANCE;
@@ -39,8 +40,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class AccountsCommitInterceptorTest {
 
-    @Mock private AccountUsageTracking usageTracking;
-    @Mock private SideEffectsTracker sideEffectsTracker;
+    @Mock
+    private AccountUsageTracking usageTracking;
+
+    @Mock
+    private SideEffectsTracker sideEffectsTracker;
 
     private AccountsCommitInterceptor subject;
 
@@ -70,24 +74,20 @@ class AccountsCommitInterceptorTest {
 
     @Test
     void failsFastOnImpossibleBalance() {
-        final EntityChangeSet<AccountID, HederaAccount, AccountProperty>
-                impossibleNewAccountBalance = new EntityChangeSet<>();
+        final EntityChangeSet<AccountID, HederaAccount, AccountProperty> impossibleNewAccountBalance =
+                new EntityChangeSet<>();
         impossibleNewAccountBalance.include(idWith(1234L), null, Map.of(BALANCE, -1L));
-        Assertions.assertThrows(
-                IllegalStateException.class, () -> subject.preview(impossibleNewAccountBalance));
+        Assertions.assertThrows(IllegalStateException.class, () -> subject.preview(impossibleNewAccountBalance));
 
-        final EntityChangeSet<AccountID, HederaAccount, AccountProperty>
-                impossibleExtantAccountBalance = new EntityChangeSet<>();
-        impossibleExtantAccountBalance.include(
-                idWith(1234L), new OnDiskAccount(), Map.of(BALANCE, -1L));
-        Assertions.assertThrows(
-                IllegalStateException.class, () -> subject.preview(impossibleExtantAccountBalance));
+        final EntityChangeSet<AccountID, HederaAccount, AccountProperty> impossibleExtantAccountBalance =
+                new EntityChangeSet<>();
+        impossibleExtantAccountBalance.include(idWith(1234L), new OnDiskAccount(), Map.of(BALANCE, -1L));
+        Assertions.assertThrows(IllegalStateException.class, () -> subject.preview(impossibleExtantAccountBalance));
     }
 
     private EntityChangeSet<AccountID, HederaAccount, AccountProperty> pendingChanges(
             final boolean includeContract, final boolean includeAccounts) {
-        final EntityChangeSet<AccountID, HederaAccount, AccountProperty> pendingChanges =
-                new EntityChangeSet<>();
+        final EntityChangeSet<AccountID, HederaAccount, AccountProperty> pendingChanges = new EntityChangeSet<>();
         if (includeAccounts) {
             pendingChanges.include(idWith(1234L), null, Map.of(IS_SMART_CONTRACT, false));
             pendingChanges.include(idWith(1236L), null, Map.of());

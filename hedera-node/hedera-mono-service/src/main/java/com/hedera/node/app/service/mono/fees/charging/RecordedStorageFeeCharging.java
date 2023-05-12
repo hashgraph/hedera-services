@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.charging;
 
 import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
@@ -104,17 +105,14 @@ public class RecordedStorageFeeCharging implements StorageFeeCharging {
             final var accountsCommitInterceptor = new AccountsCommitInterceptor(sideEffects);
             wrappedAccounts.setCommitInterceptor(accountsCommitInterceptor);
 
-            chargeStorageFeesInternal(
-                    totalKvPairs, newUsageInfos, storagePriceTiers, wrappedAccounts);
+            chargeStorageFeesInternal(totalKvPairs, newUsageInfos, storagePriceTiers, wrappedAccounts);
             wrappedAccounts.commit();
 
             final var charges = sideEffects.getNetTrackedHbarChanges();
             if (!charges.isEmpty()) {
                 final var synthBody = syntheticTxnFactory.synthHbarTransfer(charges);
-                final var synthRecord =
-                        creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, MEMO);
-                recordsHistorian.trackFollowingChildRecord(
-                        DEFAULT_SOURCE_ID, synthBody, synthRecord, NO_SIDECARS);
+                final var synthRecord = creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, MEMO);
+                recordsHistorian.trackFollowingChildRecord(DEFAULT_SOURCE_ID, synthBody, synthRecord, NO_SIDECARS);
             }
         }
     }
@@ -130,32 +128,24 @@ public class RecordedStorageFeeCharging implements StorageFeeCharging {
         final var thisSecond = now.getEpochSecond();
 
         if (!newUsageInfos.isEmpty()) {
-            newUsageInfos.forEach(
-                    (num, usageInfo) -> {
-                        if (usageInfo.hasPositiveUsageDelta()) {
-                            final var id = keyFor(num);
-                            var lifetime = (long) accounts.get(id, EXPIRY) - thisSecond;
-                            if (lifetime < 0) {
-                                // This is possible if the contract is expired with funds, but
-                                // hasn't been visited recently in the auto-renew cycle; we can
-                                // use its auto-renew period as an approximation
-                                lifetime = (long) accounts.get(id, AUTO_RENEW_PERIOD);
-                            }
-                            final var fee =
-                                    storagePriceTiers.priceOfPendingUsage(
-                                            rate, totalKvPairs, lifetime, usageInfo);
-                            if (fee > 0) {
-                                final var autoRenewId =
-                                        (EntityId) accounts.get(id, AUTO_RENEW_ACCOUNT_ID);
-                                nonHapiFeeCharging.chargeNonHapiFee(
-                                        autoRenewId,
-                                        id,
-                                        fee,
-                                        accounts,
-                                        INSUFFICIENT_BALANCES_FOR_STORAGE_RENT);
-                            }
-                        }
-                    });
+            newUsageInfos.forEach((num, usageInfo) -> {
+                if (usageInfo.hasPositiveUsageDelta()) {
+                    final var id = keyFor(num);
+                    var lifetime = (long) accounts.get(id, EXPIRY) - thisSecond;
+                    if (lifetime < 0) {
+                        // This is possible if the contract is expired with funds, but
+                        // hasn't been visited recently in the auto-renew cycle; we can
+                        // use its auto-renew period as an approximation
+                        lifetime = (long) accounts.get(id, AUTO_RENEW_PERIOD);
+                    }
+                    final var fee = storagePriceTiers.priceOfPendingUsage(rate, totalKvPairs, lifetime, usageInfo);
+                    if (fee > 0) {
+                        final var autoRenewId = (EntityId) accounts.get(id, AUTO_RENEW_ACCOUNT_ID);
+                        nonHapiFeeCharging.chargeNonHapiFee(
+                                autoRenewId, id, fee, accounts, INSUFFICIENT_BALANCES_FOR_STORAGE_RENT);
+                    }
+                }
+            });
         }
     }
 

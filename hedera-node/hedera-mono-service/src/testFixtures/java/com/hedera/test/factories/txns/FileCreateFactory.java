@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.factories.txns;
 
 import static com.hedera.test.factories.keys.NodeFactory.ed25519;
@@ -46,9 +47,8 @@ public class FileCreateFactory extends SignedTxnFactory<FileCreateFactory> {
 
     @Override
     protected void customizeTxn(final TransactionBody.Builder txn) {
-        final FileCreateTransactionBody.Builder op =
-                FileCreateTransactionBody.newBuilder()
-                        .setKeys(waclKt.asKey(keyFactory).getKeyList());
+        final FileCreateTransactionBody.Builder op = FileCreateTransactionBody.newBuilder()
+                .setKeys(waclKt.asKey(keyFactory).getKeyList());
         txn.setFileCreate(op);
     }
 

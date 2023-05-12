@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.expiry;
 
 import static java.util.Comparator.comparing;
@@ -54,9 +55,9 @@ public class ExpiryManager {
     entity numbers are unique---the downstream comparator below will guarantee a fixed
     ordering for ExpiryEvents with the same expiry. The reason for different scheduled entities having
     the same expiry is that we round expiration times to a consensus second. */
-    private static final Comparator<ExpiryEvent<Pair<Long, Consumer<EntityId>>>> PQ_CMP =
-            Comparator.comparingLong(ExpiryEvent<Pair<Long, Consumer<EntityId>>>::expiry)
-                    .thenComparingLong(ee -> ee.id().getKey());
+    private static final Comparator<ExpiryEvent<Pair<Long, Consumer<EntityId>>>> PQ_CMP = Comparator.comparingLong(
+                    ExpiryEvent<Pair<Long, Consumer<EntityId>>>::expiry)
+            .thenComparingLong(ee -> ee.id().getKey());
 
     private final long shard;
     private final long realm;
@@ -65,8 +66,7 @@ public class ExpiryManager {
     private final Map<TransactionID, TxnIdRecentHistory> txnHistories;
     private final Supplier<RecordsStorageAdapter> payerRecords;
 
-    private final MonotonicFullQueueExpiries<Long> payerRecordExpiries =
-            new MonotonicFullQueueExpiries<>();
+    private final MonotonicFullQueueExpiries<Long> payerRecordExpiries = new MonotonicFullQueueExpiries<>();
     private final PriorityQueueExpiries<Pair<Long, Consumer<EntityId>>> shortLivedEntityExpiries =
             new PriorityQueueExpiries<>(PQ_CMP);
 
@@ -100,8 +100,7 @@ public class ExpiryManager {
      * @param event the expiration event to track
      * @param expiry the earliest consensus second at which it should fire
      */
-    public void trackExpirationEvent(
-            final Pair<Long, Consumer<EntityId>> event, final long expiry) {
+    public void trackExpirationEvent(final Pair<Long, Consumer<EntityId>> event, final long expiry) {
         shortLivedEntityExpiries.track(event, expiry);
     }
 
@@ -121,12 +120,9 @@ public class ExpiryManager {
         final var payerExpiries = new ArrayList<Map.Entry<Long, Long>>();
         payerRecords
                 .get()
-                .doForEach(
-                        (payerNum, accountRecords) ->
-                                stageExpiringRecords(
-                                        payerNum.longValue(), accountRecords, payerExpiries));
-        payerExpiries.sort(
-                comparing(Map.Entry<Long, Long>::getValue).thenComparing(Map.Entry::getKey));
+                .doForEach((payerNum, accountRecords) ->
+                        stageExpiringRecords(payerNum.longValue(), accountRecords, payerExpiries));
+        payerExpiries.sort(comparing(Map.Entry<Long, Long>::getValue).thenComparing(Map.Entry::getKey));
         payerExpiries.forEach(entry -> payerRecordExpiries.track(entry.getKey(), entry.getValue()));
 
         txnHistories.values().forEach(TxnIdRecentHistory::observeStaged);
@@ -183,9 +179,7 @@ public class ExpiryManager {
     }
 
     private void stageExpiringRecords(
-            final Long num,
-            final FCQueue<ExpirableTxnRecord> records,
-            final List<Map.Entry<Long, Long>> expiries) {
+            final Long num, final FCQueue<ExpirableTxnRecord> records, final List<Map.Entry<Long, Long>> expiries) {
         long lastAdded = -1;
         for (final var expirableTxnRecord : records) {
             stage(expirableTxnRecord);
@@ -199,9 +193,7 @@ public class ExpiryManager {
 
     private void stage(final ExpirableTxnRecord expirableTxnRecord) {
         final var txnId = expirableTxnRecord.getTxnId().toGrpc();
-        txnHistories
-                .computeIfAbsent(txnId, ignore -> new TxnIdRecentHistory())
-                .stage(expirableTxnRecord);
+        txnHistories.computeIfAbsent(txnId, ignore -> new TxnIdRecentHistory()).stage(expirableTxnRecord);
     }
 
     private EntityId entityWith(final long num) {

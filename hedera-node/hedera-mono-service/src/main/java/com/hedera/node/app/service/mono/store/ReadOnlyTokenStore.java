@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
@@ -139,8 +140,7 @@ public class ReadOnlyTokenStore {
      * @return a usable model of the token-account relationship or null if the requested
      *     relationship doesnt exist
      */
-    public TokenRelationship loadPossiblyMissingTokenRelationship(
-            final Token token, final Account account) {
+    public TokenRelationship loadPossiblyMissingTokenRelationship(final Token token, final Account account) {
         final var merkleTokenRel = getMerkleTokenRelationship(token, account);
 
         if (merkleTokenRel == null) {
@@ -302,16 +302,13 @@ public class ReadOnlyTokenStore {
         validateTrue(uniqueTokenAdapter != null, INVALID_NFT_ID);
     }
 
-    private void initModelAccounts(
-            final Token token, final EntityId treasuryId, @Nullable final EntityId autoRenewId) {
+    private void initModelAccounts(final Token token, final EntityId treasuryId, @Nullable final EntityId autoRenewId) {
         if (autoRenewId != null) {
-            final var autoRenewIdentifier =
-                    new Id(autoRenewId.shard(), autoRenewId.realm(), autoRenewId.num());
+            final var autoRenewIdentifier = new Id(autoRenewId.shard(), autoRenewId.realm(), autoRenewId.num());
             final var autoRenew = accountStore.loadAccount(autoRenewIdentifier);
             token.setAutoRenewAccount(autoRenew);
         }
-        final var treasuryIdentifier =
-                new Id(treasuryId.shard(), treasuryId.realm(), treasuryId.num());
+        final var treasuryIdentifier = new Id(treasuryId.shard(), treasuryId.realm(), treasuryId.num());
         final var treasury = accountStore.loadAccount(treasuryIdentifier);
         token.setTreasury(treasury);
     }
@@ -336,18 +333,21 @@ public class ReadOnlyTokenStore {
         token.setAutoRenewPeriod(immutableToken.autoRenewPeriod());
     }
 
-    private void initModelFields(
-            final UniqueToken uniqueToken, final UniqueTokenAdapter immutableUniqueToken) {
+    private void initModelFields(final UniqueToken uniqueToken, final UniqueTokenAdapter immutableUniqueToken) {
         if (immutableUniqueToken.isVirtual()) {
             uniqueToken.setCreationTime(immutableUniqueToken.uniqueTokenValue().getCreationTime());
             uniqueToken.setMetadata(immutableUniqueToken.uniqueTokenValue().getMetadata());
-            uniqueToken.setOwner(immutableUniqueToken.uniqueTokenValue().getOwner().asId());
-            uniqueToken.setSpender(immutableUniqueToken.uniqueTokenValue().getSpender().asId());
+            uniqueToken.setOwner(
+                    immutableUniqueToken.uniqueTokenValue().getOwner().asId());
+            uniqueToken.setSpender(
+                    immutableUniqueToken.uniqueTokenValue().getSpender().asId());
         } else {
             uniqueToken.setCreationTime(immutableUniqueToken.merkleUniqueToken().getCreationTime());
             uniqueToken.setMetadata(immutableUniqueToken.merkleUniqueToken().getMetadata());
-            uniqueToken.setOwner(immutableUniqueToken.merkleUniqueToken().getOwner().asId());
-            uniqueToken.setSpender(immutableUniqueToken.merkleUniqueToken().getSpender().asId());
+            uniqueToken.setOwner(
+                    immutableUniqueToken.merkleUniqueToken().getOwner().asId());
+            uniqueToken.setSpender(
+                    immutableUniqueToken.merkleUniqueToken().getSpender().asId());
         }
     }
 

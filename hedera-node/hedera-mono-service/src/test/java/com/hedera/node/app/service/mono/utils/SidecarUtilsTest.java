@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.utils;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -42,19 +43,18 @@ class SidecarUtilsTest {
         final var runtimeCode = "runtimeCode".getBytes();
 
         // when
-        final var bytecodeSidecar =
-                SidecarUtils.createContractBytecodeSidecarFrom(contract, initCode, runtimeCode)
-                        .build();
+        final var bytecodeSidecar = SidecarUtils.createContractBytecodeSidecarFrom(contract, initCode, runtimeCode)
+                .build();
 
         // then
-        final var expectedBytecodes =
-                ContractBytecode.newBuilder()
-                        .setContractId(contract)
-                        .setInitcode(ByteString.copyFrom(initCode))
-                        .setRuntimeBytecode(ByteString.copyFrom(runtimeCode))
-                        .build();
-        final var expectedTransactionSidecarRecord =
-                TransactionSidecarRecord.newBuilder().setBytecode(expectedBytecodes).build();
+        final var expectedBytecodes = ContractBytecode.newBuilder()
+                .setContractId(contract)
+                .setInitcode(ByteString.copyFrom(initCode))
+                .setRuntimeBytecode(ByteString.copyFrom(runtimeCode))
+                .build();
+        final var expectedTransactionSidecarRecord = TransactionSidecarRecord.newBuilder()
+                .setBytecode(expectedBytecodes)
+                .build();
         assertEquals(expectedTransactionSidecarRecord, bytecodeSidecar);
     }
 
@@ -65,17 +65,17 @@ class SidecarUtilsTest {
         final var runtimeCode = "runtimeCode".getBytes();
 
         // when
-        final var bytecodeSidecar =
-                SidecarUtils.createContractBytecodeSidecarFrom(contract, runtimeCode).build();
+        final var bytecodeSidecar = SidecarUtils.createContractBytecodeSidecarFrom(contract, runtimeCode)
+                .build();
 
         // then
-        final var expectedBytecodes =
-                ContractBytecode.newBuilder()
-                        .setContractId(contract)
-                        .setRuntimeBytecode(ByteString.copyFrom(runtimeCode))
-                        .build();
-        final var expectedTransactionSidecarRecord =
-                TransactionSidecarRecord.newBuilder().setBytecode(expectedBytecodes).build();
+        final var expectedBytecodes = ContractBytecode.newBuilder()
+                .setContractId(contract)
+                .setRuntimeBytecode(ByteString.copyFrom(runtimeCode))
+                .build();
+        final var expectedTransactionSidecarRecord = TransactionSidecarRecord.newBuilder()
+                .setBytecode(expectedBytecodes)
+                .build();
         assertEquals(expectedTransactionSidecarRecord, bytecodeSidecar);
     }
 
@@ -85,14 +85,16 @@ class SidecarUtilsTest {
         final var initCode = "initCode".getBytes();
 
         // when
-        final var bytecodeSidecar =
-                SidecarUtils.createContractBytecodeSidecarForFailedCreate(initCode).build();
+        final var bytecodeSidecar = SidecarUtils.createContractBytecodeSidecarForFailedCreate(initCode)
+                .build();
 
         // then
-        final var expectedBytecodes =
-                ContractBytecode.newBuilder().setInitcode(ByteString.copyFrom(initCode)).build();
-        final var expectedTransactionSidecarRecord =
-                TransactionSidecarRecord.newBuilder().setBytecode(expectedBytecodes).build();
+        final var expectedBytecodes = ContractBytecode.newBuilder()
+                .setInitcode(ByteString.copyFrom(initCode))
+                .build();
+        final var expectedTransactionSidecarRecord = TransactionSidecarRecord.newBuilder()
+                .setBytecode(expectedBytecodes)
+                .build();
         assertEquals(expectedTransactionSidecarRecord, bytecodeSidecar);
     }
 
@@ -110,25 +112,18 @@ class SidecarUtilsTest {
                 SidecarUtils.createStateChangesSidecarFrom(stateChanges).build();
 
         // then
-        final var expectedStorageChange =
-                StorageChange.newBuilder()
-                        .setSlot(ByteString.copyFrom(slot.toArrayUnsafe()))
-                        .setValueRead(ByteString.copyFrom(valueRead.toArrayUnsafe()))
-                        .build();
-        final var expectedTransactionSidecarRecord =
-                TransactionSidecarRecord.newBuilder()
-                        .setStateChanges(
-                                ContractStateChanges.newBuilder()
-                                        .addContractStateChanges(
-                                                ContractStateChange.newBuilder()
-                                                        .setContractId(
-                                                                EntityIdUtils
-                                                                        .contractIdFromEvmAddress(
-                                                                                address))
-                                                        .addStorageChanges(expectedStorageChange)
-                                                        .build())
-                                        .build())
-                        .build();
+        final var expectedStorageChange = StorageChange.newBuilder()
+                .setSlot(ByteString.copyFrom(slot.toArrayUnsafe()))
+                .setValueRead(ByteString.copyFrom(valueRead.toArrayUnsafe()))
+                .build();
+        final var expectedTransactionSidecarRecord = TransactionSidecarRecord.newBuilder()
+                .setStateChanges(ContractStateChanges.newBuilder()
+                        .addContractStateChanges(ContractStateChange.newBuilder()
+                                .setContractId(EntityIdUtils.contractIdFromEvmAddress(address))
+                                .addStorageChanges(expectedStorageChange)
+                                .build())
+                        .build())
+                .build();
         assertEquals(expectedTransactionSidecarRecord, stateChangesSidecar);
     }
 
@@ -136,26 +131,17 @@ class SidecarUtilsTest {
     void stripsLeadingZerosInChangeRepresentation() {
         final var slot = Bytes.wrap(Address.BLS12_G1MULTIEXP.toArray());
         final var access =
-                Pair.of(
-                        Bytes.of(Address.BLS12_MAP_FP2_TO_G2.toArray()),
-                        Bytes.of(Address.BLS12_G1MUL.toArray()));
-        final var expected =
-                StorageChange.newBuilder()
-                        .setSlot(
-                                ByteString.copyFrom(
-                                        Address.BLS12_G1MULTIEXP.trimLeadingZeros().toArray()))
-                        .setValueRead(
-                                ByteString.copyFrom(
-                                        Address.BLS12_MAP_FP2_TO_G2.trimLeadingZeros().toArray()))
-                        .setValueWritten(
-                                BytesValue.newBuilder()
-                                        .setValue(
-                                                ByteString.copyFrom(
-                                                        Address.BLS12_G1MUL
-                                                                .trimLeadingZeros()
-                                                                .toArray()))
-                                        .build())
-                        .build();
+                Pair.of(Bytes.of(Address.BLS12_MAP_FP2_TO_G2.toArray()), Bytes.of(Address.BLS12_G1MUL.toArray()));
+        final var expected = StorageChange.newBuilder()
+                .setSlot(ByteString.copyFrom(
+                        Address.BLS12_G1MULTIEXP.trimLeadingZeros().toArray()))
+                .setValueRead(ByteString.copyFrom(
+                        Address.BLS12_MAP_FP2_TO_G2.trimLeadingZeros().toArray()))
+                .setValueWritten(BytesValue.newBuilder()
+                        .setValue(ByteString.copyFrom(
+                                Address.BLS12_G1MUL.trimLeadingZeros().toArray()))
+                        .build())
+                .build();
         final var actual = SidecarUtils.trimmedGrpc(slot, access);
         assertEquals(expected, actual.build());
     }

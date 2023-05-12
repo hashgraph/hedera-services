@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.utils;
 
 import java.io.File;
@@ -30,33 +31,28 @@ public class TestFileUtils {
             return;
         }
 
-        Files.walkFileTree(
-                Paths.get(loc),
-                new SimpleFileVisitor<>() {
-                    @Override
-                    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
-                            throws IOException {
-                        Files.delete(file);
-                        return FileVisitResult.CONTINUE;
-                    }
+        Files.walkFileTree(Paths.get(loc), new SimpleFileVisitor<>() {
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                Files.delete(file);
+                return FileVisitResult.CONTINUE;
+            }
 
-                    @Override
-                    public FileVisitResult postVisitDirectory(Path dir, IOException e)
-                            throws IOException {
-                        if (e == null) {
-                            Files.delete(dir);
-                            return FileVisitResult.CONTINUE;
-                        } else {
-                            throw e;
-                        }
-                    }
-                });
+            @Override
+            public FileVisitResult postVisitDirectory(Path dir, IOException e) throws IOException {
+                if (e == null) {
+                    Files.delete(dir);
+                    return FileVisitResult.CONTINUE;
+                } else {
+                    throw e;
+                }
+            }
+        });
     }
 
     /** Convenience method for adding the OS file separator to a path */
     public static String toPath(final File dir, final String filename) {
-        var withSeparator =
-                filename.startsWith(File.separator) ? filename : File.separator + filename;
+        var withSeparator = filename.startsWith(File.separator) ? filename : File.separator + filename;
         return dir.getPath() + withSeparator;
     }
 

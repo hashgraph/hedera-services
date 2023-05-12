@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage;
 
 import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
@@ -36,7 +37,8 @@ public class QueryUsage {
     }
 
     public FeeData get() {
-        final var usage = FeeComponents.newBuilder().setBpt(tb).setBpr(rb).setSbpr(sb).build();
+        final var usage =
+                FeeComponents.newBuilder().setBpt(tb).setBpr(rb).setSbpr(sb).build();
         return ESTIMATOR_UTILS.withDefaultQueryPartitioning(usage);
     }
 

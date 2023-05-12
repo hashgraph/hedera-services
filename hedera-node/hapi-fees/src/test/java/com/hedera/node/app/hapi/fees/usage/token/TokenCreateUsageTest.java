@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage.token;
 
 import static com.hedera.node.app.hapi.fees.test.UsageUtils.A_USAGES_MATRIX;
@@ -100,8 +101,7 @@ class TokenCreateUsageTest {
         // and:
         verify(base).addBpt(expectedBytes);
         verify(base).addRbs(expectedBytes * autoRenewPeriod);
-        verify(base)
-                .addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+        verify(base).addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
     }
 
     @Test
@@ -122,11 +122,8 @@ class TokenCreateUsageTest {
         // and:
         verify(base).addBpt(expectedBytes);
         verify(base)
-                .addRbs(
-                        (expectedBytes + tokenOpsUsage.bytesNeededToRepr(op.getCustomFeesList()))
-                                * autoRenewPeriod);
-        verify(base)
-                .addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+                .addRbs((expectedBytes + tokenOpsUsage.bytesNeededToRepr(op.getCustomFeesList())) * autoRenewPeriod);
+        verify(base).addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
     }
 
     @Test
@@ -147,8 +144,7 @@ class TokenCreateUsageTest {
         // and:
         verify(base).addBpt(expectedBytes);
         verify(base).addRbs(expectedBytes * autoRenewPeriod);
-        verify(base)
-                .addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+        verify(base).addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
     }
 
     @Test
@@ -157,8 +153,7 @@ class TokenCreateUsageTest {
         final var expectedBytes = baseSizeWith(true);
 
         givenExpiryBasedOp(TokenType.NON_FUNGIBLE_UNIQUE, true);
-        given(base.get(SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES))
-                .willReturn(A_USAGES_MATRIX);
+        given(base.get(SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES)).willReturn(A_USAGES_MATRIX);
         // and:
         subject = TokenCreateUsage.newEstimate(txn, base);
 
@@ -170,8 +165,7 @@ class TokenCreateUsageTest {
         // and:
         verify(base).addBpt(expectedBytes);
         verify(base).addRbs(expectedBytes * autoRenewPeriod);
-        verify(base)
-                .addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+        verify(base).addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
     }
 
     @Test
@@ -180,8 +174,7 @@ class TokenCreateUsageTest {
         final var expectedBytes = baseSizeWith(false);
 
         givenExpiryBasedOp(expiry, TokenType.NON_FUNGIBLE_UNIQUE, false, true);
-        given(base.get(SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES))
-                .willReturn(A_USAGES_MATRIX);
+        given(base.get(SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES)).willReturn(A_USAGES_MATRIX);
         // and:
         subject = TokenCreateUsage.newEstimate(txn, base);
 
@@ -193,11 +186,8 @@ class TokenCreateUsageTest {
         // and:
         verify(base).addBpt(expectedBytes);
         verify(base)
-                .addRbs(
-                        (expectedBytes + tokenOpsUsage.bytesNeededToRepr(op.getCustomFeesList()))
-                                * autoRenewPeriod);
-        verify(base)
-                .addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+                .addRbs((expectedBytes + tokenOpsUsage.bytesNeededToRepr(op.getCustomFeesList())) * autoRenewPeriod);
+        verify(base).addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
     }
 
     @Test
@@ -218,8 +208,7 @@ class TokenCreateUsageTest {
         // and:
         verify(base).addBpt(expectedBytes);
         verify(base).addRbs(expectedBytes * maxLifetime);
-        verify(base)
-                .addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+        verify(base).addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
     }
 
     @Test
@@ -241,11 +230,9 @@ class TokenCreateUsageTest {
         verify(base).addBpt(expectedBytes);
         verify(base).addRbs(expectedBytes * autoRenewPeriod);
         verify(base)
-                .addRbs(
-                        TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 1, 0)
-                                * USAGE_PROPERTIES.legacyReceiptStorageSecs());
-        verify(base)
-                .addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+                .addRbs(TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 1, 0)
+                        * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+        verify(base).addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
     }
 
     private long baseSize() {
@@ -272,61 +259,52 @@ class TokenCreateUsageTest {
     }
 
     private void givenExpiryBasedOp(
-            final long newExpiry,
-            final TokenType type,
-            final boolean withCustomFeesKey,
-            final boolean withCustomFees) {
-        final var builder =
-                TokenCreateTransactionBody.newBuilder()
-                        .setTokenType(type)
-                        .setExpiry(Timestamp.newBuilder().setSeconds(newExpiry))
-                        .setSymbol(symbol)
-                        .setMemo(memo)
-                        .setName(name)
-                        .setKycKey(kycKey)
-                        .setAdminKey(adminKey)
-                        .setFreezeKey(freezeKey)
-                        .setSupplyKey(supplyKey)
-                        .setWipeKey(wipeKey);
+            final long newExpiry, final TokenType type, final boolean withCustomFeesKey, final boolean withCustomFees) {
+        final var builder = TokenCreateTransactionBody.newBuilder()
+                .setTokenType(type)
+                .setExpiry(Timestamp.newBuilder().setSeconds(newExpiry))
+                .setSymbol(symbol)
+                .setMemo(memo)
+                .setName(name)
+                .setKycKey(kycKey)
+                .setAdminKey(adminKey)
+                .setFreezeKey(freezeKey)
+                .setSupplyKey(supplyKey)
+                .setWipeKey(wipeKey);
         if (withCustomFeesKey) {
             builder.setFeeScheduleKey(customFeeKey);
         }
         if (withCustomFees) {
-            builder.addCustomFees(
-                    CustomFee.newBuilder()
-                            .setFeeCollectorAccountId(IdUtils.asAccount("0.0.1234"))
-                            .setFixedFee(FixedFee.newBuilder().setAmount(123)));
+            builder.addCustomFees(CustomFee.newBuilder()
+                    .setFeeCollectorAccountId(IdUtils.asAccount("0.0.1234"))
+                    .setFixedFee(FixedFee.newBuilder().setAmount(123)));
         }
         op = builder.build();
         setTxn();
     }
 
     private void givenAutoRenewBasedOp() {
-        op =
-                TokenCreateTransactionBody.newBuilder()
-                        .setAutoRenewAccount(autoRenewAccount)
-                        .setMemo(memo)
-                        .setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod))
-                        .setSymbol(symbol)
-                        .setName(name)
-                        .setKycKey(kycKey)
-                        .setAdminKey(adminKey)
-                        .setFreezeKey(freezeKey)
-                        .setSupplyKey(supplyKey)
-                        .setWipeKey(wipeKey)
-                        .setInitialSupply(1)
-                        .build();
+        op = TokenCreateTransactionBody.newBuilder()
+                .setAutoRenewAccount(autoRenewAccount)
+                .setMemo(memo)
+                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod))
+                .setSymbol(symbol)
+                .setName(name)
+                .setKycKey(kycKey)
+                .setAdminKey(adminKey)
+                .setFreezeKey(freezeKey)
+                .setSupplyKey(supplyKey)
+                .setWipeKey(wipeKey)
+                .setInitialSupply(1)
+                .build();
         setTxn();
     }
 
     private void setTxn() {
-        txn =
-                TransactionBody.newBuilder()
-                        .setTransactionID(
-                                TransactionID.newBuilder()
-                                        .setTransactionValidStart(
-                                                Timestamp.newBuilder().setSeconds(now)))
-                        .setTokenCreation(op)
-                        .build();
+        txn = TransactionBody.newBuilder()
+                .setTransactionID(TransactionID.newBuilder()
+                        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(now)))
+                .setTokenCreation(op)
+                .build();
     }
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.factories.sigs;
 
 import static com.hedera.test.factories.sigs.SigWrappers.asInvalid;
@@ -23,17 +24,15 @@ import com.swirlds.common.crypto.TransactionSignature;
 import java.util.List;
 
 public class SyncVerifiers {
-    public static final SyncVerifier NEVER_VALID =
-            l -> {
-                List<TransactionSignature> lv = asInvalid(l);
-                l.clear();
-                l.addAll(lv);
-            };
+    public static final SyncVerifier NEVER_VALID = l -> {
+        List<TransactionSignature> lv = asInvalid(l);
+        l.clear();
+        l.addAll(lv);
+    };
 
-    public static final SyncVerifier ALWAYS_VALID =
-            l -> {
-                List<TransactionSignature> lv = asValid(l);
-                l.clear();
-                l.addAll(lv);
-            };
+    public static final SyncVerifier ALWAYS_VALID = l -> {
+        List<TransactionSignature> lv = asValid(l);
+        l.clear();
+        l.addAll(lv);
+    };
 }

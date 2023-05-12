@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context.domain.security;
 
 import static com.hedera.node.app.service.mono.context.domain.security.PermissionFileUtils.permissionFileKeyForQuery;
@@ -178,14 +179,16 @@ class PermissionFileUtilsTest {
     @Test
     void worksForContractCreateInstance() {
         final var op = ContractCreateTransactionBody.getDefaultInstance();
-        final var txn = TransactionBody.newBuilder().setContractCreateInstance(op).build();
+        final var txn =
+                TransactionBody.newBuilder().setContractCreateInstance(op).build();
         assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
     }
 
     @Test
     void worksForContractUpdateInstance() {
         final var op = ContractUpdateTransactionBody.getDefaultInstance();
-        final var txn = TransactionBody.newBuilder().setContractUpdateInstance(op).build();
+        final var txn =
+                TransactionBody.newBuilder().setContractUpdateInstance(op).build();
         assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
     }
 
@@ -199,7 +202,8 @@ class PermissionFileUtilsTest {
     @Test
     void worksForTokenFeeScheduleUpdate() {
         final var op = TokenFeeScheduleUpdateTransactionBody.getDefaultInstance();
-        final var txn = TransactionBody.newBuilder().setTokenFeeScheduleUpdate(op).build();
+        final var txn =
+                TransactionBody.newBuilder().setTokenFeeScheduleUpdate(op).build();
         assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
     }
 
@@ -220,7 +224,8 @@ class PermissionFileUtilsTest {
     @Test
     void worksForContractDeleteInstance() {
         final var op = ContractDeleteTransactionBody.getDefaultInstance();
-        final var txn = TransactionBody.newBuilder().setContractDeleteInstance(op).build();
+        final var txn =
+                TransactionBody.newBuilder().setContractDeleteInstance(op).build();
         assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
     }
 
@@ -255,7 +260,8 @@ class PermissionFileUtilsTest {
     @Test
     void worksForConsensusSubmitMessage() {
         final var op = ConsensusSubmitMessageTransactionBody.getDefaultInstance();
-        final var txn = TransactionBody.newBuilder().setConsensusSubmitMessage(op).build();
+        final var txn =
+                TransactionBody.newBuilder().setConsensusSubmitMessage(op).build();
         assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
     }
 

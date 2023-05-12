@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage;
 
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_TX_BODY_SIZE;
@@ -55,8 +56,7 @@ public interface EstimatorUtils {
 
     long baseNetworkRbs();
 
-    FeeData withDefaultTxnPartitioning(
-            FeeComponents usage, SubType subType, long networkRbh, int numPayerKeys);
+    FeeData withDefaultTxnPartitioning(FeeComponents usage, SubType subType, long networkRbh, int numPayerKeys);
 
     FeeData withDefaultQueryPartitioning(FeeComponents usage);
 

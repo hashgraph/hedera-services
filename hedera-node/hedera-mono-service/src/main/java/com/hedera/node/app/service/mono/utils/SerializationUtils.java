@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.utils;
 
 import com.hedera.node.app.service.mono.state.submerkle.FcTokenAllowanceId;
@@ -31,8 +32,7 @@ public final class SerializationUtils {
     }
 
     public static void serializeHbarAllowances(
-            SerializableDataOutputStream out, final Map<EntityNum, Long> cryptoAllowances)
-            throws IOException {
+            SerializableDataOutputStream out, final Map<EntityNum, Long> cryptoAllowances) throws IOException {
         out.writeInt(cryptoAllowances.size());
         for (Map.Entry<EntityNum, Long> entry : cryptoAllowances.entrySet()) {
             out.writeLong(entry.getKey().longValue());
@@ -41,8 +41,7 @@ public final class SerializationUtils {
     }
 
     public static void serializeFungibleAllowances(
-            final SerializableDataOutputStream out,
-            final Map<FcTokenAllowanceId, Long> fungibleTokenAllowances)
+            final SerializableDataOutputStream out, final Map<FcTokenAllowanceId, Long> fungibleTokenAllowances)
             throws IOException {
         out.writeInt(fungibleTokenAllowances.size());
         for (Map.Entry<FcTokenAllowanceId, Long> entry : fungibleTokenAllowances.entrySet()) {
@@ -51,8 +50,8 @@ public final class SerializationUtils {
         }
     }
 
-    public static Map<FcTokenAllowanceId, Long> deserializeFungibleAllowances(
-            final SerializableDataInputStream in) throws IOException {
+    public static Map<FcTokenAllowanceId, Long> deserializeFungibleAllowances(final SerializableDataInputStream in)
+            throws IOException {
         var numFungibleTokenAllowances = in.readInt();
         if (numFungibleTokenAllowances == 0) {
             return Collections.emptyMap();
@@ -67,16 +66,15 @@ public final class SerializationUtils {
     }
 
     public static void serializeNftOperatorApprovals(
-            SerializableDataOutputStream out, final Set<FcTokenAllowanceId> approveForAllNfts)
-            throws IOException {
+            SerializableDataOutputStream out, final Set<FcTokenAllowanceId> approveForAllNfts) throws IOException {
         out.writeInt(approveForAllNfts.size());
         for (final var allowanceId : approveForAllNfts) {
             out.writeSerializable(allowanceId, true);
         }
     }
 
-    public static Map<EntityNum, Long> deserializeHbarAllowances(
-            final SerializableDataInputStream in) throws IOException {
+    public static Map<EntityNum, Long> deserializeHbarAllowances(final SerializableDataInputStream in)
+            throws IOException {
         var numCryptoAllowances = in.readInt();
         if (numCryptoAllowances == 0) {
             return Collections.emptyMap();
@@ -90,8 +88,8 @@ public final class SerializationUtils {
         return cryptoAllowances;
     }
 
-    public static Set<FcTokenAllowanceId> deserializeNftOperatorApprovals(
-            final SerializableDataInputStream in) throws IOException {
+    public static Set<FcTokenAllowanceId> deserializeNftOperatorApprovals(final SerializableDataInputStream in)
+            throws IOException {
         var numApproveForAllNftsAllowances = in.readInt();
         if (numApproveForAllNftsAllowances == 0) {
             return Collections.emptySet();

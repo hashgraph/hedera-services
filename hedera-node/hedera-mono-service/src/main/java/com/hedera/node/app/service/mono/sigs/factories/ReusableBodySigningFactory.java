@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs.factories;
 
 import static com.hedera.node.app.service.mono.sigs.factories.PlatformSigFactory.ecdsaSecp256k1Sig;
@@ -48,8 +49,7 @@ public class ReusableBodySigningFactory implements TxnScopedPlatformSigFactory {
     }
 
     @Override
-    public TransactionSignature signKeccak256DigestWithSecp256k1(
-            final byte[] publicKey, final byte[] sigBytes) {
+    public TransactionSignature signKeccak256DigestWithSecp256k1(final byte[] publicKey, final byte[] sigBytes) {
         if (keccak256Digest == null) {
             keccak256Digest = keccak256DigestOf(accessor.getTxnBytes());
         }

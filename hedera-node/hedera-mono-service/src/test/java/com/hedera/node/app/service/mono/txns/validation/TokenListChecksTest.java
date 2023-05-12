@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.validation;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
@@ -42,15 +43,14 @@ class TokenListChecksTest {
         TokenListChecks.adminKeyRemoval = adminKeyRemoval;
         given(adminKeyRemoval.test(any())).willReturn(true);
 
-        final var validity =
-                TokenListChecks.checkKeys(
-                        true, Key.getDefaultInstance(),
-                        false, Key.getDefaultInstance(),
-                        false, Key.getDefaultInstance(),
-                        false, Key.getDefaultInstance(),
-                        false, Key.getDefaultInstance(),
-                        false, Key.getDefaultInstance(),
-                        false, Key.getDefaultInstance());
+        final var validity = TokenListChecks.checkKeys(
+                true, Key.getDefaultInstance(),
+                false, Key.getDefaultInstance(),
+                false, Key.getDefaultInstance(),
+                false, Key.getDefaultInstance(),
+                false, Key.getDefaultInstance(),
+                false, Key.getDefaultInstance(),
+                false, Key.getDefaultInstance());
 
         assertEquals(OK, validity);
 
@@ -107,17 +107,17 @@ class TokenListChecksTest {
     @Test
     void checksInvalidFeeScheduleKey() {
         final var invalidKeyList1 = KeyList.newBuilder().build();
-        final var invalidFeeScheduleKey = Key.newBuilder().setKeyList(invalidKeyList1).build();
+        final var invalidFeeScheduleKey =
+                Key.newBuilder().setKeyList(invalidKeyList1).build();
 
-        final var validity =
-                TokenListChecks.checkKeys(
-                        false, Key.getDefaultInstance(),
-                        false, Key.getDefaultInstance(),
-                        false, Key.getDefaultInstance(),
-                        false, Key.getDefaultInstance(),
-                        false, Key.getDefaultInstance(),
-                        true, invalidFeeScheduleKey,
-                        false, Key.getDefaultInstance());
+        final var validity = TokenListChecks.checkKeys(
+                false, Key.getDefaultInstance(),
+                false, Key.getDefaultInstance(),
+                false, Key.getDefaultInstance(),
+                false, Key.getDefaultInstance(),
+                false, Key.getDefaultInstance(),
+                true, invalidFeeScheduleKey,
+                false, Key.getDefaultInstance());
 
         assertEquals(INVALID_CUSTOM_FEE_SCHEDULE_KEY, validity);
     }
@@ -127,22 +127,21 @@ class TokenListChecksTest {
         final var invalidKeyList1 = KeyList.newBuilder().build();
         final var invalidPauseKey = Key.newBuilder().setKeyList(invalidKeyList1).build();
 
-        final var validity =
-                TokenListChecks.checkKeys(
-                        false,
-                        Key.getDefaultInstance(),
-                        false,
-                        Key.getDefaultInstance(),
-                        false,
-                        Key.getDefaultInstance(),
-                        false,
-                        Key.getDefaultInstance(),
-                        false,
-                        Key.getDefaultInstance(),
-                        false,
-                        Key.getDefaultInstance(),
-                        true,
-                        invalidPauseKey);
+        final var validity = TokenListChecks.checkKeys(
+                false,
+                Key.getDefaultInstance(),
+                false,
+                Key.getDefaultInstance(),
+                false,
+                Key.getDefaultInstance(),
+                false,
+                Key.getDefaultInstance(),
+                false,
+                Key.getDefaultInstance(),
+                false,
+                Key.getDefaultInstance(),
+                true,
+                invalidPauseKey);
 
         assertEquals(INVALID_PAUSE_KEY, validity);
     }

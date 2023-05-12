@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.grpc;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -90,9 +91,7 @@ class NettyGrpcServerManagerTest {
         println = mock(Consumer.class);
         hookAdder = mock(Consumer.class);
 
-        subject =
-                new NettyGrpcServerManager(
-                        hookAdder, nodeProperties, bindableServices, nettyFactory);
+        subject = new NettyGrpcServerManager(hookAdder, nodeProperties, bindableServices, nettyFactory);
     }
 
     @Test
@@ -119,9 +118,7 @@ class NettyGrpcServerManagerTest {
 
         given(server.start()).willThrow(new IOException("Failed to bind"));
 
-        assertThrows(
-                IOException.class,
-                () -> subject.startOneNettyServer(false, port, ignore -> {}, mockPause));
+        assertThrows(IOException.class, () -> subject.startOneNettyServer(false, port, ignore -> {}, mockPause));
 
         verify(mockPause, times(startRetries)).forMs(startRetryIntervalMs);
         verify(server, times(startRetries + 1)).start();
@@ -133,15 +130,11 @@ class NettyGrpcServerManagerTest {
         final var mockPause = mock(Pause.class);
 
         given(nodeProperties.nettyStartRetries()).willReturn(0);
-        subject =
-                new NettyGrpcServerManager(
-                        hookAdder, nodeProperties, bindableServices, nettyFactory);
+        subject = new NettyGrpcServerManager(hookAdder, nodeProperties, bindableServices, nettyFactory);
         given(server.start()).willThrow(new IOException("Failed to bind"));
 
         // expect:
-        assertThrows(
-                IOException.class,
-                () -> subject.startOneNettyServer(false, port, ignore -> {}, mockPause));
+        assertThrows(IOException.class, () -> subject.startOneNettyServer(false, port, ignore -> {}, mockPause));
 
         // then:
         verify(mockPause, never()).forMs(startRetryIntervalMs);
@@ -221,12 +214,10 @@ class NettyGrpcServerManagerTest {
 
         willDoNothing().given(hookAdder).accept(captor.capture());
         // and:
-        given(server.awaitTermination(anyLong(), any()))
-                .willAnswer(
-                        ignore -> {
-                            Thread.sleep(5_000L);
-                            return null;
-                        });
+        given(server.awaitTermination(anyLong(), any())).willAnswer(ignore -> {
+            Thread.sleep(5_000L);
+            return null;
+        });
 
         // when:
         subject.start(port, tlsPort, println);

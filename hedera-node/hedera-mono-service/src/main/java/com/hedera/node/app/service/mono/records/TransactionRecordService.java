@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.records;
 
 import static com.hedera.node.app.service.mono.utils.ResponseCodeUtil.getStatusOrDefault;
@@ -72,8 +73,7 @@ public class TransactionRecordService {
         externalizeGenericEvmCreate(result);
     }
 
-    public void externalizeSuccessfulEvmCreate(
-            final TransactionProcessingResult result, final byte[] evmAddress) {
+    public void externalizeSuccessfulEvmCreate(final TransactionProcessingResult result, final byte[] evmAddress) {
         externalizeSuccessfulEvmCreate(result, evmAddress, null);
     }
 
@@ -91,8 +91,7 @@ public class TransactionRecordService {
 
     private void externalizeGenericEvmCreate(final TransactionProcessingResult result) {
         txnCtx.setStatus(getStatusOrDefault(result, SUCCESS));
-        final var finalGasPayment =
-                result.getGasPrice() * (result.getGasUsed() - result.getSbhRefund());
+        final var finalGasPayment = result.getGasPrice() * (result.getGasUsed() - result.getSbhRefund());
         txnCtx.addFeeChargedToPayer(finalGasPayment);
     }
 
@@ -105,15 +104,13 @@ public class TransactionRecordService {
     public void externaliseEvmCallTransaction(final TransactionProcessingResult result) {
         txnCtx.setStatus(getStatusOrDefault(result, SUCCESS));
         txnCtx.setCallResult(EvmFnResult.fromCall(result));
-        txnCtx.addFeeChargedToPayer(
-                result.getGasPrice() * (result.getGasUsed() - result.getSbhRefund()));
+        txnCtx.addFeeChargedToPayer(result.getGasPrice() * (result.getGasUsed() - result.getSbhRefund()));
         addAllSidecarsToTxnContextFrom(result);
     }
 
     private void addAllSidecarsToTxnContextFrom(final TransactionProcessingResult result) {
         if (!result.getStateChanges().isEmpty()) {
-            txnCtx.addSidecarRecord(
-                    SidecarUtils.createStateChangesSidecarFrom(result.getStateChanges()));
+            txnCtx.addSidecarRecord(SidecarUtils.createStateChangesSidecarFrom(result.getStateChanges()));
         }
         final var actions = result.getActions();
         if (!actions.isEmpty()) {

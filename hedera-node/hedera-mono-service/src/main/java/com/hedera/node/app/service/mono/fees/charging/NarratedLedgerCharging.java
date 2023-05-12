@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.charging;
 
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
@@ -94,9 +95,9 @@ public class NarratedLedgerCharging implements NarratedCharging {
 
     @Override
     public void setFees(FeeObject fees) {
-        this.nodeFee = fees.getNodeFee();
-        this.networkFee = fees.getNetworkFee();
-        this.serviceFee = fees.getServiceFee();
+        this.nodeFee = fees.nodeFee();
+        this.networkFee = fees.networkFee();
+        this.serviceFee = fees.serviceFee();
     }
 
     @Override
@@ -176,8 +177,7 @@ public class NarratedLedgerCharging implements NarratedCharging {
             return;
         }
         if (!serviceFeeCharged) {
-            throw new IllegalStateException(
-                    "NarratedCharging asked to refund service fee to un-charged payer");
+            throw new IllegalStateException("NarratedCharging asked to refund service fee to un-charged payer");
         }
         feeDistribution.distributeChargedFee(-serviceFee, ledger.getAccountsLedger());
         ledger.adjustBalance(grpcPayerId, +serviceFee);
@@ -210,12 +210,9 @@ public class NarratedLedgerCharging implements NarratedCharging {
     private void initEffPayerBalance(EntityNum effPayerId) {
         final var payerAccount = accounts.get().get(effPayerId);
         if (payerAccount == null) {
-            throw new IllegalStateException(
-                    "Invariant failure, effective payer account "
-                            + Optional.ofNullable(effPayerId)
-                                    .map(EntityNum::toIdString)
-                                    .orElse("null")
-                            + " is missing!");
+            throw new IllegalStateException("Invariant failure, effective payer account "
+                    + Optional.ofNullable(effPayerId).map(EntityNum::toIdString).orElse("null")
+                    + " is missing!");
         }
         effPayerStartingBalance = payerAccount.getBalance();
     }

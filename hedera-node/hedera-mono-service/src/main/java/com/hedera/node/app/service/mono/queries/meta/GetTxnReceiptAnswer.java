@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.meta;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetReceipt;
@@ -58,13 +59,9 @@ public class GetTxnReceiptAnswer implements AnswerService {
 
     @Override
     public Response responseGiven(
-            final Query query,
-            @Nullable final StateView view,
-            ResponseCodeEnum validity,
-            final long cost) {
+            final Query query, @Nullable final StateView view, ResponseCodeEnum validity, final long cost) {
         final TransactionGetReceiptQuery op = query.getTransactionGetReceipt();
-        final TransactionGetReceiptResponse.Builder opResponse =
-                TransactionGetReceiptResponse.newBuilder();
+        final TransactionGetReceiptResponse.Builder opResponse = TransactionGetReceiptResponse.newBuilder();
 
         if (validity == OK) {
             final var txnId = op.getTransactionID();
@@ -74,8 +71,7 @@ public class GetTxnReceiptAnswer implements AnswerService {
             } else {
                 opResponse.setReceipt(receipt.toGrpc());
                 if (op.getIncludeDuplicates()) {
-                    opResponse.addAllDuplicateTransactionReceipts(
-                            recordCache.getDuplicateReceipts(txnId));
+                    opResponse.addAllDuplicateTransactionReceipts(recordCache.getDuplicateReceipts(txnId));
                 }
                 if (op.getIncludeChildReceipts()) {
                     opResponse.addAllChildTransactionReceipts(recordCache.getChildReceipts(txnId));

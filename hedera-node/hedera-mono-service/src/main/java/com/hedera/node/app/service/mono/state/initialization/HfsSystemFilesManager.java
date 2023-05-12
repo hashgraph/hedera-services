@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.initialization;
 
 import static com.google.protobuf.TextFormat.escapeBytes;
@@ -77,6 +78,7 @@ import org.apache.logging.log4j.Logger;
 
 @Singleton
 public final class HfsSystemFilesManager implements SystemFilesManager {
+
     private static final Logger log = LogManager.getLogger(HfsSystemFilesManager.class);
     private static final String PROPERTIES_SYS_FILE_NAME = "properties";
     private static final String PERMISSIONS_SYS_FILE_NAME = "API permissions";
@@ -128,7 +130,7 @@ public final class HfsSystemFilesManager implements SystemFilesManager {
         final Map<Long, Long> stakes = new HashMap<>();
         for (int i = 0, n = book.getSize(); i < n; i++) {
             final var address = book.getAddress(i);
-            stakes.put(address.getId(), address.getStake());
+            stakes.put(address.getId(), address.getWeight());
         }
 
         final var detailsFid = fileNumbers.toFid(fileNumbers.nodeDetails());
@@ -236,16 +238,19 @@ public final class HfsSystemFilesManager implements SystemFilesManager {
 
     @FunctionalInterface
     private interface BootstrapLoader {
+
         byte[] get() throws Exception;
     }
 
     @FunctionalInterface
     private interface GrpcParser<T> {
+
         T parseFrom(byte[] data) throws InvalidProtocolBufferException;
     }
 
     @FunctionalInterface
     private interface ThrowingStreamProvider {
+
         InputStream get() throws IOException;
     }
 
@@ -254,16 +259,12 @@ public final class HfsSystemFilesManager implements SystemFilesManager {
         try {
             return parser.parseFrom(hfs.cat(disFid));
         } catch (final InvalidProtocolBufferException e) {
-            log.error(
-                    "Corrupt {} in saved state ({}), unable to continue!",
-                    resource,
-                    escapeBytes(contents));
+            log.error("Corrupt {} in saved state ({}), unable to continue!", resource, escapeBytes(contents));
             throw new IllegalStateException(e);
         }
     }
 
-    private void bootstrapInto(
-            final FileID disFid, final String resource, final BootstrapLoader loader) {
+    private void bootstrapInto(final FileID disFid, final String resource, final BootstrapLoader loader) {
         final byte[] rawProps;
         try {
             rawProps = loader.get();
@@ -284,8 +285,7 @@ public final class HfsSystemFilesManager implements SystemFilesManager {
     }
 
     private boolean isUpdateFile(final long num) {
-        return num >= fileNumbers.firstSoftwareUpdateFile()
-                && num <= fileNumbers.lastSoftwareUpdateFile();
+        return num >= fileNumbers.firstSoftwareUpdateFile() && num <= fileNumbers.lastSoftwareUpdateFile();
     }
 
     private <T> void loadProtoWithSupplierFallback(
@@ -313,12 +313,11 @@ public final class HfsSystemFilesManager implements SystemFilesManager {
             bootstrapInto(
                     sysFileFid,
                     sysFileName,
-                    () ->
-                            asSerializedConfig(
-                                    sysFileName,
-                                    properties.getStringProperty(externalLocProp),
-                                    defaultResource,
-                                    errorLogIfAnyForFailureToLoad(sysFileName)));
+                    () -> asSerializedConfig(
+                            sysFileName,
+                            properties.getStringProperty(externalLocProp),
+                            defaultResource,
+                            errorLogIfAnyForFailureToLoad(sysFileName)));
         }
         final var config = loadFrom(sysFileFid, sysFileName, ServicesConfigurationList::parseFrom);
         onSuccess.accept(config);
@@ -326,10 +325,8 @@ public final class HfsSystemFilesManager implements SystemFilesManager {
 
     private String errorLogIfAnyForFailureToLoad(final String sysFileName) {
         return PERMISSIONS_SYS_FILE_NAME.equals(sysFileName)
-                ? "Could not bootstrap permissions, only superusers will be able to perform HAPI"
-                        + " operations!"
-                : "Could not bootstrap properties, likely benign but resources should be"
-                        + " double-checked!";
+                ? "Could not bootstrap permissions, only superusers will be able to perform HAPI" + " operations!"
+                : "Could not bootstrap properties, likely benign but resources should be" + " double-checked!";
     }
 
     private byte[] asSerializedConfig(
@@ -337,31 +334,23 @@ public final class HfsSystemFilesManager implements SystemFilesManager {
             final String externalPropsLoc,
             final String defaultResource,
             final String errorLog) {
-        final var externalSrcMsg =
-                String.format("Bootstrapping %s from '%s':", sysFileName, externalPropsLoc);
+        final var externalSrcMsg = String.format("Bootstrapping %s from '%s':", sysFileName, externalPropsLoc);
         final var externalConfig =
-                configBytesFrom(
-                        () -> Files.newInputStream(Paths.get(externalPropsLoc)), externalSrcMsg);
+                configBytesFrom(() -> Files.newInputStream(Paths.get(externalPropsLoc)), externalSrcMsg);
         if (null != externalConfig) {
             return externalConfig;
         }
 
-        final var resourceSrcMsg =
-                String.format("Bootstrapping %s from resource '%s':", sysFileName, defaultResource);
-        final var defaultConfig =
-                configBytesFrom(
-                        () -> {
-                            final var in =
-                                    HfsSystemFilesManager.class
-                                            .getClassLoader()
-                                            .getResourceAsStream(defaultResource);
-                            if (null == in) {
-                                throw new IOException(
-                                        "Could not load resource '" + defaultResource + "'");
-                            }
-                            return in;
-                        },
-                        resourceSrcMsg);
+        final var resourceSrcMsg = String.format("Bootstrapping %s from resource '%s':", sysFileName, defaultResource);
+        final var defaultConfig = configBytesFrom(
+                () -> {
+                    final var in = HfsSystemFilesManager.class.getClassLoader().getResourceAsStream(defaultResource);
+                    if (null == in) {
+                        throw new IOException("Could not load resource '" + defaultResource + "'");
+                    }
+                    return in;
+                },
+                resourceSrcMsg);
         if (null != defaultConfig) {
             return defaultConfig;
         }
@@ -370,8 +359,7 @@ public final class HfsSystemFilesManager implements SystemFilesManager {
         return ServicesConfigurationList.getDefaultInstance().toByteArray();
     }
 
-    private @Nullable byte[] configBytesFrom(
-            final ThrowingStreamProvider inProvider, final String baseMsg) {
+    private @Nullable byte[] configBytesFrom(final ThrowingStreamProvider inProvider, final String baseMsg) {
         try (final var in = inProvider.get()) {
             final var jutilProps = new Properties();
             jutilProps.load(in);
@@ -386,27 +374,20 @@ public final class HfsSystemFilesManager implements SystemFilesManager {
     }
 
     static void mapOrderedJutilProps(
-            final Properties jutilProps,
-            final StringBuilder intoSb,
-            final ServicesConfigurationList.Builder config) {
+            final Properties jutilProps, final StringBuilder intoSb, final ServicesConfigurationList.Builder config) {
         jutilProps.entrySet().stream()
                 .sorted(Comparator.comparing(entry -> String.valueOf(entry.getKey())))
-                .forEach(
-                        entry -> {
-                            intoSb.append(
-                                    String.format("%n  %s=%s", entry.getKey(), entry.getValue()));
-                            config.addNameValue(
-                                    Setting.newBuilder()
-                                            .setName(String.valueOf(entry.getKey()))
-                                            .setValue(String.valueOf(entry.getValue())));
-                        });
+                .forEach(entry -> {
+                    intoSb.append(String.format("%n  %s=%s", entry.getKey(), entry.getValue()));
+                    config.addNameValue(Setting.newBuilder()
+                            .setName(String.valueOf(entry.getKey()))
+                            .setValue(String.valueOf(entry.getValue())));
+                });
     }
 
     private HFileMeta systemFileInfo() {
         return new HFileMeta(
-                false,
-                new JKeyList(List.of(masterKey())),
-                properties.getLongProperty(BOOTSTRAP_SYSTEM_ENTITY_EXPIRY));
+                false, new JKeyList(List.of(masterKey())), properties.getLongProperty(BOOTSTRAP_SYSTEM_ENTITY_EXPIRY));
     }
 
     private void writeFromBookIfMissing(final long disNum, final Supplier<byte[]> scribe) {
@@ -427,26 +408,20 @@ public final class HfsSystemFilesManager implements SystemFilesManager {
     }
 
     static NodeAddress.Builder basicBioEntryFrom(final Address address) {
-        final var builder =
-                NodeAddress.newBuilder()
-                        .setIpAddress(
-                                ByteString.copyFromUtf8(ipString(address.getAddressExternalIpv4())))
-                        .setRSAPubKey(CommonUtils.hex(address.getSigPublicKey().getEncoded()))
-                        .setNodeId(address.getId())
-                        .setStake(address.getStake())
-                        .setMemo(ByteString.copyFromUtf8(address.getMemo()));
-        final var serviceEndpoint =
-                ServiceEndpoint.newBuilder()
-                        .setIpAddressV4(ByteString.copyFrom(address.getAddressExternalIpv4()))
-                        .setPort(address.getPortExternalIpv4());
+        final var builder = NodeAddress.newBuilder()
+                .setIpAddress(ByteString.copyFromUtf8(ipString(address.getAddressExternalIpv4())))
+                .setRSAPubKey(CommonUtils.hex(address.getSigPublicKey().getEncoded()))
+                .setNodeId(address.getId())
+                .setStake(address.getWeight())
+                .setMemo(ByteString.copyFromUtf8(address.getMemo()));
+        final var serviceEndpoint = ServiceEndpoint.newBuilder()
+                .setIpAddressV4(ByteString.copyFrom(address.getAddressExternalIpv4()))
+                .setPort(address.getPortExternalIpv4());
         builder.addServiceEndpoint(serviceEndpoint);
         try {
             builder.setNodeAccountId(parseAccount(address.getMemo()));
         } catch (final IllegalArgumentException e) {
-            log.warn(
-                    "Address for node {} had memo {}, not a parseable account!",
-                    address.getId(),
-                    address.getMemo());
+            log.warn("Address for node {} had memo {}, not a parseable account!", address.getId(), address.getMemo());
         }
         return builder;
     }
@@ -459,24 +434,21 @@ public final class HfsSystemFilesManager implements SystemFilesManager {
 
     private ThrottleDefinitions defaultThrottles() throws Exception {
         final var resource = properties.getStringProperty(BOOTSTRAP_THROTTLE_DEF_JSON_RESOURCE);
-        try (final var in =
-                HfsSystemFilesManager.class.getClassLoader().getResourceAsStream(resource)) {
+        try (final var in = HfsSystemFilesManager.class.getClassLoader().getResourceAsStream(resource)) {
             return ThrottlesJsonToProtoSerde.loadProtoDefs(in);
         }
     }
 
     private ExchangeRateSet defaultRates() {
         return ExchangeRateSet.newBuilder()
-                .setCurrentRate(
-                        rateFrom(
-                                properties.getIntProperty(BOOTSTRAP_RATES_CURRENT_CENT_EQUIV),
-                                properties.getIntProperty(BOOTSTRAP_RATES_CURRENT_HBAR_EQUIV),
-                                properties.getLongProperty(BOOTSTRAP_RATES_CURRENT_EXPIRY)))
-                .setNextRate(
-                        rateFrom(
-                                properties.getIntProperty(BOOTSTRAP_RATES_NEXT_CENT_EQUIV),
-                                properties.getIntProperty(BOOTSTRAP_RATES_NEXT_HBAR_EQUIV),
-                                properties.getLongProperty(BOOTSTRAP_RATES_NEXT_EXPIRY)))
+                .setCurrentRate(rateFrom(
+                        properties.getIntProperty(BOOTSTRAP_RATES_CURRENT_CENT_EQUIV),
+                        properties.getIntProperty(BOOTSTRAP_RATES_CURRENT_HBAR_EQUIV),
+                        properties.getLongProperty(BOOTSTRAP_RATES_CURRENT_EXPIRY)))
+                .setNextRate(rateFrom(
+                        properties.getIntProperty(BOOTSTRAP_RATES_NEXT_CENT_EQUIV),
+                        properties.getIntProperty(BOOTSTRAP_RATES_NEXT_HBAR_EQUIV),
+                        properties.getLongProperty(BOOTSTRAP_RATES_NEXT_EXPIRY)))
                 .build();
     }
 

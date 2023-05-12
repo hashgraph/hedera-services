@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store;
 
 import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
@@ -72,11 +73,20 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class TypedTokenStoreTest {
-    @Mock private SideEffectsTracker sideEffectsTracker;
-    @Mock private AccountStore accountStore;
-    @Mock private BackingStore<TokenID, MerkleToken> tokens;
-    @Mock private BackingStore<NftId, UniqueTokenAdapter> uniqueTokens;
-    @Mock private BackingStore<Pair<AccountID, TokenID>, HederaTokenRel> tokenRels;
+    @Mock
+    private SideEffectsTracker sideEffectsTracker;
+
+    @Mock
+    private AccountStore accountStore;
+
+    @Mock
+    private BackingStore<TokenID, MerkleToken> tokens;
+
+    @Mock
+    private BackingStore<NftId, UniqueTokenAdapter> uniqueTokens;
+
+    @Mock
+    private BackingStore<Pair<AccountID, TokenID>, HederaTokenRel> tokenRels;
 
     private TypedTokenStore subject;
 
@@ -85,9 +95,7 @@ class TypedTokenStoreTest {
         setupToken();
         setupTokenRel();
 
-        subject =
-                new TypedTokenStore(
-                        accountStore, tokens, uniqueTokens, tokenRels, sideEffectsTracker);
+        subject = new TypedTokenStore(accountStore, tokens, uniqueTokens, tokenRels, sideEffectsTracker);
     }
 
     /* --- Token relationship loading --- */
@@ -176,10 +184,9 @@ class TypedTokenStoreTest {
 
         // then:
         verify(tokenRels)
-                .remove(
-                        Pair.of(
-                                STATIC_PROPERTIES.scopedAccountWith(miscAccountNum),
-                                STATIC_PROPERTIES.scopedTokenWith(tokenNum)));
+                .remove(Pair.of(
+                        STATIC_PROPERTIES.scopedAccountWith(miscAccountNum),
+                        STATIC_PROPERTIES.scopedTokenWith(tokenNum)));
         verify(sideEffectsTracker).trackTokenBalanceChanges(List.of(destroyedRel));
     }
 
@@ -241,25 +248,13 @@ class TypedTokenStoreTest {
         final var tokenEntityId = new EntityId(0, 0, tokenNum);
         final var creationTime = new RichInstant(1_234_567L, 8);
         final var modelTreasuryId = new Id(0, 0, treasuryAccountNum);
-        final var mintedToken =
-                new UniqueToken(tokenId, mintedSerialNo, creationTime, Id.DEFAULT, nftMeta);
-        final var wipedToken =
-                new UniqueToken(tokenId, wipedSerialNo, creationTime, modelTreasuryId, nftMeta);
-        final var mintedToken2 =
-                new UniqueToken(tokenId, mintedSerialNo2, creationTime, Id.DEFAULT, nftMeta);
-        final var burnedToken =
-                new UniqueToken(tokenId, burnedSerialNo, creationTime, modelTreasuryId, nftMeta);
+        final var mintedToken = new UniqueToken(tokenId, mintedSerialNo, creationTime, Id.DEFAULT, nftMeta);
+        final var wipedToken = new UniqueToken(tokenId, wipedSerialNo, creationTime, modelTreasuryId, nftMeta);
+        final var mintedToken2 = new UniqueToken(tokenId, mintedSerialNo2, creationTime, Id.DEFAULT, nftMeta);
+        final var burnedToken = new UniqueToken(tokenId, burnedSerialNo, creationTime, modelTreasuryId, nftMeta);
         // and:
-        final var expectedReplacementToken =
-                new MerkleToken(
-                        expiry,
-                        tokenSupply * 2,
-                        0,
-                        symbol,
-                        name,
-                        freezeDefault,
-                        true,
-                        new EntityId(0, 0, autoRenewAccountNum));
+        final var expectedReplacementToken = new MerkleToken(
+                expiry, tokenSupply * 2, 0, symbol, name, freezeDefault, true, new EntityId(0, 0, autoRenewAccountNum));
         expectedReplacementToken.setAutoRenewAccount(treasuryId);
         expectedReplacementToken.setSupplyKey(supplyKey);
         expectedReplacementToken.setFreezeKey(freezeKey);
@@ -270,16 +265,8 @@ class TypedTokenStoreTest {
         expectedReplacementToken.setAutoRenewPeriod(autoRenewPeriod);
 
         // and:
-        final var expectedReplacementToken2 =
-                new MerkleToken(
-                        expiry,
-                        tokenSupply * 4,
-                        0,
-                        symbol,
-                        name,
-                        freezeDefault,
-                        true,
-                        new EntityId(0, 0, treasuryAccountNum));
+        final var expectedReplacementToken2 = new MerkleToken(
+                expiry, tokenSupply * 4, 0, symbol, name, freezeDefault, true, new EntityId(0, 0, treasuryAccountNum));
         expectedReplacementToken2.setAutoRenewAccount(treasuryId);
         expectedReplacementToken2.setSupplyKey(supplyKey);
         expectedReplacementToken2.setFreezeKey(freezeKey);
@@ -289,17 +276,12 @@ class TypedTokenStoreTest {
         expectedReplacementToken2.setMemo(memo);
         expectedReplacementToken2.setAutoRenewPeriod(autoRenewPeriod);
         // and:
-        final var expectedNewUniqTokenId =
-                NftId.withDefaultShardRealm(tokenEntityId.num(), mintedSerialNo);
-        final var expectedNewUniqTokenId2 =
-                NftId.withDefaultShardRealm(tokenEntityId.num(), mintedSerialNo2);
+        final var expectedNewUniqTokenId = NftId.withDefaultShardRealm(tokenEntityId.num(), mintedSerialNo);
+        final var expectedNewUniqTokenId2 = NftId.withDefaultShardRealm(tokenEntityId.num(), mintedSerialNo2);
         final var expectedNewUniqToken =
-                UniqueTokenAdapter.wrap(
-                        new MerkleUniqueToken(MISSING_ENTITY_ID, nftMeta, creationTime));
-        final var expectedPastUniqTokenId =
-                NftId.withDefaultShardRealm(tokenEntityId.num(), wipedSerialNo);
-        final var expectedPastUniqTokenId2 =
-                NftId.withDefaultShardRealm(tokenEntityId.num(), burnedSerialNo);
+                UniqueTokenAdapter.wrap(new MerkleUniqueToken(MISSING_ENTITY_ID, nftMeta, creationTime));
+        final var expectedPastUniqTokenId = NftId.withDefaultShardRealm(tokenEntityId.num(), wipedSerialNo);
+        final var expectedPastUniqTokenId2 = NftId.withDefaultShardRealm(tokenEntityId.num(), burnedSerialNo);
 
         givenModifiableToken(merkleTokenId, merkleToken);
         givenToken(merkleTokenId, merkleToken);
@@ -327,15 +309,12 @@ class TypedTokenStoreTest {
         assertEquals(expectedReplacementToken, merkleToken);
         // and:
         verify(sideEffectsTracker).trackTokenChanges(modelToken);
-        ArgumentCaptor<UniqueTokenAdapter> argumentCaptor =
-                ArgumentCaptor.forClass(UniqueTokenAdapter.class);
+        ArgumentCaptor<UniqueTokenAdapter> argumentCaptor = ArgumentCaptor.forClass(UniqueTokenAdapter.class);
         verify(uniqueTokens).put(eq(expectedNewUniqTokenId), argumentCaptor.capture());
         assertEquals(expectedNewUniqToken, argumentCaptor.getValue());
 
         verify(uniqueTokens)
-                .put(
-                        eq(NftId.withDefaultShardRealm(tokenEntityId.num(), mintedSerialNo)),
-                        argumentCaptor.capture());
+                .put(eq(NftId.withDefaultShardRealm(tokenEntityId.num(), mintedSerialNo)), argumentCaptor.capture());
         assertEquals(expectedNewUniqToken, argumentCaptor.getValue());
         verify(uniqueTokens).remove(expectedPastUniqTokenId);
 
@@ -406,11 +385,8 @@ class TypedTokenStoreTest {
         nft2.setSpender(autoRenewId);
 
         final var mut1 =
-                UniqueTokenAdapter.wrap(
-                        new MerkleUniqueToken(treasuryId.asEntityId(), meta1, MISSING_INSTANT));
-        final var mut2 =
-                UniqueTokenAdapter.wrap(
-                        new MerkleUniqueToken(miscId.asEntityId(), meta2, MISSING_INSTANT));
+                UniqueTokenAdapter.wrap(new MerkleUniqueToken(treasuryId.asEntityId(), meta1, MISSING_INSTANT));
+        final var mut2 = UniqueTokenAdapter.wrap(new MerkleUniqueToken(miscId.asEntityId(), meta2, MISSING_INSTANT));
         given(uniqueTokens.getRef(nftId1)).willReturn(mut1);
         given(uniqueTokens.getRef(nftId2)).willReturn(mut2);
 
@@ -441,12 +417,8 @@ class TypedTokenStoreTest {
         nft2.setCreationTime(MISSING_INSTANT);
         nft2.setSpender(autoRenewId);
 
-        final var mut1 =
-                UniqueTokenAdapter.wrap(
-                        new UniqueTokenValue(treasuryId.num(), 0, meta1, MISSING_INSTANT));
-        final var mut2 =
-                UniqueTokenAdapter.wrap(
-                        new UniqueTokenValue(miscId.num(), 0, meta2, MISSING_INSTANT));
+        final var mut1 = UniqueTokenAdapter.wrap(new UniqueTokenValue(treasuryId.num(), 0, meta1, MISSING_INSTANT));
+        final var mut2 = UniqueTokenAdapter.wrap(new UniqueTokenValue(miscId.num(), 0, meta2, MISSING_INSTANT));
         given(uniqueTokens.getRef(nftId1)).willReturn(mut1);
         given(uniqueTokens.getRef(nftId2)).willReturn(mut2);
 
@@ -472,13 +444,11 @@ class TypedTokenStoreTest {
         assertEquals(status, ex.getResponseCode());
     }
 
-    private void givenRelationship(
-            final EntityNumPair anAssoc, MerkleTokenRelStatus aRelationship) {
+    private void givenRelationship(final EntityNumPair anAssoc, MerkleTokenRelStatus aRelationship) {
         given(tokenRels.getImmutableRef(anAssoc.asAccountTokenRel())).willReturn(aRelationship);
     }
 
-    private void givenModifiableRelationship(
-            final EntityNumPair anAssoc, final MerkleTokenRelStatus aRelationship) {
+    private void givenModifiableRelationship(final EntityNumPair anAssoc, final MerkleTokenRelStatus aRelationship) {
         given(tokenRels.getRef(anAssoc.asAccountTokenRel())).willReturn(aRelationship);
     }
 
@@ -491,24 +461,14 @@ class TypedTokenStoreTest {
     }
 
     private void assertMiscRelLoadFailsWith(final ResponseCodeEnum status) {
-        final var ex =
-                assertThrows(
-                        InvalidTransactionException.class,
-                        () -> subject.loadTokenRelationship(token, miscAccount));
+        final var ex = assertThrows(
+                InvalidTransactionException.class, () -> subject.loadTokenRelationship(token, miscAccount));
         assertEquals(status, ex.getResponseCode());
     }
 
     private void setupToken() {
-        merkleToken =
-                new MerkleToken(
-                        expiry,
-                        tokenSupply,
-                        0,
-                        symbol,
-                        name,
-                        freezeDefault,
-                        true,
-                        new EntityId(0, 0, treasuryAccountNum));
+        merkleToken = new MerkleToken(
+                expiry, tokenSupply, 0, symbol, name, freezeDefault, true, new EntityId(0, 0, treasuryAccountNum));
         merkleToken.setAutoRenewAccount(new EntityId(0, 0, autoRenewAccountNum));
         merkleToken.setSupplyKey(supplyKey);
         merkleToken.setKycKey(kycKey);
@@ -530,8 +490,7 @@ class TypedTokenStoreTest {
     }
 
     private void setupTokenRel() {
-        miscTokenMerkleRel =
-                new MerkleTokenRelStatus(balance, frozen, kycGranted, automaticAssociation);
+        miscTokenMerkleRel = new MerkleTokenRelStatus(balance, frozen, kycGranted, automaticAssociation);
         miscTokenMerkleRel.setKey(miscTokenRelId);
         miscTokenMerkleRel.setPrev(0);
         miscTokenMerkleRel.setNext(0);

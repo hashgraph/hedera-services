@@ -8,6 +8,7 @@ module com.hedera.node.app.service.mono.testFixtures {
     requires org.junit.jupiter.api;
     requires com.google.protobuf;
     requires com.hedera.node.app.hapi.utils;
+    requires com.hedera.node.app.service.token;
     requires com.hedera.hashgraph.protobuf.java.api;
     requires com.swirlds.common;
     requires com.hedera.node.app.service.mono;
@@ -19,4 +20,7 @@ module com.hedera.node.app.service.mono.testFixtures {
     requires org.apache.commons.codec;
     requires org.apache.commons.lang3;
     requires com.hedera.node.app.spi;
+    requires com.google.common;
+    requires com.github.spotbugs.annotations;
+    requires com.hedera.pbj.runtime;
 }

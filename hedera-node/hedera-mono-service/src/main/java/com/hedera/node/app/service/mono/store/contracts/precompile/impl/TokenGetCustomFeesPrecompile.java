@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
@@ -61,9 +62,7 @@ public class TokenGetCustomFeesPrecompile extends AbstractReadOnlyPrecompile
     }
 
     public static TokenGetCustomFeesWrapper<TokenID> decodeTokenGetCustomFees(final Bytes input) {
-        final var rawTokenGetCustomFeesWrapper =
-                EvmTokenGetCustomFeesPrecompile.decodeTokenGetCustomFees(input);
-        return new TokenGetCustomFeesWrapper<>(
-                convertAddressBytesToTokenID(rawTokenGetCustomFeesWrapper.token()));
+        final var rawTokenGetCustomFeesWrapper = EvmTokenGetCustomFeesPrecompile.decodeTokenGetCustomFees(input);
+        return new TokenGetCustomFeesWrapper<>(convertAddressBytesToTokenID(rawTokenGetCustomFeesWrapper.token()));
     }
 }

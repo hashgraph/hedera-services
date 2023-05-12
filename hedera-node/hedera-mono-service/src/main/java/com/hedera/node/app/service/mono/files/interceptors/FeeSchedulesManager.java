@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.files.interceptors;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED;
@@ -56,9 +57,7 @@ public class FeeSchedulesManager implements FileUpdateInterceptor {
 
     @Override
     public OptionalInt priorityForCandidate(FileID id) {
-        return (id.getFileNum() == fileNum)
-                ? OptionalInt.of(APPLICABLE_PRIORITY)
-                : OptionalInt.empty();
+        return (id.getFileNum() == fileNum) ? OptionalInt.of(APPLICABLE_PRIORITY) : OptionalInt.empty();
     }
 
     @Override

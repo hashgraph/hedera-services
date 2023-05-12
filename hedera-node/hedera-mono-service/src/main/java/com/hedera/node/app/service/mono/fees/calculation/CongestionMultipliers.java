@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation;
 
 import com.hedera.node.app.service.mono.fees.calculation.utils.TriggeredValuesParser;
@@ -21,19 +22,16 @@ import java.util.Objects;
 
 public record CongestionMultipliers(int[] usagePercentTriggers, long[] multipliers) {
     public static CongestionMultipliers from(final String csv) {
-        final var triggeredMultipliers =
-                TriggeredValuesParser.parseFrom(csv, CongestionMultipliers::multiplierFrom);
+        final var triggeredMultipliers = TriggeredValuesParser.parseFrom(csv, CongestionMultipliers::multiplierFrom);
         return new CongestionMultipliers(
                 triggeredMultipliers.triggers().stream().mapToInt(v -> v).toArray(),
                 triggeredMultipliers.values().stream().mapToLong(l -> l).toArray());
     }
 
     private static Long multiplierFrom(final String s) {
-        final var multiplier =
-                s.endsWith("x")
-                        ? Long.valueOf(
-                                TriggeredValuesParser.sansDecimals(s.substring(0, s.length() - 1)))
-                        : Long.valueOf(TriggeredValuesParser.sansDecimals(s));
+        final var multiplier = s.endsWith("x")
+                ? Long.valueOf(TriggeredValuesParser.sansDecimals(s.substring(0, s.length() - 1)))
+                : Long.valueOf(TriggeredValuesParser.sansDecimals(s));
         if (multiplier <= 0) {
             throw new IllegalArgumentException("Cannot use multiplier value " + multiplier + "!");
         }

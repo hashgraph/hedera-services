@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.submerkle;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -62,12 +63,9 @@ class NftAdjustmentsTest {
     @Test
     void deserialize() throws IOException {
         SerializableDataInputStream stream = mock(SerializableDataInputStream.class);
-        given(
-                        stream.readSerializableList(
-                                eq(NftAdjustments.MAX_NUM_ADJUSTMENTS), anyBoolean(), any()))
+        given(stream.readSerializableList(eq(NftAdjustments.MAX_NUM_ADJUSTMENTS), anyBoolean(), any()))
                 .willReturn(Collections.emptyList());
-        given(stream.readLongArray(NftAdjustments.MAX_NUM_ADJUSTMENTS))
-                .willReturn(new long[] {1, 2, 3});
+        given(stream.readLongArray(NftAdjustments.MAX_NUM_ADJUSTMENTS)).willReturn(new long[] {1, 2, 3});
 
         subject.deserialize(stream, 1);
         verify(stream).readLongArray(NftAdjustments.MAX_NUM_ADJUSTMENTS);
@@ -80,10 +78,8 @@ class NftAdjustmentsTest {
         SerializableDataOutputStream stream = mock(SerializableDataOutputStream.class);
         subject.serialize(stream);
         verify(stream).writeLongArray(new long[] {1});
-        verify(stream, times(1))
-                .writeSerializableList(List.of(EntityId.fromGrpcAccountId(sender)), true, true);
-        verify(stream, times(1))
-                .writeSerializableList(List.of(EntityId.fromGrpcAccountId(recipient)), true, true);
+        verify(stream, times(1)).writeSerializableList(List.of(EntityId.fromGrpcAccountId(sender)), true, true);
+        verify(stream, times(1)).writeSerializableList(List.of(EntityId.fromGrpcAccountId(recipient)), true, true);
     }
 
     @Test
@@ -148,13 +144,11 @@ class NftAdjustmentsTest {
     @Test
     void fromGrpc() {
         givenCanonicalSubject();
-        var grpc =
-                List.of(
-                        NftTransfer.newBuilder()
-                                .setSerialNumber(1)
-                                .setReceiverAccountID(recipient)
-                                .setSenderAccountID(sender)
-                                .build());
+        var grpc = List.of(NftTransfer.newBuilder()
+                .setSerialNumber(1)
+                .setReceiverAccountID(recipient)
+                .setSenderAccountID(sender)
+                .build());
 
         assertEquals(subject, NftAdjustments.fromGrpc(grpc));
     }
@@ -164,12 +158,10 @@ class NftAdjustmentsTest {
     }
 
     private NftAdjustments canonicalOwnershipChange() {
-        return NftAdjustments.fromGrpc(
-                List.of(
-                        NftTransfer.newBuilder()
-                                .setSerialNumber(1)
-                                .setSenderAccountID(sender)
-                                .setReceiverAccountID(recipient)
-                                .build()));
+        return NftAdjustments.fromGrpc(List.of(NftTransfer.newBuilder()
+                .setSerialNumber(1)
+                .setSenderAccountID(sender)
+                .setReceiverAccountID(recipient)
+                .build()));
     }
 }

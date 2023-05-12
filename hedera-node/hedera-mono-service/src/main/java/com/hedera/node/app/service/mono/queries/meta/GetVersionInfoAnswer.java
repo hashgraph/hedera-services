@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.meta;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetVersionInfo;
@@ -40,20 +41,14 @@ public final class GetVersionInfoAnswer extends AbstractAnswer {
                 GetVersionInfo,
                 query -> query.getNetworkGetVersionInfo().getHeader().getPayment(),
                 query -> query.getNetworkGetVersionInfo().getHeader().getResponseType(),
-                response ->
-                        response.getNetworkGetVersionInfo()
-                                .getHeader()
-                                .getNodeTransactionPrecheckCode(),
+                response -> response.getNetworkGetVersionInfo().getHeader().getNodeTransactionPrecheckCode(),
                 (query, view) -> OK);
         this.semanticVersions = semanticVersions;
     }
 
     @Override
     public Response responseGiven(
-            final Query query,
-            final @Nullable StateView view,
-            final ResponseCodeEnum validity,
-            final long cost) {
+            final Query query, final @Nullable StateView view, final ResponseCodeEnum validity, final long cost) {
         final var op = query.getNetworkGetVersionInfo();
         final var response = NetworkGetVersionInfoResponse.newBuilder();
 

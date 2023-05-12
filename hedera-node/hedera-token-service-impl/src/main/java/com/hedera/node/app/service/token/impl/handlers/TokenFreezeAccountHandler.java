@@ -13,51 +13,130 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl.handlers;
 
-import com.hedera.node.app.spi.meta.TransactionMetadata;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static java.util.Objects.requireNonNull;
+
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.state.token.TokenRelation;
+import com.hedera.hapi.node.token.TokenFreezeAccountTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableTokenStore;
+import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
+import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#TokenFreezeAccount}.
+ * HederaFunctionality#TOKEN_FREEZE_ACCOUNT}.
  */
+@Singleton
 public class TokenFreezeAccountHandler implements TransactionHandler {
+    @Inject
+    public TokenFreezeAccountHandler() {
+        // Exists for injection
+    }
 
-    /**
-     * This method is called during the pre-handle workflow.
-     *
-     * <p>Typically, this method validates the {@link TransactionBody} semantically, gathers all
-     * required keys, warms the cache, and creates the {@link TransactionMetadata} that is used in
-     * the handle stage.
-     *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
-     *
-     * @param txBody the {@link TransactionBody} with the transaction data
-     * @param payer the {@link AccountID} of the payer
-     * @return the {@link TransactionMetadata} with all information that needs to be passed to
-     *     {@link #handle(TransactionMetadata)}
-     * @throws NullPointerException if one of the arguments is {@code null}
-     */
-    public TransactionMetadata preHandle(
-            @NonNull final TransactionBody txBody, @NonNull final AccountID payer) {
-        throw new UnsupportedOperationException("Not implemented");
+    @Override
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
+        requireNonNull(context);
+        final var op = context.body().tokenFreezeOrThrow();
+        pureChecks(op);
+
+        final var tokenStore = context.createStore(ReadableTokenStore.class);
+        final var tokenMeta = tokenStore.getTokenMeta(op.tokenOrElse(TokenID.DEFAULT));
+        if (tokenMeta == null) throw new PreCheckException(INVALID_TOKEN_ID);
+        if (tokenMeta.hasFreezeKey()) {
+            context.requireKey(tokenMeta.freezeKey());
+        } else {
+            throw new PreCheckException(TOKEN_HAS_NO_FREEZE_KEY);
+        }
     }
 
     /**
      * This method is called during the handle workflow. It executes the actual transaction.
      *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
-     *
-     * @param metadata the {@link TransactionMetadata} that was generated during pre-handle.
+     * @param txn the {@link TokenFreezeAccountTransactionBody} of the active transaction
+     * @param accountStore the {@link ReadableAccountStore} for the active transaction
+     * @param tokenStore the {@link ReadableTokenStore} for the active transaction
+     * @param tokenRelStore the {@link WritableTokenRelationStore} for the active transaction
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void handle(@NonNull final TransactionMetadata metadata) {
-        throw new UnsupportedOperationException("Not implemented");
+    public void handle(
+            @NonNull final TransactionBody txn,
+            @NonNull final ReadableAccountStore accountStore,
+            @NonNull final ReadableTokenStore tokenStore,
+            @NonNull final WritableTokenRelationStore tokenRelStore)
+            throws HandleException {
+        requireNonNull(txn);
+        requireNonNull(accountStore);
+        requireNonNull(tokenStore);
+        requireNonNull(tokenRelStore);
+
+        final var op = txn.tokenFreezeOrThrow();
+        final var tokenRel = validateSemantics(op, accountStore, tokenStore, tokenRelStore);
+
+        final var copyBuilder = tokenRel.copyBuilder();
+        copyBuilder.frozen(true);
+        tokenRelStore.put(copyBuilder.build());
+    }
+
+    /**
+     * Performs checks independent of state or context
+     */
+    private void pureChecks(@NonNull final TokenFreezeAccountTransactionBody op) throws PreCheckException {
+        if (!op.hasToken()) {
+            throw new PreCheckException(INVALID_TOKEN_ID);
+        }
+
+        if (!op.hasAccount()) {
+            throw new PreCheckException(INVALID_ACCOUNT_ID);
+        }
+    }
+
+    /**
+     * Performs checks that the given token and accounts from the state are valid and that the
+     * token is associated to the account
+     *
+     * @return the token relation for the given token and account
+     */
+    private TokenRelation validateSemantics(
+            @NonNull final TokenFreezeAccountTransactionBody op,
+            @NonNull final ReadableAccountStore accountStore,
+            @NonNull final ReadableTokenStore tokenStore,
+            @NonNull final WritableTokenRelationStore tokenRelStore)
+            throws HandleException {
+        // Check that the token exists
+        final var tokenId = op.tokenOrElse(TokenID.DEFAULT);
+        final var tokenMeta = tokenStore.getTokenMeta(tokenId);
+        validateTrue(tokenMeta != null, INVALID_TOKEN_ID);
+
+        // Check that the token has a freeze key
+        validateTrue(tokenMeta.hasFreezeKey(), TOKEN_HAS_NO_FREEZE_KEY);
+
+        // Check that the account exists
+        final var account = accountStore.getAccountById(op.accountOrElse(AccountID.DEFAULT));
+        validateTrue(account != null, INVALID_ACCOUNT_ID);
+
+        // Check that the token is associated to the account
+        final var tokenRel = tokenRelStore.getForModify(tokenId.tokenNum(), account.accountNumber());
+        validateTrue(tokenRel.isPresent(), TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+
+        // Return the token relation
+        return tokenRel.get();
     }
 }

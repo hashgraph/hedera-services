@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs.metadata.lookups;
 
 import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.INVALID_TOPIC;
@@ -20,16 +21,16 @@ import static com.hedera.node.app.service.mono.utils.EntityNum.fromTopicId;
 
 import com.hedera.node.app.service.mono.sigs.metadata.SafeLookupResult;
 import com.hedera.node.app.service.mono.sigs.metadata.TopicSigningMetadata;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.TopicID;
-import com.swirlds.merkle.map.MerkleMap;
 import java.util.function.Supplier;
 
 public class DefaultTopicLookup implements TopicSigMetaLookup {
-    private final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics;
+    private final Supplier<MerkleMapLike<EntityNum, MerkleTopic>> topics;
 
-    public DefaultTopicLookup(Supplier<MerkleMap<EntityNum, MerkleTopic>> topics) {
+    public DefaultTopicLookup(Supplier<MerkleMapLike<EntityNum, MerkleTopic>> topics) {
         this.topics = topics;
     }
 

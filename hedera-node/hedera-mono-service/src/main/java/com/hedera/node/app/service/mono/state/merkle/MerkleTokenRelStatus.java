@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.merkle;
 
 import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.packedNums;
@@ -61,10 +62,7 @@ public class MerkleTokenRelStatus extends PartialMerkleLeaf
     }
 
     public MerkleTokenRelStatus(
-            final long balance,
-            final boolean frozen,
-            final boolean kycGranted,
-            final boolean automaticAssociation) {
+            final long balance, final boolean frozen, final boolean kycGranted, final boolean automaticAssociation) {
         this.balance = balance;
         this.frozen = frozen;
         this.kycGranted = kycGranted;
@@ -106,8 +104,7 @@ public class MerkleTokenRelStatus extends PartialMerkleLeaf
     }
 
     @Override
-    public void deserialize(final SerializableDataInputStream in, final int version)
-            throws IOException {
+    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         balance = in.readLong();
         frozen = in.readBoolean();
         kycGranted = in.readBoolean();
@@ -175,8 +172,7 @@ public class MerkleTokenRelStatus extends PartialMerkleLeaf
     public void setBalance(final long balance) {
         throwIfImmutable("Cannot change this token relation's balance if it's immutable.");
         if (balance < 0) {
-            throw new IllegalArgumentException(
-                    String.format("Argument 'balance=%d' would negate %s!", balance, this));
+            throw new IllegalArgumentException(String.format("Argument 'balance=%d' would negate %s!", balance, this));
         }
         this.balance = balance;
     }
@@ -204,8 +200,7 @@ public class MerkleTokenRelStatus extends PartialMerkleLeaf
     }
 
     public void setAutomaticAssociation(final boolean automaticAssociation) {
-        throwIfImmutable(
-                "Cannot change this token relation's automaticAssociation if it's immutable.");
+        throwIfImmutable("Cannot change this token relation's automaticAssociation if it's immutable.");
         this.automaticAssociation = automaticAssociation;
     }
 

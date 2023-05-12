@@ -13,13 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.stats;
 
 import com.hedera.node.app.service.mono.utils.NonAtomicReference;
 import com.swirlds.common.metrics.DoubleGauge;
 import java.util.function.DoubleSupplier;
 
-public record UtilGauge(
-        DoubleSupplier valueSource,
-        DoubleGauge.Config config,
-        NonAtomicReference<DoubleGauge> gauge) {}
+public record UtilGauge(DoubleSupplier valueSource, DoubleGauge.Config config, NonAtomicReference<DoubleGauge> gauge) {}

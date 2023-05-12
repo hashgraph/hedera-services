@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.records;
 
 import com.hedera.node.app.service.mono.state.EntityCreator;
@@ -130,9 +131,7 @@ public interface RecordsHistorian {
      * @param recordSoFar the in-progress child record
      */
     void trackPrecedingChildRecord(
-            int sourceId,
-            TransactionBody.Builder syntheticBody,
-            ExpirableTxnRecord.Builder recordSoFar);
+            int sourceId, TransactionBody.Builder syntheticBody, ExpirableTxnRecord.Builder recordSoFar);
 
     /**
      * Reverts all records created by the given source.
@@ -175,8 +174,7 @@ public interface RecordsHistorian {
      * Applies the given customization to the first in-progress successor record (and synthetic
      * transaction) that matches the given predicate.
      */
-    void customizeSuccessor(
-            Predicate<InProgressChildRecord> matcher, Consumer<InProgressChildRecord> customizer);
+    void customizeSuccessor(Predicate<InProgressChildRecord> matcher, Consumer<InProgressChildRecord> customizer);
 
     /**
      * Convenience method to get the {@link RunningHash} of the last record saved in this

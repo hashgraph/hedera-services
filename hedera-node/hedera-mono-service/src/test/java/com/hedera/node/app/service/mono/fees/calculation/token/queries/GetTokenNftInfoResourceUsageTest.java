@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.token.queries;
 
 import static com.hedera.node.app.service.mono.queries.token.GetTokenNftInfoAnswer.NFT_INFO_CTX_KEY;
@@ -46,16 +47,17 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
 class GetTokenNftInfoResourceUsageTest {
-    private static final NftID target =
-            NftID.newBuilder().setTokenID(IdUtils.asToken("0.0.123")).setSerialNumber(1).build();
+    private static final NftID target = NftID.newBuilder()
+            .setTokenID(IdUtils.asToken("0.0.123"))
+            .setSerialNumber(1)
+            .build();
     private static final ByteString metadata = ByteString.copyFromUtf8("LMAO");
     private static final AccountID owner = IdUtils.asAccount("0.0.321321");
-    private static final TokenNftInfo info =
-            TokenNftInfo.newBuilder()
-                    .setAccountID(owner)
-                    .setMetadata(metadata)
-                    .setNftID(target)
-                    .build();
+    private static final TokenNftInfo info = TokenNftInfo.newBuilder()
+            .setAccountID(owner)
+            .setMetadata(metadata)
+            .setNftID(target)
+            .build();
     private static final Query satisfiableAnswerOnly = TokenNftInfoQuery(target, ANSWER_ONLY);
 
     private FeeData expected;
@@ -138,10 +140,9 @@ class GetTokenNftInfoResourceUsageTest {
     }
 
     private static final Query TokenNftInfoQuery(final NftID id, final ResponseType type) {
-        final var op =
-                TokenGetNftInfoQuery.newBuilder()
-                        .setNftID(id)
-                        .setHeader(QueryHeader.newBuilder().setResponseType(type));
+        final var op = TokenGetNftInfoQuery.newBuilder()
+                .setNftID(id)
+                .setHeader(QueryHeader.newBuilder().setResponseType(type));
         return Query.newBuilder().setTokenGetNftInfo(op).build();
     }
 }

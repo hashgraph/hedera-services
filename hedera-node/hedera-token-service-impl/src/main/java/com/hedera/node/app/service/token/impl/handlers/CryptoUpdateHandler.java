@@ -13,57 +13,52 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl.handlers;
 
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
-import com.hedera.node.app.service.token.impl.ReadableAccountStore;
-import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoUpdate}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#CRYPTO_UPDATE}.
  */
+@Singleton
 public class CryptoUpdateHandler implements TransactionHandler {
 
-    /**
-     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoUpdate}
-     * transaction, returning the metadata required to, at minimum, validate the signatures of all
-     * required signing keys.
-     *
-     * @param txn the {@link TransactionBody} with the transaction data
-     * @param payer the {@link AccountID} of the payer
-     * @param accountStore the {@link ReadableAccountStore} with the current data
-     * @return the {@link TransactionMetadata} with all information that needs to be passed to
-     *     {@link #handle(TransactionMetadata)}
-     * @throws NullPointerException if one of the arguments is {@code null}
-     */
-    public TransactionMetadata preHandle(
-            @NonNull final TransactionBody txn,
-            @NonNull final AccountID payer,
-            @NonNull final ReadableAccountStore accountStore,
-            @NonNull final CryptoSignatureWaivers waivers) {
-        final var op = txn.getCryptoUpdateAccount();
-        final var updateAccountId = op.getAccountIDToUpdate();
-        final var meta =
-                new SigTransactionMetadataBuilder(accountStore).payerKeyFor(payer).txnBody(txn);
+    private final CryptoSignatureWaivers waivers;
+
+    @Inject
+    public CryptoUpdateHandler(@NonNull final CryptoSignatureWaivers waivers) {
+        this.waivers = requireNonNull(waivers, "The supplied argument 'waivers' must not be null");
+    }
+
+    @Override
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
+        requireNonNull(context);
+        requireNonNull(waivers);
+        final var txn = context.body();
+        final var payer = context.payer();
+        final var op = txn.cryptoUpdateAccountOrThrow();
+        final var updateAccountId = op.accountIDToUpdateOrElse(AccountID.DEFAULT);
 
         final var newAccountKeyMustSign = !waivers.isNewKeySignatureWaived(txn, payer);
         final var targetAccountKeyMustSign = !waivers.isTargetAccountSignatureWaived(txn, payer);
         if (targetAccountKeyMustSign) {
-            meta.addNonPayerKey(updateAccountId);
+            context.requireKeyOrThrow(updateAccountId, INVALID_ACCOUNT_ID);
         }
         if (newAccountKeyMustSign && op.hasKey()) {
-            final var candidate = asHederaKey(op.getKey());
-            candidate.ifPresent(meta::addToReqNonPayerKeys);
+            context.requireKey(op.keyOrThrow());
         }
-        return meta.build();
     }
 
     /**
@@ -72,10 +67,9 @@ public class CryptoUpdateHandler implements TransactionHandler {
      * <p>Please note: the method signature is just a placeholder which is most likely going to
      * change.
      *
-     * @param metadata the {@link TransactionMetadata} that was generated during pre-handle.
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void handle(@NonNull final TransactionMetadata metadata) {
+    public void handle() {
         throw new UnsupportedOperationException("Not implemented");
     }
 }

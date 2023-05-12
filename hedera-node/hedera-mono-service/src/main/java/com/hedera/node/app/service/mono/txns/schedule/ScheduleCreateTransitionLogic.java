@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.schedule;
 
 import static com.hedera.node.app.service.mono.state.submerkle.RichInstant.fromJava;
@@ -100,9 +101,7 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
             transitionFor(accessor.getTxnBytes(), accessor.getSigMap());
         } catch (final Exception e) {
             log.warn(
-                    "Unhandled error while processing :: {}!",
-                    txnCtx.accessor().getSignedTxnWrapper(),
-                    e);
+                    "Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxnWrapper(), e);
             abortWith(FAIL_INVALID);
         }
     }
@@ -128,8 +127,7 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
             return;
         }
 
-        final var throttleResult =
-                scheduleProcessing.checkFutureThrottlesForCreate(scheduleId, schedule);
+        final var throttleResult = scheduleProcessing.checkFutureThrottlesForCreate(scheduleId, schedule);
 
         if (throttleResult != OK) {
             abortWith(throttleResult);
@@ -139,20 +137,14 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
         final var payerKey = txnCtx.activePayerKey();
         final var topLevelKeys =
                 schedule.adminKey().map(ak -> List.of(payerKey, ak)).orElse(List.of(payerKey));
-        final var validScheduleKeys =
-                classifier.validScheduleKeys(
-                        topLevelKeys,
-                        sigMap,
-                        activationHelper.currentSigsFn(),
-                        activationHelper::visitScheduledCryptoSigs);
-        final var signingOutcome =
-                signingsWitness.observeInScope(
-                        scheduleId,
-                        store,
-                        validScheduleKeys,
-                        activationHelper,
-                        properties.schedulingLongTermEnabled()
-                                && schedule.calculatedWaitForExpiry());
+        final var validScheduleKeys = classifier.validScheduleKeys(
+                topLevelKeys, sigMap, activationHelper.currentSigsFn(), activationHelper::visitScheduledCryptoSigs);
+        final var signingOutcome = signingsWitness.observeInScope(
+                scheduleId,
+                store,
+                validScheduleKeys,
+                activationHelper,
+                properties.schedulingLongTermEnabled() && schedule.calculatedWaitForExpiry());
 
         if (!ACCEPTABLE_SIGNING_OUTCOMES.contains(signingOutcome.getLeft())) {
             abortWith(signingOutcome.getLeft());
@@ -173,9 +165,7 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
     }
 
     private void completeContextWith(
-            final ScheduleID scheduleID,
-            final ScheduleVirtualValue schedule,
-            final ResponseCodeEnum finalOutcome) {
+            final ScheduleID scheduleID, final ScheduleVirtualValue schedule, final ResponseCodeEnum finalOutcome) {
         txnCtx.setCreated(scheduleID);
         txnCtx.setScheduledTxnId(schedule.scheduledTransactionId());
         txnCtx.setStatus(finalOutcome);

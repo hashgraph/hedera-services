@@ -13,36 +13,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.throttle;
 
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.transaction.Query;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Keeps track of the amount of usage of different throttle categories (by {@code id}), and returns
  * whether the throttle has been exceeded after applying the given incremental amount.
  */
-public class ThrottleAccumulator {
-
-    private static final Logger LOG = LoggerFactory.getLogger(ThrottleAccumulator.class);
+public interface ThrottleAccumulator {
 
     /**
-     * Increments the throttle associated with functionality's {@code id} and returns whether the
-     * throttle has been exceeded. If there is no throttle associated with {@code functionality},
-     * then an {@link IllegalArgumentException} will be thrown. This is to prevent bugs where some
-     * code accidentally specified a throttle but a corresponding throttle was never configured,
-     * leading to an open-throttle situation (i.e. an un-throttled attack vector).
+     * Test for capacity in the throttle bucket(s) associated with the given transaction, and
+     * returns whether the throttle has been exceeded. (If there is no throttle associated with
+     * the {@code transaction}, will always return true.)
      *
-     * @param functionality The ID of the throttle to increment and check. This must exist.
-     * @return true if the throttle has been exceeded, false otherwise.
-     * @throws NullPointerException if (@code functionality} is {@code null}
-     * @throws IllegalArgumentException if no throttle exists for {@code functionality}
+     * @param txn the transaction to consider throttling
+     * @return true if the relevant throttle(s) have run out of capacity, false otherwise.
+     * @throws NullPointerException if {@code txn} is {@code null}
      */
-    public boolean shouldThrottle(@NonNull final HederaFunctionality functionality) {
-        // TODO: Implement (#4206)
-        LOG.warn("ThrottleAccumulator.shouldThrottle() not implemented");
-        return false;
-    }
+    boolean shouldThrottle(@NonNull TransactionBody txn);
+
+    /**
+     * Tests whether the given query should be throttled, assuming its functionality is as
+     * specified.
+     *
+     * @param functionality the functionality of the query
+     * @param query the query to test
+     * @return true if the query should be throttled, false otherwise
+     */
+    boolean shouldThrottleQuery(@NonNull final HederaFunctionality functionality, @NonNull Query query);
 }

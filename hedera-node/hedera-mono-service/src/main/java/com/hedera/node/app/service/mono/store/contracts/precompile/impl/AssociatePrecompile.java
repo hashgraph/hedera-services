@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ADDRESS_PAIR_RAW_TYPE;
@@ -34,18 +35,22 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.Infrastructur
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.Association;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hedera.node.app.service.mono.utils.EntityIdUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.Objects;
 import java.util.function.UnaryOperator;
 import javax.inject.Provider;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 
 public class AssociatePrecompile extends AbstractAssociatePrecompile {
-    private static final Function ASSOCIATE_TOKEN_FUNCTION =
-            new Function("associateToken(address,address)", INT);
-    private static final Bytes ASSOCIATE_TOKEN_SELECTOR =
-            Bytes.wrap(ASSOCIATE_TOKEN_FUNCTION.selector());
-    private static final ABIType<Tuple> ASSOCIATE_TOKEN_DECODER =
-            TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
+    private static final Function ASSOCIATE_TOKEN_FUNCTION = new Function("associateToken(address,address)", INT);
+    private static final Bytes ASSOCIATE_TOKEN_SELECTOR = Bytes.wrap(ASSOCIATE_TOKEN_FUNCTION.selector());
+    private static final ABIType<Tuple> ASSOCIATE_TOKEN_DECODER = TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
+    private final TokenID tokenID;
+    private final AccountID callerAccountID;
 
     public AssociatePrecompile(
             final WorldLedgers ledgers,
@@ -65,12 +70,41 @@ public class AssociatePrecompile extends AbstractAssociatePrecompile {
                 infrastructureFactory,
                 pricingUtils,
                 feeCalculator);
+        this.tokenID = null;
+        callerAccountID = null;
+    }
+
+    public AssociatePrecompile(
+            final TokenID tokenID,
+            final Address callerAccount,
+            final WorldLedgers ledgers,
+            final ContractAliases aliases,
+            final EvmSigsVerifier sigsVerifier,
+            final SideEffectsTracker sideEffects,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final InfrastructureFactory infrastructureFactory,
+            final PrecompilePricingUtils pricingUtils,
+            final Provider<FeeCalculator> feeCalculator) {
+        super(
+                ledgers,
+                aliases,
+                sigsVerifier,
+                sideEffects,
+                syntheticTxnFactory,
+                infrastructureFactory,
+                pricingUtils,
+                feeCalculator);
+
+        this.tokenID = tokenID;
+        this.callerAccountID = EntityIdUtils.accountIdFromEvmAddress(Objects.requireNonNull(callerAccount));
     }
 
     @Override
-    public TransactionBody.Builder body(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        associateOp = decodeAssociation(input, aliasResolver);
+    public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        associateOp = tokenID == null
+                ? decodeAssociation(input, aliasResolver)
+                : Association.singleAssociation(Objects.requireNonNull(callerAccountID), tokenID);
+
         transactionBody = syntheticTxnFactory.createAssociate(associateOp);
         return transactionBody;
     }
@@ -80,13 +114,10 @@ public class AssociatePrecompile extends AbstractAssociatePrecompile {
         return pricingUtils.computeGasRequirement(blockTimestamp, this, transactionBody);
     }
 
-    public static Association decodeAssociation(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        final Tuple decodedArguments =
-                decodeFunctionCall(input, ASSOCIATE_TOKEN_SELECTOR, ASSOCIATE_TOKEN_DECODER);
+    public static Association decodeAssociation(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        final Tuple decodedArguments = decodeFunctionCall(input, ASSOCIATE_TOKEN_SELECTOR, ASSOCIATE_TOKEN_DECODER);
 
-        final var accountID =
-                convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
+        final var accountID = convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
         final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(1));
 
         return Association.singleAssociation(accountID, tokenID);

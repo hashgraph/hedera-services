@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2016-2022 Hedera Hashgraph, LLC
+  ~
+  ~ This software is the confidential and proprietary information of
+  ~ Hedera Hashgraph, LLC. ("Confidential Information"). You shall not
+  ~ disclose such Confidential Information and shall use it only in
+  ~ accordance with the terms of the license agreement you entered into
+  ~ with Hedera Hashgraph.
+  ~
+  ~ HEDERA HASHGRAPH MAKES NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF
+  ~ THE SOFTWARE, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+  ~ TO THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+  ~ PARTICULAR PURPOSE, OR NON-INFRINGEMENT. HEDERA HASHGRAPH SHALL NOT BE LIABLE FOR
+  ~ ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, MODIFYING OR
+  ~ DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
+  -->
+
+<Configuration status="INFO" monitorInterval="600">
+	<!--
+	Due to known log4j2 issues with how Markers and LogLevels are evaluated there must be a top level <Filter> element
+	to ensure that the root logger does not execute all the lambda arguments erroneously. Potential work around in the
+	future is to use a top-level <Filter> and <Logger> specific filters in combination to achieve the desired
+	multi-logger setup for diagnostic logging.
+	-->
+	<Filters>
+		<!-- Filter out levels above INFO (ex: DEBUG & TRACE) -->
+		<!-- Intentially left disabled by default -->
+		<!-- <ThresholdFilter level="INFO"                 onMatch="NEUTRAL" onMismatch="DENY" />-->
+
+		<!-- In the following, enable a marker with onMatch="ACCEPT" and disable with onMatch="DENY". -->
+		<!-- More markers can be added, but ensure that every onMismatch="NEUTRAL", except the last is "DENY". -->
+
+		<!-- Exceptions -->
+		<MarkerFilter marker="EXCEPTION" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+		<MarkerFilter marker="TESTING_EXCEPTIONS" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+		<MarkerFilter marker="SOCKET_EXCEPTIONS" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+		<MarkerFilter marker="TCP_CONNECT_EXCEPTIONS" onMatch="DENY" onMismatch="NEUTRAL"/>
+
+		<!-- Errors -->
+		<MarkerFilter marker="INVALID_EVENT_ERROR" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+
+		<!-- Synchronization/Gossip (Debug) -->
+		<MarkerFilter marker="SYNC" onMatch="DENY" onMismatch="NEUTRAL"/>
+		<MarkerFilter marker="SYNC_START" onMatch="DENY" onMismatch="NEUTRAL"/>
+		<MarkerFilter marker="SYNC_INFO" onMatch="DENY" onMismatch="NEUTRAL"/>
+		<MarkerFilter marker="SYNC_ERROR" onMatch="DENY" onMismatch="NEUTRAL"/>
+
+		<!-- Platform Events (Debug) -->
+		<MarkerFilter marker="CREATE_EVENT" onMatch="DENY" onMismatch="NEUTRAL"/>
+		<MarkerFilter marker="INTAKE_EVENT" onMatch="DENY" onMismatch="NEUTRAL"/>
+		<MarkerFilter marker="WATCH_EVENTS_SEND_REC" onMatch="DENY" onMismatch="NEUTRAL"/>
+		<MarkerFilter marker="EVENT_SIG" onMatch="DENY" onMismatch="NEUTRAL"/>
+		<MarkerFilter marker="EVENT_STREAM" onMatch="DENY" onMismatch="NEUTRAL"/>
+		<MarkerFilter marker="EVENT_RESTART" onMatch="DENY" onMismatch="NEUTRAL"/>
+		<MarkerFilter marker="STALE_EVENTS" onMatch="DENY" onMismatch="NEUTRAL"/>
+		<MarkerFilter marker="EVENT_PARSER" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+
+		<!-- Queues/Certificates/Utilities -->
+		<MarkerFilter marker="QUEUES" onMatch="DENY" onMismatch="NEUTRAL"/>
+		<MarkerFilter marker="CERTIFICATES" onMatch="DENY" onMismatch="NEUTRAL"/>
+		<MarkerFilter marker="LOCKS" onMatch="DENY" onMismatch="NEUTRAL"/>
+		<MarkerFilter marker="TIME_MEASURE" onMatch="DENY" onMismatch="NEUTRAL"/>
+
+		<!-- Cryptography -->
+		<MarkerFilter marker="ADV_CRYPTO_SYSTEM" onMatch="DENY" onMismatch="NEUTRAL"/>
+
+		<!-- Startup/Restart/Reconnect -->
+		<MarkerFilter marker="STARTUP" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+		<MarkerFilter marker="PLATFORM_STATUS" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+		<MarkerFilter marker="RECONNECT" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+		<MarkerFilter marker="FREEZE" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+
+		<!-- Saved States -->
+		<MarkerFilter marker="SNAPSHOT_MANAGER" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+		<MarkerFilter marker="STATE_TO_DISK" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+
+		<!-- Merkle Trees & Hashing -->
+		<MarkerFilter marker="MERKLE_FORCE_FLUSH" onMatch="DENY" onMismatch="NEUTRAL"/>
+		<MarkerFilter marker="MERKLE_GENERATION" onMatch="DENY" onMismatch="NEUTRAL"/>
+		<MarkerFilter marker="MERKLE_LOCKS" onMatch="DENY" onMismatch="NEUTRAL"/>
+
+		<!-- Migration -->
+		<MarkerFilter marker="MIGRATION" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+
+		<!-- Platform Testing App -->
+		<MarkerFilter marker="DEMO_INFO" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+		<MarkerFilter marker="DEMO_QUORUM" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+		<MarkerFilter marker="SAVE_EXPECTED_MAP" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+		<MarkerFilter marker="DEMO_STAT" onMatch="DENY" onMismatch="NEUTRAL"/>
+		<MarkerFilter marker="DEMO_TRANSACTION_INFO" onMatch="DENY" onMismatch="NEUTRAL"/>
+		<MarkerFilter marker="DEMO_MAP" onMatch="DENY" onMismatch="NEUTRAL"/>
+		<MarkerFilter marker="EXPIRATION" onMatch="DENY" onMismatch="NEUTRAL"/>
+
+		<!-- Reconnect Specific -->
+		<MarkerFilter marker="TESTING_EXCEPTIONS_ACCEPTABLE_RECONNECT" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+	</Filters>
+	<Appenders>
+		<Console name="Console" target="SYSTEM_OUT">
+			<PatternLayout>
+				<pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-8sn %-5p %-16marker &lt;%t&gt; %c{1}: %msg%n</pattern>
+			</PatternLayout>
+		</Console>
+
+		<!-- JSON formatted output -->
+		<RollingRandomAccessFile name="SwirldsPrimaryJsonLog" fileName="swirlds.json" filePattern="swirlds.%i.json">
+			<JsonLayout>
+				<!-- ensure there is a newline after each entry -->
+				<eventEol>true</eventEol>
+				<!-- don't add whitespace in the middle of an entry -->
+				<compact>true</compact>
+				<!-- stack traces are SUPER long in json format, don't include them -->
+				<includeStacktrace>false</includeStacktrace>
+			</JsonLayout>
+			<Policies>
+				<SizeBasedTriggeringPolicy size="500 MB"/>
+			</Policies>
+			<DefaultRolloverStrategy max="1"/>
+		</RollingRandomAccessFile>
+
+	</Appenders>
+	<Loggers>
+		<Root level="ALL">
+			<AppenderRef ref="Console"/>
+			<AppenderRef ref="SwirldsPrimaryJsonLog"/>
+
+			<!-- Debugging Logs that are disabled by default (Do not remove) -->
+			<!-- <AppenderRef ref="SwirldsSyncLog" />-->
+			<!-- <AppenderRef ref="SwirldsHeartbeatLog" />-->
+			<!-- <AppenderRef ref="SwirldsEventLog" />-->
+			<!-- <AppenderRef ref="SwirldsSignedStateLog" />-->
+		</Root>
+	</Loggers>
+</Configuration>

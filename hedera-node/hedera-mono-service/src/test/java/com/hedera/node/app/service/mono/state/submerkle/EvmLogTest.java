@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.submerkle;
 
 import static java.util.stream.Collectors.toList;
@@ -36,11 +37,10 @@ class EvmLogTest {
     private static final byte[] bloom = "ijklmnopqrstuvwxyz".getBytes();
     private static final EntityNum aSourceNum = EntityNum.fromLong(3L);
     private static final EntityId aLoggerId = aSourceNum.toId().asEntityId();
-    private static final List<byte[]> aTopics =
-            List.of(
-                    "first000000000000000000000000000".getBytes(),
-                    "second00000000000000000000000000".getBytes(),
-                    "third000000000000000000000000000".getBytes());
+    private static final List<byte[]> aTopics = List.of(
+            "first000000000000000000000000000".getBytes(),
+            "second00000000000000000000000000".getBytes(),
+            "third000000000000000000000000000".getBytes());
 
     private EvmLog subject;
 
@@ -51,11 +51,10 @@ class EvmLogTest {
 
     @Test
     void convertsFromBesuAsExpected() {
-        final var aSource =
-                new Log(
-                        aSourceNum.toEvmAddress(),
-                        Bytes.wrap(data),
-                        aTopics.stream().map(bytes -> LogTopic.of(Bytes.wrap(bytes))).toList());
+        final var aSource = new Log(
+                aSourceNum.toEvmAddress(),
+                Bytes.wrap(data),
+                aTopics.stream().map(bytes -> LogTopic.of(Bytes.wrap(bytes))).toList());
         final var aBloom = bloomFor(aSource);
         subject.setBloom(aBloom);
 
@@ -66,25 +65,18 @@ class EvmLogTest {
 
     @Test
     void convertsFromTwoBesuAsExpected() {
-        final var aSource =
-                new Log(
-                        aSourceNum.toEvmAddress(),
-                        Bytes.wrap(data),
-                        aTopics.stream().map(bytes -> LogTopic.of(Bytes.wrap(bytes))).toList());
+        final var aSource = new Log(
+                aSourceNum.toEvmAddress(),
+                Bytes.wrap(data),
+                aTopics.stream().map(bytes -> LogTopic.of(Bytes.wrap(bytes))).toList());
         final var aBloom = bloomFor(aSource);
         final var bSourceNum = EntityNum.fromLong(666);
-        final var bSource =
-                new Log(bSourceNum.toEvmAddress(), Bytes.wrap(otherData), Collections.emptyList());
+        final var bSource = new Log(bSourceNum.toEvmAddress(), Bytes.wrap(otherData), Collections.emptyList());
         final var bBloom = bloomFor(bSource);
 
-        final var expected =
-                List.of(
-                        new EvmLog(aSourceNum.toId().asEntityId(), aBloom, aTopics, data),
-                        new EvmLog(
-                                bSourceNum.toId().asEntityId(),
-                                bBloom,
-                                Collections.emptyList(),
-                                otherData));
+        final var expected = List.of(
+                new EvmLog(aSourceNum.toId().asEntityId(), aBloom, aTopics, data),
+                new EvmLog(bSourceNum.toId().asEntityId(), bBloom, Collections.emptyList(), otherData));
 
         final var converted = EvmLog.fromBesu(List.of(aSource, bSource));
 
@@ -105,8 +97,7 @@ class EvmLogTest {
     @Test
     void areSameTopicsBadScenarios() {
         List<byte[]> differentTopics = List.of("first".getBytes(), "second".getBytes());
-        List<byte[]> sameButDifferentTopics =
-                List.of("first".getBytes(), "second".getBytes(), "thirds".getBytes());
+        List<byte[]> sameButDifferentTopics = List.of("first".getBytes(), "second".getBytes(), "thirds".getBytes());
 
         EvmLog copy = new EvmLog(aLoggerId, bloom, differentTopics, data);
         EvmLog sameButDifferentCopy = new EvmLog(aLoggerId, bloom, sameButDifferentTopics, data);
@@ -151,11 +142,7 @@ class EvmLogTest {
     @Test
     void beanWorks() {
         assertEquals(
-                new EvmLog(
-                        subject.getContractId(),
-                        subject.getBloom(),
-                        subject.getTopics(),
-                        subject.getData()),
+                new EvmLog(subject.getContractId(), subject.getBloom(), subject.getTopics(), subject.getData()),
                 subject);
     }
 

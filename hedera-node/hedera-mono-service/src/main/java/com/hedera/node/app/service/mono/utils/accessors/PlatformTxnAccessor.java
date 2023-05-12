@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.utils.accessors;
 
 import com.google.common.base.MoreObjects;
@@ -28,6 +29,7 @@ import com.hedera.node.app.service.mono.sigs.order.LinkedRefs;
 import com.hedera.node.app.service.mono.sigs.sourcing.PojoSigMapPubKeyToSigBytes;
 import com.hedera.node.app.service.mono.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.node.app.service.mono.txns.span.ExpandHandleSpanMapAccessor;
+import com.hedera.node.app.service.mono.utils.PendingCompletion;
 import com.hedera.node.app.service.mono.utils.RationalizedSigMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -40,6 +42,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.crypto.TransactionSignature;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -59,19 +62,18 @@ public class PlatformTxnAccessor implements SwirldsTxnAccessor {
     private LinkedRefs linkedRefs;
     private ResponseCodeEnum expandedSigStatus;
     private RationalizedSigMeta sigMeta = null;
+    private List<PendingCompletion> pendingCompletions = Collections.emptyList();
 
     protected PlatformTxnAccessor(final TxnAccessor delegate) {
         this.delegate = delegate;
         pubKeyToSigBytes = new PojoSigMapPubKeyToSigBytes(delegate.getSigMap());
     }
 
-    public static PlatformTxnAccessor from(final Transaction transaction)
-            throws InvalidProtocolBufferException {
+    public static PlatformTxnAccessor from(final Transaction transaction) throws InvalidProtocolBufferException {
         return from(transaction.toByteArray());
     }
 
-    public static PlatformTxnAccessor from(final byte[] contents)
-            throws InvalidProtocolBufferException {
+    public static PlatformTxnAccessor from(final byte[] contents) throws InvalidProtocolBufferException {
         return new PlatformTxnAccessor(SignedTxnAccessor.from(contents));
     }
 
@@ -146,11 +148,20 @@ public class PlatformTxnAccessor implements SwirldsTxnAccessor {
     }
 
     @Override
+    public void setPendingCompletions(final List<PendingCompletion> pendingCompletions) {
+        this.pendingCompletions = pendingCompletions;
+    }
+
+    @Override
+    public List<PendingCompletion> getPendingCompletions() {
+        return this.pendingCompletions;
+    }
+
+    @Override
     public Function<byte[], TransactionSignature> getRationalizedPkToCryptoSigFn() {
         final var meta = getSigMeta();
         if (!meta.couldRationalizeOthers()) {
-            throw new IllegalStateException(
-                    "Public-key-to-sig mapping is unusable after rationalization failed");
+            throw new IllegalStateException("Public-key-to-sig mapping is unusable after rationalization failed");
         }
         return meta.pkToVerifiedSigFn();
     }

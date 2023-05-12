@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.records;
 
 import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.INVALID_SIGNATURE;
@@ -71,18 +72,21 @@ class TransactionRecordServiceTest {
     private static final Long GAS_USED = 1234L;
     private static final Long SBH_REFUND = 234L;
     private static final Long NON_THRESHOLD_FEE = GAS_USED - SBH_REFUND;
-    private static final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges =
-            new TreeMap<>(
-                    Map.of(
-                            Address.fromHexString("0x9"),
-                            Map.of(Bytes.of(10), Pair.of(Bytes.of(11), Bytes.of(12)))));
-    private static final List<SolidityAction> actions =
-            List.of(createAction(OP_CALL), createAction(OP_CREATE2));
+    private static final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges = new TreeMap<>(
+            Map.of(Address.fromHexString("0x9"), Map.of(Bytes.of(10), Pair.of(Bytes.of(11), Bytes.of(12)))));
+    private static final List<SolidityAction> actions = List.of(createAction(OP_CALL), createAction(OP_CREATE2));
 
-    @Mock private TransactionContext txnCtx;
-    @Mock private TransactionProcessingResult processingResult;
-    @Mock private EvmFnResult functionResult;
-    @Mock private EthTxData evmFnCallContext;
+    @Mock
+    private TransactionContext txnCtx;
+
+    @Mock
+    private TransactionProcessingResult processingResult;
+
+    @Mock
+    private EvmFnResult functionResult;
+
+    @Mock
+    private EthTxData evmFnCallContext;
 
     private TransactionRecordService subject;
 
@@ -109,8 +113,7 @@ class TransactionRecordServiceTest {
         verify(txnCtx).setCreateResult(captor.capture());
         verify(txnCtx).addFeeChargedToPayer(NON_THRESHOLD_FEE);
         assertArrayEquals(mockAddr, captor.getValue().getEvmAddress());
-        verify(txnCtx, Mockito.never())
-                .addSidecarRecord(any(TransactionSidecarRecord.Builder.class));
+        verify(txnCtx, Mockito.never()).addSidecarRecord(any(TransactionSidecarRecord.Builder.class));
     }
 
     @Test
@@ -127,11 +130,8 @@ class TransactionRecordServiceTest {
         given(processingResult.getOutput()).willReturn(Bytes.fromHexStringLenient("0xabcd"));
         given(processingResult.getStateChanges()).willReturn(stateChanges);
         given(processingResult.getActions()).willReturn(actions);
-        final var contractBytecodeSidecar =
-                SidecarUtils.createContractBytecodeSidecarFrom(
-                        IdUtils.asContract("0.0.5"),
-                        "initCode".getBytes(),
-                        "runtimeCode".getBytes());
+        final var contractBytecodeSidecar = SidecarUtils.createContractBytecodeSidecarFrom(
+                IdUtils.asContract("0.0.5"), "initCode".getBytes(), "runtimeCode".getBytes());
 
         // when:
         subject.externalizeSuccessfulEvmCreate(processingResult, mockAddr, contractBytecodeSidecar);
@@ -197,8 +197,7 @@ class TransactionRecordServiceTest {
         verify(txnCtx).setStatus(SUCCESS);
         verify(txnCtx).setCallResult(any());
         verify(txnCtx).addFeeChargedToPayer(NON_THRESHOLD_FEE);
-        verify(txnCtx, Mockito.never())
-                .addSidecarRecord(any(TransactionSidecarRecord.Builder.class));
+        verify(txnCtx, Mockito.never()).addSidecarRecord(any(TransactionSidecarRecord.Builder.class));
     }
 
     @Test
@@ -207,11 +206,8 @@ class TransactionRecordServiceTest {
         final var contextCaptor = ArgumentCaptor.forClass(TransactionSidecarRecord.Builder.class);
         givenProcessingResult(false, null);
         given(processingResult.getStateChanges()).willReturn(stateChanges);
-        final var contractBytecodeSidecar =
-                SidecarUtils.createContractBytecodeSidecarFrom(
-                        IdUtils.asContract("0.0.5"),
-                        "initCode".getBytes(),
-                        "runtimeCode".getBytes());
+        final var contractBytecodeSidecar = SidecarUtils.createContractBytecodeSidecarFrom(
+                IdUtils.asContract("0.0.5"), "initCode".getBytes(), "runtimeCode".getBytes());
         // when:
         subject.externalizeUnsuccessfulEvmCreate(processingResult, contractBytecodeSidecar);
         // then:
@@ -257,8 +253,7 @@ class TransactionRecordServiceTest {
         verify(txnCtx).setStatus(CONTRACT_EXECUTION_EXCEPTION);
         verify(txnCtx).setCreateResult(any());
         verify(txnCtx).addFeeChargedToPayer(NON_THRESHOLD_FEE);
-        verify(txnCtx, Mockito.never())
-                .addSidecarRecord(any(TransactionSidecarRecord.Builder.class));
+        verify(txnCtx, Mockito.never()).addSidecarRecord(any(TransactionSidecarRecord.Builder.class));
     }
 
     @Test
@@ -332,20 +327,17 @@ class TransactionRecordServiceTest {
         assertEquals(
                 ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS,
                 ResponseCodeUtil.getStatusOrDefault(processingResult, ResponseCodeEnum.SUCCESS));
-        given(processingResult.getHaltReason())
-                .willReturn(Optional.of(HederaExceptionalHaltReason.INVALID_SIGNATURE));
+        given(processingResult.getHaltReason()).willReturn(Optional.of(HederaExceptionalHaltReason.INVALID_SIGNATURE));
         assertEquals(
                 ResponseCodeEnum.INVALID_SIGNATURE,
                 ResponseCodeUtil.getStatusOrDefault(processingResult, ResponseCodeEnum.SUCCESS));
-        given(processingResult.getHaltReason())
-                .willReturn(Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
+        given(processingResult.getHaltReason()).willReturn(Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
         assertEquals(
                 ResponseCodeEnum.INSUFFICIENT_GAS,
                 ResponseCodeUtil.getStatusOrDefault(processingResult, ResponseCodeEnum.SUCCESS));
     }
 
-    private void givenProcessingResult(
-            final boolean isSuccessful, @Nullable final ExceptionalHaltReason haltReason) {
+    private void givenProcessingResult(final boolean isSuccessful, @Nullable final ExceptionalHaltReason haltReason) {
         given(processingResult.isSuccessful()).willReturn(isSuccessful);
         given(processingResult.getGasPrice()).willReturn(1L);
         given(processingResult.getSbhRefund()).willReturn(SBH_REFUND);
@@ -356,8 +348,7 @@ class TransactionRecordServiceTest {
     }
 
     private static SolidityAction createAction(final CallOperationType opCall) {
-        final SolidityAction solidityAction =
-                new SolidityAction(ContractActionType.CALL, 100, null, 55, 0);
+        final SolidityAction solidityAction = new SolidityAction(ContractActionType.CALL, 100, null, 55, 0);
         solidityAction.setCallOperationType(opCall);
         return solidityAction;
     }

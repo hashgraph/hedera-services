@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.utils.builder;
 
 import com.google.common.base.Strings;
@@ -94,10 +95,9 @@ public final class RequestBuilder {
             long receiveRecordThreshold,
             boolean receiverSign,
             Duration autoRenew) {
-        Key keys =
-                Key.newBuilder()
-                        .setKeyList(KeyList.newBuilder().addAllKeys(keyList).build())
-                        .build();
+        Key keys = Key.newBuilder()
+                .setKeyList(KeyList.newBuilder().addAllKeys(keyList).build())
+                .build();
         return getCreateAccountBuilder(
                 payerAccountNum,
                 payerRealmNum,
@@ -133,11 +133,10 @@ public final class RequestBuilder {
             String memo,
             Duration autoRenew) {
 
-        CryptoUpdateTransactionBody cryptoUpdate =
-                CryptoUpdateTransactionBody.newBuilder()
-                        .setAccountIDToUpdate(accountID)
-                        .setAutoRenewPeriod(autoRenew)
-                        .build();
+        CryptoUpdateTransactionBody cryptoUpdate = CryptoUpdateTransactionBody.newBuilder()
+                .setAccountIDToUpdate(accountID)
+                .setAutoRenewPeriod(autoRenew)
+                .build();
         return getAccountUpdateRequest(
                 payerAccountNum,
                 payerRealmNum,
@@ -184,19 +183,18 @@ public final class RequestBuilder {
             String memo,
             CryptoUpdateTransactionBody cryptoUpdate) {
 
-        TransactionBody.Builder body =
-                getTransactionBody(
-                        payerAccountNum,
-                        payerRealmNum,
-                        payerShardNum,
-                        nodeAccountNum,
-                        nodeRealmNum,
-                        nodeShardNum,
-                        transactionFee,
-                        startTime,
-                        transactionDuration,
-                        generateRecord,
-                        memo);
+        TransactionBody.Builder body = getTransactionBody(
+                payerAccountNum,
+                payerRealmNum,
+                payerShardNum,
+                nodeAccountNum,
+                nodeRealmNum,
+                nodeShardNum,
+                transactionFee,
+                startTime,
+                transactionDuration,
+                generateRecord,
+                memo);
         body.setCryptoUpdateAccount(cryptoUpdate);
         byte[] bodyBytesArr = body.build().toByteArray();
         ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
@@ -218,13 +216,7 @@ public final class RequestBuilder {
         AccountID payerAccountID = getAccountIdBuild(payerAccountNum, payerRealmNum, payerShardNum);
         AccountID nodeAccountID = getAccountIdBuild(nodeAccountNum, nodeRealmNum, nodeShardNum);
         return getTxBodyBuilder(
-                transactionFee,
-                timestamp,
-                transactionDuration,
-                generateRecord,
-                memo,
-                payerAccountID,
-                nodeAccountID);
+                transactionFee, timestamp, transactionDuration, generateRecord, memo, payerAccountID, nodeAccountID);
     }
 
     public static TransactionBody.Builder getTxBodyBuilder(
@@ -285,11 +277,7 @@ public final class RequestBuilder {
     }
 
     public static TransactionRecord.Builder getTransactionRecord(
-            long txFee,
-            String memo,
-            TransactionID transactionID,
-            Timestamp consensusTime,
-            TransactionReceipt receipt) {
+            long txFee, String memo, TransactionID transactionID, Timestamp consensusTime, TransactionReceipt receipt) {
         return TransactionRecord.newBuilder()
                 .setConsensusTimestamp(consensusTime)
                 .setTransactionID(transactionID)
@@ -309,43 +297,35 @@ public final class RequestBuilder {
         return Duration.newBuilder().setSeconds(seconds).build();
     }
 
-    public static Query getCryptoGetInfoQuery(
-            AccountID accountID, Transaction transaction, ResponseType responseType) {
-        QueryHeader queryHeader =
-                QueryHeader.newBuilder()
-                        .setResponseType(responseType)
-                        .setPayment(transaction)
-                        .build();
+    public static Query getCryptoGetInfoQuery(AccountID accountID, Transaction transaction, ResponseType responseType) {
+        QueryHeader queryHeader = QueryHeader.newBuilder()
+                .setResponseType(responseType)
+                .setPayment(transaction)
+                .build();
         return Query.newBuilder()
                 .setCryptoGetInfo(
-                        CryptoGetInfoQuery.newBuilder()
-                                .setAccountID(accountID)
-                                .setHeader(queryHeader))
+                        CryptoGetInfoQuery.newBuilder().setAccountID(accountID).setHeader(queryHeader))
                 .build();
     }
 
     public static Query getCryptoGetBalanceQuery(
             AccountID accountID, Transaction transaction, ResponseType responseType) {
-        QueryHeader queryHeader =
-                QueryHeader.newBuilder()
-                        .setResponseType(responseType)
-                        .setPayment(transaction)
-                        .build();
+        QueryHeader queryHeader = QueryHeader.newBuilder()
+                .setResponseType(responseType)
+                .setPayment(transaction)
+                .build();
         return Query.newBuilder()
-                .setCryptogetAccountBalance(
-                        CryptoGetAccountBalanceQuery.newBuilder()
-                                .setAccountID(accountID)
-                                .setHeader(queryHeader))
+                .setCryptogetAccountBalance(CryptoGetAccountBalanceQuery.newBuilder()
+                        .setAccountID(accountID)
+                        .setHeader(queryHeader))
                 .build();
     }
 
-    public static Query getFileContentQuery(
-            FileID fileID, Transaction transaction, ResponseType responseType) {
-        QueryHeader queryHeader =
-                QueryHeader.newBuilder()
-                        .setResponseType(responseType)
-                        .setPayment(transaction)
-                        .build();
+    public static Query getFileContentQuery(FileID fileID, Transaction transaction, ResponseType responseType) {
+        QueryHeader queryHeader = QueryHeader.newBuilder()
+                .setResponseType(responseType)
+                .setPayment(transaction)
+                .build();
         return Query.newBuilder()
                 .setFileGetContents(
                         FileGetContentsQuery.newBuilder().setFileID(fileID).setHeader(queryHeader))
@@ -354,62 +334,54 @@ public final class RequestBuilder {
 
     public static Query getTransactionGetRecordQuery(
             TransactionID transactionID, Transaction transaction, ResponseType responseType) {
-        QueryHeader queryHeader =
-                QueryHeader.newBuilder()
-                        .setResponseType(responseType)
-                        .setPayment(transaction)
-                        .build();
+        QueryHeader queryHeader = QueryHeader.newBuilder()
+                .setResponseType(responseType)
+                .setPayment(transaction)
+                .build();
         return Query.newBuilder()
-                .setTransactionGetRecord(
-                        TransactionGetRecordQuery.newBuilder()
-                                .setTransactionID(transactionID)
-                                .setHeader(queryHeader))
+                .setTransactionGetRecord(TransactionGetRecordQuery.newBuilder()
+                        .setTransactionID(transactionID)
+                        .setHeader(queryHeader))
                 .build();
     }
 
     public static Query getAccountRecordsQuery(
             AccountID accountID, Transaction transaction, ResponseType responseType) {
-        QueryHeader queryHeader =
-                QueryHeader.newBuilder()
-                        .setResponseType(responseType)
-                        .setPayment(transaction)
-                        .build();
+        QueryHeader queryHeader = QueryHeader.newBuilder()
+                .setResponseType(responseType)
+                .setPayment(transaction)
+                .build();
         return Query.newBuilder()
-                .setCryptoGetAccountRecords(
-                        CryptoGetAccountRecordsQuery.newBuilder()
-                                .setAccountID(accountID)
-                                .setHeader(queryHeader))
+                .setCryptoGetAccountRecords(CryptoGetAccountRecordsQuery.newBuilder()
+                        .setAccountID(accountID)
+                        .setHeader(queryHeader))
                 .build();
     }
 
     public static Query getAccountLiveHashQuery(
             AccountID accountID, byte[] hash, Transaction transaction, ResponseType responseType) {
-        QueryHeader queryHeader =
-                QueryHeader.newBuilder()
-                        .setResponseType(responseType)
-                        .setPayment(transaction)
-                        .build();
+        QueryHeader queryHeader = QueryHeader.newBuilder()
+                .setResponseType(responseType)
+                .setPayment(transaction)
+                .build();
         return Query.newBuilder()
-                .setCryptoGetLiveHash(
-                        CryptoGetLiveHashQuery.newBuilder()
-                                .setAccountID(accountID)
-                                .setHash(ByteString.copyFrom(hash))
-                                .setHeader(queryHeader))
+                .setCryptoGetLiveHash(CryptoGetLiveHashQuery.newBuilder()
+                        .setAccountID(accountID)
+                        .setHash(ByteString.copyFrom(hash))
+                        .setHeader(queryHeader))
                 .build();
     }
 
     public static Query getContractRecordsQuery(
             ContractID contractID, Transaction transaction, ResponseType responseType) {
-        QueryHeader queryHeader =
-                QueryHeader.newBuilder()
-                        .setResponseType(responseType)
-                        .setPayment(transaction)
-                        .build();
+        QueryHeader queryHeader = QueryHeader.newBuilder()
+                .setResponseType(responseType)
+                .setPayment(transaction)
+                .build();
         return Query.newBuilder()
-                .setContractGetRecords(
-                        ContractGetRecordsQuery.newBuilder()
-                                .setContractID(contractID)
-                                .setHeader(queryHeader))
+                .setContractGetRecords(ContractGetRecordsQuery.newBuilder()
+                        .setContractID(contractID)
+                        .setHeader(queryHeader))
                 .build();
     }
 
@@ -447,26 +419,24 @@ public final class RequestBuilder {
             ByteString fileData,
             Timestamp fileExpirationTime,
             List<Key> waclKeyList) {
-        FileCreateTransactionBody fileCreateTransactionBody =
-                FileCreateTransactionBody.newBuilder()
-                        .setExpirationTime(fileExpirationTime)
-                        .setKeys(KeyList.newBuilder().addAllKeys(waclKeyList).build())
-                        .setContents(fileData)
-                        .build();
+        FileCreateTransactionBody fileCreateTransactionBody = FileCreateTransactionBody.newBuilder()
+                .setExpirationTime(fileExpirationTime)
+                .setKeys(KeyList.newBuilder().addAllKeys(waclKeyList).build())
+                .setContents(fileData)
+                .build();
 
-        TransactionBody.Builder body =
-                getTransactionBody(
-                        payerAccountNum,
-                        payerRealmNum,
-                        payerShardNum,
-                        nodeAccountNum,
-                        nodeRealmNum,
-                        nodeShardNum,
-                        transactionFee,
-                        timestamp,
-                        transactionDuration,
-                        generateRecord,
-                        memo);
+        TransactionBody.Builder body = getTransactionBody(
+                payerAccountNum,
+                payerRealmNum,
+                payerShardNum,
+                nodeAccountNum,
+                nodeRealmNum,
+                nodeShardNum,
+                transactionFee,
+                timestamp,
+                transactionDuration,
+                generateRecord,
+                memo);
         body.setFileCreate(fileCreateTransactionBody);
         byte[] bodyBytesArr = body.build().toByteArray();
         ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
@@ -508,19 +478,18 @@ public final class RequestBuilder {
         FileAppendTransactionBody.Builder builder =
                 FileAppendTransactionBody.newBuilder().setContents(fileData);
         builder.setFileID(fileId);
-        TransactionBody.Builder body =
-                getTransactionBody(
-                        payerAccountNum,
-                        payerRealmNum,
-                        payerShardNum,
-                        nodeAccountNum,
-                        nodeRealmNum,
-                        nodeShardNum,
-                        transactionFee,
-                        timestamp,
-                        transactionDuration,
-                        generateRecord,
-                        memo);
+        TransactionBody.Builder body = getTransactionBody(
+                payerAccountNum,
+                payerRealmNum,
+                payerShardNum,
+                nodeAccountNum,
+                nodeRealmNum,
+                nodeShardNum,
+                transactionFee,
+                timestamp,
+                transactionDuration,
+                generateRecord,
+                memo);
         body.setFileAppend(builder);
         byte[] bodyBytesArr = body.build().toByteArray();
         ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
@@ -563,26 +532,24 @@ public final class RequestBuilder {
             ByteString data,
             FileID fid,
             KeyList keys) {
-        FileUpdateTransactionBody.Builder builder =
-                FileUpdateTransactionBody.newBuilder()
-                        .setContents(data)
-                        .setFileID(fid)
-                        .setExpirationTime(fileExpTime)
-                        .setKeys(keys);
+        FileUpdateTransactionBody.Builder builder = FileUpdateTransactionBody.newBuilder()
+                .setContents(data)
+                .setFileID(fid)
+                .setExpirationTime(fileExpTime)
+                .setKeys(keys);
 
-        TransactionBody.Builder body =
-                getTransactionBody(
-                        payerAccountNum,
-                        payerRealmNum,
-                        payerShardNum,
-                        nodeAccountNum,
-                        nodeRealmNum,
-                        nodeShardNum,
-                        transactionFee,
-                        timestamp,
-                        transactionDuration,
-                        generateRecord,
-                        memo);
+        TransactionBody.Builder body = getTransactionBody(
+                payerAccountNum,
+                payerRealmNum,
+                payerShardNum,
+                nodeAccountNum,
+                nodeRealmNum,
+                nodeShardNum,
+                transactionFee,
+                timestamp,
+                transactionDuration,
+                generateRecord,
+                memo);
         body.setFileUpdate(builder);
         byte[] bodyBytesArr = body.build().toByteArray();
         ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
@@ -621,33 +588,35 @@ public final class RequestBuilder {
             final FileID fileID) {
         final var fileDeleteTransaction =
                 FileDeleteTransactionBody.newBuilder().setFileID(fileID).build();
-        final var body =
-                getTransactionBody(
-                        payerAccountNum,
-                        payerRealmNum,
-                        payerShardNum,
-                        nodeAccountNum,
-                        nodeRealmNum,
-                        nodeShardNum,
-                        transactionFee,
-                        timestamp,
-                        transactionDuration,
-                        generateRecord,
-                        memo);
+        final var body = getTransactionBody(
+                payerAccountNum,
+                payerRealmNum,
+                payerShardNum,
+                nodeAccountNum,
+                nodeRealmNum,
+                nodeShardNum,
+                transactionFee,
+                timestamp,
+                transactionDuration,
+                generateRecord,
+                memo);
         body.setFileDelete(fileDeleteTransaction);
         final var bodyBytesArr = body.build().toByteArray();
         final var bodyBytes = ByteString.copyFrom(bodyBytesArr);
         return getAsTransaction(bodyBytes);
     }
 
-    public static Query getFileGetContentBuilder(
-            Transaction payment, FileID fileID, ResponseType responseType) {
+    public static Query getFileGetContentBuilder(Transaction payment, FileID fileID, ResponseType responseType) {
 
-        QueryHeader queryHeader =
-                QueryHeader.newBuilder().setPayment(payment).setResponseType(responseType).build();
+        QueryHeader queryHeader = QueryHeader.newBuilder()
+                .setPayment(payment)
+                .setResponseType(responseType)
+                .build();
 
-        FileGetContentsQuery fileGetContentsQuery =
-                FileGetContentsQuery.newBuilder().setHeader(queryHeader).setFileID(fileID).build();
+        FileGetContentsQuery fileGetContentsQuery = FileGetContentsQuery.newBuilder()
+                .setHeader(queryHeader)
+                .setFileID(fileID)
+                .build();
 
         return Query.newBuilder().setFileGetContents(fileGetContentsQuery).build();
     }
@@ -660,13 +629,16 @@ public final class RequestBuilder {
      * @param responseType response type
      * @return query
      */
-    public static Query getFileGetInfoBuilder(
-            Transaction payment, FileID fileID, ResponseType responseType) {
-        QueryHeader queryHeader =
-                QueryHeader.newBuilder().setPayment(payment).setResponseType(responseType).build();
+    public static Query getFileGetInfoBuilder(Transaction payment, FileID fileID, ResponseType responseType) {
+        QueryHeader queryHeader = QueryHeader.newBuilder()
+                .setPayment(payment)
+                .setResponseType(responseType)
+                .build();
 
-        FileGetInfoQuery fileGetInfoQuery =
-                FileGetInfoQuery.newBuilder().setHeader(queryHeader).setFileID(fileID).build();
+        FileGetInfoQuery fileGetInfoQuery = FileGetInfoQuery.newBuilder()
+                .setHeader(queryHeader)
+                .setFileID(fileID)
+                .build();
 
         return Query.newBuilder().setFileGetInfo(fileGetInfoQuery).build();
     }
@@ -711,18 +683,16 @@ public final class RequestBuilder {
             String contractMemo,
             Key adminKey) {
 
-        ContractCreateTransactionBody.Builder contractCreateInstance =
-                ContractCreateTransactionBody.newBuilder()
-                        .setGas(gas)
-                        .setProxyAccountID(getAccountIdBuild(0L, 0L, 0L))
-                        .setAutoRenewPeriod(autoRenewalPeriod);
+        ContractCreateTransactionBody.Builder contractCreateInstance = ContractCreateTransactionBody.newBuilder()
+                .setGas(gas)
+                .setProxyAccountID(getAccountIdBuild(0L, 0L, 0L))
+                .setAutoRenewPeriod(autoRenewalPeriod);
         if (fileId != null && fileId.isInitialized()) {
             contractCreateInstance = contractCreateInstance.setFileID(fileId);
         }
 
         if (constructorParameters != null) {
-            contractCreateInstance =
-                    contractCreateInstance.setConstructorParameters(constructorParameters);
+            contractCreateInstance = contractCreateInstance.setConstructorParameters(constructorParameters);
         }
         if (initialBalance != 0) {
             contractCreateInstance = contractCreateInstance.setInitialBalance(initialBalance);
@@ -735,19 +705,18 @@ public final class RequestBuilder {
         if (adminKey != null) {
             contractCreateInstance = contractCreateInstance.setAdminKey(adminKey);
         }
-        TransactionBody.Builder body =
-                getTransactionBody(
-                        payerAccountNum,
-                        payerRealmNum,
-                        payerShardNum,
-                        nodeAccountNum,
-                        nodeRealmNum,
-                        nodeShardNum,
-                        transactionFee,
-                        timestamp,
-                        txDuration,
-                        generateRecord,
-                        txMemo);
+        TransactionBody.Builder body = getTransactionBody(
+                payerAccountNum,
+                payerRealmNum,
+                payerShardNum,
+                nodeAccountNum,
+                nodeRealmNum,
+                nodeShardNum,
+                transactionFee,
+                timestamp,
+                txDuration,
+                generateRecord,
+                txMemo);
         body.setContractCreateInstance(contractCreateInstance);
         byte[] bodyBytesArr = body.build().toByteArray();
         ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
@@ -771,18 +740,18 @@ public final class RequestBuilder {
             Long receiverAcctNum,
             Long amountReceived) {
 
-        AccountAmount a1 =
-                AccountAmount.newBuilder()
-                        .setAccountID(getAccountIdBuild(senderActNum, 0l, 0l))
-                        .setAmount(amountSend)
-                        .build();
-        AccountAmount a2 =
-                AccountAmount.newBuilder()
-                        .setAccountID(getAccountIdBuild(receiverAcctNum, 0l, 0l))
-                        .setAmount(amountReceived)
-                        .build();
-        TransferList transferList =
-                TransferList.newBuilder().addAccountAmounts(a1).addAccountAmounts(a2).build();
+        AccountAmount a1 = AccountAmount.newBuilder()
+                .setAccountID(getAccountIdBuild(senderActNum, 0l, 0l))
+                .setAmount(amountSend)
+                .build();
+        AccountAmount a2 = AccountAmount.newBuilder()
+                .setAccountID(getAccountIdBuild(receiverAcctNum, 0l, 0l))
+                .setAmount(amountReceived)
+                .build();
+        TransferList transferList = TransferList.newBuilder()
+                .addAccountAmounts(a1)
+                .addAccountAmounts(a2)
+                .build();
         return getCryptoTransferRequest(
                 payerAccountNum,
                 payerRealmNum,
@@ -815,18 +784,18 @@ public final class RequestBuilder {
             ByteString receivingAlias,
             Long amountReceived) {
 
-        AccountAmount a1 =
-                AccountAmount.newBuilder()
-                        .setAccountID(getAccountIdBuild(senderActNum, 0l, 0l))
-                        .setAmount(amountSend)
-                        .build();
-        AccountAmount a2 =
-                AccountAmount.newBuilder()
-                        .setAccountID(getAccountIdBuild(receivingAlias, 0l, 0l))
-                        .setAmount(amountReceived)
-                        .build();
-        TransferList transferList =
-                TransferList.newBuilder().addAccountAmounts(a1).addAccountAmounts(a2).build();
+        AccountAmount a1 = AccountAmount.newBuilder()
+                .setAccountID(getAccountIdBuild(senderActNum, 0l, 0l))
+                .setAmount(amountSend)
+                .build();
+        AccountAmount a2 = AccountAmount.newBuilder()
+                .setAccountID(getAccountIdBuild(receivingAlias, 0l, 0l))
+                .setAmount(amountReceived)
+                .build();
+        TransferList transferList = TransferList.newBuilder()
+                .addAccountAmounts(a1)
+                .addAccountAmounts(a2)
+                .build();
         return getCryptoTransferRequest(
                 payerAccountNum,
                 payerRealmNum,
@@ -860,30 +829,26 @@ public final class RequestBuilder {
             ByteString receivingAlias,
             Long amountReceived) {
 
-        AccountAmount a1 =
-                AccountAmount.newBuilder()
-                        .setAccountID(getAccountIdBuild(senderActNum, 0l, 0l))
-                        .setAmount(amountSend)
-                        .build();
-        AccountAmount a2 =
-                AccountAmount.newBuilder()
-                        .setAccountID(getAccountIdBuild(receivingAlias, 0l, 0l))
-                        .setAmount(amountReceived)
-                        .build();
-        NftTransfer a3 =
-                NftTransfer.newBuilder()
-                        .setReceiverAccountID(
-                                AccountID.newBuilder().setAlias(receivingAlias).build())
-                        .setSenderAccountID(getAccountIdBuild(senderActNum, 0l, 0l))
-                        .setSerialNumber(1)
-                        .build();
-        TokenTransferList tokenTransferList =
-                TokenTransferList.newBuilder()
-                        .setToken(TokenID.newBuilder().setTokenNum(tokenNum).build())
-                        .addTransfers(a1)
-                        .addTransfers(a2)
-                        .addNftTransfers(a3)
-                        .build();
+        AccountAmount a1 = AccountAmount.newBuilder()
+                .setAccountID(getAccountIdBuild(senderActNum, 0l, 0l))
+                .setAmount(amountSend)
+                .build();
+        AccountAmount a2 = AccountAmount.newBuilder()
+                .setAccountID(getAccountIdBuild(receivingAlias, 0l, 0l))
+                .setAmount(amountReceived)
+                .build();
+        NftTransfer a3 = NftTransfer.newBuilder()
+                .setReceiverAccountID(
+                        AccountID.newBuilder().setAlias(receivingAlias).build())
+                .setSenderAccountID(getAccountIdBuild(senderActNum, 0l, 0l))
+                .setSerialNumber(1)
+                .build();
+        TokenTransferList tokenTransferList = TokenTransferList.newBuilder()
+                .setToken(TokenID.newBuilder().setTokenNum(tokenNum).build())
+                .addTransfers(a1)
+                .addTransfers(a2)
+                .addNftTransfers(a3)
+                .build();
         return getTokenTransferRequest(
                 payerAccountNum,
                 payerRealmNum,
@@ -912,22 +877,22 @@ public final class RequestBuilder {
             boolean generateRecord,
             String memo,
             TransferList transferList) {
-        CryptoTransferTransactionBody cryptoTransferTransaction =
-                CryptoTransferTransactionBody.newBuilder().setTransfers(transferList).build();
+        CryptoTransferTransactionBody cryptoTransferTransaction = CryptoTransferTransactionBody.newBuilder()
+                .setTransfers(transferList)
+                .build();
 
-        TransactionBody.Builder body =
-                getTransactionBody(
-                        payerAccountNum,
-                        payerRealmNum,
-                        payerShardNum,
-                        nodeAccountNum,
-                        nodeRealmNum,
-                        nodeShardNum,
-                        transactionFee,
-                        timestamp,
-                        transactionDuration,
-                        generateRecord,
-                        memo);
+        TransactionBody.Builder body = getTransactionBody(
+                payerAccountNum,
+                payerRealmNum,
+                payerShardNum,
+                nodeAccountNum,
+                nodeRealmNum,
+                nodeShardNum,
+                transactionFee,
+                timestamp,
+                transactionDuration,
+                generateRecord,
+                memo);
         body.setCryptoTransfer(cryptoTransferTransaction);
         byte[] bodyBytesArr = body.build().toByteArray();
         ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
@@ -947,24 +912,22 @@ public final class RequestBuilder {
             boolean generateRecord,
             String memo,
             TokenTransferList tokenTransferList) {
-        CryptoTransferTransactionBody cryptoTransferTransaction =
-                CryptoTransferTransactionBody.newBuilder()
-                        .addTokenTransfers(tokenTransferList)
-                        .build();
+        CryptoTransferTransactionBody cryptoTransferTransaction = CryptoTransferTransactionBody.newBuilder()
+                .addTokenTransfers(tokenTransferList)
+                .build();
 
-        TransactionBody.Builder body =
-                getTransactionBody(
-                        payerAccountNum,
-                        payerRealmNum,
-                        payerShardNum,
-                        nodeAccountNum,
-                        nodeRealmNum,
-                        nodeShardNum,
-                        transactionFee,
-                        timestamp,
-                        transactionDuration,
-                        generateRecord,
-                        memo);
+        TransactionBody.Builder body = getTransactionBody(
+                payerAccountNum,
+                payerRealmNum,
+                payerShardNum,
+                nodeAccountNum,
+                nodeRealmNum,
+                nodeShardNum,
+                transactionFee,
+                timestamp,
+                transactionDuration,
+                generateRecord,
+                memo);
         body.setCryptoTransfer(cryptoTransferTransaction);
         byte[] bodyBytesArr = body.build().toByteArray();
         ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
@@ -973,7 +936,8 @@ public final class RequestBuilder {
 
     public static TransactionGetReceiptQuery getTransactionGetReceiptQuery(
             TransactionID transactionID, ResponseType responseType) {
-        QueryHeader queryHeader = QueryHeader.newBuilder().setResponseType(responseType).build();
+        QueryHeader queryHeader =
+                QueryHeader.newBuilder().setResponseType(responseType).build();
         return TransactionGetReceiptQuery.newBuilder()
                 .setHeader(queryHeader)
                 .setTransactionID(transactionID)
@@ -982,7 +946,8 @@ public final class RequestBuilder {
 
     public static TransactionGetFastRecordQuery getFastTransactionRecordQuery(
             TransactionID transactionID, ResponseType responseType) {
-        QueryHeader queryHeader = QueryHeader.newBuilder().setResponseType(responseType).build();
+        QueryHeader queryHeader =
+                QueryHeader.newBuilder().setResponseType(responseType).build();
         return TransactionGetFastRecordQuery.newBuilder()
                 .setHeader(queryHeader)
                 .setTransactionID(transactionID)
@@ -1013,26 +978,24 @@ public final class RequestBuilder {
             ContractID contractId,
             ByteString functionData,
             long value) {
-        ContractCallTransactionBody.Builder contractCall =
-                ContractCallTransactionBody.newBuilder()
-                        .setContractID(contractId)
-                        .setGas(gas)
-                        .setFunctionParameters(functionData)
-                        .setAmount(value);
+        ContractCallTransactionBody.Builder contractCall = ContractCallTransactionBody.newBuilder()
+                .setContractID(contractId)
+                .setGas(gas)
+                .setFunctionParameters(functionData)
+                .setAmount(value);
 
-        TransactionBody.Builder body =
-                getTransactionBody(
-                        payerAccountNum,
-                        payerRealmNum,
-                        payerShardNum,
-                        nodeAccountNum,
-                        nodeRealmNum,
-                        nodeShardNum,
-                        transactionFee,
-                        timestamp,
-                        txDuration,
-                        true,
-                        "");
+        TransactionBody.Builder body = getTransactionBody(
+                payerAccountNum,
+                payerRealmNum,
+                payerShardNum,
+                nodeAccountNum,
+                nodeRealmNum,
+                nodeShardNum,
+                transactionFee,
+                timestamp,
+                txDuration,
+                true,
+                "");
         body.setContractCall(contractCall);
         byte[] bodyBytesArr = body.build().toByteArray();
         ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
@@ -1046,19 +1009,17 @@ public final class RequestBuilder {
             long maxResultSize,
             Transaction transaction,
             ResponseType responseType) {
-        QueryHeader queryHeader =
-                QueryHeader.newBuilder()
-                        .setResponseType(responseType)
-                        .setPayment(transaction)
-                        .build();
+        QueryHeader queryHeader = QueryHeader.newBuilder()
+                .setResponseType(responseType)
+                .setPayment(transaction)
+                .build();
         return Query.newBuilder()
-                .setContractCallLocal(
-                        ContractCallLocalQuery.newBuilder()
-                                .setContractID(contractId)
-                                .setGas(gas)
-                                .setFunctionParameters(functionData)
-                                .setMaxResultSize(maxResultSize)
-                                .setHeader(queryHeader))
+                .setContractCallLocal(ContractCallLocalQuery.newBuilder()
+                        .setContractID(contractId)
+                        .setGas(gas)
+                        .setFunctionParameters(functionData)
+                        .setMaxResultSize(maxResultSize)
+                        .setHeader(queryHeader))
                 .build();
     }
 
@@ -1071,8 +1032,7 @@ public final class RequestBuilder {
                 .build();
     }
 
-    public static TransactionReceipt getTransactionReceipt(
-            ResponseCodeEnum status, ExchangeRateSet exchangeRateSet) {
+    public static TransactionReceipt getTransactionReceipt(ResponseCodeEnum status, ExchangeRateSet exchangeRateSet) {
         return TransactionReceipt.newBuilder()
                 .setStatus(status)
                 .setExchangeRate(exchangeRateSet)
@@ -1103,31 +1063,27 @@ public final class RequestBuilder {
 
     public static Query getContractGetInfoQuery(
             ContractID contractId, Transaction transaction, ResponseType responseType) {
-        QueryHeader queryHeader =
-                QueryHeader.newBuilder()
-                        .setResponseType(responseType)
-                        .setPayment(transaction)
-                        .build();
+        QueryHeader queryHeader = QueryHeader.newBuilder()
+                .setResponseType(responseType)
+                .setPayment(transaction)
+                .build();
         return Query.newBuilder()
-                .setContractGetInfo(
-                        ContractGetInfoQuery.newBuilder()
-                                .setContractID(contractId)
-                                .setHeader(queryHeader))
+                .setContractGetInfo(ContractGetInfoQuery.newBuilder()
+                        .setContractID(contractId)
+                        .setHeader(queryHeader))
                 .build();
     }
 
     public static Query getContractGetBytecodeQuery(
             ContractID contractId, Transaction transaction, ResponseType responseType) {
-        QueryHeader queryHeader =
-                QueryHeader.newBuilder()
-                        .setResponseType(responseType)
-                        .setPayment(transaction)
-                        .build();
+        QueryHeader queryHeader = QueryHeader.newBuilder()
+                .setResponseType(responseType)
+                .setPayment(transaction)
+                .build();
         return Query.newBuilder()
-                .setContractGetBytecode(
-                        ContractGetBytecodeQuery.newBuilder()
-                                .setContractID(contractId)
-                                .setHeader(queryHeader))
+                .setContractGetBytecode(ContractGetBytecodeQuery.newBuilder()
+                        .setContractID(contractId)
+                        .setHeader(queryHeader))
                 .build();
     }
 
@@ -1146,8 +1102,7 @@ public final class RequestBuilder {
             Timestamp expirationTime,
             String contractMemo) {
 
-        ContractUpdateTransactionBody.Builder contractUpdateBld =
-                ContractUpdateTransactionBody.newBuilder();
+        ContractUpdateTransactionBody.Builder contractUpdateBld = ContractUpdateTransactionBody.newBuilder();
 
         contractUpdateBld = contractUpdateBld.setContractID(contractId);
         if (autoRenewPeriod != null && autoRenewPeriod.isInitialized()) {
@@ -1169,37 +1124,33 @@ public final class RequestBuilder {
             contractUpdateBld = contractUpdateBld.setMemo(contractMemo);
         }
 
-        TransactionBody.Builder body =
-                getTransactionBody(
-                        payerAccount.getAccountNum(),
-                        payerAccount.getRealmNum(),
-                        payerAccount.getShardNum(),
-                        nodeAccount.getAccountNum(),
-                        nodeAccount.getRealmNum(),
-                        nodeAccount.getShardNum(),
-                        transactionFee,
-                        startTime,
-                        transactionDuration,
-                        generateRecord,
-                        memo);
+        TransactionBody.Builder body = getTransactionBody(
+                payerAccount.getAccountNum(),
+                payerAccount.getRealmNum(),
+                payerAccount.getShardNum(),
+                nodeAccount.getAccountNum(),
+                nodeAccount.getRealmNum(),
+                nodeAccount.getShardNum(),
+                transactionFee,
+                startTime,
+                transactionDuration,
+                generateRecord,
+                memo);
         body.setContractUpdateInstance(contractUpdateBld);
         byte[] bodyBytesArr = body.build().toByteArray();
         ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
         return getAsTransaction(bodyBytes);
     }
 
-    public static Query getBySolidityIDQuery(
-            String solidityID, Transaction transaction, ResponseType responseType) {
-        QueryHeader queryHeader =
-                QueryHeader.newBuilder()
-                        .setResponseType(responseType)
-                        .setPayment(transaction)
-                        .build();
+    public static Query getBySolidityIDQuery(String solidityID, Transaction transaction, ResponseType responseType) {
+        QueryHeader queryHeader = QueryHeader.newBuilder()
+                .setResponseType(responseType)
+                .setPayment(transaction)
+                .build();
         return Query.newBuilder()
-                .setGetBySolidityID(
-                        GetBySolidityIDQuery.newBuilder()
-                                .setSolidityID(solidityID)
-                                .setHeader(queryHeader))
+                .setGetBySolidityID(GetBySolidityIDQuery.newBuilder()
+                        .setSolidityID(solidityID)
+                        .setHeader(queryHeader))
                 .build();
     }
 
@@ -1221,43 +1172,41 @@ public final class RequestBuilder {
             long receiveRecordThreshold,
             boolean receiverSign,
             Duration autoRenew) {
-        CryptoCreateTransactionBody createAccount =
-                CryptoCreateTransactionBody.newBuilder()
-                        .setKey(key)
-                        .setInitialBalance(initBal)
-                        .setProxyAccountID(getAccountIdBuild(0L, 0L, 0L))
-                        .setReceiveRecordThreshold(receiveRecordThreshold)
-                        .setSendRecordThreshold(sendRecordThreshold)
-                        .setReceiverSigRequired(receiverSign)
-                        .setAutoRenewPeriod(autoRenew)
-                        .build();
+        CryptoCreateTransactionBody createAccount = CryptoCreateTransactionBody.newBuilder()
+                .setKey(key)
+                .setInitialBalance(initBal)
+                .setProxyAccountID(getAccountIdBuild(0L, 0L, 0L))
+                .setReceiveRecordThreshold(receiveRecordThreshold)
+                .setSendRecordThreshold(sendRecordThreshold)
+                .setReceiverSigRequired(receiverSign)
+                .setAutoRenewPeriod(autoRenew)
+                .build();
 
-        TransactionBody.Builder body =
-                getTransactionBody(
-                        payerAccountNum,
-                        payerRealmNum,
-                        payerShardNum,
-                        nodeAccountNum,
-                        nodeRealmNum,
-                        nodeShardNum,
-                        transactionFee,
-                        startTime,
-                        transactionDuration,
-                        generateRecord,
-                        memo);
+        TransactionBody.Builder body = getTransactionBody(
+                payerAccountNum,
+                payerRealmNum,
+                payerShardNum,
+                nodeAccountNum,
+                nodeRealmNum,
+                nodeShardNum,
+                transactionFee,
+                startTime,
+                transactionDuration,
+                generateRecord,
+                memo);
         body.setCryptoCreateAccount(createAccount);
         byte[] bodyBytesArr = body.build().toByteArray();
         ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
         return getAsTransaction(bodyBytes);
     }
 
-    public static ExchangeRate getExchangeRateBuilder(
-            int hbarEquivalent, int centEquivalent, long expirationSeconds) {
+    public static ExchangeRate getExchangeRateBuilder(int hbarEquivalent, int centEquivalent, long expirationSeconds) {
         return ExchangeRate.newBuilder()
                 .setHbarEquiv(hbarEquivalent)
                 .setCentEquiv(centEquivalent)
-                .setExpirationTime(
-                        TimestampSeconds.newBuilder().setSeconds(expirationSeconds).build())
+                .setExpirationTime(TimestampSeconds.newBuilder()
+                        .setSeconds(expirationSeconds)
+                        .build())
                 .build();
     }
 
@@ -1270,23 +1219,17 @@ public final class RequestBuilder {
             long nextExpirationSeconds) {
         return ExchangeRateSet.newBuilder()
                 .setCurrentRate(
-                        getExchangeRateBuilder(
-                                currentHbarEquivalent,
-                                currentCentEquivalent,
-                                currentExpirationSeconds))
-                .setNextRate(
-                        getExchangeRateBuilder(
-                                nextHbarEquivalent, nextCentEquivalent, nextExpirationSeconds))
+                        getExchangeRateBuilder(currentHbarEquivalent, currentCentEquivalent, currentExpirationSeconds))
+                .setNextRate(getExchangeRateBuilder(nextHbarEquivalent, nextCentEquivalent, nextExpirationSeconds))
                 .build();
     }
 
     private static Transaction getAsTransaction(ByteString bodyBytes) {
         return Transaction.newBuilder()
-                .setSignedTransactionBytes(
-                        SignedTransaction.newBuilder()
-                                .setBodyBytes(bodyBytes)
-                                .build()
-                                .toByteString())
+                .setSignedTransactionBytes(SignedTransaction.newBuilder()
+                        .setBodyBytes(bodyBytes)
+                        .build()
+                        .toByteString())
                 .build();
     }
 }

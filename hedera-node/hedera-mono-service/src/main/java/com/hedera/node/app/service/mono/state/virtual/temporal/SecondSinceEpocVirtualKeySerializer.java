@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual.temporal;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -22,8 +23,7 @@ import com.swirlds.jasperdb.files.hashmap.KeySerializer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-public class SecondSinceEpocVirtualKeySerializer
-        implements KeySerializer<SecondSinceEpocVirtualKey> {
+public class SecondSinceEpocVirtualKeySerializer implements KeySerializer<SecondSinceEpocVirtualKey> {
     static final long CLASS_ID = 0xced4f0425c211ba2L;
     static final int CURRENT_VERSION = 1;
 
@@ -50,22 +50,19 @@ public class SecondSinceEpocVirtualKeySerializer
     }
 
     @Override
-    public SecondSinceEpocVirtualKey deserialize(ByteBuffer byteBuffer, long version)
-            throws IOException {
+    public SecondSinceEpocVirtualKey deserialize(ByteBuffer byteBuffer, long version) throws IOException {
         final var key = new SecondSinceEpocVirtualKey();
         key.deserialize(byteBuffer, (int) version);
         return key;
     }
 
     @Override
-    public boolean equals(ByteBuffer buffer, int version, SecondSinceEpocVirtualKey key)
-            throws IOException {
+    public boolean equals(ByteBuffer buffer, int version, SecondSinceEpocVirtualKey key) throws IOException {
         return key.equals(buffer, version);
     }
 
     @Override
-    public int serialize(SecondSinceEpocVirtualKey key, SerializableDataOutputStream out)
-            throws IOException {
+    public int serialize(SecondSinceEpocVirtualKey key, SerializableDataOutputStream out) throws IOException {
         key.serialize(out);
         return SecondSinceEpocVirtualKey.sizeInBytes();
     }

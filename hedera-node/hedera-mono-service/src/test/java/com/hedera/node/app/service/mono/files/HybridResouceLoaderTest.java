@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.files;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -37,7 +38,8 @@ class HybridResouceLoaderTest {
     private static final String SOME_FILE_ID_LITERAL = "0.0.666";
     private static final FileID SOME_FILE_ID = IdUtils.asFile(SOME_FILE_ID_LITERAL);
 
-    @Mock private TieredHederaFs hfs;
+    @Mock
+    private TieredHederaFs hfs;
 
     private HybridResouceLoader subject;
 

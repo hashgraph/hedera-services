@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.utils;
 
 import static com.hedera.node.app.hapi.utils.SignatureGenerator.BOUNCYCASTLE_PROVIDER;
@@ -29,9 +30,7 @@ class SignatureGeneratorTest {
 
     @Test
     void rejectsNonEddsaKeys() {
-        Assertions.assertThrows(
-                IllegalArgumentException.class,
-                () -> SignatureGenerator.signBytes(new byte[0], null));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> SignatureGenerator.signBytes(new byte[0], null));
     }
 
     @Test
@@ -41,8 +40,7 @@ class SignatureGeneratorTest {
                 java.security.KeyPairGenerator.getInstance("EC", BOUNCYCASTLE_PROVIDER);
         generator.initialize(ecSpec, new SecureRandom());
         final var kp = generator.generateKeyPair();
-        Assertions.assertDoesNotThrow(
-                () -> SignatureGenerator.signBytes("abc".getBytes(), kp.getPrivate()));
+        Assertions.assertDoesNotThrow(() -> SignatureGenerator.signBytes("abc".getBytes(), kp.getPrivate()));
     }
 
     @Test

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
@@ -61,26 +62,21 @@ public class GetTokenExpiryInfoPrecompile extends AbstractReadOnlyPrecompile
 
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-        final var tokenInfo =
-                ledgers.evmInfoForToken(tokenId, stateView.getNetworkInfo().ledgerId())
-                        .orElse(null);
+        final var tokenInfo = ledgers.evmInfoForToken(
+                        tokenId, stateView.getNetworkInfo().ledgerId())
+                .orElse(null);
 
         validateTrue(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
         Objects.requireNonNull(tokenInfo);
 
-        final var expiryInfo =
-                new TokenExpiryInfo(
-                        tokenInfo.getExpiry(),
-                        tokenInfo.getAutoRenewAccount(),
-                        tokenInfo.getAutoRenewPeriod());
+        final var expiryInfo = new TokenExpiryInfo(
+                tokenInfo.getExpiry(), tokenInfo.getAutoRenewAccount(), tokenInfo.getAutoRenewPeriod());
 
         return evmEncoder.encodeGetTokenExpiryInfo(expiryInfo);
     }
 
     public static GetTokenExpiryInfoWrapper<TokenID> decodeGetTokenExpiryInfo(final Bytes input) {
-        final var rawGetTokenExpityInfoWrapper =
-                EvmGetTokenExpiryInfoPrecompile.decodeGetTokenExpiryInfo(input);
-        return new GetTokenExpiryInfoWrapper<>(
-                convertAddressBytesToTokenID(rawGetTokenExpityInfoWrapper.token()));
+        final var rawGetTokenExpityInfoWrapper = EvmGetTokenExpiryInfoPrecompile.decodeGetTokenExpiryInfo(input);
+        return new GetTokenExpiryInfoWrapper<>(convertAddressBytesToTokenID(rawGetTokenExpityInfoWrapper.token()));
     }
 }

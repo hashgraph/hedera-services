@@ -13,9 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.legacy.core.jproto;
 
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isOfEvmAddressSize;
 
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -70,13 +71,7 @@ public class JContractAliasKey extends JKey {
 
     @Override
     public String toString() {
-        return "<JContractAlias: "
-                + shardNum
-                + "."
-                + realmNum
-                + "."
-                + CommonUtils.hex(evmAddress)
-                + ">";
+        return "<JContractAlias: " + shardNum + "." + realmNum + "." + CommonUtils.hex(evmAddress) + ">";
     }
 
     @Override
@@ -86,6 +81,6 @@ public class JContractAliasKey extends JKey {
 
     @Override
     public boolean isValid() {
-        return !isEmpty() && evmAddress.length == EVM_ADDRESS_SIZE;
+        return !isEmpty() && isOfEvmAddressSize(evmAddress);
     }
 }

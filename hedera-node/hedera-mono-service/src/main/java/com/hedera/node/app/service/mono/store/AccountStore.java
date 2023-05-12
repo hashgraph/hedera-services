@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
@@ -42,9 +43,7 @@ public class AccountStore {
     private final BackingStore<AccountID, HederaAccount> accounts;
 
     @Inject
-    public AccountStore(
-            final OptionValidator validator,
-            final BackingStore<AccountID, HederaAccount> accounts) {
+    public AccountStore(final OptionValidator validator, final BackingStore<AccountID, HederaAccount> accounts) {
         this.validator = validator;
         this.accounts = accounts;
     }
@@ -193,17 +192,12 @@ public class AccountStore {
             @Nullable final ResponseCodeEnum explicitResponse,
             final ResponseCodeEnum nonExistingCode,
             final ResponseCodeEnum deletedCode) {
-        validateTrue(
-                merkleAccount != null,
-                explicitResponse != null ? explicitResponse : nonExistingCode);
-        validateFalse(
-                merkleAccount.isDeleted(),
-                explicitResponse != null ? explicitResponse : deletedCode);
-        final var expiryStatus =
-                validator.expiryStatusGiven(
-                        merkleAccount.getBalance(),
-                        merkleAccount.isExpiredAndPendingRemoval(),
-                        merkleAccount.isSmartContract());
+        validateTrue(merkleAccount != null, explicitResponse != null ? explicitResponse : nonExistingCode);
+        validateFalse(merkleAccount.isDeleted(), explicitResponse != null ? explicitResponse : deletedCode);
+        final var expiryStatus = validator.expiryStatusGiven(
+                merkleAccount.getBalance(),
+                merkleAccount.isExpiredAndPendingRemoval(),
+                merkleAccount.isSmartContract());
         validateTrue(expiryStatus == OK, expiryStatus);
     }
 

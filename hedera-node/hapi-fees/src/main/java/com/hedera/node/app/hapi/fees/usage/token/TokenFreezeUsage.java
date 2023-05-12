@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage.token;
 
 import com.hedera.node.app.hapi.fees.usage.TxnUsageEstimator;
@@ -24,8 +25,7 @@ public class TokenFreezeUsage extends TokenTxnUsage<TokenFreezeUsage> {
         super(tokenFreezeOp, usageEstimator);
     }
 
-    public static TokenFreezeUsage newEstimate(
-            TransactionBody tokenFreezeOp, TxnUsageEstimator usageEstimator) {
+    public static TokenFreezeUsage newEstimate(TransactionBody tokenFreezeOp, TxnUsageEstimator usageEstimator) {
         return new TokenFreezeUsage(tokenFreezeOp, usageEstimator);
     }
 

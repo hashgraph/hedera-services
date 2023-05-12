@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage.crypto;
 
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
@@ -47,17 +48,12 @@ public class CryptoUpdateMeta {
         hasMaxAutomaticAssociations = builder.hasMaxAutomaticAssociations;
     }
 
-    public CryptoUpdateMeta(
-            CryptoUpdateTransactionBody cryptoUpdateTxnBody, long transactionValidStartSecs) {
-        keyBytesUsed =
-                cryptoUpdateTxnBody.hasKey()
-                        ? getAccountKeyStorageSize(cryptoUpdateTxnBody.getKey())
-                        : 0;
+    public CryptoUpdateMeta(CryptoUpdateTransactionBody cryptoUpdateTxnBody, long transactionValidStartSecs) {
+        keyBytesUsed = cryptoUpdateTxnBody.hasKey() ? getAccountKeyStorageSize(cryptoUpdateTxnBody.getKey()) : 0;
         msgBytesUsed = bytesUsedInTxn(cryptoUpdateTxnBody) + keyBytesUsed;
-        memoSize =
-                cryptoUpdateTxnBody.hasMemo()
-                        ? cryptoUpdateTxnBody.getMemo().getValueBytes().size()
-                        : 0;
+        memoSize = cryptoUpdateTxnBody.hasMemo()
+                ? cryptoUpdateTxnBody.getMemo().getValueBytes().size()
+                : 0;
         effectiveNow = transactionValidStartSecs;
         expiry = cryptoUpdateTxnBody.getExpirationTime().getSeconds();
         hasProxy = cryptoUpdateTxnBody.hasProxyAccountID();
@@ -156,8 +152,7 @@ public class CryptoUpdateMeta {
             return this;
         }
 
-        public CryptoUpdateMeta.Builder hasMaxAutomaticAssociations(
-                boolean hasMaxAutomaticAssociations) {
+        public CryptoUpdateMeta.Builder hasMaxAutomaticAssociations(boolean hasMaxAutomaticAssociations) {
             this.hasMaxAutomaticAssociations = hasMaxAutomaticAssociations;
             return this;
         }

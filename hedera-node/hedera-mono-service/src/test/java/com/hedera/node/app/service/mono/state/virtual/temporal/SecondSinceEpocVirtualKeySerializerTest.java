@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual.temporal;
 
 import static com.hedera.node.app.service.mono.state.virtual.temporal.SecondSinceEpocVirtualKey.BYTES_IN_SERIALIZED_FORM;
@@ -34,8 +35,7 @@ class SecondSinceEpocVirtualKeySerializerTest {
     private final long longKey = 2;
     private final long otherLongKey = 3;
 
-    private final SecondSinceEpocVirtualKeySerializer subject =
-            new SecondSinceEpocVirtualKeySerializer();
+    private final SecondSinceEpocVirtualKeySerializer subject = new SecondSinceEpocVirtualKeySerializer();
 
     @Test
     void gettersWork() {
@@ -43,8 +43,7 @@ class SecondSinceEpocVirtualKeySerializerTest {
 
         assertEquals(BYTES_IN_SERIALIZED_FORM, subject.deserializeKeySize(bin));
         assertEquals(BYTES_IN_SERIALIZED_FORM, subject.getSerializedSize());
-        assertEquals(
-                SecondSinceEpocVirtualKeySerializer.DATA_VERSION, subject.getCurrentDataVersion());
+        assertEquals(SecondSinceEpocVirtualKeySerializer.DATA_VERSION, subject.getCurrentDataVersion());
         assertEquals(SecondSinceEpocVirtualKeySerializer.CLASS_ID, subject.getClassId());
         assertEquals(SecondSinceEpocVirtualKeySerializer.CURRENT_VERSION, subject.getVersion());
     }

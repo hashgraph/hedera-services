@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS;
@@ -63,60 +64,93 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class GetTokenDefaultKycStatusTest {
-    @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private GasCalculator gasCalculator;
-    @Mock private MessageFrame frame;
-    @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
-    @Mock private RecordsHistorian recordsHistorian;
-    @Mock private EncodingFacade encoder;
-    @Mock private EvmEncodingFacade evmEncoder;
-    @Mock private SyntheticTxnFactory syntheticTxnFactory;
-    @Mock private ExpiringCreations creator;
-    @Mock private SideEffectsTracker sideEffects;
-    @Mock private FeeCalculator feeCalculator;
-    @Mock private StateView stateView;
-    @Mock private HederaStackedWorldStateUpdater worldUpdater;
-    @Mock private WorldLedgers wrappedLedgers;
-    @Mock private UsagePricesProvider resourceCosts;
-    @Mock private HbarCentExchange exchange;
-    @Mock private TransactionBody.Builder mockSynthBodyBuilder;
-    @Mock private InfrastructureFactory infrastructureFactory;
-    @Mock private AccessorFactory accessorFactory;
-    @Mock private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
 
-    @Mock private AssetsLoader assetLoader;
+    @Mock
+    private GasCalculator gasCalculator;
+
+    @Mock
+    private MessageFrame frame;
+
+    @Mock
+    private TxnAwareEvmSigsVerifier sigsVerifier;
+
+    @Mock
+    private RecordsHistorian recordsHistorian;
+
+    @Mock
+    private EncodingFacade encoder;
+
+    @Mock
+    private EvmEncodingFacade evmEncoder;
+
+    @Mock
+    private SyntheticTxnFactory syntheticTxnFactory;
+
+    @Mock
+    private ExpiringCreations creator;
+
+    @Mock
+    private SideEffectsTracker sideEffects;
+
+    @Mock
+    private FeeCalculator feeCalculator;
+
+    @Mock
+    private StateView stateView;
+
+    @Mock
+    private HederaStackedWorldStateUpdater worldUpdater;
+
+    @Mock
+    private WorldLedgers wrappedLedgers;
+
+    @Mock
+    private UsagePricesProvider resourceCosts;
+
+    @Mock
+    private HbarCentExchange exchange;
+
+    @Mock
+    private TransactionBody.Builder mockSynthBodyBuilder;
+
+    @Mock
+    private InfrastructureFactory infrastructureFactory;
+
+    @Mock
+    private AccessorFactory accessorFactory;
+
+    @Mock
+    private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
+
+    @Mock
+    private AssetsLoader assetLoader;
+
     public static final Bytes GET_TOKEN_DEFAULT_KYC_STATUS_INPUT =
-            Bytes.fromHexString(
-                    "0x335e04c10000000000000000000000000000000000000000000000000000000000000404");
+            Bytes.fromHexString("0x335e04c10000000000000000000000000000000000000000000000000000000000000404");
 
     private HTSPrecompiledContract subject;
     private MockedStatic<GetTokenDefaultKycStatus> getTokenDefaultKycStatus;
 
     @BeforeEach
     void setUp() throws IOException {
-        final PrecompilePricingUtils precompilePricingUtils =
-                new PrecompilePricingUtils(
-                        assetLoader,
-                        exchange,
-                        () -> feeCalculator,
-                        resourceCosts,
-                        stateView,
-                        accessorFactory);
-        subject =
-                new HTSPrecompiledContract(
-                        dynamicProperties,
-                        gasCalculator,
-                        recordsHistorian,
-                        sigsVerifier,
-                        encoder,
-                        evmEncoder,
-                        syntheticTxnFactory,
-                        creator,
-                        () -> feeCalculator,
-                        stateView,
-                        precompilePricingUtils,
-                        infrastructureFactory,
-                        evmHTSPrecompiledContract);
+        final PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(
+                assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView, accessorFactory);
+        subject = new HTSPrecompiledContract(
+                dynamicProperties,
+                gasCalculator,
+                recordsHistorian,
+                sigsVerifier,
+                encoder,
+                evmEncoder,
+                syntheticTxnFactory,
+                creator,
+                () -> feeCalculator,
+                stateView,
+                precompilePricingUtils,
+                infrastructureFactory,
+                evmHTSPrecompiledContract);
         getTokenDefaultKycStatus = Mockito.mockStatic(GetTokenDefaultKycStatus.class);
     }
 
@@ -127,31 +161,24 @@ class GetTokenDefaultKycStatusTest {
 
     @Test
     void getTokenDefaultKycStatus() {
-        final var output =
-                "0x000000000000000000000000000000000000000000000000000000000000"
-                        + "00160000000000000000000000000000000000000000000000000000000000000001";
+        final var output = "0x000000000000000000000000000000000000000000000000000000000000"
+                + "00160000000000000000000000000000000000000000000000000000000000000001";
 
         final var successOutput =
-                Bytes.fromHexString(
-                        "0x000000000000000000000000000000000000000000000000000000000000001600000000000"
-                            + "00000000000000000000000000000000000000000000000000001");
+                Bytes.fromHexString("0x000000000000000000000000000000000000000000000000000000000000001600000000000"
+                        + "00000000000000000000000000000000000000000000000000001");
 
         givenMinimalFrameContext();
         givenLedgers();
         givenMinimalContextForSuccessfulCall();
-        final Bytes pretendArguments =
-                Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS));
+        final Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS));
 
-        given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments))
-                .willReturn(mockSynthBodyBuilder);
-        getTokenDefaultKycStatus
-                .when(() -> decodeTokenDefaultKycStatus(any()))
-                .thenReturn(defaultKycStatusWrapper);
+        given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
+        getTokenDefaultKycStatus.when(() -> decodeTokenDefaultKycStatus(any())).thenReturn(defaultKycStatusWrapper);
         given(evmEncoder.encodeGetTokenDefaultKycStatus(true)).willReturn(successResult);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(wrappedLedgers.defaultKycStatus((any()))).willReturn(Boolean.TRUE);
-        given(evmEncoder.encodeGetTokenDefaultKycStatus(true))
-                .willReturn(Bytes.fromHexString(output));
+        given(evmEncoder.encodeGetTokenDefaultKycStatus(true)).willReturn(Bytes.fromHexString(output));
         given(frame.getValue()).willReturn(Wei.ZERO);
 
         // when

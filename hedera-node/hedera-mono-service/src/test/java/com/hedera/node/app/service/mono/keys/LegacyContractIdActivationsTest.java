@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.keys;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -29,15 +30,12 @@ class LegacyContractIdActivationsTest {
 
         final var subject = LegacyContractIdActivations.from(spec);
 
-        final var accountAddr =
-                EntityIdUtils.asTypedEvmAddress(
-                        AccountID.newBuilder().setAccountNum(1058134L).build());
-        final var missingAccountAddr =
-                EntityIdUtils.asTypedEvmAddress(
-                        AccountID.newBuilder().setAccountNum(2169245L).build());
-        final var relaxedContractAddr =
-                EntityIdUtils.asTypedEvmAddress(
-                        AccountID.newBuilder().setAccountNum(1062784L).build());
+        final var accountAddr = EntityIdUtils.asTypedEvmAddress(
+                AccountID.newBuilder().setAccountNum(1058134L).build());
+        final var missingAccountAddr = EntityIdUtils.asTypedEvmAddress(
+                AccountID.newBuilder().setAccountNum(2169245L).build());
+        final var relaxedContractAddr = EntityIdUtils.asTypedEvmAddress(
+                AccountID.newBuilder().setAccountNum(1062784L).build());
 
         assertEquals(Set.of(relaxedContractAddr), subject.getLegacyActiveContractsFor(accountAddr));
         assertNull(subject.getLegacyActiveContractsFor(missingAccountAddr));
@@ -49,31 +47,23 @@ class LegacyContractIdActivationsTest {
 
         final var subject = LegacyContractIdActivations.from(spec);
 
-        final var firstAccountAddr =
-                EntityIdUtils.asTypedEvmAddress(
-                        AccountID.newBuilder().setAccountNum(1058134L).build());
-        final var secondAccountAddr =
-                EntityIdUtils.asTypedEvmAddress(
-                        AccountID.newBuilder().setAccountNum(857111L).build());
-        final var firstContractAddr =
-                EntityIdUtils.asTypedEvmAddress(
-                        AccountID.newBuilder().setAccountNum(1062784L).build());
-        final var secondContractAddr =
-                EntityIdUtils.asTypedEvmAddress(
-                        AccountID.newBuilder().setAccountNum(2173895L).build());
-        final var thirdContractAddr =
-                EntityIdUtils.asTypedEvmAddress(
-                        AccountID.newBuilder().setAccountNum(522000L).build());
-        final var fourthContractAddr =
-                EntityIdUtils.asTypedEvmAddress(
-                        AccountID.newBuilder().setAccountNum(365365L).build());
+        final var firstAccountAddr = EntityIdUtils.asTypedEvmAddress(
+                AccountID.newBuilder().setAccountNum(1058134L).build());
+        final var secondAccountAddr = EntityIdUtils.asTypedEvmAddress(
+                AccountID.newBuilder().setAccountNum(857111L).build());
+        final var firstContractAddr = EntityIdUtils.asTypedEvmAddress(
+                AccountID.newBuilder().setAccountNum(1062784L).build());
+        final var secondContractAddr = EntityIdUtils.asTypedEvmAddress(
+                AccountID.newBuilder().setAccountNum(2173895L).build());
+        final var thirdContractAddr = EntityIdUtils.asTypedEvmAddress(
+                AccountID.newBuilder().setAccountNum(522000L).build());
+        final var fourthContractAddr = EntityIdUtils.asTypedEvmAddress(
+                AccountID.newBuilder().setAccountNum(365365L).build());
 
         assertEquals(
-                Set.of(firstContractAddr, secondContractAddr),
-                subject.getLegacyActiveContractsFor(firstAccountAddr));
+                Set.of(firstContractAddr, secondContractAddr), subject.getLegacyActiveContractsFor(firstAccountAddr));
         assertEquals(
-                Set.of(thirdContractAddr, fourthContractAddr),
-                subject.getLegacyActiveContractsFor(secondAccountAddr));
+                Set.of(thirdContractAddr, fourthContractAddr), subject.getLegacyActiveContractsFor(secondAccountAddr));
     }
 
     @Test

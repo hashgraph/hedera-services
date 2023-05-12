@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.crypto;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
@@ -105,17 +106,16 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
             /* Accessor is for either (1) a transaction in precheck; or (2) a scheduled
             transaction that reached consensus without a managed expand-handle span; or
             (3) in a development environment, a transaction submitted via UncheckedSubmit. */
-            final var validationProps =
-                    new ImpliedTransfersMeta.ValidationProps(
-                            dynamicProperties.maxTransferListSize(),
-                            dynamicProperties.maxTokenTransferListSize(),
-                            dynamicProperties.maxNftTransfersLen(),
-                            dynamicProperties.maxCustomFeeDepth(),
-                            dynamicProperties.maxXferBalanceChanges(),
-                            dynamicProperties.areNftsEnabled(),
-                            dynamicProperties.isAutoCreationEnabled(),
-                            dynamicProperties.isLazyCreationEnabled(),
-                            dynamicProperties.areAllowancesEnabled());
+            final var validationProps = new ImpliedTransfersMeta.ValidationProps(
+                    dynamicProperties.maxTransferListSize(),
+                    dynamicProperties.maxTokenTransferListSize(),
+                    dynamicProperties.maxNftTransfersLen(),
+                    dynamicProperties.maxCustomFeeDepth(),
+                    dynamicProperties.maxXferBalanceChanges(),
+                    dynamicProperties.areNftsEnabled(),
+                    dynamicProperties.isAutoCreationEnabled(),
+                    dynamicProperties.isLazyCreationEnabled(),
+                    dynamicProperties.areAllowancesEnabled());
             final var op = accessor.getTxn().getCryptoTransfer();
             return transferSemanticChecks.fullPureValidation(
                     op.getTransfers(), op.getTokenTransfersList(), validationProps);

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.records;
 
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.fromGrpcScheduleId;
@@ -67,11 +68,20 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class RecordCacheTest {
     private static final long submittingMember = 1L;
 
-    @Mock private EntityCreator creator;
-    @Mock private Cache<TransactionID, Boolean> receiptCache;
-    @Mock private Map<TransactionID, TxnIdRecentHistory> histories;
-    @Mock private TxnIdRecentHistory recentHistory;
-    @Mock private TxnIdRecentHistory recentChildHistory;
+    @Mock
+    private EntityCreator creator;
+
+    @Mock
+    private Cache<TransactionID, Boolean> receiptCache;
+
+    @Mock
+    private Map<TransactionID, TxnIdRecentHistory> histories;
+
+    @Mock
+    private TxnIdRecentHistory recentHistory;
+
+    @Mock
+    private TxnIdRecentHistory recentChildHistory;
 
     private RecordCache subject;
 
@@ -239,72 +249,65 @@ class RecordCacheTest {
     @Test
     void managesFailInvalidRecordsAsExpected() throws InvalidProtocolBufferException {
         final var consensusTime = Instant.now();
-        final var txnId = TransactionID.newBuilder().setAccountID(asAccount("0.0.1001")).build();
-        final var signedTxn =
-                Transaction.newBuilder()
-                        .setBodyBytes(
-                                TransactionBody.newBuilder()
-                                        .setTransactionID(txnId)
-                                        .setMemo("Catastrophe!")
-                                        .build()
-                                        .toByteString())
-                        .build();
+        final var txnId =
+                TransactionID.newBuilder().setAccountID(asAccount("0.0.1001")).build();
+        final var signedTxn = Transaction.newBuilder()
+                .setBodyBytes(TransactionBody.newBuilder()
+                        .setTransactionID(txnId)
+                        .setMemo("Catastrophe!")
+                        .build()
+                        .toByteString())
+                .build();
         final var effectivePayer = IdUtils.asAccount("0.0.3");
         given(histories.computeIfAbsent(argThat(txnId::equals), any())).willReturn(recentHistory);
         final var accessor = PlatformTxnAccessor.from(signedTxn.toByteArray());
 
-        final var expirableTxnRecordBuilder =
-                ExpirableTxnRecord.newBuilder()
-                        .setTxnId(TxnId.fromGrpc(txnId))
-                        .setReceipt(TxnReceipt.newBuilder().setStatus(FAIL_INVALID.name()).build())
-                        .setMemo(accessor.getTxn().getMemo())
-                        .setTxnHash(accessor.getHash())
-                        .setConsensusTime(RichInstant.fromJava(consensusTime));
+        final var expirableTxnRecordBuilder = ExpirableTxnRecord.newBuilder()
+                .setTxnId(TxnId.fromGrpc(txnId))
+                .setReceipt(
+                        TxnReceipt.newBuilder().setStatus(FAIL_INVALID.name()).build())
+                .setMemo(accessor.getTxn().getMemo())
+                .setTxnHash(accessor.getHash())
+                .setConsensusTime(RichInstant.fromJava(consensusTime));
         final var expectedRecord = expirableTxnRecordBuilder.build();
         expectedRecord.setExpiry(consensusTime.getEpochSecond() + 180);
         expectedRecord.setSubmittingMember(submittingMember);
 
-        given(creator.createInvalidFailureRecord(any(), any()))
-                .willReturn(expirableTxnRecordBuilder);
-        given(creator.saveExpiringRecord(any(), any(), anyLong(), anyLong()))
-                .willReturn(expectedRecord);
+        given(creator.createInvalidFailureRecord(any(), any())).willReturn(expirableTxnRecordBuilder);
+        given(creator.saveExpiringRecord(any(), any(), anyLong(), anyLong())).willReturn(expectedRecord);
 
         subject.setFailInvalid(effectivePayer, accessor, consensusTime, submittingMember);
 
-        verify(recentHistory)
-                .observe(argThat(expectedRecord::equals), argThat(FAIL_INVALID::equals));
+        verify(recentHistory).observe(argThat(expectedRecord::equals), argThat(FAIL_INVALID::equals));
     }
 
     @Test
     void managesTriggeredFailInvalidRecordAsExpected() throws InvalidProtocolBufferException {
         final var consensusTime = Instant.now();
-        final var txnId = TransactionID.newBuilder().setAccountID(asAccount("0.0.1001")).build();
-        final var signedTxn =
-                Transaction.newBuilder()
-                        .setBodyBytes(
-                                TransactionBody.newBuilder()
-                                        .setTransactionID(txnId)
-                                        .setMemo("Catastrophe!")
-                                        .build()
-                                        .toByteString())
-                        .build();
+        final var txnId =
+                TransactionID.newBuilder().setAccountID(asAccount("0.0.1001")).build();
+        final var signedTxn = Transaction.newBuilder()
+                .setBodyBytes(TransactionBody.newBuilder()
+                        .setTransactionID(txnId)
+                        .setMemo("Catastrophe!")
+                        .build()
+                        .toByteString())
+                .build();
         final var effectivePayer = IdUtils.asAccount("0.0.3");
         final var effectiveScheduleID = IdUtils.asSchedule("0.0.123");
         given(histories.computeIfAbsent(argThat(txnId::equals), any())).willReturn(recentHistory);
         final var accessor = SignedTxnAccessor.from(signedTxn.toByteArray());
-        final var expirableTxnRecordBuilder =
-                ExpirableTxnRecord.newBuilder()
-                        .setTxnId(TxnId.fromGrpc(txnId))
-                        .setReceipt(TxnReceipt.newBuilder().setStatus(FAIL_INVALID.name()).build())
-                        .setMemo(accessor.getTxn().getMemo())
-                        .setTxnHash(accessor.getHash())
-                        .setConsensusTime(RichInstant.fromJava(consensusTime))
-                        .setScheduleRef(fromGrpcScheduleId(effectiveScheduleID));
+        final var expirableTxnRecordBuilder = ExpirableTxnRecord.newBuilder()
+                .setTxnId(TxnId.fromGrpc(txnId))
+                .setReceipt(
+                        TxnReceipt.newBuilder().setStatus(FAIL_INVALID.name()).build())
+                .setMemo(accessor.getTxn().getMemo())
+                .setTxnHash(accessor.getHash())
+                .setConsensusTime(RichInstant.fromJava(consensusTime))
+                .setScheduleRef(fromGrpcScheduleId(effectiveScheduleID));
         final var expirableTxnRecord = expirableTxnRecordBuilder.build();
-        given(creator.createInvalidFailureRecord(any(), any()))
-                .willReturn(expirableTxnRecordBuilder);
-        given(creator.saveExpiringRecord(any(), any(), anyLong(), anyLong()))
-                .willReturn(expirableTxnRecord);
+        given(creator.createInvalidFailureRecord(any(), any())).willReturn(expirableTxnRecordBuilder);
+        given(creator.saveExpiringRecord(any(), any(), anyLong(), anyLong())).willReturn(expirableTxnRecord);
 
         // when:
         subject.setFailInvalid(effectivePayer, accessor, consensusTime, submittingMember);
@@ -330,60 +333,48 @@ class RecordCacheTest {
         assertFalse(hasC);
     }
 
-    private static final TransactionID txnIdA =
-            TransactionID.newBuilder()
-                    .setTransactionValidStart(
-                            Timestamp.newBuilder().setSeconds(12_345L).setNanos(54321))
-                    .setAccountID(asAccount("0.0.2"))
-                    .build();
-    private static final TransactionID txnIdB =
-            TransactionID.newBuilder()
-                    .setAccountID(asAccount("2.2.0"))
-                    .setTransactionValidStart(
-                            Timestamp.newBuilder().setSeconds(12_345L).setNanos(54321))
-                    .build();
-    private static final TransactionID txnIdC =
-            TransactionID.newBuilder()
-                    .setAccountID(asAccount("2.2.3"))
-                    .setTransactionValidStart(
-                            Timestamp.newBuilder().setSeconds(12_345L).setNanos(54321))
-                    .build();
+    private static final TransactionID txnIdA = TransactionID.newBuilder()
+            .setTransactionValidStart(Timestamp.newBuilder().setSeconds(12_345L).setNanos(54321))
+            .setAccountID(asAccount("0.0.2"))
+            .build();
+    private static final TransactionID txnIdB = TransactionID.newBuilder()
+            .setAccountID(asAccount("2.2.0"))
+            .setTransactionValidStart(Timestamp.newBuilder().setSeconds(12_345L).setNanos(54321))
+            .build();
+    private static final TransactionID txnIdC = TransactionID.newBuilder()
+            .setAccountID(asAccount("2.2.3"))
+            .setTransactionValidStart(Timestamp.newBuilder().setSeconds(12_345L).setNanos(54321))
+            .build();
     private static final TxnReceipt unknownReceipt =
             TxnReceipt.newBuilder().setStatus(UNKNOWN.name()).build();
-    private static final ExchangeRate rate =
-            ExchangeRate.newBuilder()
-                    .setCentEquiv(1)
-                    .setHbarEquiv(12)
-                    .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(555L).build())
-                    .build();
-    private static final TxnReceipt knownReceipt =
-            TxnReceipt.newBuilder()
-                    .setStatus(SUCCESS.name())
-                    .setAccountId(EntityId.fromGrpcAccountId(asAccount("0.0.2")))
-                    .setExchangeRates(
-                            ExchangeRates.fromGrpc(
-                                    ExchangeRateSet.newBuilder()
-                                            .setCurrentRate(rate)
-                                            .setNextRate(rate)
-                                            .build()))
-                    .build();
+    private static final ExchangeRate rate = ExchangeRate.newBuilder()
+            .setCentEquiv(1)
+            .setHbarEquiv(12)
+            .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(555L).build())
+            .build();
+    private static final TxnReceipt knownReceipt = TxnReceipt.newBuilder()
+            .setStatus(SUCCESS.name())
+            .setAccountId(EntityId.fromGrpcAccountId(asAccount("0.0.2")))
+            .setExchangeRates(ExchangeRates.fromGrpc(ExchangeRateSet.newBuilder()
+                    .setCurrentRate(rate)
+                    .setNextRate(rate)
+                    .build()))
+            .build();
     private static final TxnReceipt knownChildReceipt =
             TxnReceipt.newBuilder().setStatus(INVALID_SIGNATURE.name()).build();
-    private final ExpirableTxnRecord aRecord =
-            ExpirableTxnRecord.newBuilder()
-                    .setMemo("Something")
-                    .setConsensusTime(RichInstant.fromJava(Instant.ofEpochSecond(500L)))
-                    .setReceipt(knownReceipt)
-                    .setTxnId(TxnId.fromGrpc(txnIdA))
-                    .setFee(123L)
-                    .setNumChildRecords((short) 1)
-                    .build();
-    private final ExpirableTxnRecord aChildRecord =
-            ExpirableTxnRecord.newBuilder()
-                    .setMemo("Something else")
-                    .setConsensusTime(RichInstant.fromJava(Instant.ofEpochSecond(501L)))
-                    .setReceipt(knownChildReceipt)
-                    .setTxnId(TxnId.fromGrpc(txnIdA).withNonce(1))
-                    .setParentConsensusTime(Instant.ofEpochSecond(500L))
-                    .build();
+    private final ExpirableTxnRecord aRecord = ExpirableTxnRecord.newBuilder()
+            .setMemo("Something")
+            .setConsensusTime(RichInstant.fromJava(Instant.ofEpochSecond(500L)))
+            .setReceipt(knownReceipt)
+            .setTxnId(TxnId.fromGrpc(txnIdA))
+            .setFee(123L)
+            .setNumChildRecords((short) 1)
+            .build();
+    private final ExpirableTxnRecord aChildRecord = ExpirableTxnRecord.newBuilder()
+            .setMemo("Something else")
+            .setConsensusTime(RichInstant.fromJava(Instant.ofEpochSecond(501L)))
+            .setReceipt(knownChildReceipt)
+            .setTxnId(TxnId.fromGrpc(txnIdA).withNonce(1))
+            .setParentConsensusTime(Instant.ofEpochSecond(500L))
+            .build();
 }

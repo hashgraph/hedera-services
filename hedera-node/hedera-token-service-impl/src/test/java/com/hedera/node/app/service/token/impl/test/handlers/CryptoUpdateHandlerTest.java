@@ -13,137 +13,130 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl.test.handlers;
 
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static org.junit.jupiter.api.Assertions.*;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
+import static com.hedera.test.utils.KeyUtils.B_COMPLEX_KEY;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertIterableEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
+import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.handlers.CryptoUpdateHandler;
-import com.hedera.node.app.spi.key.HederaKey;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
 class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
-    private final AccountID updateAccountId = asAccount("0.0.32132");
-    private final HederaKey updateAccountKey = asHederaKey(A_COMPLEX_KEY).get();
-    @Mock private MerkleAccount updateAccount;
+    private final AccountID updateAccountId =
+            AccountID.newBuilder().accountNum(32132).build();
+    private final Key opKey = B_COMPLEX_KEY;
 
-    private CryptoUpdateHandler subject = new CryptoUpdateHandler();
+    @Mock
+    private Account updateAccount;
 
-    @Test
-    void cryptoUpdateVanilla() {
-        final var txn = cryptoUpdateTransaction(payer, updateAccountId);
-        given(accounts.get(updateAccountId.getAccountNum())).willReturn(updateAccount);
-        given(updateAccount.getAccountKey()).willReturn((JKey) updateAccountKey);
-        given(waivers.isNewKeySignatureWaived(txn, payer)).willReturn(false);
-        given(waivers.isTargetAccountSignatureWaived(txn, payer)).willReturn(false);
+    private CryptoUpdateHandler subject;
 
-        final var meta = subject.preHandle(txn, payer, store, waivers);
-        basicMetaAssertions(meta, 2, false, OK);
-        assertEquals(payerKey, meta.payerKey());
-        assertTrue(meta.requiredNonPayerKeys().contains(updateAccountKey));
+    @BeforeEach
+    public void setUp() {
+        super.setUp();
+        readableAccounts = emptyReadableAccountStateBuilder()
+                .value(EntityNumVirtualKey.fromLong(accountNum), account)
+                .value(EntityNumVirtualKey.fromLong(updateAccountId.accountNum()), updateAccount)
+                .build();
+        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        readableStore = new ReadableAccountStoreImpl(readableStates);
+
+        subject = new CryptoUpdateHandler(waivers);
     }
 
     @Test
-    void cryptoUpdateNewSignatureKeyWaivedVanilla() {
-        final var txn = cryptoUpdateTransaction(payer, updateAccountId);
-        given(accounts.get(updateAccountId.getAccountNum())).willReturn(updateAccount);
-        given(updateAccount.getAccountKey()).willReturn((JKey) updateAccountKey);
-        given(waivers.isNewKeySignatureWaived(txn, payer)).willReturn(true);
-        given(waivers.isTargetAccountSignatureWaived(txn, payer)).willReturn(false);
+    void cryptoUpdateVanilla() throws PreCheckException {
+        final var txn = cryptoUpdateTransaction(id, updateAccountId);
+        given(updateAccount.key()).willReturn(otherKey);
+        given(waivers.isNewKeySignatureWaived(txn, id)).willReturn(false);
+        given(waivers.isTargetAccountSignatureWaived(txn, id)).willReturn(false);
 
-        final var meta = subject.preHandle(txn, payer, store, waivers);
-        basicMetaAssertions(meta, 1, false, OK);
-        assertEquals(payerKey, meta.payerKey());
-        assertIterableEquals(List.of(updateAccountKey), meta.requiredNonPayerKeys());
+        final var context = new FakePreHandleContext(readableStore, txn);
+        subject.preHandle(context);
+        basicMetaAssertions(context, 2);
+        assertEquals(key, context.payerKey());
+        assertTrue(context.requiredNonPayerKeys().contains(otherKey));
     }
 
     @Test
-    void cryptoUpdateTargetSignatureKeyWaivedVanilla() {
-        final var txn = cryptoUpdateTransaction(payer, updateAccountId);
-        given(waivers.isNewKeySignatureWaived(txn, payer)).willReturn(false);
-        given(waivers.isTargetAccountSignatureWaived(txn, payer)).willReturn(true);
+    void cryptoUpdateNewSignatureKeyWaivedVanilla() throws PreCheckException {
+        final var txn = cryptoUpdateTransaction(id, updateAccountId);
+        given(updateAccount.key()).willReturn(otherKey);
+        given(waivers.isNewKeySignatureWaived(txn, id)).willReturn(true);
+        given(waivers.isTargetAccountSignatureWaived(txn, id)).willReturn(false);
 
-        final var meta = subject.preHandle(txn, payer, store, waivers);
-        basicMetaAssertions(meta, 1, false, OK);
-        assertEquals(payerKey, meta.payerKey());
-        assertFalse(meta.requiredNonPayerKeys().contains(updateAccountKey));
+        final var context = new FakePreHandleContext(readableStore, txn);
+        subject.preHandle(context);
+        basicMetaAssertions(context, 1);
+        assertEquals(key, context.payerKey());
+        assertIterableEquals(List.of(otherKey), context.requiredNonPayerKeys());
     }
 
     @Test
-    void cryptoUpdatePayerMissingFails() {
-        final var txn = cryptoUpdateTransaction(updateAccountId, updateAccountId);
-        given(accounts.get(updateAccountId.getAccountNum())).willReturn(null);
+    void cryptoUpdateTargetSignatureKeyWaivedVanilla() throws PreCheckException {
+        final var txn = cryptoUpdateTransaction(id, updateAccountId);
+        given(waivers.isNewKeySignatureWaived(txn, id)).willReturn(false);
+        given(waivers.isTargetAccountSignatureWaived(txn, id)).willReturn(true);
 
-        given(waivers.isNewKeySignatureWaived(txn, updateAccountId)).willReturn(false);
-        given(waivers.isTargetAccountSignatureWaived(txn, updateAccountId)).willReturn(true);
-
-        final var meta = subject.preHandle(txn, updateAccountId, store, waivers);
-        basicMetaAssertions(meta, 0, true, INVALID_PAYER_ACCOUNT_ID);
-        assertNull(meta.payerKey());
+        final var context = new FakePreHandleContext(readableStore, txn);
+        subject.preHandle(context);
+        basicMetaAssertions(context, 1);
+        assertEquals(key, context.payerKey());
+        assertFalse(context.requiredNonPayerKeys().contains(otherKey));
     }
 
     @Test
-    void cryptoUpdatePayerMissingFailsWhenNoOtherSigsRequired() {
-        final var txn = cryptoUpdateTransaction(updateAccountId, updateAccountId);
-        given(accounts.get(updateAccountId.getAccountNum())).willReturn(null);
+    void cryptoUpdateUpdateAccountMissingFails() throws PreCheckException {
+        final var txn = cryptoUpdateTransaction(id, updateAccountId);
+        readableAccounts = emptyReadableAccountStateBuilder()
+                .value(EntityNumVirtualKey.fromLong(accountNum), account)
+                .build();
+        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        readableStore = new ReadableAccountStoreImpl(readableStates);
 
-        given(waivers.isNewKeySignatureWaived(txn, updateAccountId)).willReturn(true);
-        given(waivers.isTargetAccountSignatureWaived(txn, updateAccountId)).willReturn(true);
+        given(waivers.isNewKeySignatureWaived(txn, id)).willReturn(true);
+        given(waivers.isTargetAccountSignatureWaived(txn, id)).willReturn(false);
 
-        final var meta = subject.preHandle(txn, updateAccountId, store, waivers);
-        basicMetaAssertions(meta, 0, true, INVALID_PAYER_ACCOUNT_ID);
-        assertNull(meta.payerKey());
-    }
-
-    @Test
-    void cryptoUpdateUpdateAccountMissingFails() {
-        final var txn = cryptoUpdateTransaction(payer, updateAccountId);
-        given(accounts.get(updateAccountId.getAccountNum())).willReturn(null);
-
-        given(waivers.isNewKeySignatureWaived(txn, payer)).willReturn(true);
-        given(waivers.isTargetAccountSignatureWaived(txn, payer)).willReturn(false);
-
-        final var meta = subject.preHandle(txn, payer, store, waivers);
-        basicMetaAssertions(meta, 0, true, INVALID_ACCOUNT_ID);
-        assertEquals(payerKey, meta.payerKey());
+        final var context = new FakePreHandleContext(readableStore, txn);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ACCOUNT_ID);
     }
 
     @Test
     void handleNotImplemented() {
-        assertThrows(UnsupportedOperationException.class, () -> subject.handle(metaToHandle));
+        assertThrows(UnsupportedOperationException.class, () -> subject.handle());
     }
 
-    private TransactionBody cryptoUpdateTransaction(
-            final AccountID payerId, final AccountID accountToUpdate) {
-        if (payerId.equals(payer)) {
-            setUpPayer();
-        }
+    private TransactionBody cryptoUpdateTransaction(final AccountID payerId, final AccountID accountToUpdate) {
         final var transactionID =
-                TransactionID.newBuilder()
-                        .setAccountID(payerId)
-                        .setTransactionValidStart(consensusTimestamp);
-        final var updateTxnBody =
-                CryptoUpdateTransactionBody.newBuilder()
-                        .setAccountIDToUpdate(accountToUpdate)
-                        .setKey(key)
-                        .build();
+                TransactionID.newBuilder().accountID(payerId).transactionValidStart(consensusTimestamp);
+        final var updateTxnBody = CryptoUpdateTransactionBody.newBuilder()
+                .accountIDToUpdate(accountToUpdate)
+                .key(opKey)
+                .build();
         return TransactionBody.newBuilder()
-                .setTransactionID(transactionID)
-                .setCryptoUpdateAccount(updateTxnBody)
+                .transactionID(transactionID)
+                .cryptoUpdateAccount(updateTxnBody)
                 .build();
     }
 }

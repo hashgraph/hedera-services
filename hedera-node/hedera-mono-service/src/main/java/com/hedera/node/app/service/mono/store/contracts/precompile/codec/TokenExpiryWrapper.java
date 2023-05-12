@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.codec;
 
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -23,8 +24,7 @@ public class TokenExpiryWrapper {
     private AccountID autoRenewAccount;
     private final long autoRenewPeriod;
 
-    public TokenExpiryWrapper(
-            final long second, final AccountID autoRenewAccount, final long autoRenewPeriod) {
+    public TokenExpiryWrapper(final long second, final AccountID autoRenewAccount, final long autoRenewPeriod) {
         this.second = second;
         this.autoRenewAccount = autoRenewAccount;
         this.autoRenewPeriod = autoRenewPeriod;

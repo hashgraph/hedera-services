@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.validation;
 
 import static com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer.STAKED_ACCOUNT_ID_CASE;
@@ -24,9 +25,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.node.app.service.mono.context.NodeInfo;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.utils.EntityNum;
@@ -49,13 +52,26 @@ class PureValidationTest {
     @SuppressWarnings("unchecked")
     void contractOkIfExplicitlyAllowed() {
         final AccountStorageAdapter accounts =
-                AccountStorageAdapter.fromInMemory(mock(MerkleMap.class));
+                AccountStorageAdapter.fromInMemory(MerkleMapLike.from(mock(MerkleMap.class)));
         final var contract = MerkleAccountFactory.newContract().get();
         final var num = EntityNum.fromLong(1234L);
 
         given(accounts.get(num)).willReturn(contract);
         assertEquals(INVALID_ACCOUNT_ID, PureValidation.queryableAccountStatus(num, accounts));
         assertEquals(OK, PureValidation.queryableAccountOrContractStatus(num, accounts));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void contractOkIfExplicitlyAllowedAlsoWhenCalledThroughValidator() {
+        final var validator = mock(OptionValidator.class);
+        final AccountStorageAdapter accounts = AccountStorageAdapter.fromInMemory(mock(MerkleMapLike.class));
+        final var contract = MerkleAccountFactory.newContract().get();
+        final var num = EntityNum.fromLong(1234L);
+        doCallRealMethod().when(validator).queryableAccountOrContractStatus(num, accounts);
+
+        given(accounts.get(num)).willReturn(contract);
+        assertEquals(OK, validator.queryableAccountOrContractStatus(num, accounts));
     }
 
     @Test
@@ -84,19 +100,16 @@ class PureValidationTest {
         final var stakedAccountID = asAccount("0.0.2");
         final var stakedNodeId = 0;
         final AccountStorageAdapter accounts = mock(AccountStorageAdapter.class);
-        given(accounts.get(EntityNum.fromAccountId(stakedAccountID)))
-                .willReturn(new MerkleAccount());
+        given(accounts.get(EntityNum.fromAccountId(stakedAccountID))).willReturn(new MerkleAccount());
 
-        assertTrue(
-                PureValidation.isValidStakedId(
-                        STAKED_ACCOUNT_ID_CASE, stakedAccountID, stakedNodeId, accounts, nodeInfo));
+        assertTrue(PureValidation.isValidStakedId(
+                STAKED_ACCOUNT_ID_CASE, stakedAccountID, stakedNodeId, accounts, nodeInfo));
 
         final var deletedAccount = new MerkleAccount();
         deletedAccount.setDeleted(true);
         given(accounts.get(EntityNum.fromAccountId(stakedAccountID))).willReturn(deletedAccount);
-        assertFalse(
-                PureValidation.isValidStakedId(
-                        STAKED_ACCOUNT_ID_CASE, stakedAccountID, stakedNodeId, accounts, nodeInfo));
+        assertFalse(PureValidation.isValidStakedId(
+                STAKED_ACCOUNT_ID_CASE, stakedAccountID, stakedNodeId, accounts, nodeInfo));
     }
 
     @Test
@@ -109,12 +122,10 @@ class PureValidationTest {
 
         given(nodeInfo.isValidId(stakedNodeId)).willReturn(true);
         assertTrue(
-                PureValidation.isValidStakedId(
-                        STAKED_NODE_ID_CASE, stakedAccountID, stakedNodeId, accounts, nodeInfo));
+                PureValidation.isValidStakedId(STAKED_NODE_ID_CASE, stakedAccountID, stakedNodeId, accounts, nodeInfo));
 
         given(nodeInfo.isValidId(stakedNodeId)).willReturn(false);
         assertFalse(
-                PureValidation.isValidStakedId(
-                        STAKED_NODE_ID_CASE, stakedAccountID, stakedNodeId, accounts, nodeInfo));
+                PureValidation.isValidStakedId(STAKED_NODE_ID_CASE, stakedAccountID, stakedNodeId, accounts, nodeInfo));
     }
 }

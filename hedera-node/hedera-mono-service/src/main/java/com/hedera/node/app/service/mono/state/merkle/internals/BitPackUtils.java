@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.merkle.internals;
 
 /**
@@ -21,8 +22,7 @@ package com.hedera.node.app.service.mono.state.merkle.internals;
  */
 public class BitPackUtils {
     private static final int MAX_AUTOMATIC_ASSOCIATIONS_MASK = (1 << 16) - 1;
-    private static final int ALREADY_USED_AUTOMATIC_ASSOCIATIONS_MASK =
-            MAX_AUTOMATIC_ASSOCIATIONS_MASK << 16;
+    private static final int ALREADY_USED_AUTOMATIC_ASSOCIATIONS_MASK = MAX_AUTOMATIC_ASSOCIATIONS_MASK << 16;
 
     private static final long MASK_INT_AS_UNSIGNED_LONG = (1L << 32) - 1;
     private static final long MASK_HI_ORDER_32 = MASK_INT_AS_UNSIGNED_LONG << 32;
@@ -135,8 +135,7 @@ public class BitPackUtils {
      * @param alreadyUsedAutoAssociations already used automatic associations of an account.
      * @return metadata of
      */
-    public static int buildAutomaticAssociationMetaData(
-            int maxAutoAssociations, int alreadyUsedAutoAssociations) {
+    public static int buildAutomaticAssociationMetaData(int maxAutoAssociations, int alreadyUsedAutoAssociations) {
         return (alreadyUsedAutoAssociations << 16) | maxAutoAssociations;
     }
 
@@ -168,10 +167,8 @@ public class BitPackUtils {
      * @param maxAutomaticAssociations new max allowed automatic associations to set
      * @return metadata after changing the new max.
      */
-    public static int setMaxAutomaticAssociationsTo(
-            int autoAssociationMetadata, int maxAutomaticAssociations) {
-        return (autoAssociationMetadata & ALREADY_USED_AUTOMATIC_ASSOCIATIONS_MASK)
-                | maxAutomaticAssociations;
+    public static int setMaxAutomaticAssociationsTo(int autoAssociationMetadata, int maxAutomaticAssociations) {
+        return (autoAssociationMetadata & ALREADY_USED_AUTOMATIC_ASSOCIATIONS_MASK) | maxAutomaticAssociations;
     }
 
     /**
@@ -184,8 +181,7 @@ public class BitPackUtils {
      */
     public static int setAlreadyUsedAutomaticAssociationsTo(
             int autoAssociationMetadata, int alreadyUsedAutoAssociations) {
-        return (alreadyUsedAutoAssociations << 16)
-                | getMaxAutomaticAssociationsFrom(autoAssociationMetadata);
+        return (alreadyUsedAutoAssociations << 16) | getMaxAutomaticAssociationsFrom(autoAssociationMetadata);
     }
 
     /**

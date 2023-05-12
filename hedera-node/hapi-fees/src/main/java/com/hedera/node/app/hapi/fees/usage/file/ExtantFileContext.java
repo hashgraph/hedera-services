@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage.file;
 
 import static com.hedera.node.app.hapi.fees.usage.file.FileOpsUsage.asKey;
@@ -78,8 +79,7 @@ public class ExtantFileContext {
 
         public ExtantFileContext build() {
             if (mask != ALL_FIELDS_MASK) {
-                throw new IllegalStateException(
-                        String.format("Field mask is %d, not %d!", mask, ALL_FIELDS_MASK));
+                throw new IllegalStateException(String.format("Field mask is %d, not %d!", mask, ALL_FIELDS_MASK));
             }
             return new ExtantFileContext(this);
         }

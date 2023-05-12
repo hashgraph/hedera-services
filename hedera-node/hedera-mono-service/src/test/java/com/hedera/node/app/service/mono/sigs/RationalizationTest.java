@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs;
 
 import static com.hedera.node.app.service.mono.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
@@ -28,6 +29,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
+import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.sigs.factories.ReusableBodySigningFactory;
@@ -45,6 +47,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -57,26 +60,44 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class RationalizationTest {
     private final JKey payerKey = TxnHandlingScenario.MISC_ACCOUNT_KT.asJKeyUnchecked();
     private final TransactionBody txn = TransactionBody.getDefaultInstance();
-    private final SigningOrderResult<ResponseCodeEnum> generalError =
-            CODE_ORDER_RESULT_FACTORY.forGeneralError();
-    private final SigningOrderResult<ResponseCodeEnum> othersError =
-            CODE_ORDER_RESULT_FACTORY.forImmutableContract();
+    private final SigningOrderResult<ResponseCodeEnum> generalError = CODE_ORDER_RESULT_FACTORY.forGeneralError();
+    private final SigningOrderResult<ResponseCodeEnum> othersError = CODE_ORDER_RESULT_FACTORY.forImmutableContract();
 
-    @Mock private PlatformTxnAccessor txnAccessor;
-    @Mock private SyncVerifier syncVerifier;
-    @Mock private SigRequirements keyOrderer;
-    @Mock private ReusableBodySigningFactory sigFactory;
-    @Mock private PubKeyToSigBytes pkToSigFn;
-    @Mock private SigningOrderResult<ResponseCodeEnum> mockOrderResult;
-    @Mock private SigImpactHistorian sigImpactHistorian;
-    @Mock private AccountID payer;
-    @Mock private LinkedRefs linkedRefs;
+    @Mock
+    private PlatformTxnAccessor txnAccessor;
+
+    @Mock
+    private SyncVerifier syncVerifier;
+
+    @Mock
+    private SigRequirements keyOrderer;
+
+    @Mock
+    private ReusableBodySigningFactory sigFactory;
+
+    @Mock
+    private PubKeyToSigBytes pkToSigFn;
+
+    @Mock
+    private SigningOrderResult<ResponseCodeEnum> mockOrderResult;
+
+    @Mock
+    private SigImpactHistorian sigImpactHistorian;
+
+    @Mock
+    private AccountID payer;
+
+    @Mock
+    private LinkedRefs linkedRefs;
+
+    @Mock
+    private AliasManager aliasManager;
 
     private Rationalization subject;
 
     @BeforeEach
     void setUp() {
-        subject = new Rationalization(syncVerifier, sigImpactHistorian, keyOrderer, sigFactory);
+        subject = new Rationalization(syncVerifier, sigImpactHistorian, keyOrderer, sigFactory, aliasManager);
     }
 
     @Test
@@ -117,6 +138,8 @@ class RationalizationTest {
         // and:
         verify(sigFactory).resetFor(txnAccessor);
         verify(pkToSigFn).resetAllSigsToUnused();
+        // and:
+        verify(txnAccessor).setPendingCompletions(Collections.emptyList());
     }
 
     @Test
@@ -136,8 +159,7 @@ class RationalizationTest {
     @Test
     void setsUnavailableMetaIfCannotListPayerKey() {
         given(txnAccessor.getLinkedRefs()).willReturn(linkedRefs);
-        ArgumentCaptor<RationalizedSigMeta> captor =
-                ArgumentCaptor.forClass(RationalizedSigMeta.class);
+        ArgumentCaptor<RationalizedSigMeta> captor = ArgumentCaptor.forClass(RationalizedSigMeta.class);
 
         given(txnAccessor.getTxn()).willReturn(txn);
         given(txnAccessor.getPayer()).willReturn(payer);
@@ -159,8 +181,7 @@ class RationalizationTest {
     void propagatesFailureIfCouldNotExpandOthersKeys() {
         given(txnAccessor.getLinkedRefs()).willReturn(linkedRefs);
         given(linkedRefs.haveNoChangesAccordingTo(sigImpactHistorian)).willReturn(true);
-        ArgumentCaptor<RationalizedSigMeta> captor =
-                ArgumentCaptor.forClass(RationalizedSigMeta.class);
+        ArgumentCaptor<RationalizedSigMeta> captor = ArgumentCaptor.forClass(RationalizedSigMeta.class);
 
         given(txnAccessor.getTxn()).willReturn(txn);
         given(txnAccessor.getPayer()).willReturn(payer);

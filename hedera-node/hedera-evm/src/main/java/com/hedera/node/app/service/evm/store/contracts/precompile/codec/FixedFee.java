@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.store.contracts.precompile.codec;
 
 import java.util.Objects;
@@ -61,12 +62,7 @@ public class FixedFee {
 
     @Override
     public int hashCode() {
-        return Objects.hash(
-                amount,
-                denominatingTokenId,
-                useHbarsForPayment,
-                useCurrentTokenForPayment,
-                feeCollector);
+        return Objects.hash(amount, denominatingTokenId, useHbarsForPayment, useCurrentTokenForPayment, feeCollector);
     }
 
     @Override

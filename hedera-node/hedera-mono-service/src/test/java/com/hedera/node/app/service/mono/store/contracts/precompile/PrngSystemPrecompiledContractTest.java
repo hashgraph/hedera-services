@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
+import static com.hedera.node.app.hapi.utils.CommonUtils.functionOf;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.PrngSystemPrecompiledContract.PSEUDORANDOM_SEED_GENERATOR_SELECTOR;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.PRNG;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
@@ -38,12 +40,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.google.common.primitives.Longs;
+import com.hedera.node.app.hapi.utils.exception.UnknownHederaFunctionality;
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.execution.LivePricesSource;
-import com.hedera.node.app.service.mono.exceptions.UnknownHederaFunctionality;
 import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.expiry.ExpiringCreations;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
@@ -52,7 +54,6 @@ import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateU
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.mono.txns.util.PrngLogic;
-import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -76,21 +77,40 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class PrngSystemPrecompiledContractTest {
-    private static final Hash WELL_KNOWN_HASH =
-            new Hash(
-                    CommonUtils.unhex(
-                            "65386630386164632d356537632d343964342d623437372d62636134346538386338373133633038316162372d616300"));
-    @Mock private MessageFrame frame;
-    @Mock private GasCalculator gasCalculator;
-    @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private RecordsRunningHashLeaf runningHashLeaf;
-    @Mock private SideEffectsTracker sideEffectsTracker;
-    @Mock private ExpiringCreations creator;
-    @Mock private RecordsHistorian recordsHistorian;
-    @Mock private PrecompilePricingUtils pricingUtils;
+    private static final Hash WELL_KNOWN_HASH = new Hash(CommonUtils.unhex(
+            "65386630386164632d356537632d343964342d623437372d62636134346538386338373133633038316162372d616300"));
+
+    @Mock
+    private MessageFrame frame;
+
+    @Mock
+    private GasCalculator gasCalculator;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
+
+    @Mock
+    private RecordsRunningHashLeaf runningHashLeaf;
+
+    @Mock
+    private SideEffectsTracker sideEffectsTracker;
+
+    @Mock
+    private ExpiringCreations creator;
+
+    @Mock
+    private RecordsHistorian recordsHistorian;
+
+    @Mock
+    private PrecompilePricingUtils pricingUtils;
+
     private final Instant consensusNow = Instant.ofEpochSecond(123456789L);
-    @Mock private LivePricesSource livePricesSource;
-    @Mock private HederaStackedWorldStateUpdater updater;
+
+    @Mock
+    private LivePricesSource livePricesSource;
+
+    @Mock
+    private HederaStackedWorldStateUpdater updater;
 
     private PrngSystemPrecompiledContract subject;
     private final Random r = new Random();
@@ -99,23 +119,14 @@ class PrngSystemPrecompiledContractTest {
 
     @BeforeEach
     void setUp() {
-        final var logic =
-                new PrngLogic(dynamicProperties, () -> runningHashLeaf, sideEffectsTracker);
-        subject =
-                new PrngSystemPrecompiledContract(
-                        gasCalculator,
-                        logic,
-                        creator,
-                        recordsHistorian,
-                        pricingUtils,
-                        livePricesSource,
-                        dynamicProperties);
+        final var logic = new PrngLogic(dynamicProperties, () -> runningHashLeaf, sideEffectsTracker);
+        subject = new PrngSystemPrecompiledContract(
+                gasCalculator, logic, creator, recordsHistorian, pricingUtils, livePricesSource, dynamicProperties);
     }
 
     @Test
     void generatesRandom256BitNumber() throws InterruptedException {
-        given(runningHashLeaf.nMinusThreeRunningHash())
-                .willReturn(new Hash(TxnUtils.randomUtf8Bytes(48)));
+        given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(new Hash(TxnUtils.randomUtf8Bytes(48)));
         final var result = subject.generatePseudoRandomData(random256BitGeneratorInput());
         assertEquals(32, result.toArray().length);
     }
@@ -131,9 +142,7 @@ class PrngSystemPrecompiledContractTest {
     @Test
     void calculatesGasCorrectly() {
         given(pricingUtils.getCanonicalPriceInTinyCents(PRNG)).willReturn(100000000L);
-        given(
-                        livePricesSource.currentGasPriceInTinycents(
-                                consensusNow, HederaFunctionality.ContractCall))
+        given(livePricesSource.currentGasPriceInTinycents(consensusNow, HederaFunctionality.ContractCall))
                 .willReturn(800L);
         assertEquals(100000000L / 800L, subject.calculateGas(consensusNow));
     }
@@ -155,14 +164,13 @@ class PrngSystemPrecompiledContractTest {
         assertNull(result.getOutput());
         verify(updater).manageInProgressRecord(eq(recordsHistorian), any(), captor.capture());
         final var synthTxn = captor.getValue().build();
-        final var synthTxnType = MiscUtils.functionOf(synthTxn);
+        final var synthTxnType = functionOf(synthTxn);
         assertEquals(UtilPrng, synthTxnType);
     }
 
     @Test
     void happyPathWithRandomSeedGeneratedWorks() throws InterruptedException {
-        final ArgumentCaptor<SideEffectsTracker> captor =
-                ArgumentCaptor.forClass(SideEffectsTracker.class);
+        final ArgumentCaptor<SideEffectsTracker> captor = ArgumentCaptor.forClass(SideEffectsTracker.class);
 
         final var input = random256BitGeneratorInput();
         initialSetUp();
@@ -181,9 +189,7 @@ class PrngSystemPrecompiledContractTest {
 
         // and:
         final var effectsTracker = captor.getValue();
-        assertArrayEquals(
-                Arrays.copyOfRange(WELL_KNOWN_HASH.getValue(), 0, 32),
-                effectsTracker.getPseudorandomBytes());
+        assertArrayEquals(Arrays.copyOfRange(WELL_KNOWN_HASH.getValue(), 0, 32), effectsTracker.getPseudorandomBytes());
     }
 
     @Test
@@ -192,15 +198,8 @@ class PrngSystemPrecompiledContractTest {
         initialSetUp();
         given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, consensusNow));
         final var logic = mock(PrngLogic.class);
-        subject =
-                new PrngSystemPrecompiledContract(
-                        gasCalculator,
-                        logic,
-                        creator,
-                        recordsHistorian,
-                        pricingUtils,
-                        livePricesSource,
-                        dynamicProperties);
+        subject = new PrngSystemPrecompiledContract(
+                gasCalculator, logic, creator, recordsHistorian, pricingUtils, livePricesSource, dynamicProperties);
         given(logic.getNMinus3RunningHashBytes()).willThrow(IndexOutOfBoundsException.class);
 
         final var response = subject.computePrngResult(10L, input, frame);
@@ -219,8 +218,7 @@ class PrngSystemPrecompiledContractTest {
 
     @Test
     void invalidHashReturnsSentinelOutputs() throws InterruptedException {
-        given(runningHashLeaf.nMinusThreeRunningHash())
-                .willReturn(new Hash(TxnUtils.randomUtf8Bytes(48)));
+        given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(new Hash(TxnUtils.randomUtf8Bytes(48)));
 
         var result = subject.generatePseudoRandomData(random256BitGeneratorInput());
         assertEquals(32, result.toArray().length);
@@ -247,28 +245,27 @@ class PrngSystemPrecompiledContractTest {
         setUpForChildRecord();
         given(creator.createSuccessfulSyntheticRecord(anyList(), any(), anyString()))
                 .willReturn(childRecord);
-        var childRecord =
-                subject.createSuccessfulChildRecord(
-                        Bytes.ofUnsignedInt(randomNum), frame, random256BitGeneratorInput());
+        var childRecord = subject.createSuccessfulChildRecord(
+                Bytes.ofUnsignedInt(randomNum), frame, random256BitGeneratorInput());
 
         assertNotNull(childRecord);
         assertEquals(
                 EntityId.fromAddress(ALTBN128_ADD),
                 childRecord.getContractCallResult().getSenderId());
         assertEquals(
-                randomNum, Bytes.wrap(childRecord.getContractCallResult().getResult()).toInt());
+                randomNum,
+                Bytes.wrap(childRecord.getContractCallResult().getResult()).toInt());
         assertNull(childRecord.getContractCallResult().getError());
 
-        childRecord =
-                subject.createSuccessfulChildRecord(
-                        Bytes.ofUnsignedInt(randomNum), frame, defaultInput());
+        childRecord = subject.createSuccessfulChildRecord(Bytes.ofUnsignedInt(randomNum), frame, defaultInput());
 
         assertNotNull(childRecord);
         assertEquals(
                 EntityId.fromAddress(ALTBN128_ADD),
                 childRecord.getContractCallResult().getSenderId());
         assertEquals(
-                randomNum, Bytes.wrap(childRecord.getContractCallResult().getResult()).toInt());
+                randomNum,
+                Bytes.wrap(childRecord.getContractCallResult().getResult()).toInt());
         assertNull(childRecord.getContractCallResult().getError());
     }
 
@@ -279,9 +276,7 @@ class PrngSystemPrecompiledContractTest {
         setUpForChildRecord();
         given(creator.createSuccessfulSyntheticRecord(anyList(), any(), anyString()))
                 .willReturn(childRecord);
-        final var childRecord =
-                subject.createSuccessfulChildRecord(
-                        randomBytes, frame, random256BitGeneratorInput());
+        final var childRecord = subject.createSuccessfulChildRecord(randomBytes, frame, random256BitGeneratorInput());
 
         assertNotNull(childRecord);
         assertEquals(
@@ -305,7 +300,8 @@ class PrngSystemPrecompiledContractTest {
         assertEquals(
                 EntityId.fromAddress(ALTBN128_ADD),
                 childRecord.getContractCallResult().getSenderId());
-        assertEquals(0, Bytes.wrap(childRecord.getContractCallResult().getResult()).toInt());
+        assertEquals(
+                0, Bytes.wrap(childRecord.getContractCallResult().getResult()).toInt());
         assertEquals("FAIL_INVALID", childRecord.getContractCallResult().getError());
     }
 
@@ -317,13 +313,9 @@ class PrngSystemPrecompiledContractTest {
         given(creator.createSuccessfulSyntheticRecord(anyList(), any(), anyString()))
                 .willReturn(childRecord);
         given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, consensusNow));
-        given(runningHashLeaf.nMinusThreeRunningHash())
-                .willReturn(new Hash(TxnUtils.randomUtf8Bytes(48)));
+        given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(new Hash(TxnUtils.randomUtf8Bytes(48)));
 
-        final var msg =
-                assertThrows(
-                        InvalidTransactionException.class,
-                        () -> subject.computePrecompile(input, frame));
+        final var msg = assertThrows(InvalidTransactionException.class, () -> subject.computePrecompile(input, frame));
 
         assertTrue(msg.getMessage().contains("PRNG precompile frame had no parent updater"));
     }
@@ -347,12 +339,9 @@ class PrngSystemPrecompiledContractTest {
     private void initialSetUp() {
         given(frame.getSenderAddress()).willReturn(ALTBN128_ADD);
         given(frame.getWorldUpdater()).willReturn(updater);
-        given(updater.permissivelyUnaliased(frame.getSenderAddress().toArray()))
-                .willReturn(ALTBN128_ADD.toArray());
+        given(updater.permissivelyUnaliased(frame.getSenderAddress().toArray())).willReturn(ALTBN128_ADD.toArray());
         given(pricingUtils.getCanonicalPriceInTinyCents(PRNG)).willReturn(100000000L);
-        given(
-                        livePricesSource.currentGasPriceInTinycents(
-                                consensusNow, HederaFunctionality.ContractCall))
+        given(livePricesSource.currentGasPriceInTinycents(consensusNow, HederaFunctionality.ContractCall))
                 .willReturn(830L);
         given(frame.getRemainingGas()).willReturn(400_000L);
         given(updater.parentUpdater()).willReturn(Optional.of(updater));
@@ -361,8 +350,7 @@ class PrngSystemPrecompiledContractTest {
     private void setUpForChildRecord() {
         given(frame.getSenderAddress()).willReturn(ALTBN128_ADD);
         given(frame.getWorldUpdater()).willReturn(updater);
-        given(updater.permissivelyUnaliased(frame.getSenderAddress().toArray()))
-                .willReturn(ALTBN128_ADD.toArray());
+        given(updater.permissivelyUnaliased(frame.getSenderAddress().toArray())).willReturn(ALTBN128_ADD.toArray());
         given(dynamicProperties.shouldExportPrecompileResults()).willReturn(true);
         given(frame.getValue()).willReturn(Wei.of(100L));
         given(frame.getInputData()).willReturn(Bytes.EMPTY);

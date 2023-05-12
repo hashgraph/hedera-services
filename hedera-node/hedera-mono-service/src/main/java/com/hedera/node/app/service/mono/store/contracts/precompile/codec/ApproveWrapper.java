@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.codec;
 
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -20,8 +21,4 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import java.math.BigInteger;
 
 public record ApproveWrapper(
-        TokenID tokenId,
-        AccountID spender,
-        BigInteger amount,
-        BigInteger serialNumber,
-        boolean isFungible) {}
+        TokenID tokenId, AccountID spender, BigInteger amount, BigInteger serialNumber, boolean isFungible) {}

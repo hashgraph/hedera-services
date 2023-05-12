@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.models;
 
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
@@ -31,9 +32,16 @@ import java.time.Instant;
 public final class Topic {
     private final Id id;
     private String memo;
-    @Nullable private JKey adminKey;
-    @Nullable private JKey submitKey;
-    @Nullable private Id autoRenewAccountId;
+
+    @Nullable
+    private JKey adminKey;
+
+    @Nullable
+    private JKey submitKey;
+
+    @Nullable
+    private Id autoRenewAccountId;
+
     private long autoRenewDurationSeconds;
     private boolean deleted;
     private boolean isNew;

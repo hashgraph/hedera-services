@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.schedule.txns;
 
 import com.hedera.node.app.hapi.fees.usage.SigUsage;
@@ -45,13 +46,10 @@ public class ScheduleDeleteResourceUsage implements TxnResourceUsageEstimator {
     }
 
     @Override
-    public FeeData usageGiven(
-            final TransactionBody txn, final SigValueObj svo, final StateView view)
+    public FeeData usageGiven(final TransactionBody txn, final SigValueObj svo, final StateView view)
             throws InvalidTxBodyException {
         final var op = txn.getScheduleDelete();
-        final var sigUsage =
-                new SigUsage(
-                        svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
+        final var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
 
         final var optionalInfo = view.infoForSchedule(op.getScheduleID());
         if (optionalInfo.isPresent()) {

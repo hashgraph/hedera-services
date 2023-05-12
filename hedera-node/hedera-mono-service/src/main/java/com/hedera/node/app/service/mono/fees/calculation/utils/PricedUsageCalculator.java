@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.utils;
 
 import static com.hedera.node.app.service.mono.keys.HederaKeyTraversal.numSimpleKeys;
@@ -53,18 +54,12 @@ public class PricedUsageCalculator {
     }
 
     public FeeObject inHandleFees(
-            final TxnAccessor accessor,
-            final FeeData resourcePrices,
-            final ExchangeRate rate,
-            final JKey payerKey) {
+            final TxnAccessor accessor, final FeeData resourcePrices, final ExchangeRate rate, final JKey payerKey) {
         return fees(accessor, resourcePrices, rate, payerKey, handleScopedAccumulator);
     }
 
     public FeeObject extraHandleFees(
-            final TxnAccessor accessor,
-            final FeeData resourcePrices,
-            final ExchangeRate rate,
-            final JKey payerKey) {
+            final TxnAccessor accessor, final FeeData resourcePrices, final ExchangeRate rate, final JKey payerKey) {
         return fees(accessor, resourcePrices, rate, payerKey, new UsageAccumulator());
     }
 
@@ -78,8 +73,7 @@ public class PricedUsageCalculator {
 
         accessorBasedUsages.assess(sigUsage, accessor, accumulator);
 
-        return calculator.fees(
-                accumulator, resourcePrices, rate, feeMultiplierSource.currentMultiplier(accessor));
+        return calculator.fees(accumulator, resourcePrices, rate, feeMultiplierSource.currentMultiplier(accessor));
     }
 
     UsageAccumulator getHandleScopedAccumulator() {

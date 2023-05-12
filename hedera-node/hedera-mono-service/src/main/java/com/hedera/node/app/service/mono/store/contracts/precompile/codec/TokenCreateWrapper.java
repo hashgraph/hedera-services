@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.codec;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
@@ -165,8 +166,7 @@ public class TokenCreateWrapper {
     }
 
     public boolean hasAutoRenewAccount() {
-        return expiry.autoRenewAccount() != null
-                && !expiry.autoRenewAccount().equals(AccountID.getDefaultInstance());
+        return expiry.autoRenewAccount() != null && !expiry.autoRenewAccount().equals(AccountID.getDefaultInstance());
     }
 
     public void inheritAutoRenewAccount(final EntityId parentAutoRenewId) {
@@ -213,9 +213,7 @@ public class TokenCreateWrapper {
                         ? FixedFeePayment.USE_CURRENTLY_CREATED_TOKEN
                         : FixedFeePayment.INVALID_PAYMENT;
             } else {
-                return useHbarsForPayment
-                        ? FixedFeePayment.USE_HBAR
-                        : FixedFeePayment.INVALID_PAYMENT;
+                return useHbarsForPayment ? FixedFeePayment.USE_HBAR : FixedFeePayment.INVALID_PAYMENT;
             }
         }
 
@@ -227,12 +225,11 @@ public class TokenCreateWrapper {
                         .setDenominatingTokenId(tokenID);
                 case USE_CURRENTLY_CREATED_TOKEN -> FixedFee.newBuilder()
                         .setAmount(amount)
-                        .setDenominatingTokenId(
-                                TokenID.newBuilder()
-                                        .setShardNum(0L)
-                                        .setRealmNum(0L)
-                                        .setTokenNum(0L)
-                                        .build());
+                        .setDenominatingTokenId(TokenID.newBuilder()
+                                .setShardNum(0L)
+                                .setRealmNum(0L)
+                                .setTokenNum(0L)
+                                .build());
                 default -> throw new InvalidTransactionException(ResponseCodeEnum.FAIL_INVALID);
             };
         }
@@ -242,7 +239,8 @@ public class TokenCreateWrapper {
         }
 
         public CustomFee asGrpc() {
-            final var feeBuilder = CustomFee.newBuilder().setFixedFee(asBuilder().build());
+            final var feeBuilder =
+                    CustomFee.newBuilder().setFixedFee(asBuilder().build());
             if (feeCollector != null) {
                 feeBuilder.setFeeCollectorAccountId(feeCollector);
             }
@@ -258,19 +256,16 @@ public class TokenCreateWrapper {
             boolean netOfTransfers,
             AccountID feeCollector) {
         public CustomFee asGrpc() {
-            final var feeBuilder =
-                    CustomFee.newBuilder()
-                            .setFractionalFee(
-                                    FractionalFee.newBuilder()
-                                            .setFractionalAmount(
-                                                    Fraction.newBuilder()
-                                                            .setNumerator(numerator)
-                                                            .setDenominator(denominator)
-                                                            .build())
-                                            .setMinimumAmount(minimumAmount)
-                                            .setMaximumAmount(maximumAmount)
-                                            .setNetOfTransfers(netOfTransfers)
-                                            .build());
+            final var feeBuilder = CustomFee.newBuilder()
+                    .setFractionalFee(FractionalFee.newBuilder()
+                            .setFractionalAmount(Fraction.newBuilder()
+                                    .setNumerator(numerator)
+                                    .setDenominator(denominator)
+                                    .build())
+                            .setMinimumAmount(minimumAmount)
+                            .setMaximumAmount(maximumAmount)
+                            .setNetOfTransfers(netOfTransfers)
+                            .build());
             if (feeCollector != null) {
                 feeBuilder.setFeeCollectorAccountId(feeCollector);
             }
@@ -279,28 +274,21 @@ public class TokenCreateWrapper {
     }
 
     public record RoyaltyFeeWrapper(
-            long numerator,
-            long denominator,
-            FixedFeeWrapper fallbackFixedFee,
-            AccountID feeCollector) {
+            long numerator, long denominator, FixedFeeWrapper fallbackFixedFee, AccountID feeCollector) {
         public CustomFee asGrpc() {
-            final var royaltyFeeBuilder =
-                    RoyaltyFee.newBuilder()
-                            .setExchangeValueFraction(
-                                    Fraction.newBuilder()
-                                            .setNumerator(numerator)
-                                            .setDenominator(denominator)
-                                            .build());
+            final var royaltyFeeBuilder = RoyaltyFee.newBuilder()
+                    .setExchangeValueFraction(Fraction.newBuilder()
+                            .setNumerator(numerator)
+                            .setDenominator(denominator)
+                            .build());
             if (fallbackFixedFee != null) {
                 validateTrue(
-                        fallbackFixedFee.getFixedFeePayment()
-                                != FixedFeeWrapper.FixedFeePayment.INVALID_PAYMENT,
+                        fallbackFixedFee.getFixedFeePayment() != FixedFeeWrapper.FixedFeePayment.INVALID_PAYMENT,
                         ResponseCodeEnum.FAIL_INVALID);
                 royaltyFeeBuilder.setFallbackFee(fallbackFixedFee.asBuilder().build());
             }
 
-            final var customFeeBuilder =
-                    CustomFee.newBuilder().setRoyaltyFee(royaltyFeeBuilder.build());
+            final var customFeeBuilder = CustomFee.newBuilder().setRoyaltyFee(royaltyFeeBuilder.build());
             if (feeCollector != null) {
                 customFeeBuilder.setFeeCollectorAccountId(feeCollector);
             }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual.schedule;
 
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asTimestamp;
@@ -90,75 +91,69 @@ public class ScheduleVirtualValueTest {
 
     @Test
     void serializeWorks() throws Exception {
-        checkSerialize(
-                () -> {
-                    final var byteArr = new ByteArrayOutputStream();
-                    final var out = new SerializableDataOutputStream(byteArr);
-                    subject.serialize(out);
+        checkSerialize(() -> {
+            final var byteArr = new ByteArrayOutputStream();
+            final var out = new SerializableDataOutputStream(byteArr);
+            subject.serialize(out);
 
-                    var copy = new ScheduleVirtualValue();
-                    copy.deserialize(
-                            new SerializableDataInputStream(
-                                    new ByteArrayInputStream(byteArr.toByteArray())),
-                            ScheduleVirtualValue.CURRENT_VERSION);
+            var copy = new ScheduleVirtualValue();
+            copy.deserialize(
+                    new SerializableDataInputStream(new ByteArrayInputStream(byteArr.toByteArray())),
+                    ScheduleVirtualValue.CURRENT_VERSION);
 
-                    assertEqualSchedules(subject, copy);
+            assertEqualSchedules(subject, copy);
 
-                    return copy;
-                });
+            return copy;
+        });
     }
 
     @Test
     void serializeWithByteBufferWorks() throws Exception {
-        checkSerialize(
-                () -> {
-                    final var buffer = ByteBuffer.allocate(100000);
-                    subject.serialize(buffer);
-                    buffer.rewind();
-                    var copy = new ScheduleVirtualValue();
-                    copy.deserialize(buffer, ScheduleVirtualValue.CURRENT_VERSION);
+        checkSerialize(() -> {
+            final var buffer = ByteBuffer.allocate(100000);
+            subject.serialize(buffer);
+            buffer.rewind();
+            var copy = new ScheduleVirtualValue();
+            copy.deserialize(buffer, ScheduleVirtualValue.CURRENT_VERSION);
 
-                    assertEqualSchedules(subject, copy);
+            assertEqualSchedules(subject, copy);
 
-                    return copy;
-                });
+            return copy;
+        });
     }
 
     @Test
     void serializeWithMixedWorksBytesFirst() throws Exception {
-        checkSerialize(
-                () -> {
-                    final var buffer = ByteBuffer.allocate(100000);
-                    subject.serialize(buffer);
+        checkSerialize(() -> {
+            final var buffer = ByteBuffer.allocate(100000);
+            subject.serialize(buffer);
 
-                    var copy = new ScheduleVirtualValue();
-                    copy.deserialize(
-                            new SerializableDataInputStream(
-                                    new ByteArrayInputStream(buffer.array())),
-                            ScheduleVirtualValue.CURRENT_VERSION);
+            var copy = new ScheduleVirtualValue();
+            copy.deserialize(
+                    new SerializableDataInputStream(new ByteArrayInputStream(buffer.array())),
+                    ScheduleVirtualValue.CURRENT_VERSION);
 
-                    assertEqualSchedules(subject, copy);
+            assertEqualSchedules(subject, copy);
 
-                    return copy;
-                });
+            return copy;
+        });
     }
 
     @Test
     void serializeWithMixedWorksBytesSecond() throws Exception {
-        checkSerialize(
-                () -> {
-                    final var byteArr = new ByteArrayOutputStream();
-                    final var out = new SerializableDataOutputStream(byteArr);
-                    subject.serialize(out);
+        checkSerialize(() -> {
+            final var byteArr = new ByteArrayOutputStream();
+            final var out = new SerializableDataOutputStream(byteArr);
+            subject.serialize(out);
 
-                    final var buffer = ByteBuffer.wrap(byteArr.toByteArray());
-                    var copy = new ScheduleVirtualValue();
-                    copy.deserialize(buffer, ScheduleVirtualValue.CURRENT_VERSION);
+            final var buffer = ByteBuffer.wrap(byteArr.toByteArray());
+            var copy = new ScheduleVirtualValue();
+            copy.deserialize(buffer, ScheduleVirtualValue.CURRENT_VERSION);
 
-                    assertEqualSchedules(subject, copy);
+            assertEqualSchedules(subject, copy);
 
-                    return copy;
-                });
+            return copy;
+        });
     }
 
     private void checkSerialize(Callable<ScheduleVirtualValue> check) throws Exception {
@@ -204,8 +199,7 @@ public class ScheduleVirtualValueTest {
         assertEquals(ScheduleVirtualValue.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
     }
 
-    public static void assertEqualSchedules(
-            final ScheduleVirtualValue a, final ScheduleVirtualValue b) {
+    public static void assertEqualSchedules(final ScheduleVirtualValue a, final ScheduleVirtualValue b) {
         assertEquals(a.calculatedExpirationTime(), b.calculatedExpirationTime());
         assertArrayEquals(a.bodyBytes(), b.bodyBytes());
         assertEquals(a.isDeleted(), b.isDeleted());
@@ -223,11 +217,10 @@ public class ScheduleVirtualValueTest {
 
     @Test
     void recognizesMissingFunction() {
-        final var noneBodyBytes =
-                parentTxn.toBuilder()
-                        .setScheduleCreate(ScheduleCreateTransactionBody.getDefaultInstance())
-                        .build()
-                        .toByteArray();
+        final var noneBodyBytes = parentTxn.toBuilder()
+                .setScheduleCreate(ScheduleCreateTransactionBody.getDefaultInstance())
+                .build()
+                .toByteArray();
 
         subject = ScheduleVirtualValue.from(noneBodyBytes, expiry);
 
@@ -258,12 +251,8 @@ public class ScheduleVirtualValueTest {
     @Test
     void factoryTranslatesImpossibleParseError() {
         final var bytes = "NONSENSE".getBytes();
-        final var iae =
-                assertThrows(
-                        IllegalArgumentException.class, () -> ScheduleVirtualValue.from(bytes, 0L));
-        assertEquals(
-                "Argument bodyBytes=0x4e4f4e53454e5345 was not a TransactionBody!",
-                iae.getMessage());
+        final var iae = assertThrows(IllegalArgumentException.class, () -> ScheduleVirtualValue.from(bytes, 0L));
+        assertEquals("Argument bodyBytes=0x4e4f4e53454e5345 was not a TransactionBody!", iae.getMessage());
     }
 
     @Test
@@ -334,22 +323,16 @@ public class ScheduleVirtualValueTest {
 
     @Test
     void nonessentialFieldsDontAffectIdentity() {
-        final var diffBodyBytes =
-                parentTxn.toBuilder()
-                        .setTransactionID(
-                                parentTxn.getTransactionID().toBuilder()
-                                        .setAccountID(otherPayer.toGrpcAccountId())
-                                        .setTransactionValidStart(
-                                                MiscUtils.asTimestamp(
-                                                        otherSchedulingTXValidStart.toJava())))
-                        .setScheduleCreate(
-                                parentTxn.getScheduleCreate().toBuilder()
-                                        .setPayerAccountID(otherPayer.toGrpcAccountId()))
-                        .build()
-                        .toByteArray();
-        final var other =
-                ScheduleVirtualValue.from(
-                        diffBodyBytes, RichInstant.fromJava(expiry.toJava().plusSeconds(1)));
+        final var diffBodyBytes = parentTxn.toBuilder()
+                .setTransactionID(parentTxn.getTransactionID().toBuilder()
+                        .setAccountID(otherPayer.toGrpcAccountId())
+                        .setTransactionValidStart(MiscUtils.asTimestamp(otherSchedulingTXValidStart.toJava())))
+                .setScheduleCreate(
+                        parentTxn.getScheduleCreate().toBuilder().setPayerAccountID(otherPayer.toGrpcAccountId()))
+                .build()
+                .toByteArray();
+        final var other = ScheduleVirtualValue.from(
+                diffBodyBytes, RichInstant.fromJava(expiry.toJava().plusSeconds(1)));
         other.markExecuted(resolutionTime);
         other.markDeleted(resolutionTime);
         other.witnessValidSignature(fpk);
@@ -362,13 +345,11 @@ public class ScheduleVirtualValueTest {
 
     @Test
     void differentAdminKeysNotIdentical() {
-        final var bodyBytesDiffAdminKey =
-                parentTxn.toBuilder()
-                        .setScheduleCreate(
-                                parentTxn.getScheduleCreate().toBuilder()
-                                        .setAdminKey(MiscUtils.asKeyUnchecked(otherAdminKey)))
-                        .build()
-                        .toByteArray();
+        final var bodyBytesDiffAdminKey = parentTxn.toBuilder()
+                .setScheduleCreate(
+                        parentTxn.getScheduleCreate().toBuilder().setAdminKey(MiscUtils.asKeyUnchecked(otherAdminKey)))
+                .build()
+                .toByteArray();
         final var other = ScheduleVirtualValue.from(bodyBytesDiffAdminKey, expiry);
 
         assertNotEquals(subject, other);
@@ -379,12 +360,10 @@ public class ScheduleVirtualValueTest {
 
     @Test
     void differentMemosNotIdentical() {
-        final var bodyBytesDiffMemo =
-                parentTxn.toBuilder()
-                        .setScheduleCreate(
-                                parentTxn.getScheduleCreate().toBuilder().setMemo(otherEntityMemo))
-                        .build()
-                        .toByteArray();
+        final var bodyBytesDiffMemo = parentTxn.toBuilder()
+                .setScheduleCreate(parentTxn.getScheduleCreate().toBuilder().setMemo(otherEntityMemo))
+                .build()
+                .toByteArray();
         final var other = ScheduleVirtualValue.from(bodyBytesDiffMemo, expiry);
 
         assertNotEquals(subject, other);
@@ -395,11 +374,10 @@ public class ScheduleVirtualValueTest {
 
     @Test
     void differentMemosNotIdenticalViaNull() {
-        final var bodyBytesDiffMemo =
-                parentTxn.toBuilder()
-                        .setScheduleCreate(parentTxn.getScheduleCreate().toBuilder().clearMemo())
-                        .build()
-                        .toByteArray();
+        final var bodyBytesDiffMemo = parentTxn.toBuilder()
+                .setScheduleCreate(parentTxn.getScheduleCreate().toBuilder().clearMemo())
+                .build()
+                .toByteArray();
         final var other = ScheduleVirtualValue.from(bodyBytesDiffMemo, expiry);
 
         assertNotEquals(subject, other);
@@ -410,15 +388,12 @@ public class ScheduleVirtualValueTest {
 
     @Test
     void differentScheduledTxnNotIdentical() {
-        final var bodyBytesDiffScheduledTxn =
-                parentTxn.toBuilder()
-                        .setScheduleCreate(
-                                parentTxn.getScheduleCreate().toBuilder()
-                                        .setScheduledTransactionBody(
-                                                ScheduledTxnFactory.scheduledTxn.toBuilder()
-                                                        .setMemo("Slightly different!")))
-                        .build()
-                        .toByteArray();
+        final var bodyBytesDiffScheduledTxn = parentTxn.toBuilder()
+                .setScheduleCreate(parentTxn.getScheduleCreate().toBuilder()
+                        .setScheduledTransactionBody(
+                                ScheduledTxnFactory.scheduledTxn.toBuilder().setMemo("Slightly different!")))
+                .build()
+                .toByteArray();
         final var other = ScheduleVirtualValue.from(bodyBytesDiffScheduledTxn, expiry);
 
         assertNotEquals(subject, other);
@@ -429,22 +404,15 @@ public class ScheduleVirtualValueTest {
 
     @Test
     void differentProvidedExpirationTimeNotIdentical() {
-        final var bodyBytesDiffMemo =
-                parentTxn.toBuilder()
-                        .setScheduleCreate(
-                                parentTxn.getScheduleCreate().toBuilder()
-                                        .setExpirationTime(
-                                                RichInstant.fromJava(
-                                                                providedExpiry
-                                                                        .toJava()
-                                                                        .plusNanos(1))
-                                                        .toGrpc()))
-                        .build()
-                        .toByteArray();
-        final var other =
-                ScheduleVirtualValue.from(
-                        bodyBytesDiffMemo,
-                        RichInstant.fromJava(providedExpiry.toJava().plusNanos(1)));
+        final var bodyBytesDiffMemo = parentTxn.toBuilder()
+                .setScheduleCreate(parentTxn.getScheduleCreate().toBuilder()
+                        .setExpirationTime(
+                                RichInstant.fromJava(providedExpiry.toJava().plusNanos(1))
+                                        .toGrpc()))
+                .build()
+                .toByteArray();
+        final var other = ScheduleVirtualValue.from(
+                bodyBytesDiffMemo, RichInstant.fromJava(providedExpiry.toJava().plusNanos(1)));
 
         assertEquals(subject.calculatedExpirationTime(), subject.expirationTimeProvided());
         assertEquals(other.expirationTimeProvided(), other.expirationTimeProvided());
@@ -457,17 +425,12 @@ public class ScheduleVirtualValueTest {
 
     @Test
     void differentCalculatedExpirationTimeIdentical() {
-        final var bodyBytesDiffMemo =
-                parentTxn.toBuilder()
-                        .setScheduleCreate(
-                                parentTxn.getScheduleCreate().toBuilder()
-                                        .setExpirationTime(providedExpiry.toGrpc()))
-                        .build()
-                        .toByteArray();
-        final var other =
-                ScheduleVirtualValue.from(
-                        bodyBytesDiffMemo,
-                        RichInstant.fromJava(providedExpiry.toJava().plusNanos(1)));
+        final var bodyBytesDiffMemo = parentTxn.toBuilder()
+                .setScheduleCreate(parentTxn.getScheduleCreate().toBuilder().setExpirationTime(providedExpiry.toGrpc()))
+                .build()
+                .toByteArray();
+        final var other = ScheduleVirtualValue.from(
+                bodyBytesDiffMemo, RichInstant.fromJava(providedExpiry.toJava().plusNanos(1)));
 
         assertEquals(other.expirationTimeProvided(), subject.expirationTimeProvided());
 
@@ -480,13 +443,10 @@ public class ScheduleVirtualValueTest {
 
     @Test
     void differentProvidedWaitForExpiryNotIdentical() {
-        final var bodyBytesDiffMemo =
-                parentTxn.toBuilder()
-                        .setScheduleCreate(
-                                parentTxn.getScheduleCreate().toBuilder()
-                                        .setWaitForExpiry(!waitForExpiry))
-                        .build()
-                        .toByteArray();
+        final var bodyBytesDiffMemo = parentTxn.toBuilder()
+                .setScheduleCreate(parentTxn.getScheduleCreate().toBuilder().setWaitForExpiry(!waitForExpiry))
+                .build()
+                .toByteArray();
         final var other = ScheduleVirtualValue.from(bodyBytesDiffMemo, expiry);
 
         assertEquals(subject.calculatedWaitForExpiry(), subject.waitForExpiryProvided());
@@ -501,13 +461,10 @@ public class ScheduleVirtualValueTest {
 
     @Test
     void differentCalculatedWaitForExpiryIdentical() {
-        final var bodyBytesDiffMemo =
-                parentTxn.toBuilder()
-                        .setScheduleCreate(
-                                parentTxn.getScheduleCreate().toBuilder()
-                                        .setWaitForExpiry(waitForExpiry))
-                        .build()
-                        .toByteArray();
+        final var bodyBytesDiffMemo = parentTxn.toBuilder()
+                .setScheduleCreate(parentTxn.getScheduleCreate().toBuilder().setWaitForExpiry(waitForExpiry))
+                .build()
+                .toByteArray();
         final var other = ScheduleVirtualValue.from(bodyBytesDiffMemo, expiry);
 
         other.setCalculatedWaitForExpiry(!subject.calculatedWaitForExpiry());
@@ -527,50 +484,49 @@ public class ScheduleVirtualValueTest {
         subject.witnessValidSignature(tpk);
         subject.markDeleted(resolutionTime);
 
-        final var expected =
-                "ScheduleVirtualValue{"
-                        + "scheduledTxn="
-                        + ScheduledTxnFactory.scheduledTxn
-                        + ", "
-                        + "expirationTimeProvided="
-                        + providedExpiry
-                        + ", "
-                        + "calculatedExpirationTime="
-                        + expiry
-                        + ", "
-                        + "executed="
-                        + false
-                        + ", "
-                        + "waitForExpiryProvided="
-                        + waitForExpiry
-                        + ", "
-                        + "calculatedWaitForExpiry="
-                        + waitForExpiry
-                        + ", "
-                        + "deleted="
-                        + true
-                        + ", "
-                        + "memo="
-                        + entityMemo
-                        + ", "
-                        + "payer="
-                        + payer.toAbbrevString()
-                        + ", "
-                        + "schedulingAccount="
-                        + schedulingAccount
-                        + ", "
-                        + "schedulingTXValidStart="
-                        + schedulingTXValidStart
-                        + ", "
-                        + "signatories=["
-                        + signatoriesToString()
-                        + "], "
-                        + "adminKey="
-                        + describe(adminKey)
-                        + ", "
-                        + "resolutionTime="
-                        + RichInstant.fromJava(resolutionTime).toString()
-                        + ", number=3}";
+        final var expected = "ScheduleVirtualValue{"
+                + "scheduledTxn="
+                + ScheduledTxnFactory.scheduledTxn
+                + ", "
+                + "expirationTimeProvided="
+                + providedExpiry
+                + ", "
+                + "calculatedExpirationTime="
+                + expiry
+                + ", "
+                + "executed="
+                + false
+                + ", "
+                + "waitForExpiryProvided="
+                + waitForExpiry
+                + ", "
+                + "calculatedWaitForExpiry="
+                + waitForExpiry
+                + ", "
+                + "deleted="
+                + true
+                + ", "
+                + "memo="
+                + entityMemo
+                + ", "
+                + "payer="
+                + payer.toAbbrevString()
+                + ", "
+                + "schedulingAccount="
+                + schedulingAccount
+                + ", "
+                + "schedulingTXValidStart="
+                + schedulingTXValidStart
+                + ", "
+                + "signatories=["
+                + signatoriesToString()
+                + "], "
+                + "adminKey="
+                + describe(adminKey)
+                + ", "
+                + "resolutionTime="
+                + RichInstant.fromJava(resolutionTime).toString()
+                + ", number=3}";
 
         assertEquals(expected, subject.toString());
     }
@@ -702,52 +658,42 @@ public class ScheduleVirtualValueTest {
         return signatories.stream().map(CommonUtils::hex).collect(Collectors.joining(", "));
     }
 
-    private static final TransactionID parentTxnId =
-            TransactionID.newBuilder()
-                    .setTransactionValidStart(
-                            MiscUtils.asTimestamp(schedulingTXValidStart.toJava()))
-                    .setAccountID(schedulingAccount.toGrpcAccountId())
-                    .build();
+    private static final TransactionID parentTxnId = TransactionID.newBuilder()
+            .setTransactionValidStart(MiscUtils.asTimestamp(schedulingTXValidStart.toJava()))
+            .setAccountID(schedulingAccount.toGrpcAccountId())
+            .build();
 
     private static final TransactionBody ordinaryVersionOfScheduledTxn =
             MiscUtils.asOrdinary(ScheduledTxnFactory.scheduledTxn, parentTxnId);
 
-    private static final ScheduleCreateTransactionBody creation =
-            ScheduleCreateTransactionBody.newBuilder()
-                    .setAdminKey(MiscUtils.asKeyUnchecked(adminKey))
-                    .setPayerAccountID(payer.toGrpcAccountId())
-                    .setExpirationTime(providedExpiry.toGrpc())
-                    .setWaitForExpiry(waitForExpiry)
-                    .setMemo(entityMemo)
-                    .setScheduledTransactionBody(ScheduledTxnFactory.scheduledTxn)
-                    .build();
-    private static final TransactionBody parentTxn =
-            TransactionBody.newBuilder()
-                    .setTransactionID(parentTxnId)
-                    .setScheduleCreate(creation)
-                    .build();
+    private static final ScheduleCreateTransactionBody creation = ScheduleCreateTransactionBody.newBuilder()
+            .setAdminKey(MiscUtils.asKeyUnchecked(adminKey))
+            .setPayerAccountID(payer.toGrpcAccountId())
+            .setExpirationTime(providedExpiry.toGrpc())
+            .setWaitForExpiry(waitForExpiry)
+            .setMemo(entityMemo)
+            .setScheduledTransactionBody(ScheduledTxnFactory.scheduledTxn)
+            .build();
+    private static final TransactionBody parentTxn = TransactionBody.newBuilder()
+            .setTransactionID(parentTxnId)
+            .setScheduleCreate(creation)
+            .build();
     private static final byte[] bodyBytes = parentTxn.toByteArray();
 
     private static Transaction expectedSignedTxn() {
-        final var expectedId =
-                TransactionID.newBuilder()
-                        .setAccountID(schedulingAccount.toGrpcAccountId())
-                        .setTransactionValidStart(asTimestamp(schedulingTXValidStart.toJava()))
-                        .setScheduled(true);
+        final var expectedId = TransactionID.newBuilder()
+                .setAccountID(schedulingAccount.toGrpcAccountId())
+                .setTransactionValidStart(asTimestamp(schedulingTXValidStart.toJava()))
+                .setScheduled(true);
         return Transaction.newBuilder()
-                .setSignedTransactionBytes(
-                        SignedTransaction.newBuilder()
-                                .setBodyBytes(
-                                        TransactionBody.newBuilder()
-                                                .mergeFrom(
-                                                        MiscUtils.asOrdinary(
-                                                                ScheduledTxnFactory.scheduledTxn,
-                                                                parentTxnId))
-                                                .setTransactionID(expectedId)
-                                                .build()
-                                                .toByteString())
+                .setSignedTransactionBytes(SignedTransaction.newBuilder()
+                        .setBodyBytes(TransactionBody.newBuilder()
+                                .mergeFrom(MiscUtils.asOrdinary(ScheduledTxnFactory.scheduledTxn, parentTxnId))
+                                .setTransactionID(expectedId)
                                 .build()
                                 .toByteString())
+                        .build()
+                        .toByteString())
                 .build();
     }
 }

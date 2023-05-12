@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.pricing;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
@@ -69,8 +70,7 @@ public class ScheduleGenerator {
 
     private static final FeeSchedules feeSchedules = new FeeSchedules();
 
-    String feeSchedulesFor(final List<Pair<HederaFunctionality, List<SubType>>> data)
-            throws IOException {
+    String feeSchedulesFor(final List<Pair<HederaFunctionality, List<SubType>>> data) throws IOException {
         final List<Map<String, Object>> currentFeeSchedules = new ArrayList<>();
         final List<Map<String, Object>> nextFeeSchedules = new ArrayList<>();
 
@@ -85,14 +85,12 @@ public class ScheduleGenerator {
         nextFeeSchedules.add(Map.of("expiryTime", NEXT_SCHEDULE_EXPIRY.getEpochSecond()));
 
         final List<Map<String, Object>> everything =
-                List.of(
-                        Map.of("currentFeeSchedule", currentFeeSchedules),
-                        Map.of("nextFeeSchedule", nextFeeSchedules));
+                List.of(Map.of("currentFeeSchedule", currentFeeSchedules), Map.of("nextFeeSchedule", nextFeeSchedules));
         return new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(everything);
     }
 
-    private Map<String, Object> pricesAsTfs(
-            final HederaFunctionality function, final List<SubType> subTypes) throws IOException {
+    private Map<String, Object> pricesAsTfs(final HederaFunctionality function, final List<SubType> subTypes)
+            throws IOException {
         final Map<String, Object> transactionFeeSchedule = new HashMap<>();
 
         final Map<String, Object> details = new LinkedHashMap<>();
@@ -125,45 +123,42 @@ public class ScheduleGenerator {
     }
 
     @SuppressWarnings("unchecked")
-    static final List<Pair<HederaFunctionality, List<SubType>>> SUPPORTED_FUNCTIONS =
-            List.of(
-                    Pair.of(ContractAutoRenew, List.of(DEFAULT)),
-                    /* Crypto */
-                    Pair.of(
-                            CryptoTransfer,
-                            List.of(
-                                    DEFAULT,
-                                    TOKEN_FUNGIBLE_COMMON,
-                                    TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES,
-                                    TOKEN_NON_FUNGIBLE_UNIQUE,
-                                    TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES)),
-                    Pair.of(CryptoCreate, List.of(DEFAULT)),
-                    Pair.of(CryptoUpdate, List.of(DEFAULT)),
-                    Pair.of(CryptoApproveAllowance, List.of(DEFAULT)),
-                    Pair.of(CryptoDeleteAllowance, List.of(DEFAULT)),
-                    /* File */
-                    Pair.of(FileAppend, List.of(DEFAULT)),
-                    /* Token */
-                    Pair.of(
-                            TokenCreate,
-                            List.of(
-                                    TOKEN_FUNGIBLE_COMMON,
-                                    TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES,
-                                    TOKEN_NON_FUNGIBLE_UNIQUE,
-                                    TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES)),
-                    Pair.of(TokenMint, List.of(TOKEN_FUNGIBLE_COMMON, TOKEN_NON_FUNGIBLE_UNIQUE)),
-                    Pair.of(TokenBurn, List.of(TOKEN_FUNGIBLE_COMMON, TOKEN_NON_FUNGIBLE_UNIQUE)),
-                    Pair.of(
-                            TokenAccountWipe,
-                            List.of(TOKEN_FUNGIBLE_COMMON, TOKEN_NON_FUNGIBLE_UNIQUE)),
-                    Pair.of(TokenFeeScheduleUpdate, List.of(DEFAULT)),
-                    Pair.of(TokenFreezeAccount, List.of(DEFAULT)),
-                    Pair.of(TokenUnfreezeAccount, List.of(DEFAULT)),
-                    Pair.of(TokenPause, List.of(DEFAULT)),
-                    Pair.of(TokenUnpause, List.of(DEFAULT)),
-                    /* Consensus */
-                    Pair.of(ConsensusSubmitMessage, List.of(DEFAULT)),
-                    /* Schedule */
-                    Pair.of(ScheduleCreate, List.of(DEFAULT, SCHEDULE_CREATE_CONTRACT_CALL)),
-                    Pair.of(UtilPrng, List.of(DEFAULT)));
+    static final List<Pair<HederaFunctionality, List<SubType>>> SUPPORTED_FUNCTIONS = List.of(
+            Pair.of(ContractAutoRenew, List.of(DEFAULT)),
+            /* Crypto */
+            Pair.of(
+                    CryptoTransfer,
+                    List.of(
+                            DEFAULT,
+                            TOKEN_FUNGIBLE_COMMON,
+                            TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES,
+                            TOKEN_NON_FUNGIBLE_UNIQUE,
+                            TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES)),
+            Pair.of(CryptoCreate, List.of(DEFAULT)),
+            Pair.of(CryptoUpdate, List.of(DEFAULT)),
+            Pair.of(CryptoApproveAllowance, List.of(DEFAULT)),
+            Pair.of(CryptoDeleteAllowance, List.of(DEFAULT)),
+            /* File */
+            Pair.of(FileAppend, List.of(DEFAULT)),
+            /* Token */
+            Pair.of(
+                    TokenCreate,
+                    List.of(
+                            TOKEN_FUNGIBLE_COMMON,
+                            TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES,
+                            TOKEN_NON_FUNGIBLE_UNIQUE,
+                            TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES)),
+            Pair.of(TokenMint, List.of(TOKEN_FUNGIBLE_COMMON, TOKEN_NON_FUNGIBLE_UNIQUE)),
+            Pair.of(TokenBurn, List.of(TOKEN_FUNGIBLE_COMMON, TOKEN_NON_FUNGIBLE_UNIQUE)),
+            Pair.of(TokenAccountWipe, List.of(TOKEN_FUNGIBLE_COMMON, TOKEN_NON_FUNGIBLE_UNIQUE)),
+            Pair.of(TokenFeeScheduleUpdate, List.of(DEFAULT)),
+            Pair.of(TokenFreezeAccount, List.of(DEFAULT)),
+            Pair.of(TokenUnfreezeAccount, List.of(DEFAULT)),
+            Pair.of(TokenPause, List.of(DEFAULT)),
+            Pair.of(TokenUnpause, List.of(DEFAULT)),
+            /* Consensus */
+            Pair.of(ConsensusSubmitMessage, List.of(DEFAULT)),
+            /* Schedule */
+            Pair.of(ScheduleCreate, List.of(DEFAULT, SCHEDULE_CREATE_CONTRACT_CALL)),
+            Pair.of(UtilPrng, List.of(DEFAULT)));
 }

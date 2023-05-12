@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.expiry.removal;
 
 import static com.hedera.test.utils.TxnUtils.*;
@@ -22,6 +23,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
+import com.hedera.node.app.service.mono.state.expiry.classification.EntityLookup;
+import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus;
 import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;
@@ -47,8 +50,20 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class TreasuryReturnHelperTest {
-    @Mock private TokenRelStorageAdapter tokenRels;
-    @Mock private UniqueTokenMapAdapter nfts;
+    @Mock
+    private TokenRelStorageAdapter tokenRels;
+
+    @Mock
+    private UniqueTokenMapAdapter nfts;
+
+    @Mock
+    private EntityLookup lookup;
+
+    @Mock
+    private MerkleAccount treasury;
+
+    @Mock
+    private MerkleTokenRelStatus rel;
 
     private final List<CurrencyAdjustments> returnTransfers = new ArrayList<>();
     private final List<EntityId> tokenTypes = new ArrayList<>();
@@ -58,26 +73,16 @@ class TreasuryReturnHelperTest {
 
     @BeforeEach
     void setUp() {
-        subject = new TreasuryReturnHelper();
+        subject = new TreasuryReturnHelper(lookup, () -> tokenRels);
     }
 
     @Test
     void justInsertsBurnIfTokenIsDeleted() {
-        final var didReturn =
-                subject.updateNftReturns(
-                        expiredAccountNum,
-                        deletedTokenNum,
-                        deletedToken,
-                        serialNo,
-                        tokenTypes,
-                        returnExchanges);
+        final var didReturn = subject.updateNftReturns(
+                expiredAccountNum, deletedTokenNum, deletedToken, serialNo, tokenTypes, returnExchanges);
 
         final var ttls =
-                List.of(
-                        burnExchangeOf(
-                                deletedTokenNum.toGrpcTokenId(),
-                                expiredAccountNum.toGrpcAccountId(),
-                                serialNo));
+                List.of(burnExchangeOf(deletedTokenNum.toGrpcTokenId(), expiredAccountNum.toGrpcAccountId(), serialNo));
         assertFalse(didReturn);
         assertEquals(exchangesFrom(ttls), returnExchanges);
         assertEquals(1, tokenTypes.size());
@@ -124,88 +129,59 @@ class TreasuryReturnHelperTest {
         tokenTypes.add(deletedTokenNum.toEntityId());
         returnExchanges.add(new NftAdjustments());
 
-        final var didReturn =
-                subject.updateNftReturns(
-                        expiredAccountNum,
-                        deletedTokenNum,
-                        deletedToken,
-                        serialNo,
-                        tokenTypes,
-                        returnExchanges);
+        final var didReturn = subject.updateNftReturns(
+                expiredAccountNum, deletedTokenNum, deletedToken, serialNo, tokenTypes, returnExchanges);
 
         final var ttls =
-                List.of(
-                        burnExchangeOf(
-                                deletedTokenNum.toGrpcTokenId(),
-                                expiredAccountNum.toGrpcAccountId(),
-                                serialNo));
+                List.of(burnExchangeOf(deletedTokenNum.toGrpcTokenId(), expiredAccountNum.toGrpcAccountId(), serialNo));
         assertFalse(didReturn);
         assertEquals(exchangesFrom(ttls), returnExchanges);
         assertEquals(1, tokenTypes.size());
     }
 
     @Test
-    void justAppendsReturnIfTokenNotDeleted() {
+    void appendsAndChangedNumOwnedNftsIfTokenNotDeleted() {
         final List<EntityId> tokenTypes = new ArrayList<>();
         tokenTypes.add(nonFungibleTokenNum.toEntityId());
         returnExchanges.add(new NftAdjustments());
+        given(lookup.getMutableAccount(treasuryNum)).willReturn(treasury);
+        given(tokenRels.getForModify(EntityNumPair.fromLongs(treasuryNum.longValue(), nonFungibleTokenNum.longValue())))
+                .willReturn(rel);
+        given(treasury.getNftsOwned()).willReturn(0L);
+        given(rel.getBalance()).willReturn(0L);
 
-        final var didReturn =
-                subject.updateNftReturns(
-                        expiredAccountNum,
-                        nonFungibleTokenNum,
-                        nonFungibleToken,
-                        serialNo,
-                        tokenTypes,
-                        returnExchanges);
+        final var didReturn = subject.updateNftReturns(
+                expiredAccountNum, nonFungibleTokenNum, nonFungibleToken, serialNo, tokenTypes, returnExchanges);
 
-        final var ttls =
-                List.of(
-                        returnExchangeOf(
-                                nonFungibleTokenNum.toGrpcTokenId(),
-                                expiredAccountNum.toGrpcAccountId(),
-                                treasuryNum.toGrpcAccountId(),
-                                serialNo));
+        final var ttls = List.of(returnExchangeOf(
+                nonFungibleTokenNum.toGrpcTokenId(),
+                expiredAccountNum.toGrpcAccountId(),
+                treasuryNum.toGrpcAccountId(),
+                serialNo));
         assertTrue(didReturn);
         assertEquals(exchangesFrom(ttls), returnExchanges);
         assertEquals(1, tokenTypes.size());
+        verify(treasury).setNftsOwned(1L);
+        verify(rel).setBalance(1L);
     }
 
     @Test
     void justReportsDebitIfTokenIsDeleted() {
         subject.updateFungibleReturns(
-                expiredAccountNum,
-                deletedTokenNum,
-                deletedToken,
-                tokenBalance,
-                returnTransfers,
-                tokenRels);
+                expiredAccountNum, deletedTokenNum, deletedToken, tokenBalance, returnTransfers, tokenRels);
 
-        final var ttls =
-                List.of(
-                        asymmetricTtlOf(
-                                deletedTokenNum.toGrpcTokenId(),
-                                expiredAccountNum.toGrpcAccountId(),
-                                tokenBalance));
+        final var ttls = List.of(
+                asymmetricTtlOf(deletedTokenNum.toGrpcTokenId(), expiredAccountNum.toGrpcAccountId(), tokenBalance));
         assertEquals(adjustmentsFrom(ttls), returnTransfers);
     }
 
     @Test
     void doesBurnForNonzeroFungibleBalanceButWithBadTreasuryRel() {
         subject.updateFungibleReturns(
-                expiredAccountNum,
-                fungibleTokenNum,
-                fungibleToken,
-                tokenBalance,
-                returnTransfers,
-                tokenRels);
+                expiredAccountNum, fungibleTokenNum, fungibleToken, tokenBalance, returnTransfers, tokenRels);
 
-        final var ttls =
-                List.of(
-                        asymmetricTtlOf(
-                                deletedTokenNum.toGrpcTokenId(),
-                                expiredAccountNum.toGrpcAccountId(),
-                                tokenBalance));
+        final var ttls = List.of(
+                asymmetricTtlOf(deletedTokenNum.toGrpcTokenId(), expiredAccountNum.toGrpcAccountId(), tokenBalance));
         assertEquals(adjustmentsFrom(ttls), returnTransfers);
     }
 
@@ -215,20 +191,10 @@ class TreasuryReturnHelperTest {
         givenModifiableRelPresent(treasuryNum, fungibleTokenNum, treasuryRel);
 
         subject.updateFungibleReturns(
-                expiredAccountNum,
-                fungibleTokenNum,
-                fungibleToken,
-                tokenBalance,
-                returnTransfers,
-                tokenRels);
+                expiredAccountNum, fungibleTokenNum, fungibleToken, tokenBalance, returnTransfers, tokenRels);
 
-        final var ttls =
-                List.of(
-                        ttlOf(
-                                survivedTokenGrpcId,
-                                expiredAccountNum.toGrpcAccountId(),
-                                treasuryId.toGrpcAccountId(),
-                                tokenBalance));
+        final var ttls = List.of(ttlOf(
+                survivedTokenGrpcId, expiredAccountNum.toGrpcAccountId(), treasuryId.toGrpcAccountId(), tokenBalance));
         assertEquals(adjustmentsFrom(ttls), returnTransfers);
         assertEquals(2 * tokenBalance, treasuryRel.getBalance());
     }
@@ -239,26 +205,18 @@ class TreasuryReturnHelperTest {
         givenModifiableRelPresent(treasuryNum, fungibleTokenNum, treasuryRel);
 
         subject.updateFungibleReturns(
-                olderExpiredAccountNum,
-                fungibleTokenNum,
-                fungibleToken,
-                tokenBalance,
-                returnTransfers,
-                tokenRels);
+                olderExpiredAccountNum, fungibleTokenNum, fungibleToken, tokenBalance, returnTransfers, tokenRels);
 
-        final var ttls =
-                List.of(
-                        ttlOf(
-                                survivedTokenGrpcId,
-                                treasuryId.toGrpcAccountId(),
-                                olderExpiredAccountNum.toGrpcAccountId(),
-                                -tokenBalance));
+        final var ttls = List.of(ttlOf(
+                survivedTokenGrpcId,
+                treasuryId.toGrpcAccountId(),
+                olderExpiredAccountNum.toGrpcAccountId(),
+                -tokenBalance));
         assertEquals(adjustmentsFrom(ttls), returnTransfers);
         assertEquals(2 * tokenBalance, treasuryRel.getBalance());
     }
 
-    private void givenModifiableRelPresent(
-            EntityNum account, EntityNum token, MerkleTokenRelStatus mutableRel) {
+    private void givenModifiableRelPresent(EntityNum account, EntityNum token, MerkleTokenRelStatus mutableRel) {
         var rel = EntityNumPair.fromLongs(account.longValue(), token.longValue());
         given(tokenRels.getForModify(rel)).willReturn(mutableRel);
     }
@@ -279,21 +237,11 @@ class TreasuryReturnHelperTest {
     private final EntityId treasuryId = treasuryNum.toEntityId();
     private final TokenID survivedTokenGrpcId = fungibleTokenNum.toGrpcTokenId();
     private final MerkleToken deletedToken =
-            new MerkleToken(
-                    Long.MAX_VALUE,
-                    1L,
-                    0,
-                    "GONE",
-                    "Long lost dream",
-                    true,
-                    true,
-                    expiredTreasuryId);
+            new MerkleToken(Long.MAX_VALUE, 1L, 0, "GONE", "Long lost dream", true, true, expiredTreasuryId);
     private final MerkleToken fungibleToken =
-            new MerkleToken(
-                    Long.MAX_VALUE, 1L, 0, "HERE", "Dreams never die", true, true, treasuryId);
+            new MerkleToken(Long.MAX_VALUE, 1L, 0, "HERE", "Dreams never die", true, true, treasuryId);
     private final MerkleToken nonFungibleToken =
-            new MerkleToken(
-                    Long.MAX_VALUE, 1L, 0, "HERE", "Dreams never die", true, true, treasuryId);
+            new MerkleToken(Long.MAX_VALUE, 1L, 0, "HERE", "Dreams never die", true, true, treasuryId);
 
     {
         deletedToken.setDeleted(true);
@@ -302,14 +250,8 @@ class TreasuryReturnHelperTest {
         nonFungibleToken.setTreasury(treasuryNum.toEntityId());
     }
 
-    private final NftId aNftKey =
-            NftId.withDefaultShardRealm(nonFungibleTokenNum.longValue(), 666L);
-    private final EntityNumPair bNftKey =
-            EntityNumPair.fromLongs(deletedTokenNum.longValue(), 777L);
-    private final UniqueTokenAdapter someNft =
-            UniqueTokenAdapter.wrap(
-                    new MerkleUniqueToken(
-                            expiredAccountNum.toEntityId(),
-                            "A".getBytes(),
-                            RichInstant.MISSING_INSTANT));
+    private final NftId aNftKey = NftId.withDefaultShardRealm(nonFungibleTokenNum.longValue(), 666L);
+    private final EntityNumPair bNftKey = EntityNumPair.fromLongs(deletedTokenNum.longValue(), 777L);
+    private final UniqueTokenAdapter someNft = UniqueTokenAdapter.wrap(
+            new MerkleUniqueToken(expiredAccountNum.toEntityId(), "A".getBytes(), RichInstant.MISSING_INSTANT));
 }

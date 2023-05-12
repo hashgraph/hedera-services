@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -52,14 +53,12 @@ class EmptyWritableStatesTest extends StateTestBase {
     @Test
     @DisplayName("Throws IAE for any non-null key")
     void nonNullKey() {
-        assertThatThrownBy(() -> states.get(UNKNOWN_KEY))
-                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> states.get(UNKNOWN_KEY)).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     @DisplayName("Throws IAE for any non-null singleton key")
     void nonNullSingletonKey() {
-        assertThatThrownBy(() -> states.getSingleton(UNKNOWN_KEY))
-                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> states.getSingleton(UNKNOWN_KEY)).isInstanceOf(IllegalArgumentException.class);
     }
 }

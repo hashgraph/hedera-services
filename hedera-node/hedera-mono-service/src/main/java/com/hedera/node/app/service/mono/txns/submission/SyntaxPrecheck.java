@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.submission;
 
 import static com.hedera.node.app.service.mono.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
@@ -52,9 +53,7 @@ public class SyntaxPrecheck {
 
     @Inject
     public SyntaxPrecheck(
-            RecordCache recordCache,
-            OptionValidator validator,
-            GlobalDynamicProperties dynamicProperties) {
+            RecordCache recordCache, OptionValidator validator, GlobalDynamicProperties dynamicProperties) {
         this.validator = validator;
         this.recordCache = recordCache;
         this.dynamicProperties = dynamicProperties;

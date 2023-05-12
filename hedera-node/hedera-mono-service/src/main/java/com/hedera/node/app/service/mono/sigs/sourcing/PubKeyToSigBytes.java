@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs.sourcing;
 
 import com.hedera.node.app.service.mono.legacy.exception.KeyPrefixMismatchException;
@@ -79,5 +80,14 @@ public interface PubKeyToSigBytes {
     /** Resets all internal public-key-to-signature mappings to unused. */
     default void resetAllSigsToUnused() {
         /* No-op */
+    }
+
+    /**
+     * Checks for presence of an ECDSA signature in all of the public-key-to-signature mappings.
+     *
+     * @return true if there is at least one ECDSA signature; false if there is none
+     */
+    default boolean hasAtLeastOneEcdsaSig() {
+        return false;
     }
 }

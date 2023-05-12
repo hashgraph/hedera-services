@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context.properties;
 
 import static com.hedera.node.app.service.mono.context.properties.BootstrapProperties.BOOTSTRAP_PROP_NAMES;
@@ -49,9 +50,7 @@ public class StandardizedPropertySources implements PropertySources {
 
     @Override
     public void reloadFrom(ServicesConfigurationList config) {
-        log.info(
-                "Reloading global dynamic properties from {} candidates",
-                config.getNameValueCount());
+        log.info("Reloading global dynamic properties from {} candidates", config.getNameValueCount());
         dynamicGlobalProps.screenNew(config);
     }
 
@@ -66,8 +65,7 @@ public class StandardizedPropertySources implements PropertySources {
         final Map<String, Supplier<Object>> source = new HashMap<>();
 
         /* Bootstrap properties, which must include defaults for every system property. */
-        BOOTSTRAP_PROP_NAMES.forEach(
-                name -> source.put(name, () -> bootstrapProps.getProperty(name)));
+        BOOTSTRAP_PROP_NAMES.forEach(name -> source.put(name, () -> bootstrapProps.getProperty(name)));
 
         return source;
     }

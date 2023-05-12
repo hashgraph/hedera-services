@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation;
 
 import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
@@ -45,6 +46,5 @@ public interface TxnResourceUsageEstimator {
      * @throws InvalidTxBodyException if the txn is malformed
      * @throws NullPointerException or analogous if the estimator does not apply to the txn
      */
-    FeeData usageGiven(TransactionBody txn, SigValueObj sigUsage, StateView view)
-            throws InvalidTxBodyException;
+    FeeData usageGiven(TransactionBody txn, SigValueObj sigUsage, StateView view) throws InvalidTxBodyException;
 }

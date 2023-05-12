@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.factories.txns;
 
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -82,8 +83,7 @@ public class ScheduleCreateFactory extends SignedTxnFactory<ScheduleCreateFactor
                 var scheduled = ScheduleUtils.fromOrdinary(accessor.getTxn());
                 op.setScheduledTransactionBody(scheduled);
             } catch (InvalidProtocolBufferException e) {
-                throw new IllegalStateException(
-                        "ScheduleCreate test used unparseable transaction!", e);
+                throw new IllegalStateException("ScheduleCreate test used unparseable transaction!", e);
             }
         }
         txn.setScheduleCreate(op);

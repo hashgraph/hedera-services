@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context.domain.trackers;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
@@ -54,7 +55,10 @@ class ConsensusStatusCountsTest {
         assertTrue(subject.counts.get(FEE_SCHEDULE_FILE_PART_UPLOADED).containsKey(CryptoDelete));
         assertEquals(
                 2,
-                subject.counts.get(FEE_SCHEDULE_FILE_PART_UPLOADED).get(CryptoDelete).intValue());
+                subject.counts
+                        .get(FEE_SCHEDULE_FILE_PART_UPLOADED)
+                        .get(CryptoDelete)
+                        .intValue());
         assertTrue(subject.counts.containsKey(SUCCESS));
         assertEquals(1, subject.counts.get(SUCCESS).get(ContractCall).intValue());
     }
@@ -67,14 +71,13 @@ class ConsensusStatusCountsTest {
         subject.increment(ContractCall, SUCCESS);
         subject.increment(ContractCall, INVALID_SIGNATURE);
         // and:
-        var expected =
-                "[ {\n"
-                        + "  \"INVALID_SIGNATURE:ContractCall\" : 1\n"
-                        + "}, {\n"
-                        + "  \"SUCCESS:ContractCall\" : 1\n"
-                        + "}, {\n"
-                        + "  \"FEE_SCHEDULE_FILE_PART_UPLOADED:CryptoDelete\" : 2\n"
-                        + "} ]";
+        var expected = "[ {\n"
+                + "  \"INVALID_SIGNATURE:ContractCall\" : 1\n"
+                + "}, {\n"
+                + "  \"SUCCESS:ContractCall\" : 1\n"
+                + "}, {\n"
+                + "  \"FEE_SCHEDULE_FILE_PART_UPLOADED:CryptoDelete\" : 2\n"
+                + "} ]";
 
         // when:
         var json = subject.asJson();

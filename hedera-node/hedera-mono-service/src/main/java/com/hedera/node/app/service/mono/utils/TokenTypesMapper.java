@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.utils;
 
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
@@ -27,16 +28,14 @@ import com.hedera.node.app.service.mono.state.enums.TokenSupplyType;
  * @author Yoan Sredkov (yoansredkov@gmail.com)
  */
 public final class TokenTypesMapper {
-    public static TokenType mapToDomain(
-            final com.hederahashgraph.api.proto.java.TokenType grpcType) {
+    public static TokenType mapToDomain(final com.hederahashgraph.api.proto.java.TokenType grpcType) {
         if (grpcType == com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE) {
             return TokenType.NON_FUNGIBLE_UNIQUE;
         }
         return TokenType.FUNGIBLE_COMMON;
     }
 
-    public static TokenSupplyType mapToDomain(
-            final com.hederahashgraph.api.proto.java.TokenSupplyType grpcType) {
+    public static TokenSupplyType mapToDomain(final com.hederahashgraph.api.proto.java.TokenSupplyType grpcType) {
         if (grpcType == com.hederahashgraph.api.proto.java.TokenSupplyType.FINITE) {
             return TokenSupplyType.FINITE;
         }

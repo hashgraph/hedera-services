@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs;
 
 import static com.hedera.node.app.service.mono.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
@@ -26,6 +27,7 @@ import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.sigs.factories.TxnScopedPlatformSigFactory;
@@ -51,43 +53,56 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ExpansionTest {
-    @Mock private PubKeyToSigBytes pkToSigFn;
-    @Mock private SigRequirements sigReqs;
-    @Mock private PlatformTxnAccessor txnAccessor;
-    @Mock private TxnScopedPlatformSigFactory sigFactory;
-    @Mock private TransactionSignature ed25519Sig;
-    @Mock private TransactionSignature secp256k1Sig;
-    @Mock private AccountID payer;
-    @Mock private Expansion.CryptoSigsCreation cryptoSigsCreation;
+    @Mock
+    private PubKeyToSigBytes pkToSigFn;
+
+    @Mock
+    private SigRequirements sigReqs;
+
+    @Mock
+    private PlatformTxnAccessor txnAccessor;
+
+    @Mock
+    private TxnScopedPlatformSigFactory sigFactory;
+
+    @Mock
+    private TransactionSignature ed25519Sig;
+
+    @Mock
+    private TransactionSignature secp256k1Sig;
+
+    @Mock
+    private AccountID payer;
+
+    @Mock
+    private Expansion.CryptoSigsCreation cryptoSigsCreation;
+
+    @Mock
+    private AliasManager aliasManager;
 
     private Expansion subject;
 
     @BeforeEach
     void setUp() {
-        subject = new Expansion(txnAccessor, sigReqs, pkToSigFn, cryptoSigsCreation, sigFactory);
-        given(cryptoSigsCreation.createFrom(any(), any(), any()))
-                .willReturn(new PlatformSigsCreationResult());
+        subject = new Expansion(txnAccessor, sigReqs, pkToSigFn, cryptoSigsCreation, sigFactory, aliasManager);
+        given(cryptoSigsCreation.createFrom(any(), any(), any())).willReturn(new PlatformSigsCreationResult());
     }
 
     @Test
     void tracksLinkedRefs() {
         final var mockTxn = TransactionBody.getDefaultInstance();
         given(sigReqs.keysForPayer(eq(mockTxn), eq(CODE_ORDER_RESULT_FACTORY), any(), eq(payer)))
-                .willAnswer(
-                        invocationOnMock -> {
-                            final var linkedRefs = (LinkedRefs) invocationOnMock.getArgument(2);
-                            linkedRefs.link(1L);
-                            return mockPayerResponse;
-                        });
-        given(
-                        sigReqs.keysForOtherParties(
-                                eq(mockTxn), eq(CODE_ORDER_RESULT_FACTORY), any(), eq(payer)))
-                .willAnswer(
-                        invocationOnMock -> {
-                            final var linkedRefs = (LinkedRefs) invocationOnMock.getArgument(2);
-                            linkedRefs.link(2L);
-                            return mockOtherPartiesResponse;
-                        });
+                .willAnswer(invocationOnMock -> {
+                    final var linkedRefs = (LinkedRefs) invocationOnMock.getArgument(2);
+                    linkedRefs.link(1L);
+                    return mockPayerResponse;
+                });
+        given(sigReqs.keysForOtherParties(eq(mockTxn), eq(CODE_ORDER_RESULT_FACTORY), any(), eq(payer)))
+                .willAnswer(invocationOnMock -> {
+                    final var linkedRefs = (LinkedRefs) invocationOnMock.getArgument(2);
+                    linkedRefs.link(2L);
+                    return mockOtherPartiesResponse;
+                });
         given(txnAccessor.getPayer()).willReturn(payer);
         given(txnAccessor.getTxn()).willReturn(mockTxn);
 
@@ -117,29 +132,18 @@ class ExpansionTest {
         final var pretendSecp256k1FullSig = "ALSO_NONSENSE".getBytes(StandardCharsets.UTF_8);
         final ArgumentCaptor<List<TransactionSignature>> captor = forClass(List.class);
 
-        given(
-                        sigFactory.signAppropriately(
-                                KeyType.ED25519, pretendEd25519FullKey, pretendEd25519FullSig))
+        given(sigFactory.signAppropriately(KeyType.ED25519, pretendEd25519FullKey, pretendEd25519FullSig))
                 .willReturn(ed25519Sig);
-        given(
-                        sigFactory.signAppropriately(
-                                KeyType.ECDSA_SECP256K1,
-                                pretendSecp256k1FullKey,
-                                pretendSecp256k1FullSig))
+        given(sigFactory.signAppropriately(KeyType.ECDSA_SECP256K1, pretendSecp256k1FullKey, pretendSecp256k1FullSig))
                 .willReturn(secp256k1Sig);
         setupDegenerateMocks();
         given(pkToSigFn.hasAtLeastOneUnusedSigWithFullPrefix()).willReturn(true);
-        willAnswer(
-                        inv -> {
-                            final var obs = (SigObserver) inv.getArgument(0);
-                            obs.accept(
-                                    KeyType.ED25519, pretendEd25519FullKey, pretendEd25519FullSig);
-                            obs.accept(
-                                    KeyType.ECDSA_SECP256K1,
-                                    pretendSecp256k1FullKey,
-                                    pretendSecp256k1FullSig);
-                            return null;
-                        })
+        willAnswer(inv -> {
+                    final var obs = (SigObserver) inv.getArgument(0);
+                    obs.accept(KeyType.ED25519, pretendEd25519FullKey, pretendEd25519FullSig);
+                    obs.accept(KeyType.ECDSA_SECP256K1, pretendSecp256k1FullKey, pretendSecp256k1FullSig);
+                    return null;
+                })
                 .given(pkToSigFn)
                 .forEachUnusedSigWithFullPrefix(any());
 
@@ -153,19 +157,14 @@ class ExpansionTest {
     private void setupDegenerateMocks() {
         final var degenTxnBody = TransactionBody.getDefaultInstance();
         given(txnAccessor.getTxn()).willReturn(degenTxnBody);
-        given(
-                        sigReqs.keysForPayer(
-                                eq(degenTxnBody), eq(CODE_ORDER_RESULT_FACTORY), any(), eq(payer)))
+        given(sigReqs.keysForPayer(eq(degenTxnBody), eq(CODE_ORDER_RESULT_FACTORY), any(), eq(payer)))
                 .willReturn(mockPayerResponse);
-        given(
-                        sigReqs.keysForOtherParties(
-                                eq(degenTxnBody), eq(CODE_ORDER_RESULT_FACTORY), any(), eq(payer)))
+        given(sigReqs.keysForOtherParties(eq(degenTxnBody), eq(CODE_ORDER_RESULT_FACTORY), any(), eq(payer)))
                 .willReturn(mockOtherPartiesResponse);
         given(txnAccessor.getPayer()).willReturn(payer);
     }
 
-    private static final JKey mockEd25519FullKey =
-            new JEd25519Key("01234567890123456789012345678901".getBytes());
+    private static final JKey mockEd25519FullKey = new JEd25519Key("01234567890123456789012345678901".getBytes());
     private static final SigningOrderResult<ResponseCodeEnum> mockPayerResponse =
             new SigningOrderResult<>(List.of(mockEd25519FullKey));
     private static final SigningOrderResult<ResponseCodeEnum> mockOtherPartiesResponse =

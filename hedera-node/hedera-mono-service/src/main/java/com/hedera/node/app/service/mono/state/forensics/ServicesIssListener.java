@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.forensics;
 
 import com.hedera.node.app.service.mono.ServicesState;
@@ -53,19 +54,18 @@ public class ServicesIssListener implements IssListener {
 
         final long round = notice.getRound();
         final long otherNodeId = notice.getOtherNodeId();
+        final String msg = String.format(ISS_ERROR_MSG_PATTERN, round, otherNodeId);
         try (final AutoCloseableWrapper<ServicesState> wrapper =
-                platform.getLatestImmutableState()) {
+                platform.getLatestImmutableState(this.getClass().getName() + " " + msg)) {
             final ServicesState issState = wrapper.get();
             issEventInfo.alert(issState.getTimeOfLastHandledTxn());
             if (issEventInfo.shouldLogThisRound()) {
                 issEventInfo.decrementRoundsToLog();
-                final String msg = String.format(ISS_ERROR_MSG_PATTERN, round, otherNodeId);
                 log.error(msg);
                 issState.logSummary();
             }
         } catch (final Exception any) {
-            final String fallbackMsg =
-                    String.format(ISS_FALLBACK_ERROR_MSG_PATTERN, round, otherNodeId);
+            final String fallbackMsg = String.format(ISS_FALLBACK_ERROR_MSG_PATTERN, round, otherNodeId);
             log.warn(fallbackMsg, any);
         }
     }

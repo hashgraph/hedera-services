@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.utils.ethereum;
 
 import com.esaulpaugh.headlong.rlp.RLPDecoder;
@@ -52,8 +53,7 @@ public record EthTxData(
     // Copy of constants from besu-native, remove when next besu-native publishes
     static final int SECP256K1_FLAGS_TYPE_COMPRESSION = 1 << 1;
     static final int SECP256K1_FLAGS_BIT_COMPRESSION = 1 << 8;
-    static final int SECP256K1_EC_COMPRESSED =
-            (SECP256K1_FLAGS_TYPE_COMPRESSION | SECP256K1_FLAGS_BIT_COMPRESSION);
+    static final int SECP256K1_EC_COMPRESSED = (SECP256K1_FLAGS_TYPE_COMPRESSION | SECP256K1_FLAGS_BIT_COMPRESSION);
 
     public static EthTxData populateEthTxData(byte[] data) {
         try {
@@ -276,9 +276,7 @@ public record EthTxData(
                 .add("chainId", chainId == null ? null : Hex.encodeHexString(chainId))
                 .add("nonce", nonce)
                 .add("gasPrice", gasPrice == null ? null : Hex.encodeHexString(gasPrice))
-                .add(
-                        "maxPriorityGas",
-                        maxPriorityGas == null ? null : Hex.encodeHexString(maxPriorityGas))
+                .add("maxPriorityGas", maxPriorityGas == null ? null : Hex.encodeHexString(maxPriorityGas))
                 .add("maxGas", maxGas == null ? null : Hex.encodeHexString(maxGas))
                 .add("gasLimit", gasLimit)
                 .add("to", to == null ? null : Hex.encodeHexString(to))

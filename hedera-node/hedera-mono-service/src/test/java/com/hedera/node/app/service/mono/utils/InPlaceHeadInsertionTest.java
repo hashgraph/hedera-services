@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.utils;
 
 import static com.hedera.node.app.service.mono.utils.MapValueListUtils.insertInPlaceAtMapValueListHead;
@@ -26,15 +27,13 @@ import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.Test;
 
 class InPlaceHeadInsertionTest {
-    private TokenRelStorageAdapter tokenRels =
-            TokenRelStorageAdapter.fromInMemory(new MerkleMap<>());
+    private TokenRelStorageAdapter tokenRels = TokenRelStorageAdapter.fromInMemory(new MerkleMap<>());
 
     @Test
     void canInsertToEmptyList() {
         final var listInsertion = new TokenRelsListMutation(accountNum.longValue(), tokenRels);
 
-        final var newRoot =
-                insertInPlaceAtMapValueListHead(aRelKey, aRel, null, null, listInsertion);
+        final var newRoot = insertInPlaceAtMapValueListHead(aRelKey, aRel, null, null, listInsertion);
 
         assertSame(aRelKey, newRoot);
         assertSame(aRel, tokenRels.get(aRelKey));
@@ -45,8 +44,7 @@ class InPlaceHeadInsertionTest {
         tokenRels.put(bRelKey, bRel);
         final var listInsertion = new TokenRelsListMutation(accountNum.longValue(), tokenRels);
 
-        final var newRoot =
-                insertInPlaceAtMapValueListHead(aRelKey, aRel, bRelKey, null, listInsertion);
+        final var newRoot = insertInPlaceAtMapValueListHead(aRelKey, aRel, bRelKey, null, listInsertion);
 
         assertSame(aRelKey, newRoot);
         final var newRootValue = tokenRels.get(aRelKey);
@@ -60,8 +58,7 @@ class InPlaceHeadInsertionTest {
         tokenRels.put(bRelKey, bRel);
         final var listInsertion = new TokenRelsListMutation(accountNum.longValue(), tokenRels);
 
-        final var newRoot =
-                insertInPlaceAtMapValueListHead(aRelKey, aRel, bRelKey, bRel, listInsertion);
+        final var newRoot = insertInPlaceAtMapValueListHead(aRelKey, aRel, bRelKey, bRel, listInsertion);
 
         assertSame(aRelKey, newRoot);
         final var newRootValue = tokenRels.get(aRelKey);

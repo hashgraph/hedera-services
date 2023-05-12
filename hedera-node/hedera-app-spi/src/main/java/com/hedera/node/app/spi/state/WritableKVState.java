@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi.state;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -28,7 +29,7 @@ import java.util.Set;
  * @param <V> The value, which must be of the appropriate kind depending on whether it is stored in
  *     memory, or on disk.
  */
-public interface WritableKVState<K extends Comparable<K>, V> extends ReadableKVState<K, V> {
+public interface WritableKVState<K, V> extends ReadableKVState<K, V> {
 
     /**
      * Gets the value associated with the given key in a <strong>READ-WRITE</strong> way. The
@@ -55,8 +56,8 @@ public interface WritableKVState<K extends Comparable<K>, V> extends ReadableKVS
 
     /**
      * Removes the given key and its associated value from the map. Subsequent calls to {@link
-     * #contains(Comparable)} with the given key will return false, and subsequent calls to {@link
-     * #get(Comparable)} and {@link #getForModify(Comparable)} will return empty optionals.
+     * #contains} with the given key will return false, and subsequent calls to {@link
+     * #get} and {@link #getForModify} will return empty optionals.
      *
      * @param key The key representing the key/value to remove. Cannot be null.
      * @throws NullPointerException if the key or value is null.

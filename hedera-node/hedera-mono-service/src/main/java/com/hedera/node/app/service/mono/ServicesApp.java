@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono;
 
+import com.hedera.node.app.service.mono.cache.EntityMapWarmer;
 import com.hedera.node.app.service.mono.config.ConfigModule;
 import com.hedera.node.app.service.mono.context.ContextModule;
 import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
@@ -29,6 +31,7 @@ import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertiesModule;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.contracts.ContractsModule;
+import com.hedera.node.app.service.mono.fees.FeeCalculatorModule;
 import com.hedera.node.app.service.mono.fees.FeesModule;
 import com.hedera.node.app.service.mono.files.FilesModule;
 import com.hedera.node.app.service.mono.grpc.GrpcModule;
@@ -51,7 +54,9 @@ import com.hedera.node.app.service.mono.state.forensics.HashLogger;
 import com.hedera.node.app.service.mono.state.initialization.SystemAccountsCreator;
 import com.hedera.node.app.service.mono.state.initialization.SystemFilesManager;
 import com.hedera.node.app.service.mono.state.initialization.TreasuryCloner;
+import com.hedera.node.app.service.mono.state.logic.LastStepModule;
 import com.hedera.node.app.service.mono.state.logic.NetworkCtxManager;
+import com.hedera.node.app.service.mono.state.logic.ProcessLogicModule;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.migration.MigrationRecordsManager;
 import com.hedera.node.app.service.mono.state.tasks.TaskModule;
@@ -77,12 +82,15 @@ import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
+import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.state.notifications.IssListener;
+import com.swirlds.common.system.state.notifications.NewRecoveredStateListener;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import dagger.BindsInstance;
 import dagger.Component;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.util.Optional;
@@ -112,7 +120,10 @@ import javax.inject.Singleton;
             ThrottlingModule.class,
             SubmissionModule.class,
             TransactionsModule.class,
-            ExpiryModule.class
+            ExpiryModule.class,
+            LastStepModule.class,
+            ProcessLogicModule.class,
+            FeeCalculatorModule.class
         })
 public interface ServicesApp {
     /* Needed by ServicesState */
@@ -147,6 +158,7 @@ public interface ServicesApp {
 
     NodeId nodeId();
 
+    @NonNull
     Platform platform();
 
     NodeInfo nodeInfo();
@@ -195,9 +207,16 @@ public interface ServicesApp {
 
     NewSignedStateListener newSignedStateListener();
 
+    Optional<NewRecoveredStateListener> maybeNewRecoveredStateListener();
+
     Supplier<NotificationEngine> notificationEngine();
 
     BackingStore<AccountID, HederaAccount> backingAccounts();
+
+    @BootstrapProps
+    PropertySource bootstrapProps();
+
+    EntityMapWarmer mapWarmer();
 
     @Component.Builder
     interface Builder {
@@ -208,7 +227,7 @@ public interface ServicesApp {
         Builder initialHash(Hash initialHash);
 
         @BindsInstance
-        Builder platform(Platform platform);
+        Builder platform(@NonNull Platform platform);
 
         @BindsInstance
         Builder consoleCreator(StateModule.ConsoleCreator consoleCreator);
@@ -218,6 +237,9 @@ public interface ServicesApp {
 
         @BindsInstance
         Builder staticAccountMemo(@StaticAccountMemo String accountMemo);
+
+        @BindsInstance
+        Builder initTrigger(InitTrigger initTrigger);
 
         @BindsInstance
         Builder bootstrapProps(@BootstrapProps PropertySource bootstrapProps);

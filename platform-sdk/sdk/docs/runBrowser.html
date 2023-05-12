@@ -1,0 +1,84 @@
+<!--
+  ~ Copyright 2016-2022 Hedera Hashgraph, LLC
+  ~
+  ~ This software is the confidential and proprietary information of
+  ~ Hedera Hashgraph, LLC. ("Confidential Information"). You shall not
+  ~ disclose such Confidential Information and shall use it only in
+  ~ accordance with the terms of the license agreement you entered into
+  ~ with Hedera Hashgraph.
+  ~
+  ~ HEDERA HASHGRAPH MAKES NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF
+  ~ THE SOFTWARE, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+  ~ TO THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+  ~ PARTICULAR PURPOSE, OR NON-INFRINGEMENT. HEDERA HASHGRAPH SHALL NOT BE LIABLE FOR
+  ~ ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, MODIFYING OR
+  ~ DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
+  -->
+
+<html>
+<head>
+	<style>
+		pre {
+			font-family: "Courier 10 Pitch", Courier, monospace;
+			margin-bottom: 1.6em;
+			max-width: 100%;
+			overflow: auto;
+			background-color: #efefef;
+		}
+	</style>
+</head>
+<body>
+
+<h1>How to run apps in the Swirlds browser</h1>
+
+<h2>Install Java and Swirlds</h2>
+The Swirlds browser needs both the Java runtime and the Swirlds SDK to be installed. This can be done by following the
+instructions for either
+
+<a href="installEclipse.html">installing with Eclipse</a> or
+<a href="installCLI.html">installing with Maven</a>. To simply run the apps without creating new apps, there is no need
+to install Eclipse or Maven. It is sufficient to just follow the installation instructions for the Java SDK and the JCE
+security policy file.
+<p>
+
+	The browser is the file <b>swirlds.jar</b>. Both <b>swirlds.jar</b> and the <b>data</b> directory should be in the
+	same directory, along with an optional <b>config.txt</b> file. The subdirectory <b>data/apps</b> will contain all of
+	the apps that the browser can run, each in its own <b>.jar</b> file.
+<p>
+
+<h2>Prepare for random numbers</h2>
+The Swirlds browser uses the same encryption technology that is used by a web browser when it goes to a secure HTTPS://
+website. In both cases, there is a need to get random numbers from the operating system. This works fine for most
+operating systems, such as Windows, MacOS, and Linux. However, some operating systems may need to be configured to
+generate good random numbers. If the Swirld browser seems to freeze when launched, it may need extra software to be
+installed to help the operating system collect entropy (randomness). If that case, download whatever utilities are
+appropriate for the particular operating system, such as those for
+<a href="installDebian.html">Debian</a>
+or
+<a href="installRaspbian.html">Raspbian</a>
+
+
+<h2>Run the Swirlds browser</h2>
+
+Double click on the <b>swirlds.jar</b> file to run an app. (On a Mac, the first time you run it, you may need to right
+click on it and choose OPEN). You can also run it from the command line by going into the swirlds directory and
+typing:</p>
+
+<pre>java -jar swirlds.jar</pre>
+
+Future versions of the browser will have a window interface to let the user launch apps and connect to existing
+networks. The current version supports another method for controlling it, the <b>config.txt</b> file. The
+<b>config.txt</b> file that comes with the SDK has comments in it explaining how to control which app will run, and how
+to pass it parameters. It can also control how many instances will run, and which computers they will run on. It can
+even run multiple instances on the same machine, communicating with each other through TCP/IP as if they were on
+different machines.
+
+<h2>Use the SDK to develop and run new apps</h2>
+
+After downloading and installing the SDK as above, developers can <a href="newApp.html">write new apps</a> that run in
+the Swirlds browser.
+
+<p>
+	<a href="index.html">Back</a>
+</p>
+</body>

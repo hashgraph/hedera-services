@@ -13,27 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context.properties;
 
 import java.util.HashSet;
 import java.util.Set;
 
 public class ChainedSources implements PropertySource {
+
     private final PropertySource first;
     private final PropertySource second;
 
-    public ChainedSources(PropertySource first, PropertySource second) {
+    public ChainedSources(final PropertySource first, final PropertySource second) {
         this.first = first;
         this.second = second;
     }
 
     @Override
-    public boolean containsProperty(String name) {
+    public boolean containsProperty(final String name) {
         return first.containsProperty(name) || second.containsProperty(name);
     }
 
     @Override
-    public Object getProperty(String name) {
+    public Object getProperty(final String name) {
         return first.containsProperty(name) ? first.getProperty(name) : second.getProperty(name);
     }
 
@@ -42,5 +44,10 @@ public class ChainedSources implements PropertySource {
         final var all = new HashSet<>(first.allPropertyNames());
         all.addAll(second.allPropertyNames());
         return all;
+    }
+
+    @Override
+    public String getRawValue(final String name) {
+        return first.containsProperty(name) ? first.getRawValue(name) : second.getRawValue(name);
     }
 }

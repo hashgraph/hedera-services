@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.contract.txns;
 
 import static com.hedera.node.app.service.mono.fees.calculation.FeeCalcUtils.lookupAccountExpiry;
@@ -48,17 +49,13 @@ public class ContractUpdateResourceUsage implements TxnResourceUsageEstimator {
     }
 
     @Override
-    public FeeData usageGiven(TransactionBody txn, SigValueObj sigUsage, StateView view)
-            throws InvalidTxBodyException {
+    public FeeData usageGiven(TransactionBody txn, SigValueObj sigUsage, StateView view) throws InvalidTxBodyException {
         try {
             final var id = fromContractId(txn.getContractUpdateInstance().getContractID());
             Timestamp expiry = lookupAccountExpiry(id, view.accounts());
             return usageEstimator.getContractUpdateTxFeeMatrices(txn, expiry, sigUsage);
         } catch (Exception e) {
-            log.debug(
-                    "Unable to deduce ContractUpdate usage for {}, using defaults",
-                    txn.getTransactionID(),
-                    e);
+            log.debug("Unable to deduce ContractUpdate usage for {}, using defaults", txn.getTransactionID(), e);
             return FeeData.getDefaultInstance();
         }
     }

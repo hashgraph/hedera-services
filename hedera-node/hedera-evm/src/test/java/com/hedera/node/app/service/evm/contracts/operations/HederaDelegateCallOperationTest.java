@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.contracts.operations;
 
 /*
@@ -63,12 +64,23 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class HederaDelegateCallOperationTest {
 
-    @Mock private GasCalculator calc;
-    @Mock private MessageFrame evmMsgFrame;
-    @Mock private EVM evm;
-    @Mock private WorldUpdater worldUpdater;
-    @Mock private Account acc;
-    @Mock private BiPredicate<Address, MessageFrame> addressValidator;
+    @Mock
+    private GasCalculator calc;
+
+    @Mock
+    private MessageFrame evmMsgFrame;
+
+    @Mock
+    private EVM evm;
+
+    @Mock
+    private WorldUpdater worldUpdater;
+
+    @Mock
+    private Account acc;
+
+    @Mock
+    private BiPredicate<Address, MessageFrame> addressValidator;
 
     private final long cost = 100L;
 
@@ -84,10 +96,8 @@ class HederaDelegateCallOperationTest {
     @Test
     void haltWithInvalidAddr() {
         given(worldUpdater.get(any())).willReturn(null);
-        given(
-                        calc.callOperationGasCost(
-                                any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(),
-                                any(), any()))
+        given(calc.callOperationGasCost(
+                        any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), any()))
                 .willReturn(cost);
         given(evmMsgFrame.getStackItem(0)).willReturn(Bytes.EMPTY);
         given(evmMsgFrame.getStackItem(1)).willReturn(Bytes.EMPTY);
@@ -105,10 +115,8 @@ class HederaDelegateCallOperationTest {
 
     @Test
     void executesAsExpected() {
-        given(
-                        calc.callOperationGasCost(
-                                any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(),
-                                any(), any()))
+        given(calc.callOperationGasCost(
+                        any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), any()))
                 .willReturn(cost);
         for (int i = 0; i < 10; i++) {
             lenient().when(evmMsgFrame.getStackItem(i)).thenReturn(Bytes.ofUnsignedInt(10));

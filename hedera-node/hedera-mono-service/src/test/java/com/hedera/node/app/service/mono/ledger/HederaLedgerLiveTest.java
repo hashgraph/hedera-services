@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -56,11 +57,20 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 
-    @Mock private UsageLimits usageLimits;
-    @Mock private AutoCreationLogic autoCreationLogic;
-    @Mock private AutoAssocTokenRelsCommitInterceptor autoAssocTokenRelsCommitInterceptor;
-    @Mock private AccountsCommitInterceptor accountsCommitInterceptor;
-    @Mock private LinkAwareUniqueTokensCommitInterceptor linkAwareUniqueTokensCommitInterceptor;
+    @Mock
+    private UsageLimits usageLimits;
+
+    @Mock
+    private AutoCreationLogic autoCreationLogic;
+
+    @Mock
+    private AutoAssocTokenRelsCommitInterceptor autoAssocTokenRelsCommitInterceptor;
+
+    @Mock
+    private AccountsCommitInterceptor accountsCommitInterceptor;
+
+    @Mock
+    private LinkAwareUniqueTokensCommitInterceptor linkAwareUniqueTokensCommitInterceptor;
 
     final SideEffectsTracker liveSideEffects = new SideEffectsTracker();
 
@@ -68,57 +78,45 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
     void setup() {
         commonSetup();
 
-        accountsLedger =
-                new TransactionalLedger<>(
-                        AccountProperty.class,
-                        MerkleAccount::new,
-                        new HashMapBackingAccounts(),
-                        new ChangeSummaryManager<>());
+        accountsLedger = new TransactionalLedger<>(
+                AccountProperty.class, MerkleAccount::new, new HashMapBackingAccounts(), new ChangeSummaryManager<>());
         accountsLedger.setCommitInterceptor(accountsCommitInterceptor);
 
-        nftsLedger =
-                new TransactionalLedger<>(
-                        NftProperty.class,
-                        UniqueTokenAdapter::newEmptyMerkleToken,
-                        new HashMapBackingNfts(),
-                        new ChangeSummaryManager<>());
+        nftsLedger = new TransactionalLedger<>(
+                NftProperty.class,
+                UniqueTokenAdapter::newEmptyMerkleToken,
+                new HashMapBackingNfts(),
+                new ChangeSummaryManager<>());
         nftsLedger.setCommitInterceptor(linkAwareUniqueTokensCommitInterceptor);
-        tokenRelsLedger =
-                new TransactionalLedger<>(
-                        TokenRelProperty.class,
-                        MerkleTokenRelStatus::new,
-                        new HashMapBackingTokenRels(),
-                        new ChangeSummaryManager<>());
+        tokenRelsLedger = new TransactionalLedger<>(
+                TokenRelProperty.class,
+                MerkleTokenRelStatus::new,
+                new HashMapBackingTokenRels(),
+                new ChangeSummaryManager<>());
         tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
         tokenRelsLedger.setCommitInterceptor(autoAssocTokenRelsCommitInterceptor);
-        tokensLedger =
-                new TransactionalLedger<>(
-                        TokenProperty.class,
-                        MerkleToken::new,
-                        new HashMapBackingTokens(),
-                        new ChangeSummaryManager<>());
-        tokenStore =
-                new HederaTokenStore(
-                        ids,
-                        usageLimits,
-                        TestContextValidator.TEST_VALIDATOR,
-                        liveSideEffects,
-                        new MockGlobalDynamicProps(),
-                        tokenRelsLedger,
-                        nftsLedger,
-                        new HashMapBackingTokens());
-        subject =
-                new HederaLedger(
-                        tokenStore,
-                        ids,
-                        creator,
-                        validator,
-                        liveSideEffects,
-                        historian,
-                        tokensLedger,
-                        accountsLedger,
-                        transferLogic,
-                        autoCreationLogic);
+        tokensLedger = new TransactionalLedger<>(
+                TokenProperty.class, MerkleToken::new, new HashMapBackingTokens(), new ChangeSummaryManager<>());
+        tokenStore = new HederaTokenStore(
+                ids,
+                usageLimits,
+                TestContextValidator.TEST_VALIDATOR,
+                liveSideEffects,
+                new MockGlobalDynamicProps(),
+                tokenRelsLedger,
+                nftsLedger,
+                new HashMapBackingTokens());
+        subject = new HederaLedger(
+                tokenStore,
+                ids,
+                creator,
+                validator,
+                liveSideEffects,
+                historian,
+                tokensLedger,
+                accountsLedger,
+                transferLogic,
+                autoCreationLogic);
         subject.setMutableEntityAccess(mock(MutableEntityAccess.class));
     }
 
@@ -157,8 +155,7 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
         liveSideEffects.reset();
         subject.begin();
         final var customizer = new HederaAccountCustomizer().memo("a");
-        assertThrows(
-                IllegalArgumentException.class, () -> subject.create(genesis, 1_000L, customizer));
+        assertThrows(IllegalArgumentException.class, () -> subject.create(genesis, 1_000L, customizer));
     }
 
     @Test

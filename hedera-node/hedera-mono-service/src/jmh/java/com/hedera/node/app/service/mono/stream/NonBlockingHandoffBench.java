@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.stream;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -48,8 +49,10 @@ public class NonBlockingHandoffBench {
     @Setup(Level.Trial)
     public void setupInfrastructure() {
         receivingQueue = new LinkedBlockingQueue<>();
-        nodeLocalProperties = mock(NodeLocalProperties.class, Mockito.withSettings().stubOnly());
-        recordStreamManager = mock(RecordStreamManager.class, Mockito.withSettings().stubOnly());
+        nodeLocalProperties =
+                mock(NodeLocalProperties.class, Mockito.withSettings().stubOnly());
+        recordStreamManager =
+                mock(RecordStreamManager.class, Mockito.withSettings().stubOnly());
         when(nodeLocalProperties.recordStreamQueueCapacity()).thenReturn(5000);
         doAnswer(val -> receivingQueue.add(val.getArgument(0, RecordStreamObject.class)))
                 .when(recordStreamManager)

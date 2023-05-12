@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.grpc;
 
 import io.grpc.netty.NettyServerBuilder;
@@ -20,6 +21,5 @@ import java.io.FileNotFoundException;
 import javax.net.ssl.SSLException;
 
 public interface NettyBuilderFactory {
-    NettyServerBuilder builderFor(int port, boolean tlsSupport)
-            throws FileNotFoundException, SSLException;
+    NettyServerBuilder builderFor(int port, boolean tlsSupport) throws FileNotFoundException, SSLException;
 }

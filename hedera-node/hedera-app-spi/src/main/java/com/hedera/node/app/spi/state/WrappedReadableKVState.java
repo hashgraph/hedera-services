@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi.state;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -42,14 +43,23 @@ public class WrappedReadableKVState<K extends Comparable<K>, V> extends Readable
         this.delegate = delegate;
     }
 
+    /** {@inheritDoc} */
     @Override
     protected V readFromDataSource(@NonNull K key) {
         return delegate.get(key);
     }
 
+    /** {@inheritDoc} */
     @NonNull
     @Override
     protected Iterator<K> iterateFromDataSource() {
         return delegate.keys();
+    }
+
+    /** {@inheritDoc} */
+    @NonNull
+    @Override
+    public long size() {
+        return delegate.size();
     }
 }

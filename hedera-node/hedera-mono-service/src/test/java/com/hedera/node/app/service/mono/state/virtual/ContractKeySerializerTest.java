@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual;
 
 import static com.hedera.node.app.service.mono.state.virtual.ContractKeySerializer.CLASS_ID;
@@ -37,8 +38,7 @@ class ContractKeySerializerTest {
     private final long otherContractNum = 1235L;
     private final long key = 123L;
     private final UInt256 largeKey =
-            UInt256.fromHexString(
-                    "0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563");
+            UInt256.fromHexString("0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563");
 
     final ContractKeySerializer subject = new ContractKeySerializer();
     final ContractKey contractKey = new ContractKey(contractNum, key);
@@ -90,12 +90,9 @@ class ContractKeySerializerTest {
         final var uint256KeyNonZeroBytes = contractKey.getUint256KeyNonZeroBytes();
         final var bin = mock(ByteBuffer.class);
 
-        given(bin.get())
-                .willReturn(contractKey.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes());
+        given(bin.get()).willReturn(contractKey.getContractIdNonZeroBytesAndUint256KeyNonZeroBytes());
 
-        assertEquals(
-                1 + contractIdNonZeroBytes + uint256KeyNonZeroBytes,
-                subject.deserializeKeySize(bin));
+        assertEquals(1 + contractIdNonZeroBytes + uint256KeyNonZeroBytes, subject.deserializeKeySize(bin));
     }
 
     @Test
@@ -115,8 +112,7 @@ class ContractKeySerializerTest {
     @Test
     void equalsUsingByteBufferFailsAsExpected() throws IOException {
         final var someKey = new ContractKey(contractNum, key);
-        final var someKeyForDiffContractButSameNonZeroBytes =
-                new ContractKey(otherContractNum, key);
+        final var someKeyForDiffContractButSameNonZeroBytes = new ContractKey(otherContractNum, key);
         final var someKeyForDiffContract = new ContractKey(Long.MAX_VALUE, key);
         final var someDiffKeyForSameContract = new ContractKey(contractNum, largeKey.toArray());
         final var bin = mock(ByteBuffer.class);

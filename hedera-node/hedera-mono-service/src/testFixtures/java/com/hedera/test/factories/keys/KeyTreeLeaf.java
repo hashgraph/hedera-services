@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.factories.keys;
 
 import com.google.protobuf.ByteString;
@@ -55,9 +56,7 @@ public class KeyTreeLeaf implements KeyTreeNode {
 
     private Key customKey(KeyFactory factory) {
         if (sigType == SignatureType.ED25519) {
-            return Optional.ofNullable(label)
-                    .map(factory::labeledEd25519)
-                    .orElse(factory.newEd25519());
+            return Optional.ofNullable(label).map(factory::labeledEd25519).orElse(factory.newEd25519());
         } else if (sigType == SignatureType.ECDSA_SECP256K1) {
             return Optional.ofNullable(label)
                     .map(factory::labeledEcdsaSecp256k1)

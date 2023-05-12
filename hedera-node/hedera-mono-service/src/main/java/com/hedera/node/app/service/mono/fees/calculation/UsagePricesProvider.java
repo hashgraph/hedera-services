@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation;
 
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
@@ -75,6 +76,5 @@ public interface UsagePricesProvider {
      * @param function the operation of interest
      * @return the triple of price sequences
      */
-    Triple<Map<SubType, FeeData>, Instant, Map<SubType, FeeData>> activePricingSequence(
-            HederaFunctionality function);
+    Triple<Map<SubType, FeeData>, Instant, Map<SubType, FeeData>> activePricingSequence(HederaFunctionality function);
 }

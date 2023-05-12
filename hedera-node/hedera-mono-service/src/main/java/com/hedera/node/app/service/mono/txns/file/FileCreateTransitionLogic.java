@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.file;
 
 import static com.hedera.node.app.service.mono.context.primitives.StateView.EMPTY_WACL;
@@ -91,10 +92,7 @@ public class FileCreateTransitionLogic implements TransitionLogic {
         } catch (final IllegalArgumentException iae) {
             FileUpdateTransitionLogic.mapToStatus(iae, txnCtx);
         } catch (final Exception unknown) {
-            log.warn(
-                    "Unrecognized failure handling {}!",
-                    txnCtx.accessor().getSignedTxnWrapper(),
-                    unknown);
+            log.warn("Unrecognized failure handling {}!", txnCtx.accessor().getSignedTxnWrapper(), unknown);
             txnCtx.setStatus(FAIL_INVALID);
         }
     }
@@ -138,15 +136,13 @@ public class FileCreateTransitionLogic implements TransitionLogic {
             return INVALID_EXPIRATION_TIME;
         }
 
-        final var effectiveDuration =
-                Duration.newBuilder()
-                        .setSeconds(
-                                op.getExpirationTime().getSeconds()
-                                        - fileCreateTxn
-                                                .getTransactionID()
-                                                .getTransactionValidStart()
-                                                .getSeconds())
-                        .build();
+        final var effectiveDuration = Duration.newBuilder()
+                .setSeconds(op.getExpirationTime().getSeconds()
+                        - fileCreateTxn
+                                .getTransactionID()
+                                .getTransactionValidStart()
+                                .getSeconds())
+                .build();
         if (!validator.isValidAutoRenewPeriod(effectiveDuration)) {
             return AUTORENEW_DURATION_NOT_IN_RANGE;
         }

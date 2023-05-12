@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.decodeFunctionCall;
@@ -33,8 +34,7 @@ public interface EvmTokenGetCustomFeesPrecompile {
 
     public static TokenGetCustomFeesWrapper<byte[]> decodeTokenGetCustomFees(final Bytes input) {
         final Tuple decodedArguments =
-                decodeFunctionCall(
-                        input, TOKEN_GET_CUSTOM_FEES_SELECTOR, TOKEN_GET_CUSTOM_FEES_DECODER);
+                decodeFunctionCall(input, TOKEN_GET_CUSTOM_FEES_SELECTOR, TOKEN_GET_CUSTOM_FEES_DECODER);
 
         return new TokenGetCustomFeesWrapper<>(decodedArguments.get(0));
     }

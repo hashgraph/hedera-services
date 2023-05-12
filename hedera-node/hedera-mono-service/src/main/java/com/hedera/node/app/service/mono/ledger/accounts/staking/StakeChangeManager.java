@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.accounts.staking;
 
 import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
@@ -34,15 +35,12 @@ public class StakeChangeManager {
     private final Supplier<AccountStorageAdapter> accounts;
 
     @Inject
-    public StakeChangeManager(
-            final StakeInfoManager stakeInfoManager,
-            final Supplier<AccountStorageAdapter> accounts) {
+    public StakeChangeManager(final StakeInfoManager stakeInfoManager, final Supplier<AccountStorageAdapter> accounts) {
         this.stakeInfoManager = stakeInfoManager;
         this.accounts = accounts;
     }
 
-    public void withdrawStake(
-            final long curNodeId, final long amount, final boolean declinedReward) {
+    public void withdrawStake(final long curNodeId, final long amount, final boolean declinedReward) {
         final var node = stakeInfoManager.mutableStakeInfoFor(curNodeId);
         if (node == null) {
             return;
@@ -69,8 +67,7 @@ public class StakeChangeManager {
     }
 
     public int findOrAdd(
-            final long accountNum,
-            final EntityChangeSet<AccountID, HederaAccount, AccountProperty> pendingChanges) {
+            final long accountNum, final EntityChangeSet<AccountID, HederaAccount, AccountProperty> pendingChanges) {
         final var n = pendingChanges.size();
         for (int i = 0; i < n; i++) {
             if (pendingChanges.id(i).getAccountNum() == accountNum) {

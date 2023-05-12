@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.utils.sysfiles.domain.throttling;
 
+import static com.hedera.node.app.hapi.utils.CommonUtils.productWouldOverflow;
 import static com.hedera.node.app.hapi.utils.sysfiles.validation.ErrorCodeUtils.exceptionMsgFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUCKET_CAPACITY_OVERFLOW;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUCKET_HAS_NO_THROTTLE_GROUPS;
@@ -95,13 +97,10 @@ public final class ThrottleBucket<E extends Enum<E>> {
      *     many logical operations each assigned function will use from the throttle
      * @throws IllegalStateException if this bucket was constructed with invalid throttle groups
      */
-    public Pair<DeterministicThrottle, List<Pair<E, Integer>>> asThrottleMapping(
-            final long capacitySplit) {
+    public Pair<DeterministicThrottle, List<Pair<E, Integer>>> asThrottleMapping(final long capacitySplit) {
         if (throttleGroups.isEmpty()) {
-            throw new IllegalStateException(
-                    exceptionMsgFor(
-                            BUCKET_HAS_NO_THROTTLE_GROUPS,
-                            BUCKET_PREFIX + name + " includes no throttle groups!"));
+            throw new IllegalStateException(exceptionMsgFor(
+                    BUCKET_HAS_NO_THROTTLE_GROUPS, BUCKET_PREFIX + name + " includes no throttle groups!"));
         }
 
         assertMinimalOpsPerSec();
@@ -110,26 +109,22 @@ public final class ThrottleBucket<E extends Enum<E>> {
     }
 
     private long logicalMtps() {
-        final var ans = requiredLogicalMilliTpsToAccommodateAllGroups();
-        if (ans < 0) {
-            throw new IllegalStateException(
-                    exceptionMsgFor(
-                            BUCKET_CAPACITY_OVERFLOW,
-                            BUCKET_PREFIX + name + " overflows with given throttle groups!"));
+        try {
+            return requiredLogicalMilliTpsToAccommodateAllGroups();
+        } catch (ArithmeticException overflow) {
+            throw new IllegalStateException(exceptionMsgFor(
+                    BUCKET_CAPACITY_OVERFLOW, BUCKET_PREFIX + name + " overflows with given throttle groups!"));
         }
-        return ans;
     }
 
-    private Pair<DeterministicThrottle, List<Pair<E, Integer>>> mappingWith(
-            final long mtps, final long capacitySplit) {
+    private Pair<DeterministicThrottle, List<Pair<E, Integer>>> mappingWith(final long mtps, final long capacitySplit) {
         final var throttle = throttleFor(mtps, capacitySplit);
         final var totalCapacityUnits = throttle.capacity();
 
         final Set<E> seenSoFar = new HashSet<>();
         final List<Pair<E, Integer>> opsReqs = new ArrayList<>();
         for (final var throttleGroup : throttleGroups) {
-            updateOpsReqs(
-                    capacitySplit, mtps, totalCapacityUnits, throttleGroup, seenSoFar, opsReqs);
+            updateOpsReqs(capacitySplit, mtps, totalCapacityUnits, throttleGroup, seenSoFar, opsReqs);
         }
 
         return Pair.of(throttle, opsReqs);
@@ -145,14 +140,13 @@ public final class ThrottleBucket<E extends Enum<E>> {
         final var opsReq = (int) (mtps / group.impliedMilliOpsPerSec());
         final var capacityReq = DeterministicThrottle.capacityRequiredFor(opsReq);
         if (capacityReq < 0 || capacityReq > totalCapacity) {
-            throw new IllegalStateException(
-                    exceptionMsgFor(
-                            NODE_CAPACITY_NOT_SUFFICIENT_FOR_OPERATION,
-                            BUCKET_PREFIX
-                                    + name
-                                    + " contains an unsatisfiable milliOpsPerSec with "
-                                    + capacitySplit
-                                    + " nodes!"));
+            throw new IllegalStateException(exceptionMsgFor(
+                    NODE_CAPACITY_NOT_SUFFICIENT_FOR_OPERATION,
+                    BUCKET_PREFIX
+                            + name
+                            + " contains an unsatisfiable milliOpsPerSec with "
+                            + capacitySplit
+                            + " nodes!"));
         }
 
         final var functions = group.getOperations();
@@ -166,10 +160,9 @@ public final class ThrottleBucket<E extends Enum<E>> {
             }
             seenSoFar.addAll(functions);
         } else {
-            throw new IllegalStateException(
-                    exceptionMsgFor(
-                            OPERATION_REPEATED_IN_BUCKET_GROUPS,
-                            BUCKET_PREFIX + name + " assigns an operation to multiple groups!"));
+            throw new IllegalStateException(exceptionMsgFor(
+                    OPERATION_REPEATED_IN_BUCKET_GROUPS,
+                    BUCKET_PREFIX + name + " assigns an operation to multiple groups!"));
         }
     }
 
@@ -177,22 +170,19 @@ public final class ThrottleBucket<E extends Enum<E>> {
         try {
             final var effBurstPeriodMs = autoScaledBurstPeriodMs(capacitySplit);
             return DeterministicThrottle.withMtpsAndBurstPeriodMsNamed(
-                    mtps / capacitySplit, effBurstPeriodMs, name);
+                    mtpsSplitBy(mtps, capacitySplit), effBurstPeriodMs, name);
         } catch (final IllegalArgumentException unsatisfiable) {
             if (unsatisfiable.getMessage().startsWith("Cannot free")) {
-                throw new IllegalStateException(
-                        exceptionMsgFor(
-                                BUCKET_CAPACITY_OVERFLOW,
-                                BUCKET_PREFIX + name + " overflows with given throttle groups!"));
+                throw new IllegalStateException(exceptionMsgFor(
+                        BUCKET_CAPACITY_OVERFLOW, BUCKET_PREFIX + name + " overflows with given throttle groups!"));
             } else {
-                throw new IllegalStateException(
-                        exceptionMsgFor(
-                                NODE_CAPACITY_NOT_SUFFICIENT_FOR_OPERATION,
-                                BUCKET_PREFIX
-                                        + name
-                                        + " contains an unsatisfiable milliOpsPerSec with "
-                                        + capacitySplit
-                                        + " nodes!"));
+                throw new IllegalStateException(exceptionMsgFor(
+                        NODE_CAPACITY_NOT_SUFFICIENT_FOR_OPERATION,
+                        BUCKET_PREFIX
+                                + name
+                                + " contains an unsatisfiable milliOpsPerSec with "
+                                + capacitySplit
+                                + " nodes!"));
             }
         }
     }
@@ -203,23 +193,24 @@ public final class ThrottleBucket<E extends Enum<E>> {
         for (final var group : throttleGroups) {
             final var opsReq = (int) (mtps / group.impliedMilliOpsPerSec());
             minCapacityUnitsPostSplit =
-                    Math.max(
-                            minCapacityUnitsPostSplit,
-                            DeterministicThrottle.capacityRequiredFor(opsReq));
+                    Math.max(minCapacityUnitsPostSplit, DeterministicThrottle.capacityRequiredFor(opsReq));
         }
-        final var minCapacityUnits = minCapacityUnitsPostSplit * capacitySplit;
-        final var capacityUnitsPerMs = BucketThrottle.capacityUnitsPerMs(mtps);
-        final var minBurstPeriodMs = quotientRoundedUp(minCapacityUnits, capacityUnitsPerMs);
+        final var postSplitCapacityUnitsLeakedPerMs =
+                BucketThrottle.capacityUnitsPerMs(mtpsSplitBy(mtps, capacitySplit));
+        final var minBurstPeriodMs = quotientRoundedUp(minCapacityUnitsPostSplit, postSplitCapacityUnitsLeakedPerMs);
         final var reqBurstPeriodMs = impliedBurstPeriodMs();
         if (minBurstPeriodMs > reqBurstPeriodMs) {
             log.info(
-                    "Auto-scaled {} burst period from {}ms -> {}ms to achieve requested"
-                            + " steady-state OPS",
+                    "Auto-scaled {} burst period from {}ms -> {}ms to achieve requested" + " steady-state OPS",
                     name,
                     reqBurstPeriodMs,
                     minBurstPeriodMs);
         }
-        return Math.max(minBurstPeriodMs, impliedBurstPeriodMs());
+        return Math.max(minBurstPeriodMs, reqBurstPeriodMs);
+    }
+
+    private long mtpsSplitBy(final long mtps, final long splitFactor) {
+        return Math.max(1, mtps / splitFactor);
     }
 
     public static long quotientRoundedUp(final long a, final long b) {
@@ -229,12 +220,9 @@ public final class ThrottleBucket<E extends Enum<E>> {
     private void assertMinimalOpsPerSec() {
         for (final var group : throttleGroups) {
             if (group.impliedMilliOpsPerSec() == 0) {
-                throw new IllegalStateException(
-                        exceptionMsgFor(
-                                THROTTLE_GROUP_HAS_ZERO_OPS_PER_SEC,
-                                BUCKET_PREFIX
-                                        + name
-                                        + " contains a group with zero milliOpsPerSec!"));
+                throw new IllegalStateException(exceptionMsgFor(
+                        THROTTLE_GROUP_HAS_ZERO_OPS_PER_SEC,
+                        BUCKET_PREFIX + name + " contains a group with zero milliOpsPerSec!"));
             }
         }
     }
@@ -251,7 +239,18 @@ public final class ThrottleBucket<E extends Enum<E>> {
         return burstPeriodMs > 0 ? burstPeriodMs : 1_000L * burstPeriod;
     }
 
+    /**
+     * Computes the least common multiple of the given two numbers.
+     *
+     * @param a the first number
+     * @param b the second number
+     * @return the least common multiple of {@code a} and {@code b}
+     * @throws ArithmeticException if the result overflows a {@code long}
+     */
     private long lcm(final long a, final long b) {
+        if (productWouldOverflow(a, b)) {
+            throw new ArithmeticException();
+        }
         return (a * b) / gcd(Math.min(a, b), Math.max(a, b));
     }
 

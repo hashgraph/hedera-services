@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.factories.scenarios;
 
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER;
@@ -24,46 +25,42 @@ public enum TokenDissociateScenarios implements TxnHandlingScenario {
     TOKEN_DISSOCIATE_WITH_KNOWN_TARGET {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(
-                    newSignedTokenDissociate()
-                            .targeting(MISC_ACCOUNT)
-                            .dissociating(KNOWN_TOKEN_WITH_KYC)
-                            .dissociating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
-                            .nonPayerKts(MISC_ACCOUNT_KT)
-                            .get());
+            return PlatformTxnAccessor.from(newSignedTokenDissociate()
+                    .targeting(MISC_ACCOUNT)
+                    .dissociating(KNOWN_TOKEN_WITH_KYC)
+                    .dissociating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
+                    .nonPayerKts(MISC_ACCOUNT_KT)
+                    .get());
         }
     },
     TOKEN_DISSOCIATE_WITH_SELF_PAID_KNOWN_TARGET {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(
-                    newSignedTokenDissociate()
-                            .targeting(DEFAULT_PAYER)
-                            .dissociating(KNOWN_TOKEN_WITH_KYC)
-                            .dissociating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
-                            .get());
+            return PlatformTxnAccessor.from(newSignedTokenDissociate()
+                    .targeting(DEFAULT_PAYER)
+                    .dissociating(KNOWN_TOKEN_WITH_KYC)
+                    .dissociating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
+                    .get());
         }
     },
     TOKEN_DISSOCIATE_WITH_CUSTOM_PAYER_PAID_KNOWN_TARGET {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(
-                    newSignedTokenDissociate()
-                            .targeting(CUSTOM_PAYER_ACCOUNT)
-                            .dissociating(KNOWN_TOKEN_WITH_KYC)
-                            .dissociating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
-                            .get());
+            return PlatformTxnAccessor.from(newSignedTokenDissociate()
+                    .targeting(CUSTOM_PAYER_ACCOUNT)
+                    .dissociating(KNOWN_TOKEN_WITH_KYC)
+                    .dissociating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
+                    .get());
         }
     },
     TOKEN_DISSOCIATE_WITH_MISSING_TARGET {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(
-                    newSignedTokenDissociate()
-                            .targeting(MISSING_ACCOUNT)
-                            .dissociating(KNOWN_TOKEN_WITH_KYC)
-                            .dissociating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
-                            .get());
+            return PlatformTxnAccessor.from(newSignedTokenDissociate()
+                    .targeting(MISSING_ACCOUNT)
+                    .dissociating(KNOWN_TOKEN_WITH_KYC)
+                    .dissociating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
+                    .get());
         }
     },
 }

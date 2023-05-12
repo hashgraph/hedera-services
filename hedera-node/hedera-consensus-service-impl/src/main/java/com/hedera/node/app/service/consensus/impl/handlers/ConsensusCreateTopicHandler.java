@@ -13,71 +13,142 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.consensus.impl.handlers;
 
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
+import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.RUNNING_HASH_BYTE_ARRAY_SIZE;
+import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
+import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.spi.AccountKeyLookup;
-import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.hapi.node.base.Duration;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.consensus.ConsensusCreateTopicTransactionBody;
+import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
+import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
+import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
+import com.hedera.node.app.service.consensus.impl.records.CreateTopicRecordBuilder;
+import com.hedera.node.app.spi.meta.HandleContext;
+import com.hedera.node.app.spi.validation.ExpiryMeta;
+import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#ConsensusCreateTopic}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#CONSENSUS_CREATE_TOPIC}.
  */
+@Singleton
 public class ConsensusCreateTopicHandler implements TransactionHandler {
+    @Inject
+    public ConsensusCreateTopicHandler() {
+        // Exists for injection
+    }
 
-    /**
-     * This method is called during the pre-handle workflow.
-     *
-     * <p>Typically, this method validates the {@link TransactionBody} semantically, gathers all
-     * required keys, warms the cache, and creates the {@link TransactionMetadata} that is used in
-     * the handle stage.
-     *
-     * @param txBody the {@link TransactionBody} with the transaction data
-     * @param payer the {@link AccountID} of the payer
-     * @param keyLookup the {@link AccountKeyLookup} to use for key lookups
-     * @return the {@link TransactionMetadata} with all information that needs to be passed to
-     *     {@link #handle(TransactionMetadata)}
-     * @throws NullPointerException if one of the arguments is {@code null}
-     */
-    public TransactionMetadata preHandle(
-            @NonNull final TransactionBody txBody,
-            @NonNull final AccountID payer,
-            @NonNull final AccountKeyLookup keyLookup) {
-        final var metaBuilder =
-                new SigTransactionMetadataBuilder(keyLookup).txnBody(txBody).payerKeyFor(payer);
+    @Override
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
+        requireNonNull(context);
+        final var op = context.body().consensusCreateTopicOrThrow();
 
-        final var op = txBody.getConsensusCreateTopic();
-        final var adminKey = asHederaKey(op.getAdminKey());
-        adminKey.ifPresent(metaBuilder::addToReqNonPayerKeys);
-        final var submitKey = asHederaKey(op.getSubmitKey());
-        submitKey.ifPresent(metaBuilder::addToReqNonPayerKeys);
-
-        if (op.hasAutoRenewAccount()) {
-            final var autoRenewAccount = op.getAutoRenewAccount();
-            metaBuilder.addNonPayerKey(
-                    autoRenewAccount, ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
+        // The transaction cannot set the admin key unless the transaction was signed by that key
+        if (op.hasAdminKey()) {
+            context.requireKeyOrThrow(op.adminKeyOrThrow(), INVALID_ADMIN_KEY);
         }
 
-        return metaBuilder.build();
+        // If an account is to be used for auto-renewal, then the account must exist and the transaction
+        // must be signed with that account's key.
+        if (op.hasAutoRenewAccount()) {
+            final var autoRenewAccountID = op.autoRenewAccountOrThrow();
+            context.requireKeyOrThrow(autoRenewAccountID, INVALID_AUTORENEW_ACCOUNT);
+        }
     }
 
     /**
-     * This method is called during the handle workflow. It executes the actual transaction.
+     * Given the appropriate context, creates a new topic.
      *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
-     *
-     * @param metadata the {@link TransactionMetadata} that was generated during pre-handle.
+     * @param handleContext the {@link HandleContext} for the active transaction
+     * @param op the {@link ConsensusCreateTopicTransactionBody} of the active transaction
+     * @param consensusServiceConfig the {@link ConsensusServiceConfig} for the active transaction
+     * @param recordBuilder the {@link ConsensusCreateTopicRecordBuilder} for the active transaction
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void handle(@NonNull final TransactionMetadata metadata) {
-        throw new UnsupportedOperationException("Not implemented");
+    public void handle(
+            @NonNull final HandleContext handleContext,
+            @NonNull final ConsensusCreateTopicTransactionBody op,
+            @NonNull final ConsensusServiceConfig consensusServiceConfig,
+            @NonNull final ConsensusCreateTopicRecordBuilder recordBuilder,
+            @NonNull final WritableTopicStore topicStore) {
+        final var builder = new Topic.Builder();
+
+        /* Validate admin and submit keys and set them */
+        if (op.hasAdminKey()) {
+            handleContext.attributeValidator().validateKey(op.adminKey());
+            builder.adminKey(op.adminKey());
+        }
+        if (op.hasSubmitKey()) {
+            handleContext.attributeValidator().validateKey(op.submitKey());
+            builder.submitKey(op.submitKey());
+        }
+
+        /* Validate if the current topic can be created */
+        if (topicStore.sizeOfState() >= consensusServiceConfig.maxTopics()) {
+            throw new HandleException(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
+        }
+
+        /* Validate the topic memo */
+        handleContext.attributeValidator().validateMemo(op.memo());
+        builder.memo(op.memo());
+
+        final var impliedExpiry = handleContext.consensusNow().getEpochSecond()
+                + op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds();
+        final var entityExpiryMeta = new ExpiryMeta(
+                impliedExpiry,
+                op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds(),
+                // Shard and realm will be ignored if num is NA
+                op.hasAutoRenewAccount() ? op.autoRenewAccount().shardNum() : NA,
+                op.hasAutoRenewAccount() ? op.autoRenewAccount().realmNum() : NA,
+                op.hasAutoRenewAccount() ? op.autoRenewAccount().accountNumOrElse(NA) : NA);
+
+        try {
+            final var effectiveExpiryMeta =
+                    handleContext.expiryValidator().resolveCreationAttempt(false, entityExpiryMeta);
+            builder.autoRenewPeriod(effectiveExpiryMeta.autoRenewPeriod());
+            builder.expiry(effectiveExpiryMeta.expiry());
+            builder.autoRenewAccountNumber(effectiveExpiryMeta.autoRenewNum());
+
+            /* --- Add topic number to topic builder --- */
+            builder.topicNumber(handleContext.newEntityNumSupplier().getAsLong());
+
+            builder.runningHash(Bytes.wrap(new byte[RUNNING_HASH_BYTE_ARRAY_SIZE]));
+
+            /* --- Put the final topic. It will be in underlying state's modifications map.
+            It will not be committed to state until commit is called on the state.--- */
+            final var topic = builder.build();
+            topicStore.put(topic);
+
+            /* --- Build the record with newly created topic --- */
+            recordBuilder.setCreatedTopic(topic.topicNumber());
+        } catch (final HandleException e) {
+            if (e.getStatus() == INVALID_EXPIRATION_TIME) {
+                // Since for some reason TopicCreateTransactionBody does not have an expiration time,
+                // it makes more sense to propagate AUTORENEW_DURATION_NOT_IN_RANGE
+                throw new HandleException(AUTORENEW_DURATION_NOT_IN_RANGE);
+            }
+            throw e;
+        }
+    }
+
+    @Override
+    public ConsensusCreateTopicRecordBuilder newRecordBuilder() {
+        return new CreateTopicRecordBuilder();
     }
 }

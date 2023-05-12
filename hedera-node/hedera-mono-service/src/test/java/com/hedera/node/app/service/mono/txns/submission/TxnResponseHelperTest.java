@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.submission;
 
 import static com.hedera.node.app.service.mono.txns.submission.TxnResponseHelper.FAIL_INVALID_RESPONSE;
@@ -50,9 +51,11 @@ class TxnResponseHelperTest {
     private HapiOpCounters opCounters;
     private StreamObserver<TransactionResponse> observer;
 
-    @LoggingTarget private LogCaptor logCaptor;
+    @LoggingTarget
+    private LogCaptor logCaptor;
 
-    @LoggingSubject private TxnResponseHelper subject;
+    @LoggingSubject
+    private TxnResponseHelper subject;
 
     @BeforeEach
     void setup() {
@@ -111,9 +114,7 @@ class TxnResponseHelperTest {
             inOrder.verify(accessor).getSignedTxnWrapper();
             assertThat(
                     logCaptor.warnLogs(),
-                    contains(
-                            "Submission flow unable to submit null!"
-                                    + " java.lang.IllegalArgumentException: null"));
+                    contains("Submission flow unable to submit null!" + " java.lang.IllegalArgumentException: null"));
             inOrder.verify(observer).onNext(FAIL_INVALID_RESPONSE);
             inOrder.verify(observer).onCompleted();
             inOrder.verify(opCounters, never()).countSubmitted(CryptoTransfer);

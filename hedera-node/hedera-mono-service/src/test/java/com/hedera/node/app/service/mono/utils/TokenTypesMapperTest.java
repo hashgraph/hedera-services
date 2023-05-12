@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.utils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -26,30 +27,25 @@ class TokenTypesMapperTest {
     void grpcTokenTypeToModelType() {
         assertEquals(
                 TokenType.FUNGIBLE_COMMON,
-                TokenTypesMapper.mapToDomain(
-                        com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON));
+                TokenTypesMapper.mapToDomain(com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON));
         assertEquals(
                 TokenType.NON_FUNGIBLE_UNIQUE,
-                TokenTypesMapper.mapToDomain(
-                        com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE));
+                TokenTypesMapper.mapToDomain(com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE));
     }
 
     @Test
     void grpcTokenSupplyTypeToModelSupplyType() {
         assertEquals(
                 TokenSupplyType.FINITE,
-                TokenTypesMapper.mapToDomain(
-                        com.hederahashgraph.api.proto.java.TokenSupplyType.FINITE));
+                TokenTypesMapper.mapToDomain(com.hederahashgraph.api.proto.java.TokenSupplyType.FINITE));
 
         assertEquals(
                 TokenSupplyType.INFINITE,
-                TokenTypesMapper.mapToDomain(
-                        com.hederahashgraph.api.proto.java.TokenSupplyType.INFINITE));
+                TokenTypesMapper.mapToDomain(com.hederahashgraph.api.proto.java.TokenSupplyType.INFINITE));
 
         /* ensure default is infinite */
         assertEquals(
                 TokenSupplyType.INFINITE,
-                TokenTypesMapper.mapToDomain(
-                        com.hederahashgraph.api.proto.java.TokenSupplyType.UNRECOGNIZED));
+                TokenTypesMapper.mapToDomain(com.hederahashgraph.api.proto.java.TokenSupplyType.UNRECOGNIZED));
     }
 }

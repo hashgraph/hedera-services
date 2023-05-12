@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.stats;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
@@ -35,6 +36,7 @@ import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.Platform;
@@ -44,11 +46,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class HapiOpCountersTest {
-    private Platform platform;
     private Counter counter;
     private MiscRunningAvgs runningAvgs;
     private TransactionContext txnCtx;
-    private Function<HederaFunctionality, String> statNameFn;
     private Metrics metrics;
 
     private HapiOpCounters subject;
@@ -56,21 +56,20 @@ class HapiOpCountersTest {
     @BeforeEach
     void setup() {
         HapiOpCounters.setAllFunctions(
-                () ->
-                        new HederaFunctionality[] {
-                            CryptoTransfer, TokenGetInfo, ConsensusSubmitMessage, NONE
-                        });
+                () -> new HederaFunctionality[] {CryptoTransfer, TokenGetInfo, ConsensusSubmitMessage, NONE});
 
         txnCtx = mock(TransactionContext.class);
         counter = mock(Counter.class);
-        platform = mock(Platform.class);
-        statNameFn = HederaFunctionality::toString;
+        final Platform platform = mock(Platform.class);
+        final Function<HederaFunctionality, String> statNameFn = HederaFunctionality::toString;
         runningAvgs = mock(MiscRunningAvgs.class);
         metrics = mock(Metrics.class);
 
         subject = new HapiOpCounters(runningAvgs, txnCtx, statNameFn);
 
-        given(platform.getMetrics()).willReturn(metrics);
+        final var platformContext = mock(PlatformContext.class);
+        given(platform.getContext()).willReturn(platformContext);
+        given(platformContext.getMetrics()).willReturn(metrics);
         given(metrics.getOrCreate(any())).willReturn(counter);
 
         subject.registerWith(platform);

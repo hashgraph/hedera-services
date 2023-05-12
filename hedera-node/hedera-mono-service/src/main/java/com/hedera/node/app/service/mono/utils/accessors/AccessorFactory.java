@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.utils.accessors;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.extractTransactionBody;
@@ -34,10 +35,8 @@ public class AccessorFactory {
         this.dynamicProperties = dynamicProperties;
     }
 
-    public TxnAccessor nonTriggeredTxn(final byte[] transactionBytes)
-            throws InvalidProtocolBufferException {
-        return internalSpecializedConstruction(
-                transactionBytes, Transaction.parseFrom(transactionBytes));
+    public TxnAccessor nonTriggeredTxn(final byte[] transactionBytes) throws InvalidProtocolBufferException {
+        return internalSpecializedConstruction(transactionBytes, Transaction.parseFrom(transactionBytes));
     }
 
     public TxnAccessor triggeredTxn(
@@ -72,8 +71,7 @@ public class AccessorFactory {
     }
 
     private SignedTxnAccessor internalSpecializedConstruction(
-            final byte[] transactionBytes, final Transaction transaction)
-            throws InvalidProtocolBufferException {
+            final byte[] transactionBytes, final Transaction transaction) throws InvalidProtocolBufferException {
         final var body = extractTransactionBody(transaction);
         final var function = MiscUtils.FUNCTION_EXTRACTOR.apply(body);
         if (function == TokenAccountWipe) {

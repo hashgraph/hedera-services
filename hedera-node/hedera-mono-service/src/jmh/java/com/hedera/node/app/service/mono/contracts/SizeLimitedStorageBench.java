@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts;
 
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
@@ -87,38 +88,30 @@ public class SizeLimitedStorageBench {
     public void setupInfrastructure() {
         registerConstructables();
         bundle = loadOrCreateBundle(activeConfig(), requiredInfra());
-        subject =
-                new SizeLimitedStorage(
-                        new NoopStorageFeeCharging(),
-                        new MockStorageLimits(),
-                        IterableStorageUtils::overwritingUpsertMapping,
-                        IterableStorageUtils::removeMapping,
-                        bundle.getterFor(ACCOUNTS_MM),
-                        bundle.getterFor(CONTRACT_STORAGE_VM));
+        subject = new SizeLimitedStorage(
+                new NoopStorageFeeCharging(),
+                new MockStorageLimits(),
+                IterableStorageUtils::overwritingUpsertMapping,
+                IterableStorageUtils::removeMapping,
+                bundle.getterFor(ACCOUNTS_MM),
+                bundle.getterFor(CONTRACT_STORAGE_VM));
     }
 
     @Setup(Level.Iteration)
     public void generateMutationBatch() {
-        mutationBatch =
-                EvmKeyValueSource.randomMutationBatch(
-                        uniqueMutationsPerIteration,
-                        maxContractNum,
-                        maxContractKvPairs,
-                        removalProb);
+        mutationBatch = EvmKeyValueSource.randomMutationBatch(
+                uniqueMutationsPerIteration, maxContractNum, maxContractKvPairs, removalProb);
         batchI = 0;
     }
 
     // --- Benchmarks ---
     @Benchmark
     public void simulateContractTransaction() {
-        final TransactionalLedger<AccountID, AccountProperty, HederaAccount> ledger =
-                bundle.get(ACCOUNTS_LEDGER);
+        final TransactionalLedger<AccountID, AccountProperty, HederaAccount> ledger = bundle.get(ACCOUNTS_LEDGER);
         ledger.begin();
 
         subject.beginSession();
-        for (int j = 0;
-                j < mutationsPerInvocation;
-                j++, batchI = (batchI + 1) % uniqueMutationsPerIteration) {
+        for (int j = 0; j < mutationsPerInvocation; j++, batchI = (batchI + 1) % uniqueMutationsPerIteration) {
             final var contractId = mutationBatch.contracts()[batchI];
             if (!ledger.contains(contractId)) {
                 ledger.create(contractId);
@@ -137,9 +130,9 @@ public class SizeLimitedStorageBench {
     private void registerConstructables() {
         try {
             Constructables.registerForAccounts();
-            Constructables.registerForJasperDb();
             Constructables.registerForMerkleMap();
             Constructables.registerForVirtualMap();
+            Constructables.registerForVirtualDataSource();
             Constructables.registerForContractStorage();
         } catch (final ConstructableRegistryException e) {
             throw new IllegalStateException(e);

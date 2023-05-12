@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.factories.txns;
 
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -55,10 +56,9 @@ public class TokenDissociateFactory extends SignedTxnFactory<TokenDissociateFact
 
     @Override
     protected void customizeTxn(TransactionBody.Builder txn) {
-        txn.setTokenDissociate(
-                        TokenDissociateTransactionBody.newBuilder()
-                                .setAccount(target)
-                                .addAllTokens(dissociations))
+        txn.setTokenDissociate(TokenDissociateTransactionBody.newBuilder()
+                        .setAccount(target)
+                        .addAllTokens(dissociations))
                 .build();
     }
 }

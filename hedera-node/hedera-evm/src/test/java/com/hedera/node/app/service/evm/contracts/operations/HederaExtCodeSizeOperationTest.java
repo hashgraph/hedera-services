@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.contracts.operations;
 
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS;
@@ -43,14 +44,20 @@ class HederaExtCodeSizeOperationTest {
     private final Address ethAddressInstance = Address.fromHexString(ethAddress);
     private final Account account = new SimpleAccount(ethAddressInstance, 0, Wei.ONE);
 
-    @Mock WorldUpdater worldUpdater;
+    @Mock
+    WorldUpdater worldUpdater;
 
-    @Mock GasCalculator gasCalculator;
+    @Mock
+    GasCalculator gasCalculator;
 
-    @Mock MessageFrame mf;
+    @Mock
+    MessageFrame mf;
 
-    @Mock EVM evm;
-    @Mock private BiPredicate<Address, MessageFrame> addressValidator;
+    @Mock
+    EVM evm;
+
+    @Mock
+    private BiPredicate<Address, MessageFrame> addressValidator;
 
     HederaExtCodeSizeOperation subject;
 
@@ -69,8 +76,7 @@ class HederaExtCodeSizeOperationTest {
 
         var opResult = subject.execute(mf, evm);
 
-        assertEquals(
-                HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, opResult.getHaltReason());
+        assertEquals(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, opResult.getHaltReason());
         assertEquals(12L, opResult.getGasCost());
     }
 

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -28,15 +29,13 @@ import org.junit.jupiter.params.provider.CsvSource;
 class UtilizationScaleFactorsTest {
     @CsvSource({"50|3:2|69|7:3|96|8:1,50|69|96,3:2|7:3|8:1"})
     @ParameterizedTest
-    void readsExpectedValues(
-            final String pipedInput, final String pipedTriggers, final String pipedScales) {
+    void readsExpectedValues(final String pipedInput, final String pipedTriggers, final String pipedScales) {
         final var csv = pipedInput.replace("|", ",");
-        final var triggers =
-                Arrays.stream(pipedTriggers.split("[|]")).mapToInt(Integer::parseInt).toArray();
+        final var triggers = Arrays.stream(pipedTriggers.split("[|]"))
+                .mapToInt(Integer::parseInt)
+                .toArray();
         final var scaleFactors =
-                Arrays.stream(pipedScales.split("[|]"))
-                        .map(ScaleFactor::from)
-                        .toArray(ScaleFactor[]::new);
+                Arrays.stream(pipedScales.split("[|]")).map(ScaleFactor::from).toArray(ScaleFactor[]::new);
 
         final var parsed = UtilizationScaleFactors.from(csv);
         assertArrayEquals(triggers, parsed.usagePercentTriggers());
@@ -67,10 +66,9 @@ class UtilizationScaleFactorsTest {
     @Test
     void toStringWorks() {
         final var propA = "90,10:1,95,25:1,99,100:1";
-        final var desired =
-                "UtilizationScaleFactors{usagePercentTriggers=[90, 95, 99],"
-                        + " scaleFactors=[ScaleFactor{scale=10:1}, ScaleFactor{scale=25:1},"
-                        + " ScaleFactor{scale=100:1}]}";
+        final var desired = "UtilizationScaleFactors{usagePercentTriggers=[90, 95, 99],"
+                + " scaleFactors=[ScaleFactor{scale=10:1}, ScaleFactor{scale=25:1},"
+                + " ScaleFactor{scale=100:1}]}";
 
         assertEquals(desired, UtilizationScaleFactors.from(propA).toString());
     }

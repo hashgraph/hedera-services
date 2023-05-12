@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.customfees;
 
 import com.hedera.node.app.service.mono.grpc.marshalling.CustomFeeMeta;
@@ -32,8 +33,7 @@ public class LedgerCustomFeeSchedules implements CustomFeeSchedules {
     private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
 
     @Inject
-    public LedgerCustomFeeSchedules(
-            TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger) {
+    public LedgerCustomFeeSchedules(TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger) {
         this.tokensLedger = tokensLedger;
     }
 
@@ -44,8 +44,7 @@ public class LedgerCustomFeeSchedules implements CustomFeeSchedules {
         }
         final var merkleToken = tokensLedger.getImmutableRef(tokenId.asGrpcToken());
 
-        return new CustomFeeMeta(
-                tokenId, merkleToken.treasury().asId(), merkleToken.customFeeSchedule());
+        return new CustomFeeMeta(tokenId, merkleToken.treasury().asId(), merkleToken.customFeeSchedule());
     }
 
     public TransactionalLedger<TokenID, TokenProperty, MerkleToken> getTokens() {

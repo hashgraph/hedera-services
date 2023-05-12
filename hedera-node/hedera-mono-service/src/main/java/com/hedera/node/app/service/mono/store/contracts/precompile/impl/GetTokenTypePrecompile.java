@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
@@ -33,8 +34,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
-public class GetTokenTypePrecompile extends AbstractTokenInfoPrecompile
-        implements EvmGetTokenTypePrecompile {
+public class GetTokenTypePrecompile extends AbstractTokenInfoPrecompile implements EvmGetTokenTypePrecompile {
 
     public GetTokenTypePrecompile(
             final TokenID tokenId,
@@ -48,8 +48,7 @@ public class GetTokenTypePrecompile extends AbstractTokenInfoPrecompile
     }
 
     @Override
-    public TransactionBody.Builder body(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final var tokenInfoWrapper = decodeGetTokenType(input);
         tokenId = tokenInfoWrapper.token();
         return super.body(input, aliasResolver);

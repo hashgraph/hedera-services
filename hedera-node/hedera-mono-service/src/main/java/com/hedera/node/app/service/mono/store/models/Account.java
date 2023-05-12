@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.models;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
@@ -158,15 +159,12 @@ public class Account extends HederaEvmAccount {
     }
 
     public void setMaxAutomaticAssociations(int maxAutomaticAssociations) {
-        autoAssociationMetadata =
-                setMaxAutomaticAssociationsTo(autoAssociationMetadata, maxAutomaticAssociations);
+        autoAssociationMetadata = setMaxAutomaticAssociationsTo(autoAssociationMetadata, maxAutomaticAssociations);
     }
 
     public void setAlreadyUsedAutomaticAssociations(int alreadyUsedCount) {
-        validateTrue(
-                isValidAlreadyUsedCount(alreadyUsedCount), NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
-        autoAssociationMetadata =
-                setAlreadyUsedAutomaticAssociationsTo(autoAssociationMetadata, alreadyUsedCount);
+        validateTrue(isValidAlreadyUsedCount(alreadyUsedCount), NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
+        autoAssociationMetadata = setAlreadyUsedAutomaticAssociationsTo(autoAssociationMetadata, alreadyUsedCount);
     }
 
     public void incrementUsedAutomaticAssociations() {
@@ -231,15 +229,13 @@ public class Account extends HederaEvmAccount {
                 TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
         final List<TokenRelationship> newModelRels = new ArrayList<>();
         for (final var token : tokens) {
-            validateFalse(
-                    tokenStore.hasAssociation(token, this), TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
+            validateFalse(tokenStore.hasAssociation(token, this), TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
             if (isAutomaticAssociation) {
                 incrementUsedAutomaticAssociations();
             }
-            final var newRel =
-                    shouldEnableRelationship
-                            ? token.newEnabledRelationship(this)
-                            : token.newRelationshipWith(this, false);
+            final var newRel = shouldEnableRelationship
+                    ? token.newEnabledRelationship(this)
+                    : token.newRelationshipWith(this, false);
             numAssociations++;
             newModelRels.add(newRel);
         }
@@ -253,8 +249,7 @@ public class Account extends HederaEvmAccount {
      * @param dissociations the dissociations to perform
      * @param validator validator to check if the dissociating token has expired
      */
-    public void dissociateUsing(
-            final List<Dissociation> dissociations, final OptionValidator validator) {
+    public void dissociateUsing(final List<Dissociation> dissociations, final OptionValidator validator) {
         for (final var dissociation : dissociations) {
             validateTrue(id.equals(dissociation.dissociatingAccountId()), FAIL_INVALID);
             dissociation.updateModelRelsSubjectTo(validator);
@@ -277,8 +272,7 @@ public class Account extends HederaEvmAccount {
         return alreadyUsedCount >= 0 && alreadyUsedCount <= getMaxAutomaticAssociations();
     }
 
-    private boolean exceedsTokenAssociationLimit(
-            GlobalDynamicProperties dynamicProperties, int totalAssociations) {
+    private boolean exceedsTokenAssociationLimit(GlobalDynamicProperties dynamicProperties, int totalAssociations) {
         return dynamicProperties.areTokenAssociationsLimited()
                 && totalAssociations > dynamicProperties.maxTokensPerAccount();
     }
@@ -407,8 +401,7 @@ public class Account extends HederaEvmAccount {
         return fungibleTokenAllowances;
     }
 
-    public void setFungibleTokenAllowances(
-            final Map<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
+    public void setFungibleTokenAllowances(final Map<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
         this.fungibleTokenAllowances = new TreeMap<>(fungibleTokenAllowances);
     }
 

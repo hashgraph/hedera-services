@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.merkle;
 
 import com.google.common.base.MoreObjects;
@@ -42,7 +43,7 @@ public class MerkleAccount extends PartialNaryMerkleInternal
     static Runnable stackDump = Thread::dumpStack;
 
     private static final int RELEASE_0240_VERSION = 4;
-    static final int MERKLE_VERSION = RELEASE_0240_VERSION;
+    public static final int MERKLE_VERSION = RELEASE_0240_VERSION;
 
     static final long RUNTIME_CONSTRUCTABLE_ID = 0x950bcf7255691908L;
 
@@ -77,9 +78,7 @@ public class MerkleAccount extends PartialNaryMerkleInternal
     }
 
     public MerkleAccount() {
-        addDeserializedChildren(
-                List.of(new MerkleAccountState(), new FCQueue<ExpirableTxnRecord>()),
-                MERKLE_VERSION);
+        addDeserializedChildren(List.of(new MerkleAccountState(), new FCQueue<ExpirableTxnRecord>()), MERKLE_VERSION);
     }
 
     /* --- MerkleInternal --- */
@@ -102,12 +101,9 @@ public class MerkleAccount extends PartialNaryMerkleInternal
     @Override
     public MerkleAccount copy() {
         if (isImmutable()) {
-            final var msg =
-                    String.format(
-                            "Copy called on immutable MerkleAccount by thread '%s'! Payer records"
-                                    + " mutable? %s",
-                            Thread.currentThread().getName(),
-                            records().isImmutable() ? "NO" : "YES");
+            final var msg = String.format(
+                    "Copy called on immutable MerkleAccount by thread '%s'! Payer records" + " mutable? %s",
+                    Thread.currentThread().getName(), records().isImmutable() ? "NO" : "YES");
             log.warn(msg);
             /* Ensure we get this stack trace in case a caller incorrectly suppresses the exception. */
             stackDump.run();
@@ -311,8 +307,7 @@ public class MerkleAccount extends PartialNaryMerkleInternal
     @Override
     public void setBalance(final long balance) throws NegativeAccountBalanceException {
         if (balance < 0) {
-            throw new NegativeAccountBalanceException(
-                    String.format("Illegal balance: %d!", balance));
+            throw new NegativeAccountBalanceException(String.format("Illegal balance: %d!", balance));
         }
         throwIfImmutable("Cannot change this account's hbar balance if it's immutable.");
         state().setHbarBalance(balance);
@@ -334,9 +329,7 @@ public class MerkleAccount extends PartialNaryMerkleInternal
 
     @Override
     public void setReceiverSigRequired(final boolean receiverSigRequired) {
-        throwIfImmutable(
-                "Cannot change this account's receiver signature required setting if it's"
-                        + " immutable.");
+        throwIfImmutable("Cannot change this account's receiver signature required setting if it's" + " immutable.");
         state().setReceiverSigRequired(receiverSigRequired);
     }
 
@@ -418,8 +411,7 @@ public class MerkleAccount extends PartialNaryMerkleInternal
     @Override
     public void setUsedAutomaticAssociations(final int usedAutoAssociations) {
         if (usedAutoAssociations < 0 || usedAutoAssociations > getMaxAutomaticAssociations()) {
-            throw new IllegalArgumentException(
-                    "Cannot set usedAutoAssociations to " + usedAutoAssociations);
+            throw new IllegalArgumentException("Cannot set usedAutoAssociations to " + usedAutoAssociations);
         }
         state().setUsedAutomaticAssociations(usedAutoAssociations);
     }
@@ -479,8 +471,7 @@ public class MerkleAccount extends PartialNaryMerkleInternal
 
     @Override
     public void setApproveForAllNfts(final Set<FcTokenAllowanceId> approveForAllNfts) {
-        throwIfImmutable(
-                "Cannot change this account's approved for all NFTs allowances if it's immutable.");
+        throwIfImmutable("Cannot change this account's approved for all NFTs allowances if it's immutable.");
         state().setApproveForAllNfts(approveForAllNfts);
     }
 
@@ -495,10 +486,8 @@ public class MerkleAccount extends PartialNaryMerkleInternal
     }
 
     @Override
-    public void setFungibleTokenAllowances(
-            final SortedMap<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
-        throwIfImmutable(
-                "Cannot change this account's fungible token allowances if it's immutable.");
+    public void setFungibleTokenAllowances(final SortedMap<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
+        throwIfImmutable("Cannot change this account's fungible token allowances if it's immutable.");
         state().setFungibleTokenAllowances(fungibleTokenAllowances);
     }
 
@@ -508,10 +497,8 @@ public class MerkleAccount extends PartialNaryMerkleInternal
     }
 
     @Override
-    public void setFungibleTokenAllowancesUnsafe(
-            final Map<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
-        throwIfImmutable(
-                "Cannot change this account's fungible token allowances if it's immutable.");
+    public void setFungibleTokenAllowancesUnsafe(final Map<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
+        throwIfImmutable("Cannot change this account's fungible token allowances if it's immutable.");
         state().setFungibleTokenAllowancesUnsafe(fungibleTokenAllowances);
     }
 
@@ -538,9 +525,7 @@ public class MerkleAccount extends PartialNaryMerkleInternal
 
     @Override
     public void setStakeAtStartOfLastRewardedPeriod(final long balanceAtStartOfLastRewardedPeriod) {
-        throwIfImmutable(
-                "Cannot change this account's balanceAtStartOfLastRewardedPeriod if it's"
-                        + " immutable");
+        throwIfImmutable("Cannot change this account's balanceAtStartOfLastRewardedPeriod if it's" + " immutable");
         state().setStakeAtStartOfLastRewardedPeriod(balanceAtStartOfLastRewardedPeriod);
     }
 

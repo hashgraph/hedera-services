@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.serdes;
 
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKeySerializer;
@@ -25,8 +26,7 @@ import java.io.IOException;
 public class TopicSerde {
     public static final int MAX_MEMO_BYTES = 4_096;
 
-    public void deserialize(final SerializableDataInputStream in, final MerkleTopic to)
-            throws IOException {
+    public void deserialize(final SerializableDataInputStream in, final MerkleTopic to) throws IOException {
         to.setMemo(IoUtils.readNullableString(in, MAX_MEMO_BYTES));
         to.setAdminKey(IoUtils.readNullable(in, JKeySerializer::deserialize));
         to.setSubmitKey(IoUtils.readNullable(in, JKeySerializer::deserialize));
@@ -35,14 +35,10 @@ public class TopicSerde {
         to.setExpirationTimestamp(IoUtils.readNullable(in, RichInstant::from));
         to.setDeleted(in.readBoolean());
         to.setSequenceNumber(in.readLong());
-        to.setRunningHash(
-                in.readBoolean()
-                        ? in.readByteArray(MerkleTopic.RUNNING_HASH_BYTE_ARRAY_SIZE)
-                        : null);
+        to.setRunningHash(in.readBoolean() ? in.readByteArray(MerkleTopic.RUNNING_HASH_BYTE_ARRAY_SIZE) : null);
     }
 
-    public void serialize(final MerkleTopic topic, final SerializableDataOutputStream out)
-            throws IOException {
+    public void serialize(final MerkleTopic topic, final SerializableDataOutputStream out) throws IOException {
         IoUtils.writeNullableString(topic.getNullableMemo(), out);
         IoUtils.writeNullable(topic.getNullableAdminKey(), out, IoUtils::serializeKey);
         IoUtils.writeNullable(topic.getNullableSubmitKey(), out, IoUtils::serializeKey);
@@ -51,9 +47,6 @@ public class TopicSerde {
         IoUtils.writeNullable(topic.getNullableExpirationTimestamp(), out, RichInstant::serialize);
         out.writeBoolean(topic.isDeleted());
         out.writeLong(topic.getSequenceNumber());
-        IoUtils.writeNullable(
-                topic.getNullableRunningHash(),
-                out,
-                (hashOut, dout) -> dout.writeByteArray(hashOut));
+        IoUtils.writeNullable(topic.getNullableRunningHash(), out, (hashOut, dout) -> dout.writeByteArray(hashOut));
     }
 }

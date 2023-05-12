@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.submission;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
@@ -43,6 +44,7 @@ import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.*;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.Platform;
@@ -63,30 +65,31 @@ class StructuralPrecheckTest {
     private static final int pretendMaxMessageDepth = 42;
     private StructuralPrecheck subject;
 
-    private TransactionContext txnCtx = mock(TransactionContext.class);
-    private Function<HederaFunctionality, String> statNameFn = HederaFunctionality::toString;
-    private MiscRunningAvgs runningAvgs = mock(MiscRunningAvgs.class);
+    private final TransactionContext txnCtx = mock(TransactionContext.class);
+    private final Function<HederaFunctionality, String> statNameFn = HederaFunctionality::toString;
+    private final MiscRunningAvgs runningAvgs = mock(MiscRunningAvgs.class);
 
-    private HapiOpCounters counters = new HapiOpCounters(runningAvgs, txnCtx, statNameFn);
+    private final HapiOpCounters counters = new HapiOpCounters(runningAvgs, txnCtx, statNameFn);
 
-    @Mock private Counter counter;
-    @Mock private Platform platform;
-    @Mock private Metrics metrics;
-    private SignedStateViewFactory viewFactory = mock(SignedStateViewFactory.class);
-    private AccessorFactory accessorFactory = mock(AccessorFactory.class);
+    @Mock
+    private Counter counter;
 
-    private SignedTxnAccessor accessor = mock(SignedTxnAccessor.class);
+    @Mock
+    private Platform platform;
+
+    @Mock
+    private Metrics metrics;
+
+    private final SignedStateViewFactory viewFactory = mock(SignedStateViewFactory.class);
+    private final AccessorFactory accessorFactory = mock(AccessorFactory.class);
+
+    private final SignedTxnAccessor accessor = mock(SignedTxnAccessor.class);
     private Transaction txn;
 
     @BeforeEach
     void setUp() {
-        subject =
-                new StructuralPrecheck(
-                        pretendSizeLimit,
-                        pretendMaxMessageDepth,
-                        counters,
-                        viewFactory,
-                        accessorFactory);
+        subject = new StructuralPrecheck(
+                pretendSizeLimit, pretendMaxMessageDepth, counters, viewFactory, accessorFactory);
     }
 
     @Test
@@ -103,11 +106,10 @@ class StructuralPrecheckTest {
     @Test
     void cantMixSignedBytesWithBodyBytes() throws InvalidProtocolBufferException {
         withVerifiableCounters();
-        txn =
-                Transaction.newBuilder()
-                        .setSignedTransactionBytes(ByteString.copyFromUtf8("w/e"))
-                        .setBodyBytes(ByteString.copyFromUtf8("doesn't matter"))
-                        .build();
+        txn = Transaction.newBuilder()
+                .setSignedTransactionBytes(ByteString.copyFromUtf8("w/e"))
+                .setBodyBytes(ByteString.copyFromUtf8("doesn't matter"))
+                .build();
         willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(txn);
         given(accessor.getTxn()).willReturn(txn.getBody());
 
@@ -120,11 +122,10 @@ class StructuralPrecheckTest {
     @Test
     void cantMixSignedBytesWithSigMap() throws InvalidProtocolBufferException {
         withVerifiableCounters();
-        txn =
-                Transaction.newBuilder()
-                        .setSignedTransactionBytes(ByteString.copyFromUtf8("w/e"))
-                        .setSigMap(SignatureMap.getDefaultInstance())
-                        .build();
+        txn = Transaction.newBuilder()
+                .setSignedTransactionBytes(ByteString.copyFromUtf8("w/e"))
+                .setSigMap(SignatureMap.getDefaultInstance())
+                .build();
         willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(txn);
         given(accessor.getTxn()).willReturn(txn.getBody());
 
@@ -137,14 +138,10 @@ class StructuralPrecheckTest {
     @Test
     void cantBeOversize() throws InvalidProtocolBufferException {
         withVerifiableCounters();
-        txn =
-                Transaction.newBuilder()
-                        .setSignedTransactionBytes(
-                                ByteString.copyFromUtf8(
-                                        IntStream.range(0, pretendSizeLimit)
-                                                .mapToObj(i -> "A")
-                                                .collect(joining())))
-                        .build();
+        txn = Transaction.newBuilder()
+                .setSignedTransactionBytes(ByteString.copyFromUtf8(
+                        IntStream.range(0, pretendSizeLimit).mapToObj(i -> "A").collect(joining())))
+                .build();
         willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(txn);
         given(accessor.getTxn()).willReturn(txn.getBody());
 
@@ -157,10 +154,9 @@ class StructuralPrecheckTest {
     @Test
     void mustParseViaAccessor() throws InvalidProtocolBufferException {
         withVerifiableCounters();
-        txn =
-                Transaction.newBuilder()
-                        .setSignedTransactionBytes(ByteString.copyFromUtf8("NONSENSE"))
-                        .build();
+        txn = Transaction.newBuilder()
+                .setSignedTransactionBytes(ByteString.copyFromUtf8("NONSENSE"))
+                .build();
         willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(txn);
         given(accessor.getTxn()).willReturn(txn.getBody());
 
@@ -174,12 +170,11 @@ class StructuralPrecheckTest {
     void cantBeUndulyNested() throws InvalidProtocolBufferException {
         withVerifiableCounters();
         final var weirdlyNestedKey = TxnUtils.nestKeys(Key.newBuilder(), pretendMaxMessageDepth);
-        final var hostTxn =
-                TransactionBody.newBuilder()
-                        .setCryptoCreateAccount(
-                                CryptoCreateTransactionBody.newBuilder().setKey(weirdlyNestedKey));
-        final var signedTxn =
-                Transaction.newBuilder().setBodyBytes(hostTxn.build().toByteString()).build();
+        final var hostTxn = TransactionBody.newBuilder()
+                .setCryptoCreateAccount(CryptoCreateTransactionBody.newBuilder().setKey(weirdlyNestedKey));
+        final var signedTxn = Transaction.newBuilder()
+                .setBodyBytes(hostTxn.build().toByteString())
+                .build();
         willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(signedTxn);
         given(accessor.getTxn()).willReturn(hostTxn.build());
         final var assess = subject.assess(signedTxn);
@@ -191,13 +186,11 @@ class StructuralPrecheckTest {
     @Test
     void cantOmitAFunction() throws InvalidProtocolBufferException {
         withVerifiableCounters();
-        final var hostTxn =
-                TransactionBody.newBuilder()
-                        .setTransactionID(
-                                TransactionID.newBuilder()
-                                        .setAccountID(IdUtils.asAccount("0.0.2")));
-        final var signedTxn =
-                Transaction.newBuilder().setBodyBytes(hostTxn.build().toByteString()).build();
+        final var hostTxn = TransactionBody.newBuilder()
+                .setTransactionID(TransactionID.newBuilder().setAccountID(IdUtils.asAccount("0.0.2")));
+        final var signedTxn = Transaction.newBuilder()
+                .setBodyBytes(hostTxn.build().toByteString())
+                .build();
 
         willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(signedTxn);
         given(accessor.getTxn()).willReturn(hostTxn.build());
@@ -212,23 +205,18 @@ class StructuralPrecheckTest {
     void cannotHaveUnknownFieldsInTransaction() throws InvalidProtocolBufferException {
         withVerifiableCounters();
         final var reasonablyNestedKey = TxnUtils.nestKeys(Key.newBuilder(), 2);
-        final var hostTxn =
-                TransactionBody.newBuilder()
-                        .setCryptoCreateAccount(
-                                CryptoCreateTransactionBody.newBuilder()
-                                        .setKey(reasonablyNestedKey));
-        final var signedTxn =
-                Transaction.newBuilder()
-                        .setBodyBytes(hostTxn.build().toByteString())
-                        .setUnknownFields(
-                                UnknownFieldSet.newBuilder()
-                                        .addField(
-                                                666,
-                                                UnknownFieldSet.Field.newBuilder()
-                                                        .addFixed32(42)
-                                                        .build())
+        final var hostTxn = TransactionBody.newBuilder()
+                .setCryptoCreateAccount(CryptoCreateTransactionBody.newBuilder().setKey(reasonablyNestedKey));
+        final var signedTxn = Transaction.newBuilder()
+                .setBodyBytes(hostTxn.build().toByteString())
+                .setUnknownFields(UnknownFieldSet.newBuilder()
+                        .addField(
+                                666,
+                                UnknownFieldSet.Field.newBuilder()
+                                        .addFixed32(42)
                                         .build())
-                        .build();
+                        .build())
+                .build();
         final var view = mock(StateView.class);
 
         willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(signedTxn);
@@ -244,27 +232,21 @@ class StructuralPrecheckTest {
     void cannotHaveUnknownFieldsInSignedTransaction() throws InvalidProtocolBufferException {
         withVerifiableCounters();
         final var reasonablyNestedKey = TxnUtils.nestKeys(Key.newBuilder(), 2);
-        final var hostTxn =
-                TransactionBody.newBuilder()
-                        .setCryptoCreateAccount(
-                                CryptoCreateTransactionBody.newBuilder()
-                                        .setKey(reasonablyNestedKey));
-        final var wrapperSignedTxn =
-                SignedTransaction.newBuilder()
-                        .setBodyBytes(hostTxn.build().toByteString())
-                        .setUnknownFields(
-                                UnknownFieldSet.newBuilder()
-                                        .addField(
-                                                666,
-                                                UnknownFieldSet.Field.newBuilder()
-                                                        .addFixed32(42)
-                                                        .build())
+        final var hostTxn = TransactionBody.newBuilder()
+                .setCryptoCreateAccount(CryptoCreateTransactionBody.newBuilder().setKey(reasonablyNestedKey));
+        final var wrapperSignedTxn = SignedTransaction.newBuilder()
+                .setBodyBytes(hostTxn.build().toByteString())
+                .setUnknownFields(UnknownFieldSet.newBuilder()
+                        .addField(
+                                666,
+                                UnknownFieldSet.Field.newBuilder()
+                                        .addFixed32(42)
                                         .build())
-                        .build();
-        final var signedTxn =
-                Transaction.newBuilder()
-                        .setSignedTransactionBytes(wrapperSignedTxn.toByteString())
-                        .build();
+                        .build())
+                .build();
+        final var signedTxn = Transaction.newBuilder()
+                .setSignedTransactionBytes(wrapperSignedTxn.toByteString())
+                .build();
         final var view = mock(StateView.class);
 
         willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(signedTxn);
@@ -280,29 +262,22 @@ class StructuralPrecheckTest {
     void cannotHaveUnknownFieldsInSignedTransactionSigMap() throws InvalidProtocolBufferException {
         withVerifiableCounters();
         final var reasonablyNestedKey = TxnUtils.nestKeys(Key.newBuilder(), 2);
-        final var hostTxn =
-                TransactionBody.newBuilder()
-                        .setCryptoCreateAccount(
-                                CryptoCreateTransactionBody.newBuilder()
-                                        .setKey(reasonablyNestedKey));
-        final var wrapperSignedTxn =
-                SignedTransaction.newBuilder()
-                        .setBodyBytes(hostTxn.build().toByteString())
-                        .setSigMap(
-                                SignatureMap.newBuilder()
-                                        .setUnknownFields(
-                                                UnknownFieldSet.newBuilder()
-                                                        .addField(
-                                                                666,
-                                                                UnknownFieldSet.Field.newBuilder()
-                                                                        .addFixed32(42)
-                                                                        .build())
-                                                        .build()))
-                        .build();
-        final var signedTxn =
-                Transaction.newBuilder()
-                        .setSignedTransactionBytes(wrapperSignedTxn.toByteString())
-                        .build();
+        final var hostTxn = TransactionBody.newBuilder()
+                .setCryptoCreateAccount(CryptoCreateTransactionBody.newBuilder().setKey(reasonablyNestedKey));
+        final var wrapperSignedTxn = SignedTransaction.newBuilder()
+                .setBodyBytes(hostTxn.build().toByteString())
+                .setSigMap(SignatureMap.newBuilder()
+                        .setUnknownFields(UnknownFieldSet.newBuilder()
+                                .addField(
+                                        666,
+                                        UnknownFieldSet.Field.newBuilder()
+                                                .addFixed32(42)
+                                                .build())
+                                .build()))
+                .build();
+        final var signedTxn = Transaction.newBuilder()
+                .setSignedTransactionBytes(wrapperSignedTxn.toByteString())
+                .build();
         final var view = mock(StateView.class);
 
         willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(signedTxn);
@@ -318,21 +293,18 @@ class StructuralPrecheckTest {
     void cannotHaveUnknownFieldsInTransactionBody() throws InvalidProtocolBufferException {
         withVerifiableCounters();
         final var reasonablyNestedKey = TxnUtils.nestKeys(Key.newBuilder(), 2);
-        final var hostTxn =
-                TransactionBody.newBuilder()
-                        .setUnknownFields(
-                                UnknownFieldSet.newBuilder()
-                                        .addField(
-                                                666,
-                                                UnknownFieldSet.Field.newBuilder()
-                                                        .addFixed32(42)
-                                                        .build())
+        final var hostTxn = TransactionBody.newBuilder()
+                .setUnknownFields(UnknownFieldSet.newBuilder()
+                        .addField(
+                                666,
+                                UnknownFieldSet.Field.newBuilder()
+                                        .addFixed32(42)
                                         .build())
-                        .setCryptoCreateAccount(
-                                CryptoCreateTransactionBody.newBuilder()
-                                        .setKey(reasonablyNestedKey));
-        final var signedTxn =
-                Transaction.newBuilder().setBodyBytes(hostTxn.build().toByteString()).build();
+                        .build())
+                .setCryptoCreateAccount(CryptoCreateTransactionBody.newBuilder().setKey(reasonablyNestedKey));
+        final var signedTxn = Transaction.newBuilder()
+                .setBodyBytes(hostTxn.build().toByteString())
+                .build();
         final var view = mock(StateView.class);
 
         willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(signedTxn);
@@ -348,21 +320,19 @@ class StructuralPrecheckTest {
     void cannotHaveUnknownFieldsInOpTransactionBody() throws InvalidProtocolBufferException {
         withVerifiableCounters();
         final var reasonablyNestedKey = TxnUtils.nestKeys(Key.newBuilder(), 2);
-        final var hostTxn =
-                TransactionBody.newBuilder()
-                        .setCryptoCreateAccount(
-                                CryptoCreateTransactionBody.newBuilder()
-                                        .setUnknownFields(
-                                                UnknownFieldSet.newBuilder()
-                                                        .addField(
-                                                                666,
-                                                                UnknownFieldSet.Field.newBuilder()
-                                                                        .addFixed32(42)
-                                                                        .build())
-                                                        .build())
-                                        .setKey(reasonablyNestedKey));
-        final var signedTxn =
-                Transaction.newBuilder().setBodyBytes(hostTxn.build().toByteString()).build();
+        final var hostTxn = TransactionBody.newBuilder()
+                .setCryptoCreateAccount(CryptoCreateTransactionBody.newBuilder()
+                        .setUnknownFields(UnknownFieldSet.newBuilder()
+                                .addField(
+                                        666,
+                                        UnknownFieldSet.Field.newBuilder()
+                                                .addFixed32(42)
+                                                .build())
+                                .build())
+                        .setKey(reasonablyNestedKey));
+        final var signedTxn = Transaction.newBuilder()
+                .setBodyBytes(hostTxn.build().toByteString())
+                .build();
         final var view = mock(StateView.class);
 
         willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(signedTxn);
@@ -378,13 +348,11 @@ class StructuralPrecheckTest {
     void canBeOkAndSetsStateView() throws InvalidProtocolBufferException {
         withVerifiableCounters();
         final var reasonablyNestedKey = TxnUtils.nestKeys(Key.newBuilder(), 2);
-        final var hostTxn =
-                TransactionBody.newBuilder()
-                        .setCryptoCreateAccount(
-                                CryptoCreateTransactionBody.newBuilder()
-                                        .setKey(reasonablyNestedKey));
-        final var signedTxn =
-                Transaction.newBuilder().setBodyBytes(hostTxn.build().toByteString()).build();
+        final var hostTxn = TransactionBody.newBuilder()
+                .setCryptoCreateAccount(CryptoCreateTransactionBody.newBuilder().setKey(reasonablyNestedKey));
+        final var signedTxn = Transaction.newBuilder()
+                .setBodyBytes(hostTxn.build().toByteString())
+                .build();
         final var view = mock(StateView.class);
 
         willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(signedTxn);
@@ -414,25 +382,29 @@ class StructuralPrecheckTest {
     @Test
     void validateCounterForDeprecatedTransactions() throws InvalidProtocolBufferException {
         withVerifiableCounters();
-        final var hostTxn =
-                TransactionBody.newBuilder()
-                        .setTransactionID(
-                                TransactionID.newBuilder()
-                                        .setAccountID(IdUtils.asAccount("0.0.2")));
-        var signedTxn =
-                Transaction.newBuilder().setBodyBytes(hostTxn.build().toByteString()).build();
+        final var hostTxn = TransactionBody.newBuilder()
+                .setTransactionID(TransactionID.newBuilder().setAccountID(IdUtils.asAccount("0.0.2")));
+        var signedTxn = Transaction.newBuilder()
+                .setBodyBytes(hostTxn.build().toByteString())
+                .build();
         willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(signedTxn);
         given(accessor.getTxn()).willReturn(hostTxn.build());
 
         subject.assess(signedTxn);
 
-        signedTxn = Transaction.newBuilder().setSigMap(SignatureMap.newBuilder().build()).build();
+        signedTxn = Transaction.newBuilder()
+                .setSigMap(SignatureMap.newBuilder().build())
+                .build();
         subject.assess(signedTxn);
 
-        signedTxn = Transaction.newBuilder().setBody(TransactionBody.newBuilder().build()).build();
+        signedTxn = Transaction.newBuilder()
+                .setBody(TransactionBody.newBuilder().build())
+                .build();
         subject.assess(signedTxn);
 
-        signedTxn = Transaction.newBuilder().setSigs(SignatureList.newBuilder().build()).build();
+        signedTxn = Transaction.newBuilder()
+                .setSigs(SignatureList.newBuilder().build())
+                .build();
         subject.assess(signedTxn);
         verify(counter, times(4)).increment();
     }
@@ -440,15 +412,11 @@ class StructuralPrecheckTest {
     @Test
     void txnWithNoDeprecatedFieldsDoesntIncrement() throws InvalidProtocolBufferException {
         withVerifiableCounters();
-        final var hostTxn =
-                TransactionBody.newBuilder()
-                        .setTransactionID(
-                                TransactionID.newBuilder()
-                                        .setAccountID(IdUtils.asAccount("0.0.2")));
-        var signedTxn =
-                Transaction.newBuilder()
-                        .setSignedTransactionBytes(hostTxn.build().toByteString())
-                        .build();
+        final var hostTxn = TransactionBody.newBuilder()
+                .setTransactionID(TransactionID.newBuilder().setAccountID(IdUtils.asAccount("0.0.2")));
+        var signedTxn = Transaction.newBuilder()
+                .setSignedTransactionBytes(hostTxn.build().toByteString())
+                .build();
         willCallRealMethod().given(accessorFactory).constructSpecializedAccessor(signedTxn);
         given(accessor.getTxn()).willReturn(hostTxn.build());
 
@@ -475,14 +443,15 @@ class StructuralPrecheckTest {
     }
 
     private void assertExpectedFail(
-            final ResponseCodeEnum error,
-            final Pair<TxnValidityAndFeeReq, SignedTxnAccessor> resp) {
+            final ResponseCodeEnum error, final Pair<TxnValidityAndFeeReq, SignedTxnAccessor> resp) {
         assertEquals(error, resp.getLeft().getValidity());
         assertNull(resp.getRight());
     }
 
     private void withVerifiableCounters() {
-        given(platform.getMetrics()).willReturn(metrics);
+        final var platformContext = mock(PlatformContext.class);
+        given(platform.getContext()).willReturn(platformContext);
+        given(platformContext.getMetrics()).willReturn(metrics);
         given(metrics.getOrCreate(any())).willReturn(counter);
         counters.registerWith(platform);
     }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger;
 
 import static com.hedera.node.app.service.mono.ledger.SigImpactHistorian.ChangeStatus.CHANGED;
@@ -69,10 +70,8 @@ public class SigImpactHistorian {
 
     private final Map<Long, Instant> entityChangeTimes = new HashMap<>();
     private final Map<ByteString, Instant> aliasChangeTimes = new HashMap<>();
-    private final MonotonicFullQueueExpiries<Long> entityChangeExpiries =
-            new MonotonicFullQueueExpiries<>();
-    private final MonotonicFullQueueExpiries<ByteString> aliasChangeExpiries =
-            new MonotonicFullQueueExpiries<>();
+    private final MonotonicFullQueueExpiries<Long> entityChangeExpiries = new MonotonicFullQueueExpiries<>();
+    private final MonotonicFullQueueExpiries<ByteString> aliasChangeExpiries = new MonotonicFullQueueExpiries<>();
 
     public enum ChangeStatus {
         CHANGED,
@@ -190,9 +189,7 @@ public class SigImpactHistorian {
 
     /* --- Internal helpers --- */
     private <T> void expire(
-            final long thisSecond,
-            final Map<T, Instant> changeTimes,
-            final MonotonicFullQueueExpiries<T> expiries) {
+            final long thisSecond, final Map<T, Instant> changeTimes, final MonotonicFullQueueExpiries<T> expiries) {
         while (expiries.hasExpiringAt(thisSecond)) {
             final var maybeExpiredChange = expiries.expireNextAt(thisSecond);
             /* This could be null if two changes to the same thing happened in the same consensus second. */
@@ -219,8 +216,7 @@ public class SigImpactHistorian {
         }
     }
 
-    private ChangeStatus statusGiven(
-            final @Nullable Instant lastChangeInWindow, final Instant then) {
+    private ChangeStatus statusGiven(final @Nullable Instant lastChangeInWindow, final Instant then) {
         if (lastChangeInWindow == null) {
             if (fullWindowElapsed) {
                 return inCurrentFullWindow(then) ? UNCHANGED : UNKNOWN;
@@ -233,8 +229,7 @@ public class SigImpactHistorian {
     }
 
     private boolean inCurrentFullWindow(final Instant then) {
-        return then.getEpochSecond()
-                >= now.getEpochSecond() - dynamicProperties.changeHistorianMemorySecs();
+        return then.getEpochSecond() >= now.getEpochSecond() - dynamicProperties.changeHistorianMemorySecs();
     }
 
     private long expirySec() {

@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual;
 
+import static com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey.fromLong;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -23,6 +25,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.ByteArrayInputStream;
@@ -41,18 +44,6 @@ class EntityNumVirtualKeyTest {
     @BeforeEach
     void setup() {
         subject = new EntityNumVirtualKey(longKey);
-    }
-
-    @Test
-    void ordersSameAsExpected() {
-        final var sameButDifferent = subject;
-        assertEquals(0, subject.compareTo(sameButDifferent));
-    }
-
-    @Test
-    void orderPrioritizesEntityNum() {
-        final var smallerEntityNum = new EntityNumVirtualKey(longKey - 1);
-        assertEquals(+1, subject.compareTo(smallerEntityNum));
     }
 
     @Test
@@ -106,75 +97,69 @@ class EntityNumVirtualKeyTest {
 
     @Test
     void serializeActuallyWorks() throws Exception {
-        checkSerialize(
-                () -> {
-                    final var byteArr = new ByteArrayOutputStream();
-                    final var out = new SerializableDataOutputStream(byteArr);
-                    subject.serialize(out);
+        checkSerialize(() -> {
+            final var byteArr = new ByteArrayOutputStream();
+            final var out = new SerializableDataOutputStream(byteArr);
+            subject.serialize(out);
 
-                    var copy = new EntityNumVirtualKey();
-                    copy.deserialize(
-                            new SerializableDataInputStream(
-                                    new ByteArrayInputStream(byteArr.toByteArray())),
-                            EntityNumVirtualKey.CURRENT_VERSION);
+            var copy = new EntityNumVirtualKey();
+            copy.deserialize(
+                    new SerializableDataInputStream(new ByteArrayInputStream(byteArr.toByteArray())),
+                    EntityNumVirtualKey.CURRENT_VERSION);
 
-                    assertEquals(subject, copy);
+            assertEquals(subject, copy);
 
-                    return copy;
-                });
+            return copy;
+        });
     }
 
     @Test
     void serializeActuallyWithByteBufferWorks() throws Exception {
-        checkSerialize(
-                () -> {
-                    final var buffer = ByteBuffer.allocate(100000);
-                    subject.serialize(buffer);
-                    buffer.rewind();
-                    var copy = new EntityNumVirtualKey();
-                    copy.deserialize(buffer, EntityNumVirtualKey.CURRENT_VERSION);
+        checkSerialize(() -> {
+            final var buffer = ByteBuffer.allocate(100000);
+            subject.serialize(buffer);
+            buffer.rewind();
+            var copy = new EntityNumVirtualKey();
+            copy.deserialize(buffer, EntityNumVirtualKey.CURRENT_VERSION);
 
-                    assertEquals(subject, copy);
+            assertEquals(subject, copy);
 
-                    return copy;
-                });
+            return copy;
+        });
     }
 
     @Test
     void serializeActuallyWithMixedWorksBytesFirst() throws Exception {
-        checkSerialize(
-                () -> {
-                    final var buffer = ByteBuffer.allocate(100000);
-                    subject.serialize(buffer);
+        checkSerialize(() -> {
+            final var buffer = ByteBuffer.allocate(100000);
+            subject.serialize(buffer);
 
-                    var copy = new EntityNumVirtualKey();
-                    copy.deserialize(
-                            new SerializableDataInputStream(
-                                    new ByteArrayInputStream(buffer.array())),
-                            EntityNumVirtualKey.CURRENT_VERSION);
+            var copy = new EntityNumVirtualKey();
+            copy.deserialize(
+                    new SerializableDataInputStream(new ByteArrayInputStream(buffer.array())),
+                    EntityNumVirtualKey.CURRENT_VERSION);
 
-                    assertEquals(subject, copy);
+            assertEquals(subject, copy);
 
-                    return copy;
-                });
+            return copy;
+        });
     }
 
     @Test
     void serializeActuallyWithMixedWorksBytesSecond() throws Exception {
-        checkSerialize(
-                () -> {
-                    final var byteArr = new ByteArrayOutputStream();
-                    final var out = new SerializableDataOutputStream(byteArr);
-                    subject.serialize(out);
+        checkSerialize(() -> {
+            final var byteArr = new ByteArrayOutputStream();
+            final var out = new SerializableDataOutputStream(byteArr);
+            subject.serialize(out);
 
-                    final var buffer = ByteBuffer.wrap(byteArr.toByteArray());
-                    var copy = new EntityNumVirtualKey();
-                    copy.deserialize(buffer, EntityNumVirtualKey.CURRENT_VERSION);
+            final var buffer = ByteBuffer.wrap(byteArr.toByteArray());
+            var copy = new EntityNumVirtualKey();
+            copy.deserialize(buffer, EntityNumVirtualKey.CURRENT_VERSION);
 
-                    assertEquals(subject, copy);
+            assertEquals(subject, copy);
 
-                    return copy;
-                });
+            return copy;
+        });
     }
 
     private void checkSerialize(Callable<EntityNumVirtualKey> check) throws Exception {
@@ -222,5 +207,18 @@ class EntityNumVirtualKeyTest {
         subject.serialize(fOut);
 
         verify(fOut).writeLong(longKey);
+    }
+
+    @Test
+    void canGetEntityNumUsingLongValue() {
+        assertEquals(subject, fromLong(longKey));
+    }
+
+    @Test
+    void canGetEntityNumUsingAccountId() {
+        assertEquals(
+                subject,
+                EntityNumVirtualKey.fromAccountId(
+                        AccountID.newBuilder().setAccountNum(longKey).build()));
     }
 }

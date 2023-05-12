@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.store.contracts;
 
 import static com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount.proxyBytecodeFor;
@@ -31,8 +32,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class HederaEvmWorldStateTokenAccountTest {
     private static final Address pretendTokenAddr = Address.BLS12_G1MULTIEXP;
 
-    private HederaEvmWorldStateTokenAccount subject =
-            new HederaEvmWorldStateTokenAccount(pretendTokenAddr);
+    private HederaEvmWorldStateTokenAccount subject = new HederaEvmWorldStateTokenAccount(pretendTokenAddr);
 
     @Test
     void getsExpectedCode() {
@@ -87,7 +87,6 @@ class HederaEvmWorldStateTokenAccountTest {
 
     @Test
     void storageEntriesStreamStillNotSupported() {
-        Assertions.assertThrows(
-                UnsupportedOperationException.class, () -> subject.storageEntriesFrom(null, 0));
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> subject.storageEntriesFrom(null, 0));
     }
 }

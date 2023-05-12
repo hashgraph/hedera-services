@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.submerkle;
 
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
@@ -44,11 +45,7 @@ public class TxnId implements SelfSerializable {
         /* RuntimeConstructable */
     }
 
-    public TxnId(
-            final EntityId payerAccount,
-            final RichInstant validStart,
-            final boolean scheduled,
-            final int nonce) {
+    public TxnId(final EntityId payerAccount, final RichInstant validStart, final boolean scheduled, final int nonce) {
         this.scheduled = scheduled;
         this.validStart = validStart;
         this.payerAccount = payerAccount;
@@ -88,8 +85,7 @@ public class TxnId implements SelfSerializable {
     }
 
     @Override
-    public void deserialize(final SerializableDataInputStream in, final int version)
-            throws IOException {
+    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         payerAccount = in.readSerializable(true, EntityId::new);
         validStart = RichInstant.from(in);
         scheduled = in.readBoolean();

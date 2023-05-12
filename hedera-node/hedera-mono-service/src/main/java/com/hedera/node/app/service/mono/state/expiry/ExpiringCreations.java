@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.expiry;
 
 import static com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt.SUCCESS_LITERAL;
@@ -99,8 +100,7 @@ public class ExpiringCreations implements EntityCreator {
     }
 
     @Override
-    public ExpirableTxnRecord.Builder createUnsuccessfulSyntheticRecord(
-            final ResponseCodeEnum failureStatus) {
+    public ExpirableTxnRecord.Builder createUnsuccessfulSyntheticRecord(final ResponseCodeEnum failureStatus) {
         final var receiptBuilder = TxnReceipt.newBuilder().setStatus(failureStatus.name());
         return ExpirableTxnRecord.newBuilder().setReceiptBuilder(receiptBuilder);
     }
@@ -115,8 +115,7 @@ public class ExpiringCreations implements EntityCreator {
             final List<FcAssessedCustomFee> customFeesCharged,
             final SideEffectsTracker sideEffectsTracker) {
         final var expiringRecord =
-                createBaseRecord(
-                        accessor.getMemo(), receiptBuilder, customFeesCharged, sideEffectsTracker);
+                createBaseRecord(accessor.getMemo(), receiptBuilder, customFeesCharged, sideEffectsTracker);
         expiringRecord
                 .setFee(fee)
                 .setTxnHash(hash)
@@ -140,8 +139,7 @@ public class ExpiringCreations implements EntityCreator {
             final List<FcAssessedCustomFee> customFeesCharged,
             final SideEffectsTracker sideEffectsTracker) {
         if (sideEffectsTracker.hasTrackedNewTokenId()) {
-            receiptBuilder.setTokenId(
-                    EntityId.fromGrpcTokenId(sideEffectsTracker.getTrackedNewTokenId()));
+            receiptBuilder.setTokenId(EntityId.fromGrpcTokenId(sideEffectsTracker.getTrackedNewTokenId()));
         }
         if (sideEffectsTracker.hasTrackedTokenSupply()) {
             receiptBuilder.setNewTotalSupply(sideEffectsTracker.getTrackedTokenSupply());
@@ -153,24 +151,21 @@ public class ExpiringCreations implements EntityCreator {
             receiptBuilder.setSerialNumbers(rawSerials);
         }
 
-        final var baseRecord =
-                ExpirableTxnRecord.newBuilder()
-                        .setReceiptBuilder(receiptBuilder)
-                        .setMemo(memo)
-                        .setHbarAdjustments(sideEffectsTracker.getNetTrackedHbarChanges())
-                        .setStakingRewardsPaid(sideEffectsTracker.getStakingRewardsPaid())
-                        .setAssessedCustomFees(customFeesCharged)
-                        .setNewTokenAssociations(sideEffectsTracker.getTrackedAutoAssociations());
+        final var baseRecord = ExpirableTxnRecord.newBuilder()
+                .setReceiptBuilder(receiptBuilder)
+                .setMemo(memo)
+                .setHbarAdjustments(sideEffectsTracker.getNetTrackedHbarChanges())
+                .setStakingRewardsPaid(sideEffectsTracker.getStakingRewardsPaid())
+                .setAssessedCustomFees(customFeesCharged)
+                .setNewTokenAssociations(sideEffectsTracker.getTrackedAutoAssociations());
 
         if (sideEffectsTracker.hasTrackedAutoCreation()) {
             receiptBuilder.setAccountId(
-                    EntityId.fromGrpcAccountId(
-                            sideEffectsTracker.getTrackedAutoCreatedAccountId()));
+                    EntityId.fromGrpcAccountId(sideEffectsTracker.getTrackedAutoCreatedAccountId()));
         }
 
         if (sideEffectsTracker.hasTrackedHollowAccountUpdate()) {
-            receiptBuilder.setAccountId(
-                    EntityId.fromGrpcAccountId(sideEffectsTracker.getTrackedHollowAccountId()));
+            receiptBuilder.setAccountId(EntityId.fromGrpcAccountId(sideEffectsTracker.getTrackedHollowAccountId()));
         }
 
         final var tokenChanges = sideEffectsTracker.getNetTrackedTokenUnitAndOwnershipChanges();
@@ -178,8 +173,7 @@ public class ExpiringCreations implements EntityCreator {
             setTokensAndTokenAdjustments(baseRecord, tokenChanges);
         }
         if (sideEffectsTracker.hasTrackedContractCreation()) {
-            final var newId =
-                    EntityId.fromGrpcContractId(sideEffectsTracker.getTrackedNewContractId());
+            final var newId = EntityId.fromGrpcContractId(sideEffectsTracker.getTrackedNewContractId());
             receiptBuilder.setContractId(newId);
             final var createResult = new EvmFnResult();
             // A bit redundant, but set this for consistency with top-level records
@@ -206,19 +200,16 @@ public class ExpiringCreations implements EntityCreator {
 
         return ExpirableTxnRecord.newBuilder()
                 .setTxnId(TxnId.fromGrpc(txnId))
-                .setReceipt(TxnReceipt.newBuilder().setStatus(FAIL_INVALID.name()).build())
+                .setReceipt(
+                        TxnReceipt.newBuilder().setStatus(FAIL_INVALID.name()).build())
                 .setMemo(accessor.getMemo())
                 .setTxnHash(accessor.getHash())
                 .setConsensusTime(RichInstant.fromJava(consensusTime))
-                .setScheduleRef(
-                        accessor.isTriggeredTxn()
-                                ? fromGrpcScheduleId(accessor.getScheduleRef())
-                                : null);
+                .setScheduleRef(accessor.isTriggeredTxn() ? fromGrpcScheduleId(accessor.getScheduleRef()) : null);
     }
 
     private void setTokensAndTokenAdjustments(
-            final ExpirableTxnRecord.Builder builder,
-            final List<TokenTransferList> tokenTransferList) {
+            final ExpirableTxnRecord.Builder builder, final List<TokenTransferList> tokenTransferList) {
         final List<EntityId> tokens = new ArrayList<>();
         final List<CurrencyAdjustments> tokenAdjustments = new ArrayList<>();
         final List<NftAdjustments> nftTokenAdjustments = new ArrayList<>();
@@ -227,9 +218,7 @@ public class ExpiringCreations implements EntityCreator {
             tokenAdjustments.add(CurrencyAdjustments.fromGrpc(tokenTransfer.getTransfersList()));
             nftTokenAdjustments.add(NftAdjustments.fromGrpc(tokenTransfer.getNftTransfersList()));
         }
-        builder.setTokens(tokens)
-                .setTokenAdjustments(tokenAdjustments)
-                .setNftTokenAdjustments(nftTokenAdjustments);
+        builder.setTokens(tokens).setTokenAdjustments(tokenAdjustments).setNftTokenAdjustments(nftTokenAdjustments);
     }
 
     private void addToState(final EntityNum key, final ExpirableTxnRecord expirableTxnRecord) {

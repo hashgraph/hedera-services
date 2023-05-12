@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
@@ -33,8 +34,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
-public class FungibleTokenInfoPrecompile extends AbstractTokenInfoPrecompile
-        implements EvmFungibleTokenInfoPrecompile {
+public class FungibleTokenInfoPrecompile extends AbstractTokenInfoPrecompile implements EvmFungibleTokenInfoPrecompile {
 
     public FungibleTokenInfoPrecompile(
             TokenID tokenId,
@@ -56,18 +56,16 @@ public class FungibleTokenInfoPrecompile extends AbstractTokenInfoPrecompile
 
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-        final var tokenInfo =
-                ledgers.evmInfoForToken(tokenId, stateView.getNetworkInfo().ledgerId())
-                        .orElse(null);
+        final var tokenInfo = ledgers.evmInfoForToken(
+                        tokenId, stateView.getNetworkInfo().ledgerId())
+                .orElse(null);
         validateTrue(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
 
         return evmEncoder.encodeGetFungibleTokenInfo(tokenInfo);
     }
 
     public static TokenInfoWrapper<TokenID> decodeGetFungibleTokenInfo(final Bytes input) {
-        final var rawTokenInfoWrapper =
-                EvmFungibleTokenInfoPrecompile.decodeGetFungibleTokenInfo(input);
-        return TokenInfoWrapper.forFungibleToken(
-                convertAddressBytesToTokenID(rawTokenInfoWrapper.token()));
+        final var rawTokenInfoWrapper = EvmFungibleTokenInfoPrecompile.decodeGetFungibleTokenInfo(input);
+        return TokenInfoWrapper.forFungibleToken(convertAddressBytesToTokenID(rawTokenInfoWrapper.token()));
     }
 }

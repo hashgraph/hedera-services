@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.operation;
 
 /*
@@ -55,15 +56,13 @@ public class HederaSLoadOperation extends HederaEvmSLoadOperation {
     private final GlobalDynamicProperties dynamicProperties;
 
     @Inject
-    public HederaSLoadOperation(
-            final GasCalculator gasCalculator, final GlobalDynamicProperties dynamicProperties) {
+    public HederaSLoadOperation(final GasCalculator gasCalculator, final GlobalDynamicProperties dynamicProperties) {
         super(gasCalculator);
         this.dynamicProperties = dynamicProperties;
     }
 
     @Override
-    protected void intermediateCustomLogic(
-            MessageFrame frame, Address address, Bytes32 key, UInt256 storageValue) {
+    protected void intermediateCustomLogic(MessageFrame frame, Address address, Bytes32 key, UInt256 storageValue) {
         if (dynamicProperties.enabledSidecars().contains(SidecarType.CONTRACT_STATE_CHANGE)) {
             HederaOperationUtil.cacheExistingValue(frame, address, key, storageValue);
         }

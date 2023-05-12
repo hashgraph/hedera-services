@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.factories.scenarios;
 
 import static com.hedera.test.factories.txns.TokenUnfreezeFactory.newSignedTokenUnfreeze;
@@ -23,11 +24,29 @@ public enum TokenUnfreezeScenarios implements TxnHandlingScenario {
     VALID_UNFREEZE_WITH_EXTANT_TOKEN {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(
-                    newSignedTokenUnfreeze()
-                            .unfreezing(KNOWN_TOKEN_WITH_FREEZE)
-                            .nonPayerKts(TOKEN_FREEZE_KT)
-                            .get());
+            return PlatformTxnAccessor.from(newSignedTokenUnfreeze()
+                    .unfreezing(KNOWN_TOKEN_WITH_FREEZE)
+                    .withAccount(OWNER_ACCOUNT)
+                    .nonPayerKts(TOKEN_FREEZE_KT)
+                    .get());
+        }
+    },
+    UNFREEZE_WITH_MISSING_FREEZE_TOKEN {
+        @Override
+        public PlatformTxnAccessor platformTxn() throws Throwable {
+            return PlatformTxnAccessor.from(newSignedTokenUnfreeze()
+                    .withAccount(OWNER_ACCOUNT)
+                    .unfreezing(KNOWN_TOKEN_NO_SPECIAL_KEYS)
+                    .get());
+        }
+    },
+    UNFREEZE_WITH_INVALID_TOKEN {
+        @Override
+        public PlatformTxnAccessor platformTxn() throws Throwable {
+            return PlatformTxnAccessor.from(newSignedTokenUnfreeze()
+                    .unfreezing(MISSING_TOKEN)
+                    .withAccount(OWNER_ACCOUNT)
+                    .get());
         }
     },
 }

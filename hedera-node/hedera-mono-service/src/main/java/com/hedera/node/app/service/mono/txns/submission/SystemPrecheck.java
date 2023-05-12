@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.submission;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetAccountDetails;
@@ -60,8 +61,7 @@ public class SystemPrecheck {
     ResponseCodeEnum screen(SignedTxnAccessor accessor) {
         final var payer = accessor.getPayer();
 
-        final var permissionStatus =
-                hapiOpPermissions.permissibilityOf(accessor.getFunction(), payer);
+        final var permissionStatus = hapiOpPermissions.permissibilityOf(accessor.getFunction(), payer);
         if (permissionStatus != OK) {
             return permissionStatus;
         }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.logic;
 
 import com.hedera.node.app.service.mono.context.NodeInfo;
@@ -46,8 +47,7 @@ public class InvariantChecks {
         this.networkCtx = networkCtx;
     }
 
-    public boolean holdFor(
-            SwirldsTxnAccessor accessor, Instant consensusTime, long submittingMember) {
+    public boolean holdFor(SwirldsTxnAccessor accessor, Instant consensusTime, long submittingMember) {
         final var currentNetworkCtx = networkCtx.get();
         final var lastConsensusTime = currentNetworkCtx.consensusTimeOfLastHandledTxn();
         if (lastConsensusTime != null && !consensusTime.isAfter(lastConsensusTime)) {

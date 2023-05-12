@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context;
 
 import static com.hedera.node.app.service.evm.store.tokens.TokenType.FUNGIBLE_COMMON;
@@ -73,8 +74,11 @@ class SideEffectsTrackerTest {
 
     @Test
     void tracksAndResetsHollowAccountUpdateExpected() {
-        final var updatedHollowAccount =
-                AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(20L).build();
+        final var updatedHollowAccount = AccountID.newBuilder()
+                .setShardNum(0)
+                .setRealmNum(0)
+                .setAccountNum(20L)
+                .build();
         subject.trackHollowAccountUpdate(updatedHollowAccount);
 
         assertTrue(subject.hasTrackedHollowAccountUpdate());
@@ -118,9 +122,7 @@ class SideEffectsTrackerTest {
     @Test
     void tracksAndResetsNftMintsAsExpected() {
         final var changedToken = new Token(Id.fromGrpcToken(aToken));
-        changedToken
-                .mintedUniqueTokens()
-                .add(new UniqueToken(Id.fromGrpcToken(cSN1.tokenId()), cSN1.serialNo()));
+        changedToken.mintedUniqueTokens().add(new UniqueToken(Id.fromGrpcToken(cSN1.tokenId()), cSN1.serialNo()));
 
         subject.trackTokenChanges(changedToken);
 
@@ -140,10 +142,9 @@ class SideEffectsTrackerTest {
 
     @Test
     void tracksAndResetsAutoAssociationsAsExpected() {
-        final var expected =
-                List.of(
-                        new FcTokenAssociation(aToken.getTokenNum(), aAccount.getAccountNum()),
-                        new FcTokenAssociation(bToken.getTokenNum(), bAccount.getAccountNum()));
+        final var expected = List.of(
+                new FcTokenAssociation(aToken.getTokenNum(), aAccount.getAccountNum()),
+                new FcTokenAssociation(bToken.getTokenNum(), bAccount.getAccountNum()));
 
         subject.trackAutoAssociation(aToken, aAccount);
         subject.trackAutoAssociation(bToken, bAccount);
@@ -158,8 +159,11 @@ class SideEffectsTrackerTest {
 
     @Test
     void tracksAndResetsNewAccountIdAsExpected() {
-        final var createdAutoAccount =
-                AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(20L).build();
+        final var createdAutoAccount = AccountID.newBuilder()
+                .setShardNum(0)
+                .setRealmNum(0)
+                .setAccountNum(20L)
+                .build();
 
         subject.trackAutoCreation(createdAutoAccount);
 
@@ -177,9 +181,7 @@ class SideEffectsTrackerTest {
         final var changedToken = new Token(Id.fromGrpcToken(aToken));
         changedToken.setNew(true);
         changedToken.setTotalSupply(newSupply);
-        changedToken
-                .mintedUniqueTokens()
-                .add(new UniqueToken(Id.fromGrpcToken(cSN1.tokenId()), cSN1.serialNo()));
+        changedToken.mintedUniqueTokens().add(new UniqueToken(Id.fromGrpcToken(cSN1.tokenId()), cSN1.serialNo()));
 
         subject.trackHbarChange(aAccount.getAccountNum(), aFirstBalanceChange);
         subject.trackTokenUnitsChange(bToken, cAccount, cOnlyBalanceChange);
@@ -255,9 +257,7 @@ class SideEffectsTrackerTest {
         assertEquals(cAccount.getAccountNum(), netChanges.getAccountNums()[1]);
         assertEquals(cOnlyBalanceChange, netChanges.getHbars()[1]);
 
-        assertEquals(
-                aFirstBalanceChange + aSecondBalanceChange + cOnlyBalanceChange,
-                subject.getNetHbarChange());
+        assertEquals(aFirstBalanceChange + aSecondBalanceChange + cOnlyBalanceChange, subject.getNetHbarChange());
         subject.reset();
         assertEquals(0, subject.getNetTrackedHbarChanges().getAccountNums().length);
         assertEquals(0, subject.getNetTrackedHbarChanges().getHbars().length);
@@ -300,12 +300,10 @@ class SideEffectsTrackerTest {
         final var tracker = new OwnershipTracker();
         tracker.add(
                 Id.fromGrpcToken(cToken),
-                new OwnershipTracker.Change(
-                        Id.fromGrpcAccount(aAccount), Id.fromGrpcAccount(bAccount), 1L));
+                new OwnershipTracker.Change(Id.fromGrpcAccount(aAccount), Id.fromGrpcAccount(bAccount), 1L));
         tracker.add(
                 Id.fromGrpcToken(aToken),
-                new OwnershipTracker.Change(
-                        Id.fromGrpcAccount(bAccount), Id.fromGrpcAccount(cAccount), 2L));
+                new OwnershipTracker.Change(Id.fromGrpcAccount(bAccount), Id.fromGrpcAccount(cAccount), 2L));
 
         subject.trackTokenOwnershipChanges(tracker);
 
@@ -331,20 +329,14 @@ class SideEffectsTrackerTest {
     @Test
     void prioritizesExplicitTokenBalanceChanges() {
         final var aaRelChange =
-                new TokenRelationship(
-                        new Token(Id.fromGrpcToken(aToken)),
-                        new Account(Id.fromGrpcAccount(aAccount)));
+                new TokenRelationship(new Token(Id.fromGrpcToken(aToken)), new Account(Id.fromGrpcAccount(aAccount)));
         aaRelChange.getToken().setType(FUNGIBLE_COMMON);
         aaRelChange.setBalance(aFirstBalanceChange);
         final var bbRelChange =
-                new TokenRelationship(
-                        new Token(Id.fromGrpcToken(bToken)),
-                        new Account(Id.fromGrpcAccount(bAccount)));
+                new TokenRelationship(new Token(Id.fromGrpcToken(bToken)), new Account(Id.fromGrpcAccount(bAccount)));
         bbRelChange.getToken().setType(FUNGIBLE_COMMON);
         final var ccRelChange =
-                new TokenRelationship(
-                        new Token(Id.fromGrpcToken(cToken)),
-                        new Account(Id.fromGrpcAccount(cAccount)));
+                new TokenRelationship(new Token(Id.fromGrpcToken(cToken)), new Account(Id.fromGrpcAccount(cAccount)));
         ccRelChange.setBalance(cOnlyBalanceChange);
         ccRelChange.getToken().setType(FUNGIBLE_COMMON);
 
@@ -375,8 +367,7 @@ class SideEffectsTrackerTest {
     void includesOrderedFungibleChanges() {
         final var accountNums = new long[] {100L, 200L, 300L, 400L, 200L};
         final var balanceChanges = new long[] {1000L, 2000L, 0L, 300L, -100L};
-        var result =
-                subject.includeOrderedFungibleChange(accountNums, balanceChanges, 4, 300L, 100L);
+        var result = subject.includeOrderedFungibleChange(accountNums, balanceChanges, 4, 300L, 100L);
         assertEquals(4, result);
         result = subject.includeOrderedFungibleChange(accountNums, balanceChanges, 4, 500L, 100L);
         assertEquals(5, result);
@@ -458,84 +449,65 @@ class SideEffectsTrackerTest {
     private static final FcTokenAllowance nftAllowance1 = FcTokenAllowance.from(true);
     private static final FcTokenAllowance nftAllowance2 = FcTokenAllowance.from(List.of(1L, 2L));
     private static final FcTokenAllowanceId fungibleAllowanceId =
-            FcTokenAllowanceId.from(
-                    EntityNum.fromTokenId(aToken), EntityNum.fromAccountId(aAccount));
+            FcTokenAllowanceId.from(EntityNum.fromTokenId(aToken), EntityNum.fromAccountId(aAccount));
     private static final FcTokenAllowanceId nftAllowanceId =
-            FcTokenAllowanceId.from(
-                    EntityNum.fromTokenId(bToken), EntityNum.fromAccountId(aAccount));
-    private static final Map<EntityNum, Map<EntityNum, Long>> cryptoAllowances =
-            new TreeMap<>() {
-                {
-                    put(
-                            EntityNum.fromAccountId(owner),
-                            new TreeMap<>() {
-                                {
-                                    put(EntityNum.fromAccountId(aAccount), initialAllowance);
-                                }
-                            });
-                }
-            };
-    private static final Map<EntityNum, Long> cryptoAllowance =
-            new TreeMap<>() {
+            FcTokenAllowanceId.from(EntityNum.fromTokenId(bToken), EntityNum.fromAccountId(aAccount));
+    private static final Map<EntityNum, Map<EntityNum, Long>> cryptoAllowances = new TreeMap<>() {
+        {
+            put(EntityNum.fromAccountId(owner), new TreeMap<>() {
                 {
                     put(EntityNum.fromAccountId(aAccount), initialAllowance);
                 }
-            };
-    private static final Map<EntityNum, Map<FcTokenAllowanceId, Long>> fungibleAllowances =
-            new TreeMap<>() {
-                {
-                    put(
-                            EntityNum.fromAccountId(owner),
-                            new TreeMap<>() {
-                                {
-                                    put(fungibleAllowanceId, initialAllowance);
-                                }
-                            });
-                }
-            };
-    private static final Map<FcTokenAllowanceId, Long> fungibleAllowance =
-            new TreeMap<>() {
+            });
+        }
+    };
+    private static final Map<EntityNum, Long> cryptoAllowance = new TreeMap<>() {
+        {
+            put(EntityNum.fromAccountId(aAccount), initialAllowance);
+        }
+    };
+    private static final Map<EntityNum, Map<FcTokenAllowanceId, Long>> fungibleAllowances = new TreeMap<>() {
+        {
+            put(EntityNum.fromAccountId(owner), new TreeMap<>() {
                 {
                     put(fungibleAllowanceId, initialAllowance);
                 }
-            };
-    private static final Map<EntityNum, Map<FcTokenAllowanceId, FcTokenAllowance>> nftAllowances =
+            });
+        }
+    };
+    private static final Map<FcTokenAllowanceId, Long> fungibleAllowance = new TreeMap<>() {
+        {
+            put(fungibleAllowanceId, initialAllowance);
+        }
+    };
+    private static final Map<EntityNum, Map<FcTokenAllowanceId, FcTokenAllowance>> nftAllowances = new TreeMap<>() {
+        {
+            put(EntityNum.fromAccountId(owner), new TreeMap<>() {
+                {
+                    put(fungibleAllowanceId, nftAllowance1);
+                    put(nftAllowanceId, nftAllowance2);
+                }
+            });
+        }
+    };
+    private static final Set<FcTokenAllowanceId> nftAllowance = new TreeSet<>() {
+        {
+            add(fungibleAllowanceId);
+        }
+    };
+    private static final Map<EntityNum, Map<FcTokenAllowanceId, FcTokenAllowance>> expectedNftAllowances =
             new TreeMap<>() {
                 {
-                    put(
-                            EntityNum.fromAccountId(owner),
-                            new TreeMap<>() {
-                                {
-                                    put(fungibleAllowanceId, nftAllowance1);
-                                    put(nftAllowanceId, nftAllowance2);
-                                }
-                            });
-                }
-            };
-    private static final Set<FcTokenAllowanceId> nftAllowance =
-            new TreeSet<>() {
-                {
-                    add(fungibleAllowanceId);
-                }
-            };
-    private static final Map<EntityNum, Map<FcTokenAllowanceId, FcTokenAllowance>>
-            expectedNftAllowances =
-                    new TreeMap<>() {
+                    put(EntityNum.fromAccountId(owner), new TreeMap<>() {
                         {
-                            put(
-                                    EntityNum.fromAccountId(owner),
-                                    new TreeMap<>() {
-                                        {
-                                            put(fungibleAllowanceId, nftAllowance1);
-                                            put(nftAllowanceId, nftAllowance2);
-                                        }
-                                    });
+                            put(fungibleAllowanceId, nftAllowance1);
+                            put(nftAllowanceId, nftAllowance2);
                         }
-                    };
-    private static final UniqueToken nft1 =
-            new UniqueToken(Id.fromGrpcToken(bToken), 1L, Id.fromGrpcAccount(owner));
-    private static final UniqueToken nft2 =
-            new UniqueToken(Id.fromGrpcToken(bToken), 2L, Id.fromGrpcAccount(owner));
+                    });
+                }
+            };
+    private static final UniqueToken nft1 = new UniqueToken(Id.fromGrpcToken(bToken), 1L, Id.fromGrpcAccount(owner));
+    private static final UniqueToken nft2 = new UniqueToken(Id.fromGrpcToken(bToken), 2L, Id.fromGrpcAccount(owner));
 
     static {
         nft1.setSpender(Id.fromGrpcAccount(aAccount));

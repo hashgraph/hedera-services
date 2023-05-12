@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.schedule.queries;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -48,29 +49,26 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 class GetScheduleInfoResourceUsageTest {
-    private static final TransactionID scheduledTxnId =
-            TransactionID.newBuilder()
-                    .setScheduled(true)
-                    .setAccountID(IdUtils.asAccount("0.0.2"))
-                    .build();
+    private static final TransactionID scheduledTxnId = TransactionID.newBuilder()
+            .setScheduled(true)
+            .setAccountID(IdUtils.asAccount("0.0.2"))
+            .build();
     private static final ScheduleID target = IdUtils.asSchedule("0.0.123");
     private static final Instant resolutionTime = Instant.ofEpochSecond(123L);
     private static final Key signersList = TxnHandlingScenario.MISC_FILE_WACL_KT.asKey();
     private static final String memo = "some memo here";
     private static final Key adminKey = TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asKey();
-    private static final ScheduleInfo info =
-            ScheduleInfo.newBuilder()
-                    .setMemo(memo)
-                    .setAdminKey(adminKey)
-                    .setPayerAccountID(TxnHandlingScenario.COMPLEX_KEY_ACCOUNT)
-                    .setSigners(signersList.getKeyList())
-                    .setScheduledTransactionID(scheduledTxnId)
-                    .setDeletionTime(RichInstant.fromJava(resolutionTime).toGrpc())
-                    .build();
-    private static final Query scheduleInfoQuery =
-            Query.newBuilder()
-                    .setScheduleGetInfo(ScheduleGetInfoQuery.newBuilder().setScheduleID(target))
-                    .build();
+    private static final ScheduleInfo info = ScheduleInfo.newBuilder()
+            .setMemo(memo)
+            .setAdminKey(adminKey)
+            .setPayerAccountID(TxnHandlingScenario.COMPLEX_KEY_ACCOUNT)
+            .setSigners(signersList.getKeyList())
+            .setScheduledTransactionID(scheduledTxnId)
+            .setDeletionTime(RichInstant.fromJava(resolutionTime).toGrpc())
+            .build();
+    private static final Query scheduleInfoQuery = Query.newBuilder()
+            .setScheduleGetInfo(ScheduleGetInfoQuery.newBuilder().setScheduleID(target))
+            .build();
 
     private StateView view;
     private ScheduleOpsUsage scheduleOpsUsage;
@@ -152,7 +150,8 @@ class GetScheduleInfoResourceUsageTest {
 
     @Test
     void calculatesFeeDataForScheduleMissingAdminKeyAndUnresolved() {
-        final var differentInfo = info.toBuilder().clearAdminKey().clearDeletionTime().build();
+        final var differentInfo =
+                info.toBuilder().clearAdminKey().clearDeletionTime().build();
         given(view.infoForSchedule(target)).willReturn(Optional.of(differentInfo));
         final var captor = ArgumentCaptor.forClass(ExtantScheduleContext.class);
         given(scheduleOpsUsage.scheduleInfoUsage(eq(scheduleInfoQuery), captor.capture()))

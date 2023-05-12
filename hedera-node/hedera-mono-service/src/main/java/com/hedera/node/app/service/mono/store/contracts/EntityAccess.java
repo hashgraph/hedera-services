@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts;
 
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
@@ -42,13 +43,11 @@ public interface EntityAccess extends HederaEvmEntityAccess {
     void customize(AccountID id, HederaAccountCustomizer customizer);
 
     /* --- Storage access --- */
-    void recordNewKvUsageTo(
-            TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger);
+    void recordNewKvUsageTo(TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger);
 
     void putStorage(AccountID id, Bytes key, Bytes value);
 
-    void flushStorage(
-            TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger);
+    void flushStorage(TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger);
 
     /* --- Bytecode access --- */
     void storeCode(AccountID id, Bytes code);

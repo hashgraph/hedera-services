@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs.metadata;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -42,16 +43,15 @@ class DelegatingSigMetadataLookupTest {
     private static final EntityId treasury = new EntityId(1, 2, 3);
     private static final TokenID id = IdUtils.asToken("1.2.666");
 
-    private static final MerkleToken token =
-            new MerkleToken(
-                    Long.MAX_VALUE,
-                    TOTAL_SUPPLY,
-                    DECIMALS,
-                    SYMBOL,
-                    TOKEN_NAME,
-                    FREEZE_DEFAULT,
-                    ACCOUNTS_KYC_GRANTED_BY_DEFAULT,
-                    treasury);
+    private static final MerkleToken token = new MerkleToken(
+            Long.MAX_VALUE,
+            TOTAL_SUPPLY,
+            DECIMALS,
+            SYMBOL,
+            TOKEN_NAME,
+            FREEZE_DEFAULT,
+            ACCOUNTS_KYC_GRANTED_BY_DEFAULT,
+            treasury);
     private static final JKey freezeKey = new JEd25519Key("not-a-real-freeze-key".getBytes());
 
     private TokenStore tokenStore;
@@ -68,12 +68,11 @@ class DelegatingSigMetadataLookupTest {
     @Test
     void returnsExpectedFailIfExplicitlyMissing() {
         given(tokenStore.resolve(id))
-                .willReturn(
-                        TokenID.newBuilder()
-                                .setShardNum(0L)
-                                .setRealmNum(0L)
-                                .setTokenNum(0L)
-                                .build());
+                .willReturn(TokenID.newBuilder()
+                        .setShardNum(0L)
+                        .setRealmNum(0L)
+                        .setTokenNum(0L)
+                        .build());
 
         final var result = subject.apply(id);
 

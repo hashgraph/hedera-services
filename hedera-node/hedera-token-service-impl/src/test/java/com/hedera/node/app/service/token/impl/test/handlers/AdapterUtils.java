@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,16 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl.test.handlers;
 
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.*;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.CURRENTLY_UNUSED_ALIAS;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.FIRST_TOKEN_SENDER;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.FIRST_TOKEN_SENDER_LITERAL_ALIAS;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.NO_RECEIVER_SIG;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.NO_RECEIVER_SIG_ALIAS;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.RECEIVER_SIG;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.RECEIVER_SIG_ALIAS;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
-import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.spi.AccountKeyLookup;
+import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
+import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
@@ -41,19 +51,16 @@ public class AdapterUtils {
     }
 
     /**
-     * Returns the {@link AccountKeyLookup} containing the "well-known" accounts and aliases that
+     * Returns the {@link ReadableAccountStore} containing the "well-known" accounts and aliases that
      * exist in a {@code SigRequirementsTest} scenario. This allows us to re-use these scenarios in
-     * unit tests of {@link com.hedera.node.app.spi.PreTransactionHandler} implementations that
-     * require an {@link AccountKeyLookup}.
+     * unit tests that require a {@link ReadableAccountStore}.
      *
      * @return the well-known account store
      */
-    public static AccountKeyLookup wellKnownKeyLookupAt() {
-        return new TestFixturesKeyLookup(
-                mockStates(
-                        Map.of(
-                                ALIASES_KEY, wellKnownAliasState(),
-                                ACCOUNTS_KEY, wellKnownAccountsState())));
+    public static ReadableAccountStore wellKnownKeyLookupAt() {
+        return new TestFixturesKeyLookup(mockStates(Map.of(
+                ALIASES_KEY, wellKnownAliasState(),
+                ACCOUNTS_KEY, wellKnownAccountsState())));
     }
 
     public static ReadableStates mockStates(final Map<String, ReadableKVState> keysToMock) {
@@ -62,22 +69,31 @@ public class AdapterUtils {
         return mockStates;
     }
 
-    private static ReadableKVState<Long, ? extends HederaAccount> wellKnownAccountsState() {
-        final var wrappedState =
-                new MapReadableKVState<>(ACCOUNTS_KEY, TxnHandlingScenario.wellKnownAccounts());
-        return new StateKeyAdapter<>(wrappedState, EntityNum::fromLong);
+    private static ReadableKVState<EntityNumVirtualKey, ? extends HederaAccount> wellKnownAccountsState() {
+        final var wrappedState = new MapReadableKVState<>(ACCOUNTS_KEY, TxnHandlingScenario.wellKnownAccounts());
+        return new StateKeyAdapter<>(wrappedState, EntityNumVirtualKey::asEntityNum);
     }
 
-    private static MapReadableKVState<String, Long> wellKnownAliasState() {
-        final Map<String, Long> wellKnownAliases =
-                Map.ofEntries(
-                        Map.entry(CURRENTLY_UNUSED_ALIAS, MISSING_NUM.longValue()),
-                        Map.entry(
-                                NO_RECEIVER_SIG_ALIAS, fromAccountId(NO_RECEIVER_SIG).longValue()),
-                        Map.entry(RECEIVER_SIG_ALIAS, fromAccountId(RECEIVER_SIG).longValue()),
-                        Map.entry(
-                                FIRST_TOKEN_SENDER_LITERAL_ALIAS.toStringUtf8(),
-                                fromAccountId(FIRST_TOKEN_SENDER).longValue()));
+    public static MapReadableKVState<String, EntityNumValue> wellKnownAliasState() {
+        final Map<String, EntityNumValue> wellKnownAliases = Map.ofEntries(
+                Map.entry(CURRENTLY_UNUSED_ALIAS, new EntityNumValue(MISSING_NUM.longValue())),
+                Map.entry(
+                        NO_RECEIVER_SIG_ALIAS,
+                        new EntityNumValue(fromAccountId(NO_RECEIVER_SIG).longValue())),
+                Map.entry(
+                        RECEIVER_SIG_ALIAS,
+                        new EntityNumValue(fromAccountId(RECEIVER_SIG).longValue())),
+                Map.entry(
+                        FIRST_TOKEN_SENDER_LITERAL_ALIAS.toStringUtf8(),
+                        new EntityNumValue(fromAccountId(FIRST_TOKEN_SENDER).longValue())));
         return new MapReadableKVState<>(ALIASES_KEY, wellKnownAliases);
+    }
+
+    public static TransactionBody txnFrom(final TxnHandlingScenario scenario) {
+        try {
+            return toPbj(scenario.platformTxn().getTxn());
+        } catch (final Throwable e) {
+            throw new RuntimeException(e);
+        }
     }
 }

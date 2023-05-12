@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.decodeFunctionCall;
@@ -45,15 +46,13 @@ import java.util.Objects;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
-public class GetApprovedPrecompile extends AbstractReadOnlyPrecompile
-        implements EvmGetApprovedPrecompile {
+public class GetApprovedPrecompile extends AbstractReadOnlyPrecompile implements EvmGetApprovedPrecompile {
 
     private static final ABIType<Tuple> HAPI_GET_APPROVED_FUNCTION_DECODER =
             TypeFactory.create(ADDRESS_UINT256_RAW_TYPE);
     private static final Function HAPI_GET_APPROVED_FUNCTION =
             new Function("getApproved(address,uint256)", "(int,int)");
-    private static final Bytes HAPI_GET_APPROVED_FUNCTION_SELECTOR =
-            Bytes.wrap(HAPI_GET_APPROVED_FUNCTION.selector());
+    private static final Bytes HAPI_GET_APPROVED_FUNCTION_SELECTOR = Bytes.wrap(HAPI_GET_APPROVED_FUNCTION.selector());
 
     GetApprovedWrapper<TokenID> getApprovedWrapper;
 
@@ -76,16 +75,14 @@ public class GetApprovedPrecompile extends AbstractReadOnlyPrecompile
     }
 
     @Override
-    public TransactionBody.Builder body(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         getApprovedWrapper = decodeGetApproved(input, tokenId);
         return super.body(input, aliasResolver);
     }
 
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-        Objects.requireNonNull(
-                getApprovedWrapper, "`body` method should be called before `getSuccessResultsFor`");
+        Objects.requireNonNull(getApprovedWrapper, "`body` method should be called before `getSuccessResultsFor`");
 
         final var nftsLedger = ledgers.nfts();
         final var nftId = NftId.fromGrpc(getApprovedWrapper.token(), getApprovedWrapper.serialNo());
@@ -97,24 +94,18 @@ public class GetApprovedPrecompile extends AbstractReadOnlyPrecompile
                 : evmEncoder.encodeGetApproved(canonicalSpender);
     }
 
-    public static GetApprovedWrapper<TokenID> decodeGetApproved(
-            final Bytes input, final TokenID impliedTokenId) {
+    public static GetApprovedWrapper<TokenID> decodeGetApproved(final Bytes input, final TokenID impliedTokenId) {
         final var offset = impliedTokenId == null ? 1 : 0;
         if (offset == 1) {
             final Tuple decodedArguments =
-                    decodeFunctionCall(
-                            input,
-                            HAPI_GET_APPROVED_FUNCTION_SELECTOR,
-                            HAPI_GET_APPROVED_FUNCTION_DECODER);
+                    decodeFunctionCall(input, HAPI_GET_APPROVED_FUNCTION_SELECTOR, HAPI_GET_APPROVED_FUNCTION_DECODER);
             final var serialNo = (BigInteger) decodedArguments.get(offset);
             return new GetApprovedWrapper<>(
-                    convertAddressBytesToTokenID(decodedArguments.get(0)),
-                    serialNo.longValueExact());
+                    convertAddressBytesToTokenID(decodedArguments.get(0)), serialNo.longValueExact());
         } else {
             final var rawGetApprovedWrapper = EvmGetApprovedPrecompile.decodeGetApproved(input);
             return new GetApprovedWrapper<>(
-                    tokenIdFromEvmAddress(rawGetApprovedWrapper.token()),
-                    rawGetApprovedWrapper.serialNo());
+                    tokenIdFromEvmAddress(rawGetApprovedWrapper.token()), rawGetApprovedWrapper.serialNo());
         }
     }
 }

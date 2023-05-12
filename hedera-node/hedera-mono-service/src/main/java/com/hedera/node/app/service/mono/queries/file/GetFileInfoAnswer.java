@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.file;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetInfo;
@@ -62,19 +63,13 @@ public class GetFileInfoAnswer implements AnswerService {
 
     @Override
     public Response responseGiven(
-            final Query query,
-            @Nullable final StateView view,
-            final ResponseCodeEnum validity,
-            final long cost) {
+            final Query query, @Nullable final StateView view, final ResponseCodeEnum validity, final long cost) {
         final var op = query.getFileGetInfo();
         final FileGetInfoResponse.Builder response = FileGetInfoResponse.newBuilder();
 
         final ResponseType type = op.getHeader().getResponseType();
         if (validity != OK) {
-            log.debug(
-                    "FileGetInfo not successful for: validity {}, query {} ",
-                    validity,
-                    query.getFileGetInfo());
+            log.debug("FileGetInfo not successful for: validity {}, query {} ", validity, query.getFileGetInfo());
             response.setHeader(header(validity, type, cost));
         } else {
             if (type == COST_ANSWER) {

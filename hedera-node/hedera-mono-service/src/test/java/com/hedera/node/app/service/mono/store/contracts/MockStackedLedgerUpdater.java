@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts;
 
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
@@ -20,8 +21,7 @@ import com.hedera.node.app.service.mono.ledger.accounts.ContractCustomizer;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
-public class MockStackedLedgerUpdater
-        extends AbstractStackedLedgerUpdater<HederaWorldState, Account> {
+public class MockStackedLedgerUpdater extends AbstractStackedLedgerUpdater<HederaWorldState, Account> {
     private final ContractCustomizer customizer;
 
     public MockStackedLedgerUpdater(
@@ -41,8 +41,6 @@ public class MockStackedLedgerUpdater
     @SuppressWarnings({"unchecked", "rawtypes"})
     public WorldUpdater updater() {
         return new MockStackedLedgerUpdater(
-                (AbstractLedgerWorldUpdater) this,
-                trackingLedgers().wrapped(new SideEffectsTracker()),
-                customizer);
+                (AbstractLedgerWorldUpdater) this, trackingLedgers().wrapped(new SideEffectsTracker()), customizer);
     }
 }

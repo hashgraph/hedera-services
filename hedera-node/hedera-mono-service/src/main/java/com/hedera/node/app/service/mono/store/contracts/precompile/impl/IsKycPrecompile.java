@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
@@ -47,8 +48,7 @@ public class IsKycPrecompile extends AbstractReadOnlyPrecompile implements EvmIs
     }
 
     @Override
-    public TransactionBody.Builder body(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final var tokenIsKycWrapper = decodeIsKyc(input, aliasResolver);
         tokenId = tokenIsKycWrapper.token();
         accountId = tokenIsKycWrapper.account();
@@ -66,7 +66,6 @@ public class IsKycPrecompile extends AbstractReadOnlyPrecompile implements EvmIs
         final var rawGrantRevokeKycWrapper = EvmIsKycPrecompile.decodeIsKyc(input);
         return new GrantRevokeKycWrapper<>(
                 convertAddressBytesToTokenID(rawGrantRevokeKycWrapper.token()),
-                convertLeftPaddedAddressToAccountId(
-                        rawGrantRevokeKycWrapper.account(), aliasResolver));
+                convertLeftPaddedAddressToAccountId(rawGrantRevokeKycWrapper.account(), aliasResolver));
     }
 }

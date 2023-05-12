@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage.token.meta;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -44,8 +45,7 @@ class FeeScheduleUpdateMetaTest {
     @Test
     void toStringWorks() {
         // given:
-        final var desired =
-                "FeeScheduleUpdateMeta[effConsensusTime=1234567, numBytesInNewFeeScheduleRepr=22]";
+        final var desired = "FeeScheduleUpdateMeta[effConsensusTime=1234567, numBytesInNewFeeScheduleRepr=22]";
 
         // when:
         final var subject = new FeeScheduleUpdateMeta(1_234_567L, 22);

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.models;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -103,8 +104,11 @@ class NftIdTest {
     void gettersWork() {
         // given:
         final var subject = new NftId(shard, realm, num, serialNo);
-        TokenID expectedTokenId =
-                TokenID.newBuilder().setShardNum(shard).setRealmNum(realm).setTokenNum(num).build();
+        TokenID expectedTokenId = TokenID.newBuilder()
+                .setShardNum(shard)
+                .setRealmNum(realm)
+                .setTokenNum(num)
+                .build();
 
         assertEquals(shard, subject.shard());
         assertEquals(realm, subject.realm());

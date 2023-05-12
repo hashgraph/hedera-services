@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage.schedule;
 
 import static com.hedera.node.app.hapi.fees.usage.schedule.entities.ScheduleEntitySizes.SCHEDULE_ENTITY_SIZES;
@@ -95,11 +96,7 @@ public class ExtantScheduleContext {
         private static final int NUM_SIGNERS_MASK = 1 << 4;
 
         private static final int ALL_FIELDS_MASK =
-                NUM_SIGNERS_MASK
-                        | SCHEDULED_TXN_MASK
-                        | MEMO_MASK
-                        | ADMIN_KEY_MASK
-                        | IS_RESOLVED_MASK;
+                NUM_SIGNERS_MASK | SCHEDULED_TXN_MASK | MEMO_MASK | ADMIN_KEY_MASK | IS_RESOLVED_MASK;
         private int mask = 0;
 
         private int numSigners;
@@ -112,8 +109,7 @@ public class ExtantScheduleContext {
 
         public ExtantScheduleContext build() {
             if (mask != ALL_FIELDS_MASK) {
-                throw new IllegalStateException(
-                        String.format("Field mask is %d, not %d!", mask, ALL_FIELDS_MASK));
+                throw new IllegalStateException(String.format("Field mask is %d, not %d!", mask, ALL_FIELDS_MASK));
             }
             return new ExtantScheduleContext(this);
         }
@@ -124,8 +120,7 @@ public class ExtantScheduleContext {
             return this;
         }
 
-        public ExtantScheduleContext.Builder setScheduledTxn(
-                final SchedulableTransactionBody scheduledTxn) {
+        public ExtantScheduleContext.Builder setScheduledTxn(final SchedulableTransactionBody scheduledTxn) {
             this.scheduledTxn = scheduledTxn;
             mask |= SCHEDULED_TXN_MASK;
             return this;

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual;
 
 import com.google.common.base.MoreObjects;
@@ -22,16 +23,15 @@ import com.hedera.node.app.service.mono.utils.NftNumPair;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /** Represents a key for a unique token (NFT). */
-public class UniqueTokenKey implements VirtualKey<UniqueTokenKey> {
+public class UniqueTokenKey implements VirtualKey {
     private static final long CLASS_ID = 0x17f77b311f6L;
 
     /** Current version of the encoding scheme. */
-    /* package */ static final int CURRENT_VERSION = 1;
+    /* package */ public static final int CURRENT_VERSION = 1;
 
     /**
      * Expected maximum number of bytes this class will serialize to. Serialization format will be:
@@ -101,18 +101,6 @@ public class UniqueTokenKey implements VirtualKey<UniqueTokenKey> {
         return (nonZeroBits / 8) + Math.min(1, nonZeroBits % 8);
     }
 
-    @Override
-    public int compareTo(@NonNull final UniqueTokenKey other) {
-        if (this == other) {
-            return 0;
-        }
-        // Sort by entity num first, followed by token serial number.
-        if (this.entityNum == other.entityNum) {
-            return Long.compare(this.tokenSerial, other.tokenSerial);
-        }
-        return Long.compare(this.entityNum, other.entityNum);
-    }
-
     /* package */ interface ByteConsumer {
         void accept(byte b) throws IOException;
     }
@@ -129,8 +117,8 @@ public class UniqueTokenKey implements VirtualKey<UniqueTokenKey> {
         return packed & 0x0F;
     }
 
-    private static void writePartial(
-            final long value, final int numBytes, final ByteConsumer output) throws IOException {
+    private static void writePartial(final long value, final int numBytes, final ByteConsumer output)
+            throws IOException {
         for (int b = numBytes - 1; b >= 0; b--) {
             output.accept((byte) (value >> (b * 8)));
         }
@@ -188,8 +176,7 @@ public class UniqueTokenKey implements VirtualKey<UniqueTokenKey> {
         byte get() throws IOException;
     }
 
-    private static long decodeVariableField(final ByteSupplier input, final int numBytes)
-            throws IOException {
+    private static long decodeVariableField(final ByteSupplier input, final int numBytes) throws IOException {
         long value = 0;
         for (int n = Math.min(8, numBytes), shift = 8 * (n - 1); n > 0; n--, shift -= 8) {
             value |= ((long) input.get() & 0xFF) << shift;
@@ -212,8 +199,7 @@ public class UniqueTokenKey implements VirtualKey<UniqueTokenKey> {
     }
 
     @Override
-    public void deserialize(final SerializableDataInputStream inputStream, final int dataVersion)
-            throws IOException {
+    public void deserialize(final SerializableDataInputStream inputStream, final int dataVersion) throws IOException {
         deserializeFrom(inputStream::readByte);
     }
 

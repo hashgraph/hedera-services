@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,79 +13,81 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.contract.impl.test.handlers;
 
-import static com.hedera.test.factories.scenarios.ContractCreateScenarios.*;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
+import static com.hedera.test.factories.scenarios.ContractCreateScenarios.CONTRACT_CREATE_DEPRECATED_CID_ADMIN_KEY;
+import static com.hedera.test.factories.scenarios.ContractCreateScenarios.CONTRACT_CREATE_NO_ADMIN_KEY;
+import static com.hedera.test.factories.scenarios.ContractCreateScenarios.CONTRACT_CREATE_WITH_ADMIN_KEY;
+import static com.hedera.test.factories.scenarios.ContractCreateScenarios.CONTRACT_CREATE_WITH_AUTO_RENEW_ACCOUNT;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.MISC_ACCOUNT_KT;
 import static com.hedera.test.factories.txns.ContractCreateFactory.DEFAULT_ADMIN_KT;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
-import static com.hedera.test.utils.KeyUtils.sanityRestored;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCreateHandler;
-import com.hedera.node.app.spi.AccountKeyLookup;
+import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.time.Instant;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class ContractCreateHandlerParityTest {
-    private AccountKeyLookup keyLookup;
+    private ReadableAccountStore accountStore;
     private final ContractCreateHandler subject = new ContractCreateHandler();
 
     @BeforeEach
     void setUp() {
-        final var now = Instant.now();
-        keyLookup = AdapterUtils.wellKnownKeyLookupAt();
+        accountStore = AdapterUtils.wellKnownKeyLookupAt();
     }
 
     @Test
-    void getsContractCreateWithAutoRenew() {
+    void getsContractCreateWithAutoRenew() throws PreCheckException {
         final var theTxn = txnFrom(CONTRACT_CREATE_WITH_AUTO_RENEW_ACCOUNT);
-        final var meta =
-                subject.preHandle(theTxn, theTxn.getTransactionID().getAccountID(), keyLookup);
+        final var context = new FakePreHandleContext(accountStore, theTxn);
+        subject.preHandle(context);
 
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(sanityRestored(meta.requiredNonPayerKeys()), contains(MISC_ACCOUNT_KT.asKey()));
+        assertThat(context.payerKey()).isEqualTo(DEFAULT_PAYER_KT.asPbjKey());
+        assertThat(context.requiredNonPayerKeys()).isEqualTo(Set.of(MISC_ACCOUNT_KT.asPbjKey()));
     }
 
     @Test
-    void getsContractCreateNoAdminKey() {
+    void getsContractCreateNoAdminKey() throws PreCheckException {
         final var theTxn = txnFrom(CONTRACT_CREATE_NO_ADMIN_KEY);
-        final var meta =
-                subject.preHandle(theTxn, theTxn.getTransactionID().getAccountID(), keyLookup);
+        final var context = new FakePreHandleContext(accountStore, theTxn);
+        subject.preHandle(context);
 
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertTrue(sanityRestored(meta.requiredNonPayerKeys()).isEmpty());
+        assertThat(context.payerKey()).isEqualTo(DEFAULT_PAYER_KT.asPbjKey());
+        assertThat(context.requiredNonPayerKeys()).isEmpty();
     }
 
     @Test
-    void getsContractCreateDeprecatedAdminKey() {
+    void getsContractCreateDeprecatedAdminKey() throws PreCheckException {
         final var theTxn = txnFrom(CONTRACT_CREATE_DEPRECATED_CID_ADMIN_KEY);
-        final var meta =
-                subject.preHandle(theTxn, theTxn.getTransactionID().getAccountID(), keyLookup);
+        final var context = new FakePreHandleContext(accountStore, theTxn);
+        subject.preHandle(context);
 
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertTrue(sanityRestored(meta.requiredNonPayerKeys()).isEmpty());
+        assertThat(context.payerKey()).isEqualTo(DEFAULT_PAYER_KT.asPbjKey());
+        assertThat(context.requiredNonPayerKeys()).isEmpty();
     }
 
     @Test
-    void getsContractCreateWithAdminKey() {
+    void getsContractCreateWithAdminKey() throws PreCheckException {
         final var theTxn = txnFrom(CONTRACT_CREATE_WITH_ADMIN_KEY);
-        final var meta =
-                subject.preHandle(theTxn, theTxn.getTransactionID().getAccountID(), keyLookup);
+        final var context = new FakePreHandleContext(accountStore, theTxn);
+        subject.preHandle(context);
 
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(sanityRestored(meta.requiredNonPayerKeys()), contains(DEFAULT_ADMIN_KT.asKey()));
+        assertThat(context.payerKey()).isEqualTo(DEFAULT_PAYER_KT.asPbjKey());
+        assertThat(context.requiredNonPayerKeys()).isEqualTo(Set.of(DEFAULT_ADMIN_KT.asPbjKey()));
     }
 
     private TransactionBody txnFrom(final TxnHandlingScenario scenario) {
         try {
-            return scenario.platformTxn().getTxn();
+            return toPbj(scenario.platformTxn().getTxn());
         } catch (final Throwable e) {
             throw new RuntimeException(e);
         }

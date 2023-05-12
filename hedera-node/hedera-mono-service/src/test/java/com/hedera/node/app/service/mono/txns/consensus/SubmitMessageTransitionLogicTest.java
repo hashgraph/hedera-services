@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.consensus;
 
 import static com.hedera.test.utils.IdUtils.asTopic;
@@ -35,6 +36,7 @@ import static org.mockito.BDDMockito.verify;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hedera.node.app.service.mono.utils.EntityNum;
@@ -61,7 +63,7 @@ class SubmitMessageTransitionLogicTest {
     private SignedTxnAccessor accessor;
     private OptionValidator validator;
     private SubmitMessageTransitionLogic subject;
-    private MerkleMap<EntityNum, MerkleTopic> topics = new MerkleMap<>();
+    private MerkleMapLike<EntityNum, MerkleTopic> topics = MerkleMapLike.from(new MerkleMap<>());
     private GlobalDynamicProperties globalDynamicProperties;
     private final AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 
@@ -73,12 +75,10 @@ class SubmitMessageTransitionLogicTest {
         given(transactionContext.consensusTime()).willReturn(consensusTime);
         accessor = mock(SignedTxnAccessor.class);
         validator = mock(OptionValidator.class);
-        topics.clear();
         globalDynamicProperties = mock(GlobalDynamicProperties.class);
         given(globalDynamicProperties.messageMaxBytesAllowed()).willReturn(1024);
         subject =
-                new SubmitMessageTransitionLogic(
-                        () -> topics, validator, transactionContext, globalDynamicProperties);
+                new SubmitMessageTransitionLogic(() -> topics, validator, transactionContext, globalDynamicProperties);
     }
 
     @Test
@@ -235,11 +235,10 @@ class SubmitMessageTransitionLogicTest {
     }
 
     private void givenTransaction(ConsensusSubmitMessageTransactionBody.Builder body) {
-        transactionBody =
-                TransactionBody.newBuilder()
-                        .setTransactionID(defaultTxnId())
-                        .setConsensusSubmitMessage(body.build())
-                        .build();
+        transactionBody = TransactionBody.newBuilder()
+                .setTransactionID(defaultTxnId())
+                .setConsensusSubmitMessage(body.build())
+                .build();
         given(accessor.getTxn()).willReturn(transactionBody);
         given(transactionContext.accessor()).willReturn(accessor);
     }
@@ -251,28 +250,24 @@ class SubmitMessageTransitionLogicTest {
     }
 
     private void givenTransactionContextNoMessage() {
-        givenTransaction(
-                ConsensusSubmitMessageTransactionBody.newBuilder()
-                        .setTopicID(asTopic(TOPIC_ID))
-                        .setTopicID(asTopic(TOPIC_ID)));
+        givenTransaction(ConsensusSubmitMessageTransactionBody.newBuilder()
+                .setTopicID(asTopic(TOPIC_ID))
+                .setTopicID(asTopic(TOPIC_ID)));
         given(validator.queryableTopicStatus(asTopic(TOPIC_ID), topics)).willReturn(OK);
         topics.put(EntityNum.fromTopicId(asTopic(TOPIC_ID)), new MerkleTopic());
     }
 
     private void givenTransactionContextInvalidTopic() {
         givenTransaction(getBasicValidTransactionBodyBuilder());
-        given(validator.queryableTopicStatus(asTopic(TOPIC_ID), topics))
-                .willReturn(INVALID_TOPIC_ID);
+        given(validator.queryableTopicStatus(asTopic(TOPIC_ID), topics)).willReturn(INVALID_TOPIC_ID);
     }
 
-    private void givenChunkMessage(
-            int totalChunks, int chunkNumber, TransactionID initialTransactionID) {
-        ConsensusMessageChunkInfo chunkInfo =
-                ConsensusMessageChunkInfo.newBuilder()
-                        .setInitialTransactionID(initialTransactionID)
-                        .setTotal(totalChunks)
-                        .setNumber(chunkNumber)
-                        .build();
+    private void givenChunkMessage(int totalChunks, int chunkNumber, TransactionID initialTransactionID) {
+        ConsensusMessageChunkInfo chunkInfo = ConsensusMessageChunkInfo.newBuilder()
+                .setInitialTransactionID(initialTransactionID)
+                .setTotal(totalChunks)
+                .setNumber(chunkNumber)
+                .build();
         givenTransaction(getBasicValidTransactionBodyBuilder().setChunkInfo(chunkInfo));
         given(validator.queryableTopicStatus(asTopic(TOPIC_ID), topics)).willReturn(OK);
         topics.put(EntityNum.fromTopicId(asTopic(TOPIC_ID)), new MerkleTopic());

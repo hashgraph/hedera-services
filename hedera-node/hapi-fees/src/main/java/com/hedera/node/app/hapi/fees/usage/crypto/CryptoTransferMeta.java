@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage.crypto;
 
 import com.hederahashgraph.api.proto.java.SubType;
@@ -29,10 +30,7 @@ public class CryptoTransferMeta {
     private int customFeeTokenTransfers;
 
     public CryptoTransferMeta(
-            int tokenMultiplier,
-            int numTokensInvolved,
-            int numFungibleTokenTransfers,
-            int numNftOwnershipChanges) {
+            int tokenMultiplier, int numTokensInvolved, int numFungibleTokenTransfers, int numNftOwnershipChanges) {
         this.tokenMultiplier = tokenMultiplier;
         this.numTokensInvolved = numTokensInvolved;
         this.numFungibleTokenTransfers = numFungibleTokenTransfers;

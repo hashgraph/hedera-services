@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.submerkle;
 
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
@@ -40,10 +41,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class RoyaltyFeeSpecTest {
-    @Mock private Account feeCollector;
-    @Mock private Token token;
-    @Mock private FixedFeeSpec fallbackSpec;
-    @Mock private TypedTokenStore tokenStore;
+    @Mock
+    private Account feeCollector;
+
+    @Mock
+    private Token token;
+
+    @Mock
+    private FixedFeeSpec fallbackSpec;
+
+    @Mock
+    private TypedTokenStore tokenStore;
 
     final RoyaltyFeeSpec subject = new RoyaltyFeeSpec(1, 10, fallbackSpec);
 
@@ -109,9 +117,8 @@ class RoyaltyFeeSpecTest {
     void toStringWorks() {
         final var fallback = new FixedFeeSpec(1, MISSING_ENTITY_ID);
         final var a = new RoyaltyFeeSpec(1, 10, fallback);
-        final var desired =
-                "RoyaltyFeeSpec[numerator=1, denominator=10, "
-                        + "fallbackFee=FixedFeeSpec{unitsToCollect=1, tokenDenomination=0.0.0}]";
+        final var desired = "RoyaltyFeeSpec[numerator=1, denominator=10, "
+                + "fallbackFee=FixedFeeSpec{unitsToCollect=1, tokenDenomination=0.0.0}]";
 
         assertEquals(desired, a.toString());
     }

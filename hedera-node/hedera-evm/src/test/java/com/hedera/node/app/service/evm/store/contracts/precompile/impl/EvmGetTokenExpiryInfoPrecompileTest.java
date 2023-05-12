@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.store.contracts.precompile.impl;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -26,14 +27,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class EvmGetTokenExpiryInfoPrecompileTest {
 
     public static final Bytes GET_EXPIRY_INFO_FOR_TOKEN_INPUT =
-            Bytes.fromHexString(
-                    "0xd614cdb800000000000000000000000000000000000000000000000000000000000008c1");
+            Bytes.fromHexString("0xd614cdb800000000000000000000000000000000000000000000000000000000000008c1");
 
     @Test
     void decodeGetTokenExpiryInfo() {
         final var decodedInput =
-                EvmGetTokenExpiryInfoPrecompile.decodeGetTokenExpiryInfo(
-                        GET_EXPIRY_INFO_FOR_TOKEN_INPUT);
+                EvmGetTokenExpiryInfoPrecompile.decodeGetTokenExpiryInfo(GET_EXPIRY_INFO_FOR_TOKEN_INPUT);
 
         assertTrue(decodedInput.token().length > 0);
     }

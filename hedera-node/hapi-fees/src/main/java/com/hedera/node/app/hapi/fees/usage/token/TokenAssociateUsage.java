@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage.token;
 
 import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
@@ -28,8 +29,7 @@ public class TokenAssociateUsage extends TokenTxnUsage<TokenAssociateUsage> {
         super(tokenOp, usageEstimator);
     }
 
-    public static TokenAssociateUsage newEstimate(
-            TransactionBody tokenOp, TxnUsageEstimator usageEstimator) {
+    public static TokenAssociateUsage newEstimate(TransactionBody tokenOp, TxnUsageEstimator usageEstimator) {
         return new TokenAssociateUsage(tokenOp, usageEstimator);
     }
 
@@ -47,8 +47,7 @@ public class TokenAssociateUsage extends TokenTxnUsage<TokenAssociateUsage> {
         var op = this.op.getTokenAssociate();
         addEntityBpt();
         op.getTokensList().forEach(t -> addEntityBpt());
-        novelRelsLasting(
-                op.getTokensCount(), ESTIMATOR_UTILS.relativeLifetime(this.op, currentExpiry));
+        novelRelsLasting(op.getTokensCount(), ESTIMATOR_UTILS.relativeLifetime(this.op, currentExpiry));
         return usageEstimator.get();
     }
 }

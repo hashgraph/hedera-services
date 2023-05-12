@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.utils;
 
 import static com.swirlds.common.crypto.SignatureType.ECDSA_SECP256K1;
@@ -53,8 +54,7 @@ public final class SignatureGenerator {
             return engine.signOneShot(msg);
         } else if (privateKey instanceof ECPrivateKey) {
             final Signature ecdsaSign =
-                    Signature.getInstance(
-                            ECDSA_SECP256K1.signingAlgorithm(), BOUNCYCASTLE_PROVIDER);
+                    Signature.getInstance(ECDSA_SECP256K1.signingAlgorithm(), BOUNCYCASTLE_PROVIDER);
             ecdsaSign.initSign(privateKey);
             ecdsaSign.update(msg);
             final var asn1Sig = ecdsaSign.sign();

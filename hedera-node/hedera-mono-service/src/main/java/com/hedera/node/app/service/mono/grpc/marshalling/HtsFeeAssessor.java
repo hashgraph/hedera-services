@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.grpc.marshalling;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -37,26 +38,18 @@ public class HtsFeeAssessor {
             CustomFeeMeta chargingTokenMeta,
             FcCustomFee htsFee,
             BalanceChangeManager changeManager,
-            List<AssessedCustomFeeWrapper> accumulator) {
+            List<AssessedCustomFeeWrapper> accumulator,
+            boolean isFallbackFee) {
         final var collector = htsFee.getFeeCollectorAsId();
         final var fixedSpec = htsFee.getFixedFeeSpec();
         final var amount = fixedSpec.getUnitsToCollect();
         final var denominatingToken = fixedSpec.getTokenDenomination().asId();
         AdjustmentUtils.adjustForAssessed(
-                payer,
-                chargingTokenMeta.tokenId(),
-                collector,
-                denominatingToken,
-                amount,
-                changeManager);
+                payer, chargingTokenMeta.tokenId(), collector, denominatingToken, amount, changeManager, isFallbackFee);
 
         final var effPayerAccountNums = new AccountID[] {payer.asGrpcAccount()};
-        final var assessed =
-                new AssessedCustomFeeWrapper(
-                        htsFee.getFeeCollector(),
-                        fixedSpec.getTokenDenomination(),
-                        amount,
-                        effPayerAccountNums);
+        final var assessed = new AssessedCustomFeeWrapper(
+                htsFee.getFeeCollector(), fixedSpec.getTokenDenomination(), amount, effPayerAccountNums);
         accumulator.add(assessed);
 
         return OK;

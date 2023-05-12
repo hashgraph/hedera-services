@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.charging;
 
 import static com.hedera.node.app.hapi.fees.calc.OverflowCheckingCalc.tinycentsToTinybars;
@@ -37,9 +38,8 @@ class ContractStoragePriceTiersTest {
     private static final int DEFAULT_FREE_TIER_LIMIT = 100;
     private static final long DEFAULT_MAX_KV_PAIRS = 500_000_000;
     private static final long DEFAULT_REFERENCE_LIFETIME = 2592000L;
-    private static final String CANONICAL_SPEC =
-            "10til50M,50til100M,100til150M,200til200M,500til250M,700til300M"
-                    + ",1000til350M,2000til400M,5000til450M,10000til500M";
+    private static final String CANONICAL_SPEC = "10til50M,50til100M,100til150M,200til200M,500til250M,700til300M"
+            + ",1000til350M,2000til400M,5000til450M,10000til500M";
 
     private ContractStoragePriceTiers subject;
 
@@ -47,8 +47,7 @@ class ContractStoragePriceTiersTest {
     void doesntChargeZeroGivenNonZeroPrice() {
         givenTypicalSubject();
         final var degenerate =
-                subject.priceOfPendingUsage(
-                        degenRate, 1_000_000, DEFAULT_REFERENCE_LIFETIME, nonFreeUsageFor(1));
+                subject.priceOfPendingUsage(degenRate, 1_000_000, DEFAULT_REFERENCE_LIFETIME, nonFreeUsageFor(1));
         assertEquals(1, degenerate);
     }
 
@@ -56,8 +55,7 @@ class ContractStoragePriceTiersTest {
     void chargesZeroGivenZeroPrice() {
         givenDefaultSubjectWith("0til100M");
         final var degenerate =
-                subject.priceOfPendingUsage(
-                        degenRate, 1_000_000, DEFAULT_REFERENCE_LIFETIME, nonFreeUsageFor(1));
+                subject.priceOfPendingUsage(degenRate, 1_000_000, DEFAULT_REFERENCE_LIFETIME, nonFreeUsageFor(1));
         assertEquals(0, degenerate);
     }
 
@@ -69,9 +67,7 @@ class ContractStoragePriceTiersTest {
         final var basePrice = 2000 * THOUSANDTHS_TO_TINY;
         final var expected = tinycentsToTinybars(basePrice, someRate) * congestionFactor;
 
-        final var actual =
-                subject.priceOfPendingUsage(
-                        someRate, used, DEFAULT_REFERENCE_LIFETIME, nonFreeUsageFor(1));
+        final var actual = subject.priceOfPendingUsage(someRate, used, DEFAULT_REFERENCE_LIFETIME, nonFreeUsageFor(1));
 
         assertEquals(expected, actual);
     }
@@ -83,9 +79,7 @@ class ContractStoragePriceTiersTest {
         final var basePrice = 2000 * THOUSANDTHS_TO_TINY;
         final var expected = tinycentsToTinybars(basePrice, someRate);
 
-        final var actual =
-                subject.priceOfPendingUsage(
-                        someRate, used, DEFAULT_REFERENCE_LIFETIME, nonFreeUsageFor(1));
+        final var actual = subject.priceOfPendingUsage(someRate, used, DEFAULT_REFERENCE_LIFETIME, nonFreeUsageFor(1));
 
         assertEquals(expected, actual);
     }
@@ -97,8 +91,7 @@ class ContractStoragePriceTiersTest {
         final var basePrice = 2000 * THOUSANDTHS_TO_TINY;
         final var expected = 101 * tinycentsToTinybars(basePrice, someRate);
 
-        final var actual =
-                subject.priceOfAutoRenewal(someRate, used, DEFAULT_REFERENCE_LIFETIME, 101);
+        final var actual = subject.priceOfAutoRenewal(someRate, used, DEFAULT_REFERENCE_LIFETIME, 101);
 
         assertEquals(expected, actual);
     }
@@ -108,8 +101,7 @@ class ContractStoragePriceTiersTest {
         givenDefaultSubjectWith("0til50M,2000til450M");
         final var used = 450_000_000L;
 
-        final var actual =
-                subject.priceOfAutoRenewal(someRate, used, DEFAULT_REFERENCE_LIFETIME, 99);
+        final var actual = subject.priceOfAutoRenewal(someRate, used, DEFAULT_REFERENCE_LIFETIME, 99);
 
         assertEquals(0, actual);
     }
@@ -122,8 +114,7 @@ class ContractStoragePriceTiersTest {
         final var lifetime = DEFAULT_REFERENCE_LIFETIME / 4;
         final var expected = tinycentsToTinybars(basePrice / 4, someRate);
 
-        final var actual =
-                subject.priceOfPendingUsage(someRate, used, lifetime, nonFreeUsageFor(1));
+        final var actual = subject.priceOfPendingUsage(someRate, used, lifetime, nonFreeUsageFor(1));
 
         assertEquals(expected, actual);
     }
@@ -141,17 +132,14 @@ class ContractStoragePriceTiersTest {
         final var usage = nonFreeUsageFor(-1);
         assertThrows(
                 IllegalArgumentException.class,
-                () ->
-                        subject.priceOfPendingUsage(
-                                someRate, 666, DEFAULT_REFERENCE_LIFETIME, usage));
+                () -> subject.priceOfPendingUsage(someRate, 666, DEFAULT_REFERENCE_LIFETIME, usage));
     }
 
     @Test
     void zeroSlotsRequestedIsZeroRent() {
         givenTypicalSubject();
         final var usage = nonFreeUsageFor(0);
-        assertEquals(
-                0, subject.priceOfPendingUsage(someRate, 666, DEFAULT_REFERENCE_LIFETIME, usage));
+        assertEquals(0, subject.priceOfPendingUsage(someRate, 666, DEFAULT_REFERENCE_LIFETIME, usage));
     }
 
     @Test
@@ -160,9 +148,7 @@ class ContractStoragePriceTiersTest {
         final var info = nonFreeUsageFor(1);
         assertThrows(
                 IllegalArgumentException.class,
-                () ->
-                        subject.priceOfPendingUsage(
-                                someRate, 666, -DEFAULT_REFERENCE_LIFETIME, info));
+                () -> subject.priceOfPendingUsage(someRate, 666, -DEFAULT_REFERENCE_LIFETIME, info));
     }
 
     @Test
@@ -172,8 +158,7 @@ class ContractStoragePriceTiersTest {
         final var expected = tinycentsToTinybars(correctPrice, someRate);
 
         final var actual =
-                subject.priceOfPendingUsage(
-                        someRate, 150_000_000, DEFAULT_REFERENCE_LIFETIME, nonFreeUsageFor(1));
+                subject.priceOfPendingUsage(someRate, 150_000_000, DEFAULT_REFERENCE_LIFETIME, nonFreeUsageFor(1));
 
         assertEquals(expected, actual);
     }
@@ -185,8 +170,7 @@ class ContractStoragePriceTiersTest {
         final var expected = tinycentsToTinybars(correctPrice, someRate);
 
         final var actual =
-                subject.priceOfPendingUsage(
-                        someRate, 150_000_000, DEFAULT_REFERENCE_LIFETIME / 2, nonFreeUsageFor(2));
+                subject.priceOfPendingUsage(someRate, 150_000_000, DEFAULT_REFERENCE_LIFETIME / 2, nonFreeUsageFor(2));
 
         assertEquals(expected / 2 * 2, actual);
     }
@@ -198,8 +182,7 @@ class ContractStoragePriceTiersTest {
         final var expected = tinycentsToTinybars(correctPrice + 1, someRate);
 
         final var actual =
-                subject.priceOfPendingUsage(
-                        someRate, 1_000_000, DEFAULT_REFERENCE_LIFETIME + 1, nonFreeUsageFor(1));
+                subject.priceOfPendingUsage(someRate, 1_000_000, DEFAULT_REFERENCE_LIFETIME + 1, nonFreeUsageFor(1));
 
         assertEquals(expected, actual);
     }
@@ -208,12 +191,8 @@ class ContractStoragePriceTiersTest {
     void costIsUnpayableWithNoSlotsRemaining() {
         givenDefaultSubjectWith("0til50M,2000til450M");
 
-        final var actual =
-                subject.priceOfPendingUsage(
-                        someRate,
-                        500_000_000,
-                        3 * DEFAULT_REFERENCE_LIFETIME / 2,
-                        nonFreeUsageFor(1));
+        final var actual = subject.priceOfPendingUsage(
+                someRate, 500_000_000, 3 * DEFAULT_REFERENCE_LIFETIME / 2, nonFreeUsageFor(1));
 
         assertEquals(Long.MAX_VALUE, actual);
     }
@@ -222,30 +201,23 @@ class ContractStoragePriceTiersTest {
     void alwaysFreeIfInFreeTier() {
         givenTypicalSubject();
 
-        final var actual =
-                subject.priceOfPendingUsage(
-                        someRate,
-                        500_000_000,
-                        3 * DEFAULT_REFERENCE_LIFETIME / 2,
-                        usageInfoFor(DEFAULT_FREE_TIER_LIMIT - 10, 1));
+        final var actual = subject.priceOfPendingUsage(
+                someRate,
+                500_000_000,
+                3 * DEFAULT_REFERENCE_LIFETIME / 2,
+                usageInfoFor(DEFAULT_FREE_TIER_LIMIT - 10, 1));
 
         assertEquals(0, actual);
     }
 
     @Test
     void parsesValidAsExpected() {
-        final var input =
-                "10til50M,50til100M,100til150M,200til200M,500til250M,700til300M"
-                        + ",1000til350M,2000til400M,5000til450M,10000til500M";
+        final var input = "10til50M,50til100M,100til150M,200til200M,500til250M,700til300M"
+                + ",1000til350M,2000til400M,5000til450M,10000til500M";
         final var expectedUsageTiers =
-                new long[] {
-                    50 * M, 100 * M, 150 * M, 200 * M, 250 * M, 300 * M, 350 * M, 400 * M, 450 * M,
-                    500 * M
-                };
+                new long[] {50 * M, 100 * M, 150 * M, 200 * M, 250 * M, 300 * M, 350 * M, 400 * M, 450 * M, 500 * M};
         final var expectedPrices =
-                new long[] {
-                    10 * P, 50 * P, 100 * P, 200 * P, 500 * P, 700 * P, 1000 * P, 2000 * P,
-                    5000 * P, 10000 * P
+                new long[] {10 * P, 50 * P, 100 * P, 200 * P, 500 * P, 700 * P, 1000 * P, 2000 * P, 5000 * P, 10000 * P
                 };
         givenDefaultSubjectWith(input);
 
@@ -259,12 +231,8 @@ class ContractStoragePriceTiersTest {
 
         assertThrows(
                 IllegalArgumentException.class,
-                () ->
-                        ContractStoragePriceTiers.from(
-                                input,
-                                DEFAULT_FREE_TIER_LIMIT,
-                                DEFAULT_MAX_KV_PAIRS,
-                                DEFAULT_REFERENCE_LIFETIME));
+                () -> ContractStoragePriceTiers.from(
+                        input, DEFAULT_FREE_TIER_LIMIT, DEFAULT_MAX_KV_PAIRS, DEFAULT_REFERENCE_LIFETIME));
     }
 
     @Test
@@ -273,76 +241,48 @@ class ContractStoragePriceTiersTest {
 
         assertThrows(
                 IllegalArgumentException.class,
-                () ->
-                        ContractStoragePriceTiers.from(
-                                input,
-                                DEFAULT_FREE_TIER_LIMIT,
-                                DEFAULT_MAX_KV_PAIRS,
-                                DEFAULT_REFERENCE_LIFETIME));
+                () -> ContractStoragePriceTiers.from(
+                        input, DEFAULT_FREE_TIER_LIMIT, DEFAULT_MAX_KV_PAIRS, DEFAULT_REFERENCE_LIFETIME));
     }
 
     @Test
     void failsOnEmpty() {
         assertThrows(
                 IllegalArgumentException.class,
-                () ->
-                        ContractStoragePriceTiers.from(
-                                "",
-                                DEFAULT_FREE_TIER_LIMIT,
-                                DEFAULT_MAX_KV_PAIRS,
-                                DEFAULT_REFERENCE_LIFETIME));
+                () -> ContractStoragePriceTiers.from(
+                        "", DEFAULT_FREE_TIER_LIMIT, DEFAULT_MAX_KV_PAIRS, DEFAULT_REFERENCE_LIFETIME));
     }
 
     @Test
     @SuppressWarnings("java:S3415")
     void objectMethodsAsExpected() {
-        final var a =
-                ContractStoragePriceTiers.from(
-                        "1til10,5til50,1000til100",
-                        DEFAULT_FREE_TIER_LIMIT,
-                        DEFAULT_MAX_KV_PAIRS,
-                        DEFAULT_REFERENCE_LIFETIME);
-        final var b =
-                ContractStoragePriceTiers.from(
-                        "1til10,5til50,10til100",
-                        DEFAULT_FREE_TIER_LIMIT,
-                        DEFAULT_MAX_KV_PAIRS,
-                        DEFAULT_REFERENCE_LIFETIME);
-        final var c =
-                ContractStoragePriceTiers.from(
-                        "1til10,5til50,1000til200",
-                        DEFAULT_FREE_TIER_LIMIT,
-                        DEFAULT_MAX_KV_PAIRS,
-                        DEFAULT_REFERENCE_LIFETIME);
+        final var a = ContractStoragePriceTiers.from(
+                "1til10,5til50,1000til100", DEFAULT_FREE_TIER_LIMIT, DEFAULT_MAX_KV_PAIRS, DEFAULT_REFERENCE_LIFETIME);
+        final var b = ContractStoragePriceTiers.from(
+                "1til10,5til50,10til100", DEFAULT_FREE_TIER_LIMIT, DEFAULT_MAX_KV_PAIRS, DEFAULT_REFERENCE_LIFETIME);
+        final var c = ContractStoragePriceTiers.from(
+                "1til10,5til50,1000til200", DEFAULT_FREE_TIER_LIMIT, DEFAULT_MAX_KV_PAIRS, DEFAULT_REFERENCE_LIFETIME);
         final var d = a;
-        final var e =
-                ContractStoragePriceTiers.from(
-                        "1til10,5til50,1000til100",
-                        DEFAULT_FREE_TIER_LIMIT,
-                        DEFAULT_MAX_KV_PAIRS,
-                        DEFAULT_REFERENCE_LIFETIME);
-        final var f =
-                ContractStoragePriceTiers.from(
-                        "1til10,5til50,1000til100",
-                        DEFAULT_FREE_TIER_LIMIT - 1,
-                        DEFAULT_MAX_KV_PAIRS,
-                        DEFAULT_REFERENCE_LIFETIME);
-        final var g =
-                ContractStoragePriceTiers.from(
-                        "1til10,5til50,1000til100",
-                        DEFAULT_FREE_TIER_LIMIT,
-                        DEFAULT_MAX_KV_PAIRS - 1,
-                        DEFAULT_REFERENCE_LIFETIME);
-        final var h =
-                ContractStoragePriceTiers.from(
-                        "1til10,5til50,1000til100",
-                        DEFAULT_FREE_TIER_LIMIT,
-                        DEFAULT_MAX_KV_PAIRS,
-                        DEFAULT_REFERENCE_LIFETIME - 1);
-        final var desired =
-                "ContractStoragePriceTiers{usageTiers=[10, 50, 100], prices=[100000, 500000,"
-                        + " 100000000], freeTierLimit=100, maxTotalKvPairs=500000000,"
-                        + " referenceLifetime=2592000}";
+        final var e = ContractStoragePriceTiers.from(
+                "1til10,5til50,1000til100", DEFAULT_FREE_TIER_LIMIT, DEFAULT_MAX_KV_PAIRS, DEFAULT_REFERENCE_LIFETIME);
+        final var f = ContractStoragePriceTiers.from(
+                "1til10,5til50,1000til100",
+                DEFAULT_FREE_TIER_LIMIT - 1,
+                DEFAULT_MAX_KV_PAIRS,
+                DEFAULT_REFERENCE_LIFETIME);
+        final var g = ContractStoragePriceTiers.from(
+                "1til10,5til50,1000til100",
+                DEFAULT_FREE_TIER_LIMIT,
+                DEFAULT_MAX_KV_PAIRS - 1,
+                DEFAULT_REFERENCE_LIFETIME);
+        final var h = ContractStoragePriceTiers.from(
+                "1til10,5til50,1000til100",
+                DEFAULT_FREE_TIER_LIMIT,
+                DEFAULT_MAX_KV_PAIRS,
+                DEFAULT_REFERENCE_LIFETIME - 1);
+        final var desired = "ContractStoragePriceTiers{usageTiers=[10, 50, 100], prices=[100000, 500000,"
+                + " 100000000], freeTierLimit=100, maxTotalKvPairs=500000000,"
+                + " referenceLifetime=2592000}";
 
         assertEquals(a, d);
 
@@ -376,8 +316,7 @@ class ContractStoragePriceTiersTest {
     }
 
     private void givenDefaultSubjectWith(final String spec) {
-        givenSubjectWith(
-                spec, DEFAULT_FREE_TIER_LIMIT, DEFAULT_MAX_KV_PAIRS, DEFAULT_REFERENCE_LIFETIME);
+        givenSubjectWith(spec, DEFAULT_FREE_TIER_LIMIT, DEFAULT_MAX_KV_PAIRS, DEFAULT_REFERENCE_LIFETIME);
     }
 
     private void givenCanonicalSubjectWith(
@@ -386,13 +325,8 @@ class ContractStoragePriceTiersTest {
     }
 
     private void givenSubjectWith(
-            final String spec,
-            final int freeTierLimit,
-            final long maxTotalKvPairs,
-            final long referenceLifetime) {
-        subject =
-                ContractStoragePriceTiers.from(
-                        spec, freeTierLimit, maxTotalKvPairs, referenceLifetime);
+            final String spec, final int freeTierLimit, final long maxTotalKvPairs, final long referenceLifetime) {
+        subject = ContractStoragePriceTiers.from(spec, freeTierLimit, maxTotalKvPairs, referenceLifetime);
     }
 
     private KvUsageInfo nonFreeUsageFor(final int delta) {
@@ -409,6 +343,8 @@ class ContractStoragePriceTiersTest {
 
     private static final ExchangeRate someRate =
             ExchangeRate.newBuilder().setHbarEquiv(12).setCentEquiv(123).build();
-    private static final ExchangeRate degenRate =
-            ExchangeRate.newBuilder().setHbarEquiv(1).setCentEquiv(Integer.MAX_VALUE).build();
+    private static final ExchangeRate degenRate = ExchangeRate.newBuilder()
+            .setHbarEquiv(1)
+            .setCentEquiv(Integer.MAX_VALUE)
+            .build();
 }

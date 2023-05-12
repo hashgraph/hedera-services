@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.auth;
 
 import static com.hedera.node.app.service.mono.txns.auth.SystemOpAuthorization.AUTHORIZED;
@@ -146,12 +147,9 @@ class SystemOpPoliciesTest {
     @Test
     void uncheckedSubmitRejectsUnauthorized() throws InvalidProtocolBufferException {
         // given:
-        var txn =
-                civilianTxn()
-                        .setUncheckedSubmit(
-                                UncheckedSubmitBody.newBuilder()
-                                        .setTransactionBytes(
-                                                ByteString.copyFrom("DOESN'T MATTER".getBytes())));
+        var txn = civilianTxn()
+                .setUncheckedSubmit(UncheckedSubmitBody.newBuilder()
+                        .setTransactionBytes(ByteString.copyFrom("DOESN'T MATTER".getBytes())));
         // expect:
         assertEquals(UNAUTHORIZED, subject.checkAccessor(accessor(txn)));
     }
@@ -159,12 +157,9 @@ class SystemOpPoliciesTest {
     @Test
     void sysAdminCanSubmitUnchecked() throws InvalidProtocolBufferException {
         // given:
-        var txn =
-                sysAdminTxn()
-                        .setUncheckedSubmit(
-                                UncheckedSubmitBody.newBuilder()
-                                        .setTransactionBytes(
-                                                ByteString.copyFrom("DOESN'T MATTER".getBytes())));
+        var txn = sysAdminTxn()
+                .setUncheckedSubmit(UncheckedSubmitBody.newBuilder()
+                        .setTransactionBytes(ByteString.copyFrom("DOESN'T MATTER".getBytes())));
         // expect:
         assertEquals(AUTHORIZED, subject.checkAccessor(accessor(txn)));
     }
@@ -172,12 +167,9 @@ class SystemOpPoliciesTest {
     @Test
     void treasuryCanSubmitUnchecked() throws InvalidProtocolBufferException {
         // given:
-        var txn =
-                treasuryTxn()
-                        .setUncheckedSubmit(
-                                UncheckedSubmitBody.newBuilder()
-                                        .setTransactionBytes(
-                                                ByteString.copyFrom("DOESN'T MATTER".getBytes())));
+        var txn = treasuryTxn()
+                .setUncheckedSubmit(UncheckedSubmitBody.newBuilder()
+                        .setTransactionBytes(ByteString.copyFrom("DOESN'T MATTER".getBytes())));
         // expect:
         assertEquals(AUTHORIZED, subject.checkAccessor(accessor(txn)));
     }
@@ -185,11 +177,8 @@ class SystemOpPoliciesTest {
     @Test
     void cryptoUpdateRecognizesAuthorized() throws InvalidProtocolBufferException {
         // given:
-        var txn =
-                treasuryTxn()
-                        .setCryptoUpdateAccount(
-                                CryptoUpdateTransactionBody.newBuilder()
-                                        .setAccountIDToUpdate(account(75)));
+        var txn = treasuryTxn()
+                .setCryptoUpdateAccount(CryptoUpdateTransactionBody.newBuilder().setAccountIDToUpdate(account(75)));
         // expect:
         assertEquals(AUTHORIZED, subject.checkAccessor(accessor(txn)));
     }
@@ -197,11 +186,8 @@ class SystemOpPoliciesTest {
     @Test
     void cryptoUpdateRecognizesUnnecessaryForSystem() throws InvalidProtocolBufferException {
         // given:
-        var txn =
-                civilianTxn()
-                        .setCryptoUpdateAccount(
-                                CryptoUpdateTransactionBody.newBuilder()
-                                        .setAccountIDToUpdate(account(75)));
+        var txn = civilianTxn()
+                .setCryptoUpdateAccount(CryptoUpdateTransactionBody.newBuilder().setAccountIDToUpdate(account(75)));
         // expect:
         assertEquals(UNNECESSARY, subject.checkAccessor(accessor(txn)));
     }
@@ -209,11 +195,8 @@ class SystemOpPoliciesTest {
     @Test
     void cryptoUpdateRecognizesUnnecessaryForNonSystem() throws InvalidProtocolBufferException {
         // given:
-        var txn =
-                civilianTxn()
-                        .setCryptoUpdateAccount(
-                                CryptoUpdateTransactionBody.newBuilder()
-                                        .setAccountIDToUpdate(account(1001)));
+        var txn = civilianTxn()
+                .setCryptoUpdateAccount(CryptoUpdateTransactionBody.newBuilder().setAccountIDToUpdate(account(1001)));
         // expect:
         assertEquals(UNNECESSARY, subject.checkAccessor(accessor(txn)));
     }
@@ -221,16 +204,10 @@ class SystemOpPoliciesTest {
     @Test
     void cryptoUpdateRecognizesAuthorizedForTreasury() throws InvalidProtocolBufferException {
         // given:
-        var selfUpdateTxn =
-                treasuryTxn()
-                        .setCryptoUpdateAccount(
-                                CryptoUpdateTransactionBody.newBuilder()
-                                        .setAccountIDToUpdate(account(2)));
-        var otherUpdateTxn =
-                treasuryTxn()
-                        .setCryptoUpdateAccount(
-                                CryptoUpdateTransactionBody.newBuilder()
-                                        .setAccountIDToUpdate(account(50)));
+        var selfUpdateTxn = treasuryTxn()
+                .setCryptoUpdateAccount(CryptoUpdateTransactionBody.newBuilder().setAccountIDToUpdate(account(2)));
+        var otherUpdateTxn = treasuryTxn()
+                .setCryptoUpdateAccount(CryptoUpdateTransactionBody.newBuilder().setAccountIDToUpdate(account(50)));
         // expect:
         assertEquals(AUTHORIZED, subject.checkAccessor(accessor(selfUpdateTxn)));
         assertEquals(AUTHORIZED, subject.checkAccessor(accessor(otherUpdateTxn)));
@@ -239,16 +216,10 @@ class SystemOpPoliciesTest {
     @Test
     void cryptoUpdateRecognizesUnauthorized() throws InvalidProtocolBufferException {
         // given:
-        var civilianTxn =
-                civilianTxn()
-                        .setCryptoUpdateAccount(
-                                CryptoUpdateTransactionBody.newBuilder()
-                                        .setAccountIDToUpdate(account(2)));
-        var sysAdminTxn =
-                sysAdminTxn()
-                        .setCryptoUpdateAccount(
-                                CryptoUpdateTransactionBody.newBuilder()
-                                        .setAccountIDToUpdate(account(2)));
+        var civilianTxn = civilianTxn()
+                .setCryptoUpdateAccount(CryptoUpdateTransactionBody.newBuilder().setAccountIDToUpdate(account(2)));
+        var sysAdminTxn = sysAdminTxn()
+                .setCryptoUpdateAccount(CryptoUpdateTransactionBody.newBuilder().setAccountIDToUpdate(account(2)));
         // expect:
         assertEquals(UNAUTHORIZED, subject.checkAccessor(accessor(civilianTxn)));
         assertEquals(UNAUTHORIZED, subject.checkAccessor(accessor(sysAdminTxn)));
@@ -257,9 +228,8 @@ class SystemOpPoliciesTest {
     @Test
     void fileUpdateRecognizesUnauthorized() throws InvalidProtocolBufferException {
         // given:
-        var txn =
-                exchangeRatesAdminTxn()
-                        .setFileUpdate(FileUpdateTransactionBody.newBuilder().setFileID(file(111)));
+        var txn = exchangeRatesAdminTxn()
+                .setFileUpdate(FileUpdateTransactionBody.newBuilder().setFileID(file(111)));
         // expect:
         assertEquals(UNAUTHORIZED, subject.checkAccessor(accessor(txn)));
     }
@@ -267,9 +237,8 @@ class SystemOpPoliciesTest {
     @Test
     void fileAppendRecognizesUnauthorized() throws InvalidProtocolBufferException {
         // given:
-        var txn =
-                exchangeRatesAdminTxn()
-                        .setFileAppend(FileAppendTransactionBody.newBuilder().setFileID(file(111)));
+        var txn = exchangeRatesAdminTxn()
+                .setFileAppend(FileAppendTransactionBody.newBuilder().setFileID(file(111)));
         // expect:
         assertEquals(UNAUTHORIZED, subject.checkAccessor(accessor(txn)));
     }
@@ -277,9 +246,8 @@ class SystemOpPoliciesTest {
     @Test
     void fileAppendRecognizesAuthorized() throws InvalidProtocolBufferException {
         // given:
-        var txn =
-                exchangeRatesAdminTxn()
-                        .setFileAppend(FileAppendTransactionBody.newBuilder().setFileID(file(112)));
+        var txn = exchangeRatesAdminTxn()
+                .setFileAppend(FileAppendTransactionBody.newBuilder().setFileID(file(112)));
         // expect:
         assertEquals(AUTHORIZED, subject.checkAccessor(accessor(txn)));
     }
@@ -319,24 +287,17 @@ class SystemOpPoliciesTest {
     @Test
     void systemDeleteRecognizesImpermissibleContractDel() throws InvalidProtocolBufferException {
         // given:
-        var txn =
-                treasuryTxn()
-                        .setSystemDelete(
-                                SystemDeleteTransactionBody.newBuilder()
-                                        .setContractID(contract(123)));
+        var txn = treasuryTxn()
+                .setSystemDelete(SystemDeleteTransactionBody.newBuilder().setContractID(contract(123)));
         // expect:
         assertEquals(IMPERMISSIBLE, subject.checkAccessor(accessor(txn)));
     }
 
     @Test
-    void systemUndeleteRecognizesImpermissibleContractUndel()
-            throws InvalidProtocolBufferException {
+    void systemUndeleteRecognizesImpermissibleContractUndel() throws InvalidProtocolBufferException {
         // given:
-        var txn =
-                treasuryTxn()
-                        .setSystemUndelete(
-                                SystemUndeleteTransactionBody.newBuilder()
-                                        .setContractID(contract(123)));
+        var txn = treasuryTxn()
+                .setSystemUndelete(SystemUndeleteTransactionBody.newBuilder().setContractID(contract(123)));
         // expect:
         assertEquals(IMPERMISSIBLE, subject.checkAccessor(accessor(txn)));
     }
@@ -344,11 +305,8 @@ class SystemOpPoliciesTest {
     @Test
     void systemUndeleteRecognizesUnauthorizedContractUndel() throws InvalidProtocolBufferException {
         // given:
-        var txn =
-                exchangeRatesAdminTxn()
-                        .setSystemUndelete(
-                                SystemUndeleteTransactionBody.newBuilder()
-                                        .setContractID(contract(1234)));
+        var txn = exchangeRatesAdminTxn()
+                .setSystemUndelete(SystemUndeleteTransactionBody.newBuilder().setContractID(contract(1234)));
         // expect:
         assertEquals(UNAUTHORIZED, subject.checkAccessor(accessor(txn)));
     }
@@ -356,11 +314,8 @@ class SystemOpPoliciesTest {
     @Test
     void systemUndeleteRecognizesAuthorizedContractUndel() throws InvalidProtocolBufferException {
         // given:
-        var txn =
-                sysUndeleteTxn()
-                        .setSystemUndelete(
-                                SystemUndeleteTransactionBody.newBuilder()
-                                        .setContractID(contract(1234)));
+        var txn = sysUndeleteTxn()
+                .setSystemUndelete(SystemUndeleteTransactionBody.newBuilder().setContractID(contract(1234)));
         // expect:
         assertEquals(AUTHORIZED, subject.checkAccessor(accessor(txn)));
     }
@@ -368,10 +323,8 @@ class SystemOpPoliciesTest {
     @Test
     void systemUndeleteRecognizesAuthorizedFileUndel() throws InvalidProtocolBufferException {
         // given:
-        var txn =
-                sysUndeleteTxn()
-                        .setSystemUndelete(
-                                SystemUndeleteTransactionBody.newBuilder().setFileID(file(1234)));
+        var txn = sysUndeleteTxn()
+                .setSystemUndelete(SystemUndeleteTransactionBody.newBuilder().setFileID(file(1234)));
         // expect:
         assertEquals(AUTHORIZED, subject.checkAccessor(accessor(txn)));
     }
@@ -379,10 +332,8 @@ class SystemOpPoliciesTest {
     @Test
     void systemUndeleteRecognizesUnauthorizedFileUndel() throws InvalidProtocolBufferException {
         // given:
-        var txn =
-                exchangeRatesAdminTxn()
-                        .setSystemUndelete(
-                                SystemUndeleteTransactionBody.newBuilder().setFileID(file(1234)));
+        var txn = exchangeRatesAdminTxn()
+                .setSystemUndelete(SystemUndeleteTransactionBody.newBuilder().setFileID(file(1234)));
         // expect:
         assertEquals(UNAUTHORIZED, subject.checkAccessor(accessor(txn)));
     }
@@ -390,10 +341,8 @@ class SystemOpPoliciesTest {
     @Test
     void systemUndeleteRecognizesImpermissibleFileUndel() throws InvalidProtocolBufferException {
         // given:
-        var txn =
-                exchangeRatesAdminTxn()
-                        .setSystemUndelete(
-                                SystemUndeleteTransactionBody.newBuilder().setFileID(file(123)));
+        var txn = exchangeRatesAdminTxn()
+                .setSystemUndelete(SystemUndeleteTransactionBody.newBuilder().setFileID(file(123)));
         // expect:
         assertEquals(IMPERMISSIBLE, subject.checkAccessor(accessor(txn)));
     }
@@ -401,10 +350,8 @@ class SystemOpPoliciesTest {
     @Test
     void systemDeleteRecognizesImpermissibleFileDel() throws InvalidProtocolBufferException {
         // given:
-        var txn =
-                treasuryTxn()
-                        .setSystemDelete(
-                                SystemDeleteTransactionBody.newBuilder().setFileID(file(123)));
+        var txn = treasuryTxn()
+                .setSystemDelete(SystemDeleteTransactionBody.newBuilder().setFileID(file(123)));
         // expect:
         assertEquals(IMPERMISSIBLE, subject.checkAccessor(accessor(txn)));
     }
@@ -412,10 +359,8 @@ class SystemOpPoliciesTest {
     @Test
     void systemDeleteRecognizesUnauthorizedFileDel() throws InvalidProtocolBufferException {
         // given:
-        var txn =
-                exchangeRatesAdminTxn()
-                        .setSystemDelete(
-                                SystemDeleteTransactionBody.newBuilder().setFileID(file(1234)));
+        var txn = exchangeRatesAdminTxn()
+                .setSystemDelete(SystemDeleteTransactionBody.newBuilder().setFileID(file(1234)));
         // expect:
         assertEquals(UNAUTHORIZED, subject.checkAccessor(accessor(txn)));
     }
@@ -423,10 +368,8 @@ class SystemOpPoliciesTest {
     @Test
     void systemDeleteRecognizesAuthorizedFileDel() throws InvalidProtocolBufferException {
         // given:
-        var txn =
-                sysDeleteTxn()
-                        .setSystemDelete(
-                                SystemDeleteTransactionBody.newBuilder().setFileID(file(1234)));
+        var txn = sysDeleteTxn()
+                .setSystemDelete(SystemDeleteTransactionBody.newBuilder().setFileID(file(1234)));
         // expect:
         assertEquals(AUTHORIZED, subject.checkAccessor(accessor(txn)));
     }
@@ -434,11 +377,8 @@ class SystemOpPoliciesTest {
     @Test
     void systemDeleteRecognizesUnauthorizedContractDel() throws InvalidProtocolBufferException {
         // given:
-        var txn =
-                civilianTxn()
-                        .setSystemDelete(
-                                SystemDeleteTransactionBody.newBuilder()
-                                        .setContractID(contract(1234)));
+        var txn = civilianTxn()
+                .setSystemDelete(SystemDeleteTransactionBody.newBuilder().setContractID(contract(1234)));
         // expect:
         assertEquals(UNAUTHORIZED, subject.checkAccessor(accessor(txn)));
     }
@@ -446,11 +386,8 @@ class SystemOpPoliciesTest {
     @Test
     void systemDeleteRecognizesAuthorizedContractDel() throws InvalidProtocolBufferException {
         // given:
-        var txn =
-                sysDeleteTxn()
-                        .setSystemDelete(
-                                SystemDeleteTransactionBody.newBuilder()
-                                        .setContractID(contract(1234)));
+        var txn = sysDeleteTxn()
+                .setSystemDelete(SystemDeleteTransactionBody.newBuilder().setContractID(contract(1234)));
         // expect:
         assertEquals(AUTHORIZED, subject.checkAccessor(accessor(txn)));
     }
@@ -458,10 +395,8 @@ class SystemOpPoliciesTest {
     @Test
     void fileAppendRecognizesUnnecessary() throws InvalidProtocolBufferException {
         // given:
-        var txn =
-                exchangeRatesAdminTxn()
-                        .setFileAppend(
-                                FileAppendTransactionBody.newBuilder().setFileID(file(1122)));
+        var txn = exchangeRatesAdminTxn()
+                .setFileAppend(FileAppendTransactionBody.newBuilder().setFileID(file(1122)));
         // expect:
         assertEquals(UNNECESSARY, subject.checkAccessor(accessor(txn)));
     }
@@ -469,11 +404,9 @@ class SystemOpPoliciesTest {
     @Test
     void contractUpdateRecognizesAuthorized() throws InvalidProtocolBufferException {
         // given:
-        var txn =
-                treasuryTxn()
-                        .setContractUpdateInstance(
-                                ContractUpdateTransactionBody.newBuilder()
-                                        .setContractID(contract(123)));
+        var txn = treasuryTxn()
+                .setContractUpdateInstance(
+                        ContractUpdateTransactionBody.newBuilder().setContractID(contract(123)));
         // expect:
         assertEquals(AUTHORIZED, subject.checkAccessor(accessor(txn)));
     }
@@ -481,11 +414,9 @@ class SystemOpPoliciesTest {
     @Test
     void contractUpdateRecognizesUnnecessary() throws InvalidProtocolBufferException {
         // given:
-        var txn =
-                treasuryTxn()
-                        .setContractUpdateInstance(
-                                ContractUpdateTransactionBody.newBuilder()
-                                        .setContractID(contract(1233)));
+        var txn = treasuryTxn()
+                .setContractUpdateInstance(
+                        ContractUpdateTransactionBody.newBuilder().setContractID(contract(1233)));
         // expect:
         assertEquals(UNNECESSARY, subject.checkAccessor(accessor(txn)));
     }
@@ -493,9 +424,8 @@ class SystemOpPoliciesTest {
     @Test
     void fileUpdateRecognizesAuthorized() throws InvalidProtocolBufferException {
         // given:
-        var txn =
-                exchangeRatesAdminTxn()
-                        .setFileUpdate(FileUpdateTransactionBody.newBuilder().setFileID(file(112)));
+        var txn = exchangeRatesAdminTxn()
+                .setFileUpdate(FileUpdateTransactionBody.newBuilder().setFileID(file(112)));
         // expect:
         assertEquals(AUTHORIZED, subject.checkAccessor(accessor(txn)));
     }
@@ -503,9 +433,8 @@ class SystemOpPoliciesTest {
     @Test
     void freezeAdminCanUpdateZipFile() throws InvalidProtocolBufferException {
         // given:
-        var txn =
-                freezeAdminTxn()
-                        .setFileUpdate(FileUpdateTransactionBody.newBuilder().setFileID(file(150)));
+        var txn = freezeAdminTxn()
+                .setFileUpdate(FileUpdateTransactionBody.newBuilder().setFileID(file(150)));
         // expect:
         assertEquals(AUTHORIZED, subject.checkAccessor(accessor(txn)));
     }
@@ -513,10 +442,8 @@ class SystemOpPoliciesTest {
     @Test
     void fileUpdateRecognizesUnnecessary() throws InvalidProtocolBufferException {
         // given:
-        var txn =
-                exchangeRatesAdminTxn()
-                        .setFileUpdate(
-                                FileUpdateTransactionBody.newBuilder().setFileID(file(1122)));
+        var txn = exchangeRatesAdminTxn()
+                .setFileUpdate(FileUpdateTransactionBody.newBuilder().setFileID(file(1122)));
         // expect:
         assertEquals(UNNECESSARY, subject.checkAccessor(accessor(txn)));
     }
@@ -524,9 +451,8 @@ class SystemOpPoliciesTest {
     @Test
     void systemFilesCannotBeDeleted() throws InvalidProtocolBufferException {
         // given:
-        var txn =
-                treasuryTxn()
-                        .setFileDelete(FileDeleteTransactionBody.newBuilder().setFileID(file(100)));
+        var txn = treasuryTxn()
+                .setFileDelete(FileDeleteTransactionBody.newBuilder().setFileID(file(100)));
 
         // expect:
         assertEquals(IMPERMISSIBLE, subject.checkAccessor(accessor(txn)));
@@ -535,10 +461,8 @@ class SystemOpPoliciesTest {
     @Test
     void civilianFilesAreDeletable() throws InvalidProtocolBufferException {
         // given:
-        var txn =
-                treasuryTxn()
-                        .setFileDelete(
-                                FileDeleteTransactionBody.newBuilder().setFileID(file(1001)));
+        var txn = treasuryTxn()
+                .setFileDelete(FileDeleteTransactionBody.newBuilder().setFileID(file(1001)));
 
         // expect:
         assertEquals(UNNECESSARY, subject.checkAccessor(accessor(txn)));
@@ -547,11 +471,9 @@ class SystemOpPoliciesTest {
     @Test
     void systemContractsCannotBeDeleted() throws InvalidProtocolBufferException {
         // given:
-        var txn =
-                treasuryTxn()
-                        .setContractDeleteInstance(
-                                ContractDeleteTransactionBody.newBuilder()
-                                        .setContractID(contract(100)));
+        var txn = treasuryTxn()
+                .setContractDeleteInstance(
+                        ContractDeleteTransactionBody.newBuilder().setContractID(contract(100)));
 
         // expect:
         assertEquals(IMPERMISSIBLE, subject.checkAccessor(accessor(txn)));
@@ -560,11 +482,9 @@ class SystemOpPoliciesTest {
     @Test
     void civilianContractsAreDeletable() throws InvalidProtocolBufferException {
         // given:
-        var txn =
-                treasuryTxn()
-                        .setContractDeleteInstance(
-                                ContractDeleteTransactionBody.newBuilder()
-                                        .setContractID(contract(1001)));
+        var txn = treasuryTxn()
+                .setContractDeleteInstance(
+                        ContractDeleteTransactionBody.newBuilder().setContractID(contract(1001)));
 
         // expect:
         assertEquals(UNNECESSARY, subject.checkAccessor(accessor(txn)));
@@ -573,11 +493,8 @@ class SystemOpPoliciesTest {
     @Test
     void systemAccountsCannotBeDeleted() throws InvalidProtocolBufferException {
         // given:
-        var txn =
-                treasuryTxn()
-                        .setCryptoDelete(
-                                CryptoDeleteTransactionBody.newBuilder()
-                                        .setDeleteAccountID(account(100)));
+        var txn = treasuryTxn()
+                .setCryptoDelete(CryptoDeleteTransactionBody.newBuilder().setDeleteAccountID(account(100)));
 
         // expect:
         assertEquals(IMPERMISSIBLE, subject.checkAccessor(accessor(txn)));
@@ -586,11 +503,8 @@ class SystemOpPoliciesTest {
     @Test
     void civilianAccountsAreDeletable() throws InvalidProtocolBufferException {
         // given:
-        var txn =
-                civilianTxn()
-                        .setCryptoDelete(
-                                CryptoDeleteTransactionBody.newBuilder()
-                                        .setDeleteAccountID(account(1001)));
+        var txn = civilianTxn()
+                .setCryptoDelete(CryptoDeleteTransactionBody.newBuilder().setDeleteAccountID(account(1001)));
 
         // expect:
         assertEquals(UNNECESSARY, subject.checkAccessor(accessor(txn)));
@@ -599,9 +513,7 @@ class SystemOpPoliciesTest {
     @Test
     void createAccountAlwaysOk() throws InvalidProtocolBufferException {
         // given:
-        var txn =
-                civilianTxn()
-                        .setCryptoCreateAccount(CryptoCreateTransactionBody.getDefaultInstance());
+        var txn = civilianTxn().setCryptoCreateAccount(CryptoCreateTransactionBody.getDefaultInstance());
 
         // expect:
         assertEquals(UNNECESSARY, subject.checkAccessor(accessor(txn)));
@@ -610,8 +522,7 @@ class SystemOpPoliciesTest {
     @Test
     void ethereumTxnAlwaysOk() throws InvalidProtocolBufferException {
         // given:
-        var txn =
-                ethereumTxn().setEthereumTransaction(EthereumTransactionBody.getDefaultInstance());
+        var txn = ethereumTxn().setEthereumTransaction(EthereumTransactionBody.getDefaultInstance());
 
         // expect:
         assertEquals(UNNECESSARY, subject.checkAccessor(accessor(txn)));
@@ -620,16 +531,10 @@ class SystemOpPoliciesTest {
     @Test
     void handlesNullPayerFallback() throws InvalidProtocolBufferException {
         // given:
-        var selfUpdateTxn =
-                treasuryTxn()
-                        .setCryptoUpdateAccount(
-                                CryptoUpdateTransactionBody.newBuilder()
-                                        .setAccountIDToUpdate(account(2)));
-        var otherUpdateTxn =
-                treasuryTxn()
-                        .setCryptoUpdateAccount(
-                                CryptoUpdateTransactionBody.newBuilder()
-                                        .setAccountIDToUpdate(account(50)));
+        var selfUpdateTxn = treasuryTxn()
+                .setCryptoUpdateAccount(CryptoUpdateTransactionBody.newBuilder().setAccountIDToUpdate(account(2)));
+        var otherUpdateTxn = treasuryTxn()
+                .setCryptoUpdateAccount(CryptoUpdateTransactionBody.newBuilder().setAccountIDToUpdate(account(50)));
         // expect:
         assertEquals(AUTHORIZED, subject.checkAccessor(accessorWithPayer(selfUpdateTxn, null)));
         assertEquals(AUTHORIZED, subject.checkAccessor(accessorWithPayer(otherUpdateTxn, null)));
@@ -638,16 +543,10 @@ class SystemOpPoliciesTest {
     @Test
     void handlesNullPayerFallbackWithUnauthorized() throws InvalidProtocolBufferException {
         // given:
-        var selfUpdateTxn =
-                civilianTxn()
-                        .setCryptoUpdateAccount(
-                                CryptoUpdateTransactionBody.newBuilder()
-                                        .setAccountIDToUpdate(account(2)));
-        var otherUpdateTxn =
-                civilianTxn()
-                        .setCryptoUpdateAccount(
-                                CryptoUpdateTransactionBody.newBuilder()
-                                        .setAccountIDToUpdate(account(50)));
+        var selfUpdateTxn = civilianTxn()
+                .setCryptoUpdateAccount(CryptoUpdateTransactionBody.newBuilder().setAccountIDToUpdate(account(2)));
+        var otherUpdateTxn = civilianTxn()
+                .setCryptoUpdateAccount(CryptoUpdateTransactionBody.newBuilder().setAccountIDToUpdate(account(50)));
         // expect:
         assertEquals(UNAUTHORIZED, subject.checkAccessor(accessorWithPayer(selfUpdateTxn, null)));
         assertEquals(UNNECESSARY, subject.checkAccessor(accessorWithPayer(otherUpdateTxn, null)));
@@ -656,48 +555,34 @@ class SystemOpPoliciesTest {
     @Test
     void handlesDifferentPayer() throws InvalidProtocolBufferException {
         // given:
-        var selfUpdateTxn =
-                civilianTxn()
-                        .setCryptoUpdateAccount(
-                                CryptoUpdateTransactionBody.newBuilder()
-                                        .setAccountIDToUpdate(account(2)));
-        var otherUpdateTxn =
-                civilianTxn()
-                        .setCryptoUpdateAccount(
-                                CryptoUpdateTransactionBody.newBuilder()
-                                        .setAccountIDToUpdate(account(50)));
+        var selfUpdateTxn = civilianTxn()
+                .setCryptoUpdateAccount(CryptoUpdateTransactionBody.newBuilder().setAccountIDToUpdate(account(2)));
+        var otherUpdateTxn = civilianTxn()
+                .setCryptoUpdateAccount(CryptoUpdateTransactionBody.newBuilder().setAccountIDToUpdate(account(50)));
         // expect:
-        assertEquals(
-                AUTHORIZED, subject.checkAccessor(accessorWithPayer(selfUpdateTxn, account(2))));
-        assertEquals(
-                AUTHORIZED, subject.checkAccessor(accessorWithPayer(otherUpdateTxn, account(2))));
+        assertEquals(AUTHORIZED, subject.checkAccessor(accessorWithPayer(selfUpdateTxn, account(2))));
+        assertEquals(AUTHORIZED, subject.checkAccessor(accessorWithPayer(otherUpdateTxn, account(2))));
     }
 
-    private SignedTxnAccessor accessor(TransactionBody.Builder transaction)
-            throws InvalidProtocolBufferException {
-        var txn =
-                TransactionBody.newBuilder()
-                        .mergeFrom(transaction.build())
-                        .clearTransactionID()
-                        .build();
-        var accessor =
-                SignedTxnAccessor.from(
-                        Transaction.newBuilder()
-                                .setBodyBytes(txn.toByteString())
-                                .build()
-                                .toByteArray());
+    private SignedTxnAccessor accessor(TransactionBody.Builder transaction) throws InvalidProtocolBufferException {
+        var txn = TransactionBody.newBuilder()
+                .mergeFrom(transaction.build())
+                .clearTransactionID()
+                .build();
+        var accessor = SignedTxnAccessor.from(Transaction.newBuilder()
+                .setBodyBytes(txn.toByteString())
+                .build()
+                .toByteArray());
         accessor.setPayer(transaction.getTransactionID().getAccountID());
         return accessor;
     }
 
     private SignedTxnAccessor accessorWithPayer(TransactionBody.Builder txn, AccountID payer)
             throws InvalidProtocolBufferException {
-        var accessor =
-                SignedTxnAccessor.from(
-                        Transaction.newBuilder()
-                                .setBodyBytes(txn.build().toByteString())
-                                .build()
-                                .toByteArray());
+        var accessor = SignedTxnAccessor.from(Transaction.newBuilder()
+                .setBodyBytes(txn.build().toByteString())
+                .build()
+                .toByteArray());
         accessor.setPayer(payer);
         return accessor;
     }

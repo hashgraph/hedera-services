@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.backing;
 
 import static com.hedera.node.app.service.mono.ledger.backing.BackingTokenRels.asTokenRel;
@@ -62,12 +63,9 @@ class BackingTokenRelsTest {
     private final EntityNumPair aKey = fromAccountTokenRel(a, at);
     private final EntityNumPair bKey = fromAccountTokenRel(b, bt);
     private final EntityNumPair cKey = fromAccountTokenRel(c, ct);
-    private final MerkleTokenRelStatus aValue =
-            new MerkleTokenRelStatus(aBalance, aFrozen, aKyc, automaticAssociation);
-    private final MerkleTokenRelStatus bValue =
-            new MerkleTokenRelStatus(bBalance, bFrozen, bKyc, automaticAssociation);
-    private final MerkleTokenRelStatus cValue =
-            new MerkleTokenRelStatus(cBalance, cFrozen, cKyc, automaticAssociation);
+    private final MerkleTokenRelStatus aValue = new MerkleTokenRelStatus(aBalance, aFrozen, aKyc, automaticAssociation);
+    private final MerkleTokenRelStatus bValue = new MerkleTokenRelStatus(bBalance, bFrozen, bKyc, automaticAssociation);
+    private final MerkleTokenRelStatus cValue = new MerkleTokenRelStatus(cBalance, cFrozen, cKyc, automaticAssociation);
 
     private MerkleMap<EntityNumPair, MerkleTokenRelStatus> rels;
 

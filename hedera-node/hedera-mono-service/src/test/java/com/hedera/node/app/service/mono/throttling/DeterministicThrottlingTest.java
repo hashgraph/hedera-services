@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.throttling;
 
 import static com.hedera.node.app.service.mono.throttling.DeterministicThrottling.DeterministicThrottlingMode.CONSENSUS;
@@ -37,7 +38,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -100,6 +100,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junitpioneer.jupiter.cartesian.CartesianTest;
+import org.junitpioneer.jupiter.cartesian.CartesianTest.Enum.Mode;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -110,26 +112,39 @@ class DeterministicThrottlingTest {
     private static final ScheduleID scheduleID = IdUtils.asSchedule("0.0.333333");
     private final ScaleFactor nftScaleFactor = ScaleFactor.from("5:2");
 
-    @Mock private TxnAccessor accessor;
-    @Mock private ThrottleReqsManager manager;
+    @Mock
+    private TxnAccessor accessor;
+
+    @Mock
+    private ThrottleReqsManager manager;
 
     @Mock(lenient = true)
     private GlobalDynamicProperties dynamicProperties;
 
-    @Mock private GasLimitDeterministicThrottle gasLimitDeterministicThrottle;
-    @Mock private Query query;
-    @Mock private ContractCallLocalQuery callLocalQuery;
-    @Mock private AliasManager aliasManager;
-    @Mock private ScheduleStore scheduleStore;
+    @Mock
+    private GasLimitDeterministicThrottle gasLimitDeterministicThrottle;
 
-    @LoggingTarget private LogCaptor logCaptor;
-    @LoggingSubject private DeterministicThrottling subject;
+    @Mock
+    private Query query;
+
+    @Mock
+    private ContractCallLocalQuery callLocalQuery;
+
+    @Mock
+    private AliasManager aliasManager;
+
+    @Mock
+    private ScheduleStore scheduleStore;
+
+    @LoggingTarget
+    private LogCaptor logCaptor;
+
+    @LoggingSubject
+    private DeterministicThrottling subject;
 
     @BeforeEach
     void setUp() {
-        subject =
-                new DeterministicThrottling(
-                        () -> n, aliasManager, dynamicProperties, CONSENSUS, scheduleStore);
+        subject = new DeterministicThrottling(() -> n, aliasManager, dynamicProperties, CONSENSUS, scheduleStore);
     }
 
     @Test
@@ -153,29 +168,17 @@ class DeterministicThrottlingTest {
         assertEquals(10999999990000L, dNow.used());
     }
 
-    @ParameterizedTest
-    @CsvSource({
-        "HAPI,true,true",
-        "HAPI,false,true",
-        "CONSENSUS,true,true",
-        "CONSENSUS,false,true",
-        "HAPI,true,false",
-        "HAPI,false,false",
-        "CONSENSUS,true,false",
-        "CONSENSUS,false,false"
-    })
+    @CartesianTest
     void usesScheduleCreateThrottleForSubmitMessage(
-            final DeterministicThrottlingMode mode,
-            final boolean longTermEnabled,
-            final boolean waitForExpiry)
+            @CartesianTest.Enum(mode = Mode.EXCLUDE, names = "SCHEDULE") final DeterministicThrottlingMode mode,
+            @CartesianTest.Values(booleans = {false, true}) final boolean longTermEnabled,
+            @CartesianTest.Values(booleans = {false, true}) final boolean waitForExpiry)
             throws IOException {
         given(dynamicProperties.schedulingLongTermEnabled()).willReturn(longTermEnabled);
         subject.setMode(mode);
-        final var scheduledSubmit =
-                SchedulableTransactionBody.newBuilder()
-                        .setConsensusSubmitMessage(
-                                ConsensusSubmitMessageTransactionBody.getDefaultInstance())
-                        .build();
+        final var scheduledSubmit = SchedulableTransactionBody.newBuilder()
+                .setConsensusSubmitMessage(ConsensusSubmitMessageTransactionBody.getDefaultInstance())
+                .build();
         var defs = SerdeUtils.pojoDefs("bootstrap/schedule-create-throttles.json");
         subject.rebuildFor(defs);
 
@@ -198,34 +201,21 @@ class DeterministicThrottlingTest {
                 subject.activeThrottlesFor(ConsensusSubmitMessage).get(0).used());
     }
 
-    @ParameterizedTest
-    @CsvSource({
-        "HAPI,true,true",
-        "HAPI,false,true",
-        "CONSENSUS,true,true",
-        "CONSENSUS,false,true",
-        "HAPI,true,false",
-        "HAPI,false,false",
-        "CONSENSUS,true,false",
-        "CONSENSUS,false,false"
-    })
+    @CartesianTest
     void usesScheduleCreateThrottleWithNestedThrottleExempt(
-            final DeterministicThrottlingMode mode,
-            final boolean longTermEnabled,
-            final boolean waitForExpiry)
+            @CartesianTest.Enum(mode = Mode.EXCLUDE, names = "SCHEDULE") final DeterministicThrottlingMode mode,
+            @CartesianTest.Values(booleans = {false, true}) final boolean longTermEnabled,
+            @CartesianTest.Values(booleans = {false, true}) final boolean waitForExpiry)
             throws IOException {
         given(dynamicProperties.schedulingLongTermEnabled()).willReturn(longTermEnabled);
         subject.setMode(mode);
-        final var scheduledSubmit =
-                SchedulableTransactionBody.newBuilder()
-                        .setConsensusSubmitMessage(
-                                ConsensusSubmitMessageTransactionBody.getDefaultInstance())
-                        .build();
+        final var scheduledSubmit = SchedulableTransactionBody.newBuilder()
+                .setConsensusSubmitMessage(ConsensusSubmitMessageTransactionBody.getDefaultInstance())
+                .build();
         var defs = SerdeUtils.pojoDefs("bootstrap/schedule-create-throttles.json");
         subject.rebuildFor(defs);
 
-        final var accessor =
-                scheduleCreate(scheduledSubmit, waitForExpiry, IdUtils.asAccount("0.0.02"));
+        final var accessor = scheduleCreate(scheduledSubmit, waitForExpiry, IdUtils.asAccount("0.0.02"));
         final var firstAns = subject.shouldThrottleTxn(accessor, consensusNow);
         boolean subsequentAns = false;
         for (int i = 1; i <= 150; i++) {
@@ -239,13 +229,14 @@ class DeterministicThrottlingTest {
         assertTrue(subsequentAns);
         assertEquals(149999992500000L, aNow.used());
 
-        assertEquals(0, subject.activeThrottlesFor(ConsensusSubmitMessage).get(0).used());
+        assertEquals(
+                0, subject.activeThrottlesFor(ConsensusSubmitMessage).get(0).used());
     }
 
-    @ParameterizedTest
-    @CsvSource({"HAPI,true", "HAPI,false", "CONSENSUS,true", "CONSENSUS,false"})
+    @CartesianTest
     void scheduleCreateAlwaysThrottledWhenNoBody(
-            final DeterministicThrottlingMode mode, final boolean longTermEnabled)
+            @CartesianTest.Enum(mode = Mode.EXCLUDE, names = "SCHEDULE") final DeterministicThrottlingMode mode,
+            @CartesianTest.Values(booleans = {false, true}) final boolean longTermEnabled)
             throws IOException {
         given(dynamicProperties.schedulingLongTermEnabled()).willReturn(longTermEnabled);
         subject.setMode(mode);
@@ -265,21 +256,21 @@ class DeterministicThrottlingTest {
         assertTrue(firstAns);
         assertEquals(0, aNow.used());
 
-        assertEquals(0, subject.activeThrottlesFor(ConsensusSubmitMessage).get(0).used());
+        assertEquals(
+                0, subject.activeThrottlesFor(ConsensusSubmitMessage).get(0).used());
     }
 
-    @ParameterizedTest
-    @CsvSource({"HAPI,true", "HAPI,false", "CONSENSUS,true", "CONSENSUS,false"})
+    @CartesianTest
     void usesScheduleCreateThrottleForCryptoTransferNoAutoCreations(
-            final DeterministicThrottlingMode mode, final boolean longTermEnabled)
+            @CartesianTest.Enum(mode = Mode.EXCLUDE, names = "SCHEDULE") final DeterministicThrottlingMode mode,
+            @CartesianTest.Values(booleans = {false, true}) final boolean longTermEnabled)
             throws IOException {
         given(dynamicProperties.schedulingLongTermEnabled()).willReturn(longTermEnabled);
         subject.setMode(mode);
         given(dynamicProperties.isAutoCreationEnabled()).willReturn(true);
-        final var scheduledXferNoAliases =
-                SchedulableTransactionBody.newBuilder()
-                        .setCryptoTransfer(CryptoTransferTransactionBody.getDefaultInstance())
-                        .build();
+        final var scheduledXferNoAliases = SchedulableTransactionBody.newBuilder()
+                .setCryptoTransfer(CryptoTransferTransactionBody.getDefaultInstance())
+                .build();
         var defs = SerdeUtils.pojoDefs("bootstrap/schedule-create-throttles.json");
         subject.rebuildFor(defs);
 
@@ -297,36 +288,24 @@ class DeterministicThrottlingTest {
                 subject.activeThrottlesFor(CryptoTransfer).get(0).used());
     }
 
-    @ParameterizedTest
-    @CsvSource({"HAPI,true", "HAPI,false", "CONSENSUS,true", "CONSENSUS,false"})
-    void
-            doesntUseCryptoCreateThrottleForCryptoTransferWithAutoCreationIfAutoAndLazyCreationDisabled(
-                    final DeterministicThrottlingMode mode, final boolean longTermEnabled)
-                    throws IOException {
+    @CartesianTest
+    void doesntUseCryptoCreateThrottleForCryptoTransferWithAutoCreationIfAutoAndLazyCreationDisabled(
+            @CartesianTest.Enum(mode = Mode.EXCLUDE, names = "SCHEDULE") final DeterministicThrottlingMode mode,
+            @CartesianTest.Values(booleans = {false, true}) final boolean longTermEnabled)
+            throws IOException {
         given(dynamicProperties.schedulingLongTermEnabled()).willReturn(longTermEnabled);
         subject.setMode(mode);
         final var alias = aPrimitiveKey.toByteString();
-        final var scheduledXferWithAutoCreation =
-                SchedulableTransactionBody.newBuilder()
-                        .setCryptoTransfer(
-                                CryptoTransferTransactionBody.newBuilder()
-                                        .setTransfers(
-                                                TransferList.newBuilder()
-                                                        .addAccountAmounts(
-                                                                AccountAmount.newBuilder()
-                                                                        .setAmount(-1_000_000_000)
-                                                                        .setAccountID(
-                                                                                IdUtils.asAccount(
-                                                                                        "0.0.3333")))
-                                                        .addAccountAmounts(
-                                                                AccountAmount.newBuilder()
-                                                                        .setAmount(+1_000_000_000)
-                                                                        .setAccountID(
-                                                                                AccountID
-                                                                                        .newBuilder()
-                                                                                        .setAlias(
-                                                                                                alias)))))
-                        .build();
+        final var scheduledXferWithAutoCreation = SchedulableTransactionBody.newBuilder()
+                .setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()
+                        .setTransfers(TransferList.newBuilder()
+                                .addAccountAmounts(AccountAmount.newBuilder()
+                                        .setAmount(-1_000_000_000)
+                                        .setAccountID(IdUtils.asAccount("0.0.3333")))
+                                .addAccountAmounts(AccountAmount.newBuilder()
+                                        .setAmount(+1_000_000_000)
+                                        .setAccountID(AccountID.newBuilder().setAlias(alias)))))
+                .build();
         var defs = SerdeUtils.pojoDefs("bootstrap/schedule-create-throttles.json");
         subject.rebuildFor(defs);
 
@@ -344,45 +323,26 @@ class DeterministicThrottlingTest {
                 subject.activeThrottlesFor(CryptoTransfer).get(0).used());
     }
 
-    @ParameterizedTest
-    @CsvSource({
-        "HAPI,true,true",
-        "HAPI,false,true",
-        "CONSENSUS,true,true",
-        "CONSENSUS,false,true",
-        "HAPI,true,false",
-        "HAPI,false,false",
-        "CONSENSUS,true,false",
-        "CONSENSUS,false,false"
-    })
+    @CartesianTest
     void doesntUseCryptoCreateThrottleForCryptoTransferWithNoAliases(
-            final DeterministicThrottlingMode mode,
-            final boolean longTermEnabled,
-            final boolean autoOrLazyCreationEnabled)
+            @CartesianTest.Enum(mode = Mode.EXCLUDE, names = "SCHEDULE") final DeterministicThrottlingMode mode,
+            @CartesianTest.Values(booleans = {false, true}) final boolean longTermEnabled,
+            @CartesianTest.Values(booleans = {false, true}) final boolean autoOrLazyCreationEnabled)
             throws IOException {
         given(dynamicProperties.schedulingLongTermEnabled()).willReturn(longTermEnabled);
         subject.setMode(mode);
         given(dynamicProperties.isAutoCreationEnabled()).willReturn(autoOrLazyCreationEnabled);
         given(dynamicProperties.isLazyCreationEnabled()).willReturn(!autoOrLazyCreationEnabled);
-        final var scheduledXferWithAutoCreation =
-                SchedulableTransactionBody.newBuilder()
-                        .setCryptoTransfer(
-                                CryptoTransferTransactionBody.newBuilder()
-                                        .setTransfers(
-                                                TransferList.newBuilder()
-                                                        .addAccountAmounts(
-                                                                AccountAmount.newBuilder()
-                                                                        .setAmount(-1_000_000_000)
-                                                                        .setAccountID(
-                                                                                IdUtils.asAccount(
-                                                                                        "0.0.3333")))
-                                                        .addAccountAmounts(
-                                                                AccountAmount.newBuilder()
-                                                                        .setAmount(+1_000_000_000)
-                                                                        .setAccountID(
-                                                                                IdUtils.asAccount(
-                                                                                        "0.0.4444")))))
-                        .build();
+        final var scheduledXferWithAutoCreation = SchedulableTransactionBody.newBuilder()
+                .setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()
+                        .setTransfers(TransferList.newBuilder()
+                                .addAccountAmounts(AccountAmount.newBuilder()
+                                        .setAmount(-1_000_000_000)
+                                        .setAccountID(IdUtils.asAccount("0.0.3333")))
+                                .addAccountAmounts(AccountAmount.newBuilder()
+                                        .setAmount(+1_000_000_000)
+                                        .setAccountID(IdUtils.asAccount("0.0.4444")))))
+                .build();
         var defs = SerdeUtils.pojoDefs("bootstrap/schedule-create-throttles.json");
         subject.rebuildFor(defs);
 
@@ -418,11 +378,9 @@ class DeterministicThrottlingTest {
         subject.setMode(mode);
         given(dynamicProperties.isAutoCreationEnabled()).willReturn(autoCreationEnabled);
         given(dynamicProperties.isLazyCreationEnabled()).willReturn(lazyCreationEnabled);
-        final var scheduledTxn =
-                SchedulableTransactionBody.newBuilder()
-                        .setConsensusSubmitMessage(
-                                ConsensusSubmitMessageTransactionBody.getDefaultInstance())
-                        .build();
+        final var scheduledTxn = SchedulableTransactionBody.newBuilder()
+                .setConsensusSubmitMessage(ConsensusSubmitMessageTransactionBody.getDefaultInstance())
+                .build();
         var defs = SerdeUtils.pojoDefs("bootstrap/schedule-create-throttles.json");
         subject.rebuildFor(defs);
 
@@ -436,10 +394,10 @@ class DeterministicThrottlingTest {
         assertEquals(BucketThrottle.capacityUnitsPerTxn(), aNow.used());
     }
 
-    @ParameterizedTest
-    @CsvSource({"HAPI,true", "HAPI,false", "CONSENSUS,true", "CONSENSUS,false"})
+    @CartesianTest
     void usesCryptoCreateThrottleForCryptoTransferWithAutoCreationInScheduleCreate(
-            final DeterministicThrottlingMode mode, final boolean longTermEnabled)
+            @CartesianTest.Enum(mode = Mode.EXCLUDE, names = "SCHEDULE") final DeterministicThrottlingMode mode,
+            @CartesianTest.Values(booleans = {false, true}) final boolean longTermEnabled)
             throws IOException {
         given(dynamicProperties.schedulingLongTermEnabled()).willReturn(longTermEnabled);
         subject.setMode(mode);
@@ -448,27 +406,16 @@ class DeterministicThrottlingTest {
             given(aliasManager.lookupIdBy(alias)).willReturn(MISSING_NUM);
         }
         given(dynamicProperties.isAutoCreationEnabled()).willReturn(true);
-        final var scheduledXferWithAutoCreation =
-                SchedulableTransactionBody.newBuilder()
-                        .setCryptoTransfer(
-                                CryptoTransferTransactionBody.newBuilder()
-                                        .setTransfers(
-                                                TransferList.newBuilder()
-                                                        .addAccountAmounts(
-                                                                AccountAmount.newBuilder()
-                                                                        .setAmount(-1_000_000_000)
-                                                                        .setAccountID(
-                                                                                IdUtils.asAccount(
-                                                                                        "0.0.3333")))
-                                                        .addAccountAmounts(
-                                                                AccountAmount.newBuilder()
-                                                                        .setAmount(+1_000_000_000)
-                                                                        .setAccountID(
-                                                                                AccountID
-                                                                                        .newBuilder()
-                                                                                        .setAlias(
-                                                                                                alias)))))
-                        .build();
+        final var scheduledXferWithAutoCreation = SchedulableTransactionBody.newBuilder()
+                .setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()
+                        .setTransfers(TransferList.newBuilder()
+                                .addAccountAmounts(AccountAmount.newBuilder()
+                                        .setAmount(-1_000_000_000)
+                                        .setAccountID(IdUtils.asAccount("0.0.3333")))
+                                .addAccountAmounts(AccountAmount.newBuilder()
+                                        .setAmount(+1_000_000_000)
+                                        .setAccountID(AccountID.newBuilder().setAlias(alias)))))
+                .build();
         var defs = SerdeUtils.pojoDefs("bootstrap/schedule-create-throttles.json");
         subject.rebuildFor(defs);
 
@@ -494,10 +441,10 @@ class DeterministicThrottlingTest {
         assertEquals(0, subject.activeThrottlesFor(CryptoTransfer).get(0).used());
     }
 
-    @ParameterizedTest
-    @CsvSource({"HAPI,true", "HAPI,false", "CONSENSUS,true", "CONSENSUS,false"})
+    @CartesianTest
     void usesScheduleCreateThrottleForAliasedCryptoTransferWithNoAutoCreation(
-            final DeterministicThrottlingMode mode, final boolean longTermEnabled)
+            @CartesianTest.Enum(mode = Mode.EXCLUDE, names = "SCHEDULE") final DeterministicThrottlingMode mode,
+            @CartesianTest.Values(booleans = {false, true}) final boolean longTermEnabled)
             throws IOException {
         given(dynamicProperties.schedulingLongTermEnabled()).willReturn(longTermEnabled);
         subject.setMode(mode);
@@ -506,27 +453,16 @@ class DeterministicThrottlingTest {
         if (!(mode != HAPI && longTermEnabled)) {
             given(aliasManager.lookupIdBy(alias)).willReturn(EntityNum.fromLong(1_234L));
         }
-        final var scheduledXferWithAutoCreation =
-                SchedulableTransactionBody.newBuilder()
-                        .setCryptoTransfer(
-                                CryptoTransferTransactionBody.newBuilder()
-                                        .setTransfers(
-                                                TransferList.newBuilder()
-                                                        .addAccountAmounts(
-                                                                AccountAmount.newBuilder()
-                                                                        .setAmount(+1_000_000_000)
-                                                                        .setAccountID(
-                                                                                IdUtils.asAccount(
-                                                                                        "0.0.3333")))
-                                                        .addAccountAmounts(
-                                                                AccountAmount.newBuilder()
-                                                                        .setAmount(-1_000_000_000)
-                                                                        .setAccountID(
-                                                                                AccountID
-                                                                                        .newBuilder()
-                                                                                        .setAlias(
-                                                                                                alias)))))
-                        .build();
+        final var scheduledXferWithAutoCreation = SchedulableTransactionBody.newBuilder()
+                .setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()
+                        .setTransfers(TransferList.newBuilder()
+                                .addAccountAmounts(AccountAmount.newBuilder()
+                                        .setAmount(+1_000_000_000)
+                                        .setAccountID(IdUtils.asAccount("0.0.3333")))
+                                .addAccountAmounts(AccountAmount.newBuilder()
+                                        .setAmount(-1_000_000_000)
+                                        .setAccountID(AccountID.newBuilder().setAlias(alias)))))
+                .build();
         var defs = SerdeUtils.pojoDefs("bootstrap/schedule-create-throttles.json");
         subject.rebuildFor(defs);
 
@@ -544,31 +480,19 @@ class DeterministicThrottlingTest {
                 subject.activeThrottlesFor(CryptoTransfer).get(0).used());
     }
 
-    @ParameterizedTest
-    @CsvSource({
-        "HAPI,true,true",
-        "HAPI,false,true",
-        "CONSENSUS,true,true",
-        "CONSENSUS,false,true",
-        "HAPI,true,false",
-        "HAPI,false,false",
-        "CONSENSUS,true,false",
-        "CONSENSUS,false,false"
-    })
+    @CartesianTest
     void usesScheduleSignThrottle(
-            final DeterministicThrottlingMode mode,
-            final boolean longTermEnabled,
-            final boolean waitForExpiry)
+            @CartesianTest.Enum(mode = Mode.EXCLUDE, names = "SCHEDULE") final DeterministicThrottlingMode mode,
+            @CartesianTest.Values(booleans = {false, true}) final boolean longTermEnabled,
+            @CartesianTest.Values(booleans = {false, true}) final boolean waitForExpiry)
             throws IOException {
         given(dynamicProperties.schedulingLongTermEnabled()).willReturn(longTermEnabled);
         subject.setMode(mode);
 
         if (longTermEnabled && mode == HAPI) {
-            final var scheduledSubmit =
-                    SchedulableTransactionBody.newBuilder()
-                            .setConsensusSubmitMessage(
-                                    ConsensusSubmitMessageTransactionBody.getDefaultInstance())
-                            .build();
+            final var scheduledSubmit = SchedulableTransactionBody.newBuilder()
+                    .setConsensusSubmitMessage(ConsensusSubmitMessageTransactionBody.getDefaultInstance())
+                    .build();
 
             final var accessor = scheduleCreate(scheduledSubmit, waitForExpiry);
 
@@ -598,34 +522,21 @@ class DeterministicThrottlingTest {
                 subject.activeThrottlesFor(ConsensusSubmitMessage).get(0).used());
     }
 
-    @ParameterizedTest
-    @CsvSource({
-        "HAPI,true,true",
-        "HAPI,false,true",
-        "CONSENSUS,true,true",
-        "CONSENSUS,false,true",
-        "HAPI,true,false",
-        "HAPI,false,false",
-        "CONSENSUS,true,false",
-        "CONSENSUS,false,false"
-    })
+    @CartesianTest
     void usesScheduleSignThrottleWithNestedThrottleExempt(
-            final DeterministicThrottlingMode mode,
-            final boolean longTermEnabled,
-            final boolean waitForExpiry)
+            @CartesianTest.Enum(mode = Mode.EXCLUDE, names = "SCHEDULE") final DeterministicThrottlingMode mode,
+            @CartesianTest.Values(booleans = {false, true}) final boolean longTermEnabled,
+            @CartesianTest.Values(booleans = {false, true}) final boolean waitForExpiry)
             throws IOException {
         given(dynamicProperties.schedulingLongTermEnabled()).willReturn(longTermEnabled);
         subject.setMode(mode);
 
         if (longTermEnabled && mode == HAPI) {
-            final var scheduledSubmit =
-                    SchedulableTransactionBody.newBuilder()
-                            .setConsensusSubmitMessage(
-                                    ConsensusSubmitMessageTransactionBody.getDefaultInstance())
-                            .build();
+            final var scheduledSubmit = SchedulableTransactionBody.newBuilder()
+                    .setConsensusSubmitMessage(ConsensusSubmitMessageTransactionBody.getDefaultInstance())
+                    .build();
 
-            final var accessor =
-                    scheduleCreate(scheduledSubmit, waitForExpiry, IdUtils.asAccount("0.0.02"));
+            final var accessor = scheduleCreate(scheduledSubmit, waitForExpiry, IdUtils.asAccount("0.0.02"));
 
             given(scheduleStore.getNoError(scheduleID))
                     .willReturn(ScheduleVirtualValue.from(accessor.getTxnBytes(), 0));
@@ -648,7 +559,8 @@ class DeterministicThrottlingTest {
         assertTrue(subsequentAns);
         assertEquals(149999992500000L, aNow.used());
 
-        assertEquals(0, subject.activeThrottlesFor(ConsensusSubmitMessage).get(0).used());
+        assertEquals(
+                0, subject.activeThrottlesFor(ConsensusSubmitMessage).get(0).used());
     }
 
     @Test
@@ -678,7 +590,8 @@ class DeterministicThrottlingTest {
         assertTrue(firstAns);
         assertEquals(0L, aNow.used());
 
-        assertEquals(0, subject.activeThrottlesFor(ConsensusSubmitMessage).get(0).used());
+        assertEquals(
+                0, subject.activeThrottlesFor(ConsensusSubmitMessage).get(0).used());
     }
 
     @Test
@@ -701,13 +614,14 @@ class DeterministicThrottlingTest {
         assertTrue(firstAns);
         assertEquals(0L, aNow.used());
 
-        assertEquals(0, subject.activeThrottlesFor(ConsensusSubmitMessage).get(0).used());
+        assertEquals(
+                0, subject.activeThrottlesFor(ConsensusSubmitMessage).get(0).used());
     }
 
-    @ParameterizedTest
-    @CsvSource({"HAPI,true", "HAPI,false", "CONSENSUS,true", "CONSENSUS,false"})
+    @CartesianTest
     void usesCryptoCreateThrottleForCryptoTransferWithAutoCreationInScheduleSign(
-            final DeterministicThrottlingMode mode, final boolean longTermEnabled)
+            @CartesianTest.Enum(mode = Mode.EXCLUDE, names = "SCHEDULE") final DeterministicThrottlingMode mode,
+            @CartesianTest.Values(booleans = {false, true}) final boolean longTermEnabled)
             throws IOException {
 
         given(dynamicProperties.schedulingLongTermEnabled()).willReturn(longTermEnabled);
@@ -719,30 +633,16 @@ class DeterministicThrottlingTest {
         given(dynamicProperties.isAutoCreationEnabled()).willReturn(true);
 
         if (longTermEnabled && mode == HAPI) {
-            final var scheduledXferWithAutoCreation =
-                    SchedulableTransactionBody.newBuilder()
-                            .setCryptoTransfer(
-                                    CryptoTransferTransactionBody.newBuilder()
-                                            .setTransfers(
-                                                    TransferList.newBuilder()
-                                                            .addAccountAmounts(
-                                                                    AccountAmount.newBuilder()
-                                                                            .setAmount(
-                                                                                    -1_000_000_000)
-                                                                            .setAccountID(
-                                                                                    IdUtils
-                                                                                            .asAccount(
-                                                                                                    "0.0.3333")))
-                                                            .addAccountAmounts(
-                                                                    AccountAmount.newBuilder()
-                                                                            .setAmount(
-                                                                                    +1_000_000_000)
-                                                                            .setAccountID(
-                                                                                    AccountID
-                                                                                            .newBuilder()
-                                                                                            .setAlias(
-                                                                                                    alias)))))
-                            .build();
+            final var scheduledXferWithAutoCreation = SchedulableTransactionBody.newBuilder()
+                    .setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()
+                            .setTransfers(TransferList.newBuilder()
+                                    .addAccountAmounts(AccountAmount.newBuilder()
+                                            .setAmount(-1_000_000_000)
+                                            .setAccountID(IdUtils.asAccount("0.0.3333")))
+                                    .addAccountAmounts(AccountAmount.newBuilder()
+                                            .setAmount(+1_000_000_000)
+                                            .setAccountID(AccountID.newBuilder().setAlias(alias)))))
+                    .build();
             final var accessor = scheduleCreate(scheduledXferWithAutoCreation);
             given(scheduleStore.getNoError(scheduleID))
                     .willReturn(ScheduleVirtualValue.from(accessor.getTxnBytes(), 0));
@@ -794,9 +694,7 @@ class DeterministicThrottlingTest {
 
         // then:
         assertEquals(0L, gasLimitDeterministicThrottle.capacity());
-        assertThat(
-                logCaptor.warnLogs(),
-                contains("Consensus gas throttling enabled, but limited to 0 gas/sec"));
+        assertThat(logCaptor.warnLogs(), contains("Consensus gas throttling enabled, but limited to 0 gas/sec"));
     }
 
     @Test
@@ -810,9 +708,7 @@ class DeterministicThrottlingTest {
 
         // then:
         assertEquals(0L, gasLimitDeterministicThrottle.capacity());
-        assertThat(
-                logCaptor.warnLogs(),
-                contains("Frontend gas throttling enabled, but limited to 0 gas/sec"));
+        assertThat(logCaptor.warnLogs(), contains("Frontend gas throttling enabled, but limited to 0 gas/sec"));
     }
 
     @Test
@@ -826,9 +722,7 @@ class DeterministicThrottlingTest {
 
         // then:
         assertEquals(0L, gasLimitDeterministicThrottle.capacity());
-        assertThat(
-                logCaptor.warnLogs(),
-                contains("Schedule gas throttling enabled, but limited to 0 gas/sec"));
+        assertThat(logCaptor.warnLogs(), contains("Schedule gas throttling enabled, but limited to 0 gas/sec"));
     }
 
     @Test
@@ -1085,8 +979,7 @@ class DeterministicThrottlingTest {
     }
 
     @Test
-    void ethereumTransactionWithAutoAccountCreationsButNoLazyCreationsAreThrottledAsExpected()
-            throws IOException {
+    void ethereumTransactionWithAutoAccountCreationsButNoLazyCreationsAreThrottledAsExpected() throws IOException {
         var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
         given(dynamicProperties.isAutoCreationEnabled()).willReturn(true);
         givenFunction(EthereumTransaction);
@@ -1140,32 +1033,6 @@ class DeterministicThrottlingTest {
         var ans = subject.shouldThrottleTxn(accessor, consensusNow);
 
         assertTrue(ans);
-    }
-
-    @Test
-    void logsErrorOnBadBucketButDoesntFail() throws IOException {
-        final var ridiculousSplitFactor = 1_000_000;
-        subject =
-                new DeterministicThrottling(
-                        () -> ridiculousSplitFactor,
-                        aliasManager,
-                        dynamicProperties,
-                        CONSENSUS,
-                        scheduleStore);
-
-        var defs = SerdeUtils.pojoDefs("bootstrap/insufficient-capacity-throttles.json");
-
-        // expect:
-        assertDoesNotThrow(() -> subject.rebuildFor(defs));
-        // and:
-        assertEquals(1, subject.activeThrottlesFor(CryptoGetAccountBalance).size());
-        // and:
-        assertThat(
-                logCaptor.errorLogs(),
-                contains(
-                        "When constructing bucket 'A' from state:"
-                            + " NODE_CAPACITY_NOT_SUFFICIENT_FOR_OPERATION :: Bucket A contains an"
-                            + " unsatisfiable milliOpsPerSec with 1000000 nodes!"));
     }
 
     @Test
@@ -1279,18 +1146,17 @@ class DeterministicThrottlingTest {
     void logsAsExpected() throws IOException {
         // setup:
         var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
-        final var desired =
-                "Resolved throttles for CONSENSUS (after splitting capacity 2 ways) - \n"
-                        + "  ContractCall: min{6.00 tps (A), 5.00 tps (B)}\n"
-                        + "  CryptoCreate: min{5000.00 tps (A), 1.00 tps (C)}\n"
-                        + "  CryptoGetAccountBalance: min{5.00 tps (D)}\n"
-                        + "  CryptoTransfer: min{5000.00 tps (A)}\n"
-                        + "  EthereumTransaction: min{6.00 tps (A)}\n"
-                        + "  GetVersionInfo: min{0.50 tps (D)}\n"
-                        + "  TokenAssociateToAccount: min{50.00 tps (C)}\n"
-                        + "  TokenCreate: min{50.00 tps (C)}\n"
-                        + "  TokenMint: min{1500.00 tps (A)}\n"
-                        + "  TransactionGetReceipt: min{5.00 tps (D)}";
+        final var desired = "Resolved throttles for CONSENSUS (after splitting capacity 2 ways) - \n"
+                + "  ContractCall: min{6.00 tps (A), 5.00 tps (B)}\n"
+                + "  CryptoCreate: min{5000.00 tps (A), 1.00 tps (C)}\n"
+                + "  CryptoGetAccountBalance: min{5.00 tps (D)}\n"
+                + "  CryptoTransfer: min{5000.00 tps (A)}\n"
+                + "  EthereumTransaction: min{6.00 tps (A)}\n"
+                + "  GetVersionInfo: min{0.50 tps (D)}\n"
+                + "  TokenAssociateToAccount: min{50.00 tps (C)}\n"
+                + "  TokenCreate: min{50.00 tps (C)}\n"
+                + "  TokenMint: min{1500.00 tps (A)}\n"
+                + "  TransactionGetReceipt: min{5.00 tps (D)}";
 
         // when:
         subject.rebuildFor(defs);
@@ -1332,9 +1198,7 @@ class DeterministicThrottlingTest {
 
     @Test
     void logsActiveFrontendGasThrottlesAsExpected() {
-        subject =
-                new DeterministicThrottling(
-                        () -> 4, aliasManager, dynamicProperties, HAPI, scheduleStore);
+        subject = new DeterministicThrottling(() -> 4, aliasManager, dynamicProperties, HAPI, scheduleStore);
 
         var capacity = 1000L;
         // setup:
@@ -1352,9 +1216,7 @@ class DeterministicThrottlingTest {
 
     @Test
     void logsInertFrontendGasThrottlesAsExpected() {
-        subject =
-                new DeterministicThrottling(
-                        () -> 4, aliasManager, dynamicProperties, HAPI, scheduleStore);
+        subject = new DeterministicThrottling(() -> 4, aliasManager, dynamicProperties, HAPI, scheduleStore);
 
         var capacity = 1000L;
         // setup:
@@ -1370,9 +1232,7 @@ class DeterministicThrottlingTest {
 
     @Test
     void logsActiveScheduleGasThrottlesAsExpected() {
-        subject =
-                new DeterministicThrottling(
-                        () -> 4, aliasManager, dynamicProperties, SCHEDULE, scheduleStore);
+        subject = new DeterministicThrottling(() -> 4, aliasManager, dynamicProperties, SCHEDULE, scheduleStore);
 
         var capacity = 1000L;
         // setup:
@@ -1390,9 +1250,7 @@ class DeterministicThrottlingTest {
 
     @Test
     void logsInertScheduleGasThrottlesAsExpected() {
-        subject =
-                new DeterministicThrottling(
-                        () -> 4, aliasManager, dynamicProperties, SCHEDULE, scheduleStore);
+        subject = new DeterministicThrottling(() -> 4, aliasManager, dynamicProperties, SCHEDULE, scheduleStore);
 
         var capacity = 1000L;
         // setup:
@@ -1412,12 +1270,11 @@ class DeterministicThrottlingTest {
         var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
 
         // and:
-        var expected =
-                List.of(
-                        DeterministicThrottle.withMtpsAndBurstPeriod(15_000_000, 2),
-                        DeterministicThrottle.withMtpsAndBurstPeriod(5_000, 2),
-                        DeterministicThrottle.withMtpsAndBurstPeriod(50_000, 3),
-                        DeterministicThrottle.withMtpsAndBurstPeriod(5000, 4));
+        var expected = List.of(
+                DeterministicThrottle.withMtpsAndBurstPeriod(15_000_000, 2),
+                DeterministicThrottle.withMtpsAndBurstPeriod(5_000, 2),
+                DeterministicThrottle.withMtpsAndBurstPeriod(50_000, 3),
+                DeterministicThrottle.withMtpsAndBurstPeriod(5000, 4));
 
         // when:
         subject.rebuildFor(defs);
@@ -1508,11 +1365,8 @@ class DeterministicThrottlingTest {
     @Test
     void requiresExplicitTimestamp() {
         // expect:
-        assertThrows(
-                UnsupportedOperationException.class, () -> subject.shouldThrottleTxn(accessor));
-        assertThrows(
-                UnsupportedOperationException.class,
-                () -> subject.shouldThrottleQuery(FileGetInfo, query));
+        assertThrows(UnsupportedOperationException.class, () -> subject.shouldThrottleTxn(accessor));
+        assertThrows(UnsupportedOperationException.class, () -> subject.shouldThrottleQuery(FileGetInfo, query));
     }
 
     @Test
@@ -1580,11 +1434,10 @@ class DeterministicThrottlingTest {
         given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
         given(dynamicProperties.maxGasPerSec()).willReturn(10L);
         given(accessor.getTxn())
-                .willReturn(
-                        TransactionBody.newBuilder()
-                                .setContractCreateInstance(
-                                        ContractCreateTransactionBody.newBuilder().setGas(11L))
-                                .build());
+                .willReturn(TransactionBody.newBuilder()
+                        .setContractCreateInstance(
+                                ContractCreateTransactionBody.newBuilder().setGas(11L))
+                        .build());
         subject.setMode(CONSENSUS);
 
         // when:
@@ -1603,11 +1456,10 @@ class DeterministicThrottlingTest {
         given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
         given(dynamicProperties.maxGasPerSec()).willReturn(10L);
         given(accessor.getTxn())
-                .willReturn(
-                        TransactionBody.newBuilder()
-                                .setContractCall(
-                                        ContractCallTransactionBody.newBuilder().setGas(11L))
-                                .build());
+                .willReturn(TransactionBody.newBuilder()
+                        .setContractCall(
+                                ContractCallTransactionBody.newBuilder().setGas(11L))
+                        .build());
         subject.setMode(CONSENSUS);
 
         // when:
@@ -1659,11 +1511,9 @@ class DeterministicThrottlingTest {
     void reclaimsAllUsagesOnThrottledShouldThrottleTxn() throws IOException {
         given(dynamicProperties.schedulingLongTermEnabled()).willReturn(true);
         subject.setMode(HAPI);
-        final var scheduledSubmit =
-                SchedulableTransactionBody.newBuilder()
-                        .setConsensusSubmitMessage(
-                                ConsensusSubmitMessageTransactionBody.getDefaultInstance())
-                        .build();
+        final var scheduledSubmit = SchedulableTransactionBody.newBuilder()
+                .setConsensusSubmitMessage(ConsensusSubmitMessageTransactionBody.getDefaultInstance())
+                .build();
         var defs = SerdeUtils.pojoDefs("bootstrap/schedule-create-throttles-inverted.json");
         subject.rebuildFor(defs);
 
@@ -1676,15 +1526,19 @@ class DeterministicThrottlingTest {
 
         assertFalse(firstAns);
         assertTrue(subsequentAns);
-        assertEquals(4999250000000L, subject.activeThrottlesFor(ScheduleCreate).get(0).used());
+        assertEquals(
+                4999250000000L,
+                subject.activeThrottlesFor(ScheduleCreate).get(0).used());
 
         assertEquals(
-                4999999250000L, subject.activeThrottlesFor(ConsensusSubmitMessage).get(0).used());
+                4999999250000L,
+                subject.activeThrottlesFor(ConsensusSubmitMessage).get(0).used());
 
         subject.resetUsage();
         assertEquals(0L, subject.activeThrottlesFor(ScheduleCreate).get(0).used());
 
-        assertEquals(0L, subject.activeThrottlesFor(ConsensusSubmitMessage).get(0).used());
+        assertEquals(
+                0L, subject.activeThrottlesFor(ConsensusSubmitMessage).get(0).used());
     }
 
     @Test
@@ -1703,7 +1557,9 @@ class DeterministicThrottlingTest {
         assertFalse(subject.shouldThrottleQuery(ContractCallLocal, now, query));
         assertTrue(subject.shouldThrottleQuery(ContractCallLocal, now, query));
 
-        assertEquals(1000000000000L, subject.activeThrottlesFor(ContractCallLocal).get(0).used());
+        assertEquals(
+                1000000000000L,
+                subject.activeThrottlesFor(ContractCallLocal).get(0).used());
         assertEquals(3L, subject.gasLimitThrottle().used());
 
         subject.resetUsage();
@@ -1714,9 +1570,7 @@ class DeterministicThrottlingTest {
 
     @Test
     void scheduleThrottlesBuildCorrectly() throws IOException {
-        subject =
-                new DeterministicThrottling(
-                        () -> 1, aliasManager, dynamicProperties, CONSENSUS, scheduleStore);
+        subject = new DeterministicThrottling(() -> 1, aliasManager, dynamicProperties, CONSENSUS, scheduleStore);
 
         given(dynamicProperties.schedulingMaxTxnPerSecond()).willReturn(100L);
         subject.setMode(SCHEDULE);
@@ -1724,8 +1578,7 @@ class DeterministicThrottlingTest {
         var defs = SerdeUtils.pojoDefs("bootstrap/schedule-throttles.json");
         subject.rebuildFor(defs);
 
-        final EnumMap<HederaFunctionality, List<Long>> groups =
-                new EnumMap<>(HederaFunctionality.class);
+        final EnumMap<HederaFunctionality, List<Long>> groups = new EnumMap<>(HederaFunctionality.class);
 
         long sum = 0;
         long grpCount = 0;
@@ -1756,9 +1609,7 @@ class DeterministicThrottlingTest {
 
     @Test
     void scheduleThrottlesErrorOnNotPossible() throws IOException {
-        subject =
-                new DeterministicThrottling(
-                        () -> 1, aliasManager, dynamicProperties, CONSENSUS, scheduleStore);
+        subject = new DeterministicThrottling(() -> 1, aliasManager, dynamicProperties, CONSENSUS, scheduleStore);
 
         given(dynamicProperties.schedulingMaxTxnPerSecond()).willReturn(1L);
         subject.setMode(SCHEDULE);
@@ -1790,8 +1641,7 @@ class DeterministicThrottlingTest {
     }
 
     private EnumMap<HederaFunctionality, ThrottleReqsManager> reqsManager() {
-        EnumMap<HederaFunctionality, ThrottleReqsManager> opsManagers =
-                new EnumMap<>(HederaFunctionality.class);
+        EnumMap<HederaFunctionality, ThrottleReqsManager> opsManagers = new EnumMap<>(HederaFunctionality.class);
         opsManagers.put(CryptoTransfer, manager);
         return opsManagers;
     }
@@ -1800,27 +1650,25 @@ class DeterministicThrottlingTest {
         return scheduleCreate(inner, false);
     }
 
-    private SignedTxnAccessor scheduleCreate(
-            final SchedulableTransactionBody inner, boolean waitForExpiry) {
+    private SignedTxnAccessor scheduleCreate(final SchedulableTransactionBody inner, boolean waitForExpiry) {
         return scheduleCreate(inner, waitForExpiry, null);
     }
 
     private SignedTxnAccessor scheduleCreate(
             final SchedulableTransactionBody inner, boolean waitForExpiry, AccountID customPayer) {
-        final var schedule =
-                ScheduleCreateTransactionBody.newBuilder()
-                        .setWaitForExpiry(waitForExpiry)
-                        .setScheduledTransactionBody(inner);
+        final var schedule = ScheduleCreateTransactionBody.newBuilder()
+                .setWaitForExpiry(waitForExpiry)
+                .setScheduledTransactionBody(inner);
         if (customPayer != null) {
             schedule.setPayerAccountID(customPayer);
         }
-        final var body = TransactionBody.newBuilder().setScheduleCreate(schedule).build();
+        final var body =
+                TransactionBody.newBuilder().setScheduleCreate(schedule).build();
         final var signedTxn =
                 SignedTransaction.newBuilder().setBodyBytes(body.toByteString()).build();
-        final var txn =
-                Transaction.newBuilder()
-                        .setSignedTransactionBytes(signedTxn.toByteString())
-                        .build();
+        final var txn = Transaction.newBuilder()
+                .setSignedTransactionBytes(signedTxn.toByteString())
+                .build();
         return SignedTxnAccessor.uncheckedFrom(txn);
     }
 
@@ -1829,15 +1677,13 @@ class DeterministicThrottlingTest {
         final var body = TransactionBody.newBuilder().setScheduleSign(schedule).build();
         final var signedTxn =
                 SignedTransaction.newBuilder().setBodyBytes(body.toByteString()).build();
-        final var txn =
-                Transaction.newBuilder()
-                        .setSignedTransactionBytes(signedTxn.toByteString())
-                        .build();
+        final var txn = Transaction.newBuilder()
+                .setSignedTransactionBytes(signedTxn.toByteString())
+                .build();
         return SignedTxnAccessor.uncheckedFrom(txn);
     }
 
-    private static final Key aPrimitiveKey =
-            Key.newBuilder()
-                    .setEd25519(ByteString.copyFromUtf8("01234567890123456789012345678901"))
-                    .build();
+    private static final Key aPrimitiveKey = Key.newBuilder()
+            .setEd25519(ByteString.copyFromUtf8("01234567890123456789012345678901"))
+            .build();
 }

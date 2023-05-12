@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage.crypto;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -35,8 +36,7 @@ class CryptoContextUtilsTest {
         existingMap.put(4L, 2L);
         existingMap.put(5L, 2L);
 
-        assertEquals(
-                1, CryptoContextUtils.getChangedCryptoKeys(newMap.keySet(), existingMap.keySet()));
+        assertEquals(1, CryptoContextUtils.getChangedCryptoKeys(newMap.keySet(), existingMap.keySet()));
     }
 
     @Test
@@ -52,7 +52,6 @@ class CryptoContextUtilsTest {
         existingMap.put(new AllowanceId(4L, 2L), 2L);
         existingMap.put(new AllowanceId(3L, 5L), 2L);
 
-        assertEquals(
-                2, CryptoContextUtils.getChangedTokenKeys(newMap.keySet(), existingMap.keySet()));
+        assertEquals(2, CryptoContextUtils.getChangedTokenKeys(newMap.keySet(), existingMap.keySet()));
     }
 }

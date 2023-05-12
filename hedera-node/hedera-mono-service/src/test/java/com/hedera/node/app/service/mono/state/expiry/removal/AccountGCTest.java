@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.expiry.removal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -39,23 +40,26 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class AccountGCTest {
-    @Mock private AliasManager aliasManager;
-    @Mock private SigImpactHistorian sigImpactHistorian;
-    @Mock private TreasuryReturns treasuryReturns;
-    @Mock private BackingStore<AccountID, HederaAccount> backingAccounts;
-    @Mock private ExpiryThrottle expiryThrottle;
+    @Mock
+    private AliasManager aliasManager;
+
+    @Mock
+    private SigImpactHistorian sigImpactHistorian;
+
+    @Mock
+    private TreasuryReturns treasuryReturns;
+
+    @Mock
+    private BackingStore<AccountID, HederaAccount> backingAccounts;
+
+    @Mock
+    private ExpiryThrottle expiryThrottle;
 
     private AccountGC subject;
 
     @BeforeEach
     void setUp() {
-        subject =
-                new AccountGC(
-                        aliasManager,
-                        expiryThrottle,
-                        sigImpactHistorian,
-                        treasuryReturns,
-                        backingAccounts);
+        subject = new AccountGC(aliasManager, expiryThrottle, sigImpactHistorian, treasuryReturns, backingAccounts);
     }
 
     @Test
@@ -77,11 +81,10 @@ class AccountGCTest {
                 .willReturn(FungibleTreasuryReturns.FINISHED_NOOP_FUNGIBLE_RETURNS);
         given(aliasManager.forgetAlias(expiredAccount.getAlias())).willReturn(true);
 
-        final var expectedOutcome =
-                new CryptoGcOutcome(
-                        FungibleTreasuryReturns.FINISHED_NOOP_FUNGIBLE_RETURNS,
-                        NonFungibleTreasuryReturns.FINISHED_NOOP_NON_FUNGIBLE_RETURNS,
-                        true);
+        final var expectedOutcome = new CryptoGcOutcome(
+                FungibleTreasuryReturns.FINISHED_NOOP_FUNGIBLE_RETURNS,
+                NonFungibleTreasuryReturns.FINISHED_NOOP_NON_FUNGIBLE_RETURNS,
+                true);
 
         final var outcome = subject.expireBestEffort(num, expiredAccount);
 
@@ -100,11 +103,10 @@ class AccountGCTest {
         given(treasuryReturns.returnFungibleUnitsFrom(expiredAccount))
                 .willReturn(FungibleTreasuryReturns.FINISHED_NOOP_FUNGIBLE_RETURNS);
 
-        final var expectedOutcome =
-                new CryptoGcOutcome(
-                        FungibleTreasuryReturns.FINISHED_NOOP_FUNGIBLE_RETURNS,
-                        NonFungibleTreasuryReturns.FINISHED_NOOP_NON_FUNGIBLE_RETURNS,
-                        false);
+        final var expectedOutcome = new CryptoGcOutcome(
+                FungibleTreasuryReturns.FINISHED_NOOP_FUNGIBLE_RETURNS,
+                NonFungibleTreasuryReturns.FINISHED_NOOP_NON_FUNGIBLE_RETURNS,
+                false);
 
         final var outcome = subject.expireBestEffort(num, expiredAccount);
 
@@ -120,11 +122,10 @@ class AccountGCTest {
         given(treasuryReturns.returnFungibleUnitsFrom(expiredAccount))
                 .willReturn(FungibleTreasuryReturns.UNFINISHED_NOOP_FUNGIBLE_RETURNS);
 
-        final var expectedOutcome =
-                new CryptoGcOutcome(
-                        FungibleTreasuryReturns.UNFINISHED_NOOP_FUNGIBLE_RETURNS,
-                        NonFungibleTreasuryReturns.FINISHED_NOOP_NON_FUNGIBLE_RETURNS,
-                        false);
+        final var expectedOutcome = new CryptoGcOutcome(
+                FungibleTreasuryReturns.UNFINISHED_NOOP_FUNGIBLE_RETURNS,
+                NonFungibleTreasuryReturns.FINISHED_NOOP_NON_FUNGIBLE_RETURNS,
+                false);
 
         final var outcome = subject.expireBestEffort(num, expiredAccount);
 
@@ -138,11 +139,10 @@ class AccountGCTest {
         given(treasuryReturns.returnNftsFrom(expiredAccount))
                 .willReturn(NonFungibleTreasuryReturns.UNFINISHED_NOOP_NON_FUNGIBLE_RETURNS);
 
-        final var expectedOutcome =
-                new CryptoGcOutcome(
-                        FungibleTreasuryReturns.UNFINISHED_NOOP_FUNGIBLE_RETURNS,
-                        NonFungibleTreasuryReturns.UNFINISHED_NOOP_NON_FUNGIBLE_RETURNS,
-                        false);
+        final var expectedOutcome = new CryptoGcOutcome(
+                FungibleTreasuryReturns.UNFINISHED_NOOP_FUNGIBLE_RETURNS,
+                NonFungibleTreasuryReturns.UNFINISHED_NOOP_NON_FUNGIBLE_RETURNS,
+                false);
 
         final var outcome = subject.expireBestEffort(num, expiredAccount);
 

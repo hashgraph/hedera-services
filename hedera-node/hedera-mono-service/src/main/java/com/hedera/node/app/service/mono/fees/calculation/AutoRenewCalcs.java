@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation;
 
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
@@ -30,6 +31,7 @@ import com.hedera.node.app.hapi.fees.usage.contract.ExtantContractContext;
 import com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage;
 import com.hedera.node.app.hapi.fees.usage.crypto.ExtantCryptoContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.submerkle.FcTokenAllowance;
 import com.hedera.node.app.service.mono.state.submerkle.FcTokenAllowanceId;
@@ -38,7 +40,6 @@ import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.SubType;
-import com.swirlds.virtualmap.VirtualMap;
 import java.time.Instant;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -55,7 +56,7 @@ public class AutoRenewCalcs {
     private static final RenewAssessment NO_RENEWAL_POSSIBLE = new RenewAssessment(0L, 0L);
 
     private final CryptoOpsUsage cryptoOpsUsage;
-    private final Supplier<VirtualMap<ContractKey, IterableContractValue>> storage;
+    private final Supplier<VirtualMapLike<ContractKey, IterableContractValue>> storage;
     private final GlobalDynamicProperties properties;
 
     private Triple<Map<SubType, FeeData>, Instant, Map<SubType, FeeData>> accountPricesSeq = null;
@@ -74,7 +75,7 @@ public class AutoRenewCalcs {
     @Inject
     public AutoRenewCalcs(
             final CryptoOpsUsage cryptoOpsUsage,
-            final Supplier<VirtualMap<ContractKey, IterableContractValue>> storage,
+            final Supplier<VirtualMapLike<ContractKey, IterableContractValue>> storage,
             final GlobalDynamicProperties properties) {
         this.storage = storage;
         this.cryptoOpsUsage = cryptoOpsUsage;
@@ -138,10 +139,7 @@ public class AutoRenewCalcs {
     }
 
     private RenewalFees contractRenewalPrices(
-            final Instant at,
-            final ExchangeRate rate,
-            final HederaAccount contract,
-            final long reqPeriod) {
+            final Instant at, final ExchangeRate rate, final HederaAccount contract, final long reqPeriod) {
         if (contractPricesSeq == null) {
             throw new IllegalStateException("No contract usage prices are set!");
         }
@@ -161,23 +159,19 @@ public class AutoRenewCalcs {
     }
 
     private long storageFee(
-            final ExtantContractContext contractContext,
-            final ExchangeRate rate,
-            final long requestedLifetime) {
+            final ExtantContractContext contractContext, final ExchangeRate rate, final long requestedLifetime) {
         final var storagePriceTiers = properties.storagePriceTiers();
         final var totalKvPairs = storage.get().size();
         return storagePriceTiers.priceOfAutoRenewal(
                 rate, totalKvPairs, requestedLifetime, contractContext.currentNumKvPairs());
     }
 
-    private RenewalFees accountRenewalPrices(
-            final Instant at, final ExchangeRate rate, final HederaAccount account) {
+    private RenewalFees accountRenewalPrices(final Instant at, final ExchangeRate rate, final HederaAccount account) {
         if (accountPricesSeq == null) {
             throw new IllegalStateException("No account usage prices are set!");
         }
         final boolean isBeforeSwitch = at.isBefore(accountPricesSeq.getMiddle());
-        final long nominalFixed =
-                isBeforeSwitch ? firstAccountConstantFee : secondAccountConstantFee;
+        final long nominalFixed = isBeforeSwitch ? firstAccountConstantFee : secondAccountConstantFee;
         final long serviceRbhPrice = isBeforeSwitch ? firstAccountRbhPrice : secondAccountRbhPrice;
         final long fixedFee = inTinybars(nominalFixed, rate);
         final long rbUsage = rbUsedBy(account);
@@ -185,25 +179,18 @@ public class AutoRenewCalcs {
         return new RenewalFees(fixedFee, hourlyFee);
     }
 
-    private RenewAssessment assess(
-            final RenewalFees meta, final long reqPeriod, final long balance) {
+    private RenewAssessment assess(final RenewalFees meta, final long reqPeriod, final long balance) {
         final long maxRenewableHours =
-                Math.max(
-                        1L,
-                        maxRenewableHoursGiven(
-                                meta.fixedFee(), meta.hourlyFee(), reqPeriod, balance));
+                Math.max(1L, maxRenewableHoursGiven(meta.fixedFee(), meta.hourlyFee(), reqPeriod, balance));
         final long maxRenewablePeriod = maxRenewableHours * HRS_DIVISOR;
-        final long feeForMaxRenewal =
-                Math.min(meta.fixedFee() + maxRenewableHours * meta.hourlyFee(), balance);
+        final long feeForMaxRenewal = Math.min(meta.fixedFee() + maxRenewableHours * meta.hourlyFee(), balance);
         return new RenewAssessment(feeForMaxRenewal, Math.min(reqPeriod, maxRenewablePeriod));
     }
 
-    private long maxRenewableHoursGiven(
-            long fixedTinybarFee, long tinybarPerHour, long requestedPeriod, long balance) {
+    private long maxRenewableHoursGiven(long fixedTinybarFee, long tinybarPerHour, long requestedPeriod, long balance) {
         final long remainingBalance = Math.max(0, balance - fixedTinybarFee);
         final long affordableHours = remainingBalance / tinybarPerHour;
-        final long requestedHours =
-                requestedPeriod / HRS_DIVISOR + (requestedPeriod % HRS_DIVISOR > 0 ? 1 : 0);
+        final long requestedHours = requestedPeriod / HRS_DIVISOR + (requestedPeriod % HRS_DIVISOR > 0 ? 1 : 0);
         return Math.min(affordableHours, requestedHours);
     }
 

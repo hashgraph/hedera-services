@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.utils;
 
 import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
@@ -38,8 +39,7 @@ public record NftNumPair(long tokenNum, long serialNum) {
     @Override
     public String toString() {
         return String.format(
-                "%d.%d.%d.%d",
-                STATIC_PROPERTIES.getShard(), STATIC_PROPERTIES.getRealm(), tokenNum, serialNum);
+                "%d.%d.%d.%d", STATIC_PROPERTIES.getShard(), STATIC_PROPERTIES.getRealm(), tokenNum, serialNum);
     }
 
     @Override

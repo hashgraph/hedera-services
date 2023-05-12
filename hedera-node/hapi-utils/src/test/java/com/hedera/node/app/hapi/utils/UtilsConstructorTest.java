@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.utils;
 
 import com.hedera.node.app.hapi.utils.builder.RequestBuilder;
@@ -31,20 +32,18 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class UtilsConstructorTest {
-    private static final Set<Class<?>> toBeTested =
-            new HashSet<>(
-                    Arrays.asList(
-                            HapiThrottleUtils.class,
-                            ParsingUtils.class,
-                            CommonUtils.class,
-                            Ed25519Utils.class,
-                            ByteStringUtils.class,
-                            SignatureGenerator.class,
-                            ThrottlesJsonToProtoSerde.class,
-                            ErrorCodeUtils.class,
-                            ExpectedCustomThrottles.class,
-                            RequestBuilder.class,
-                            ConsensusServiceFeeBuilder.class));
+    private static final Set<Class<?>> toBeTested = new HashSet<>(Arrays.asList(
+            HapiThrottleUtils.class,
+            ParsingUtils.class,
+            CommonUtils.class,
+            Ed25519Utils.class,
+            ByteStringUtils.class,
+            SignatureGenerator.class,
+            ThrottlesJsonToProtoSerde.class,
+            ErrorCodeUtils.class,
+            ExpectedCustomThrottles.class,
+            RequestBuilder.class,
+            ConsensusServiceFeeBuilder.class));
 
     @Test
     void throwsInConstructor() {
@@ -53,8 +52,7 @@ class UtilsConstructorTest {
         }
     }
 
-    private static final String UNEXPECTED_THROW =
-            "Unexpected `%s` was thrown in `%s` constructor!";
+    private static final String UNEXPECTED_THROW = "Unexpected `%s` was thrown in `%s` constructor!";
     private static final String NO_THROW = "No exception was thrown in `%s` constructor!";
 
     private void assertFor(final Class<?> clazz) {
@@ -66,8 +64,7 @@ class UtilsConstructorTest {
         } catch (final InvocationTargetException expected) {
             final var cause = expected.getCause();
             Assertions.assertTrue(
-                    cause instanceof UnsupportedOperationException,
-                    String.format(UNEXPECTED_THROW, cause, clazz));
+                    cause instanceof UnsupportedOperationException, String.format(UNEXPECTED_THROW, cause, clazz));
             return;
         } catch (final Exception e) {
             Assertions.fail(String.format(UNEXPECTED_THROW, e, clazz));

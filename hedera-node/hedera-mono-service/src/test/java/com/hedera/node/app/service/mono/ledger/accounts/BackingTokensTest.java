@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.accounts;
 
 import static com.hedera.test.utils.IdUtils.asToken;
@@ -23,6 +24,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.ledger.backing.BackingTokens;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -47,7 +49,7 @@ class BackingTokensTest {
 
         map.put(aKey, aValue);
 
-        subject = new BackingTokens(() -> map);
+        subject = new BackingTokens(() -> MerkleMapLike.from(map));
     }
 
     @Test
@@ -129,6 +131,6 @@ class BackingTokensTest {
 
     void setupMocked() {
         mockedMap = mock(MerkleMap.class);
-        subject = new BackingTokens(() -> mockedMap);
+        subject = new BackingTokens(() -> MerkleMapLike.from(mockedMap));
     }
 }

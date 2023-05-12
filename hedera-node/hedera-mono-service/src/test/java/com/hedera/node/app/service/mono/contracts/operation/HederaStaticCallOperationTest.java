@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.operation;
 
 /*
@@ -60,38 +61,48 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class HederaStaticCallOperationTest {
-    @Mock private GasCalculator calc;
-    @Mock private MessageFrame evmMsgFrame;
-    @Mock private EVM evm;
-    @Mock private HederaStackedWorldStateUpdater worldUpdater;
-    @Mock private Account acc;
-    @Mock private EvmSigsVerifier sigsVerifier;
-    @Mock private BiPredicate<Address, MessageFrame> addressValidator;
-    @Mock private Map<String, PrecompiledContract> precompiledContractMap;
+    @Mock
+    private GasCalculator calc;
+
+    @Mock
+    private MessageFrame evmMsgFrame;
+
+    @Mock
+    private EVM evm;
+
+    @Mock
+    private HederaStackedWorldStateUpdater worldUpdater;
+
+    @Mock
+    private Account acc;
+
+    @Mock
+    private EvmSigsVerifier sigsVerifier;
+
+    @Mock
+    private BiPredicate<Address, MessageFrame> addressValidator;
+
+    @Mock
+    private Map<String, PrecompiledContract> precompiledContractMap;
 
     private final long cost = 100L;
     private HederaStaticCallOperation subject;
 
     @BeforeEach
     void setup() {
-        subject =
-                new HederaStaticCallOperation(
-                        calc, sigsVerifier, addressValidator, precompiledContractMap);
+        subject = new HederaStaticCallOperation(calc, addressValidator, precompiledContractMap);
     }
 
     @Test
     void haltWithInvalidAddr() {
         CommonCallSetup.commonSetup(evmMsgFrame, worldUpdater, acc);
         given(worldUpdater.get(any())).willReturn(null);
-        given(
-                        calc.callOperationGasCost(
-                                any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(),
-                                any(), any()))
+        given(calc.callOperationGasCost(
+                        any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), any()))
                 .willReturn(cost);
         given(evmMsgFrame.getStackItem(0)).willReturn(Bytes.EMPTY);
         given(evmMsgFrame.getStackItem(1)).willReturn(Bytes.EMPTY);
@@ -110,10 +121,8 @@ class HederaStaticCallOperationTest {
     @Test
     void executesAsExpected() {
         CommonCallSetup.commonSetup(evmMsgFrame, worldUpdater, acc);
-        given(
-                        calc.callOperationGasCost(
-                                any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(),
-                                any(), any()))
+        given(calc.callOperationGasCost(
+                        any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), any()))
                 .willReturn(cost);
         for (int i = 0; i < 10; i++) {
             lenient().when(evmMsgFrame.getStackItem(i)).thenReturn(Bytes.ofUnsignedInt(10));
@@ -125,14 +134,8 @@ class HederaStaticCallOperationTest {
         given(worldUpdater.get(any())).willReturn(acc);
         given(acc.getBalance()).willReturn(Wei.of(100));
         given(calc.gasAvailableForChildCall(any(), anyLong(), anyBoolean())).willReturn(10L);
-        given(
-                        sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
-                                Mockito.anyBoolean(), any(), any(), any()))
-                .willReturn(true);
-        given(acc.getAddress()).willReturn(Address.ZERO);
         given(addressValidator.test(any(), any())).willReturn(true);
 
-        given(evmMsgFrame.getContractAddress()).willReturn(Address.ALTBN128_ADD);
         given(evmMsgFrame.getRecipientAddress()).willReturn(Address.ALTBN128_ADD);
 
         var opRes = subject.execute(evmMsgFrame, evm);

@@ -13,12 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.customfees;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import com.hedera.node.app.service.mono.grpc.marshalling.CustomFeeMeta;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
@@ -34,7 +36,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class FcmCustomFeeSchedulesTest {
     private FcmCustomFeeSchedules subject;
 
-    MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
+    MerkleMapLike<EntityNum, MerkleToken> tokens = MerkleMapLike.from(new MerkleMap<>());
     private final EntityId aTreasury = new EntityId(0, 0, 12);
     private final EntityId bTreasury = new EntityId(0, 0, 13);
     private final EntityId tokenA = new EntityId(0, 0, 1);
@@ -104,13 +106,13 @@ class FcmCustomFeeSchedulesTest {
         // given:
         MerkleMap<EntityNum, MerkleToken> secondMerkleMap = new MerkleMap<>();
         MerkleToken token = new MerkleToken();
-        final var missingFees =
-                List.of(FcCustomFee.fixedFee(50L, missingToken, feeCollector, false).asGrpc());
+        final var missingFees = List.of(
+                FcCustomFee.fixedFee(50L, missingToken, feeCollector, false).asGrpc());
 
         token.setFeeScheduleFrom(missingFees);
         secondMerkleMap.put(EntityNum.fromLong(missingToken.num()), new MerkleToken());
         final var fees1 = new FcmCustomFeeSchedules(() -> tokens);
-        final var fees2 = new FcmCustomFeeSchedules(() -> secondMerkleMap);
+        final var fees2 = new FcmCustomFeeSchedules(() -> MerkleMapLike.from(secondMerkleMap));
 
         // expect:
         assertNotEquals(fees1, fees2);

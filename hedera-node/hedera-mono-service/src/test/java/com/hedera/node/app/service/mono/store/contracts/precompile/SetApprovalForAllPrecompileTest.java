@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.SetApprovalForAllPrecompile.decodeSetApprovalForAll;
@@ -28,13 +29,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class SetApprovalForAllPrecompileTest {
-    public static final Bytes SET_APPROVAL_FOR_ALL_INPUT_ERC =
-            Bytes.fromHexString(
-                    "0xa22cb46500000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000001");
+    public static final Bytes SET_APPROVAL_FOR_ALL_INPUT_ERC = Bytes.fromHexString(
+            "0xa22cb46500000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000001");
 
-    public static final Bytes SET_APPROVAL_FOR_ALL_INPUT_HAPI =
-            Bytes.fromHexString(
-                    "0x367605ca000000000000000000000000000000000000000000000000000000000000123400000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000001");
+    public static final Bytes SET_APPROVAL_FOR_ALL_INPUT_HAPI = Bytes.fromHexString(
+            "0x367605ca000000000000000000000000000000000000000000000000000000000000123400000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000001");
     private static final long TOKEN_NUM_HAPI_TOKEN = 0x1234;
     private static final long ACCOUNT_NUM_APPROVE_ALL_TO = 0x640;
     private static final TokenID TOKEN_ID =
@@ -42,8 +41,7 @@ class SetApprovalForAllPrecompileTest {
 
     @Test
     void decodeSetApprovalForAllERC() {
-        final var decodedInput =
-                decodeSetApprovalForAll(SET_APPROVAL_FOR_ALL_INPUT_ERC, TOKEN_ID, identity());
+        final var decodedInput = decodeSetApprovalForAll(SET_APPROVAL_FOR_ALL_INPUT_ERC, TOKEN_ID, identity());
 
         assertEquals(TOKEN_ID.getTokenNum(), decodedInput.tokenId().getTokenNum());
         assertEquals(ACCOUNT_NUM_APPROVE_ALL_TO, decodedInput.to().getAccountNum());
@@ -52,8 +50,7 @@ class SetApprovalForAllPrecompileTest {
 
     @Test
     void decodeSetApprovalForAllHAPI() {
-        final var decodedInput =
-                decodeSetApprovalForAll(SET_APPROVAL_FOR_ALL_INPUT_HAPI, null, identity());
+        final var decodedInput = decodeSetApprovalForAll(SET_APPROVAL_FOR_ALL_INPUT_HAPI, null, identity());
 
         assertEquals(TOKEN_NUM_HAPI_TOKEN, decodedInput.tokenId().getTokenNum());
         assertEquals(ACCOUNT_NUM_APPROVE_ALL_TO, decodedInput.to().getAccountNum());

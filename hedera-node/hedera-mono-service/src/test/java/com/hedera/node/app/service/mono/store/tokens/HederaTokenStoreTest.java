@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.tokens;
 
 import static com.hedera.node.app.service.mono.ledger.backing.BackingTokenRels.asTokenRel;
@@ -175,25 +176,20 @@ class HederaTokenStoreTest {
     private static final int MAX_TOKEN_SYMBOL_UTF8_BYTES = 10;
     private static final int MAX_TOKEN_NAME_UTF8_BYTES = 100;
     private static final Pair<AccountID, TokenID> sponsorMisc = asTokenRel(sponsor, misc);
-    private static final Pair<AccountID, TokenID> treasuryNft =
-            asTokenRel(primaryTreasury, nonfungible);
-    private static final Pair<AccountID, TokenID> newTreasuryNft =
-            asTokenRel(newTreasury, nonfungible);
+    private static final Pair<AccountID, TokenID> treasuryNft = asTokenRel(primaryTreasury, nonfungible);
+    private static final Pair<AccountID, TokenID> newTreasuryNft = asTokenRel(newTreasury, nonfungible);
     private static final Pair<AccountID, TokenID> sponsorNft = asTokenRel(sponsor, nonfungible);
-    private static final Pair<AccountID, TokenID> counterpartyNft =
-            asTokenRel(counterparty, nonfungible);
+    private static final Pair<AccountID, TokenID> counterpartyNft = asTokenRel(counterparty, nonfungible);
     private static final Pair<AccountID, TokenID> treasuryMisc = asTokenRel(treasury, misc);
     private static final NftId aNft = new NftId(0, 0, 2, 1234);
     private static final NftId tNft = new NftId(0, 0, 2, 12345);
-    private static final Pair<AccountID, TokenID> anotherFeeCollectorMisc =
-            asTokenRel(anotherFeeCollector, misc);
+    private static final Pair<AccountID, TokenID> anotherFeeCollectorMisc = asTokenRel(anotherFeeCollector, misc);
     private EntityIdSource ids;
     private SideEffectsTracker sideEffectsTracker;
     private GlobalDynamicProperties properties;
     private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
     private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger;
-    private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
-            tokenRelsLedger;
+    private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel> tokenRelsLedger;
     private BackingTokens backingTokens;
     private HederaLedger hederaLedger;
     private UsageLimits usageLimits;
@@ -225,17 +221,14 @@ class HederaTokenStoreTest {
 
         hederaLedger = mock(HederaLedger.class);
 
-        nftsLedger =
-                (TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter>)
-                        mock(TransactionalLedger.class);
+        nftsLedger = (TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter>) mock(TransactionalLedger.class);
         given(nftsLedger.get(aNft, OWNER)).willReturn(EntityId.fromGrpcAccountId(sponsor));
         given(nftsLedger.get(tNft, OWNER)).willReturn(EntityId.fromGrpcAccountId(primaryTreasury));
         given(nftsLedger.exists(aNft)).willReturn(true);
         given(nftsLedger.exists(tNft)).willReturn(true);
 
         accountsLedger =
-                (TransactionalLedger<AccountID, AccountProperty, HederaAccount>)
-                        mock(TransactionalLedger.class);
+                (TransactionalLedger<AccountID, AccountProperty, HederaAccount>) mock(TransactionalLedger.class);
         given(accountsLedger.exists(treasury)).willReturn(true);
         given(accountsLedger.exists(anotherFeeCollector)).willReturn(true);
         given(accountsLedger.exists(autoRenewAccount)).willReturn(true);
@@ -296,16 +289,15 @@ class HederaTokenStoreTest {
         usageLimits = mock(UsageLimits.class);
 
         sideEffectsTracker = new SideEffectsTracker();
-        subject =
-                new HederaTokenStore(
-                        ids,
-                        usageLimits,
-                        TEST_VALIDATOR,
-                        sideEffectsTracker,
-                        properties,
-                        tokenRelsLedger,
-                        nftsLedger,
-                        backingTokens);
+        subject = new HederaTokenStore(
+                ids,
+                usageLimits,
+                TEST_VALIDATOR,
+                sideEffectsTracker,
+                properties,
+                tokenRelsLedger,
+                nftsLedger,
+                backingTokens);
         subject.setAccountsLedger(accountsLedger);
         subject.setHederaLedger(hederaLedger);
     }
@@ -500,10 +492,8 @@ class HederaTokenStoreTest {
         final var key = asTokenRel(sponsor, misc);
 
         given(accountsLedger.get(sponsor, NUM_ASSOCIATIONS)).willReturn(associatedTokensCount);
-        given(accountsLedger.get(sponsor, MAX_AUTOMATIC_ASSOCIATIONS))
-                .willReturn(maxAutoAssociations);
-        given(accountsLedger.get(sponsor, USED_AUTOMATIC_ASSOCIATIONS))
-                .willReturn(alreadyUsedAutoAssocitaions);
+        given(accountsLedger.get(sponsor, MAX_AUTOMATIC_ASSOCIATIONS)).willReturn(maxAutoAssociations);
+        given(accountsLedger.get(sponsor, USED_AUTOMATIC_ASSOCIATIONS)).willReturn(alreadyUsedAutoAssocitaions);
         given(usageLimits.areCreatableTokenRels(1)).willReturn(true);
 
         given(token.hasKycKey()).willReturn(true);
@@ -518,8 +508,7 @@ class HederaTokenStoreTest {
         verify(tokenRelsLedger).set(key, TokenRelProperty.IS_KYC_GRANTED, false);
         verify(tokenRelsLedger).set(key, TokenRelProperty.IS_AUTOMATIC_ASSOCIATION, true);
         verify(accountsLedger).set(sponsor, NUM_ASSOCIATIONS, associatedTokensCount + 1);
-        verify(accountsLedger)
-                .set(sponsor, USED_AUTOMATIC_ASSOCIATIONS, alreadyUsedAutoAssocitaions + 1);
+        verify(accountsLedger).set(sponsor, USED_AUTOMATIC_ASSOCIATIONS, alreadyUsedAutoAssocitaions + 1);
     }
 
     @Test
@@ -528,10 +517,8 @@ class HederaTokenStoreTest {
 
         given(accountsLedger.get(sponsor, NUM_ASSOCIATIONS)).willReturn(associatedTokensCount);
         given(accountsLedger.get(sponsor, NUM_POSITIVE_BALANCES)).willReturn(numPositiveBalances);
-        given(accountsLedger.get(sponsor, MAX_AUTOMATIC_ASSOCIATIONS))
-                .willReturn(maxAutoAssociations);
-        given(accountsLedger.get(sponsor, USED_AUTOMATIC_ASSOCIATIONS))
-                .willReturn(alreadyUsedAutoAssocitaions);
+        given(accountsLedger.get(sponsor, MAX_AUTOMATIC_ASSOCIATIONS)).willReturn(maxAutoAssociations);
+        given(accountsLedger.get(sponsor, USED_AUTOMATIC_ASSOCIATIONS)).willReturn(alreadyUsedAutoAssocitaions);
         given(properties.areTokenAssociationsLimited()).willReturn(true);
         given(properties.maxTokensPerAccount()).willReturn(associatedTokensCount + 1);
 
@@ -553,10 +540,8 @@ class HederaTokenStoreTest {
     @Test
     void associatingFailsWhenAutoAssociationLimitReached() {
 
-        given(accountsLedger.get(sponsor, MAX_AUTOMATIC_ASSOCIATIONS))
-                .willReturn(maxAutoAssociations);
-        given(accountsLedger.get(sponsor, USED_AUTOMATIC_ASSOCIATIONS))
-                .willReturn(maxAutoAssociations);
+        given(accountsLedger.get(sponsor, MAX_AUTOMATIC_ASSOCIATIONS)).willReturn(maxAutoAssociations);
+        given(accountsLedger.get(sponsor, USED_AUTOMATIC_ASSOCIATIONS)).willReturn(maxAutoAssociations);
         given(accountsLedger.get(sponsor, NUM_ASSOCIATIONS)).willReturn(associatedTokensCount);
         given(usageLimits.areCreatableTokenRels(1)).willReturn(true);
 
@@ -580,7 +565,8 @@ class HederaTokenStoreTest {
 
     @Test
     void grantingKycRejectsDetachedAccount() {
-        final var detachedSponsor = AccountID.newBuilder().setAccountNum(666_666).build();
+        final var detachedSponsor =
+                AccountID.newBuilder().setAccountNum(666_666).build();
         given(accountsLedger.exists(detachedSponsor)).willReturn(true);
         given(accountsLedger.get(detachedSponsor, IS_DELETED)).willReturn(false);
 
@@ -666,14 +652,12 @@ class HederaTokenStoreTest {
         given(accountsLedger.get(sponsor, NUM_NFTS_OWNED)).willReturn(startSponsorNfts);
         given(accountsLedger.get(counterparty, NUM_NFTS_OWNED)).willReturn(startCounterpartyNfts);
         given(tokenRelsLedger.get(sponsorNft, TOKEN_BALANCE)).willReturn(startSponsorANfts);
-        given(tokenRelsLedger.get(counterpartyNft, TOKEN_BALANCE))
-                .willReturn(startCounterpartyANfts);
+        given(tokenRelsLedger.get(counterpartyNft, TOKEN_BALANCE)).willReturn(startCounterpartyANfts);
         given(tokenRelsLedger.exists(counterpartyNft)).willReturn(false);
         given(accountsLedger.get(sponsor, NUM_ASSOCIATIONS)).willReturn(associatedTokensCount);
         given(accountsLedger.get(sponsor, NUM_POSITIVE_BALANCES)).willReturn(numPositiveBalances);
         given(accountsLedger.get(counterparty, NUM_ASSOCIATIONS)).willReturn(associatedTokensCount);
-        given(accountsLedger.get(counterparty, NUM_POSITIVE_BALANCES))
-                .willReturn(numPositiveBalances);
+        given(accountsLedger.get(counterparty, NUM_POSITIVE_BALANCES)).willReturn(numPositiveBalances);
         given(usageLimits.areCreatableTokenRels(1)).willReturn(true);
 
         final var status = subject.changeOwner(aNft, sponsor, counterparty);
@@ -708,21 +692,17 @@ class HederaTokenStoreTest {
         given(accountsLedger.get(sponsor, NUM_NFTS_OWNED)).willReturn(startSponsorNfts);
         given(accountsLedger.get(counterparty, NUM_NFTS_OWNED)).willReturn(startCounterpartyNfts);
         given(tokenRelsLedger.get(sponsorNft, TOKEN_BALANCE)).willReturn(startSponsorANfts);
-        given(tokenRelsLedger.get(counterpartyNft, TOKEN_BALANCE))
-                .willReturn(startCounterpartyANfts);
+        given(tokenRelsLedger.get(counterpartyNft, TOKEN_BALANCE)).willReturn(startCounterpartyANfts);
         given(accountsLedger.get(sponsor, NUM_ASSOCIATIONS)).willReturn(associatedTokensCount);
         given(accountsLedger.get(sponsor, NUM_POSITIVE_BALANCES)).willReturn(numPositiveBalances);
         given(accountsLedger.get(counterparty, NUM_ASSOCIATIONS)).willReturn(associatedTokensCount);
-        given(accountsLedger.get(counterparty, NUM_POSITIVE_BALANCES))
-                .willReturn(numPositiveBalances);
+        given(accountsLedger.get(counterparty, NUM_POSITIVE_BALANCES)).willReturn(numPositiveBalances);
 
         final var status = subject.changeOwner(aNft, sponsor, counterparty);
 
         assertEquals(OK, status);
-        verify(accountsLedger, never())
-                .set(counterparty, NUM_ASSOCIATIONS, associatedTokensCount + 1);
-        verify(accountsLedger, never())
-                .set(counterparty, NUM_POSITIVE_BALANCES, numPositiveBalances + 1);
+        verify(accountsLedger, never()).set(counterparty, NUM_ASSOCIATIONS, associatedTokensCount + 1);
+        verify(accountsLedger, never()).set(counterparty, NUM_POSITIVE_BALANCES, numPositiveBalances + 1);
         verify(nftsLedger).set(aNft, OWNER, receiver);
         verify(accountsLedger).set(sponsor, NUM_NFTS_OWNED, startSponsorNfts - 1);
         verify(accountsLedger).set(counterparty, NUM_NFTS_OWNED, startCounterpartyNfts + 1);
@@ -744,16 +724,12 @@ class HederaTokenStoreTest {
         given(accountsLedger.get(primaryTreasury, NUM_NFTS_OWNED)).willReturn(startTreasuryNfts);
         given(accountsLedger.get(counterparty, NUM_NFTS_OWNED)).willReturn(startCounterpartyNfts);
         given(tokenRelsLedger.get(treasuryNft, TOKEN_BALANCE)).willReturn(startTreasuryTNfts);
-        given(tokenRelsLedger.get(counterpartyNft, TOKEN_BALANCE))
-                .willReturn(startCounterpartyTNfts);
+        given(tokenRelsLedger.get(counterpartyNft, TOKEN_BALANCE)).willReturn(startCounterpartyTNfts);
         given(nftsLedger.get(tNft, OWNER)).willReturn(EntityId.fromGrpcAccountId(counterparty));
-        given(accountsLedger.get(primaryTreasury, NUM_ASSOCIATIONS))
-                .willReturn(associatedTokensCount);
-        given(accountsLedger.get(primaryTreasury, NUM_POSITIVE_BALANCES))
-                .willReturn(numPositiveBalances);
+        given(accountsLedger.get(primaryTreasury, NUM_ASSOCIATIONS)).willReturn(associatedTokensCount);
+        given(accountsLedger.get(primaryTreasury, NUM_POSITIVE_BALANCES)).willReturn(numPositiveBalances);
         given(accountsLedger.get(counterparty, NUM_ASSOCIATIONS)).willReturn(associatedTokensCount);
-        given(accountsLedger.get(counterparty, NUM_POSITIVE_BALANCES))
-                .willReturn(numPositiveBalances);
+        given(accountsLedger.get(counterparty, NUM_POSITIVE_BALANCES)).willReturn(numPositiveBalances);
 
         final var status = subject.changeOwner(tNft, counterparty, primaryTreasury);
 
@@ -781,17 +757,13 @@ class HederaTokenStoreTest {
         given(accountsLedger.get(primaryTreasury, NUM_NFTS_OWNED)).willReturn(startTreasuryNfts);
         given(accountsLedger.get(counterparty, NUM_NFTS_OWNED)).willReturn(startCounterpartyNfts);
         given(tokenRelsLedger.get(treasuryNft, TOKEN_BALANCE)).willReturn(startTreasuryTNfts);
-        given(tokenRelsLedger.get(counterpartyNft, TOKEN_BALANCE))
-                .willReturn(startCounterpartyTNfts);
+        given(tokenRelsLedger.get(counterpartyNft, TOKEN_BALANCE)).willReturn(startCounterpartyTNfts);
         given(nftsLedger.get(tNft, OWNER)).willReturn(EntityId.MISSING_ENTITY_ID);
         given(backingTokens.getImmutableRef(tNft.tokenId()).treasury()).willReturn(sender);
-        given(accountsLedger.get(primaryTreasury, NUM_ASSOCIATIONS))
-                .willReturn(associatedTokensCount);
-        given(accountsLedger.get(primaryTreasury, NUM_POSITIVE_BALANCES))
-                .willReturn(numPositiveBalances);
+        given(accountsLedger.get(primaryTreasury, NUM_ASSOCIATIONS)).willReturn(associatedTokensCount);
+        given(accountsLedger.get(primaryTreasury, NUM_POSITIVE_BALANCES)).willReturn(numPositiveBalances);
         given(accountsLedger.get(counterparty, NUM_ASSOCIATIONS)).willReturn(associatedTokensCount);
-        given(accountsLedger.get(counterparty, NUM_POSITIVE_BALANCES))
-                .willReturn(numPositiveBalances);
+        given(accountsLedger.get(counterparty, NUM_POSITIVE_BALANCES)).willReturn(numPositiveBalances);
 
         final var status = subject.changeOwner(tNft, primaryTreasury, counterparty);
 
@@ -816,8 +788,7 @@ class HederaTokenStoreTest {
         given(accountsLedger.get(primaryTreasury, NUM_NFTS_OWNED)).willReturn(startTreasuryNfts);
         given(accountsLedger.get(counterparty, NUM_NFTS_OWNED)).willReturn(startCounterpartyNfts);
         given(tokenRelsLedger.get(treasuryNft, TOKEN_BALANCE)).willReturn(startTreasuryTNfts);
-        given(tokenRelsLedger.get(counterpartyNft, TOKEN_BALANCE))
-                .willReturn(startCounterpartyTNfts);
+        given(tokenRelsLedger.get(counterpartyNft, TOKEN_BALANCE)).willReturn(startCounterpartyTNfts);
 
         final var status = subject.changeOwnerWildCard(tNft, primaryTreasury, counterparty);
 
@@ -867,10 +838,9 @@ class HederaTokenStoreTest {
 
     @Test
     void updateRejectsInvalidExpiry() {
-        final var op =
-                updateWith(NO_KEYS, misc, true, true, false).toBuilder()
-                        .setExpiry(Timestamp.newBuilder().setSeconds(expiry - 1))
-                        .build();
+        final var op = updateWith(NO_KEYS, misc, true, true, false).toBuilder()
+                .setExpiry(Timestamp.newBuilder().setSeconds(expiry - 1))
+                .build();
 
         final var outcome = subject.update(op, CONSENSUS_NOW);
 
@@ -880,10 +850,9 @@ class HederaTokenStoreTest {
     @Test
     void canExtendImmutableExpiry() {
         given(token.hasAdminKey()).willReturn(false);
-        final var op =
-                updateWith(NO_KEYS, misc, false, false, false).toBuilder()
-                        .setExpiry(Timestamp.newBuilder().setSeconds(expiry + 1_234))
-                        .build();
+        final var op = updateWith(NO_KEYS, misc, false, false, false).toBuilder()
+                .setExpiry(Timestamp.newBuilder().setSeconds(expiry + 1_234))
+                .build();
 
         final var outcome = subject.update(op, CONSENSUS_NOW);
 
@@ -894,11 +863,10 @@ class HederaTokenStoreTest {
     void cannotUpdateImmutableTokenWithNewFeeScheduleKey() {
         given(token.hasAdminKey()).willReturn(false);
         given(token.hasFeeScheduleKey()).willReturn(true);
-        final var op =
-                updateWith(NO_KEYS, misc, false, false, false).toBuilder()
-                        .setFeeScheduleKey(feeScheduleKey)
-                        .setExpiry(Timestamp.newBuilder().setSeconds(expiry + 1_234))
-                        .build();
+        final var op = updateWith(NO_KEYS, misc, false, false, false).toBuilder()
+                .setFeeScheduleKey(feeScheduleKey)
+                .setExpiry(Timestamp.newBuilder().setSeconds(expiry + 1_234))
+                .build();
 
         final var outcome = subject.update(op, CONSENSUS_NOW);
 
@@ -909,11 +877,10 @@ class HederaTokenStoreTest {
     void cannotUpdateImmutableTokenWithNewPauseKey() {
         given(token.hasAdminKey()).willReturn(false);
         given(token.hasPauseKey()).willReturn(true);
-        final var op =
-                updateWith(NO_KEYS, misc, false, false, false).toBuilder()
-                        .setPauseKey(pauseKey)
-                        .setExpiry(Timestamp.newBuilder().setSeconds(expiry + 1_234))
-                        .build();
+        final var op = updateWith(NO_KEYS, misc, false, false, false).toBuilder()
+                .setPauseKey(pauseKey)
+                .setExpiry(Timestamp.newBuilder().setSeconds(expiry + 1_234))
+                .build();
 
         final var outcome = subject.update(op, CONSENSUS_NOW);
 
@@ -924,10 +891,9 @@ class HederaTokenStoreTest {
     void ifImmutableWillStayImmutable() {
         givenUpdateTarget(ALL_KEYS, token);
         given(token.hasFeeScheduleKey()).willReturn(false);
-        final var op =
-                updateWith(ALL_KEYS, misc, false, false, false).toBuilder()
-                        .setFeeScheduleKey(feeScheduleKey)
-                        .build();
+        final var op = updateWith(ALL_KEYS, misc, false, false, false).toBuilder()
+                .setFeeScheduleKey(feeScheduleKey)
+                .build();
 
         final var outcome = subject.update(op, CONSENSUS_NOW);
 
@@ -938,10 +904,9 @@ class HederaTokenStoreTest {
     void cannotUpdateNewPauseKeyIfTokenHasNoPauseKey() {
         givenUpdateTarget(ALL_KEYS, token);
         given(token.hasPauseKey()).willReturn(false);
-        final var op =
-                updateWith(ALL_KEYS, misc, false, false, false).toBuilder()
-                        .setPauseKey(pauseKey)
-                        .build();
+        final var op = updateWith(ALL_KEYS, misc, false, false, false).toBuilder()
+                .setPauseKey(pauseKey)
+                .build();
 
         final var outcome = subject.update(op, CONSENSUS_NOW);
 
@@ -960,10 +925,9 @@ class HederaTokenStoreTest {
 
     @Test
     void updateRejectsInvalidNewAutoRenewPeriod() {
-        final var op =
-                updateWith(NO_KEYS, misc, true, true, false, false, false).toBuilder()
-                        .setAutoRenewPeriod(enduring(-1L))
-                        .build();
+        final var op = updateWith(NO_KEYS, misc, true, true, false, false, false).toBuilder()
+                .setAutoRenewPeriod(enduring(-1L))
+                .build();
 
         final var outcome = subject.update(op, CONSENSUS_NOW);
 
@@ -1026,10 +990,9 @@ class HederaTokenStoreTest {
         final Set<TokenID> tokenSet = new HashSet<>();
         tokenSet.add(nonfungible);
         givenUpdateTarget(ALL_KEYS, nonfungibleToken);
-        final var op =
-                updateWith(ALL_KEYS, nonfungible, true, true, true).toBuilder()
-                        .setExpiry(Timestamp.newBuilder().setSeconds(0))
-                        .build();
+        final var op = updateWith(ALL_KEYS, nonfungible, true, true, true).toBuilder()
+                .setExpiry(Timestamp.newBuilder().setSeconds(0))
+                .build();
 
         final var outcome = subject.update(op, CONSENSUS_NOW);
 
@@ -1041,10 +1004,9 @@ class HederaTokenStoreTest {
         final Set<TokenID> tokenSet = new HashSet<>();
         tokenSet.add(misc);
         givenUpdateTarget(ALL_KEYS, token);
-        final var op =
-                updateWith(ALL_KEYS, misc, true, true, true).toBuilder()
-                        .setExpiry(Timestamp.newBuilder().setSeconds(0))
-                        .build();
+        final var op = updateWith(ALL_KEYS, misc, true, true, true).toBuilder()
+                .setExpiry(Timestamp.newBuilder().setSeconds(0))
+                .build();
 
         final var outcome = subject.update(op, CONSENSUS_NOW);
 
@@ -1066,11 +1028,10 @@ class HederaTokenStoreTest {
     @Test
     void updateHappyPathWorksForEverythingWithNewExpiry() {
         givenUpdateTarget(ALL_KEYS, token);
-        final var op =
-                updateWith(ALL_KEYS, misc, true, true, true).toBuilder()
-                        .setExpiry(Timestamp.newBuilder().setSeconds(newExpiry))
-                        .setFeeScheduleKey(newKey)
-                        .build();
+        final var op = updateWith(ALL_KEYS, misc, true, true, true).toBuilder()
+                .setExpiry(Timestamp.newBuilder().setSeconds(newExpiry))
+                .setFeeScheduleKey(newKey)
+                .build();
 
         final var outcome = subject.update(op, CONSENSUS_NOW);
 
@@ -1084,8 +1045,7 @@ class HederaTokenStoreTest {
         verify(token).setKycKey(argThat((JKey k) -> JKey.equalUpToDecodability(k, newFcKey)));
         verify(token).setSupplyKey(argThat((JKey k) -> JKey.equalUpToDecodability(k, newFcKey)));
         verify(token).setWipeKey(argThat((JKey k) -> JKey.equalUpToDecodability(k, newFcKey)));
-        verify(token)
-                .setFeeScheduleKey(argThat((JKey k) -> JKey.equalUpToDecodability(k, newFcKey)));
+        verify(token).setFeeScheduleKey(argThat((JKey k) -> JKey.equalUpToDecodability(k, newFcKey)));
     }
 
     @Test
@@ -1135,8 +1095,7 @@ class HederaTokenStoreTest {
     }
 
     private static final EnumSet<KeyType> NO_KEYS = EnumSet.noneOf(KeyType.class);
-    private static final EnumSet<KeyType> ALL_KEYS =
-            EnumSet.complementOf(EnumSet.of(KeyType.EMPTY_ADMIN));
+    private static final EnumSet<KeyType> ALL_KEYS = EnumSet.complementOf(EnumSet.of(KeyType.EMPTY_ADMIN));
 
     private TokenUpdateTransactionBody updateWith(
             final EnumSet<KeyType> keys,
@@ -1364,7 +1323,8 @@ class HederaTokenStoreTest {
     @Test
     void adjustmentFailsOnAutomaticAssociationLimitNotSet() {
         given(tokenRelsLedger.exists(anotherFeeCollectorMisc)).willReturn(false);
-        given(accountsLedger.get(anotherFeeCollector, MAX_AUTOMATIC_ASSOCIATIONS)).willReturn(0);
+        given(accountsLedger.get(anotherFeeCollector, MAX_AUTOMATIC_ASSOCIATIONS))
+                .willReturn(0);
 
         final var status = subject.adjustBalance(anotherFeeCollector, misc, -1);
         assertEquals(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, status);
@@ -1376,9 +1336,11 @@ class HederaTokenStoreTest {
         given(tokenRelsLedger.get(anotherFeeCollectorMisc, IS_FROZEN)).willReturn(false);
         given(tokenRelsLedger.get(anotherFeeCollectorMisc, IS_KYC_GRANTED)).willReturn(true);
         given(tokenRelsLedger.get(anotherFeeCollectorMisc, TOKEN_BALANCE)).willReturn(0L);
-        given(accountsLedger.get(anotherFeeCollector, MAX_AUTOMATIC_ASSOCIATIONS)).willReturn(3);
+        given(accountsLedger.get(anotherFeeCollector, MAX_AUTOMATIC_ASSOCIATIONS))
+                .willReturn(3);
         given(accountsLedger.get(anotherFeeCollector, NUM_ASSOCIATIONS)).willReturn(1);
-        given(accountsLedger.get(anotherFeeCollector, USED_AUTOMATIC_ASSOCIATIONS)).willReturn(3);
+        given(accountsLedger.get(anotherFeeCollector, USED_AUTOMATIC_ASSOCIATIONS))
+                .willReturn(3);
         given(usageLimits.areCreatableTokenRels(1)).willReturn(true);
 
         final var status = subject.adjustBalance(anotherFeeCollector, misc, 1);
@@ -1394,12 +1356,12 @@ class HederaTokenStoreTest {
         given(tokenRelsLedger.get(anotherFeeCollectorMisc, IS_FROZEN)).willReturn(false);
         given(tokenRelsLedger.get(anotherFeeCollectorMisc, IS_KYC_GRANTED)).willReturn(true);
         given(tokenRelsLedger.get(anotherFeeCollectorMisc, TOKEN_BALANCE)).willReturn(0L);
-        given(accountsLedger.get(anotherFeeCollector, MAX_AUTOMATIC_ASSOCIATIONS)).willReturn(5);
-        given(accountsLedger.get(anotherFeeCollector, USED_AUTOMATIC_ASSOCIATIONS)).willReturn(3);
-        given(accountsLedger.get(anotherFeeCollector, NUM_ASSOCIATIONS))
-                .willReturn(associatedTokensCount);
-        given(accountsLedger.get(anotherFeeCollector, NUM_POSITIVE_BALANCES))
-                .willReturn(numPositiveBalances);
+        given(accountsLedger.get(anotherFeeCollector, MAX_AUTOMATIC_ASSOCIATIONS))
+                .willReturn(5);
+        given(accountsLedger.get(anotherFeeCollector, USED_AUTOMATIC_ASSOCIATIONS))
+                .willReturn(3);
+        given(accountsLedger.get(anotherFeeCollector, NUM_ASSOCIATIONS)).willReturn(associatedTokensCount);
+        given(accountsLedger.get(anotherFeeCollector, NUM_POSITIVE_BALANCES)).willReturn(numPositiveBalances);
         given(usageLimits.areCreatableTokenRels(1)).willReturn(true);
 
         final var status = subject.adjustBalance(anotherFeeCollector, misc, 1);
@@ -1407,10 +1369,8 @@ class HederaTokenStoreTest {
         assertEquals(OK, status);
         verify(tokenRelsLedger).set(anotherFeeCollectorMisc, TOKEN_BALANCE, 1L);
         verify(accountsLedger).set(anotherFeeCollector, USED_AUTOMATIC_ASSOCIATIONS, 4);
-        verify(accountsLedger)
-                .set(anotherFeeCollector, NUM_ASSOCIATIONS, associatedTokensCount + 1);
-        verify(accountsLedger)
-                .set(anotherFeeCollector, NUM_POSITIVE_BALANCES, numPositiveBalances + 1);
+        verify(accountsLedger).set(anotherFeeCollector, NUM_ASSOCIATIONS, associatedTokensCount + 1);
+        verify(accountsLedger).set(anotherFeeCollector, NUM_POSITIVE_BALANCES, numPositiveBalances + 1);
     }
 
     @Test
@@ -1458,9 +1418,9 @@ class HederaTokenStoreTest {
 
     @Test
     void adaptsBehaviorToFungibleType() {
-        final var aa = AccountAmount.newBuilder().setAccountID(sponsor).setAmount(100).build();
-        final var fungibleChange =
-                BalanceChange.changingFtUnits(Id.fromGrpcToken(misc), misc, aa, payer);
+        final var aa =
+                AccountAmount.newBuilder().setAccountID(sponsor).setAmount(100).build();
+        final var fungibleChange = BalanceChange.changingFtUnits(Id.fromGrpcToken(misc), misc, aa, payer);
         fungibleChange.setExpectedDecimals(2);
         given(accountsLedger.get(sponsor, NUM_ASSOCIATIONS)).willReturn(5);
         given(accountsLedger.get(sponsor, NUM_POSITIVE_BALANCES)).willReturn(2);
@@ -1474,9 +1434,9 @@ class HederaTokenStoreTest {
 
     @Test
     void failsIfMismatchingDecimals() {
-        final var aa = AccountAmount.newBuilder().setAccountID(sponsor).setAmount(100).build();
-        final var fungibleChange =
-                BalanceChange.changingFtUnits(Id.fromGrpcToken(misc), misc, aa, payer);
+        final var aa =
+                AccountAmount.newBuilder().setAccountID(sponsor).setAmount(100).build();
+        final var fungibleChange = BalanceChange.changingFtUnits(Id.fromGrpcToken(misc), misc, aa, payer);
         assertFalse(fungibleChange.hasExpectedDecimals());
 
         fungibleChange.setExpectedDecimals(4);
@@ -1497,10 +1457,9 @@ class HederaTokenStoreTest {
 
     @Test
     void updateExpiryInfoRejectsInvalidExpiry() {
-        final var op =
-                updateWith(NO_KEYS, misc, true, true, false).toBuilder()
-                        .setExpiry(Timestamp.newBuilder().setSeconds(expiry - 1))
-                        .build();
+        final var op = updateWith(NO_KEYS, misc, true, true, false).toBuilder()
+                .setExpiry(Timestamp.newBuilder().setSeconds(expiry - 1))
+                .build();
 
         final var outcome = subject.updateExpiryInfo(op);
 
@@ -1510,10 +1469,9 @@ class HederaTokenStoreTest {
     @Test
     void updateExpiryInfoCanExtendImmutableExpiry() {
         given(token.hasAdminKey()).willReturn(false);
-        final var op =
-                updateWith(NO_KEYS, misc, false, false, false).toBuilder()
-                        .setExpiry(Timestamp.newBuilder().setSeconds(expiry + 1_234))
-                        .build();
+        final var op = updateWith(NO_KEYS, misc, false, false, false).toBuilder()
+                .setExpiry(Timestamp.newBuilder().setSeconds(expiry + 1_234))
+                .build();
 
         final var outcome = subject.updateExpiryInfo(op);
 
@@ -1532,10 +1490,9 @@ class HederaTokenStoreTest {
 
     @Test
     void updateExpiryInfoRejectsInvalidNewAutoRenewPeriod() {
-        final var op =
-                updateWith(NO_KEYS, misc, true, true, false, false, false).toBuilder()
-                        .setAutoRenewPeriod(enduring(-1L))
-                        .build();
+        final var op = updateWith(NO_KEYS, misc, true, true, false, false, false).toBuilder()
+                .setAutoRenewPeriod(enduring(-1L))
+                .build();
 
         final var outcome = subject.updateExpiryInfo(op);
 
@@ -1571,8 +1528,7 @@ class HederaTokenStoreTest {
                 .setFreezeDefault(freezeDefault);
     }
 
-    private void assertSoleTokenChangesAreForNftTransfer(
-            final NftId nft, final AccountID from, final AccountID to) {
+    private void assertSoleTokenChangesAreForNftTransfer(final NftId nft, final AccountID from, final AccountID to) {
         final var tokenChanges = sideEffectsTracker.getNetTrackedTokenUnitAndOwnershipChanges();
         final var ownershipChange = tokenChanges.get(0);
         assertEquals(nft.tokenId(), ownershipChange.getToken());

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.utils.sysfiles.domain;
 
 import com.google.common.primitives.Longs;
@@ -34,12 +35,10 @@ public record KnownBlockValues(byte[] hash, long number) {
                 "@",
                 (hash, number) -> {
                     if (hash.length != KECCAK256_HASH_LENGTH) {
-                        throw new IllegalArgumentException(
-                                "Wrong hash length in '" + literal + "'");
+                        throw new IllegalArgumentException("Wrong hash length in '" + literal + "'");
                     }
                     if (number <= 0) {
-                        throw new IllegalArgumentException(
-                                "Non-positive block number in '" + literal + "'");
+                        throw new IllegalArgumentException("Non-positive block number in '" + literal + "'");
                     }
                 },
                 CommonUtils::unhex,

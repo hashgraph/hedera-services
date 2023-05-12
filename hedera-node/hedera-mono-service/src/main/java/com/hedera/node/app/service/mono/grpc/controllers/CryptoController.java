@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.grpc.controllers;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAddLiveHash;
@@ -86,14 +87,12 @@ public class CryptoController extends CryptoServiceGrpc.CryptoServiceImplBase {
 
     @Override
     public void cryptoGetBalance(Query query, StreamObserver<Response> observer) {
-        queryHelper.answer(
-                query, observer, cryptoAnswers.getAccountBalance(), CryptoGetAccountBalance);
+        queryHelper.answer(query, observer, cryptoAnswers.getAccountBalance(), CryptoGetAccountBalance);
     }
 
     @Override
     public void getAccountRecords(Query query, StreamObserver<Response> observer) {
-        queryHelper.answer(
-                query, observer, cryptoAnswers.getAccountRecords(), CryptoGetAccountRecords);
+        queryHelper.answer(query, observer, cryptoAnswers.getAccountRecords(), CryptoGetAccountRecords);
     }
 
     @Override
@@ -122,8 +121,7 @@ public class CryptoController extends CryptoServiceGrpc.CryptoServiceImplBase {
     }
 
     @Override
-    public void cryptoTransfer(
-            Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+    public void cryptoTransfer(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
         txnHelper.submit(signedTxn, observer, CryptoTransfer);
     }
 
@@ -143,14 +141,12 @@ public class CryptoController extends CryptoServiceGrpc.CryptoServiceImplBase {
     }
 
     @Override
-    public void approveAllowances(
-            Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+    public void approveAllowances(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
         txnHelper.submit(signedTxn, observer, CryptoApproveAllowance);
     }
 
     @Override
-    public void deleteAllowances(
-            Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+    public void deleteAllowances(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
         txnHelper.submit(signedTxn, observer, CryptoDeleteAllowance);
     }
 
@@ -160,8 +156,7 @@ public class CryptoController extends CryptoServiceGrpc.CryptoServiceImplBase {
     }
 
     @Override
-    public void deleteLiveHash(
-            Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+    public void deleteLiveHash(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
         txnHelper.submit(signedTxn, observer, CryptoDeleteLiveHash);
     }
 }

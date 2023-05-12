@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.file;
 
 import static com.hedera.node.app.service.mono.txns.file.FileCreateTransitionLogicTest.ValidProperty.CONTENTS;
@@ -117,9 +118,7 @@ class FileCreateTransitionLogicTest {
         given(validator.hasGoodEncoding(wacl)).willReturn(true);
         given(validator.memoCheck(any())).willReturn(OK);
 
-        subject =
-                new FileCreateTransitionLogic(
-                        hfs, usageLimits, validator, sigImpactHistorian, txnCtx);
+        subject = new FileCreateTransitionLogic(hfs, usageLimits, validator, sigImpactHistorian, txnCtx);
     }
 
     @Test
@@ -149,11 +148,9 @@ class FileCreateTransitionLogicTest {
         inOrder.verify(hfs)
                 .create(
                         argThat(bytes -> Arrays.equals(contents, bytes)),
-                        argThat(
-                                info ->
-                                        info.getWacl().toString().equals(hederaWacl.toString())
-                                                && info.getExpiry() == expiry
-                                                && memo.equals(info.getMemo())),
+                        argThat(info -> info.getWacl().toString().equals(hederaWacl.toString())
+                                && info.getExpiry() == expiry
+                                && memo.equals(info.getMemo())),
                         argThat(genesis::equals));
         inOrder.verify(txnCtx).setCreated(created);
         inOrder.verify(txnCtx).setStatus(SUCCESS);
@@ -212,12 +209,8 @@ class FileCreateTransitionLogicTest {
         verify(hfs)
                 .create(
                         argThat(bytes -> Arrays.equals(contents, bytes)),
-                        argThat(
-                                info ->
-                                        info.getWacl()
-                                                        .toString()
-                                                        .equals(StateView.EMPTY_WACL.toString())
-                                                && info.getExpiry() == expiry),
+                        argThat(info -> info.getWacl().toString().equals(StateView.EMPTY_WACL.toString())
+                                && info.getExpiry() == expiry),
                         argThat(genesis::equals));
         verify(txnCtx).setStatus(SUCCESS);
     }
@@ -250,10 +243,7 @@ class FileCreateTransitionLogicTest {
     void handleRejectsAlreadyExpired() {
         givenTxnCtxCreating(EnumSet.allOf(ValidProperty.class));
         given(usageLimits.areCreatableFiles(1)).willReturn(true);
-        willThrow(
-                        new IllegalArgumentException(
-                                TieredHederaFs.IllegalArgumentType.FILE_WOULD_BE_EXPIRED
-                                        .toString()))
+        willThrow(new IllegalArgumentException(TieredHederaFs.IllegalArgumentType.FILE_WOULD_BE_EXPIRED.toString()))
                 .given(hfs)
                 .create(any(), any(), any());
 
@@ -293,17 +283,14 @@ class FileCreateTransitionLogicTest {
             op.setMemo(memo);
         }
 
-        txnId =
-                TransactionID.newBuilder()
-                        .setTransactionValidStart(MiscUtils.asTimestamp(Instant.ofEpochSecond(now)))
-                        .build();
-        fileCreateTxn =
-                TransactionBody.newBuilder()
-                        .setTransactionID(txnId)
-                        .setTransactionValidDuration(
-                                Duration.newBuilder().setSeconds(txnValidDuration))
-                        .setFileCreate(op)
-                        .build();
+        txnId = TransactionID.newBuilder()
+                .setTransactionValidStart(MiscUtils.asTimestamp(Instant.ofEpochSecond(now)))
+                .build();
+        fileCreateTxn = TransactionBody.newBuilder()
+                .setTransactionID(txnId)
+                .setTransactionValidDuration(Duration.newBuilder().setSeconds(txnValidDuration))
+                .setFileCreate(op)
+                .build();
         given(accessor.getTxn()).willReturn(fileCreateTxn);
         given(txnCtx.accessor()).willReturn(accessor);
         given(txnCtx.activePayer()).willReturn(genesis);

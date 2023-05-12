@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.utils.forensics;
 
 import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.readMaybeCompressedRecordStreamFile;
@@ -30,6 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
+import java.util.function.Predicate;
 
 /**
  * Provides a helper to parse the <i>.rcd.gz</i> files in a directory into a list of {@link
@@ -54,25 +56,33 @@ public class RecordParsers {
      * @throws IOException if the files cannot be read or parsed
      */
     @SuppressWarnings("java:S3655")
-    public static List<RecordStreamEntry> parseV6RecordStreamEntriesIn(final String streamDir)
-            throws IOException {
-        final var recordFiles = RecordStreamingUtils.orderedRecordFilesFrom(streamDir);
+    public static List<RecordStreamEntry> parseV6RecordStreamEntriesIn(final String streamDir) throws IOException {
+        return parseV6RecordStreamEntriesIn(streamDir, f -> true);
+    }
+
+    /**
+     * Given a directory of compressed V6 record files, and a predicate testing whether a particular
+     * file is of interest, returns a list of all the {@code (Transaction, TransactionRecord)} entries
+     * contained in those files, in order of ascending consensus time.
+     *
+     * @param streamDir a directory with compressed V6 record files
+     * @return all the contained stream entries
+     * @throws IOException if the files cannot be read or parsed
+     */
+    public static List<RecordStreamEntry> parseV6RecordStreamEntriesIn(
+            final String streamDir, final Predicate<String> inclusionTest) throws IOException {
+        final var recordFiles = RecordStreamingUtils.orderedRecordFilesFrom(streamDir, inclusionTest);
         final List<RecordStreamEntry> entries = new ArrayList<>();
         for (final var recordFile : recordFiles) {
-            final var readResult = readMaybeCompressedRecordStreamFile(recordFile);
-            assert readResult.getRight().isPresent();
-            final var records = readResult.getRight().get();
-            records.getRecordStreamItemsList()
-                    .forEach(
-                            item -> {
-                                final var itemRecord = item.getRecord();
-                                entries.add(
-                                        new RecordStreamEntry(
-                                                uncheckedFrom(item.getTransaction()),
-                                                itemRecord,
-                                                timestampToInstant(
-                                                        itemRecord.getConsensusTimestamp())));
-                            });
+            readMaybeCompressedRecordStreamFile(recordFile)
+                    .getValue()
+                    .ifPresent(records -> records.getRecordStreamItemsList().forEach(item -> {
+                        final var itemRecord = item.getRecord();
+                        entries.add(new RecordStreamEntry(
+                                uncheckedFrom(item.getTransaction()),
+                                itemRecord,
+                                timestampToInstant(itemRecord.getConsensusTimestamp())));
+                    }));
         }
         return entries;
     }
@@ -89,21 +99,16 @@ public class RecordParsers {
      * @throws IOException if the files cannot be read or parsed
      */
     @SuppressWarnings("java:S3655")
-    public static Map<Instant, List<TransactionSidecarRecord>> parseV6SidecarRecordsByConsTimeIn(
-            final String streamDir) throws IOException {
+    public static Map<Instant, List<TransactionSidecarRecord>> parseV6SidecarRecordsByConsTimeIn(final String streamDir)
+            throws IOException {
         final var sidecarFiles = RecordStreamingUtils.orderedSidecarFilesFrom(streamDir);
         final Map<Instant, List<TransactionSidecarRecord>> sidecarRecords = new HashMap<>();
         for (final var sidecarFile : sidecarFiles) {
             final var data = readSidecarFile(sidecarFile);
-            data.getSidecarRecordsList()
-                    .forEach(
-                            sidecarRecord ->
-                                    sidecarRecords
-                                            .computeIfAbsent(
-                                                    timestampToInstant(
-                                                            sidecarRecord.getConsensusTimestamp()),
-                                                    ignore -> new ArrayList<>())
-                                            .add(sidecarRecord));
+            data.getSidecarRecordsList().forEach(sidecarRecord -> sidecarRecords
+                    .computeIfAbsent(
+                            timestampToInstant(sidecarRecord.getConsensusTimestamp()), ignore -> new ArrayList<>())
+                    .add(sidecarRecord));
         }
         return sidecarRecords;
     }
@@ -112,11 +117,7 @@ public class RecordParsers {
             final List<RecordStreamEntry> entries,
             final Map<Instant, List<TransactionSidecarRecord>> sidecarRecords,
             final BiConsumer<RecordStreamEntry, List<TransactionSidecarRecord>> observer) {
-        entries.forEach(
-                entry ->
-                        observer.accept(
-                                entry,
-                                sidecarRecords.getOrDefault(
-                                        entry.consensusTime(), Collections.emptyList())));
+        entries.forEach(entry ->
+                observer.accept(entry, sidecarRecords.getOrDefault(entry.consensusTime(), Collections.emptyList())));
     }
 }

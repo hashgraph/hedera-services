@@ -13,13 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.stream;
 
 import static com.hedera.node.app.hapi.utils.exports.FileCompressionUtils.COMPRESSION_ALGORITHM_EXTENSION;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.convertInstantToStringWithPadding;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateStreamFileNameFromInstant;
-import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
-import static com.swirlds.common.stream.StreamAligned.NO_ALIGNMENT;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.OBJECT_STREAM;
 import static com.swirlds.logging.LogMarker.OBJECT_STREAM_FILE;
@@ -49,9 +48,9 @@ import com.swirlds.common.crypto.HashingOutputStream;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.stream.Signer;
-import com.swirlds.common.stream.StreamAligned;
 import com.swirlds.common.stream.internal.LinkedObjectStream;
 import com.swirlds.logging.LogMarker;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -61,16 +60,39 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.EnumSet;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Predicate;
 import java.util.zip.GZIPOutputStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * <i>IMPORTANT:</i> This class does not guarantee that every written record file is a complete
+ * 2-second block. That guarantee only holds <b>if the node's JVM has been running and handling
+ * transactions since the (consensus) start of the 2-second block</b>.
+ *
+ * <p>In particular, if a node restarts, and the first record stream {@code item} it gives this
+ * class is in a 2-second block {@code B}, but not the first {@code item} in {@code B}; then
+ * this class will <b>skip all items received for block {@code B}, and only begin writing items
+ * in block {@code B + 1}</b>.
+ *
+ * <p>Since we only need {@code 1/3} of trustworthy nodes to avoid restarting in the middle of
+ * a given block {@code B} to have enough signatures on the resulting record file, this still
+ * provides many 9's of availability for the record stream in the absence of a separate
+ * catastrophic event.
+ *
+ * <p>If more than {@code 2/3} of trustworthy nodes <i>did</i> all restart in the middle of a
+ * given block (and these were not correlated failures due to a separate catastrophic event
+ * that already required event stream recovery); then this exceptional bad luck would require
+ * some manual steps to gather signatures on the problem block.
+ */
 class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
     private static final Logger LOG = LogManager.getLogger(RecordStreamFileWriter.class);
 
     private static final DigestType currentDigestType = Cryptography.DEFAULT_DIGEST_TYPE;
 
-    /** < * the current record stream type; used to obtain file extensions and versioning */
+    /**
+     * < * the current record stream type; used to obtain file extensions and versioning
+     */
     private final RecordStreamType streamType;
 
     /**
@@ -86,7 +108,9 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
      */
     private final MessageDigest metadataStreamDigest;
 
-    /** a messageDigest object for digesting sidecar files and generating sidecar file hash */
+    /**
+     * a messageDigest object for digesting sidecar files and generating sidecar file hash
+     */
     private final MessageDigest sidecarStreamDigest;
 
     /**
@@ -101,30 +125,10 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
      */
     private RunningHash runningHash;
 
-    /** signer for generating signatures */
+    /**
+     * signer for generating signatures
+     */
     private final Signer signer;
-
-    /**
-     * The desired amount of time that data should be written into a file before starting a new
-     * file.
-     */
-    private final long logPeriodMs;
-
-    /** The previous object that was passed to the stream. */
-    private RecordStreamObject previousObject;
-
-    /** Tracks if the previous object was held back in the previous file due to its alignment. */
-    private boolean previousHeldBackByAlignment;
-
-    /**
-     * if it is true, we don't write object stream file until the first complete window. This is
-     * suitable for streaming after reconnect, so that reconnect node can generate the same stream
-     * files as other nodes after reconnect.
-     *
-     * <p>if it is false, we start to write object stream file immediately. This is suitable for
-     * streaming after restart, so that no object would be missing in the nodes' stream files
-     */
-    private boolean startWriteAtCompleteWindow;
 
     /**
      * The id that the next sidecar file of the current period will have. Initialized to 1 at the
@@ -138,17 +142,37 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
      */
     private int currentSidecarFileSize;
 
-    /** the max file size (in bytes) a sidecar file can have */
+    /**
+     * the max file size (in bytes) a sidecar file can have
+     */
     private final int maxSidecarFileSize;
 
-    /** The instant of the first transaction in the current period */
+    /**
+     * The instant of the first transaction in the current period
+     */
     private Instant firstTxnInstant;
 
-    /** the path to which we write record stream files and signature files */
+    /**
+     * the path to which we write record stream files and signature files
+     */
     private final String dirPath;
 
-    /** the path to which we write sidecar record stream files */
+    /**
+     * the path to which we write sidecar record stream files
+     */
     private final String sidecarDirPath;
+
+    /**
+     * Whether we should overwrite an existing record file on disk, because we are doing recovery.
+     * (If false, this class just skips any record files that already exist.)
+     */
+    private final boolean overwriteFilesDuringRecovery;
+
+    /**
+     * The functional that will be used to try to delete a file; we only have this as a field so
+     * pass in a failing deletion functional for unit tests.
+     */
+    private final Predicate<File> tryDeletion;
 
     private int recordFileVersion;
     private RecordStreamFile.Builder recordStreamFileBuilder;
@@ -158,19 +182,19 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 
     public RecordStreamFileWriter(
             final String dirPath,
-            final long logPeriodMs,
             final Signer signer,
-            final boolean startWriteAtCompleteWindow,
             final RecordStreamType streamType,
             final String sidecarDirPath,
             final int maxSidecarFileSize,
+            final boolean overwriteFilesDuringRecovery,
+            @NonNull final Predicate<File> tryDeletion,
             final GlobalDynamicProperties globalDynamicProperties)
             throws NoSuchAlgorithmException {
         this.dirPath = dirPath;
-        this.logPeriodMs = logPeriodMs;
         this.signer = signer;
-        this.startWriteAtCompleteWindow = startWriteAtCompleteWindow;
         this.streamType = streamType;
+        this.overwriteFilesDuringRecovery = overwriteFilesDuringRecovery;
+        this.tryDeletion = tryDeletion;
         this.streamDigest = MessageDigest.getInstance(currentDigestType.algorithmName());
         this.metadataStreamDigest = MessageDigest.getInstance(currentDigestType.algorithmName());
         this.sidecarStreamDigest = MessageDigest.getInstance(currentDigestType.algorithmName());
@@ -183,7 +207,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 
     @Override
     public void addObject(final RecordStreamObject object) {
-        if (shouldStartNewFile(object)) {
+        if (object.closesCurrentFile()) {
             // if we are currently writing a file,
             // finish current file and generate signature file
             closeCurrentAndSign();
@@ -191,69 +215,12 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
             beginNew(object);
         }
 
-        // if recordStreamFile is null, it means startWriteAtCompleteWindow is true,
-        // and we are still in the first incomplete window, so we don't serialize this object;
-        // so we only serialize the object when stream is not null
         if (recordStreamFileBuilder != null) {
             consume(object);
         }
 
         // update runningHash
         this.runningHash = object.getRunningHash();
-    }
-
-    /**
-     * Check whether the provided object needs to be written into a new file, or if it should be
-     * written into the current file.
-     *
-     * <p>Time is divided into windows determined by provided configuration. An object is chosen to
-     * start a new file if it is the first encountered object with a timestamp in the next window --
-     * as long as the object has a different stream alignment than the previous object. If an object
-     * has a matching stream alignment as the previous object then it is always placed in the same
-     * file as the previous object. Alignment is ignored for objects with {@link
-     * StreamAligned#NO_ALIGNMENT}.
-     *
-     * @param nextObject the object currently being added to the stream
-     * @return whether the object should be written into a new file
-     */
-    private boolean shouldStartNewFile(final RecordStreamObject nextObject) {
-        try {
-            if (previousObject == null) {
-                // This is the first object. It may be the first thing in a file, but it is
-                // impossible
-                // to make that determination at this point in time.
-                return !startWriteAtCompleteWindow;
-            } else {
-                // Check if this object is in a different period than the previous object.
-                final long previousPeriod = getPeriod(previousObject.getTimestamp(), logPeriodMs);
-                final long currentPeriod = getPeriod(nextObject.getTimestamp(), logPeriodMs);
-                final boolean differentPeriod = previousPeriod != currentPeriod;
-
-                // Check if this object has a different alignment than the previous object. Objects
-                // with NO_ALIGNMENT
-                // are always considered to be unaligned with any other object.
-                final boolean differentAlignment =
-                        previousObject.getStreamAlignment() != nextObject.getStreamAlignment()
-                                || nextObject.getStreamAlignment() == NO_ALIGNMENT;
-
-                // If this object is in a new period with respect to the current file, and no
-                // objects have yet been written to the next file.
-                final boolean timestampIsEligibleForNextFile =
-                        previousHeldBackByAlignment || differentPeriod;
-
-                if (timestampIsEligibleForNextFile && !differentAlignment) {
-                    // This object has the same alignment as the one that came before it, so we must
-                    // hold it back.
-                    previousHeldBackByAlignment = true;
-                    return false;
-                }
-
-                previousHeldBackByAlignment = false;
-                return timestampIsEligibleForNextFile;
-            }
-        } finally {
-            previousObject = nextObject;
-        }
     }
 
     /**
@@ -265,23 +232,23 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
             // generate record file name
             assertFirstTxnInstantIsKnown();
             final var uncompressedRecordFilePath = generateRecordFilePath(firstTxnInstant);
-            final var recordFile =
-                    new File(
-                            dynamicProperties.shouldCompressRecordFilesOnCreation()
-                                    ? uncompressedRecordFilePath + COMPRESSION_ALGORITHM_EXTENSION
-                                    : uncompressedRecordFilePath);
+            final var recordFile = new File(
+                    dynamicProperties.shouldCompressRecordFilesOnCreation()
+                            ? uncompressedRecordFilePath + COMPRESSION_ALGORITHM_EXTENSION
+                            : uncompressedRecordFilePath);
             final var recordFileNameShort = recordFile.getName(); // for logging purposes
-            if (recordFile.exists() && !recordFile.isDirectory()) {
-                LOG.debug(
-                        OBJECT_STREAM.getMarker(),
-                        "Stream file already exists {}",
-                        recordFileNameShort);
+            final var fileExists = recordFile.exists() && !recordFile.isDirectory();
+            if (fileExists && !overwriteFilesDuringRecovery) {
+                LOG.debug(OBJECT_STREAM.getMarker(), "Stream file already exists {}", recordFileNameShort);
             } else {
+                if (fileExists && !tryDeletion.test(recordFile)) {
+                    throw new IllegalStateException("Could not delete existing record file '" + recordFileNameShort
+                            + "' to replace during recovery, aborting");
+                }
                 try {
                     // write endRunningHash
                     final var endRunningHash = runningHash.getFutureHash().get();
-                    recordStreamFileBuilder.setEndObjectRunningHash(
-                            toProto(endRunningHash.getValue()));
+                    recordStreamFileBuilder.setEndObjectRunningHash(toProto(endRunningHash.getValue()));
                     dosMeta.write(endRunningHash.getValue());
                     LOG.debug(
                             OBJECT_STREAM_FILE.getMarker(),
@@ -298,8 +265,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
                     Thread.currentThread().interrupt();
                     LOG.error(
                             EXCEPTION.getMarker(),
-                            "closeCurrentAndSign :: failed when getting endRunningHash for writing"
-                                    + " {}",
+                            "closeCurrentAndSign :: failed when getting endRunningHash for writing" + " {}",
                             recordFileNameShort,
                             e);
                     return;
@@ -330,22 +296,13 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 
                 // create record file
                 try (final FileOutputStream stream = new FileOutputStream(recordFile, false);
-                        final GZIPOutputStream gzipStream =
-                                dynamicProperties.shouldCompressRecordFilesOnCreation()
-                                        ? new GZIPOutputStream(stream)
-                                        : null;
+                        final GZIPOutputStream gzipStream = dynamicProperties.shouldCompressRecordFilesOnCreation()
+                                ? new GZIPOutputStream(stream)
+                                : null;
                         final SerializableDataOutputStream dos =
-                                new SerializableDataOutputStream(
-                                        new BufferedOutputStream(
-                                                new HashingOutputStream(
-                                                        streamDigest,
-                                                        gzipStream != null
-                                                                ? gzipStream
-                                                                : stream)))) {
-                    LOG.debug(
-                            OBJECT_STREAM_FILE.getMarker(),
-                            "Stream file created {}",
-                            recordFileNameShort);
+                                new SerializableDataOutputStream(new BufferedOutputStream(new HashingOutputStream(
+                                        streamDigest, gzipStream != null ? gzipStream : stream)))) {
+                    LOG.debug(OBJECT_STREAM_FILE.getMarker(), "Stream file created {}", recordFileNameShort);
 
                     // write contents of record file - record file version and serialized RecordFile
                     // protobuf
@@ -363,9 +320,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
                     stream.getChannel().force(true);
                     stream.getFD().sync();
                     LOG.debug(
-                            OBJECT_STREAM_FILE.getMarker(),
-                            "Stream file written successfully {}",
-                            recordFileNameShort);
+                            OBJECT_STREAM_FILE.getMarker(), "Stream file written successfully {}", recordFileNameShort);
 
                     // close dosMeta manually; stream and dos will be automatically closed
                     dosMeta.close();
@@ -408,20 +363,17 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
         firstTxnInstant = null;
         resetSidecarFields();
         sidecarFileId = 1;
-        recordStreamFileBuilder =
-                RecordStreamFile.newBuilder().setBlockNumber(object.getStreamAlignment());
-        recordStreamFileBuilder.setHapiProtoVersion(
-                SemanticVersion.newBuilder()
-                        .setMajor(fileHeader[1])
-                        .setMinor(fileHeader[2])
-                        .setPatch(fileHeader[3]));
+        recordStreamFileBuilder = RecordStreamFile.newBuilder().setBlockNumber(object.getStreamAlignment());
+        recordStreamFileBuilder.setHapiProtoVersion(SemanticVersion.newBuilder()
+                .setMajor(fileHeader[1])
+                .setMinor(fileHeader[2])
+                .setPatch(fileHeader[3]));
         dosMeta = new SerializableDataOutputStream(new HashingOutputStream(metadataStreamDigest));
         try {
             // write record stream version and HAPI version to metadata
             for (final var value : fileHeader) {
                 dosMeta.writeInt(value);
             }
-            // write startRunningHash
             final var startRunningHash = runningHash.getFutureHash().get();
             recordStreamFileBuilder.setStartObjectRunningHash(toProto(startRunningHash.getValue()));
             dosMeta.write(startRunningHash.getValue());
@@ -439,8 +391,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
             Thread.currentThread().interrupt();
             LOG.error(
                     EXCEPTION.getMarker(),
-                    "beginNew :: Exception when getting startRunningHash for writing to metadata"
-                            + " stream",
+                    "beginNew :: Exception when getting startRunningHash for writing to metadata" + " stream",
                     e);
         }
     }
@@ -451,11 +402,10 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
      * @param object object to be added to the record stream file
      */
     private void consume(final RecordStreamObject object) {
-        recordStreamFileBuilder.addRecordStreamItems(
-                RecordStreamItem.newBuilder()
-                        .setTransaction(object.getTransaction())
-                        .setRecord(object.getTransactionRecord())
-                        .build());
+        recordStreamFileBuilder.addRecordStreamItems(RecordStreamItem.newBuilder()
+                .setTransaction(object.getTransaction())
+                .setRecord(object.getTransactionRecord())
+                .build());
 
         final var sidecars = object.getSidecars();
         if (!sidecars.isEmpty()) {
@@ -505,28 +455,25 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
      * @return the new record file path
      */
     String generateRecordFilePath(final Instant consensusTimestamp) {
-        return dirPath
-                + File.separator
-                + generateStreamFileNameFromInstant(consensusTimestamp, streamType);
+        return dirPath + File.separator + generateStreamFileNameFromInstant(consensusTimestamp, streamType);
     }
 
     /**
      * generate full sidecar file path from given Instant object
      *
      * @param consensusTimestamp the consensus timestamp of the first transaction in the record file
-     *     this sidecar file is associated with
-     * @param sidecarId the sidecar id of this sidecar file
+     *                           this sidecar file is associated with
+     * @param sidecarId          the sidecar id of this sidecar file
      * @return the new sidecar file path
      */
     String generateSidecarFilePath(final Instant consensusTimestamp, final int sidecarId) {
-        var sidecarPath =
-                sidecarDirPath
-                        + File.separator
-                        + convertInstantToStringWithPadding(consensusTimestamp)
-                        + "_"
-                        + String.format("%02d", sidecarId)
-                        + "."
-                        + streamType.getSidecarExtension();
+        var sidecarPath = sidecarDirPath
+                + File.separator
+                + convertInstantToStringWithPadding(consensusTimestamp)
+                + "_"
+                + String.format("%02d", sidecarId)
+                + "."
+                + streamType.getSidecarExtension();
         if (dynamicProperties.shouldCompressRecordFilesOnCreation()) {
             sidecarPath += COMPRESSION_ALGORITHM_EXTENSION;
         }
@@ -549,10 +496,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
                 metadataStreamDigest.reset();
                 dosMeta = null;
             } catch (final IOException e) {
-                LOG.warn(
-                        EXCEPTION.getMarker(),
-                        "RecordStreamFileWriter::clear Exception in closing dosMeta",
-                        e);
+                LOG.warn(EXCEPTION.getMarker(), "RecordStreamFileWriter::clear Exception in closing dosMeta", e);
             }
         }
         recordStreamFileBuilder = null;
@@ -561,33 +505,14 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 
     public void close() {
         this.closeCurrentAndSign();
-        LOG.debug(
-                LogMarker.FREEZE.getMarker(),
-                "RecordStreamFileWriter finished writing the last object, is stopped");
-    }
-
-    public void setStartWriteAtCompleteWindow(final boolean startWriteAtCompleteWindow) {
-        this.startWriteAtCompleteWindow = startWriteAtCompleteWindow;
-        LOG.debug(
-                OBJECT_STREAM.getMarker(),
-                "RecordStreamFileWriter::setStartWriteAtCompleteWindow: {}",
-                startWriteAtCompleteWindow);
-    }
-
-    public boolean getStartWriteAtCompleteWindow() {
-        return this.startWriteAtCompleteWindow;
+        LOG.debug(LogMarker.FREEZE.getMarker(), "RecordStreamFileWriter finished writing the last object, is stopped");
     }
 
     private void assertFirstTxnInstantIsKnown() {
         if (firstTxnInstant == null) {
             final var firstTxnTimestamp =
-                    recordStreamFileBuilder
-                            .getRecordStreamItems(0)
-                            .getRecord()
-                            .getConsensusTimestamp();
-            firstTxnInstant =
-                    Instant.ofEpochSecond(
-                            firstTxnTimestamp.getSeconds(), firstTxnTimestamp.getNanos());
+                    recordStreamFileBuilder.getRecordStreamItems(0).getRecord().getConsensusTimestamp();
+            firstTxnInstant = Instant.ofEpochSecond(firstTxnTimestamp.getSeconds(), firstTxnTimestamp.getNanos());
         }
     }
 
@@ -621,9 +546,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
         final var fileSignature = generateSignatureObject(streamDigest.digest());
         final var metadataSignature = generateSignatureObject(metadataStreamDigest.digest());
         final var signatureFile =
-                SignatureFile.newBuilder()
-                        .setFileSignature(fileSignature)
-                        .setMetadataSignature(metadataSignature);
+                SignatureFile.newBuilder().setFileSignature(fileSignature).setMetadataSignature(metadataSignature);
 
         // create signature file
         final var sigFilePath = relatedRecordStreamFile + "_sig";
@@ -631,10 +554,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
             // version in signature files is 1 byte, compared to 4 in record files
             fos.write(streamType.getSigFileHeader()[0]);
             signatureFile.build().writeTo(fos);
-            LOG.debug(
-                    OBJECT_STREAM_FILE.getMarker(),
-                    "closeCurrentAndSign :: signature file saved: {}",
-                    sigFilePath);
+            LOG.debug(OBJECT_STREAM_FILE.getMarker(), "closeCurrentAndSign :: signature file saved: {}", sigFilePath);
         } catch (final IOException e) {
             LOG.error(
                     EXCEPTION.getMarker(),
@@ -649,27 +569,19 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
         return SignatureObject.newBuilder()
                 .setType(SignatureType.SHA_384_WITH_RSA)
                 .setLength(signature.length)
-                .setChecksum(
-                        101 - signature.length) // simple checksum to detect if at wrong place in
+                .setChecksum(101 - signature.length) // simple checksum to detect if at wrong place in
                 // the stream
                 .setSignature(ByteStringUtils.wrapUnsafely(signature))
                 .setHashObject(toProto(hash))
                 .build();
     }
 
-    private void createSidecarFile(final Builder sidecarFileBuilder, final File sidecarFile)
-            throws IOException {
+    private void createSidecarFile(final Builder sidecarFileBuilder, final File sidecarFile) throws IOException {
         try (final FileOutputStream stream = new FileOutputStream(sidecarFile, false);
                 final GZIPOutputStream gzipStream =
-                        dynamicProperties.shouldCompressRecordFilesOnCreation()
-                                ? new GZIPOutputStream(stream)
-                                : null;
-                final SerializableDataOutputStream dos =
-                        new SerializableDataOutputStream(
-                                new BufferedOutputStream(
-                                        new HashingOutputStream(
-                                                sidecarStreamDigest,
-                                                gzipStream != null ? gzipStream : stream)))) {
+                        dynamicProperties.shouldCompressRecordFilesOnCreation() ? new GZIPOutputStream(stream) : null;
+                final SerializableDataOutputStream dos = new SerializableDataOutputStream(new BufferedOutputStream(
+                        new HashingOutputStream(sidecarStreamDigest, gzipStream != null ? gzipStream : stream)))) {
             // write contents of sidecar
             dos.write(serialize(sidecarFileBuilder));
 
@@ -685,10 +597,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
             stream.getChannel().force(true);
             stream.getFD().sync();
 
-            LOG.debug(
-                    OBJECT_STREAM_FILE.getMarker(),
-                    "Sidecar file created successfully {}",
-                    sidecarFile.getName());
+            LOG.debug(OBJECT_STREAM_FILE.getMarker(), "Sidecar file created successfully {}", sidecarFile.getName());
         }
     }
 

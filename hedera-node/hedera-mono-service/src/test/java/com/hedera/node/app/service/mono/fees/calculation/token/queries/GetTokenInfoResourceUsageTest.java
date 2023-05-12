@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.token.queries;
 
 import static com.hedera.node.app.service.mono.queries.token.GetTokenInfoAnswer.TOKEN_INFO_CTX_KEY;
@@ -53,20 +54,19 @@ class GetTokenInfoResourceUsageTest {
     private static final String symbol = "HEYMAOK";
     private static final String name = "IsItReallyOk";
     private static final TokenID target = IdUtils.asToken("0.0.123");
-    private static final TokenInfo info =
-            TokenInfo.newBuilder()
-                    .setAdminKey(TxnHandlingScenario.TOKEN_ADMIN_KT.asKey())
-                    .setFreezeKey(TxnHandlingScenario.TOKEN_FREEZE_KT.asKey())
-                    .setWipeKey(TxnHandlingScenario.TOKEN_WIPE_KT.asKey())
-                    .setSupplyKey(TxnHandlingScenario.TOKEN_SUPPLY_KT.asKey())
-                    .setKycKey(TxnHandlingScenario.TOKEN_KYC_KT.asKey())
-                    .setPauseKey(TxnHandlingScenario.TOKEN_PAUSE_KT.asKey())
-                    .setSymbol(symbol)
-                    .setName(name)
-                    .setMemo(memo)
-                    .setPauseStatus(TokenPauseStatus.Paused)
-                    .setAutoRenewAccount(IdUtils.asAccount("1.2.3"))
-                    .build();
+    private static final TokenInfo info = TokenInfo.newBuilder()
+            .setAdminKey(TxnHandlingScenario.TOKEN_ADMIN_KT.asKey())
+            .setFreezeKey(TxnHandlingScenario.TOKEN_FREEZE_KT.asKey())
+            .setWipeKey(TxnHandlingScenario.TOKEN_WIPE_KT.asKey())
+            .setSupplyKey(TxnHandlingScenario.TOKEN_SUPPLY_KT.asKey())
+            .setKycKey(TxnHandlingScenario.TOKEN_KYC_KT.asKey())
+            .setPauseKey(TxnHandlingScenario.TOKEN_PAUSE_KT.asKey())
+            .setSymbol(symbol)
+            .setName(name)
+            .setMemo(memo)
+            .setPauseStatus(TokenPauseStatus.Paused)
+            .setAutoRenewAccount(IdUtils.asAccount("1.2.3"))
+            .build();
     private static final Query satisfiableAnswerOnly = tokenInfoQuery(target, ANSWER_ONLY);
 
     private FeeData expected;
@@ -126,10 +126,8 @@ class GetTokenInfoResourceUsageTest {
         assertSame(info, queryCtx.get(TOKEN_INFO_CTX_KEY));
         assertSame(expected, usage);
         verifyCommonCalls();
-        verify(estimator)
-                .givenCurrentAdminKey(Optional.of(TxnHandlingScenario.TOKEN_ADMIN_KT.asKey()));
-        verify(estimator)
-                .givenCurrentPauseKey(Optional.of(TxnHandlingScenario.TOKEN_PAUSE_KT.asKey()));
+        verify(estimator).givenCurrentAdminKey(Optional.of(TxnHandlingScenario.TOKEN_ADMIN_KT.asKey()));
+        verify(estimator).givenCurrentPauseKey(Optional.of(TxnHandlingScenario.TOKEN_PAUSE_KT.asKey()));
         verify(estimator).givenCurrentlyUsingAutoRenewAccount();
     }
 
@@ -146,7 +144,8 @@ class GetTokenInfoResourceUsageTest {
 
     @Test
     void estimatesWithIncompleteInfo() {
-        final var incompleteInfo = info.toBuilder().clearAdminKey().clearAutoRenewAccount().build();
+        final var incompleteInfo =
+                info.toBuilder().clearAdminKey().clearAutoRenewAccount().build();
         given(view.infoForToken(target)).willReturn(Optional.of(incompleteInfo));
 
         final var usage = subject.usageGiven(satisfiableAnswerOnly, view);
@@ -158,23 +157,19 @@ class GetTokenInfoResourceUsageTest {
     }
 
     private void verifyCommonCalls() {
-        verify(estimator)
-                .givenCurrentWipeKey(Optional.of(TxnHandlingScenario.TOKEN_WIPE_KT.asKey()));
+        verify(estimator).givenCurrentWipeKey(Optional.of(TxnHandlingScenario.TOKEN_WIPE_KT.asKey()));
         verify(estimator).givenCurrentKycKey(Optional.of(TxnHandlingScenario.TOKEN_KYC_KT.asKey()));
-        verify(estimator)
-                .givenCurrentSupplyKey(Optional.of(TxnHandlingScenario.TOKEN_SUPPLY_KT.asKey()));
-        verify(estimator)
-                .givenCurrentFreezeKey(Optional.of(TxnHandlingScenario.TOKEN_FREEZE_KT.asKey()));
+        verify(estimator).givenCurrentSupplyKey(Optional.of(TxnHandlingScenario.TOKEN_SUPPLY_KT.asKey()));
+        verify(estimator).givenCurrentFreezeKey(Optional.of(TxnHandlingScenario.TOKEN_FREEZE_KT.asKey()));
         verify(estimator).givenCurrentSymbol(symbol);
         verify(estimator).givenCurrentName(name);
         verify(estimator).givenCurrentMemo(memo);
     }
 
     private static final Query tokenInfoQuery(final TokenID id, final ResponseType type) {
-        final var op =
-                TokenGetInfoQuery.newBuilder()
-                        .setToken(id)
-                        .setHeader(QueryHeader.newBuilder().setResponseType(type));
+        final var op = TokenGetInfoQuery.newBuilder()
+                .setToken(id)
+                .setHeader(QueryHeader.newBuilder().setResponseType(type));
         return Query.newBuilder().setTokenGetInfo(op).build();
     }
 }

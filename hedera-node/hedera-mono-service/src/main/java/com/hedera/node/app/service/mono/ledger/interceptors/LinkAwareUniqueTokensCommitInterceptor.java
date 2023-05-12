@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.interceptors;
 
 import static com.hedera.node.app.service.mono.ledger.properties.NftProperty.OWNER;
@@ -33,8 +34,7 @@ import org.apache.logging.log4j.Logger;
 public class LinkAwareUniqueTokensCommitInterceptor
         implements CommitInterceptor<NftId, UniqueTokenAdapter, NftProperty> {
 
-    private static final Logger log =
-            LogManager.getLogger(LinkAwareUniqueTokensCommitInterceptor.class);
+    private static final Logger log = LogManager.getLogger(LinkAwareUniqueTokensCommitInterceptor.class);
     private boolean burnOrMint;
 
     private final UsageLimits usageLimits;
@@ -49,8 +49,7 @@ public class LinkAwareUniqueTokensCommitInterceptor
     /** {@inheritDoc} */
     @Override
     @SuppressWarnings("java:S3776")
-    public void preview(
-            final EntityChangeSet<NftId, UniqueTokenAdapter, NftProperty> pendingChanges) {
+    public void preview(final EntityChangeSet<NftId, UniqueTokenAdapter, NftProperty> pendingChanges) {
         burnOrMint = false;
         final var n = pendingChanges.size();
         if (n == 0) {
@@ -82,8 +81,7 @@ public class LinkAwareUniqueTokensCommitInterceptor
                     if (!Objects.equals(fromAccount, toAccount)) {
                         // NFT owner changed (could be a treasury exit or return)
                         try {
-                            uniqueTokensLinkManager.updateLinks(
-                                    fromAccount.asNum(), toAccount.asNum(), nftId);
+                            uniqueTokensLinkManager.updateLinks(fromAccount.asNum(), toAccount.asNum(), nftId);
                         } catch (final Exception irrecoverable) {
                             log.error(
                                     "Unable to update links changing {} owner from {} to {}",
@@ -101,15 +99,10 @@ public class LinkAwareUniqueTokensCommitInterceptor
                     // Non-treasury-owned NFT minted via a multi-stage contract operation
                     final var nftKey = pendingChanges.id(i);
                     try {
-                        final var mintedNft =
-                                uniqueTokensLinkManager.updateLinks(null, newOwner.asNum(), nftKey);
+                        final var mintedNft = uniqueTokensLinkManager.updateLinks(null, newOwner.asNum(), nftKey);
                         pendingChanges.cacheEntity(i, mintedNft);
                     } catch (final Exception irrecoverable) {
-                        log.error(
-                                "Unable to update links minting {} to owner {}",
-                                nftId,
-                                newOwner,
-                                irrecoverable);
+                        log.error("Unable to update links minting {} to owner {}", nftId, newOwner, irrecoverable);
                     }
                 }
             }

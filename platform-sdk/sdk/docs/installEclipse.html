@@ -1,0 +1,131 @@
+<!--
+  ~ Copyright 2016-2022 Hedera Hashgraph, LLC
+  ~
+  ~ This software is the confidential and proprietary information of
+  ~ Hedera Hashgraph, LLC. ("Confidential Information"). You shall not
+  ~ disclose such Confidential Information and shall use it only in
+  ~ accordance with the terms of the license agreement you entered into
+  ~ with Hedera Hashgraph.
+  ~
+  ~ HEDERA HASHGRAPH MAKES NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF
+  ~ THE SOFTWARE, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+  ~ TO THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+  ~ PARTICULAR PURPOSE, OR NON-INFRINGEMENT. HEDERA HASHGRAPH SHALL NOT BE LIABLE FOR
+  ~ ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, MODIFYING OR
+  ~ DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
+  -->
+
+<html>
+<head>
+	<style>
+		pre {
+			font-family: "Courier 10 Pitch", Courier, monospace;
+			margin-bottom: 1.6em;
+			max-width: 100%;
+			overflow: auto;
+			background-color: #efefef;
+		}
+	</style>
+</head>
+<body>
+
+<h1>How to install / recompile the example apps in Eclipse</h1>
+
+These versions (or later) should be downloaded and installed:
+
+<ul>
+	<li>OpenJDK Java 12: <a href="https://jdk.java.net/archive/">
+		OpenJDK Java Development Kit 12.0.2</a></li>
+
+	<li>Eclipse 2019-09 R (4.13):
+		<a href="https://www.eclipse.org/downloads/packages/">Eclipse IDE for Java Developers</a> (EE is also ok).
+	</li>
+
+	<li> Swirlds SDK: <a href="http://www.swirlds.com/download/">Swirlds SDK</a></li>
+</ul>
+
+<p>The above link is to OpenJDK 12, which is free. Oracle JDK 11+ requires a paid license.</p>
+
+<p>If the Swirlds browser freezes when it is first launched, it is possible that the operating system needs a utility
+	installed to collect entropy, such as the utilities for
+	<a href="installDebian.html">Debian</a>
+	or
+	<a href="installRaspbian.html">Raspbian</a>, which may also work on other versions of Linux or Unix.
+
+<p>The examples below use slashes in paths, but on Windows they will be backslashes.</p>
+
+Eclipse creates a <b>workspace</b> directory on your drive. Find it and ensure the files from the SDK are there. The <b>sdk</b>
+directory should be put somewhere in the directory tree under the Eclipse <b>workspace</b> directory. For example, the
+needed files might be put here:
+<ul>
+	<li><b>workspace/git/sdk/data/apps/ </b></li>
+	<li><b>workspace/git/sdk/swirlds.jar </b></li>
+	<li><b>workspace/git/sdk/config.txt </b></li>
+</ul>
+
+<p>The last one, <b>config.txt</b>, is used to make the Swirlds browser automatically run a particular app. It can even
+	make multiple instances of it run and communicate with each other, as if they were on multiple machines. The
+	comments in the file explain how to change it.</p>
+
+<p>The demo apps are now <a href="runBrowser.html">ready to run</a>. </p>
+
+<p>The apps come with source code, and can be recompiled in Eclipse. To import the projects into Eclipse and recompile
+	them:</p>
+
+<ul>
+
+	<li>
+		import the demo projects
+		<ul>
+			<li>choose menu WINDOW > SHOW VIEW > OTHER > JAVA > PACKAGE EXPLORER (if the package explorer isn't already
+				visible)
+			</li>
+			<li>select menu FILE > IMPORT</li>
+			<li>click the triangle by MAVEN if it doesn't have entries under it</li>
+			<li>click EXISTING MAVEN PROJECTS</li>
+			<li>click NEXT</li>
+			<li>click the BROWSE button in the upper-right, on the same line as ROOT DIRECTORY</li>
+			<li>go to and select the <b>sdk</b> directory, such as <b>workspace/git/sdk/</b></li>
+			<li>click OPEN</li>
+			<li>make sure the checkboxes by all the listed projects are checked</li>
+			<li>click FINISH</li>
+		</ul>
+	</li>
+
+	<li>
+		recompile and run HashgraphDemo
+		<ul>
+			<li> edit the <b>config.txt</b> file to choose which app to run. The instructions are given as comments in
+				the file.
+			</li>
+			<li> in the package explorer, click on the triangle by <b>HashgraphDemo</b> to open it
+			<li> right click on the <b>pom.xml</b> under <b>HashgraphDemo</b> and choose RUN AS > MAVEN INSTALL</li>
+			<li> click on <b>src</b> under <b>HashgraphDemo</b> to select it</li>
+			<li> click the green arrow button on the top bar to run it</li>
+			<li> if it asks, click JAVA APPLICATION and click OK</li>
+			<li> it won't run yet, but that's ok</li>
+			<li> select menu RUN > RUN CONFIGURATIONS</li>
+			<li> select the ARGUMENTS tab</li>
+			<li> under WORKING DIRECTORY select OTHER</li>
+			<li> click FILESYSTEM and navigate to just inside the <b>sdk</b> directory</li>
+			<li> click OPEN</li>
+			<li> click APPLY</li>
+			<li> click CLOSE</li>
+			<li> in the package explorer click on <b>src</b> under <b>HashgraphDemo</b> to select it</li>
+			<li> click the green arrow button on the top bar to run it</li>
+			<li> the app should run. When you are done with it, choose QUIT under its menu, or close its window.</li>
+		</ul>
+	</li>
+	<li>recompile and run each of the other demos, using the above steps
+</ul>
+
+<p>At this point, all of the demos have been recompiled, and their new <b>.jar</b> files have been stored in the <b>data/apps</b>
+	folder for the browser to use. If you change the source code of one of the apps, repeat the above steps to recompile
+	it (do a MAVEN INSTALL) and run it (click the green arrow). It is possible to
+	<a href="runBrowser.html">run the new app</a>, either in the browser, or from the command line, or in Eclipse
+	itself.</p>
+
+<p>
+	<a href="index.html">Back</a>
+</p>
+</body>

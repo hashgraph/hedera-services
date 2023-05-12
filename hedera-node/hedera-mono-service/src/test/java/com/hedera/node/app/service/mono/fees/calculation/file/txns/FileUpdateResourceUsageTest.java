@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.file.txns;
 
 import static com.hedera.node.app.service.mono.state.merkle.MerkleAccountState.DEFAULT_MEMO;
@@ -110,8 +111,7 @@ class FileUpdateResourceUsageTest {
         // setup:
         expected = mock(FeeData.class);
         // and:
-        final ArgumentCaptor<ExtantFileContext> captor =
-                ArgumentCaptor.forClass(ExtantFileContext.class);
+        final ArgumentCaptor<ExtantFileContext> captor = ArgumentCaptor.forClass(ExtantFileContext.class);
 
         given(fileOpsUsage.fileUpdateUsage(any(), any(), captor.capture())).willReturn(expected);
         given(view.infoForFile(fid)).willReturn(Optional.empty());
@@ -132,16 +132,14 @@ class FileUpdateResourceUsageTest {
         // setup:
         expected = mock(FeeData.class);
         // and:
-        final var info =
-                FileGetInfoResponse.FileInfo.newBuilder()
-                        .setExpirationTime(Timestamp.newBuilder().setSeconds(expiry))
-                        .setMemo(memo)
-                        .setKeys(wacl)
-                        .setSize(size)
-                        .build();
+        final var info = FileGetInfoResponse.FileInfo.newBuilder()
+                .setExpirationTime(Timestamp.newBuilder().setSeconds(expiry))
+                .setMemo(memo)
+                .setKeys(wacl)
+                .setSize(size)
+                .build();
         // and:
-        final ArgumentCaptor<ExtantFileContext> captor =
-                ArgumentCaptor.forClass(ExtantFileContext.class);
+        final ArgumentCaptor<ExtantFileContext> captor = ArgumentCaptor.forClass(ExtantFileContext.class);
 
         given(fileOpsUsage.fileUpdateUsage(any(), any(), captor.capture())).willReturn(expected);
         given(view.infoForFile(fid)).willReturn(Optional.of(info));
@@ -161,24 +159,19 @@ class FileUpdateResourceUsageTest {
     }
 
     private TransactionBody txnAt(final long now) {
-        final var op =
-                FileUpdateTransactionBody.newBuilder()
-                        .setFileID(fid)
-                        .setContents(
-                                ByteString.copyFrom(
-                                        "Though like waves breaking it may be".getBytes()))
-                        .setKeys(
-                                KeyList.newBuilder()
-                                        .addKeys(TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asKey())
-                                        .addKeys(TxnHandlingScenario.MISC_ACCOUNT_KT.asKey())
-                                        .build())
-                        .setExpirationTime(Timestamp.newBuilder().setSeconds(newExpiry))
-                        .build();
+        final var op = FileUpdateTransactionBody.newBuilder()
+                .setFileID(fid)
+                .setContents(ByteString.copyFrom("Though like waves breaking it may be".getBytes()))
+                .setKeys(KeyList.newBuilder()
+                        .addKeys(TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asKey())
+                        .addKeys(TxnHandlingScenario.MISC_ACCOUNT_KT.asKey())
+                        .build())
+                .setExpirationTime(Timestamp.newBuilder().setSeconds(newExpiry))
+                .build();
         // and:
         return TransactionBody.newBuilder()
-                .setTransactionID(
-                        TransactionID.newBuilder()
-                                .setTransactionValidStart(Timestamp.newBuilder().setSeconds(now)))
+                .setTransactionID(TransactionID.newBuilder()
+                        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(now)))
                 .setFileUpdate(op)
                 .build();
     }

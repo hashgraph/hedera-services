@@ -13,13 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs;
 
+import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.sigs.order.SigRequirements;
 import com.hedera.node.app.service.mono.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.node.app.service.mono.utils.accessors.SwirldsTxnAccessor;
 
 public interface ExpansionHelper {
     void expandIn(
-            SwirldsTxnAccessor txnAccessor, SigRequirements keyOrderer, PubKeyToSigBytes pkToSigFn);
+            SwirldsTxnAccessor txnAccessor,
+            SigRequirements keyOrderer,
+            PubKeyToSigBytes pkToSigFn,
+            AliasManager aliasManager);
 }

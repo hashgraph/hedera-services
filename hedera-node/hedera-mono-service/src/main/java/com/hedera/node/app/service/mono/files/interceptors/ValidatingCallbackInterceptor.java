@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.files.interceptors;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -58,9 +59,7 @@ public class ValidatingCallbackInterceptor implements FileUpdateInterceptor {
     public OptionalInt priorityForCandidate(FileID id) {
         lazyInitIfNecessary();
 
-        return (id.getFileNum() == fileNum)
-                ? OptionalInt.of(applicablePriority)
-                : OptionalInt.empty();
+        return (id.getFileNum() == fileNum) ? OptionalInt.of(applicablePriority) : OptionalInt.empty();
     }
 
     @Override

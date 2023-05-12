@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts;
 
 /*
@@ -72,35 +73,45 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class HederaStackedWorldStateUpdaterTest {
-    private static final Address alias =
-            Address.fromHexString("0xabcdefabcdefabcdefbabcdefabcdefabcdefbbb");
-    private static final Address alias2 =
-            Address.fromHexString("0xabcdefabcdefabcdefbabcdefabcdefabcdefbbc");
+    private static final Address alias = Address.fromHexString("0xabcdefabcdefabcdefbabcdefabcdefabcdefbbb");
+    private static final Address alias2 = Address.fromHexString("0xabcdefabcdefabcdefbabcdefabcdefabcdefbbc");
     private static final Address sponsor = Address.fromHexString("0xcba");
     private static final Address address = Address.fromHexString("0xabc");
     private static final Address otherAddress = Address.fromHexString("0xdef");
     private static final ContractID addressId = EntityIdUtils.contractIdFromEvmAddress(address);
 
-    @Mock private ContractAliases aliases;
-    @Mock private WorldLedgers trackingLedgers;
+    @Mock
+    private ContractAliases aliases;
+
+    @Mock
+    private WorldLedgers trackingLedgers;
 
     @Mock(extraInterfaces = {HederaWorldUpdater.class})
     private AbstractLedgerWorldUpdater<HederaMutableWorldState, Account> updater;
 
-    @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
-    @Mock private HederaMutableWorldState worldState;
-    @Mock private HederaStackedWorldStateUpdater.CustomizerFactory customizerFactory;
-    @Mock private ContractCustomizer customizer;
-    @Mock private HederaAccountCustomizer accountCustomizer;
-    @Mock private GlobalDynamicProperties globalDynamicProperties;
+    @Mock
+    private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
+
+    @Mock
+    private HederaMutableWorldState worldState;
+
+    @Mock
+    private HederaStackedWorldStateUpdater.CustomizerFactory customizerFactory;
+
+    @Mock
+    private ContractCustomizer customizer;
+
+    @Mock
+    private HederaAccountCustomizer accountCustomizer;
+
+    @Mock
+    private GlobalDynamicProperties globalDynamicProperties;
 
     private HederaStackedWorldStateUpdater subject;
 
     @BeforeEach
     void setUp() {
-        subject =
-                new HederaStackedWorldStateUpdater(
-                        updater, worldState, trackingLedgers, globalDynamicProperties);
+        subject = new HederaStackedWorldStateUpdater(updater, worldState, trackingLedgers, globalDynamicProperties);
     }
 
     @Test
@@ -196,22 +207,21 @@ class HederaStackedWorldStateUpdaterTest {
 
     @Test
     void linksAliasWhenReservingNewContractId() {
-        withMockCustomizerFactory(
-                () -> {
-                    given(worldState.newContractAddress(sponsor)).willReturn(address);
-                    given(trackingLedgers.aliases()).willReturn(aliases);
-                    given(trackingLedgers.accounts()).willReturn(accountsLedger);
-                    given(aliases.resolveForEvm(sponsor)).willReturn(sponsor);
-                    given(customizerFactory.apply(any(), any())).willReturn(customizer);
-                    given(customizer.accountCustomizer()).willReturn(accountCustomizer);
+        withMockCustomizerFactory(() -> {
+            given(worldState.newContractAddress(sponsor)).willReturn(address);
+            given(trackingLedgers.aliases()).willReturn(aliases);
+            given(trackingLedgers.accounts()).willReturn(accountsLedger);
+            given(aliases.resolveForEvm(sponsor)).willReturn(sponsor);
+            given(customizerFactory.apply(any(), any())).willReturn(customizer);
+            given(customizer.accountCustomizer()).willReturn(accountCustomizer);
 
-                    final var created = subject.newAliasedContractAddress(sponsor, alias);
+            final var created = subject.newAliasedContractAddress(sponsor, alias);
 
-                    assertSame(address, created);
-                    assertEquals(addressId, subject.idOfLastNewAddress());
-                    verify(aliases).link(alias, address);
-                    verify(accountCustomizer).maxAutomaticAssociations(0);
-                });
+            assertSame(address, created);
+            assertEquals(addressId, subject.idOfLastNewAddress());
+            verify(aliases).link(alias, address);
+            verify(accountCustomizer).maxAutomaticAssociations(0);
+        });
     }
 
     @Test
@@ -223,79 +233,65 @@ class HederaStackedWorldStateUpdaterTest {
 
     @Test
     void doesntRelinkAliasIfActiveAndExtant() {
-        withMockCustomizerFactory(
-                () -> {
-                    final var targetId = EntityIdUtils.accountIdFromEvmAddress(otherAddress);
-                    given(worldState.newContractAddress(sponsor)).willReturn(address);
-                    given(trackingLedgers.accounts()).willReturn(accountsLedger);
-                    given(trackingLedgers.aliases()).willReturn(aliases);
-                    given(aliases.isInUse(alias)).willReturn(true);
-                    given(aliases.resolveForEvm(sponsor)).willReturn(sponsor);
-                    given(aliases.resolveForEvm(alias)).willReturn(otherAddress);
-                    given(accountsLedger.exists(targetId)).willReturn(true);
-                    given(globalDynamicProperties.areContractAutoAssociationsEnabled())
-                            .willReturn(true);
+        withMockCustomizerFactory(() -> {
+            final var targetId = EntityIdUtils.accountIdFromEvmAddress(otherAddress);
+            given(worldState.newContractAddress(sponsor)).willReturn(address);
+            given(trackingLedgers.accounts()).willReturn(accountsLedger);
+            given(trackingLedgers.aliases()).willReturn(aliases);
+            given(aliases.isInUse(alias)).willReturn(true);
+            given(aliases.resolveForEvm(sponsor)).willReturn(sponsor);
+            given(aliases.resolveForEvm(alias)).willReturn(otherAddress);
+            given(accountsLedger.exists(targetId)).willReturn(true);
+            given(globalDynamicProperties.areContractAutoAssociationsEnabled()).willReturn(true);
 
-                    final var created = subject.newAliasedContractAddress(sponsor, alias);
+            final var created = subject.newAliasedContractAddress(sponsor, alias);
 
-                    assertSame(address, created);
-                    assertEquals(addressId, subject.idOfLastNewAddress());
-                    verify(aliases, never()).link(alias, address);
-                });
+            assertSame(address, created);
+            assertEquals(addressId, subject.idOfLastNewAddress());
+            verify(aliases, never()).link(alias, address);
+        });
     }
 
     @Test
     void doesRelinkAliasIfActiveButWithMissingTarget() {
-        withMockCustomizerFactory(
-                () -> {
-                    given(worldState.newContractAddress(sponsor)).willReturn(address);
-                    given(trackingLedgers.accounts()).willReturn(accountsLedger);
-                    given(trackingLedgers.aliases()).willReturn(aliases);
-                    given(aliases.isInUse(alias)).willReturn(true);
-                    given(aliases.resolveForEvm(sponsor)).willReturn(sponsor);
-                    given(aliases.resolveForEvm(alias)).willReturn(otherAddress);
-                    given(globalDynamicProperties.areContractAutoAssociationsEnabled())
-                            .willReturn(true);
+        withMockCustomizerFactory(() -> {
+            given(worldState.newContractAddress(sponsor)).willReturn(address);
+            given(trackingLedgers.accounts()).willReturn(accountsLedger);
+            given(trackingLedgers.aliases()).willReturn(aliases);
+            given(aliases.isInUse(alias)).willReturn(true);
+            given(aliases.resolveForEvm(sponsor)).willReturn(sponsor);
+            given(aliases.resolveForEvm(alias)).willReturn(otherAddress);
+            given(globalDynamicProperties.areContractAutoAssociationsEnabled()).willReturn(true);
 
-                    final var created = subject.newAliasedContractAddress(sponsor, alias);
+            final var created = subject.newAliasedContractAddress(sponsor, alias);
 
-                    assertSame(address, created);
-                    assertEquals(addressId, subject.idOfLastNewAddress());
-                    verify(aliases).link(alias, address);
-                });
+            assertSame(address, created);
+            assertEquals(addressId, subject.idOfLastNewAddress());
+            verify(aliases).link(alias, address);
+        });
     }
 
     @Test
     void allocatesNewContractAddress() {
-        withMockCustomizerFactory(
-                () -> {
-                    final var sponsoredId = ContractID.newBuilder().setContractNum(2).build();
-                    final var sponsorAddr =
-                            Address.wrap(
-                                    Bytes.wrap(
-                                            EntityIdUtils.asEvmAddress(
-                                                    ContractID.newBuilder()
-                                                            .setContractNum(1)
-                                                            .build())));
-                    given(trackingLedgers.aliases()).willReturn(aliases);
-                    given(aliases.resolveForEvm(sponsorAddr)).willReturn(sponsorAddr);
-                    given(globalDynamicProperties.areContractAutoAssociationsEnabled())
-                            .willReturn(true);
+        withMockCustomizerFactory(() -> {
+            final var sponsoredId = ContractID.newBuilder().setContractNum(2).build();
+            final var sponsorAddr = Address.wrap(Bytes.wrap(EntityIdUtils.asEvmAddress(
+                    ContractID.newBuilder().setContractNum(1).build())));
+            given(trackingLedgers.aliases()).willReturn(aliases);
+            given(aliases.resolveForEvm(sponsorAddr)).willReturn(sponsorAddr);
+            given(globalDynamicProperties.areContractAutoAssociationsEnabled()).willReturn(true);
 
-                    final var sponsoredAddr =
-                            Address.wrap(Bytes.wrap(EntityIdUtils.asEvmAddress(sponsoredId)));
-                    given(worldState.newContractAddress(sponsorAddr)).willReturn(sponsoredAddr);
-                    final var allocated = subject.newContractAddress(sponsorAddr);
-                    final var sponsorAid =
-                            EntityIdUtils.accountIdFromEvmAddress(sponsorAddr.toArrayUnsafe());
-                    final var allocatedAid =
-                            EntityIdUtils.accountIdFromEvmAddress(allocated.toArrayUnsafe());
+            final var sponsoredAddr = Address.wrap(Bytes.wrap(EntityIdUtils.asEvmAddress(sponsoredId)));
+            given(worldState.newContractAddress(sponsorAddr)).willReturn(sponsoredAddr);
+            final var allocated = subject.newContractAddress(sponsorAddr);
+            final var sponsorAid = EntityIdUtils.accountIdFromEvmAddress(sponsorAddr.toArrayUnsafe());
+            final var allocatedAid = EntityIdUtils.accountIdFromEvmAddress(allocated.toArrayUnsafe());
 
-                    assertEquals(sponsorAid.getRealmNum(), allocatedAid.getRealmNum());
-                    assertEquals(sponsorAid.getShardNum(), allocatedAid.getShardNum());
-                    assertEquals(sponsorAid.getAccountNum() + 1, allocatedAid.getAccountNum());
-                    assertEquals(sponsoredId, subject.idOfLastNewAddress());
-                });
+            assertEquals(sponsorAid.getRealmNum(), allocatedAid.getRealmNum());
+            assertEquals(sponsorAid.getShardNum(), allocatedAid.getShardNum());
+            assertEquals(sponsorAid.getAccountNum() + 1, allocatedAid.getAccountNum());
+            assertEquals(sponsoredId, subject.idOfLastNewAddress());
+        });
     }
 
     @Test
@@ -314,41 +310,30 @@ class HederaStackedWorldStateUpdaterTest {
 
     @Test
     void canSponsorWithAlias() {
-        withMockCustomizerFactory(
-                () -> {
-                    final var sponsoredId = ContractID.newBuilder().setContractNum(2).build();
-                    final var sponsorAddr =
-                            Address.wrap(
-                                    Bytes.wrap(
-                                            EntityIdUtils.asEvmAddress(
-                                                    ContractID.newBuilder()
-                                                            .setContractNum(1)
-                                                            .build())));
-                    final var sponsorAid =
-                            EntityIdUtils.accountIdFromEvmAddress(sponsorAddr.toArrayUnsafe());
+        withMockCustomizerFactory(() -> {
+            final var sponsoredId = ContractID.newBuilder().setContractNum(2).build();
+            final var sponsorAddr = Address.wrap(Bytes.wrap(EntityIdUtils.asEvmAddress(
+                    ContractID.newBuilder().setContractNum(1).build())));
+            final var sponsorAid = EntityIdUtils.accountIdFromEvmAddress(sponsorAddr.toArrayUnsafe());
 
-                    given(aliases.resolveForEvm(alias)).willReturn(sponsorAddr);
-                    given(trackingLedgers.aliases()).willReturn(aliases);
-                    given(trackingLedgers.accounts()).willReturn(accountsLedger);
-                    given(globalDynamicProperties.areContractAutoAssociationsEnabled())
-                            .willReturn(true);
+            given(aliases.resolveForEvm(alias)).willReturn(sponsorAddr);
+            given(trackingLedgers.aliases()).willReturn(aliases);
+            given(trackingLedgers.accounts()).willReturn(accountsLedger);
+            given(globalDynamicProperties.areContractAutoAssociationsEnabled()).willReturn(true);
 
-                    final var sponsoredAddr =
-                            Address.wrap(Bytes.wrap(EntityIdUtils.asEvmAddress(sponsoredId)));
-                    given(worldState.newContractAddress(sponsorAddr)).willReturn(sponsoredAddr);
-                    given(customizerFactory.apply(sponsorAid, accountsLedger))
-                            .willReturn(customizer);
+            final var sponsoredAddr = Address.wrap(Bytes.wrap(EntityIdUtils.asEvmAddress(sponsoredId)));
+            given(worldState.newContractAddress(sponsorAddr)).willReturn(sponsoredAddr);
+            given(customizerFactory.apply(sponsorAid, accountsLedger)).willReturn(customizer);
 
-                    final var allocated = subject.newContractAddress(alias);
-                    final var allocatedAid =
-                            EntityIdUtils.accountIdFromEvmAddress(allocated.toArrayUnsafe());
+            final var allocated = subject.newContractAddress(alias);
+            final var allocatedAid = EntityIdUtils.accountIdFromEvmAddress(allocated.toArrayUnsafe());
 
-                    assertEquals(sponsorAid.getRealmNum(), allocatedAid.getRealmNum());
-                    assertEquals(sponsorAid.getShardNum(), allocatedAid.getShardNum());
-                    assertEquals(sponsorAid.getAccountNum() + 1, allocatedAid.getAccountNum());
-                    assertEquals(sponsoredId, subject.idOfLastNewAddress());
-                    assertSame(customizer, subject.customizerForPendingCreation());
-                });
+            assertEquals(sponsorAid.getRealmNum(), allocatedAid.getRealmNum());
+            assertEquals(sponsorAid.getShardNum(), allocatedAid.getShardNum());
+            assertEquals(sponsorAid.getAccountNum() + 1, allocatedAid.getAccountNum());
+            assertEquals(sponsoredId, subject.idOfLastNewAddress());
+            assertSame(customizer, subject.customizerForPendingCreation());
+        });
     }
 
     @Test
@@ -377,7 +362,6 @@ class HederaStackedWorldStateUpdaterTest {
     private void withMockCustomizerFactory(final Runnable spec) {
         HederaStackedWorldStateUpdater.setCustomizerFactory(customizerFactory);
         spec.run();
-        HederaStackedWorldStateUpdater.setCustomizerFactory(
-                ContractCustomizer::fromSponsorContract);
+        HederaStackedWorldStateUpdater.setCustomizerFactory(ContractCustomizer::fromSponsorContract);
     }
 }

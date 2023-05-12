@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.files;
 
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
-public record SimpleUpdateResult(
-        boolean attrChanged, boolean fileReplaced, ResponseCodeEnum outcome)
+public record SimpleUpdateResult(boolean attrChanged, boolean fileReplaced, ResponseCodeEnum outcome)
         implements HederaFs.UpdateResult {}

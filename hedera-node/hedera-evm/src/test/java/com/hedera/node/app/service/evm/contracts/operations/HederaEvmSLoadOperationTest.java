@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.contracts.operations;
 
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS;
@@ -45,15 +46,20 @@ class HederaEvmSLoadOperationTest {
 
     HederaEvmSLoadOperation subject;
 
-    @Mock GasCalculator gasCalculator;
+    @Mock
+    GasCalculator gasCalculator;
 
-    @Mock MessageFrame messageFrame;
+    @Mock
+    MessageFrame messageFrame;
 
-    @Mock EVM evm;
+    @Mock
+    EVM evm;
 
-    @Mock AbstractLedgerEvmWorldUpdater worldUpdater;
+    @Mock
+    AbstractLedgerEvmWorldUpdater worldUpdater;
 
-    @Mock EvmAccount evmAccount;
+    @Mock
+    EvmAccount evmAccount;
 
     final Bytes keyBytesMock = Bytes.of(1, 2, 3, 4);
     final Bytes valueBytesMock = Bytes.of(4, 3, 2, 1);
@@ -105,8 +111,7 @@ class HederaEvmSLoadOperationTest {
         given(messageFrame.getRemainingGas()).willReturn(300L);
         given(messageFrame.getRemainingGas()).willReturn(0L);
 
-        final var expectedHaltResult =
-                new Operation.OperationResult(30L, ExceptionalHaltReason.INSUFFICIENT_GAS);
+        final var expectedHaltResult = new Operation.OperationResult(30L, ExceptionalHaltReason.INSUFFICIENT_GAS);
 
         final var haltResult = subject.execute(messageFrame, evm);
 

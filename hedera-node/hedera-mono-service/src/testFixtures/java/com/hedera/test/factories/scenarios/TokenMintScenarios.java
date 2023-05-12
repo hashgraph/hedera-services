@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.factories.scenarios;
 
 import static com.hedera.test.factories.txns.TokenMintFactory.newSignedTokenMint;
@@ -23,17 +24,17 @@ public enum TokenMintScenarios implements TxnHandlingScenario {
     MINT_WITH_SUPPLY_KEYED_TOKEN {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(
-                    newSignedTokenMint()
-                            .minting(KNOWN_TOKEN_WITH_SUPPLY)
-                            .nonPayerKts(TOKEN_SUPPLY_KT)
-                            .get());
+            return PlatformTxnAccessor.from(newSignedTokenMint()
+                    .minting(KNOWN_TOKEN_WITH_SUPPLY)
+                    .nonPayerKts(TOKEN_SUPPLY_KT)
+                    .get());
         }
     },
     MINT_WITH_MISSING_TOKEN {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedTokenMint().minting(MISSING_TOKEN).get());
+            return PlatformTxnAccessor.from(
+                    newSignedTokenMint().minting(MISSING_TOKEN).get());
         }
     },
     MINT_FOR_TOKEN_WITHOUT_SUPPLY {

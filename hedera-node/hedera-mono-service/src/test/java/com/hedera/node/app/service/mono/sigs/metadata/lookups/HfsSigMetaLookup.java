@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs.metadata.lookups;
 
 import static com.hedera.node.app.service.mono.context.primitives.StateView.EMPTY_WACL;
@@ -30,8 +31,7 @@ import com.hederahashgraph.api.proto.java.FileID;
  * effectively so.
  */
 public class HfsSigMetaLookup implements FileSigMetaLookup {
-    private static final FileSigningMetadata SPECIAL_FILE_META =
-            new FileSigningMetadata(EMPTY_WACL);
+    private static final FileSigningMetadata SPECIAL_FILE_META = new FileSigningMetadata(EMPTY_WACL);
     private static final SafeLookupResult<FileSigningMetadata> SPECIAL_FILE_RESULT =
             new SafeLookupResult<>(SPECIAL_FILE_META);
 

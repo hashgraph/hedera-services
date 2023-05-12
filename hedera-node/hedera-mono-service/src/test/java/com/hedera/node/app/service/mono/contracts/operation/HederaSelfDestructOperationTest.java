@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.operation;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -23,6 +25,7 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hedera.node.app.service.mono.utils.EntityNum;
@@ -46,19 +49,35 @@ class HederaSelfDestructOperationTest {
     private static final String ethAddress = "0xc257274276a4e539741ca11b590b9447b26a8051";
     private static final Address eip1014Address = Address.fromHexString(ethAddress);
 
-    @Mock private HederaStackedWorldStateUpdater worldUpdater;
-    @Mock private GasCalculator gasCalculator;
-    @Mock private TransactionContext txnCtx;
-    @Mock private MessageFrame frame;
-    @Mock private EVM evm;
-    @Mock private Account account;
-    @Mock private BiPredicate<Address, MessageFrame> addressValidator;
+    @Mock
+    private HederaStackedWorldStateUpdater worldUpdater;
+
+    @Mock
+    private GasCalculator gasCalculator;
+
+    @Mock
+    private TransactionContext txnCtx;
+
+    @Mock
+    private MessageFrame frame;
+
+    @Mock
+    private EVM evm;
+
+    @Mock
+    private Account account;
+
+    @Mock
+    private BiPredicate<Address, MessageFrame> addressValidator;
+
+    @Mock
+    private EvmSigsVerifier evmSigsVerifier;
 
     private HederaSelfDestructOperation subject;
 
     @BeforeEach
     void setUp() {
-        subject = new HederaSelfDestructOperation(gasCalculator, txnCtx, addressValidator);
+        subject = new HederaSelfDestructOperation(gasCalculator, txnCtx, addressValidator, evmSigsVerifier);
 
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(gasCalculator.selfDestructOperationGasCost(any(), eq(Wei.ONE))).willReturn(2L);
@@ -68,8 +87,8 @@ class HederaSelfDestructOperationTest {
     void delegatesToSuperWhenValid() {
         givenRubberstampValidator();
 
-        final var tbdMirrorAddress = EntityIdUtils.asEvmAddress(0, 0, 1234L);
-        final var beneficiaryMirrorAddress = EntityIdUtils.asEvmAddress(0, 0, 4567L);
+        final var tbdMirrorAddress = EntityIdUtils.asEvmAddress(1234L);
+        final var beneficiaryMirrorAddress = EntityIdUtils.asEvmAddress(4567L);
 
         final var beneficiaryMirror = beneficiary.toEvmAddress();
         given(frame.getStackItem(0)).willReturn(beneficiaryMirror);
@@ -83,6 +102,11 @@ class HederaSelfDestructOperationTest {
                 .willReturn(tbdMirrorAddress);
         given(worldUpdater.permissivelyUnaliased(beneficiaryMirror.toArrayUnsafe()))
                 .willReturn(beneficiaryMirrorAddress);
+        given(frame.getContractAddress()).willReturn(eip1014Address);
+        given(account.getAddress()).willReturn(beneficiaryMirror);
+        given(evmSigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+                        false, beneficiaryMirror, eip1014Address, null, ContractCall))
+                .willReturn(true);
 
         final var opResult = subject.execute(frame, evm);
 
@@ -130,9 +154,7 @@ class HederaSelfDestructOperationTest {
 
         final var opResult = subject.execute(frame, evm);
 
-        assertEquals(
-                HederaExceptionalHaltReason.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES,
-                opResult.getHaltReason());
+        assertEquals(HederaExceptionalHaltReason.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES, opResult.getHaltReason());
         assertEquals(2L, opResult.getGasCost());
     }
 
@@ -147,8 +169,49 @@ class HederaSelfDestructOperationTest {
 
         final var opResult = subject.execute(frame, evm);
 
-        assertEquals(
-                HederaExceptionalHaltReason.CONTRACT_STILL_OWNS_NFTS, opResult.getHaltReason());
+        assertEquals(HederaExceptionalHaltReason.CONTRACT_STILL_OWNS_NFTS, opResult.getHaltReason());
+        assertEquals(2L, opResult.getGasCost());
+    }
+
+    @Test
+    void rejectsSelfDestructIfBeneficiaryHasNoActiveSig() {
+        givenRubberstampValidator();
+
+        final var beneficiaryMirror = beneficiary.toEvmAddress();
+        given(frame.getStackItem(0)).willReturn(beneficiaryMirror);
+        given(frame.getRecipientAddress()).willReturn(eip1014Address);
+        given(frame.getContractAddress()).willReturn(eip1014Address);
+        given(worldUpdater.contractOwnsNfts(eip1014Address)).willReturn(false);
+        given(evmSigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+                        false, beneficiaryMirror, eip1014Address, null, ContractCall))
+                .willReturn(false);
+        given(worldUpdater.get(beneficiaryMirror)).willReturn(account);
+        given(account.getAddress()).willReturn(beneficiaryMirror);
+
+        final var opResult = subject.execute(frame, evm);
+
+        assertEquals(HederaExceptionalHaltReason.INVALID_SIGNATURE, opResult.getHaltReason());
+        assertEquals(2L, opResult.getGasCost());
+    }
+
+    @Test
+    void rejectsDelegateCallSelfDestructIfBeneficiaryHasNoActiveSig() {
+        givenRubberstampValidator();
+
+        final var beneficiaryMirror = beneficiary.toEvmAddress();
+        given(frame.getStackItem(0)).willReturn(beneficiaryMirror);
+        given(frame.getRecipientAddress()).willReturn(eip1014Address);
+        given(frame.getContractAddress()).willReturn(Address.ALTBN128_MUL);
+        given(worldUpdater.contractOwnsNfts(eip1014Address)).willReturn(false);
+        given(evmSigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+                        true, beneficiaryMirror, eip1014Address, null, ContractCall))
+                .willReturn(false);
+        given(worldUpdater.get(beneficiaryMirror)).willReturn(account);
+        given(account.getAddress()).willReturn(beneficiaryMirror);
+
+        final var opResult = subject.execute(frame, evm);
+
+        assertEquals(HederaExceptionalHaltReason.INVALID_SIGNATURE, opResult.getHaltReason());
         assertEquals(2L, opResult.getGasCost());
     }
 
@@ -161,8 +224,7 @@ class HederaSelfDestructOperationTest {
 
         final var opResult = subject.execute(frame, evm);
 
-        assertEquals(
-                HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, opResult.getHaltReason());
+        assertEquals(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, opResult.getHaltReason());
         assertEquals(2L, opResult.getGasCost());
     }
 

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage.token;
 
 import static com.hedera.node.app.hapi.fees.test.AdapterUtils.feeDataFrom;
@@ -80,49 +81,37 @@ class TokenOpsUsageTest {
     @Test
     void canCountFeeTypes() {
         final List<CustomFee> aSchedule = new ArrayList<>();
-        aSchedule.add(CustomFee.newBuilder().setFixedFee(FixedFee.getDefaultInstance()).build());
-        aSchedule.add(
-                CustomFee.newBuilder()
-                        .setFixedFee(
-                                FixedFee.newBuilder()
-                                        .setDenominatingTokenId(IdUtils.asToken("1.2.3")))
-                        .build());
-        aSchedule.add(
-                CustomFee.newBuilder()
-                        .setFixedFee(
-                                FixedFee.newBuilder()
-                                        .setDenominatingTokenId(IdUtils.asToken("1.2.3")))
-                        .build());
-        aSchedule.add(
-                CustomFee.newBuilder()
-                        .setFractionalFee(FractionalFee.getDefaultInstance())
-                        .build());
-        aSchedule.add(
-                CustomFee.newBuilder()
-                        .setFractionalFee(FractionalFee.getDefaultInstance())
-                        .build());
-        aSchedule.add(
-                CustomFee.newBuilder()
-                        .setFractionalFee(FractionalFee.getDefaultInstance())
-                        .build());
-        aSchedule.add(
-                CustomFee.newBuilder().setRoyaltyFee(RoyaltyFee.getDefaultInstance()).build());
-        aSchedule.add(
-                CustomFee.newBuilder()
-                        .setRoyaltyFee(
-                                RoyaltyFee.newBuilder()
-                                        .setFallbackFee(FixedFee.newBuilder().build()))
-                        .build());
-        aSchedule.add(
-                CustomFee.newBuilder()
-                        .setRoyaltyFee(
-                                RoyaltyFee.newBuilder()
-                                        .setFallbackFee(
-                                                FixedFee.newBuilder()
-                                                        .setDenominatingTokenId(
-                                                                IdUtils.asToken("1.2.3"))
-                                                        .build()))
-                        .build());
+        aSchedule.add(CustomFee.newBuilder()
+                .setFixedFee(FixedFee.getDefaultInstance())
+                .build());
+        aSchedule.add(CustomFee.newBuilder()
+                .setFixedFee(FixedFee.newBuilder().setDenominatingTokenId(IdUtils.asToken("1.2.3")))
+                .build());
+        aSchedule.add(CustomFee.newBuilder()
+                .setFixedFee(FixedFee.newBuilder().setDenominatingTokenId(IdUtils.asToken("1.2.3")))
+                .build());
+        aSchedule.add(CustomFee.newBuilder()
+                .setFractionalFee(FractionalFee.getDefaultInstance())
+                .build());
+        aSchedule.add(CustomFee.newBuilder()
+                .setFractionalFee(FractionalFee.getDefaultInstance())
+                .build());
+        aSchedule.add(CustomFee.newBuilder()
+                .setFractionalFee(FractionalFee.getDefaultInstance())
+                .build());
+        aSchedule.add(CustomFee.newBuilder()
+                .setRoyaltyFee(RoyaltyFee.getDefaultInstance())
+                .build());
+        aSchedule.add(CustomFee.newBuilder()
+                .setRoyaltyFee(RoyaltyFee.newBuilder()
+                        .setFallbackFee(FixedFee.newBuilder().build()))
+                .build());
+        aSchedule.add(CustomFee.newBuilder()
+                .setRoyaltyFee(RoyaltyFee.newBuilder()
+                        .setFallbackFee(FixedFee.newBuilder()
+                                .setDenominatingTokenId(IdUtils.asToken("1.2.3"))
+                                .build()))
+                .build());
 
         final var expected = subject.bytesNeededToRepr(1, 2, 3, 1, 1, 1);
 
@@ -158,8 +147,7 @@ class TokenOpsUsageTest {
     void tokenWipeUsageAccumulatorWorks() {
         final var sigUsage = new SigUsage(1, 2, 3);
         final var baseMeta = new BaseTransactionMeta(0, 0);
-        final var tokenWipeMeta =
-                new TokenWipeMeta(1000, SubType.TOKEN_NON_FUNGIBLE_UNIQUE, 12345, 1);
+        final var tokenWipeMeta = new TokenWipeMeta(1000, SubType.TOKEN_NON_FUNGIBLE_UNIQUE, 12345, 1);
         final var accumulator = new UsageAccumulator();
 
         subject.tokenWipeUsage(sigUsage, baseMeta, tokenWipeMeta, accumulator);

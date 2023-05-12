@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.calc;
 
 import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
@@ -38,8 +39,7 @@ import javax.inject.Singleton;
 @Singleton
 public final class OverflowCheckingCalc {
     private static final String OVERFLOW_ERROR =
-            "A fee calculation step overflowed; "
-                    + "the operation cannot be priced, and therefore cannot be performed";
+            "A fee calculation step overflowed; " + "the operation cannot be priced, and therefore cannot be performed";
 
     @Inject
     public OverflowCheckingCalc() {
@@ -68,10 +68,7 @@ public final class OverflowCheckingCalc {
      * @throws IllegalArgumentException if any step of the calculation overflows
      */
     public FeeObject fees(
-            final UsageAccumulator usage,
-            final FeeData prices,
-            final ExchangeRate rate,
-            final long multiplier) {
+            final UsageAccumulator usage, final FeeData prices, final ExchangeRate rate, final long multiplier) {
         final long networkFeeTinycents = networkFeeInTinycents(usage, prices.getNetworkdata());
         final long nodeFeeTinycents = nodeFeeInTinycents(usage, prices.getNodedata());
         final long serviceFeeTinycents = serviceFeeInTinycents(usage, prices.getServicedata());
@@ -81,16 +78,12 @@ public final class OverflowCheckingCalc {
         final long unscaledServiceFee = tinycentsToTinybars(serviceFeeTinycents, rate);
 
         final long maxUnscaled = Long.MAX_VALUE / multiplier;
-        if (unscaledNetworkFee > maxUnscaled
-                || unscaledNodeFee > maxUnscaled
-                || unscaledServiceFee > maxUnscaled) {
+        if (unscaledNetworkFee > maxUnscaled || unscaledNodeFee > maxUnscaled || unscaledServiceFee > maxUnscaled) {
             throw new IllegalArgumentException(OVERFLOW_ERROR);
         }
 
         return new FeeObject(
-                unscaledNodeFee * multiplier,
-                unscaledNetworkFee * multiplier,
-                unscaledServiceFee * multiplier);
+                unscaledNodeFee * multiplier, unscaledNetworkFee * multiplier, unscaledServiceFee * multiplier);
     }
 
     public static long tinycentsToTinybars(final long amount, final ExchangeRate rate) {
@@ -101,35 +94,30 @@ public final class OverflowCheckingCalc {
         return amount * hbarEquiv / rate.getCentEquiv();
     }
 
-    private long networkFeeInTinycents(
-            final UsageAccumulator usage, final FeeComponents networkPrices) {
-        final var nominal =
-                safeAccumulateThree(
-                        networkPrices.getConstant(),
-                        usage.getUniversalBpt() * networkPrices.getBpt(),
-                        usage.getNetworkVpt() * networkPrices.getVpt(),
-                        usage.getNetworkRbh() * networkPrices.getRbh());
+    private long networkFeeInTinycents(final UsageAccumulator usage, final FeeComponents networkPrices) {
+        final var nominal = safeAccumulateThree(
+                networkPrices.getConstant(),
+                usage.getUniversalBpt() * networkPrices.getBpt(),
+                usage.getNetworkVpt() * networkPrices.getVpt(),
+                usage.getNetworkRbh() * networkPrices.getRbh());
         return constrainedTinycentFee(nominal, networkPrices.getMin(), networkPrices.getMax());
     }
 
     private long nodeFeeInTinycents(final UsageAccumulator usage, final FeeComponents nodePrices) {
-        final var nominal =
-                safeAccumulateFour(
-                        nodePrices.getConstant(),
-                        usage.getUniversalBpt() * nodePrices.getBpt(),
-                        usage.getNodeBpr() * nodePrices.getBpr(),
-                        usage.getNodeSbpr() * nodePrices.getSbpr(),
-                        usage.getNodeVpt() * nodePrices.getVpt());
+        final var nominal = safeAccumulateFour(
+                nodePrices.getConstant(),
+                usage.getUniversalBpt() * nodePrices.getBpt(),
+                usage.getNodeBpr() * nodePrices.getBpr(),
+                usage.getNodeSbpr() * nodePrices.getSbpr(),
+                usage.getNodeVpt() * nodePrices.getVpt());
         return constrainedTinycentFee(nominal, nodePrices.getMin(), nodePrices.getMax());
     }
 
-    private long serviceFeeInTinycents(
-            final UsageAccumulator usage, final FeeComponents servicePrices) {
-        final var nominal =
-                safeAccumulateTwo(
-                        servicePrices.getConstant(),
-                        usage.getServiceRbh() * servicePrices.getRbh(),
-                        usage.getServiceSbh() * servicePrices.getSbh());
+    private long serviceFeeInTinycents(final UsageAccumulator usage, final FeeComponents servicePrices) {
+        final var nominal = safeAccumulateTwo(
+                servicePrices.getConstant(),
+                usage.getServiceRbh() * servicePrices.getRbh(),
+                usage.getServiceSbh() * servicePrices.getSbh());
         return constrainedTinycentFee(nominal, servicePrices.getMin(), servicePrices.getMax());
     }
 
@@ -146,8 +134,7 @@ public final class OverflowCheckingCalc {
     }
 
     /* These verbose accumulators signatures are to avoid any performance hit from varargs */
-    long safeAccumulateFour(
-            final long base, final long a, final long b, final long c, final long d) {
+    long safeAccumulateFour(final long base, final long a, final long b, final long c, final long d) {
         if (d < 0) {
             throw new IllegalArgumentException(OVERFLOW_ERROR);
         }

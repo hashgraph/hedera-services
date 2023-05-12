@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.submerkle;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
@@ -38,12 +39,8 @@ public class FractionalFeeSpec {
             boolean netOfTransfers) {
         validateTrue(denominator != 0, FRACTION_DIVIDES_BY_ZERO);
         validateTrue(bothPositive(numerator, denominator), CUSTOM_FEE_MUST_BE_POSITIVE);
-        validateTrue(
-                bothNonnegative(minimumUnitsToCollect, maximumUnitsToCollect),
-                CUSTOM_FEE_MUST_BE_POSITIVE);
-        validateTrue(
-                maximumUnitsToCollect >= minimumUnitsToCollect,
-                FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT);
+        validateTrue(bothNonnegative(minimumUnitsToCollect, maximumUnitsToCollect), CUSTOM_FEE_MUST_BE_POSITIVE);
+        validateTrue(maximumUnitsToCollect >= minimumUnitsToCollect, FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT);
 
         this.numerator = numerator;
         this.denominator = denominator;

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.keys;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -39,10 +40,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class OnlyIfSigVerifiableValidTest {
-    @Mock private Future<Void> syncFuture;
+    @Mock
+    private Future<Void> syncFuture;
 
-    @LoggingTarget private LogCaptor logCaptor;
-    @LoggingSubject private OnlyIfSigVerifiableValid subject = new OnlyIfSigVerifiableValid();
+    @LoggingTarget
+    private LogCaptor logCaptor;
+
+    @LoggingSubject
+    private OnlyIfSigVerifiableValid subject = new OnlyIfSigVerifiableValid();
 
     @Test
     void acceptsValidSig() {
@@ -62,10 +67,8 @@ class OnlyIfSigVerifiableValidTest {
 
         assertThat(
                 logCaptor.warnLogs(),
-                contains(
-                        startsWith(
-                                "Interrupted while validating signature, this will be fatal outside"
-                                        + " reconnect")));
+                contains(startsWith(
+                        "Interrupted while validating signature, this will be fatal outside" + " reconnect")));
     }
 
     @Test
@@ -77,14 +80,12 @@ class OnlyIfSigVerifiableValidTest {
         assertFalse(subject.test(null, sig));
 
         assertThat(
-                logCaptor.errorLogs(),
-                contains(startsWith("Erred while validating signature, this is likely fatal")));
+                logCaptor.errorLogs(), contains(startsWith("Erred while validating signature, this is likely fatal")));
     }
 
     @Test
     void resolvesValidSlowAsyncVerifyAsExpected() {
-        final var sig =
-                new SignatureWithStatuses(VerificationStatus.UNKNOWN, VerificationStatus.VALID);
+        final var sig = new SignatureWithStatuses(VerificationStatus.UNKNOWN, VerificationStatus.VALID);
         sig.setFuture(syncFuture);
 
         assertTrue(subject.test(null, sig));
@@ -92,8 +93,7 @@ class OnlyIfSigVerifiableValidTest {
 
     @Test
     void resolvesInvalidSlowAsyncVerifyAsExpected() {
-        final var sig =
-                new SignatureWithStatuses(VerificationStatus.UNKNOWN, VerificationStatus.INVALID);
+        final var sig = new SignatureWithStatuses(VerificationStatus.UNKNOWN, VerificationStatus.INVALID);
         sig.setFuture(syncFuture);
 
         assertFalse(subject.test(null, sig));
