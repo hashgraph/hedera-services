@@ -34,9 +34,11 @@ import com.hedera.node.app.service.mono.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.node.app.service.mono.sigs.verification.PrecheckVerifier;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
+import com.hedera.node.app.signature.impl.SignatureVerifierImpl;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.TransactionSignature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -50,8 +52,12 @@ import javax.inject.Singleton;
 
 /**
  * Implementation of {@link SignaturePreparer} that delegates to the respective mono-service's functionality
+ *
+ * @deprecated Replace with {@link SignatureVerifierImpl} after we no longer
+ * need to support the mono service.
  */
 @Singleton
+@Deprecated(forRemoval = true)
 public class MonoSignaturePreparer implements SignaturePreparer {
     private final PrecheckVerifier precheckVerifier;
 
@@ -118,7 +124,7 @@ public class MonoSignaturePreparer implements SignaturePreparer {
     @Override
     public TransactionSignature prepareSignature(
             final @NonNull HederaState state,
-            final @NonNull byte[] txBodyBytes,
+            final @NonNull Bytes txBodyBytes,
             final @NonNull SignatureMap signatureMap,
             final @NonNull AccountID accountID) {
         throw new UnsupportedOperationException("Not implemented");
@@ -128,7 +134,7 @@ public class MonoSignaturePreparer implements SignaturePreparer {
     @Override
     public Map<HederaKey, TransactionSignature> prepareSignatures(
             @NonNull HederaState state,
-            @NonNull byte[] txBodyBytes,
+            @NonNull Bytes txBodyBytes,
             @NonNull SignatureMap signatureMap,
             @NonNull Set<HederaKey> keys) {
         throw new UnsupportedOperationException("Not implemented");

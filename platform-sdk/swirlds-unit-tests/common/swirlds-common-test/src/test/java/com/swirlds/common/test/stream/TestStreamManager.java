@@ -26,7 +26,6 @@ import com.swirlds.common.stream.MultiStream;
 import com.swirlds.common.stream.QueueThreadObjectStream;
 import com.swirlds.common.stream.QueueThreadObjectStreamConfiguration;
 import com.swirlds.common.stream.RunningHashCalculatorForStream;
-import com.swirlds.common.system.NodeId;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import org.apache.logging.log4j.LogManager;
@@ -39,7 +38,6 @@ import org.apache.logging.log4j.Logger;
  */
 public class TestStreamManager {
     private static final Logger logger = LogManager.getLogger(TestStreamManager.class);
-    private static final NodeId NODE_ID = new NodeId(false, 0);
     /**
      * receives {@link ObjectForTestStream}s then passes to hashQueueThread
      */

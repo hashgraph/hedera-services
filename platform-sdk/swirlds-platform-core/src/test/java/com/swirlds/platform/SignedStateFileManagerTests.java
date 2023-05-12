@@ -88,7 +88,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 @DisplayName("SignedStateFileManager Tests")
 class SignedStateFileManagerTests {
 
-    private static final NodeId SELF_ID = new NodeId(false, 1234);
+    private static final NodeId SELF_ID = new NodeId(1234);
     private static final String MAIN_CLASS_NAME = "com.swirlds.foobar";
     private static final String SWIRLD_NAME = "mySwirld";
     /**

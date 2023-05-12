@@ -89,7 +89,7 @@ public class ReconnectProtocolResponder implements NetworkProtocolResponder {
                 logger.info(
                         RECONNECT.getMarker(),
                         "Rejecting reconnect request from node {} due to lack of a fully signed state",
-                        connection.getOtherId().getId());
+                        connection.getOtherId().id());
                 ReconnectUtils.denyReconnect(connection);
                 return;
             }
@@ -99,7 +99,7 @@ public class ReconnectProtocolResponder implements NetworkProtocolResponder {
                 logger.warn(
                         RECONNECT.getMarker(),
                         "Rejecting reconnect request from node {} due to lack of an initialized signed state.",
-                        connection.getOtherId().getId());
+                        connection.getOtherId().id());
                 return;
             } else if (!state.get().isComplete()) {
                 // this is only possible if signed state manager violates its contractual obligations
@@ -109,11 +109,11 @@ public class ReconnectProtocolResponder implements NetworkProtocolResponder {
                         "Rejecting reconnect request from node {} due to lack of a fully signed state."
                                 + " The signed state manager attempted to provide a state that was not"
                                 + " fully signed, which should not be possible.",
-                        connection.getOtherId().getId());
+                        connection.getOtherId().id());
                 return;
             }
 
-            if (!reconnectThrottle.initiateReconnect(connection.getOtherId().getId())) {
+            if (!reconnectThrottle.initiateReconnect(connection.getOtherId().id())) {
                 ReconnectUtils.denyReconnect(connection);
                 return;
             }
@@ -124,8 +124,8 @@ public class ReconnectProtocolResponder implements NetworkProtocolResponder {
                                 threadManager,
                                 connection,
                                 settings.getAsyncStreamTimeoutMilliseconds(),
-                                connection.getSelfId().getId(),
-                                connection.getOtherId().getId(),
+                                connection.getSelfId().id(),
+                                connection.getOtherId().id(),
                                 state.get().getRound(),
                                 fallenBehindManager::hasFallenBehind,
                                 stats)

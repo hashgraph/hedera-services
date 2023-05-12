@@ -55,7 +55,7 @@ public abstract class AbstractEventHandlerTests {
     protected Random random;
 
     protected void setup() {
-        selfId = new NodeId(false, 0L);
+        selfId = new NodeId(0L);
         metrics = new NoOpMetrics();
         ssStats = mock(SwirldStateMetrics.class);
         consensusMetrics = mock(ConsensusMetrics.class);

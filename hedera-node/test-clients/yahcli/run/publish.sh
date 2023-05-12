@@ -18,7 +18,7 @@ SCRIPT_PATH="$(cd "$(dirname "${SCRIPT_SOURCE}")" && pwd)"
 
 OLD_CWD="$(pwd)"
 
-cd "${SCRIPT_PATH}/../../.."
+cd "${SCRIPT_PATH}/../../../../"
 ./gradlew assemble
 cd "${SCRIPT_PATH}/.."
 

@@ -105,8 +105,8 @@ public class EmergencyReconnectTeacher {
                                     threadManager,
                                     connection,
                                     reconnectSocketTimeout,
-                                    connection.getSelfId().getId(),
-                                    connection.getOtherId().getId(),
+                                    connection.getSelfId().id(),
+                                    connection.getOtherId().id(),
                                     reservedState.get().getRound(),
                                     requestToStopTeaching,
                                     reconnectMetrics)
