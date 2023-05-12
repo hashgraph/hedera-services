@@ -35,9 +35,9 @@ plugins {
 
 include(":hedera-node")
 
-include(":hedera-node:hedera-admin-service")
+include(":hedera-node:hedera-networkadmin-service")
 
-include(":hedera-node:hedera-admin-service-impl")
+include(":hedera-node:hedera-networkadmin-service-impl")
 
 include(":hedera-node:hedera-consensus-service")
 
@@ -46,10 +46,6 @@ include(":hedera-node:hedera-consensus-service-impl")
 include(":hedera-node:hedera-file-service")
 
 include(":hedera-node:hedera-file-service-impl")
-
-include(":hedera-node:hedera-network-service")
-
-include(":hedera-node:hedera-network-service-impl")
 
 include(":hedera-node:hedera-schedule-service")
 
@@ -146,7 +142,7 @@ dependencyResolutionManagement {
       version("netty-version", "4.1.66.Final")
       version("protobuf-java-version", "3.19.4")
       version("slf4j-version", "2.0.3")
-      version("swirlds-version", "0.38.0-alpha.3")
+      version("swirlds-version", "0.38.0")
       version("tuweni-version", "2.2.0")
       version("jna-version", "5.12.1")
       version("jsr305-version", "3.0.2")

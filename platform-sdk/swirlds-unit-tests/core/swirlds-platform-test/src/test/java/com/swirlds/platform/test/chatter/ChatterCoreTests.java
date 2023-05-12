@@ -25,11 +25,13 @@ import static org.mockito.Mockito.when;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.common.time.OSTime;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.gossip.chatter.ChatterSubSetting;
+import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.test.event.GossipEventBuilder;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
@@ -48,12 +50,14 @@ public class ChatterCoreTests {
     @Test
     @Tag(TIME_CONSUMING)
     void loadFromSignedStateTest() {
-        final ChatterSubSetting chatterSettings = new ChatterSubSetting();
-        chatterSettings.futureGenerationLimit = 100;
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("chatter.futureGenerationLimit", "100")
+                .getOrCreateConfig();
+        final ChatterConfig chatterConfig = configuration.getConfigData(ChatterConfig.class);
 
         final Random random = RandomUtils.getRandomPrintSeed();
         final ChatterCore<GossipEvent> chatterCore = new ChatterCore<>(
-                OSTime.getInstance(), GossipEvent.class, (m) -> {}, chatterSettings, (id, l) -> {}, new NoOpMetrics());
+                OSTime.getInstance(), GossipEvent.class, (m) -> {}, chatterConfig, (id, l) -> {}, new NoOpMetrics());
 
         chatterCore.newPeerInstance(0L, e -> {});
         chatterCore.newPeerInstance(1L, e -> {});
