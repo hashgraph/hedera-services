@@ -124,6 +124,21 @@ public record ConsistencyTestingToolRound(long roundNumber, long currentState, @
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int hashCode() {
+        return Objects.hash(roundNumber, currentState, transactionsContents);
+    }
+
+    /**
+     * Produces a string representation of the object that can be parsed by {@link #fromString}.
+     * <p>
+     * Take care if modifying this method to mirror the change in {@link #fromString}
+     *
+     * @return a string representation of the object
+     */
     @Override
     @NonNull
     public String toString() {

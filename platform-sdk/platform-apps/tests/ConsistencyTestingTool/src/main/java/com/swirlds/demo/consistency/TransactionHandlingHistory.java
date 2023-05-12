@@ -26,6 +26,7 @@ import java.io.BufferedWriter;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -122,7 +123,7 @@ public class TransactionHandlingHistory {
                 final ConsistencyTestingToolRound parsedRound = ConsistencyTestingToolRound.fromString(line);
 
                 if (parsedRound == null) {
-                    logger.error(EXCEPTION.getMarker(), "Failed to parse line from log file: {}", line);
+                    logger.warn(STARTUP.getMarker(), "Failed to parse line from log file: {}", line);
                     return;
                 }
 
@@ -233,8 +234,8 @@ public class TransactionHandlingHistory {
         try {
             writer.write(round.toString());
             writer.flush();
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to write round `%s` to log".formatted(round.roundNumber()), e);
+        } catch (final IOException e) {
+            throw new UncheckedIOException("Failed to write round `%s` to log".formatted(round.roundNumber()), e);
         }
     }
 
