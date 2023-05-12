@@ -488,7 +488,9 @@ class StateSigningTests {
             signedState.addSignature(nodes.get(index).getId(), signatures.get(index));
         }
 
-        assertFalse(sigSet.hasSignature(nodeWithZeroWeight), "Signature for node with zero weight should not be added");
+        assertFalse(
+                sigSet.hasSignature(nodeWithZeroWeight.id()),
+                "Signature for node with zero weight should not be added");
         assertTrue(signedState.isComplete());
 
         final AddressBook newAddressBook = new AddressBook();
