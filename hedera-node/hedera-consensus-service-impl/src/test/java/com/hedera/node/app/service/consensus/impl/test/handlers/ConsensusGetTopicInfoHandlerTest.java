@@ -145,6 +145,23 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
     }
 
     @Test
+    @DisplayName("Topic Id in transaction is needed during validate")
+    void validatesQueryIfInvalidTopicInTrans() throws Throwable {
+        readableTopicState.reset();
+        final var state = MapReadableKVState.<Long, Topic>builder(TOPICS_KEY).build();
+        given(readableStates.<Long, Topic>get(TOPICS_KEY)).willReturn(state);
+        final var store = new ReadableTopicStoreImpl(readableStates);
+
+        final var query = createEmptyGetTopicInfoQuery();
+        when(context.query()).thenReturn(query);
+        when(context.createStore(ReadableTopicStore.class)).thenReturn(store);
+
+        assertThatThrownBy(() -> subject.validate(context))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(ResponseCodeEnum.INVALID_TOPIC_ID));
+    }
+
+    @Test
     @DisplayName("deleted topic is not valid")
     void validatesQueryIfDeletedTopic() throws Throwable {
         givenValidTopic(autoRenewId.accountNum(), true);
@@ -217,6 +234,16 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
                 payerSponsoredPbjTransfer(payerIdLiteral, COMPLEX_KEY_ACCOUNT_KT, beneficiaryIdStr, paymentAmount);
         final var data = ConsensusGetTopicInfoQuery.newBuilder()
                 .topicID(TopicID.newBuilder().topicNum(topicId).build())
+                .header(QueryHeader.newBuilder().payment(payment).build())
+                .build();
+
+        return Query.newBuilder().consensusGetTopicInfo(data).build();
+    }
+
+    private Query createEmptyGetTopicInfoQuery() {
+        final var payment =
+                payerSponsoredPbjTransfer(payerIdLiteral, COMPLEX_KEY_ACCOUNT_KT, beneficiaryIdStr, paymentAmount);
+        final var data = ConsensusGetTopicInfoQuery.newBuilder()
                 .header(QueryHeader.newBuilder().payment(payment).build())
                 .build();
 
