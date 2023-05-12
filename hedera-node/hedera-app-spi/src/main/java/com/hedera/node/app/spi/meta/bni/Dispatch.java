@@ -20,7 +20,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * {@code WritableStates}.
  */
 public interface Dispatch {
-     // --- (SECTION I) Read-only methods that reflects all changes up to and including the current {@link Session}
+     // --- (SECTION I) Read-only methods that reflects all changes up to and including the current {@link Scope}
 
     /**
      * Given an EVM address, resolves to the account or contract number (if any) that this address
