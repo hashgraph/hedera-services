@@ -41,4 +41,5 @@ module com.hedera.node.hapi {
     exports com.hedera.hapi.node.state.consensus;
     exports com.hedera.hapi.node.state.token;
     exports com.hedera.hapi.node.state.common;
+    exports com.hedera.hapi.node.state.contract;
 }

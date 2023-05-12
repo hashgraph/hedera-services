@@ -1,0 +1,263 @@
+package com.hedera.node.app.spi.meta.bni;
+
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.TokenRelationship;
+import com.hedera.hapi.node.state.common.Int256Value;
+import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.Id;
+import com.hedera.hapi.node.state.token.Nft;
+import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+
+/**
+ * Provides indirect state management within a {@link Scope} so a contract can make
+ * atomic changes within an EVM frame across the parts of system state it does not "own".
+ */
+public interface Dispatch {
+     // --- (SECTION I) Read-only methods that reflects all changes up to and including the current {@link Session}
+
+    /**
+     * Given an EVM address, resolves to the account or contract number (if any) that this address
+     * is an alias for.
+     *
+     * @param evmAddress the EVM address
+     * @return the account or contract number, or {@code null} if the address is not an alias
+     */
+    @Nullable
+    Long resolveAlias(@NonNull Bytes evmAddress);
+
+    /**
+     * Returns the {@link Account} with the given number.
+     *
+     * @param number the account number
+     * @return the account, or {@code null} if no such account exists
+     */
+    @Nullable
+    Account getAccount(long number);
+
+    /**
+     * Returns the {@link Token} with the given number.
+     *
+     * @param number the token number
+     * @return the token, or {@code null} if no such token exists
+     */
+    @Nullable
+    Token getToken(long number);
+
+    /**
+     * Returns the {@link Nft} with the given id.
+     *
+     * @param id the NFT id
+     * @return the NFT, or {@code null} if no such NFT exists
+     */
+    @Nullable
+    Nft getNft(@NonNull Id id);
+
+    // --- (SECTION II) State access methods that reflect all changes up to and including the current
+    // --- {@link Scope}, and ALSO have the side effect of externalizing the result via a record whose
+    // --- origin is a given contract number and result is derived from the read state via a given
+    // --- {@link ResultTranslator}
+
+    /**
+     * Returns the {@link Nft} with the given id, and also externalizes the result of the state read
+     * via a record whose (1) origin is a given contract number and (2) result is derived from the
+     * read state via a given {@link ResultTranslator}.
+     *
+     * @param id the NFT id
+     * @param callingContractNumber the number of the contract that is calling this method
+     * @param translator the {@link ResultTranslator} that derives the record result from the read state
+     * @return the NFT, or {@code null} if no such NFT exists
+     */
+    @Nullable
+    Nft getNftAndExternalizeResult(
+            Id id, long callingContractNumber, @NonNull ResultTranslator<Nft> translator);
+
+    /**
+     * Returns the {@link Token} with the given number, and also externalizes the result of the state read
+     * via a record whose (1) origin is a given contract number and (2) result is derived from the
+     * read state via a given {@link ResultTranslator}.
+     *
+     * @param number the token number
+     * @param callingContractNumber the number of the contract that is calling this method
+     * @param translator the {@link ResultTranslator} that derives the record result from the read state
+     * @return the token, or {@code null} if no such token exists
+     */
+    @Nullable
+    Token getTokenAndExternalizeResult(
+            long number, long callingContractNumber, @NonNull ResultTranslator<Token> translator);
+
+    /**
+     * Returns the {@link Account} with the given number, and also externalizes the result of the state read
+     * via a record whose (1) origin is a given contract number and (2) result is derived from the
+     * read state via a given {@link ResultTranslator}.
+     *
+     * @param number the account number
+     * @param callingContractNumber the number of the contract that is calling this method
+     * @param translator the {@link ResultTranslator} that derives the record result from the read state
+     * @return the account, or {@code null} if no such account exists
+     */
+    @Nullable
+    Account getAccountAndExternalizeResult(
+            long number, long callingContractNumber, @NonNull ResultTranslator<Account> translator);
+
+    /**
+     * Returns the {@link TokenRelationship} between the given account and token numbers, and also
+     * externalizes the result of the state read via a record whose (1) origin is a given contract number
+     * and (2) result is derived from the read state via a given {@link ResultTranslator}.
+     *
+     * @param accountNumber the account number in the relationship
+     * @param tokenNumber the token number in the relationship
+     * @param callingContractNumber the number of the contract that is calling this method
+     * @param translator the {@link ResultTranslator} that derives the record result from the read state
+     * @return the relationship, or {@code null} if no such relationship exists
+     */
+    @Nullable
+    TokenRelationship getRelationshipAndExternalizeResult(
+            long accountNumber,
+            long tokenNumber,
+            long callingContractNumber,
+            @NonNull ResultTranslator<TokenRelationship> translator);
+
+    // --- (SECTION III) State mutation methods that reflect all the context up to and including the current
+    // --- {@link Scope}, that do not have any corresponding synthetic {@code TransactionBody}; and/or have such
+    // --- different semantics for signing requirements and record creation that such a dispatch would be pointless
+    // --- overhead.
+
+    /**
+     * Creates a new hollow account with the given EVM address. The implementation of this call should
+     * consume a new entity number for the created new account.
+     *
+     * If this fails due to some non-EVM resource constraints on number of preceding child records (or even on
+     * the total number of accounts in state), should return the appropriate failure code, and
+     * {@link ResponseCodeEnum#OK} otherwise.
+     *
+     * @param evmAddress the EVM address of the new hollow account
+     * @return the result of the creation
+     */
+    ResponseCodeEnum createHollowAccount(@NonNull Bytes evmAddress);
+
+    /**
+     * Finalizes an existing hollow account with the given address as a contract by setting
+     * {@code isContract=true}, {@code key=Key{contractID=...}}, and {@code nonce=1}. As with
+     * a "normal" internal {@code CONTRACT_CREATION}, the record of this finalization should
+     * only be externalized if the top-level HAPI transaction succeeds.
+     *
+     * @param evmAddress the EVM address of the hollow account to finalize as a contract
+     */
+    void finalizeHollowAccountAsContract(@NonNull Bytes evmAddress);
+
+    /**
+     * Transfers value from one account or contract to another without creating a record in this {@link Scope},
+     * performing signature verification for a receiver with {@code receiverSigRequired=true} by giving priority
+     * to the included {@code NonCryptographicSignatureVerification}.
+     *
+     * @param amount the amount to transfer
+     * @param fromEntityNumber the number of the entity to transfer from
+     * @param toEntityNumber the number of the entity to transfer to
+     * @param nonCryptographicSignatureVerification the {@link VerificationStrategy} to use
+     * @return the result of the transfer attempt
+     */
+    ResponseCodeEnum transferValue(
+            long amount,
+            long fromEntityNumber,
+            long toEntityNumber,
+            VerificationStrategy nonCryptographicSignatureVerification);
+
+    /**
+     * Links the given {@code evmAddress} to the given {@code entityNumber} as an alias.
+     *
+     * <p>The entity number does not have to exist yet, since during a {@code CREATE} or {@code CREATE2}
+     * flow we "speculatively" create the pending contract's alias to more naturally implement the API
+     * assumed by the Besu {@code ContractCreationProcessor}.
+     *
+     * @param evmAddress the EVM address to link
+     * @param entityNumber the entity number to link to
+     */
+    void setAlias(@NonNull Bytes evmAddress, long entityNumber);
+
+    /**
+     * Reserves a new entity number for a contract that is about to be created.
+     *
+     * @return the reserved entity number
+     */
+    long reserveEntityNumber();
+
+    /**
+     * Releases the last {@code n} reserved entity numbers.
+     *
+     * @param n the number of reserved entity numbers to release
+     */
+    void releaseLastReserved(int n);
+
+    /**
+     * Creates a new contract with the given entity number and EVM address; and also "links" the alias.
+     * (Though this will have been done speculatively during the current {@code CREATE} or {@code CREATE2}
+     * flow to maintain closer parity with the Besu {@code ContractCreationProcessor}.)
+     *
+     * <p>Any inheritable Hedera-native properties managed by the {@code TokenService} should be set on
+     * the new contract based on the given model account.
+     *
+     * <p>The record of this creation should only be externalized if the top-level HAPI transaction succeeds.
+     *
+     * @param contractNumber the number of the contract to create
+     * @param evmAddress the EVM address of the contract to create
+     * @param model the model account to use for setting Hedera-native properties
+     */
+    void createContract(long contractNumber, @NonNull Bytes evmAddress, @NonNull Account model);
+
+    /**
+     * Deletes the contract whose alias is the given {@code evmAddress}, and also "unlinks" the alias.
+     * Signing requirements are waived, and the record of this deletion should only be externalized if
+     * the top-level HAPI transaction succeeds.
+     *
+     * @param evmAddress the EVM address of the contract to delete
+     */
+    void deleteContract(@NonNull Bytes evmAddress);
+
+    /**
+     * Convenience method to delete an unaliased contract with the given number.
+     *
+     * @param number the number of the contract to delete
+     */
+    void deleteContract(long number);
+
+    /**
+     * Updates the storage metadata for the given contract.
+     *
+     * @param contractNumber the number of the contract
+     * @param firstKey the first key in the storage linked list, or {@code null} if the list is empty
+     * @param slotsUsed the number of storage slots used by the contract
+     */
+    void updateStorageMetadata(long contractNumber, @Nullable Int256Value firstKey, int slotsUsed);
+
+    /**
+     * Attempts to charge the given {@code amount} of rent to the given {@code contractNumber}, with
+     * preference to its auto renew account (if any); falling back to charging the contract itself
+     * if the auto renew account does not exist or does not have sufficient balance.
+     *
+     * @param contractNumber the number of the contract to charge
+     * @param amount the amount to charge
+     * @param itemizeStoragePayments whether to itemize storage payments in the record
+     */
+    ResponseCodeEnum chargeStorageRent(long contractNumber, long amount, boolean itemizeStoragePayments);
+
+    // --- (SECTION IV) A state mutation method that dispatches a synthetic {@code TransactionBody} within
+    // --- the context of the current {@code Scope}, performing signature verification with priority given to the
+    // --- provided {@code NonCryptographicSignatureVerification}.
+    /**
+     * Attempts to dispatch the given {@code syntheticTransaction} in the context of the current
+     * {@link Scope}, performing signature verification with priority given to the included
+     * {@code NonCryptographicSignatureVerification}.
+     *
+     * <p>If the result is {@code SUCCESS}, but this scope or any of its parents revert, the record
+     * of this dispatched should have its stateful side effects cleared and its result set to {@code SUCCESS}.
+     *
+     * @param syntheticTransaction the synthetic transaction to dispatch
+     * @param strategy the non-cryptographic signature verification to use
+     * @return the result of the dispatch
+     */
+    ResponseCodeEnum dispatch(@NonNull TransactionBody syntheticTransaction, @NonNull VerificationStrategy strategy);
+}
