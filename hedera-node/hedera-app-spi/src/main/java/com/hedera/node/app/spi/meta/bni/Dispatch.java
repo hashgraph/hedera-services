@@ -20,49 +20,10 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * {@code WritableStates}.
  */
 public interface Dispatch {
-     // --- (SECTION I) Read-only methods that reflects all changes up to and including the current {@link Scope}
-
-    /**
-     * Given an EVM address, resolves to the account or contract number (if any) that this address
-     * is an alias for.
-     *
-     * @param evmAddress the EVM address
-     * @return the account or contract number, or {@code null} if the address is not an alias
-     */
-    @Nullable
-    Long resolveAlias(@NonNull Bytes evmAddress);
-
-    /**
-     * Returns the {@link Account} with the given number.
-     *
-     * @param number the account number
-     * @return the account, or {@code null} if no such account exists
-     */
-    @Nullable
-    Account getAccount(long number);
-
-    /**
-     * Returns the {@link Token} with the given number.
-     *
-     * @param number the token number
-     * @return the token, or {@code null} if no such token exists
-     */
-    @Nullable
-    Token getToken(long number);
-
-    /**
-     * Returns the {@link Nft} with the given id.
-     *
-     * @param id the NFT id
-     * @return the NFT, or {@code null} if no such NFT exists
-     */
-    @Nullable
-    Nft getNft(@NonNull Id id);
-
-    // --- (SECTION II) State access methods that reflect all changes up to and including the current
-    // --- {@link Scope}, and ALSO have the side effect of externalizing the result via a record whose
-    // --- origin is a given contract number and result is derived from the read state via a given
-    // --- {@link ResultTranslator}
+    // --- (SECTION I) State access methods that reflect all changes up to and including the current
+    // --- {@link Scope}, and ALSO have the side effect of externalizing a result via a record whose
+    // --- {@code contractCallResult} has the given sender contract number; and whose result is derived
+    // --- from the returned state via a given {@link ResultTranslator}
 
     /**
      * Returns the {@link Nft} with the given id, and also externalizes the result of the state read
@@ -124,10 +85,10 @@ public interface Dispatch {
             long callingContractNumber,
             @NonNull ResultTranslator<TokenRelationship> translator);
 
-    // --- (SECTION III) State mutation methods that reflect all the context up to and including the current
-    // --- {@link Scope}, that do not have any corresponding synthetic {@code TransactionBody}; and/or have such
-    // --- different semantics for signing requirements and record creation that such a dispatch would be pointless
-    // --- overhead.
+    // --- (SECTION II) State mutation methods that reflect all the context up to and including the current
+    // --- {@link Scope}, that do not have any corresponding synthetic {@code TransactionBody}; and/or have
+    // --- such different semantics for signing requirements and record creation that such a dispatch would be
+    // --- pointless overhead.
 
     /**
      * Creates a new hollow account with the given EVM address. The implementation of this call should
@@ -155,7 +116,7 @@ public interface Dispatch {
     /**
      * Transfers value from one account or contract to another without creating a record in this {@link Scope},
      * performing signature verification for a receiver with {@code receiverSigRequired=true} by giving priority
-     * to the included {@code NonCryptographicSignatureVerification}.
+     * to the included {@code VerificationStrategy}.
      *
      * @param amount the amount to transfer
      * @param fromEntityNumber the number of the entity to transfer from
@@ -247,13 +208,13 @@ public interface Dispatch {
      */
     ResponseCodeEnum chargeStorageRent(long contractNumber, long amount, boolean itemizeStoragePayments);
 
-    // --- (SECTION IV) A state mutation method that dispatches a synthetic {@code TransactionBody} within
+    // --- (SECTION III) A state mutation method that dispatches a synthetic {@code TransactionBody} within
     // --- the context of the current {@code Scope}, performing signature verification with priority given to the
-    // --- provided {@code NonCryptographicSignatureVerification}.
+    // --- provided {@code VerificationStrategy}.
     /**
      * Attempts to dispatch the given {@code syntheticTransaction} in the context of the current
      * {@link Scope}, performing signature verification with priority given to the included
-     * {@code NonCryptographicSignatureVerification}.
+     * {@code VerificationStrategy}.
      *
      * <p>If the result is {@code SUCCESS}, but this scope or any of its parents revert, the record
      * of this dispatched should have its stateful side effects cleared and its result set to {@code SUCCESS}.
@@ -263,4 +224,43 @@ public interface Dispatch {
      * @return the result of the dispatch
      */
     ResponseCodeEnum dispatch(@NonNull TransactionBody syntheticTransaction, @NonNull VerificationStrategy strategy);
+
+    // --- (SECTION IV) Read-only methods that reflects all changes up to and including the current {@link Scope}
+
+    /**
+     * Given an EVM address, resolves to the account or contract number (if any) that this address
+     * is an alias for.
+     *
+     * @param evmAddress the EVM address
+     * @return the account or contract number, or {@code null} if the address is not an alias
+     */
+    @Nullable
+    Long resolveAlias(@NonNull Bytes evmAddress);
+
+    /**
+     * Returns the {@link Account} with the given number.
+     *
+     * @param number the account number
+     * @return the account, or {@code null} if no such account exists
+     */
+    @Nullable
+    Account getAccount(long number);
+
+    /**
+     * Returns the {@link Token} with the given number.
+     *
+     * @param number the token number
+     * @return the token, or {@code null} if no such token exists
+     */
+    @Nullable
+    Token getToken(long number);
+
+    /**
+     * Returns the {@link Nft} with the given id.
+     *
+     * @param id the NFT id
+     * @return the NFT, or {@code null} if no such NFT exists
+     */
+    @Nullable
+    Nft getNft(@NonNull Id id);
 }
