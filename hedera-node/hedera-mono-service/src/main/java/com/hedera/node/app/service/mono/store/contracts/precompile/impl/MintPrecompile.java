@@ -65,11 +65,6 @@ public class MintPrecompile extends AbstractWritePrecompile {
     private final int functionId;
     private static final List<ByteString> NO_METADATA = Collections.emptyList();
     private static final String MINT = String.format(FAILURE_MESSAGE, "mint");
-    private static final Function MINT_TOKEN_FUNCTION = new Function("mintToken(address,uint64,bytes[])", INT);
-    private static final Function MINT_TOKEN_FUNCTION_V2 = new Function("mintToken(address,int64,bytes[])", INT);
-    public static final Bytes MINT_TOKEN_SELECTOR = Bytes.wrap(MINT_TOKEN_FUNCTION.selector());
-    private static final Bytes MINT_TOKEN_SELECTOR_V2 = Bytes.wrap(MINT_TOKEN_FUNCTION_V2.selector());
-    private static final ABIType<Tuple> MINT_TOKEN_DECODER = TypeFactory.create("(bytes32,int64,bytes[])");
     private final EncodingFacade encoder;
     private final ContractAliases aliases;
     private final EvmSigsVerifier sigsVerifier;

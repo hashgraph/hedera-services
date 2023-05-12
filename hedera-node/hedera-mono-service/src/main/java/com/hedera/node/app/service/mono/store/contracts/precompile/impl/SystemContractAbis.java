@@ -27,7 +27,7 @@ import java.math.BigInteger;
 import org.apache.tuweni.bytes.Bytes;
 
 /**
- * Ground truth for everything related to systen contract ABIs: their names, signatures, argument
+ * Ground truth for everything related to system contract ABIs: their names, signatures, argument
  * decoders, etc., for all versions of each ABI
  * <p>
  * N.B.: Currently ONLY the ABIs in multiple versions are in this enum; it is intended that ALL
@@ -149,7 +149,7 @@ public enum SystemContractAbis {
      * The method parameter decoder returns Objects. In the case of a Solidity `uint64` it will
      * be a `BigInteger`, for a `int64` it will be a `Long`.  Safely convert to a `long` (the given
      * `BigInteger.longValue` does a narrowing primitive conversion (which simply truncates to the
-     * low 64 bits).
+     * low 64 bits)).
      */
     public static long toLongSafely(@NonNull final Object bigNumeric) {
         if (bigNumeric instanceof BigInteger big) {
