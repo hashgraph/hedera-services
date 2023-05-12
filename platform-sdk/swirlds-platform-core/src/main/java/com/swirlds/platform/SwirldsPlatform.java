@@ -633,9 +633,9 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         if (chatterConfig.useChatter()) {
             criticalQuorum = new CriticalQuorumImpl(
-                    metrics, selfId.getId(), initialAddressBook, false, chatterConfig.criticalQuorumSoftening());
+                    metrics, selfId.id(), initialAddressBook, false, chatterConfig.criticalQuorumSoftening());
         } else {
-            criticalQuorum = new CriticalQuorumImpl(metrics, selfId.getId(), initialAddressBook);
+            criticalQuorum = new CriticalQuorumImpl(metrics, selfId.id(), initialAddressBook);
         }
 
         final LoadedState loadedState = initializeLoadedStateFromSignedState(loadedSignedState);

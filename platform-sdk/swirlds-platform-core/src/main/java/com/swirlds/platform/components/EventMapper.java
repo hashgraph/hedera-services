@@ -61,7 +61,7 @@ public class EventMapper implements EventAddedObserver, SelfEventStorage, Cleara
         mappings = new HashMap<>();
 
         metrics.getOrCreate(new FunctionGauge.Config<>(
-                        INFO_CATEGORY, "lastGen", Long.class, () -> getHighestGenerationNumber(selfId.getId()))
+                        INFO_CATEGORY, "lastGen", Long.class, () -> getHighestGenerationNumber(selfId.id()))
                 .withDescription("last event generation number by me")
                 .withFormat("%d"));
     }
