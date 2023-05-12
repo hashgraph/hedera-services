@@ -159,13 +159,11 @@ public class StatsSigningTestingToolMain implements SwirldMain {
             return;
         }
 
-        final long syncDelay;
         this.platform = platform;
-        selfId = id.getId();
+        selfId = id.id();
         // parse the config.txt parameters, and allow optional _ as in 1_000_000
         final String[] parameters = ParameterProvider.getParameters();
         headless = (parameters[0].equals("1"));
-        syncDelay = Integer.parseInt(parameters[2].replaceAll("_", ""));
         bytesPerTrans = Integer.parseInt(parameters[3].replaceAll("_", ""));
         transPerEventMax = Integer.parseInt(parameters[4].replaceAll("_", ""));
         transPerSecToCreate = Integer.parseInt(parameters[5].replaceAll("_", ""));
@@ -185,12 +183,12 @@ public class StatsSigningTestingToolMain implements SwirldMain {
             transPerEventMax = 1024;
         }
         SwirldsGui.setAbout(
-                platform.getSelfId().getId(),
+                platform.getSelfId().id(),
                 "Stats Signing Demo v. 1.3\nThis writes statistics to a log file,"
                         + " such as the number of transactions per second.");
 
         transactionPool = new TransactionPool(
-                platform.getSelfId().getId(),
+                platform.getSelfId().id(),
                 signedTransPoolSize,
                 bytesPerTrans,
                 true,
@@ -205,7 +203,7 @@ public class StatsSigningTestingToolMain implements SwirldMain {
     public void run() {
         final Thread shutdownHook = new ThreadConfiguration(getStaticThreadManager())
                 .setDaemon(false)
-                .setNodeId(platform.getSelfId().getId())
+                .setNodeId(platform.getSelfId().id())
                 .setComponent("app")
                 .setThreadName("demo_log_time_pulse")
                 .setRunnable(() -> {

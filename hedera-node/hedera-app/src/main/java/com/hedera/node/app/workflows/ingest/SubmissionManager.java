@@ -19,8 +19,9 @@ package com.hedera.node.app.workflows.ingest;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.hapi.node.transaction.TransactionReceipt;
+import com.hedera.node.app.annotations.NodeSelfId;
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.node.app.service.mono.context.properties.Profile;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
@@ -33,14 +34,10 @@ import com.swirlds.common.system.Platform;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** The {@code SubmissionManager} provides functionality to submit transactions to the platform. */
 @Singleton
 public class SubmissionManager {
-
-    private static final Logger LOG = LoggerFactory.getLogger(SubmissionManager.class);
     private static final String PLATFORM_TXN_REJECTIONS_NAME = "platformTxnNotCreated/sec";
     private static final String PLATFORM_TXN_REJECTIONS_DESC = "number of platform transactions not created per second";
     private static final String SPEEDOMETER_FORMAT = "%,13.2f";
@@ -49,21 +46,25 @@ public class SubmissionManager {
     private final RecordCache recordCache;
     private final boolean isProduction;
     private final SpeedometerMetric platformTxnRejections;
+    private final AccountID nodeSelfID;
 
     /**
      * Constructor of {@code SubmissionManager}
      *
-     * @param platform            the {@link Platform} to which transactions will be submitted
-     * @param recordCache         the {@link RecordCache} that tracks submitted transactions
+     * @param nodeSelfID the {@link AccountID} for referring to this node's operator account
+     * @param platform the {@link Platform} to which transactions will be submitted
+     * @param recordCache the {@link RecordCache} that tracks submitted transactions
      * @param nodeLocalProperties the {@link NodeLocalProperties} that keep local properties
      * @param metrics             metrics related to submissions
      */
     @Inject
     public SubmissionManager(
+            @NodeSelfId @NonNull final AccountID nodeSelfID,
             @NonNull final Platform platform,
             @NonNull final RecordCache recordCache,
             @NonNull final NodeLocalProperties nodeLocalProperties,
             @NonNull final Metrics metrics) {
+        this.nodeSelfID = requireNonNull(nodeSelfID);
         this.platform = requireNonNull(platform);
         this.recordCache = requireNonNull(recordCache);
         this.isProduction = requireNonNull(nodeLocalProperties).activeProfile() == Profile.PROD;
@@ -91,7 +92,7 @@ public class SubmissionManager {
 
         // Unchecked submits are a mechanism to inject transaction to the system, that bypass all
         // pre-checks. This is used in tests to check the reaction to illegal input.
-        // FIXME This should be deprecated and removed. We do not want this in our production system.
+        // FUTURE This should be deprecated and removed. We do not want this in our production system.
         if (txBody.hasUncheckedSubmit()) {
             // We do NOT allow this call in production!
             if (isProduction) {
@@ -102,14 +103,18 @@ public class SubmissionManager {
             payload = txBody.uncheckedSubmitOrThrow().transactionBytes();
         }
 
-        final var success = platform.createTransaction(PbjConverter.asBytes(payload));
-        if (success) {
-            // TODO This is bogus. We need to actually create the receipt, which is created by services.
-            final var receipt = TransactionReceipt.newBuilder().build();
-            recordCache.addPreConsensus(txBody.transactionIDOrThrow(), receipt);
-        } else {
-            platformTxnRejections.cycle();
-            throw new PreCheckException(PLATFORM_TRANSACTION_NOT_CREATED);
+        // An honest node does not want to submit duplicate transactions (since it will be charged for it), so we will
+        // check whether it has been submitted already. It is still possible under high concurrency that a duplicate
+        // transaction could be submitted, but doing this check here makes it much less likely.
+        final var txId = txBody.transactionIDOrThrow();
+        if (recordCache.get(txId) == null) {
+            final var success = platform.createTransaction(PbjConverter.asBytes(payload));
+            if (success) {
+                recordCache.put(txBody.transactionIDOrThrow(), nodeSelfID);
+            } else {
+                platformTxnRejections.cycle();
+                throw new PreCheckException(PLATFORM_TRANSACTION_NOT_CREATED);
+            }
         }
     }
 }

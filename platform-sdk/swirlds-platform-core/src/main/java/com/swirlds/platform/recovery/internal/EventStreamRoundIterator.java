@@ -53,7 +53,7 @@ public class EventStreamRoundIterator implements IOIterator<Round> {
     public EventStreamRoundIterator(
             final Path eventStreamDirectory, final long startingRound, boolean allowPartialRound) throws IOException {
         this(
-                new EventStreamMultiFileIterator(eventStreamDirectory, startingRound)
+                new EventStreamMultiFileIterator(eventStreamDirectory, new EventStreamRoundLowerBound(startingRound))
                         .transform(EventStreamRoundIterator::convertToEventImpl),
                 allowPartialRound);
     }

@@ -59,7 +59,7 @@ public class AppClient extends Thread {
         SubmitConfig submitConfig = currentConfig.getSubmitConfig();
 
         try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
-                getUnsafeMutableState(platform.getSelfId().getId())) {
+                getUnsafeMutableState(platform.getSelfId().id())) {
             final PlatformTestingToolState state = wrapper.get();
             submitter = new TransactionSubmitter(submitConfig, state.getControlQuorum());
             expectedFCMFamily = state.getStateExpectedMap();
@@ -67,7 +67,7 @@ public class AppClient extends Thread {
 
         transactionPool = new TransactionPool(
                 platform,
-                platform.getSelfId().getId(),
+                platform.getSelfId().id(),
                 payloadConfig,
                 myName,
                 currentConfig.getFcmConfig(),

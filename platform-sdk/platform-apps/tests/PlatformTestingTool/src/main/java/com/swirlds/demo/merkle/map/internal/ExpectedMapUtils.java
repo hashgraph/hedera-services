@@ -54,7 +54,7 @@ public class ExpectedMapUtils {
         }
 
         try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
-                getUnsafeMutableState(platform.getSelfId().getId())) {
+                getUnsafeMutableState(platform.getSelfId().id())) {
             final PlatformTestingToolState state = wrapper.get();
             // rebuild ExpectedMap
             state.rebuildExpectedMapFromState(Instant.EPOCH, true);
@@ -78,7 +78,7 @@ public class ExpectedMapUtils {
         }
 
         try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
-                getUnsafeMutableState(platform.getSelfId().getId())) {
+                getUnsafeMutableState(platform.getSelfId().id())) {
             final PlatformTestingToolState state = wrapper.get();
             state.rebuildExpectedMapFromState(notification.getConsensusTimestamp(), false);
         }

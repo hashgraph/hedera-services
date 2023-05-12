@@ -34,8 +34,7 @@ public final class UnsafeMutablePTTStateAccessor {
      */
     private static final Map<Long /* node ID */, PlatformTestingToolState> states = new HashMap<>();
 
-    private UnsafeMutablePTTStateAccessor() {
-    }
+    private UnsafeMutablePTTStateAccessor() {}
 
     /**
      * Set the most recent mutable copy of the PTT state.

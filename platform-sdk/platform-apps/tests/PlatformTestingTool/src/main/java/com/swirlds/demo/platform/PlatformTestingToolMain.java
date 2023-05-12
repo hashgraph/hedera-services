@@ -346,7 +346,7 @@ public class PlatformTestingToolMain implements SwirldMain {
                     platform, Pair.of(submittedPayloadTriple.getLeft(), submittedPayloadTriple.getMiddle()));
             if (!success) { // if failed keep bytes payload try next time
                 try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
-                        getUnsafeMutableState(platform.getSelfId().getId())) {
+                        getUnsafeMutableState(platform.getSelfId().id())) {
                     Thread.sleep(50);
                     final PlatformTestingToolState state = wrapper.get();
                     ExpectedMapUtils.modifySubmitStatus(state, false, isActive, submittedPayloadTriple, payloadConfig);
@@ -361,7 +361,7 @@ public class PlatformTestingToolMain implements SwirldMain {
                 transactionSubmitted.increment();
                 transactionSubmitSpeedometer.update(1);
                 try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
-                        getUnsafeMutableState(platform.getSelfId().getId())) {
+                        getUnsafeMutableState(platform.getSelfId().id())) {
                     final PlatformTestingToolState state = wrapper.get();
                     ExpectedMapUtils.modifySubmitStatus(state, true, isActive, submittedPayloadTriple, payloadConfig);
                 }
@@ -418,7 +418,7 @@ public class PlatformTestingToolMain implements SwirldMain {
                     @Override
                     public void run() {
                         try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
-                                getUnsafeMutableState(platform.getSelfId().getId())) {
+                                getUnsafeMutableState(platform.getSelfId().id())) {
                             final PlatformTestingToolState state = wrapper.get();
                             if (state != null) {
                                 getCurrentTransactionStat(state);
@@ -535,9 +535,9 @@ public class PlatformTestingToolMain implements SwirldMain {
         platform.getNotificationEngine().register(PlatformStatusChangeListener.class, this::platformStatusChange);
         registerReconnectCompleteListener();
 
-        SwirldsGui.setAbout(selfId.getId(), "Platform Testing Demo");
+        SwirldsGui.setAbout(selfId.id(), "Platform Testing Demo");
         try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
-                getUnsafeMutableState(platform.getSelfId().getId())) {
+                getUnsafeMutableState(platform.getSelfId().id())) {
             final PlatformTestingToolState state = wrapper.get();
 
             state.initControlStructures(this::handleMessageQuorum);
@@ -607,8 +607,7 @@ public class PlatformTestingToolMain implements SwirldMain {
                             final Pair<Long, Long> entitiesFirstIds = extractFirstIdForEntitiesFromSavedState(platform);
                             virtualMerkleConfig.setFirstAccountId(entitiesFirstIds.getKey());
                             virtualMerkleConfig.setFirstSmartContractId(entitiesFirstIds.getValue());
-                            VirtualMerkleStateInitializer.initStateChildren(
-                                    platform, selfId.getId(), virtualMerkleConfig);
+                            VirtualMerkleStateInitializer.initStateChildren(platform, selfId.id(), virtualMerkleConfig);
                         }
                         final Metrics metrics = platform.getContext().getMetrics();
                         if (state.getVirtualMap() != null) {
@@ -628,7 +627,7 @@ public class PlatformTestingToolMain implements SwirldMain {
                     // through calls to the setFirstAccountId and setFirstSmartContractId methods.
                     transactionPool = new TransactionPool(
                             platform,
-                            platform.getSelfId().getId(),
+                            platform.getSelfId().id(),
                             payloadConfig,
                             myName,
                             currentConfig.getFcmConfig(),
@@ -707,7 +706,7 @@ public class PlatformTestingToolMain implements SwirldMain {
     }
 
     private void initializeAppClient(final String[] pars, final ObjectMapper objectMapper) throws IOException {
-        if (pars.length < 2 || !selfId.equalsMain(0)) {
+        if (pars.length < 2 || !selfId.equals(new NodeId(0L))) {
             return;
         }
 
@@ -717,9 +716,9 @@ public class PlatformTestingToolMain implements SwirldMain {
         for (int k = 0; k < CLIENT_AMOUNT; k++) {
             appClient[k] = new AppClient(
                     this.platform,
-                    this.selfId.getId(),
+                    this.selfId.id(),
                     clientConfig,
-                    platform.getAddressBook().getAddress(selfId.getId()).getNickname());
+                    platform.getAddressBook().getAddress(selfId.id()).getNickname());
             appClient[k].start();
         }
     }
@@ -769,7 +768,7 @@ public class PlatformTestingToolMain implements SwirldMain {
 
         // reset interval timestamp before start generating transactions
         try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
-                getUnsafeMutableState(platform.getSelfId().getId())) {
+                getUnsafeMutableState(platform.getSelfId().id())) {
             final PlatformTestingToolState state = wrapper.get();
             state.resetLastFileTranFinishTimeStamp();
         }
@@ -778,7 +777,7 @@ public class PlatformTestingToolMain implements SwirldMain {
 
             // if single mode only node 0 can submit transactions
             // if not single mode anyone can submit transactions
-            if (!submitConfig.isSingleNodeSubmit() || selfId.equalsMain(0)) {
+            if (!submitConfig.isSingleNodeSubmit() || selfId.equals(new NodeId(0L))) {
 
                 if (submitConfig.isSubmitInTurn()) {
                     // Delay the start of transactions by interval multiply by node id
@@ -893,7 +892,7 @@ public class PlatformTestingToolMain implements SwirldMain {
             Thread.sleep(3000);
             while (true) {
                 try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
-                        getUnsafeMutableState(platform.getSelfId().getId())) {
+                        getUnsafeMutableState(platform.getSelfId().id())) {
                     final PlatformTestingToolState state = wrapper.get();
                     if (state != null) {
                         int randomId = random.nextInt(platform.getAddressBook().getSize());
@@ -943,11 +942,11 @@ public class PlatformTestingToolMain implements SwirldMain {
             rebuildExpirationQueue(platform);
 
             try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
-                    getUnsafeMutableState(platform.getSelfId().getId())) {
+                    getUnsafeMutableState(platform.getSelfId().id())) {
                 final PlatformTestingToolState state = wrapper.get();
                 state.initControlStructures(this::handleMessageQuorum);
                 SyntheticBottleneckConfig.getActiveConfig()
-                        .registerReconnect(platform.getSelfId().getId());
+                        .registerReconnect(platform.getSelfId().id());
             }
         });
     }
@@ -959,7 +958,7 @@ public class PlatformTestingToolMain implements SwirldMain {
      */
     private void rebuildExpirationQueue(Platform platform) {
         try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
-                getUnsafeMutableState(platform.getSelfId().getId())) {
+                getUnsafeMutableState(platform.getSelfId().id())) {
             final PlatformTestingToolState state = wrapper.get();
             state.rebuildExpirationQueue();
         }
@@ -991,7 +990,7 @@ public class PlatformTestingToolMain implements SwirldMain {
      */
     private Pair<Long, Long> extractFirstIdForEntitiesFromSavedState(final Platform platform) {
         try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
-                getUnsafeMutableState(platform.getSelfId().getId())) {
+                getUnsafeMutableState(platform.getSelfId().id())) {
 
             final PlatformTestingToolState state = wrapper.get();
 
@@ -1081,11 +1080,11 @@ public class PlatformTestingToolMain implements SwirldMain {
     private void handleEnterValidation(final Instant consensusTime) {
         final Runnable fn = () -> {
             try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
-                    getUnsafeMutableState(platform.getSelfId().getId())) {
+                    getUnsafeMutableState(platform.getSelfId().id())) {
                 final PlatformTestingToolState state = wrapper.get();
 
                 final String expectedMapFile =
-                        createExpectedMapName(platform.getSelfId().getId(), consensusTime);
+                        createExpectedMapName(platform.getSelfId().id(), consensusTime);
                 logger.info(
                         LOGM_DEMO_QUORUM,
                         "Achieved Quorum on ENTER_VALIDATION transaction [ expectedMapFile = {}, consensusTime = {} ]",
@@ -1116,7 +1115,7 @@ public class PlatformTestingToolMain implements SwirldMain {
         };
 
         new ThreadConfiguration(getStaticThreadManager())
-                .setNodeId(platform.getSelfId().getId())
+                .setNodeId(platform.getSelfId().id())
                 .setComponent(PTT_COMPONENT)
                 .setThreadName(ENTER_VALIDATION_THREAD_NAME)
                 .setRunnable(fn)
@@ -1134,7 +1133,7 @@ public class PlatformTestingToolMain implements SwirldMain {
 
             // the first node sends a freeze transaction after all transaction finish
             // This is for guaranteeing that all nodes generated same amount of signed states
-            if (platform.getSelfId().getId() == 0) {
+            if (platform.getSelfId().id() == 0) {
                 sendFreezeTransaction();
             }
 
@@ -1147,7 +1146,7 @@ public class PlatformTestingToolMain implements SwirldMain {
         };
 
         new ThreadConfiguration(getStaticThreadManager())
-                .setNodeId(platform.getSelfId().getId())
+                .setNodeId(platform.getSelfId().id())
                 .setComponent(PTT_COMPONENT)
                 .setThreadName(EXIT_VALIDATION_THREAD_NAME)
                 .setRunnable(fn)
@@ -1210,7 +1209,7 @@ public class PlatformTestingToolMain implements SwirldMain {
         ScheduledFuture<?> future = scheduledThreadPoolExecutor.scheduleAtFixedRate(
                 () -> {
                     try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
-                            getUnsafeMutableState(platform.getSelfId().getId())) {
+                            getUnsafeMutableState(platform.getSelfId().id())) {
                         // this watch is for counting the time cost in each query on current state
                         StopWatch watch = new StopWatch();
                         watch.start();

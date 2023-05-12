@@ -55,8 +55,6 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.Label;
 import java.awt.TextField;
-import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
 import java.awt.geom.Rectangle2D;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -245,7 +243,7 @@ public class HashgraphDemoMain implements SwirldMain {
             print(g, "%5.3f sec, create to consensus", createCons);
             print(g, "%5.3f sec, receive to consensus", recCons);
             final Address address =
-                    platform.getAddressBook().getAddress(platform.getSelfId().getId());
+                    platform.getAddressBook().getAddress(platform.getSelfId().id());
             print(g, "Internal: " + Network.getInternalIPAddress() + " : " + address.getPortInternalIpv4(), 0);
 
             final ExternalIpAddress ipAddress = Network.getExternalIpAddress();
@@ -393,11 +391,11 @@ public class HashgraphDemoMain implements SwirldMain {
     @Override
     public void init(final Platform platform, final NodeId id) {
         this.platform = platform;
-        this.selfId = id.getId();
+        this.selfId = id.id();
         final String[] parameters = ParameterProvider.getParameters();
 
         SwirldsGui.setAbout(
-                platform.getSelfId().getId(),
+                platform.getSelfId().id(),
                 "Hashgraph Demo v. 1.1\n" + "\n"
                         + "trans/sec = # transactions added to the hashgraph per second\n"
                         + "events/sec = # events added to the hashgraph per second\n"
@@ -428,9 +426,7 @@ public class HashgraphDemoMain implements SwirldMain {
         eventLimit = new TextField(parameters.length <= p ? "" : parameters[p].trim(), 5);
         p++;
 
-        slowCheckbox.addItemListener(new ItemListener() {
-            public void itemStateChanged(final ItemEvent e) {}
-        });
+        slowCheckbox.addItemListener(e -> {});
 
         final GridBagConstraints constr = new GridBagConstraints();
         constr.fill = GridBagConstraints.NONE; // don't stretch components

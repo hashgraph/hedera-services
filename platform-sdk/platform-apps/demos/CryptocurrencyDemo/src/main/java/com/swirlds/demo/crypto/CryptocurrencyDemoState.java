@@ -87,10 +87,6 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
         ask // run slow/fast or broadcast a bid/ask
     }
 
-    /** in slow mode, number of milliseconds to sleep after each outgoing sync */
-    private static final int delaySlowSync = 1000;
-    /** in fast mode, number of milliseconds to sleep after each outgoing sync */
-    private static final int delayFastSync = 0;
     /** number of different stocks that can be bought and sold */
     public static final int NUM_STOCKS = 10;
     /** remember the last MAX_TRADES trades that occurred. */
@@ -228,9 +224,8 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
         if (transaction == null || transaction.getContents().length == 0) {
             return;
         }
-        if (transaction.getContents()[0] == TransType.slow.ordinal()) {
-            return;
-        } else if (transaction.getContents()[0] == TransType.fast.ordinal()) {
+        if (transaction.getContents()[0] == TransType.slow.ordinal()
+                || transaction.getContents()[0] == TransType.fast.ordinal()) {
             return;
         } else if (!isConsensus || transaction.getContents().length < 3) {
             return; // ignore any bid/ask that doesn't have consensus yet

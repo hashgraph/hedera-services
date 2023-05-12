@@ -254,7 +254,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
                 OSTime.getInstance(),
                 dispatchBuilder,
                 stateConfig,
-                selfId.getId(),
+                selfId.id(),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
                 issConsumer);
