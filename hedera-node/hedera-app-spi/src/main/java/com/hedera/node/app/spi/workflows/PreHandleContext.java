@@ -21,6 +21,7 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -70,6 +71,14 @@ public interface PreHandleContext {
      */
     @NonNull
     Set<Key> requiredNonPayerKeys();
+
+    /**
+     * Gets an immutable copy of the list of required hollow accounts that need signatures.
+     *
+     * @return the {@link Set} of hollow accounts required
+     */
+    @NonNull
+    Set<Account> requiredHollowAccounts();
 
     /**
      * Getter for the payer key
@@ -173,6 +182,19 @@ public interface PreHandleContext {
     PreHandleContext requireKeyIfReceiverSigRequired(
             @Nullable final ContractID contractID, @NonNull final ResponseCodeEnum responseCode)
             throws PreCheckException;
+
+    /**
+     * Adds the given hollow account to the required signing set. If the account has already been added, then
+     * the call is a no-op. The account must not be null. During signature verification, the app will verify that the
+     * transaction was signed by an ECDSA(secp256k1) key corresponding to the given account's alias. If the account
+     * is not a hollow account, an exception will be thrown,
+     *
+     * @param hollowAccount the EVM address alias
+     * @return {@code this} object
+     * @throws IllegalArgumentException if the account is not a hollow account
+     */
+    @NonNull
+    PreHandleContext requireSignatureForHollowAccount(@NonNull final Account hollowAccount);
 
     /**
      * Creates a new {@link PreHandleContext} for a nested transaction. The nested transaction will be set on this

@@ -30,7 +30,6 @@ import com.swirlds.common.stream.QueueThreadObjectStreamConfiguration;
 import com.swirlds.common.stream.RunningHashCalculatorForStream;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.stream.internal.TimestampStreamFileWriter;
-import com.swirlds.common.system.NodeId;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
@@ -44,7 +43,6 @@ import java.util.LinkedList;
  * sends objects to LinkedObjectStream objects for calculating RunningHash and serializing to disk
  */
 public class StreamObjectWorker {
-    public static final NodeId NODE_ID = new NodeId(false, 0);
     /** receives objects from runningHashCalculator, then passes to writeConsumer */
     private final QueueThreadObjectStream<ObjectForTestStream> writeQueueThread;
 

@@ -66,7 +66,7 @@ public class AppClient extends Thread {
 
         transactionPool = new TransactionPool(
                 platform,
-                platform.getSelfId().getId(),
+                platform.getSelfId().id(),
                 payloadConfig,
                 myName,
                 currentConfig.getFcmConfig(),

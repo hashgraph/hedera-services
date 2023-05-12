@@ -39,7 +39,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 class EventStreamManagerTest {
-    private static final NodeId selfId = new NodeId(false, 0);
+    private static final NodeId selfId = new NodeId(0);
     private static final String nodeName = "node0";
     private static final String eventsLogDir = "eventStream/";
     private static final long eventsLogPeriod = 5;
