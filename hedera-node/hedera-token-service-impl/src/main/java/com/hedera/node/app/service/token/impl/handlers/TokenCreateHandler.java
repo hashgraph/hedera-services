@@ -47,8 +47,8 @@ import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.config.TokenServiceConfig;
 import com.hedera.node.app.service.token.impl.records.CreateTokenRecordBuilder;
 import com.hedera.node.app.service.token.impl.records.TokenCreateRecordBuilder;
-import com.hedera.node.app.service.token.impl.validator.CustomFeesValidator;
-import com.hedera.node.app.service.token.impl.validator.TokenTypeValidator;
+import com.hedera.node.app.service.token.impl.validators.CustomFeesValidator;
+import com.hedera.node.app.service.token.impl.validators.TokenTypeValidator;
 import com.hedera.node.app.spi.config.ConfigProvider;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
@@ -146,17 +146,20 @@ public class TokenCreateHandler implements TransactionHandler {
         final var requireCollectorAutoAssociation = customFeesValidator.validateCreation(
                 newToken, readableAccountStore, tokenRelationStore, tokenStore, op.customFees());
 
+        // associate token with treasury and collector ids of custom fees whose token denomination
+        // is set to sentinel value
         final var newRels = associateNeededAccounts(
                 newToken, readableAccountStore, tokenRelationStore, requireCollectorAutoAssociation);
         if(op.initialSupply() > 0){
             final var treasuryRel = newRels.get(0);
             validateTrue(op.initialSupply() >= 0, INVALID_TOKEN_MINT_AMOUNT);
             validateTrue(newToken.tokenType().equals(FUNGIBLE_COMMON), FAIL_INVALID); // fail invalid ???
-            chnageSupply(treasuryRel, op.initialSupply());
+            changeSupply(treasuryRel, op.initialSupply());
         }
 
         // Keep token into modifications in token store
         tokenStore.put(newToken);
+        newRels.forEach(rel -> tokenRelationStore.put(rel));
     }
 
     private List<TokenRelation> associateNeededAccounts(Token newToken,
