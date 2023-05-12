@@ -237,6 +237,10 @@ public class LeakyContractTestsSuite extends HapiSuite {
     private static final String TRANSFER_CONTRACT = "NonDelegateCryptoTransfer";
     private static final String CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS = "contracts.allowSystemUseOfHapiSigs";
     private static final String CRYPTO_TRANSFER = "CryptoTransfer";
+    private static final String TOKEN_TRANSFER_CONTRACT = "TokenTransferContract";
+    private static final String TRANSFER_WORKS_WITH_TOP_LEVEL_SIGNATURES = "transferWorksWithTopLevelSignatures";
+    private static final String TRANSFER_TOKEN_PUBLIC = "transferTokenPublic";
+    private static final String HEDERA_ALLOWANCES_IS_ENABLED = "hedera.allowances.isEnabled";
 
     public static void main(String... args) {
         new LeakyContractTestsSuite().runSuiteSync();
@@ -283,9 +287,9 @@ public class LeakyContractTestsSuite extends HapiSuite {
 
     private HapiSpec transferErc20TokenFromErc721TokenFails() {
         return propertyPreservingHapiSpec("ERC_20_TRANSFER_FROM_ERC_721_TOKEN")
-                .preserving("hedera.allowances.isEnabled")
+                .preserving(HEDERA_ALLOWANCES_IS_ENABLED)
                 .given(
-                        overriding("hedera.allowances.isEnabled", "true"),
+                        overriding(HEDERA_ALLOWANCES_IS_ENABLED, "true"),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(100 * ONE_MILLION_HBARS),
                         cryptoCreate(RECIPIENT),
@@ -452,12 +456,12 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var transferTokensTxn = "transferTokensTxn";
         final var transferNFTTxn = "transferNFTTxn";
         final var transferNFTsTxn = "transferNFTsTxn";
-        final var contract = "TokenTransferContract";
+        final var contract = TOKEN_TRANSFER_CONTRACT;
 
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaNftID = new AtomicReference<>();
-        return propertyPreservingHapiSpec("transferWorksWithTopLevelSignatures")
+        return propertyPreservingHapiSpec(TRANSFER_WORKS_WITH_TOP_LEVEL_SIGNATURES)
                 .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS)
                 .given(
                         // disable top level signatures for all functions
@@ -513,7 +517,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                     spec,
                                     contractCall(
                                                     contract,
-                                                    "transferTokenPublic",
+                                                    TRANSFER_TOKEN_PUBLIC,
                                                     HapiParserUtil.asHeadlongAddress(asAddress(
                                                             spec.registry().getTokenID(VANILLA_TOKEN))),
                                                     sender,
@@ -591,12 +595,12 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var transferTokensTxn = "transferTokensTxn";
         final var transferNFTTxn = "transferNFTTxn";
         final var transferNFTsTxn = "transferNFTsTxn";
-        final var contract = "TokenTransferContract";
+        final var contract = TOKEN_TRANSFER_CONTRACT;
 
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaNftID = new AtomicReference<>();
-        return propertyPreservingHapiSpec("transferWorksWithTopLevelSignatures")
+        return propertyPreservingHapiSpec(TRANSFER_WORKS_WITH_TOP_LEVEL_SIGNATURES)
                 .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS)
                 .given(
                         // enable top level signatures for
@@ -652,7 +656,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                     spec,
                                     contractCall(
                                                     contract,
-                                                    "transferTokenPublic",
+                                                    TRANSFER_TOKEN_PUBLIC,
                                                     HapiParserUtil.asHeadlongAddress(asAddress(
                                                             spec.registry().getTokenID(VANILLA_TOKEN))),
                                                     sender,
@@ -747,12 +751,11 @@ public class LeakyContractTestsSuite extends HapiSuite {
     private HapiSpec transferFailsWithIncorrectAmounts() {
         final var transferTokenWithNegativeAmountTxn = "transferTokenWithNegativeAmountTxn";
         final var transferTokenWithZeroAmountTxn = "transferTokenWithZeroAmountTxn";
-        final var contract = "TokenTransferContract";
+        final var contract = TOKEN_TRANSFER_CONTRACT;
 
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
-        final AtomicReference<TokenID> vanillaNftID = new AtomicReference<>();
-        return propertyPreservingHapiSpec("transferWorksWithTopLevelSignatures")
+        return propertyPreservingHapiSpec(TRANSFER_WORKS_WITH_TOP_LEVEL_SIGNATURES)
                 .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS)
                 .given(
                         overriding(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CRYPTO_TRANSFER),
@@ -782,7 +785,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                             // Call tokenTransfer with a negative amount
                             contractCall(
                                             contract,
-                                            "transferTokenPublic",
+                                            TRANSFER_TOKEN_PUBLIC,
                                             HapiParserUtil.asHeadlongAddress(
                                                     asAddress(spec.registry().getTokenID(VANILLA_TOKEN))),
                                             sender,
@@ -795,7 +798,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                             // Call tokenTransfer with a zero amount
                             contractCall(
                                             contract,
-                                            "transferTokenPublic",
+                                            TRANSFER_TOKEN_PUBLIC,
                                             HapiParserUtil.asHeadlongAddress(
                                                     asAddress(spec.registry().getTokenID(VANILLA_TOKEN))),
                                             sender,
@@ -1937,7 +1940,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
     private HapiSpec erc20TransferFromDoesNotWorkIfFlagIsDisabled() {
         return defaultHapiSpec("erc20TransferFromDoesNotWorkIfFlagIsDisabled")
                 .given(
-                        overriding("hedera.allowances.isEnabled", FALSE),
+                        overriding(HEDERA_ALLOWANCES_IS_ENABLED, FALSE),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
                         cryptoCreate(RECIPIENT),
@@ -1975,7 +1978,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         getTxnRecord(TRANSFER_FROM_ACCOUNT_TXN)
                                 .logged(), // has gasUsed little less than supplied 500K in
                         // contractCall result
-                        overriding("hedera.allowances.isEnabled", "true"));
+                        overriding(HEDERA_ALLOWANCES_IS_ENABLED, "true"));
     }
 
     private HapiSpec whitelistPositiveCase() {

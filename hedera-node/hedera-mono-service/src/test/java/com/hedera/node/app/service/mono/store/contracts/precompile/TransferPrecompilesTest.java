@@ -173,6 +173,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -2350,9 +2351,12 @@ class TransferPrecompilesTest {
         transferPrecompile
                 .when(() -> decodeTransferToken(NEGATIVE_AMOUNT_TRANSFER_TOKEN_INPUT, identity(), accoundIdExists))
                 .thenCallRealMethod();
-        assertThrows(
+        UnaryOperator<byte[]> identity = identity();
+        IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> decodeTransferToken(NEGATIVE_AMOUNT_TRANSFER_TOKEN_INPUT, identity(), accoundIdExists));
+                () -> decodeTransferToken(NEGATIVE_AMOUNT_TRANSFER_TOKEN_INPUT, identity, accoundIdExists));
+
+        assertEquals("Amount must be positive", exception.getMessage());
     }
 
     @Test
@@ -2360,9 +2364,12 @@ class TransferPrecompilesTest {
         transferPrecompile
                 .when(() -> decodeTransferToken(ZERO_AMOUNT_TRANSFER_TOKEN_INPUT, identity(), accoundIdExists))
                 .thenCallRealMethod();
-        assertThrows(
+        UnaryOperator<byte[]> identity = identity();
+        IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> decodeTransferToken(ZERO_AMOUNT_TRANSFER_TOKEN_INPUT, identity(), accoundIdExists));
+                () -> decodeTransferToken(ZERO_AMOUNT_TRANSFER_TOKEN_INPUT, identity, accoundIdExists));
+
+        assertEquals("Amount must be positive", exception.getMessage());
     }
 
     @Test
