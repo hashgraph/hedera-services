@@ -75,7 +75,6 @@ class OutboundConnectionManagerTest {
     void concurrencyTest() throws InterruptedException {
         final int numThreads = 10;
         final NodeId nodeId = new NodeId(0L);
-        ;
         final OutboundConnectionCreator creator = mock(OutboundConnectionCreator.class);
         final Connection connection = new FakeConnection();
         final CountDownLatch waitingForConnection = new CountDownLatch(1);
