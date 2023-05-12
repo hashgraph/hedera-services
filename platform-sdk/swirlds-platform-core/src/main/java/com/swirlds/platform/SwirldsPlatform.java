@@ -1844,24 +1844,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     /**
      * {@inheritDoc}
      */
-    @Deprecated(forRemoval = true)
-    @Override
-    public <T extends SwirldState> T getState() {
-        return (T) swirldStateManager.getCurrentSwirldState();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Deprecated(forRemoval = true)
-    @Override
-    public void releaseState() {
-        swirldStateManager.releaseCurrentSwirldState();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     @SuppressWarnings("unchecked")
     @Override
     public <T extends SwirldState> AutoCloseableWrapper<T> getLatestImmutableState(@NonNull final String reason) {

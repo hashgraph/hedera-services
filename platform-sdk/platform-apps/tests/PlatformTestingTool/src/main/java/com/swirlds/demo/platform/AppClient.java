@@ -16,8 +16,10 @@
 
 package com.swirlds.demo.platform;
 
+import static com.swirlds.demo.platform.UnsafeMutablePTTStateAccessor.getUnsafeMutableState;
+
 import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.PlatformWithDeprecatedMethods;
+import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.demo.merkle.map.internal.ExpectedFCMFamily;
 
 /*
@@ -56,12 +58,11 @@ public class AppClient extends Thread {
 
         SubmitConfig submitConfig = currentConfig.getSubmitConfig();
 
-        final PlatformTestingToolState state = ((PlatformWithDeprecatedMethods) platform).getState();
-        try {
+        try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
+                getUnsafeMutableState(platform.getSelfId().getId())) {
+            final PlatformTestingToolState state = wrapper.get();
             submitter = new TransactionSubmitter(submitConfig, state.getControlQuorum());
             expectedFCMFamily = state.getStateExpectedMap();
-        } finally {
-            ((PlatformWithDeprecatedMethods) platform).releaseState();
         }
 
         transactionPool = new TransactionPool(

@@ -30,6 +30,7 @@ import static com.swirlds.common.metrics.FloatFormats.FORMAT_6_2;
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_9_6;
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.demo.platform.UnsafeMutablePTTStateAccessor.getUnsafeMutableState;
 import static com.swirlds.logging.LogMarker.DEMO_INFO;
 import static com.swirlds.merkle.map.test.lifecycle.EntityType.Crypto;
 import static com.swirlds.merkle.map.test.lifecycle.SaveExpectedMapHandler.STORAGE_DIRECTORY;
@@ -54,11 +55,11 @@ import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.PlatformStatus;
-import com.swirlds.common.system.PlatformWithDeprecatedMethods;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
+import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.common.utility.Units;
 import com.swirlds.demo.merkle.map.FCMConfig;
 import com.swirlds.demo.merkle.map.MapValueData;
@@ -344,14 +345,13 @@ public class PlatformTestingToolMain implements SwirldMain {
             boolean success = submitter.trySubmit(
                     platform, Pair.of(submittedPayloadTriple.getLeft(), submittedPayloadTriple.getMiddle()));
             if (!success) { // if failed keep bytes payload try next time
-                try {
+                try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
+                        getUnsafeMutableState(platform.getSelfId().getId())) {
                     Thread.sleep(50);
-                    final PlatformTestingToolState state = ((PlatformWithDeprecatedMethods) platform).getState();
+                    final PlatformTestingToolState state = wrapper.get();
                     ExpectedMapUtils.modifySubmitStatus(state, false, isActive, submittedPayloadTriple, payloadConfig);
                 } catch (InterruptedException e) {
                     logger.error(LOGM_EXCEPTION, "", e);
-                } finally {
-                    ((PlatformWithDeprecatedMethods) platform).releaseState();
                 }
                 return false;
             } else {
@@ -360,11 +360,10 @@ public class PlatformTestingToolMain implements SwirldMain {
                 }
                 transactionSubmitted.increment();
                 transactionSubmitSpeedometer.update(1);
-                try {
-                    final PlatformTestingToolState state = ((PlatformWithDeprecatedMethods) platform).getState();
+                try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
+                        getUnsafeMutableState(platform.getSelfId().getId())) {
+                    final PlatformTestingToolState state = wrapper.get();
                     ExpectedMapUtils.modifySubmitStatus(state, true, isActive, submittedPayloadTriple, payloadConfig);
-                } finally {
-                    ((PlatformWithDeprecatedMethods) platform).releaseState();
                 }
 
                 submittedPayloadTriple = null; // release the payload
@@ -418,14 +417,12 @@ public class PlatformTestingToolMain implements SwirldMain {
                 new TimerTask() {
                     @Override
                     public void run() {
-                        try {
-                            final PlatformTestingToolState state =
-                                    ((PlatformWithDeprecatedMethods) platform).getState();
+                        try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
+                                getUnsafeMutableState(platform.getSelfId().getId())) {
+                            final PlatformTestingToolState state = wrapper.get();
                             if (state != null) {
                                 getCurrentTransactionStat(state);
                             }
-                        } finally {
-                            ((PlatformWithDeprecatedMethods) platform).releaseState();
                         }
                     }
                 },
@@ -539,8 +536,9 @@ public class PlatformTestingToolMain implements SwirldMain {
         registerReconnectCompleteListener();
 
         SwirldsGui.setAbout(selfId.getId(), "Platform Testing Demo");
-        try {
-            final PlatformTestingToolState state = ((PlatformWithDeprecatedMethods) platform).getState();
+        try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
+                getUnsafeMutableState(platform.getSelfId().getId())) {
+            final PlatformTestingToolState state = wrapper.get();
 
             state.initControlStructures(this::handleMessageQuorum);
 
@@ -664,8 +662,6 @@ public class PlatformTestingToolMain implements SwirldMain {
         } catch (final NullPointerException e) {
             logger.error(LOGM_EXCEPTION, "ERROR in parsing JSON configuration file. ", e);
             exit(-2);
-        } finally {
-            ((PlatformWithDeprecatedMethods) platform).releaseState();
         }
 
         initAppStat();
@@ -772,11 +768,10 @@ public class PlatformTestingToolMain implements SwirldMain {
         nftQueryController.launch();
 
         // reset interval timestamp before start generating transactions
-        try {
-            final PlatformTestingToolState state = ((PlatformWithDeprecatedMethods) platform).getState();
+        try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
+                getUnsafeMutableState(platform.getSelfId().getId())) {
+            final PlatformTestingToolState state = wrapper.get();
             state.resetLastFileTranFinishTimeStamp();
-        } finally {
-            ((PlatformWithDeprecatedMethods) platform).releaseState();
         }
 
         if (allowRunSubmit) {
@@ -897,8 +892,9 @@ public class PlatformTestingToolMain implements SwirldMain {
         try {
             Thread.sleep(3000);
             while (true) {
-                try {
-                    final PlatformTestingToolState state = ((PlatformWithDeprecatedMethods) platform).getState();
+                try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
+                        getUnsafeMutableState(platform.getSelfId().getId())) {
+                    final PlatformTestingToolState state = wrapper.get();
                     if (state != null) {
                         int randomId = random.nextInt(platform.getAddressBook().getSize());
                         TransactionCounter txCounter =
@@ -923,9 +919,6 @@ public class PlatformTestingToolMain implements SwirldMain {
                             }
                         }
                     }
-
-                } finally {
-                    ((PlatformWithDeprecatedMethods) platform).releaseState();
                 }
                 Thread.sleep(3000);
             }
@@ -949,13 +942,12 @@ public class PlatformTestingToolMain implements SwirldMain {
             ExpectedMapUtils.buildExpectedMapAfterReconnect(notification, platform);
             rebuildExpirationQueue(platform);
 
-            try {
-                final PlatformTestingToolState state = ((PlatformWithDeprecatedMethods) platform).getState();
+            try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
+                    getUnsafeMutableState(platform.getSelfId().getId())) {
+                final PlatformTestingToolState state = wrapper.get();
                 state.initControlStructures(this::handleMessageQuorum);
                 SyntheticBottleneckConfig.getActiveConfig()
                         .registerReconnect(platform.getSelfId().getId());
-            } finally {
-                ((PlatformWithDeprecatedMethods) platform).releaseState();
             }
         });
     }
@@ -966,11 +958,10 @@ public class PlatformTestingToolMain implements SwirldMain {
      * @param platform
      */
     private void rebuildExpirationQueue(Platform platform) {
-        try {
-            final PlatformTestingToolState state = ((PlatformWithDeprecatedMethods) platform).getState();
+        try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
+                getUnsafeMutableState(platform.getSelfId().getId())) {
+            final PlatformTestingToolState state = wrapper.get();
             state.rebuildExpirationQueue();
-        } finally {
-            ((PlatformWithDeprecatedMethods) platform).releaseState();
         }
     }
 
@@ -999,32 +990,36 @@ public class PlatformTestingToolMain implements SwirldMain {
      * 		account entities and {@code Pair.getKey()} returns the first id to be used by smart contracts.
      */
     private Pair<Long, Long> extractFirstIdForEntitiesFromSavedState(final Platform platform) {
-        final PlatformTestingToolState state = ((PlatformWithDeprecatedMethods) platform).getState();
+        try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
+                getUnsafeMutableState(platform.getSelfId().getId())) {
 
-        final AtomicLong maxAccountIdFromLoadedState = new AtomicLong(0);
-        if (state.getVirtualMap() != null) {
-            new MerkleIterator<VirtualLeafNode<AccountVirtualMapKey, AccountVirtualMapValue>>(state.getVirtualMap())
-                    .setFilter(node -> node instanceof VirtualLeafNode)
-                    .forEachRemaining(leaf -> {
-                        final AccountVirtualMapKey key = leaf.getKey();
-                        maxAccountIdFromLoadedState.set(
-                                Math.max(key.getAccountID() + 1, maxAccountIdFromLoadedState.get()));
-                    });
+            final PlatformTestingToolState state = wrapper.get();
+
+            final AtomicLong maxAccountIdFromLoadedState = new AtomicLong(0);
+            if (state.getVirtualMap() != null) {
+                new MerkleIterator<VirtualLeafNode<AccountVirtualMapKey, AccountVirtualMapValue>>(state.getVirtualMap())
+                        .setFilter(node -> node instanceof VirtualLeafNode)
+                        .forEachRemaining(leaf -> {
+                            final AccountVirtualMapKey key = leaf.getKey();
+                            maxAccountIdFromLoadedState.set(
+                                    Math.max(key.getAccountID() + 1, maxAccountIdFromLoadedState.get()));
+                        });
+            }
+
+            final AtomicLong maxSmartContractIdFromLoadedState = new AtomicLong(0);
+            if (state.getVirtualMapForSmartContractsByteCode() != null) {
+                new MerkleIterator<VirtualLeafNode<SmartContractByteCodeMapKey, SmartContractByteCodeMapValue>>(
+                                state.getVirtualMapForSmartContractsByteCode())
+                        .setFilter(node -> node instanceof VirtualLeafNode)
+                        .forEachRemaining(leaf -> {
+                            final SmartContractByteCodeMapKey key = leaf.getKey();
+                            maxSmartContractIdFromLoadedState.set(
+                                    Math.max(key.getContractId() + 1, maxSmartContractIdFromLoadedState.get()));
+                        });
+            }
+
+            return Pair.of(maxAccountIdFromLoadedState.get(), maxSmartContractIdFromLoadedState.get());
         }
-
-        final AtomicLong maxSmartContractIdFromLoadedState = new AtomicLong(0);
-        if (state.getVirtualMapForSmartContractsByteCode() != null) {
-            new MerkleIterator<VirtualLeafNode<SmartContractByteCodeMapKey, SmartContractByteCodeMapValue>>(
-                            state.getVirtualMapForSmartContractsByteCode())
-                    .setFilter(node -> node instanceof VirtualLeafNode)
-                    .forEachRemaining(leaf -> {
-                        final SmartContractByteCodeMapKey key = leaf.getKey();
-                        maxSmartContractIdFromLoadedState.set(
-                                Math.max(key.getContractId() + 1, maxSmartContractIdFromLoadedState.get()));
-                    });
-        }
-
-        return Pair.of(maxAccountIdFromLoadedState.get(), maxSmartContractIdFromLoadedState.get());
     }
 
     /**
@@ -1085,8 +1080,9 @@ public class PlatformTestingToolMain implements SwirldMain {
 
     private void handleEnterValidation(final Instant consensusTime) {
         final Runnable fn = () -> {
-            try {
-                final PlatformTestingToolState state = ((PlatformWithDeprecatedMethods) platform).getState();
+            try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
+                    getUnsafeMutableState(platform.getSelfId().getId())) {
+                final PlatformTestingToolState state = wrapper.get();
 
                 final String expectedMapFile =
                         createExpectedMapName(platform.getSelfId().getId(), consensusTime);
@@ -1116,8 +1112,6 @@ public class PlatformTestingToolMain implements SwirldMain {
 
                 logger.info(
                         LOGM_DEMO_QUORUM, "Sent EXIT_VALIDATION transaction  [ consensusTime = {} ]", consensusTime);
-            } finally {
-                ((PlatformWithDeprecatedMethods) platform).releaseState();
             }
         };
 
@@ -1215,11 +1209,12 @@ public class PlatformTestingToolMain implements SwirldMain {
         ScheduledThreadPoolExecutor scheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(3);
         ScheduledFuture<?> future = scheduledThreadPoolExecutor.scheduleAtFixedRate(
                 () -> {
-                    try {
+                    try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
+                            getUnsafeMutableState(platform.getSelfId().getId())) {
                         // this watch is for counting the time cost in each query on current state
                         StopWatch watch = new StopWatch();
                         watch.start();
-                        final PlatformTestingToolState state = ((PlatformWithDeprecatedMethods) platform).getState();
+                        final PlatformTestingToolState state = wrapper.get();
                         // suspend because we don't want to count the time spent on picking up a MapKey for this query
                         watch.suspend();
                         if (state != null) {
@@ -1238,8 +1233,6 @@ public class PlatformTestingToolMain implements SwirldMain {
                         } else {
                             watch.stop();
                         }
-                    } finally {
-                        ((PlatformWithDeprecatedMethods) platform).releaseState();
                     }
                 },
                 0,

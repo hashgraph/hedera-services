@@ -16,9 +16,11 @@
 
 package com.swirlds.demo.merkle.map.internal;
 
+import static com.swirlds.demo.platform.UnsafeMutablePTTStateAccessor.getUnsafeMutableState;
+
 import com.swirlds.common.notification.listeners.ReconnectCompleteNotification;
 import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.PlatformWithDeprecatedMethods;
+import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.demo.platform.PAYLOAD_CATEGORY;
 import com.swirlds.demo.platform.PAYLOAD_TYPE;
 import com.swirlds.demo.platform.PayloadConfig;
@@ -51,12 +53,11 @@ public class ExpectedMapUtils {
             return;
         }
 
-        try {
-            final PlatformTestingToolState state = ((PlatformWithDeprecatedMethods) platform).getState();
+        try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
+                getUnsafeMutableState(platform.getSelfId().getId())) {
+            final PlatformTestingToolState state = wrapper.get();
             // rebuild ExpectedMap
             state.rebuildExpectedMapFromState(Instant.EPOCH, true);
-        } finally {
-            ((PlatformWithDeprecatedMethods) platform).releaseState();
         }
     }
 
@@ -76,11 +77,10 @@ public class ExpectedMapUtils {
             return;
         }
 
-        try {
-            final PlatformTestingToolState state = ((PlatformWithDeprecatedMethods) platform).getState();
+        try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
+                getUnsafeMutableState(platform.getSelfId().getId())) {
+            final PlatformTestingToolState state = wrapper.get();
             state.rebuildExpectedMapFromState(notification.getConsensusTimestamp(), false);
-        } finally {
-            ((PlatformWithDeprecatedMethods) platform).releaseState();
         }
     }
 
