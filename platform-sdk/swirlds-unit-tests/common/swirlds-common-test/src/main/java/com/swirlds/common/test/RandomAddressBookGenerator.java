@@ -225,7 +225,7 @@ public class RandomAddressBookGenerator {
         } else {
             // randomly advance between 1 and 3 steps
             final int offset = random.nextInt(3);
-            nextId = previousNodeId == null ? new NodeId(offset) : new NodeId(previousNodeId.id() + offset + 1);
+            nextId = previousNodeId == null ? new NodeId(offset) : new NodeId(previousNodeId.id() + offset + 1L);
         }
         previousNodeId = nextId;
         return nextId;
