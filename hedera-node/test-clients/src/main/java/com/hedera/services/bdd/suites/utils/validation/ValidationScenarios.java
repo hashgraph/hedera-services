@@ -1269,8 +1269,7 @@ public class ValidationScenarios extends HapiSuite {
             }
             var contract = scenarios.getContract();
 
-            Object[] donationArgs =
-                    new Object[] {Long.valueOf((int) targetNetwork().getBootstrap()), "Hey, Ma!"};
+            Object[] donationArgs = new Object[] {800L, "Hey, Ma!"};
 
             return customHapiSpec("ContractScenario")
                     .withProperties(Map.of(
