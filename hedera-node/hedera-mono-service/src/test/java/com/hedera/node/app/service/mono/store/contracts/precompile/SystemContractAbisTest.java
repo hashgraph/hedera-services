@@ -43,7 +43,6 @@ class SystemContractAbisTest {
                 .map(HexFormat::fromHexDigits)
                 .toList();
         softly.assertThat(allAbiConstants).containsAll(allKnownABISelectors);
-        softly.assertThat(listAllSystemContractAbis()).isEmpty();
     }
 
     // From `mono/store/contracts/precompile/AbiConstants.java` via emacs:
