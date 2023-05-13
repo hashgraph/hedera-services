@@ -25,15 +25,14 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTes
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.failResult;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.successResult;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenUpdatePrecompile.decodeUpdateTokenInfo;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenUpdatePrecompile.decodeUpdateTokenInfoV2;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenUpdatePrecompile.decodeUpdateTokenInfoV3;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenUpdatePrecompile.getTokenUpdateWrapper;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static java.util.function.UnaryOperator.identity;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.util.Integers;
@@ -65,6 +64,7 @@ import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateU
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenUpdateWrapper;
+import com.hedera.node.app.service.mono.store.contracts.precompile.impl.SystemContractAbis;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenUpdatePrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.store.models.NftId;
@@ -348,7 +348,8 @@ class TokenUpdatePrecompileTest {
     @Test
     void decodeFungibleUpdateInput() {
         tokenUpdatePrecompile.close();
-        final var decodedInput = decodeUpdateTokenInfo(UPDATE_FUNGIBLE_TOKEN_INPUT, identity());
+        final var decodedInput = getTokenUpdateWrapper(
+                UPDATE_FUNGIBLE_TOKEN_INPUT, identity(), SystemContractAbis.UPDATE_TOKEN_INFO_METHOD_V1);
 
         assertExpectedFungibleTokenUpdateStruct(decodedInput);
     }
@@ -356,7 +357,10 @@ class TokenUpdatePrecompileTest {
     @Test
     void decodeFungibleUpdateInputWithNoTreasurySet() {
         tokenUpdatePrecompile.close();
-        final var decodedInput = decodeUpdateTokenInfo(UPDATE_FUNGIBLE_TOKEN_INPUT_WITH_NO_TREASURY_SET, identity());
+        final var decodedInput = getTokenUpdateWrapper(
+                UPDATE_FUNGIBLE_TOKEN_INPUT_WITH_NO_TREASURY_SET,
+                identity(),
+                SystemContractAbis.UPDATE_TOKEN_INFO_METHOD_V1);
 
         assertEquals("customName", decodedInput.name());
         assertEquals("Ω", decodedInput.symbol());
@@ -372,7 +376,8 @@ class TokenUpdatePrecompileTest {
     @Test
     void decodeFungibleUpdateInputV2() {
         tokenUpdatePrecompile.close();
-        final var decodedInput = decodeUpdateTokenInfoV2(UPDATE_FUNGIBLE_TOKEN_INPUT_V2, identity());
+        final var decodedInput = getTokenUpdateWrapper(
+                UPDATE_FUNGIBLE_TOKEN_INPUT_V2, identity(), SystemContractAbis.UPDATE_TOKEN_INFO_METHOD_V2);
 
         assertExpectedFungibleTokenUpdateStruct(decodedInput);
     }
@@ -380,7 +385,8 @@ class TokenUpdatePrecompileTest {
     @Test
     void decodeFungibleUpdateInputV3() {
         tokenUpdatePrecompile.close();
-        final var decodedInput = decodeUpdateTokenInfoV3(UPDATE_FUNGIBLE_TOKEN_INPUT_V3, identity());
+        final var decodedInput = getTokenUpdateWrapper(
+                UPDATE_FUNGIBLE_TOKEN_INPUT_V3, identity(), SystemContractAbis.UPDATE_TOKEN_INFO_METHOD_V3);
 
         assertExpectedFungibleTokenUpdateStruct(decodedInput);
     }
@@ -423,7 +429,9 @@ class TokenUpdatePrecompileTest {
                 .willReturn(hederaTokenStore);
         given(infrastructureFactory.newTokenUpdateLogic(hederaTokenStore, wrappedLedgers, sideEffects))
                 .willReturn(updateLogic);
-        tokenUpdatePrecompile.when(() -> decodeUpdateTokenInfo(any(), any())).thenReturn(updateWrapper);
+        tokenUpdatePrecompile
+                .when(() -> getTokenUpdateWrapper(any(), any(), eq(SystemContractAbis.UPDATE_TOKEN_INFO_METHOD_V1)))
+                .thenReturn(updateWrapper);
         given(syntheticTxnFactory.createTokenUpdate(updateWrapper))
                 .willReturn(TransactionBody.newBuilder().setTokenUpdate(TokenUpdateTransactionBody.newBuilder()));
     }
@@ -436,7 +444,9 @@ class TokenUpdatePrecompileTest {
                 .willReturn(hederaTokenStore);
         given(infrastructureFactory.newTokenUpdateLogic(hederaTokenStore, wrappedLedgers, sideEffects))
                 .willReturn(updateLogic);
-        tokenUpdatePrecompile.when(() -> decodeUpdateTokenInfoV2(any(), any())).thenReturn(updateWrapper);
+        tokenUpdatePrecompile
+                .when(() -> getTokenUpdateWrapper(any(), any(), eq(SystemContractAbis.UPDATE_TOKEN_INFO_METHOD_V2)))
+                .thenReturn(updateWrapper);
         given(syntheticTxnFactory.createTokenUpdate(updateWrapper))
                 .willReturn(TransactionBody.newBuilder().setTokenUpdate(TokenUpdateTransactionBody.newBuilder()));
     }
@@ -449,7 +459,9 @@ class TokenUpdatePrecompileTest {
                 .willReturn(hederaTokenStore);
         given(infrastructureFactory.newTokenUpdateLogic(hederaTokenStore, wrappedLedgers, sideEffects))
                 .willReturn(updateLogic);
-        tokenUpdatePrecompile.when(() -> decodeUpdateTokenInfoV3(any(), any())).thenReturn(updateWrapper);
+        tokenUpdatePrecompile
+                .when(() -> getTokenUpdateWrapper(any(), any(), eq(SystemContractAbis.UPDATE_TOKEN_INFO_METHOD_V3)))
+                .thenReturn(updateWrapper);
         given(syntheticTxnFactory.createTokenUpdate(updateWrapper))
                 .willReturn(TransactionBody.newBuilder().setTokenUpdate(TokenUpdateTransactionBody.newBuilder()));
     }

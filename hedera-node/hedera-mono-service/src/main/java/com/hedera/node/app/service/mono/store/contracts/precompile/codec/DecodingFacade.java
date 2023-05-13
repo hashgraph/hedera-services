@@ -27,6 +27,7 @@ import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
+import com.hedera.node.app.service.mono.store.contracts.precompile.impl.SystemContractAbis;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -52,20 +53,20 @@ public class DecodingFacade {
     public static final List<SyntheticTxnFactory.FungibleTokenTransfer> NO_FUNGIBLE_TRANSFERS = Collections.emptyList();
 
     /* --- Token Create Structs --- */
-    private static final String KEY_VALUE_DECODER = "(bool,bytes32,bytes,bytes,bytes32)";
+    public static final String KEY_VALUE_DECODER = "(bool,bytes32,bytes,bytes,bytes32)";
     public static final String TOKEN_KEY_DECODER = "(int32," + KEY_VALUE_DECODER + ")";
     public static final String EXPIRY_DECODER = "(int64,bytes32,int64)";
     public static final String FIXED_FEE_DECODER = "(int64,bytes32,bool,bool,bytes32)";
     public static final String FRACTIONAL_FEE_DECODER = "(int64,int64,int64,int64,bool,bytes32)";
     public static final String ROYALTY_FEE_DECODER = "(int64,int64,int64,bytes32,bool,bytes32)";
 
-    public static final String HEDERA_TOKEN_STRUCT =
+    public static final String HEDERA_TOKEN_STRUCT_V1 =
             "(string,string,address,string,bool,uint32,bool," + TOKEN_KEY + ARRAY_BRACKETS + "," + EXPIRY + ")";
     public static final String HEDERA_TOKEN_STRUCT_V2 =
             "(string,string,address,string,bool,int64,bool," + TOKEN_KEY + ARRAY_BRACKETS + "," + EXPIRY + ")";
     public static final String HEDERA_TOKEN_STRUCT_V3 =
             "(string,string,address,string,bool,int64,bool," + TOKEN_KEY + ARRAY_BRACKETS + "," + EXPIRY_V2 + ")";
-    public static final String HEDERA_TOKEN_STRUCT_DECODER = "(string,string,bytes32,string,bool,int64,bool,"
+    public static final String HEDERA_TOKEN_STRUCT_DECODER_V3 = "(string,string,bytes32,string,bool,int64,bool,"
             + TOKEN_KEY_DECODER
             + ARRAY_BRACKETS
             + ","
@@ -80,7 +81,7 @@ public class DecodingFacade {
             @NonNull final Tuple[] tokenKeysTuples, final UnaryOperator<byte[]> aliasResolver) {
         final List<TokenKeyWrapper> tokenKeys = new ArrayList<>(tokenKeysTuples.length);
         for (final var tokenKeyTuple : tokenKeysTuples) {
-            final var keyType = (int) tokenKeyTuple.get(0);
+            final var keyType = SystemContractAbis.toIntSafely(tokenKeyTuple.get(0));
             final Tuple keyValueTuple = tokenKeyTuple.get(1);
             final var inheritAccountKey = (Boolean) keyValueTuple.get(0);
             final var contractId =

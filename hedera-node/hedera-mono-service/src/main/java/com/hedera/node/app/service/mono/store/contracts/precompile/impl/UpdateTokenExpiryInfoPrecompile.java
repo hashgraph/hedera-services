@@ -72,9 +72,10 @@ public class UpdateTokenExpiryInfoPrecompile extends AbstractTokenUpdatePrecompi
     public Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
         final var updateExpiryInfoAbi =
                 switch (functionId) {
-                    case AbiConstants.ABI_ID_UPDATE_TOKEN_EXPIRY_INFO -> SystemContractAbis.UPDATE_TOKEN_EXPIRY_INFO_V1;
+                    case AbiConstants.ABI_ID_UPDATE_TOKEN_EXPIRY_INFO -> SystemContractAbis
+                            .UPDATE_TOKEN_EXPIRY_INFO_METHOD_V1;
                     case AbiConstants.ABI_ID_UPDATE_TOKEN_EXPIRY_INFO_V2 -> SystemContractAbis
-                            .UPDATE_TOKEN_EXPIRY_INFO_V2;
+                            .UPDATE_TOKEN_EXPIRY_INFO_METHOD_V2;
                     default -> throw new IllegalArgumentException("invalid selector to updateExpiryInfo precompile");
                 };
 

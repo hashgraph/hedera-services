@@ -722,7 +722,7 @@ class HTSPrecompiledContractTest {
         // given
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN));
         tokenCreatePrecompile
-                .when(() -> TokenCreatePrecompile.decodeFungibleCreate(any(), any()))
+                .when(() -> TokenCreatePrecompile.decodeFungibleCreateV1(any(), any()))
                 .thenReturn(createTokenCreateWrapperWithKeys(Collections.emptyList()));
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -735,7 +735,7 @@ class HTSPrecompiledContractTest {
         // given
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN));
         tokenCreatePrecompile
-                .when(() -> TokenCreatePrecompile.decodeNonFungibleCreate(any(), any()))
+                .when(() -> TokenCreatePrecompile.decodeNonFungibleCreateV1(any(), any()))
                 .thenReturn(createTokenCreateWrapperWithKeys(Collections.emptyList()));
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -751,7 +751,7 @@ class HTSPrecompiledContractTest {
         given(tokenCreateWrapper.hasAutoRenewAccount()).willReturn(false);
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN));
         tokenCreatePrecompile
-                .when(() -> TokenCreatePrecompile.decodeNonFungibleCreate(any(), any()))
+                .when(() -> TokenCreatePrecompile.decodeNonFungibleCreateV1(any(), any()))
                 .thenReturn(tokenCreateWrapper);
         given(wrappedLedgers.accounts()).willReturn(accounts);
         given(accounts.get(any(), eq(AccountProperty.AUTO_RENEW_ACCOUNT_ID))).willReturn(autoRenewId);
@@ -876,7 +876,7 @@ class HTSPrecompiledContractTest {
         // given
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES));
         tokenCreatePrecompile
-                .when(() -> TokenCreatePrecompile.decodeFungibleCreateWithFees(any(), any()))
+                .when(() -> TokenCreatePrecompile.decodeFungibleCreateWithFeesV1(any(), any()))
                 .thenReturn(createTokenCreateWrapperWithKeys(Collections.emptyList()));
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -889,7 +889,7 @@ class HTSPrecompiledContractTest {
         // given
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES));
         tokenCreatePrecompile
-                .when(() -> TokenCreatePrecompile.decodeNonFungibleCreateWithFees(any(), any()))
+                .when(() -> TokenCreatePrecompile.decodeNonFungibleCreateWithFeesV1(any(), any()))
                 .thenReturn(createTokenCreateWrapperWithKeys(Collections.emptyList()));
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -957,7 +957,7 @@ class HTSPrecompiledContractTest {
         givenFrameContext();
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_MINT_TOKEN));
         mintPrecompile
-                .when(() -> MintPrecompile.getMintWrapper(any(), eq(SystemContractAbis.MINT_TOKEN_V1)))
+                .when(() -> MintPrecompile.getMintWrapper(any(), eq(SystemContractAbis.MINT_TOKEN_METHOD_V1)))
                 .thenReturn(fungibleMintAmountOversize);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -978,7 +978,7 @@ class HTSPrecompiledContractTest {
         givenFrameContext();
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_BURN_TOKEN_V2));
         burnPrecompile
-                .when(() -> BurnPrecompile.getBurnWrapper(any(), eq(SystemContractAbis.BURN_TOKEN_V2)))
+                .when(() -> BurnPrecompile.getBurnWrapper(any(), eq(SystemContractAbis.BURN_TOKEN_METHOD_V2)))
                 .thenReturn(nonFungibleBurn);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -1033,7 +1033,7 @@ class HTSPrecompiledContractTest {
         givenPricingUtilsContext();
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_MINT_TOKEN));
         mintPrecompile
-                .when(() -> MintPrecompile.getMintWrapper(any(), eq(SystemContractAbis.MINT_TOKEN_V1)))
+                .when(() -> MintPrecompile.getMintWrapper(any(), eq(SystemContractAbis.MINT_TOKEN_METHOD_V1)))
                 .thenReturn(fungibleMint);
         given(messageFrame.getRemainingGas()).willReturn(0L);
         given(syntheticTxnFactory.createMint(fungibleMint)).willReturn(mockSynthBodyBuilder);
@@ -1278,7 +1278,7 @@ class HTSPrecompiledContractTest {
         final Bytes input = Bytes.of(Integers.toBytes(ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE));
         wipeFungiblePrecompile
                 .when(() -> WipeFungiblePrecompile.getWipeWrapper(
-                        any(), any(), eq(SystemContractAbis.WIPE_TOKEN_ACCOUNT_V1)))
+                        any(), any(), eq(SystemContractAbis.WIPE_TOKEN_ACCOUNT_METHOD_V1)))
                 .thenReturn(fungibleWipe);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -1298,7 +1298,7 @@ class HTSPrecompiledContractTest {
         final Bytes input = Bytes.of(Integers.toBytes(ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE_V2));
         wipeFungiblePrecompile
                 .when(() -> WipeFungiblePrecompile.getWipeWrapper(
-                        any(), any(), eq(SystemContractAbis.WIPE_TOKEN_ACCOUNT_V2)))
+                        any(), any(), eq(SystemContractAbis.WIPE_TOKEN_ACCOUNT_METHOD_V2)))
                 .thenReturn(fungibleWipe);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -1375,7 +1375,7 @@ class HTSPrecompiledContractTest {
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_UPDATE_TOKEN_EXPIRY_INFO));
         updateTokenExpiryInfoPrecompile
                 .when(() -> UpdateTokenExpiryInfoPrecompile.getTokenUpdateExpiryInfoWrapper(
-                        any(), any(), eq(SystemContractAbis.UPDATE_TOKEN_EXPIRY_INFO_V1)))
+                        any(), any(), eq(SystemContractAbis.UPDATE_TOKEN_EXPIRY_INFO_METHOD_V1)))
                 .thenReturn(tokenUpdateExpiryInfoWrapper);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -1395,7 +1395,7 @@ class HTSPrecompiledContractTest {
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_UPDATE_TOKEN_EXPIRY_INFO_V2));
         updateTokenExpiryInfoPrecompile
                 .when(() -> UpdateTokenExpiryInfoPrecompile.getTokenUpdateExpiryInfoWrapper(
-                        any(), any(), eq(SystemContractAbis.UPDATE_TOKEN_EXPIRY_INFO_V2)))
+                        any(), any(), eq(SystemContractAbis.UPDATE_TOKEN_EXPIRY_INFO_METHOD_V2)))
                 .thenReturn(tokenUpdateExpiryInfoWrapper);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));

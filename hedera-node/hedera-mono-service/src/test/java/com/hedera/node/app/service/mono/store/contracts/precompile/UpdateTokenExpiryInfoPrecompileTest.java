@@ -299,7 +299,7 @@ class UpdateTokenExpiryInfoPrecompileTest {
     void decodeUpdateExpiryInfoForTokenInput() {
         updateTokenExpiryInfoPrecompile.close();
         final var decodedInput = getTokenUpdateExpiryInfoWrapper(
-                UPDATE_EXPIRY_INFO_FOR_TOKEN_INPUT, identity(), SystemContractAbis.UPDATE_TOKEN_EXPIRY_INFO_V1);
+                UPDATE_EXPIRY_INFO_FOR_TOKEN_INPUT, identity(), SystemContractAbis.UPDATE_TOKEN_EXPIRY_INFO_METHOD_V1);
 
         assertTrue(decodedInput.tokenID().getTokenNum() > 0);
         assertTrue(decodedInput.expiry().second() > 0);
@@ -311,7 +311,9 @@ class UpdateTokenExpiryInfoPrecompileTest {
     void decodeUpdateExpiryInfoV2ForTokenInput() {
         updateTokenExpiryInfoPrecompile.close();
         final var decodedInput = getTokenUpdateExpiryInfoWrapper(
-                UPDATE_EXPIRY_INFO_FOR_TOKEN_INPUT_V2, identity(), SystemContractAbis.UPDATE_TOKEN_EXPIRY_INFO_V2);
+                UPDATE_EXPIRY_INFO_FOR_TOKEN_INPUT_V2,
+                identity(),
+                SystemContractAbis.UPDATE_TOKEN_EXPIRY_INFO_METHOD_V2);
 
         assertTrue(decodedInput.tokenID().getTokenNum() > 0);
         assertTrue(decodedInput.expiry().second() > 0);
@@ -348,7 +350,7 @@ class UpdateTokenExpiryInfoPrecompileTest {
         given(updateLogic.validate(any())).willReturn(ResponseCodeEnum.OK);
         updateTokenExpiryInfoPrecompile
                 .when(() -> getTokenUpdateExpiryInfoWrapper(
-                        any(), any(), eq(SystemContractAbis.UPDATE_TOKEN_EXPIRY_INFO_V1)))
+                        any(), any(), eq(SystemContractAbis.UPDATE_TOKEN_EXPIRY_INFO_METHOD_V1)))
                 .thenReturn(tokenUpdateExpiryInfoWrapper);
         given(syntheticTxnFactory.createTokenUpdateExpiryInfo(tokenUpdateExpiryInfoWrapper))
                 .willReturn(TransactionBody.newBuilder().setTokenUpdate(TokenUpdateTransactionBody.newBuilder()));
@@ -365,7 +367,7 @@ class UpdateTokenExpiryInfoPrecompileTest {
         given(updateLogic.validate(any())).willReturn(ResponseCodeEnum.OK);
         updateTokenExpiryInfoPrecompile
                 .when(() -> getTokenUpdateExpiryInfoWrapper(
-                        any(), any(), eq(SystemContractAbis.UPDATE_TOKEN_EXPIRY_INFO_V2)))
+                        any(), any(), eq(SystemContractAbis.UPDATE_TOKEN_EXPIRY_INFO_METHOD_V2)))
                 .thenReturn(tokenUpdateExpiryInfoWrapper);
         given(syntheticTxnFactory.createTokenUpdateExpiryInfo(tokenUpdateExpiryInfoWrapper))
                 .willReturn(TransactionBody.newBuilder().setTokenUpdate(TokenUpdateTransactionBody.newBuilder()));

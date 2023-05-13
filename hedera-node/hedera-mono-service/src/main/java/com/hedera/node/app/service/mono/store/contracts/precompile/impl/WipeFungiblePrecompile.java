@@ -58,8 +58,10 @@ public class WipeFungiblePrecompile extends AbstractWipePrecompile {
     public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final var wipeAbi =
                 switch (functionId) {
-                    case AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE -> SystemContractAbis.WIPE_TOKEN_ACCOUNT_V1;
-                    case AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE_V2 -> SystemContractAbis.WIPE_TOKEN_ACCOUNT_V2;
+                    case AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE -> SystemContractAbis
+                            .WIPE_TOKEN_ACCOUNT_METHOD_V1;
+                    case AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE_V2 -> SystemContractAbis
+                            .WIPE_TOKEN_ACCOUNT_METHOD_V2;
                     default -> throw new IllegalArgumentException("invalid selector to wipe precompile");
                 };
         wipeOp = getWipeWrapper(input, aliasResolver, wipeAbi);

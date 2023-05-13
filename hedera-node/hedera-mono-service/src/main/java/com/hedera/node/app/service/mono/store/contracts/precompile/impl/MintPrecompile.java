@@ -92,8 +92,8 @@ public class MintPrecompile extends AbstractWritePrecompile {
         this.transactionBody = null;
         final var mintAbi =
                 switch (functionId) {
-                    case AbiConstants.ABI_ID_MINT_TOKEN -> SystemContractAbis.MINT_TOKEN_V1;
-                    case AbiConstants.ABI_ID_MINT_TOKEN_V2 -> SystemContractAbis.MINT_TOKEN_V2;
+                    case AbiConstants.ABI_ID_MINT_TOKEN -> SystemContractAbis.MINT_TOKEN_METHOD_V1;
+                    case AbiConstants.ABI_ID_MINT_TOKEN_V2 -> SystemContractAbis.MINT_TOKEN_METHOD_V2;
                     default -> throw new IllegalArgumentException("invalid selector to mint precompile");
                 };
         mintOp = getMintWrapper(input, mintAbi);

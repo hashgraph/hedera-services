@@ -28,8 +28,8 @@ import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.FIXED_FEE_DECODER;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.FRACTIONAL_FEE_DECODER;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.HEDERA_TOKEN_STRUCT;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.HEDERA_TOKEN_STRUCT_DECODER;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.HEDERA_TOKEN_STRUCT_DECODER_V3;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.HEDERA_TOKEN_STRUCT_V1;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.HEDERA_TOKEN_STRUCT_V2;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.HEDERA_TOKEN_STRUCT_V3;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.ROYALTY_FEE_DECODER;
@@ -163,10 +163,10 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
     private static final String CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES_STRING = "createNonFungibleTokenWithCustomFees(";
     private static final String TOKEN_CREATE = String.format(FAILURE_MESSAGE, "token create");
     private static final Function TOKEN_CREATE_FUNGIBLE_FUNCTION =
-            new Function(CREATE_FUNGIBLE_TOKEN_STRING + HEDERA_TOKEN_STRUCT + ",uint256,uint256)");
+            new Function(CREATE_FUNGIBLE_TOKEN_STRING + HEDERA_TOKEN_STRUCT_V1 + ",uint256,uint256)");
     public static final Bytes TOKEN_CREATE_FUNGIBLE_SELECTOR = Bytes.wrap(TOKEN_CREATE_FUNGIBLE_FUNCTION.selector());
     public static final ABIType<Tuple> TOKEN_CREATE_FUNGIBLE_DECODER =
-            TypeFactory.create("(" + HEDERA_TOKEN_STRUCT_DECODER + ",uint256,uint256)");
+            TypeFactory.create("(" + HEDERA_TOKEN_STRUCT_DECODER_V3 + ",uint256,uint256)");
     private static final Function TOKEN_CREATE_FUNGIBLE_FUNCTION_V2 =
             new Function(CREATE_FUNGIBLE_TOKEN_STRING + HEDERA_TOKEN_STRUCT_V2 + ",uint64,uint32)");
     public static final Bytes TOKEN_CREATE_FUNGIBLE_SELECTOR_V2 =
@@ -177,7 +177,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
             Bytes.wrap(TOKEN_CREATE_FUNGIBLE_FUNCTION_V3.selector());
     private static final Function TOKEN_CREATE_FUNGIBLE_WITH_FEES_FUNCTION =
             new Function(CREATE_FUNGIBLE_TOKEN_WITH_FEES_STRING
-                    + HEDERA_TOKEN_STRUCT
+                    + HEDERA_TOKEN_STRUCT_V1
                     + ",uint256,uint256,"
                     + FIXED_FEE
                     + ARRAY_BRACKETS
@@ -200,7 +200,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
     public static final Bytes TOKEN_CREATE_FUNGIBLE_WITH_FEES_SELECTOR_V2 =
             Bytes.wrap(TOKEN_CREATE_FUNGIBLE_WITH_FEES_FUNCTION_V2.selector());
     public static final ABIType<Tuple> TOKEN_CREATE_FUNGIBLE_WITH_FEES_DECODER = TypeFactory.create("("
-            + HEDERA_TOKEN_STRUCT_DECODER
+            + HEDERA_TOKEN_STRUCT_DECODER_V3
             + ",uint256,uint256,"
             + FIXED_FEE_DECODER
             + ARRAY_BRACKETS
@@ -222,7 +222,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
     public static final Bytes TOKEN_CREATE_FUNGIBLE_WITH_FEES_SELECTOR_V3 =
             Bytes.wrap(TOKEN_CREATE_FUNGIBLE_WITH_FEES_FUNCTION_V3.selector());
     private static final Function TOKEN_CREATE_NON_FUNGIBLE_FUNCTION =
-            new Function(CREATE_NON_FUNGIBLE_TOKEN_STRING + HEDERA_TOKEN_STRUCT + ")");
+            new Function(CREATE_NON_FUNGIBLE_TOKEN_STRING + HEDERA_TOKEN_STRUCT_V1 + ")");
     public static final Bytes TOKEN_CREATE_NON_FUNGIBLE_SELECTOR =
             Bytes.wrap(TOKEN_CREATE_NON_FUNGIBLE_FUNCTION.selector());
     private static final Function TOKEN_CREATE_NON_FUNGIBLE_FUNCTION_V2 =
@@ -230,14 +230,14 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
     public static final Bytes TOKEN_CREATE_NON_FUNGIBLE_SELECTOR_V2 =
             Bytes.wrap(TOKEN_CREATE_NON_FUNGIBLE_FUNCTION_V2.selector());
     public static final ABIType<Tuple> TOKEN_CREATE_NON_FUNGIBLE_DECODER =
-            TypeFactory.create("(" + HEDERA_TOKEN_STRUCT_DECODER + ")");
+            TypeFactory.create("(" + HEDERA_TOKEN_STRUCT_DECODER_V3 + ")");
     private static final Function TOKEN_CREATE_NON_FUNGIBLE_FUNCTION_V3 =
             new Function(CREATE_NON_FUNGIBLE_TOKEN_STRING + HEDERA_TOKEN_STRUCT_V3 + ")");
     public static final Bytes TOKEN_CREATE_NON_FUNGIBLE_SELECTOR_V3 =
             Bytes.wrap(TOKEN_CREATE_NON_FUNGIBLE_FUNCTION_V3.selector());
     private static final Function TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_FUNCTION =
             new Function(CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES_STRING
-                    + HEDERA_TOKEN_STRUCT
+                    + HEDERA_TOKEN_STRUCT_V1
                     + ","
                     + FIXED_FEE
                     + ARRAY_BRACKETS
@@ -260,7 +260,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
     public static final Bytes TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_SELECTOR_V2 =
             Bytes.wrap(TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_FUNCTION_V2.selector());
     public static final ABIType<Tuple> TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_DECODER = TypeFactory.create("("
-            + HEDERA_TOKEN_STRUCT_DECODER
+            + HEDERA_TOKEN_STRUCT_DECODER_V3
             + ","
             + FIXED_FEE_DECODER
             + ARRAY_BRACKETS
@@ -322,11 +322,11 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
     @Override
     public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         tokenCreateOp = switch (functionId) {
-            case AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN -> decodeFungibleCreate(input, aliasResolver);
-            case AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES -> decodeFungibleCreateWithFees(
+            case AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN -> decodeFungibleCreateV1(input, aliasResolver);
+            case AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES -> decodeFungibleCreateWithFeesV1(
                     input, aliasResolver);
-            case AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN -> decodeNonFungibleCreate(input, aliasResolver);
-            case AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES -> decodeNonFungibleCreateWithFees(
+            case AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN -> decodeNonFungibleCreateV1(input, aliasResolver);
+            case AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES -> decodeNonFungibleCreateWithFeesV1(
                     input, aliasResolver);
             case AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_V2 -> decodeFungibleCreateV2(input, aliasResolver);
             case AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES_V2 -> decodeFungibleCreateWithFeesV2(
@@ -569,16 +569,16 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
      * @param aliasResolver function used to resolve aliases
      * @return TokenCreateWrapper codec
      */
-    public static TokenCreateWrapper decodeFungibleCreate(
+    public static TokenCreateWrapper decodeFungibleCreateV1(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
                 decodeFunctionCall(input, TOKEN_CREATE_FUNGIBLE_SELECTOR, TOKEN_CREATE_FUNGIBLE_DECODER);
 
-        return decodeTokenCreateWithoutFees(
+        return decodeTokenCreateWithoutFeesV1(
                 decodedArguments.get(0), true, decodedArguments.get(1), decodedArguments.get(2), aliasResolver);
     }
 
-    public static TokenCreateWrapper decodeTokenCreateWithoutFees(
+    public static TokenCreateWrapper decodeTokenCreateWithoutFeesV1(
             @NonNull final Tuple tokenCreateStruct,
             final boolean isFungible,
             final BigInteger initSupply,
@@ -640,7 +640,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
      * @param aliasResolver function used to resolve aliases
      * @return TokenCreateWrapper codec
      */
-    public static TokenCreateWrapper decodeFungibleCreateWithFees(
+    public static TokenCreateWrapper decodeFungibleCreateWithFeesV1(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         return getTokenCreateWrapperFungibleWithFees(input, aliasResolver, TOKEN_CREATE_FUNGIBLE_WITH_FEES_SELECTOR);
     }
@@ -652,7 +652,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
         final Tuple decodedArguments =
                 decodeFunctionCall(input, tokenCreateFungibleWithFeesSelector, TOKEN_CREATE_FUNGIBLE_WITH_FEES_DECODER);
 
-        final var tokenCreateWrapper = decodeTokenCreateWithoutFees(
+        final var tokenCreateWrapper = decodeTokenCreateWithoutFeesV1(
                 decodedArguments.get(0), true, decodedArguments.get(1), decodedArguments.get(2), aliasResolver);
         final var fixedFees = decodeFixedFees(decodedArguments.get(3), aliasResolver);
         final var fractionalFees = decodeFractionalFees(decodedArguments.get(4), aliasResolver);
@@ -702,16 +702,16 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
         return fractionalFees;
     }
 
-    public static TokenCreateWrapper decodeNonFungibleCreate(
+    public static TokenCreateWrapper decodeNonFungibleCreateV1(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
                 decodeFunctionCall(input, TOKEN_CREATE_NON_FUNGIBLE_SELECTOR, TOKEN_CREATE_NON_FUNGIBLE_DECODER);
 
-        return decodeTokenCreateWithoutFees(
+        return decodeTokenCreateWithoutFeesV1(
                 decodedArguments.get(0), false, BigInteger.ZERO, BigInteger.ZERO, aliasResolver);
     }
 
-    public static TokenCreateWrapper decodeNonFungibleCreateWithFees(
+    public static TokenCreateWrapper decodeNonFungibleCreateWithFeesV1(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         return getTokenCreateWrapper(input, aliasResolver, TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_SELECTOR);
     }
@@ -762,7 +762,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
         final Tuple decodedArguments =
                 decodeFunctionCall(input, TOKEN_CREATE_FUNGIBLE_SELECTOR_V2, TOKEN_CREATE_FUNGIBLE_DECODER);
 
-        return decodeTokenCreateWithoutFees(
+        return decodeTokenCreateWithoutFeesV1(
                 decodedArguments.get(0), true, decodedArguments.get(1), decodedArguments.get(2), aliasResolver);
     }
 
@@ -828,7 +828,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
         final Tuple decodedArguments =
                 decodeFunctionCall(input, TOKEN_CREATE_NON_FUNGIBLE_SELECTOR_V2, TOKEN_CREATE_NON_FUNGIBLE_DECODER);
 
-        return decodeTokenCreateWithoutFees(
+        return decodeTokenCreateWithoutFeesV1(
                 decodedArguments.get(0), false, BigInteger.ZERO, BigInteger.ZERO, aliasResolver);
     }
 
@@ -837,7 +837,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
         final Tuple decodedArguments =
                 decodeFunctionCall(input, TOKEN_CREATE_NON_FUNGIBLE_SELECTOR_V3, TOKEN_CREATE_NON_FUNGIBLE_DECODER);
 
-        return decodeTokenCreateWithoutFees(
+        return decodeTokenCreateWithoutFeesV1(
                 decodedArguments.get(0), false, BigInteger.ZERO, BigInteger.ZERO, aliasResolver);
     }
 
@@ -884,7 +884,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
         final Tuple decodedArguments = decodeFunctionCall(
                 input, tokenCreateNonFungibleWithFeesSelector, TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_DECODER);
 
-        final var tokenCreateWrapper = decodeTokenCreateWithoutFees(
+        final var tokenCreateWrapper = decodeTokenCreateWithoutFeesV1(
                 decodedArguments.get(0), false, BigInteger.ZERO, BigInteger.ZERO, aliasResolver);
         final var fixedFees = decodeFixedFees(decodedArguments.get(1), aliasResolver);
         final var royaltyFees = decodeRoyaltyFees(decodedArguments.get(2), aliasResolver);

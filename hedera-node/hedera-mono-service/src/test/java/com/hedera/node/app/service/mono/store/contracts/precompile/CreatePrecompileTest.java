@@ -35,16 +35,16 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTes
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.recipientAddress;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.USE_CURRENTLY_CREATED_TOKEN;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.USE_EXISTING_FUNGIBLE_TOKEN;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenCreatePrecompile.decodeFungibleCreate;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenCreatePrecompile.decodeFungibleCreateV1;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenCreatePrecompile.decodeFungibleCreateV2;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenCreatePrecompile.decodeFungibleCreateV3;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenCreatePrecompile.decodeFungibleCreateWithFees;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenCreatePrecompile.decodeFungibleCreateWithFeesV1;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenCreatePrecompile.decodeFungibleCreateWithFeesV2;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenCreatePrecompile.decodeFungibleCreateWithFeesV3;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenCreatePrecompile.decodeNonFungibleCreate;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenCreatePrecompile.decodeNonFungibleCreateV1;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenCreatePrecompile.decodeNonFungibleCreateV2;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenCreatePrecompile.decodeNonFungibleCreateV3;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenCreatePrecompile.decodeNonFungibleCreateWithFees;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenCreatePrecompile.decodeNonFungibleCreateWithFeesV1;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenCreatePrecompile.decodeNonFungibleCreateWithFeesV2;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenCreatePrecompile.decodeNonFungibleCreateWithFeesV3;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
@@ -362,7 +362,7 @@ class CreatePrecompileTest {
         given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
         final Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN));
         final TokenCreateWrapper wrapper = HTSTestsUtil.createTokenCreateWrapperWithKeys(List.of());
-        tokenCreatePrecompile.when(() -> decodeFungibleCreate(any(), any())).thenReturn(wrapper);
+        tokenCreatePrecompile.when(() -> decodeFungibleCreateV1(any(), any())).thenReturn(wrapper);
         given(mockSynthBodyBuilder.build())
                 .willReturn(TransactionBody.newBuilder()
                         .setTokenCreation(tokenCreateTransactionBody)
@@ -402,7 +402,7 @@ class CreatePrecompileTest {
         given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
         final Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN));
         final TokenCreateWrapper wrapper = HTSTestsUtil.createTokenCreateWrapperWithKeys(List.of());
-        tokenCreatePrecompile.when(() -> decodeFungibleCreate(any(), any())).thenReturn(wrapper);
+        tokenCreatePrecompile.when(() -> decodeFungibleCreateV1(any(), any())).thenReturn(wrapper);
         given(mockSynthBodyBuilder.build())
                 .willReturn(TransactionBody.newBuilder()
                         .setTokenCreation(tokenCreateTransactionBody)
@@ -452,7 +452,7 @@ class CreatePrecompileTest {
                                 EntityIdUtils.contractIdFromEvmAddress(HTSTestsUtil.contractAddress)))));
         final Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN));
         tokenCreatePrecompile
-                .when(() -> decodeFungibleCreate(eq(pretendArguments), any()))
+                .when(() -> decodeFungibleCreateV1(eq(pretendArguments), any()))
                 .thenReturn(tokenCreateWrapper);
 
         givenIfDelegateCall();
@@ -476,7 +476,7 @@ class CreatePrecompileTest {
                                 null))));
         final Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN));
         tokenCreatePrecompile
-                .when(() -> decodeNonFungibleCreate(eq(pretendArguments), any()))
+                .when(() -> decodeNonFungibleCreateV1(eq(pretendArguments), any()))
                 .thenReturn(tokenCreateWrapper);
         given(wrappedLedgers.accounts()).willReturn(accounts);
         given(accounts.get(any(), eq(AUTO_RENEW_ACCOUNT_ID)))
@@ -505,7 +505,7 @@ class CreatePrecompileTest {
         tokenCreateWrapper.setFractionalFees(List.of(HTSTestsUtil.fractionalFee));
         final Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES));
         tokenCreatePrecompile
-                .when(() -> decodeFungibleCreateWithFees(eq(pretendArguments), any()))
+                .when(() -> decodeFungibleCreateWithFeesV1(eq(pretendArguments), any()))
                 .thenReturn(tokenCreateWrapper);
 
         givenIfDelegateCall();
@@ -527,7 +527,7 @@ class CreatePrecompileTest {
         given(accounts.get(any(), eq(AUTO_RENEW_ACCOUNT_ID)))
                 .willReturn(EntityId.fromGrpcAccountId(HTSTestsUtil.account));
         tokenCreatePrecompile
-                .when(() -> decodeNonFungibleCreateWithFees(eq(pretendArguments), any()))
+                .when(() -> decodeNonFungibleCreateWithFeesV1(eq(pretendArguments), any()))
                 .thenReturn(tokenCreateWrapper);
         given(accounts.get(any(), eq(KEY)))
                 .willReturn(new JContractIDKey(EntityIdUtils.contractIdFromEvmAddress(HTSTestsUtil.contractAddress)));
@@ -770,7 +770,7 @@ class CreatePrecompileTest {
         final var tokenCreateWrapper = HTSTestsUtil.createTokenCreateWrapperWithKeys(List.of(new TokenKeyWrapper(
                 1, new KeyValueWrapper(false, null, new byte[JEd25519Key.ED25519_BYTE_LENGTH], new byte[] {}, null))));
         tokenCreatePrecompile
-                .when(() -> decodeFungibleCreate(eq(pretendArguments), any()))
+                .when(() -> decodeFungibleCreateV1(eq(pretendArguments), any()))
                 .thenReturn(tokenCreateWrapper);
         given(syntheticTxnFactory.createTokenCreate(tokenCreateWrapper)).willReturn(mockSynthBodyBuilder);
         given(mockSynthBodyBuilder.build())
@@ -824,7 +824,7 @@ class CreatePrecompileTest {
         final var tokenCreateWrapper = HTSTestsUtil.createTokenCreateWrapperWithKeys(List.of(new TokenKeyWrapper(
                 1, new KeyValueWrapper(false, null, new byte[JEd25519Key.ED25519_BYTE_LENGTH], new byte[] {}, null))));
         tokenCreatePrecompile
-                .when(() -> decodeFungibleCreate(eq(pretendArguments), any()))
+                .when(() -> decodeFungibleCreateV1(eq(pretendArguments), any()))
                 .thenReturn(tokenCreateWrapper);
         given(mockSynthBodyBuilder.build())
                 .willReturn(TransactionBody.newBuilder()
@@ -880,7 +880,7 @@ class CreatePrecompileTest {
         final var tokenCreateWrapper =
                 HTSTestsUtil.createTokenCreateWrapperWithKeys(List.of(new TokenKeyWrapper(1, keyValueMock)));
         tokenCreatePrecompile
-                .when(() -> decodeFungibleCreate(eq(pretendArguments), any()))
+                .when(() -> decodeFungibleCreateV1(eq(pretendArguments), any()))
                 .thenReturn(tokenCreateWrapper);
         given(mockSynthBodyBuilder.build())
                 .willReturn(TransactionBody.newBuilder()
@@ -1110,7 +1110,7 @@ class CreatePrecompileTest {
     void decodeFungibleCreateNoFeesInput() {
         tokenCreatePrecompile.close();
 
-        final var decodedInput = decodeFungibleCreate(CREATE_FUNGIBLE_NO_FEES_INPUT, identity());
+        final var decodedInput = decodeFungibleCreateV1(CREATE_FUNGIBLE_NO_FEES_INPUT, identity());
 
         assertExpectedFungibleTokenCreateStruct(decodedInput);
         assertEquals(BigInteger.valueOf(200), decodedInput.getInitSupply());
@@ -1121,7 +1121,7 @@ class CreatePrecompileTest {
     @Test
     void decodeFungibleCreateWithFeesInput() {
         tokenCreatePrecompile.close();
-        final var decodedInput = decodeFungibleCreateWithFees(CREATE_FUNGIBLE_WITH_FEES_INPUT, identity());
+        final var decodedInput = decodeFungibleCreateWithFeesV1(CREATE_FUNGIBLE_WITH_FEES_INPUT, identity());
 
         assertExpectedFungibleTokenCreateStruct(decodedInput);
         assertEquals(decodedInput.getInitSupply(), BigInteger.valueOf(200));
@@ -1157,7 +1157,7 @@ class CreatePrecompileTest {
     @Test
     void decodeNonFungibleCreateNoFeesInput() {
         tokenCreatePrecompile.close();
-        final var decodedInput = decodeNonFungibleCreate(CREATE_NON_FUNGIBLE_NO_FEES_INPUT, identity());
+        final var decodedInput = decodeNonFungibleCreateV1(CREATE_NON_FUNGIBLE_NO_FEES_INPUT, identity());
 
         assertExpectedNonFungibleTokenCreateStruct(decodedInput);
         assertEquals(BigInteger.valueOf(0), decodedInput.getInitSupply());
@@ -1169,7 +1169,7 @@ class CreatePrecompileTest {
     void decodeNonFungibleCreateWithFeesInput() {
         tokenCreatePrecompile.close();
 
-        final var decodedInput = decodeNonFungibleCreateWithFees(CREATE_NON_FUNGIBLE_WITH_FEES_INPUT, identity());
+        final var decodedInput = decodeNonFungibleCreateWithFeesV1(CREATE_NON_FUNGIBLE_WITH_FEES_INPUT, identity());
 
         assertExpectedNonFungibleTokenCreateStruct(decodedInput);
         assertEquals(BigInteger.valueOf(0), decodedInput.getInitSupply());
@@ -1211,7 +1211,7 @@ class CreatePrecompileTest {
     void decodeTokenCreateWithEmptyAddressesAsExpected() {
         tokenCreatePrecompile.close();
         final var decodedInput =
-                decodeFungibleCreateWithFees(CREATE_FUNGIBLE_WITH_FEES_INPUT_NULL_ACCOUNTS, identity());
+                decodeFungibleCreateWithFeesV1(CREATE_FUNGIBLE_WITH_FEES_INPUT_NULL_ACCOUNTS, identity());
 
         assertNull(decodedInput.getTreasury());
         assertNull(decodedInput.getTokenKeys().get(0).key().getContractID());
@@ -1224,7 +1224,7 @@ class CreatePrecompileTest {
     void decodesTokenCreateWithRoyaltyFeeWithEmptyAddressesAsExpected() {
         tokenCreatePrecompile.close();
         final var decodedInput =
-                decodeNonFungibleCreateWithFees(CREATE_NON_FUNGIBLE_WITH_EMPTY_ROYALTY_FEE, identity());
+                decodeNonFungibleCreateWithFeesV1(CREATE_NON_FUNGIBLE_WITH_EMPTY_ROYALTY_FEE, identity());
 
         final var royaltyFee = decodedInput.getRoyaltyFees().get(0).asGrpc();
         assertFalse(royaltyFee.hasFeeCollectorAccountId());
@@ -1237,7 +1237,7 @@ class CreatePrecompileTest {
         tokenCreatePrecompile.close();
         assertThrows(
                 IllegalArgumentException.class,
-                () -> decodeFungibleCreate(
+                () -> decodeFungibleCreateV1(
                         CREATE_FUNGIBLE_NO_FEES_TOKEN_KEY_EXCEEDING_INTEGER_MAX_INVALID_INPUT, identity));
     }
 
@@ -1595,7 +1595,7 @@ class CreatePrecompileTest {
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
         final Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN));
         tokenCreatePrecompile
-                .when(() -> decodeNonFungibleCreate(eq(pretendArguments), any()))
+                .when(() -> decodeNonFungibleCreateV1(eq(pretendArguments), any()))
                 .thenReturn(tokenCreateWrapper);
         given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
 

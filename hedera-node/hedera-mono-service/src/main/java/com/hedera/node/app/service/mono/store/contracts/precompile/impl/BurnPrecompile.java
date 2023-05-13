@@ -83,8 +83,8 @@ public class BurnPrecompile extends AbstractWritePrecompile {
     public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final var burnAbi =
                 switch (functionId) {
-                    case AbiConstants.ABI_ID_BURN_TOKEN -> SystemContractAbis.BURN_TOKEN_V1;
-                    case AbiConstants.ABI_ID_BURN_TOKEN_V2 -> SystemContractAbis.BURN_TOKEN_V2;
+                    case AbiConstants.ABI_ID_BURN_TOKEN -> SystemContractAbis.BURN_TOKEN_METHOD_V1;
+                    case AbiConstants.ABI_ID_BURN_TOKEN_V2 -> SystemContractAbis.BURN_TOKEN_METHOD_V2;
                     default -> throw new IllegalArgumentException("invalid selector to burn precompile");
                 };
         burnOp = getBurnWrapper(input, burnAbi);

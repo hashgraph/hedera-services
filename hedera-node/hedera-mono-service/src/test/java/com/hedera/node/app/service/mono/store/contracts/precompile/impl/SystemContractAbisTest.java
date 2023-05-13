@@ -14,17 +14,22 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.mono.store.contracts.precompile;
+package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.SystemContractAbis;
+import com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants;
+import com.hedera.node.app.service.mono.store.contracts.precompile.impl.SystemContractAbis.Kind;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.EnumSet;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.stream.Collectors;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.assertj.core.api.SoftAssertions;
 import org.assertj.core.api.junit.jupiter.InjectSoftAssertions;
 import org.assertj.core.api.junit.jupiter.SoftAssertionsExtension;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,13 +44,61 @@ class SystemContractAbisTest {
 
     @Test
     @DisplayName("Confirm all values defined in SystemContractTypes are known to AbiConstants.java")
-    void confirmAllSelectorsKnown() {
+    void confirmAllMethodSelectorsAreKnown() {
         final var allKnownABISelectors = EnumSet.allOf(SystemContractAbis.class).stream()
+                .filter(SystemContractAbis::isMethod)
                 .map(SystemContractAbis::selectorAsHex)
-                .map(s -> s.substring(2)) // lose the `0x`
+                .map(s -> s.substring(2)) // lose the `0x` prefix
                 .map(HexFormat::fromHexDigits)
                 .toList();
-        softly.assertThat(allAbiConstants).containsAll(allKnownABISelectors);
+        softly.assertThat(allAbiConstants).as("missing ABI selectors").containsAll(allKnownABISelectors);
+
+        final var abiSelectorMap = EnumSet.allOf(SystemContractAbis.class).stream()
+                .filter(SystemContractAbis::isMethod)
+                .map(abi -> Pair.of(abi.selector.toInt(), abi))
+                .collect(Collectors.toMap(Pair::getLeft, Pair::getRight));
+        final var mismatchedABISelectors = CollectionUtils.subtract(allKnownABISelectors, allAbiConstants);
+        final var mismatchedABIs =
+                mismatchedABISelectors.stream().map(abiSelectorMap::get).toList();
+        softly.assertThat(mismatchedABIs).as("mismatched ABI selectors").isEmpty();
+    }
+
+    @Test
+    @Disabled("this test for debugging only - deliberately fails in order to dump enum strings")
+    void toStringTest() {
+        final var allKnownABIThings = EnumSet.allOf(SystemContractAbis.class);
+        final var nABIMethods = (int)
+                allKnownABIThings.stream().filter(SystemContractAbis::isMethod).count();
+        final var nABITypes = (int)
+                allKnownABIThings.stream().filter(SystemContractAbis::isType).count();
+
+        softly.assertThat(listAllSystemContractAbis())
+                .as("toString for all methods")
+                .isNotBlank()
+                .hasLineCount(nABIMethods);
+        softly.assertThat(listAllSystemContractTypes())
+                .as("toString for all types")
+                .isNotBlank()
+                .hasLineCount(nABITypes);
+
+        softly.assertThat(listAllSystemContractAbis()).as("raw dump of methods").isEqualTo("");
+        softly.assertThat(listAllSystemContractTypes()).as("raw dump of types").isEqualTo("");
+    }
+
+    @Test
+    void signatureValidation() {
+        softly.assertThat(SystemContractAbis.signatureValidates("foo(a,b,c)"))
+                .as("valid method")
+                .isTrue();
+        softly.assertThat(SystemContractAbis.signatureValidates("(a,b,c)"))
+                .as("valid type")
+                .isTrue();
+        softly.assertThat(SystemContractAbis.signatureValidates("foo(a,b,c"))
+                .as("invalid method")
+                .isFalse();
+        softly.assertThat(SystemContractAbis.signatureValidates("(a,b,c"))
+                .as("invalid type")
+                .isFalse();
     }
 
     @ParameterizedTest
@@ -206,21 +259,19 @@ class SystemContractAbisTest {
 
     @NonNull
     String listAllSystemContractAbis() {
-        final var allSystemContractABIs = EnumSet.allOf(SystemContractAbis.class);
+        return listAllSystemContractThings(Kind.METHOD);
+    }
 
-        final var sb = new StringBuilder(2000);
-        sb.append('\n');
-        for (final var abi : allSystemContractABIs) {
-            sb.append("%s (%d) %s[%d]: %s {%s}%n"
-                    .formatted(
-                            abi.selectorAsHex(),
-                            abi.selector.toInt(),
-                            abi.methodName,
-                            abi.version,
-                            abi.signature,
-                            abi.decoderSignature));
-        }
+    @NonNull
+    String listAllSystemContractTypes() {
+        return listAllSystemContractThings(Kind.TYPE);
+    }
 
-        return sb.toString();
+    @NonNull
+    String listAllSystemContractThings(Kind type) {
+        return EnumSet.allOf(SystemContractAbis.class).stream()
+                .filter(abi -> abi.kind == type)
+                .map(SystemContractAbis::toString)
+                .collect(Collectors.joining("\n"));
     }
 }
