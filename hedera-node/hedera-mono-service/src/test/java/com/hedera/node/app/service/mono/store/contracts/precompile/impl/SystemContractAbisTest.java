@@ -16,6 +16,10 @@
 
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.assertj.core.api.Assertions.assertThatNoException;
+
 import com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.SystemContractAbis.Kind;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -23,6 +27,7 @@ import java.math.BigInteger;
 import java.util.EnumSet;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -45,7 +50,9 @@ class SystemContractAbisTest {
     @Test
     @DisplayName("Confirm all values defined in SystemContractTypes are known to AbiConstants.java")
     void confirmAllMethodSelectorsAreKnown() {
-        final var allKnownABISelectors = EnumSet.allOf(SystemContractAbis.class).stream()
+        final var allKnownABIThings = EnumSet.allOf(SystemContractAbis.class);
+
+        final var allKnownABISelectors = allKnownABIThings.stream()
                 .filter(SystemContractAbis::isMethod)
                 .map(SystemContractAbis::selectorAsHex)
                 .map(s -> s.substring(2)) // lose the `0x` prefix
@@ -53,84 +60,166 @@ class SystemContractAbisTest {
                 .toList();
         softly.assertThat(allAbiConstants).as("missing ABI selectors").containsAll(allKnownABISelectors);
 
-        final var abiSelectorMap = EnumSet.allOf(SystemContractAbis.class).stream()
+        final var abiSelectorMap = allKnownABIThings.stream()
                 .filter(SystemContractAbis::isMethod)
                 .map(abi -> Pair.of(abi.selector.toInt(), abi))
                 .collect(Collectors.toMap(Pair::getLeft, Pair::getRight));
-        final var mismatchedABISelectors = CollectionUtils.subtract(allKnownABISelectors, allAbiConstants);
-        final var mismatchedABIs =
-                mismatchedABISelectors.stream().map(abiSelectorMap::get).toList();
+        final var mismatchedABIs = CollectionUtils.subtract(allKnownABISelectors, allAbiConstants).stream()
+                .map(abiSelectorMap::get)
+                .toList();
         softly.assertThat(mismatchedABIs).as("mismatched ABI selectors").isEmpty();
     }
 
     @Test
-    @Disabled("this test for debugging only - deliberately fails in order to dump enum strings")
-    void toStringTest() {
+    @DisplayName("Confirm all names defined in SystemContractTypes meet consistency checks")
+    void confirmAllAbisHaveConsistentNames() {
         final var allKnownABIThings = EnumSet.allOf(SystemContractAbis.class);
+
+        assertThatNoException()
+                .isThrownBy(() -> allKnownABIThings.forEach(abi -> SystemContractAbis.validateNameIsConsistent(
+                        abi.kind, abi.isMethod() ? "METHOD" : "STRUCT,ARRAY", abi)));
+    }
+
+    @Test
+    @Disabled("this test for debugging only - deliberately fails in order to dump enum strings")
+    void toFullStringTest() {
+        final var allKnownABIThings = EnumSet.allOf(SystemContractAbis.class);
+
         final var nABIMethods = (int)
                 allKnownABIThings.stream().filter(SystemContractAbis::isMethod).count();
         final var nABITypes = (int)
                 allKnownABIThings.stream().filter(SystemContractAbis::isType).count();
 
-        softly.assertThat(listAllSystemContractAbis())
+        final Function<SystemContractAbis.Kind, String> listAllSystemContractThings =
+                kind -> EnumSet.allOf(SystemContractAbis.class).stream()
+                        .filter(abi -> abi.kind == kind)
+                        .map(SystemContractAbis::toFullString)
+                        .collect(Collectors.joining("\n"));
+
+        softly.assertThat(listAllSystemContractThings.apply(Kind.METHOD))
                 .as("toString for all methods")
                 .isNotBlank()
                 .hasLineCount(nABIMethods);
-        softly.assertThat(listAllSystemContractTypes())
+        softly.assertThat(listAllSystemContractThings.apply(Kind.TYPE))
                 .as("toString for all types")
                 .isNotBlank()
                 .hasLineCount(nABITypes);
 
-        softly.assertThat(listAllSystemContractAbis()).as("raw dump of methods").isEqualTo("");
-        softly.assertThat(listAllSystemContractTypes()).as("raw dump of types").isEqualTo("");
-    }
-
-    @Test
-    void signatureValidation() {
-        softly.assertThat(SystemContractAbis.signatureValidates("foo(a,b,c)"))
-                .as("valid method")
-                .isTrue();
-        softly.assertThat(SystemContractAbis.signatureValidates("(a,b,c)"))
-                .as("valid type")
-                .isTrue();
-        softly.assertThat(SystemContractAbis.signatureValidates("foo(a,b,c"))
-                .as("invalid method")
-                .isFalse();
-        softly.assertThat(SystemContractAbis.signatureValidates("(a,b,c"))
-                .as("invalid type")
-                .isFalse();
+        softly.assertThat(listAllSystemContractThings.apply(Kind.METHOD))
+                .as("raw dump of methods")
+                .isEqualTo("");
+        softly.assertThat(listAllSystemContractThings.apply(Kind.TYPE))
+                .as("raw dump of types")
+                .isEqualTo("");
     }
 
     @ParameterizedTest
     @CsvSource(
             textBlock =
                     """
-        0, 0,
-        10, 10
-        100, 100
-        255, 255
-        256, 256
-        257, 257
+        FOO1,  1, true
+        FOO2,  2, true
+        FOO1,  2, false
+        FOOX,  1, false
+        FOOB, 11, false
+        """)
+    void versionMatchValidation(@NonNull final String name, final int version, final boolean expected) {
+        assertThat(SystemContractAbis.versionMatches(name, version)).isEqualTo(expected);
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+            delimiter = ';',
+            textBlock =
+                    """
+        foo(a,b,c);     true
+        (a,b,c);        true
+        foo(a,(b,c),d); true
+        (a,(b,c),d);    true
+        foo(a,b,c;      false
+        (a,b,c;         false
+        foo(a,(b,c,d);  false
+        (a,(b,c,d);     false
+        """)
+    void signatureValidation(@NonNull final String sig, final boolean expected) {
+        assertThat(SystemContractAbis.signatureValidates(sig)).isEqualTo(expected);
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+            delimiter = ';',
+            textBlock =
+                    """
+        METHOD; TEST_METHOD_V1; test; test(a,b,c); 1; true
+        METHOD; TEST_METHOD_V1; test; test(a,b,c;  1; false
+        METHOD; TEST_METH0D_V1; test; test(a,b,c); 1; false
+        METHOD; TEST_METHOD_V1; test; test(a,b,c); 2; false
+        METHOD; TEST_METHOD_V1; '';   (a,b,c);     1; false
+        TYPE;   TEST_STRUCT_V1; '';   (a,b,c);     1; true
+        TYPE;   TEST_ARRAY_V1;  '';   (a,b,c);     1; true
+        TYPE;   TEST_STRUCT_V1; '';   (a,b,c;      1; false
+        TYPE;   TEST_STRÜCT_V1; '';   (a,b,c);     1; false
+        TYPE;   TEST_ARRAY_V1;  '';   (a,b,c);     2; false
+        TYPE;   TEST_STRUCT_V1; test; test(a,b,c); 1; false
+        """)
+    void validateTheNameIsConsistentValidation(
+            @NonNull final Kind abiKind,
+            @NonNull final String enumName,
+            @NonNull final String abiName,
+            @NonNull final String abiSignature,
+            final int abiVersion,
+            final boolean expectedValidation) {
+        if (expectedValidation) {
+            assertThatNoException()
+                    .isThrownBy(() -> SystemContractAbis.validateNameIsConsistent(
+                            abiKind,
+                            abiKind == Kind.METHOD ? "METHOD" : "STRUCT,ARRAY",
+                            enumName,
+                            abiName,
+                            abiSignature,
+                            abiVersion));
+        } else {
+            assertThatIllegalArgumentException()
+                    .isThrownBy(() -> SystemContractAbis.validateNameIsConsistent(
+                            abiKind,
+                            abiKind == Kind.METHOD ? "METHOD" : "STRUCT,ARRAY",
+                            enumName,
+                            abiName,
+                            abiSignature,
+                            abiVersion));
+        }
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+            textBlock =
+                    """
+        0,    0,
+        10,   10
+        100,  100
+        255,  255
+        256,  256
+        257,  257
         1000, 1000
         10000, 10000
         32767, 32767
         32768, 32768
         32769, 32769
-        100000, 100000
-        1000000000, 1000000000
-        2147483647, 2147483647
-        2147483648, 2147483648
-        4294967295, 4294967295
-        4294967296, 4294967296
+        100000,      100000
+        1000000000,  1000000000
+        2147483647,  2147483647
+        2147483648,  2147483648
+        4294967295,  4294967295
+        4294967296,  4294967296
         10000000000, 10000000000
-        281474976710655, 281474976710655
-        281474976710656, 281474976710656
-        9223372036854775807, 9223372036854775807
-        9223372036854775808, 0
-        9223372036854775809, 0
+        281474976710655,        281474976710655
+        281474976710656,        281474976710656
+        9223372036854775807,    9223372036854775807
+        9223372036854775808,    0
+        9223372036854775809,    0
         9999999999999999999999, 0
         """)
-    void toLongSafelyTest(@NonNull final BigInteger actualBI, final long expectedBI) {
+    void toLongOrIntSafelyTest(@NonNull final BigInteger actualBI, final long expectedBI) {
 
         for (final var actual : List.of(actualBI, actualBI.negate())) {
             var expected = actual.compareTo(BigInteger.ZERO) >= 0 ? expectedBI : -expectedBI;
@@ -147,16 +236,19 @@ class SystemContractAbisTest {
                 if (actual.compareTo(MIN_INT) >= 0 && actual.compareTo(MAX_INT) <= 0) {
                     final Integer actualI = actual.intValueExact();
                     softly.assertThat(SystemContractAbis.toLongSafely(actualI)).isEqualTo(expected);
+                    softly.assertThat(SystemContractAbis.toIntSafely(actualI)).isEqualTo(expected);
                 }
 
                 if (actual.compareTo(MIN_SHORT) >= 0 && actual.compareTo(MAX_SHORT) <= 0) {
                     final Short actualS = actual.shortValueExact();
                     softly.assertThat(SystemContractAbis.toLongSafely(actualS)).isEqualTo(expected);
+                    softly.assertThat(SystemContractAbis.toIntSafely(actualS)).isEqualTo(expected);
                 }
 
                 if (actual.compareTo(MIN_BYTE) >= 0 && actual.compareTo(MAX_BYTE) <= 0) {
                     final Byte actualB = actual.byteValueExact();
                     softly.assertThat(SystemContractAbis.toLongSafely(actualB)).isEqualTo(expected);
+                    softly.assertThat(SystemContractAbis.toIntSafely(actualB)).isEqualTo(expected);
                 }
             } else {
                 softly.assertThatExceptionOfType(IllegalArgumentException.class)
@@ -164,6 +256,14 @@ class SystemContractAbisTest {
                         .withMessageContaining(actual.toString(16));
             }
         }
+    }
+
+    @Test
+    void badValuesToLongOrIntSafelyTest() {
+        softly.assertThatIllegalArgumentException().isThrownBy(() -> SystemContractAbis.toLongSafely("foobar!"));
+        softly.assertThatIllegalArgumentException().isThrownBy(() -> SystemContractAbis.toIntSafely("foobar!"));
+        softly.assertThatIllegalArgumentException()
+                .isThrownBy(() -> SystemContractAbis.toIntSafely(MAX_INT.add(MAX_INT)));
     }
 
     static final BigInteger MAX_LONG = BigInteger.valueOf(Long.MAX_VALUE);
@@ -256,22 +356,4 @@ class SystemContractAbisTest {
             AbiConstants.ABI_ID_GET_TOKEN_EXPIRY_INFO,
             AbiConstants.ABI_ID_UPDATE_TOKEN_EXPIRY_INFO,
             AbiConstants.ABI_ID_UPDATE_TOKEN_EXPIRY_INFO_V2);
-
-    @NonNull
-    String listAllSystemContractAbis() {
-        return listAllSystemContractThings(Kind.METHOD);
-    }
-
-    @NonNull
-    String listAllSystemContractTypes() {
-        return listAllSystemContractThings(Kind.TYPE);
-    }
-
-    @NonNull
-    String listAllSystemContractThings(Kind type) {
-        return EnumSet.allOf(SystemContractAbis.class).stream()
-                .filter(abi -> abi.kind == type)
-                .map(SystemContractAbis::toString)
-                .collect(Collectors.joining("\n"));
-    }
 }

@@ -30,6 +30,8 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeAccountIds;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.generateAccountIDWithAliasCalculatedFrom;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.SystemContractAbis.CRYPTO_TRANSFER_METHOD_V1;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.SystemContractAbis.CRYPTO_TRANSFER_METHOD_V2;
 import static com.hedera.node.app.service.mono.txns.span.SpanMapManager.reCalculateXferMeta;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
@@ -97,18 +99,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class TransferPrecompile extends AbstractWritePrecompile {
     private static final Logger log = LogManager.getLogger(TransferPrecompile.class);
-    private static final Function CRYPTO_TRANSFER_FUNCTION =
-            new Function("cryptoTransfer((address,(address,int64)[],(address,address,int64)[])[])", INT);
-    private static final Function CRYPTO_TRANSFER_FUNCTION_V2 = new Function(
-            "cryptoTransfer(((address,int64,bool)[]),(address,(address,int64,bool)[],(address,address,int64,"
-                    + "bool)[])[])",
-            INT);
-    private static final Bytes CRYPTO_TRANSFER_SELECTOR = Bytes.wrap(CRYPTO_TRANSFER_FUNCTION.selector());
-    private static final Bytes CRYPTO_TRANSFER_SELECTOR_V2 = Bytes.wrap(CRYPTO_TRANSFER_FUNCTION_V2.selector());
-    private static final ABIType<Tuple> CRYPTO_TRANSFER_DECODER =
-            TypeFactory.create("((bytes32,(bytes32,int64)[],(bytes32,bytes32,int64)[])[])");
-    private static final ABIType<Tuple> CRYPTO_TRANSFER_DECODER_V2 = TypeFactory.create(
-            "(((bytes32,int64,bool)[]),(bytes32,(bytes32,int64,bool)[],(bytes32,bytes32,int64,bool)[])[])");
+
     private static final Function TRANSFER_TOKENS_FUNCTION =
             new Function("transferTokens(address,address[],int64[])", INT);
     private static final Bytes TRANSFER_TOKENS_SELECTOR = Bytes.wrap(TRANSFER_TOKENS_FUNCTION.selector());
@@ -126,6 +117,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             new Function("transferNFT(address,address,address,int64)", INT);
     private static final Bytes TRANSFER_NFT_SELECTOR = Bytes.wrap(TRANSFER_NFT_FUNCTION.selector());
     private static final ABIType<Tuple> TRANSFER_NFT_DECODER = TypeFactory.create("(bytes32,bytes32,bytes32,int64)");
+
     private static final String TRANSFER = String.format(FAILURE_MESSAGE, "transfer");
     private static final String CHANGE_SWITCHED_TO_APPROVAL_WITHOUT_MATCHING_ADJUSTMENT_IN =
             "Change {} switched to approval without matching adjustment in {}";
@@ -189,7 +181,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 
         transferOp = switch (functionId) {
-            case AbiConstants.ABI_ID_CRYPTO_TRANSFER -> decodeCryptoTransfer(
+            case AbiConstants.ABI_ID_CRYPTO_TRANSFER -> decodeCryptoTransferV1(
                     input, aliasResolver, ledgers.accounts()::contains);
             case AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2 -> decodeCryptoTransferV2(
                     input, aliasResolver, ledgers.accounts()::contains);
@@ -424,10 +416,11 @@ public class TransferPrecompile extends AbstractWritePrecompile {
      * @param aliasResolver function used to resolve aliases
      * @return CryptoTransferWrapper codec
      */
-    public static CryptoTransferWrapper decodeCryptoTransfer(
+    public static CryptoTransferWrapper decodeCryptoTransferV1(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver, final Predicate<AccountID> exists) {
         final List<SyntheticTxnFactory.HbarTransfer> hbarTransfers = Collections.emptyList();
-        final Tuple decodedTuples = decodeFunctionCall(input, CRYPTO_TRANSFER_SELECTOR, CRYPTO_TRANSFER_DECODER);
+        final Tuple decodedTuples =
+                decodeFunctionCall(input, CRYPTO_TRANSFER_METHOD_V1.selector, CRYPTO_TRANSFER_METHOD_V1.decoder);
 
         final List<TokenTransferWrapper> tokenTransferWrappers = new ArrayList<>();
 
@@ -452,7 +445,8 @@ public class TransferPrecompile extends AbstractWritePrecompile {
      */
     public static CryptoTransferWrapper decodeCryptoTransferV2(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver, final Predicate<AccountID> exists) {
-        final Tuple decodedTuples = decodeFunctionCall(input, CRYPTO_TRANSFER_SELECTOR_V2, CRYPTO_TRANSFER_DECODER_V2);
+        final Tuple decodedTuples =
+                decodeFunctionCall(input, CRYPTO_TRANSFER_METHOD_V2.selector, CRYPTO_TRANSFER_METHOD_V2.decoder);
         List<SyntheticTxnFactory.HbarTransfer> hbarTransfers = new ArrayList<>();
         final List<TokenTransferWrapper> tokenTransferWrappers = new ArrayList<>();
 
