@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_UPDATE_TOKEN_KEYS;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.contractAddr;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.failResult;
@@ -35,7 +34,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
-import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
@@ -67,6 +65,7 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.codec.Encodin
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.KeyValueWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenKeyWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenUpdateKeysWrapper;
+import com.hedera.node.app.service.mono.store.contracts.precompile.impl.SystemContractAbis;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenUpdateKeysPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompileUtils;
@@ -227,7 +226,7 @@ class TokenUpdateKeysPrecompileTest {
     @Test
     void computeCallsSuccessfullyUpdateKeysForFungibleToken() {
         // given
-        final var input = Bytes.of(Integers.toBytes(ABI_ID_UPDATE_TOKEN_KEYS));
+        final var input = SystemContractAbis.UPDATE_TOKEN_KEYS_METHOD_V1.selector;
         givenFrameContext();
         given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, Instant.ofEpochSecond(123L)));
         givenLedgers();
@@ -248,7 +247,7 @@ class TokenUpdateKeysPrecompileTest {
     @Test
     void failsWithWrongValidityForUpdateFungibleToken() {
         // given
-        final var input = Bytes.of(Integers.toBytes(ABI_ID_UPDATE_TOKEN_KEYS));
+        final var input = SystemContractAbis.UPDATE_TOKEN_KEYS_METHOD_V1.selector;
         givenFrameContext();
         givenLedgers();
         givenMinimalContextForSuccessfulCall();

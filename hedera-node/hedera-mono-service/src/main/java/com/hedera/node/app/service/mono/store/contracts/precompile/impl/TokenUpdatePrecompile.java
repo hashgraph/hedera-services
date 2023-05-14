@@ -58,6 +58,7 @@ public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
             PrecompilePricingUtils precompilePricingUtils,
             final int functionId) {
         super(
+                UPDATE_TOKEN_INFO,
                 KeyActivationUtils::validateKey,
                 KeyActivationUtils::validateLegacyKey,
                 ledgers,
@@ -90,7 +91,6 @@ public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
         Objects.requireNonNull(updateOp);
         validateTrue(updateOp.tokenID() != null, INVALID_TOKEN_ID);
         tokenId = Id.fromGrpcToken(updateOp.tokenID());
-        type = UPDATE_TOKEN_INFO;
         super.run(frame);
     }
 

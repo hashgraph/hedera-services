@@ -42,6 +42,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public abstract class AbstractTokenUpdatePrecompile extends AbstractWritePrecompile {
@@ -49,10 +50,11 @@ public abstract class AbstractTokenUpdatePrecompile extends AbstractWritePrecomp
     protected final LegacyKeyValidator legacyKeyValidator;
     protected final ContractAliases aliases;
     protected final EvmSigsVerifier sigsVerifier;
-    protected UpdateType type;
+    protected final UpdateType type;
     protected Id tokenId;
 
     protected AbstractTokenUpdatePrecompile(
+            @NonNull UpdateType type,
             final KeyValidator keyValidator,
             final LegacyKeyValidator legacyKeyValidator,
             final WorldLedgers ledgers,
@@ -63,6 +65,7 @@ public abstract class AbstractTokenUpdatePrecompile extends AbstractWritePrecomp
             final InfrastructureFactory infrastructureFactory,
             final PrecompilePricingUtils pricingUtils) {
         super(ledgers, sideEffectsTracker, syntheticTxnFactory, infrastructureFactory, pricingUtils);
+        this.type = type;
         this.aliases = aliases;
         this.keyValidator = keyValidator;
         this.legacyKeyValidator = legacyKeyValidator;

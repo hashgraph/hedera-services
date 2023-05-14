@@ -48,10 +48,6 @@ public class DecodingFacade {
     public static final List<SyntheticTxnFactory.NftExchange> NO_NFT_EXCHANGES = Collections.emptyList();
     public static final List<SyntheticTxnFactory.FungibleTokenTransfer> NO_FUNGIBLE_TRANSFERS = Collections.emptyList();
 
-    /* --- Token Create Structs --- */
-    public static final String KEY_VALUE_DECODER = "(bool,bytes32,bytes,bytes,bytes32)";
-    public static final String TOKEN_KEY_DECODER = "(int32," + KEY_VALUE_DECODER + ")";
-
     private DecodingFacade() {
         throw new UnsupportedOperationException("Utility Class");
     }

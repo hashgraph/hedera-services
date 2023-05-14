@@ -37,6 +37,7 @@ import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.TokenUpdateLogic;
+import com.hedera.node.app.service.mono.store.contracts.precompile.impl.AbstractTokenUpdatePrecompile.UpdateType;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.sigs.KeyValidator;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.sigs.LegacyKeyValidator;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.KeyActivationTest;
@@ -55,7 +56,6 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -110,20 +110,6 @@ class AbstractTokenUpdatePrecompileTest {
 
     private SigTestingTokenUpdatePrecompile subject;
 
-    @BeforeEach
-    void setUp() {
-        subject = new SigTestingTokenUpdatePrecompile(
-                keyValidator,
-                legacyKeyValidator,
-                ledgers,
-                aliases,
-                sigsVerifier,
-                sideEffectsTracker,
-                syntheticTxnFactory,
-                infrastructureFactory,
-                pricingUtils);
-    }
-
     @Test
     void validatesAdminKeyAndNewTreasury() {
         final var captor = forClass(KeyActivationTest.class);
@@ -141,6 +127,18 @@ class AbstractTokenUpdatePrecompileTest {
                 .willReturn(true);
         given(ledgers.accounts()).willReturn(accounts);
         given(accounts.exists(newTreasury)).willReturn(true);
+
+        final var subject = new SigTestingTokenUpdatePrecompile(
+                UpdateType.UPDATE_TOKEN_INFO,
+                keyValidator,
+                legacyKeyValidator,
+                ledgers,
+                aliases,
+                sigsVerifier,
+                sideEffectsTracker,
+                syntheticTxnFactory,
+                infrastructureFactory,
+                pricingUtils);
 
         subject.useBodyWithNewTreasury();
         subject.run(frame);
@@ -199,6 +197,17 @@ class AbstractTokenUpdatePrecompileTest {
         given(ledgers.accounts()).willReturn(accounts);
         given(accounts.exists(newAutoRenew)).willReturn(true);
 
+        final var subject = new SigTestingTokenUpdatePrecompile(
+                UpdateType.UPDATE_TOKEN_EXPIRY,
+                keyValidator,
+                legacyKeyValidator,
+                ledgers,
+                aliases,
+                sigsVerifier,
+                sideEffectsTracker,
+                syntheticTxnFactory,
+                infrastructureFactory,
+                pricingUtils);
         subject.useBodyWithNewAutoRenew();
         subject.run(frame);
 
@@ -253,6 +262,17 @@ class AbstractTokenUpdatePrecompileTest {
                 .willReturn(true);
         given(ledgers.accounts()).willReturn(accounts);
 
+        final var subject = new SigTestingTokenUpdatePrecompile(
+                UpdateType.UPDATE_TOKEN_INFO,
+                keyValidator,
+                legacyKeyValidator,
+                ledgers,
+                aliases,
+                sigsVerifier,
+                sideEffectsTracker,
+                syntheticTxnFactory,
+                infrastructureFactory,
+                pricingUtils);
         subject.useBodyWithNoOtherSigReqs();
         subject.run(frame);
 
@@ -271,6 +291,7 @@ class AbstractTokenUpdatePrecompileTest {
 
     private static class SigTestingTokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
         protected SigTestingTokenUpdatePrecompile(
+                final UpdateType type,
                 final KeyValidator keyValidator,
                 final LegacyKeyValidator legacyKeyValidator,
                 final WorldLedgers ledgers,
@@ -281,6 +302,7 @@ class AbstractTokenUpdatePrecompileTest {
                 final InfrastructureFactory infrastructureFactory,
                 final PrecompilePricingUtils pricingUtils) {
             super(
+                    type,
                     keyValidator,
                     legacyKeyValidator,
                     ledgers,
@@ -298,21 +320,18 @@ class AbstractTokenUpdatePrecompileTest {
         }
 
         public void useBodyWithNewTreasury() {
-            type = UpdateType.UPDATE_TOKEN_INFO;
             tokenId = Id.fromGrpcToken(targetId);
             final var updateOp = baseBuilder().setTreasury(newTreasury);
             transactionBody = TransactionBody.newBuilder().setTokenUpdate(updateOp);
         }
 
         public void useBodyWithNewAutoRenew() {
-            type = UpdateType.UPDATE_TOKEN_EXPIRY;
             tokenId = Id.fromGrpcToken(targetId);
             final var updateOp = baseBuilder().setAutoRenewAccount(newAutoRenew);
             transactionBody = TransactionBody.newBuilder().setTokenUpdate(updateOp);
         }
 
         public void useBodyWithNoOtherSigReqs() {
-            type = UpdateType.UPDATE_TOKEN_INFO;
             tokenId = Id.fromGrpcToken(targetId);
             final var updateOp = baseBuilder();
             transactionBody = TransactionBody.newBuilder().setTokenUpdate(updateOp);

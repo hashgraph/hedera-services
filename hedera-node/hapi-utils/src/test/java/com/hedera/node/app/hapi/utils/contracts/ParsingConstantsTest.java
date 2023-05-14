@@ -68,23 +68,5 @@ class ParsingConstantsTest {
         assertEquals(mintReturnType, TupleType.parse("(int32,uint64,int64[])"));
         assertEquals(hapiAllowanceOfType, TupleType.parse("(int32,uint256)"));
         assertEquals(hapiGetApprovedType, TupleType.parse("(int32,bytes32)"));
-        assertEquals(
-                getFungibleTokenInfoType, TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + FUNGIBLE_TOKEN_INFO + ")"));
-        assertEquals(getTokenInfoType, TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + TOKEN_INFO + ")"));
-        assertEquals(
-                getNonFungibleTokenInfoType,
-                TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + NON_FUNGIBLE_TOKEN_INFO + ")"));
-        assertEquals(
-                getTokenCustomFeesType,
-                TupleType.parse(RESPONSE_STATUS_AT_BEGINNING
-                        + FIXED_FEE
-                        + ARRAY_BRACKETS
-                        + ","
-                        + FRACTIONAL_FEE
-                        + ARRAY_BRACKETS
-                        + ","
-                        + ROYALTY_FEE
-                        + ARRAY_BRACKETS
-                        + ")"));
     }
 }

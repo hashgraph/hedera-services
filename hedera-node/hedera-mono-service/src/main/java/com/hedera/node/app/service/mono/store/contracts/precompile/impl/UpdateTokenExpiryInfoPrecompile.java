@@ -56,6 +56,7 @@ public class UpdateTokenExpiryInfoPrecompile extends AbstractTokenUpdatePrecompi
             PrecompilePricingUtils precompilePricingUtils,
             final int functionId) {
         super(
+                UPDATE_TOKEN_EXPIRY,
                 KeyActivationUtils::validateKey,
                 KeyActivationUtils::validateLegacyKey,
                 ledgers,
@@ -89,7 +90,6 @@ public class UpdateTokenExpiryInfoPrecompile extends AbstractTokenUpdatePrecompi
         Objects.requireNonNull(updateExpiryInfoOp);
         validateTrue(updateExpiryInfoOp.tokenID() != null, INVALID_TOKEN_ID);
         tokenId = Id.fromGrpcToken(updateExpiryInfoOp.tokenID());
-        type = UPDATE_TOKEN_EXPIRY;
         super.run(frame);
     }
 

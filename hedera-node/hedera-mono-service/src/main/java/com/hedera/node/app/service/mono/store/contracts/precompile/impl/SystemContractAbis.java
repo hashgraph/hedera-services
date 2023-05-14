@@ -35,8 +35,8 @@ import org.apache.tuweni.bytes.Bytes;
  * <p>
  * N.B.: Currently there are _multiple_ sources of this information in the code base, scattered
  * about; it is intended that ALL those other sources will be refactored away, leaving only this
- * enum as the single source of information about these ABIs. Specifically: DecodingFacade and
- * ParsingConstants have versions of this data too.
+ * enum as the single source of information about these ABIs. Specifically: ParsingConstants and
+ * AbiConstants have versions of this data.
  * <p>
  * N.B.: Currently this file needs to be maintained by hand when ABIs are added or versioned; it is
  * intended that this file be GENERATED from the actual Solidity contracts (in the smart contracts
@@ -148,7 +148,12 @@ public enum SystemContractAbis {
     UPDATE_TOKEN_INFO_METHOD_V3(3, "updateTokenInfo(address,%s)".formatted(HEDERA_TOKEN_STRUCT_V3)),
 
     WIPE_TOKEN_ACCOUNT_METHOD_V1(1, "wipeTokenAccount(address,address,uint32)"),
-    WIPE_TOKEN_ACCOUNT_METHOD_V2(2, "wipeTokenAccount(address,address,int64)");
+    WIPE_TOKEN_ACCOUNT_METHOD_V2(2, "wipeTokenAccount(address,address,int64)"),
+
+    // HTS, non-versioned ABIs here (for now - ultimately, everything should be put in alphabetical
+    // order for easier reading)
+
+    UPDATE_TOKEN_KEYS_METHOD_V1(1, "updateTokenKeys(address,%s[])".formatted(TOKEN_KEY_STRUCT_V1));
 
     /** Declare a METHOD */
     SystemContractAbis(int version, @NonNull final String signature) {
