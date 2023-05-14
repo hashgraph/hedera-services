@@ -275,6 +275,7 @@ public enum SystemContractAbis {
         validateNameIsConsistent(kind, keywordsCsv, abi.name(), abi.name, abi.signature, abi.version);
     }
 
+    @SuppressWarnings("java:S1301") // switch->if - I disagree: a switch on 2-elt enum is better than if
     static void validateNameIsConsistent(
             @NonNull final Kind kind,
             @NonNull final String keywordsCsv,
@@ -319,7 +320,7 @@ public enum SystemContractAbis {
         return versionFromName == version;
     }
 
-    @SuppressWarnings("java:S5852") // slow regular expression due to back-tracking could lead to DoS
+    @SuppressWarnings({"java:S5852", "Java:S5843"}) // slow regular expression due to back-tracking could lead to DoS
     static boolean signatureValidates(@NonNull final String s) {
 
         // This regex matches ensures properly balanced and nested parenthesis, in Java (using
