@@ -34,14 +34,16 @@ public class QueueThreadMetrics {
      */
     public QueueThreadMetrics(final AbstractQueueThreadConfiguration<?, ?> configuration) {
         final QueueThreadMetricsConfiguration metricsConfig = configuration.getMetricsConfiguration();
-        this.busyTime = metricsConfig.isBusyTimeMetricEnabled() ? new BusyTime(metricsConfig.getTime()) : null;
-        if (busyTime != null) {
-            busyTime.addMetric(
-                    metricsConfig.getMetrics(),
-                    metricsConfig.getCategory(),
-                    buildBusyTimeMetricName(configuration.getThreadName()),
-                    "The busy time of the queue thread called " + configuration.getThreadName());
+        if (metricsConfig == null || !metricsConfig.isBusyTimeMetricEnabled()) {
+            this.busyTime = null;
+            return;
         }
+        this.busyTime = new BusyTime(metricsConfig.getTime());
+        busyTime.addMetric(
+                metricsConfig.getMetrics(),
+                metricsConfig.getCategory(),
+                buildBusyTimeMetricName(configuration.getThreadName()),
+                "The busy time of the queue thread called " + configuration.getThreadName());
     }
 
     /**

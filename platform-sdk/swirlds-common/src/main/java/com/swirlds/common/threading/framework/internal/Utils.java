@@ -45,21 +45,18 @@ final class Utils {
         }
 
         final QueueThreadMetricsConfiguration metricsConfig = config.getMetricsConfiguration();
-        if (metricsConfig == null
-                || (!metricsConfig.isMinSizeMetricEnabled() && !metricsConfig.isMaxSizeMetricEnabled())) {
-            return queue;
+        if (metricsConfig != null
+                && (metricsConfig.isMinSizeMetricEnabled() || metricsConfig.isMaxSizeMetricEnabled())) {
+            queue = new MeasuredBlockingQueue<>(
+                    queue,
+                    new MeasuredBlockingQueue.Config(
+                            metricsConfig.getMetrics(), metricsConfig.getCategory(), config.getThreadName())
+                            .withMaxSizeMetricEnabled(metricsConfig.isMaxSizeMetricEnabled())
+                            .withMinSizeMetricEnabled(metricsConfig.isMinSizeMetricEnabled()));
         }
 
-        queue = new MeasuredBlockingQueue<>(
-                queue,
-                new MeasuredBlockingQueue.Config(
-                                metricsConfig.getMetrics(), metricsConfig.getCategory(), config.getThreadName())
-                        .withMaxSizeMetricEnabled(metricsConfig.isMaxSizeMetricEnabled())
-                        .withMinSizeMetricEnabled(metricsConfig.isMinSizeMetricEnabled()));
-
-        // this is needed for a unit test, not a great solution
+        // this is needed for unit tests, not a great solution
         config.setQueue(queue);
-
         return queue;
     }
 }
