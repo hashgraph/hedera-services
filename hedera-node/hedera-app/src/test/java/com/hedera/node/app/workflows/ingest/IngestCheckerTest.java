@@ -22,7 +22,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
@@ -132,13 +131,7 @@ class IngestCheckerTest extends AppTestBase {
         when(transactionChecker.check(tx)).thenReturn(transactionInfo);
 
         subject = new IngestChecker(
-                MOCK_NODE_ACCOUNT_ID,
-                nodeInfo,
-                currentPlatformStatus,
-                transactionChecker,
-                throttleAccumulator,
-                solvencyPreCheck,
-                signaturePreparer);
+                currentPlatformStatus, transactionChecker, throttleAccumulator, solvencyPreCheck, signaturePreparer);
     }
 
     @Nested
@@ -149,17 +142,6 @@ class IngestCheckerTest extends AppTestBase {
         @DisplayName("When the node is ok, no exception should be thrown")
         void testNodeStateSucceeds() {
             assertThatCode(() -> subject.checkNodeState()).doesNotThrowAnyException();
-        }
-
-        @Test
-        @DisplayName("When the node is zero stake, the transaction should be rejected")
-        void testCheckNodeStateWithZeroStakeFails() {
-            // Given a node that IS zero stake
-            when(nodeInfo.isSelfZeroStake()).thenReturn(true);
-
-            assertThatThrownBy(() -> subject.checkNodeState())
-                    .isInstanceOf(PreCheckException.class)
-                    .has(responseCode(INVALID_NODE_ACCOUNT));
         }
 
         @ParameterizedTest
