@@ -428,8 +428,6 @@ public class HashgraphDemoMain implements SwirldMain {
         eventLimit = new TextField(parameters.length <= p ? "" : parameters[p].trim(), 5);
         p++;
 
-        slowCheckbox.addItemListener(e -> {});
-
         final GridBagConstraints constr = new GridBagConstraints();
         constr.fill = GridBagConstraints.NONE; // don't stretch components
         constr.gridwidth = GridBagConstraints.REMAINDER; // each component uses all cells in a row
