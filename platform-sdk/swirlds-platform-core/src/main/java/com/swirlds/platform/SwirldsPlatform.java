@@ -40,6 +40,7 @@ import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.route.MerkleRouteIterator;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
@@ -55,7 +56,6 @@ import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.PlatformStatus;
-import com.swirlds.common.system.PlatformWithDeprecatedMethods;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.Address;
@@ -227,8 +227,6 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -240,13 +238,11 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods, ConnectionTracker, Startable {
+public class SwirldsPlatform implements Platform, ConnectionTracker, Startable {
 
     public static final String PLATFORM_THREAD_POOL_NAME = "platform-core";
     /** use this for all logging, as controlled by the optional data/log4j2.xml file */
     private static final Logger logger = LogManager.getLogger(SwirldsPlatform.class);
-    /** alert threshold for java app pause */
-    private static final long PAUSE_ALERT_INTERVAL = 5000;
     /**
      * the ID of the member running this. Since a node can be a main node or a mirror node, the ID is not a primitive
      * value
@@ -326,8 +322,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     private SharedConnectionLocks sharedConnectionLocks;
 
     private final StateManagementComponent stateManagementComponent;
-    /** last time stamp when pause check timer is active */
-    private long pauseCheckTimeStamp;
     /** Tracks recent events created in the network */
     private final CriticalQuorum criticalQuorum;
 
@@ -551,7 +545,9 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         consensusRef = new AtomicReference<>();
 
-        reconnectThrottle = new ReconnectThrottle(settings.getReconnect());
+        final ReconnectConfig reconnectConfig =
+                platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
+        reconnectThrottle = new ReconnectThrottle(reconnectConfig);
 
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
 
@@ -573,7 +569,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     }
                     reconnectController.get().start();
                 },
-                settings.getReconnect());
+                reconnectConfig);
 
         // FUTURE WORK remove this when there are no more ShutdownRequestedTriggers being dispatched
         components.add(new Shutdown());
@@ -1226,6 +1222,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 !syncConfig.syncAsProtocolEnabled(),
                 () -> {});
 
+        final ReconnectConfig reconnectConfig =
+                platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
         syncPermitProvider = new SyncPermitProvider(syncConfig.syncProtocolPermitCount());
 
         final Runnable stopGossip;
@@ -1251,10 +1249,14 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 clearAllPipelines,
                 swirldStateManager::getConsensusState,
                 stateManagementComponent::getLastCompleteRound,
-                new ReconnectLearnerThrottle(selfId, settings.getReconnect()),
+                new ReconnectLearnerThrottle(selfId, reconnectConfig),
                 this::loadReconnectState,
                 new ReconnectLearnerFactory(
-                        platformContext, threadManager, initialAddressBook, settings.getReconnect(), reconnectMetrics));
+                        platformContext,
+                        threadManager,
+                        initialAddressBook,
+                        reconnectConfig.asyncStreamTimeoutMilliseconds(),
+                        reconnectMetrics));
         if (chatterConfig.useChatter()) {
             reconnectController.set(new ReconnectController(threadManager, reconnectHelper, chatterCore::startChatter));
             startChatterNetwork();
@@ -1263,29 +1265,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         }
 
         metrics.start();
-
-        if (settings.isRunPauseCheckTimer()) {
-            // periodically check current time stamp to detect whether the java application
-            // has been paused for a long period
-            final Timer pauseCheckTimer = new Timer("pause check", true);
-            pauseCheckTimer.schedule(
-                    new TimerTask() {
-                        @Override
-                        public void run() {
-                            final long currentTimeStamp = System.currentTimeMillis();
-                            if ((currentTimeStamp - pauseCheckTimeStamp) > PAUSE_ALERT_INTERVAL
-                                    && pauseCheckTimeStamp != 0) {
-                                logger.error(
-                                        EXCEPTION.getMarker(),
-                                        "ERROR, a pause larger than {} is detected ",
-                                        PAUSE_ALERT_INTERVAL);
-                            }
-                            pauseCheckTimeStamp = currentTimeStamp;
-                        }
-                    },
-                    0,
-                    PAUSE_ALERT_INTERVAL / 2);
-        }
 
         // FUTURE WORK: validate that status is still STARTING_UP (sanity check until we refactor platform status)
         // FUTURE WORK: set platform status REPLAYING_EVENTS
@@ -1400,6 +1379,9 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                         intakeCycle.waitForCurrentSequenceEnd();
                     });
 
+            final ReconnectConfig reconnectConfig =
+                    platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
+
             chatterThreads.add(new StoppableThreadConfiguration<>(threadManager)
                     .setPriority(Thread.NORM_PRIORITY)
                     .setNodeId(selfId.id())
@@ -1423,7 +1405,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                                             emergencyRecoveryManager,
                                             reconnectThrottle,
                                             stateManagementComponent,
-                                            settings.getReconnect().getAsyncStreamTimeoutMilliseconds(),
+                                            reconnectConfig.asyncStreamTimeoutMilliseconds(),
                                             reconnectMetrics,
                                             reconnectController.get()),
                                     new ReconnectProtocol(
@@ -1432,7 +1414,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                                             reconnectThrottle,
                                             () -> stateManagementComponent.getLatestSignedState(
                                                     "SwirldsPlatform: ReconnectProtocol"),
-                                            settings.getReconnect().getAsyncStreamTimeoutMilliseconds(),
+                                            reconnectConfig.asyncStreamTimeoutMilliseconds(),
                                             reconnectMetrics,
                                             reconnectController.get(),
                                             new DefaultSignedStateValidator(),
@@ -1514,6 +1496,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
 
         final StaticConnectionManagers connectionManagers = startCommonNetwork();
+        final ReconnectConfig reconnectConfig =
+                platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
 
         if (syncConfig.syncAsProtocolEnabled()) {
             reconnectController.set(
@@ -1536,7 +1520,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                         new ReconnectProtocolResponder(
                                 threadManager,
                                 stateManagementComponent,
-                                settings.getReconnect(),
+                                reconnectConfig,
                                 reconnectThrottle,
                                 reconnectMetrics)),
                 ProtocolMapping.map(
@@ -1588,7 +1572,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
-
+        final ReconnectConfig reconnectConfig =
+                platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
         final Duration hangingThreadDuration = basicConfig.hangingThreadDuration();
 
         // if this is a single node network, start dedicated thread to "sync" and create events
@@ -1646,7 +1631,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                                             emergencyRecoveryManager,
                                             reconnectThrottle,
                                             stateManagementComponent,
-                                            settings.getReconnect().getAsyncStreamTimeoutMilliseconds(),
+                                            reconnectConfig.asyncStreamTimeoutMilliseconds(),
                                             reconnectMetrics,
                                             reconnectController.get()),
                                     new ReconnectProtocol(
@@ -1655,7 +1640,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                                             reconnectThrottle,
                                             () -> stateManagementComponent.getLatestSignedState(
                                                     "SwirldsPlatform: ReconnectProtocol"),
-                                            settings.getReconnect().getAsyncStreamTimeoutMilliseconds(),
+                                            reconnectConfig.asyncStreamTimeoutMilliseconds(),
                                             reconnectMetrics,
                                             reconnectController.get(),
                                             new DefaultSignedStateValidator(),
@@ -1800,24 +1785,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     @Override
     public AddressBook getAddressBook() {
         return initialAddressBook;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Deprecated(forRemoval = true)
-    @Override
-    public <T extends SwirldState> T getState() {
-        return (T) swirldStateManager.getCurrentSwirldState();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Deprecated(forRemoval = true)
-    @Override
-    public void releaseState() {
-        swirldStateManager.releaseCurrentSwirldState();
     }
 
     /**
