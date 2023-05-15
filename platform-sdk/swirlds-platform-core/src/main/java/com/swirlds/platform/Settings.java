@@ -98,7 +98,6 @@ import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.utility.PlatformVersion;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.fchashmap.FCHashMapSettingsFactory;
 import com.swirlds.jasperdb.settings.JasperDbSettingsFactory;
 import com.swirlds.merkledb.settings.MerkleDbSettingsFactory;
 import com.swirlds.platform.internal.SubSetting;
@@ -397,10 +396,6 @@ public class Settings {
     /** settings that control the {@link SignedStateManager} and {@link SignedStateFileManager} behaviors */
     private StateSettings state = new StateSettings();
 
-    /**
-     * Settings controlling FCHashMap.
-     */
-    private FCHashMapSettingsImpl fcHashMap = new FCHashMapSettingsImpl();
     /**
      * Settings controlling VirtualMap.
      */
