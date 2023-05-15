@@ -22,7 +22,6 @@ import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfigura
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.common.threading.manager.ThreadManager;
-
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -199,8 +198,7 @@ public abstract class AbstractQueueThreadConfiguration<C extends AbstractQueueTh
     }
 
     @SuppressWarnings("unchecked")
-    public C setMetricsConfiguration(
-            final QueueThreadMetricsConfiguration metricsConfiguration) {
+    public C setMetricsConfiguration(final QueueThreadMetricsConfiguration metricsConfiguration) {
         this.metricsConfiguration = metricsConfiguration;
         return (C) this;
     }

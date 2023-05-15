@@ -39,10 +39,8 @@ import com.swirlds.platform.components.transaction.system.PreConsensusSystemTran
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
-import com.swirlds.platform.eventhandling.PreConsensusEventHandler;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusHandlingMetrics;
-import com.swirlds.platform.metrics.ConsensusMetrics;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.network.connectivity.SocketFactory;
 import com.swirlds.platform.network.connectivity.TcpFactory;
@@ -136,10 +134,7 @@ final class PlatformConstructor {
                 .setThreadName("state-hash-sign")
                 .setHandler(signedStateConsumer)
                 .setCapacity(STATE_HASH_QUEUE_MAX)
-                .setMetricsConfiguration(
-                        new QueueThreadMetricsConfiguration(metrics)
-                                .enableBusyTimeMetric()
-                )
+                .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics).enableBusyTimeMetric())
                 .build();
     }
 

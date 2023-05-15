@@ -256,11 +256,9 @@ class AbstractQueueThreadConfigurationTest {
                 .setCapacity(CAPACITY)
                 .setHandler(handler)
                 .setQueue(queue)
-                .setMetricsConfiguration(
-                        new QueueThreadMetricsConfiguration(metrics)
-                                .enableMaxSizeMetric()
-                                .enableMinSizeMetric()
-                );
+                .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics)
+                        .enableMaxSizeMetric()
+                        .enableMinSizeMetric());
         final QueueThread<String> queueThread = configuration.buildQueueThread(false);
 
         // then
@@ -307,23 +305,19 @@ class AbstractQueueThreadConfigurationTest {
                         .setMaxBufferSize(MAX_BUFFER_SIZE)
                         .setCapacity(CAPACITY)
                         .setHandler(handler)
-                        .setMetricsConfiguration(
-                                new QueueThreadMetricsConfiguration(null)
-                        )
+                        .setMetricsConfiguration(new QueueThreadMetricsConfiguration(null))
                         .buildQueueThread(false))
                 .isInstanceOf(NullPointerException.class);
 
         assertThatThrownBy(() -> new DummyQueueThreadConfiguration<String>(threadManager)
-                .setNodeId(NODE_ID)
-                .setComponent(THREAD_POOL_NAME)
-                .setThreadName(THREAD_NAME)
-                .setMaxBufferSize(MAX_BUFFER_SIZE)
-                .setCapacity(CAPACITY)
-                .setHandler(handler)
-                .setMetricsConfiguration(
-                        new QueueThreadMetricsConfiguration(null)
-                )
-                .buildQueueThread(false))
+                        .setNodeId(NODE_ID)
+                        .setComponent(THREAD_POOL_NAME)
+                        .setThreadName(THREAD_NAME)
+                        .setMaxBufferSize(MAX_BUFFER_SIZE)
+                        .setCapacity(CAPACITY)
+                        .setHandler(handler)
+                        .setMetricsConfiguration(new QueueThreadMetricsConfiguration(null))
+                        .buildQueueThread(false))
                 .isInstanceOf(NullPointerException.class);
     }
 }

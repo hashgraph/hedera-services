@@ -201,9 +201,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
                         .get()
                         .getConfigData(ThreadConfig.class)
                         .logStackTracePauseDuration())
-                .setMetricsConfiguration(
-                        new QueueThreadMetricsConfiguration(platformContext.getMetrics())
-                )
+                .setMetricsConfiguration(new QueueThreadMetricsConfiguration(platformContext.getMetrics()))
                 .setQueue(queue)
                 .build();
 

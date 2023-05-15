@@ -111,9 +111,7 @@ public class AsyncPreConsensusEventWriter implements PreConsensusEventWriter {
                 .addHandler(BeginStreamingNewEvents.class, this::beginStreamingNewEventsHandler)
                 .addHandler(FlushRequested.class, this::flushRequestedHandler)
                 .setMetricsConfiguration(
-                        new QueueThreadMetricsConfiguration(platformContext.getMetrics())
-                                .enableBusyTimeMetric()
-                )
+                        new QueueThreadMetricsConfiguration(platformContext.getMetrics()).enableBusyTimeMetric())
                 .build();
 
         minimumGenerationNonAncientInserter = handleThread.getInserter(Long.class);

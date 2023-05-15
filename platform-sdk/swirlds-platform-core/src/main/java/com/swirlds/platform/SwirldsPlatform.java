@@ -684,8 +684,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             // SwirldStateManager will get a copy of the state loaded, that copy will become stateCons.
             // The original state will be saved in the SignedStateMgr and will be deleted when it becomes old
 
-            preConsensusEventHandler = components.add(new PreConsensusEventHandler(
-                    metrics, threadManager, selfId, swirldStateManager, consensusMetrics));
+            preConsensusEventHandler = components.add(
+                    new PreConsensusEventHandler(metrics, threadManager, selfId, swirldStateManager, consensusMetrics));
             consensusRoundHandler = components.add(PlatformConstructor.consensusHandler(
                     platformContext,
                     threadManager,
@@ -835,11 +835,9 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                             .get()
                             .getConfigData(ThreadConfig.class)
                             .logStackTracePauseDuration())
-                    .setMetricsConfiguration(
-                            new QueueThreadMetricsConfiguration(metrics)
-                                    .enableMaxSizeMetric()
-                                    .enableBusyTimeMetric()
-                    )
+                    .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics)
+                            .enableMaxSizeMetric()
+                            .enableBusyTimeMetric())
                     .build());
 
             if (signedStateFromDisk != null) {

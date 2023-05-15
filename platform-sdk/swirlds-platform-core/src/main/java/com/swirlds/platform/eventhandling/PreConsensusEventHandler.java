@@ -104,10 +104,7 @@ public class PreConsensusEventHandler implements PreConsensusEventObserver, Clea
                         .get()
                         .getConfigData(ThreadConfig.class)
                         .logStackTracePauseDuration())
-                .setMetricsConfiguration(
-                        new QueueThreadMetricsConfiguration(metrics)
-                                .enableBusyTimeMetric()
-                )
+                .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics).enableBusyTimeMetric())
                 .build();
 
         final AverageAndMax avgQ1PreConsEvents = new AverageAndMax(

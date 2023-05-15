@@ -79,8 +79,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-
-import org.apache.commons.lang3.ObjectUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -706,11 +704,9 @@ class QueueThreadTests {
                 .setThreadName(THREAD_NAME)
                 .setQueue(queue)
                 .setHandler(handler::add)
-                .setMetricsConfiguration(
-                        new QueueThreadMetricsConfiguration(metrics)
-                                .enableMaxSizeMetric()
-                                .enableMinSizeMetric()
-                )
+                .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics)
+                        .enableMaxSizeMetric()
+                        .enableMinSizeMetric())
                 .build();
 
         final DefaultIntegerAccumulator maxSizeMetric =
@@ -758,11 +754,9 @@ class QueueThreadTests {
                 .setThreadName(THREAD_NAME)
                 .setQueue(queue)
                 .setHandler(handler::add)
-                .setMetricsConfiguration(
-                        new QueueThreadMetricsConfiguration(metrics)
-                                .enableMaxSizeMetric()
-                                .enableMinSizeMetric()
-                )
+                .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics)
+                        .enableMaxSizeMetric()
+                        .enableMinSizeMetric())
                 .build();
 
         final DefaultIntegerAccumulator maxSizeMetric =
@@ -897,7 +891,7 @@ class QueueThreadTests {
         // given
         final Semaphore handling1 = new Semaphore(0);
         final Semaphore handling2 = new Semaphore(0);
-        final InterruptableConsumer<Integer> handler = i->{
+        final InterruptableConsumer<Integer> handler = i -> {
             handling1.release();
             handling2.acquire();
         };
@@ -906,16 +900,13 @@ class QueueThreadTests {
         final QueueThread<Integer> queueThread = new QueueThreadConfiguration<Integer>(getStaticThreadManager())
                 .setThreadName(THREAD_NAME)
                 .setHandler(handler)
-                .setMetricsConfiguration(
-                        new QueueThreadMetricsConfiguration(metrics)
-                                .setCategory(METRIC_CATEGORY)
-                                .setTime(time)
-                                .enableBusyTimeMetric()
-                )
+                .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics)
+                        .setCategory(METRIC_CATEGORY)
+                        .setTime(time)
+                        .enableBusyTimeMetric())
                 .build();
-        final FunctionGauge<Double> busyTimeMetric = (FunctionGauge<Double>) metrics.getMetric(
-                        METRIC_CATEGORY,
-                        QueueThreadMetrics.buildBusyTimeMetricName(THREAD_NAME));
+        final FunctionGauge<Double> busyTimeMetric = (FunctionGauge<Double>)
+                metrics.getMetric(METRIC_CATEGORY, QueueThreadMetrics.buildBusyTimeMetricName(THREAD_NAME));
 
         queueThread.add(123);
         queueThread.start();
