@@ -34,6 +34,7 @@ module com.hedera.node.app {
     requires javax.inject;
     requires org.apache.logging.log4j;
     requires org.apache.commons.lang3;
+    requires org.apache.commons.codec; // Temporary until AdaptedMonoProcessLogic is removed
     requires com.google.common;
     requires com.github.spotbugs.annotations;
     requires com.hedera.hashgraph.protobuf.java.api;
@@ -43,7 +44,10 @@ module com.hedera.node.app {
     exports com.hedera.node.app to
             com.swirlds.platform;
     exports com.hedera.node.app.state to
-            com.swirlds.common;
+            com.swirlds.common,
+            com.hedera.node.app.fixtures;
+    exports com.hedera.node.app.workflows to
+            com.hedera.node.app.fixtures;
     exports com.hedera.node.app.state.merkle to
             com.swirlds.common;
     exports com.hedera.node.app.state.merkle.disk to

@@ -394,9 +394,9 @@ class ServicesStateTest extends ResponsibleVMapUser {
     }
 
     @Test
-    void minimumVersionIsRelease030() {
+    void minimumVersionIsRelease031() {
         // expect:
-        assertEquals(StateVersions.RELEASE_030X_VERSION, subject.getMinimumSupportedVersion());
+        assertEquals(StateVersions.RELEASE_0310_VERSION, subject.getMinimumSupportedVersion());
     }
 
     @Test
@@ -686,7 +686,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         subject.setChild(StateChildIndices.SPECIAL_FILES, specialFiles);
         subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
         subject.setChild(StateChildIndices.ACCOUNTS, accounts);
-        subject.setDeserializedStateVersion(StateVersions.RELEASE_030X_VERSION);
+        subject.setDeserializedStateVersion(StateVersions.RELEASE_0310_VERSION);
 
         final var when = Instant.ofEpochSecond(1_234_567L, 890);
         given(dualState.getFreezeTime()).willReturn(when);
@@ -713,7 +713,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
 
     @Test
     void nonGenesisInitThrowsWithUnsupportedStateVersionUsed() {
-        subject.setDeserializedStateVersion(StateVersions.RELEASE_030X_VERSION - 1);
+        subject.setDeserializedStateVersion(StateVersions.RELEASE_0310_VERSION - 1);
 
         assertThrows(IllegalStateException.class, () -> subject.init(platform, dualState, RESTART, null));
     }
@@ -891,11 +891,11 @@ class ServicesStateTest extends ResponsibleVMapUser {
     }
 
     @Test
-    // Since 0.30 JDB files include the ':' character which is forbidden by Windows (and may
+    // Since 0.38 JDB files include the ':' character which is forbidden by Windows (and may
     // exceed the maximum path length besides), only run this test on Linux, Mac, or UNIX
     @EnabledOnOs({OS.LINUX, OS.MAC, OS.AIX, OS.SOLARIS})
-    void testLoading0305State() throws IOException {
-        // The saved state used for this test is from 0.30.5, meaning the JDB file names
+    void testLoading038XState() throws IOException {
+        // The saved state used for this test is from 0.38.1, meaning the JDB file names
         // use the ':' character; but Windows prohibits such files, so the repository
         // couldn't be cloned on that OS with the as-is saved state. The solution is to
         // store the JDB files in the repo with ':' replaced by 'cln' (plus other
@@ -908,7 +908,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         ClassLoaderHelper.loadClassPathDependencies();
 
         cpWithDirTransform(
-                Paths.get(statesDir, "0.30.5/").toString(),
+                Paths.get(statesDir, "0.38.1/").toString(),
                 jdbNamedSignedStateDir.getAbsolutePath(),
                 ServicesStateTest::unabbreviate);
         final var relocatedSignedState = Paths.get(jdbNamedSignedStateDir.getAbsolutePath(), "SignedState.swh");

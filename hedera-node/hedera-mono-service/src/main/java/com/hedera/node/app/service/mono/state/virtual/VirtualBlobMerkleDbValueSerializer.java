@@ -55,6 +55,11 @@ public class VirtualBlobMerkleDbValueSerializer implements ValueSerializer<Virtu
         return VARIABLE_DATA_SIZE;
     }
 
+    // FUTURE WORK: mark it as @Override after migration to platform 0.39
+    public int getTypicalSerializedSize() {
+        return VirtualBlobValue.getTypicalSerializedSize();
+    }
+
     // Value serialization
 
     @Override

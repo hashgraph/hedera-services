@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.spi.meta;
 
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.state.token.Account;
+import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -28,7 +31,7 @@ import java.util.function.LongSupplier;
  * Bundles up the in-handle application context required by {@link TransactionHandler} implementations.
  *
  * <p>At present, only supplies the context needed for Consensus Service handlers in the
- * limited form described by https://github.com/hashgraph/hedera-services/issues/4945.
+ * limited form described by <a href="https://github.com/hashgraph/hedera-services/issues/4945">4945</a>.
  */
 public interface HandleContext {
     /**
@@ -81,4 +84,28 @@ public interface HandleContext {
     default Configuration getConfiguration() {
         throw new UnsupportedOperationException("getConfiguration() not implemented, will be done by next PR");
     }
+
+    /**
+     * Gets the {@link SignatureVerification} for the given key. If this key was unknown during signature verification,
+     * either because it was not provided as a required key or because the signature map did not have a "full prefix"
+     * for this key, then {@code null} is returned.
+     *
+     * @param key the key to get the verification for
+     * @return the verification for the given key, or {@code null} if no known key or signature at pre-handle
+     */
+    @NonNull
+    SignatureVerification verificationFor(@NonNull final Key key);
+
+    /**
+     * Gets the {@link SignatureVerification} for the given hollow account. If the alias for the hollow account was
+     * not provided during pre-handle, then the returned {@link SignatureVerification} will be failed. If the alias
+     * was provided during pre-handle, then the corresponding {@link SignatureVerification} will be returned with the
+     * result of that verification operation. If during signature verification a key was extracted then it will be made
+     * available in the {@link SignatureVerification}.
+     *
+     * @param hollowAccount the hollow account to get the verification for
+     * @return the verification for the given hollow account.
+     */
+    @NonNull
+    SignatureVerification verificationFor(@NonNull final Account hollowAccount);
 }

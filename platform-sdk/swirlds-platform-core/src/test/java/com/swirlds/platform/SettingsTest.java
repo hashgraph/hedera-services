@@ -75,7 +75,6 @@ import static com.swirlds.platform.SettingConstants.NUM_CRYPTO_THREADS_DEFAULT_V
 import static com.swirlds.platform.SettingConstants.RANDOM_EVENT_PROBABILITY_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.REQUIRE_STATE_LOAD_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.RESCUE_CHILDLESS_INVERSE_PROBABILITY_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.RUN_PAUSE_CHECK_TIMER_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.SETTINGS_TXT;
 import static com.swirlds.platform.SettingConstants.SHOW_INTERNAL_STATS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.SIGNED_STATE_FREQ_DEFAULT_VALUE;
@@ -118,7 +117,6 @@ import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.settings.ParsingUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.config.AddressBookConfig;
-import com.swirlds.platform.reconnect.ReconnectSettingsImpl;
 import com.swirlds.platform.state.StateSettings;
 import com.swirlds.test.framework.TestTypeTags;
 import com.swirlds.test.framework.config.TestConfigBuilder;
@@ -229,47 +227,9 @@ class SettingsTest {
         Assertions.assertEquals(123, settings.getSocketIpTos());
     }
 
-    @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @DisplayName("Checks that sub-settings are part of saved settings")
-    public void checkStoreSubSetting() throws IOException {
-        // given
-        final Settings settings = Settings.getInstance();
-        final String propertyName = "reconnect.asyncStreamBufferSize";
-        final Path savedSettingsDirectory = Files.createTempDirectory("settings-test");
-
-        // when
-        settings.getReconnect().asyncStreamBufferSize = 123;
-        settings.writeSettingsUsed(savedSettingsDirectory);
-        final Path savedSettingsFile = savedSettingsDirectory.resolve(SettingConstants.SETTING_USED_FILENAME);
-        final String savedValue = readValueFromFile(savedSettingsFile, propertyName);
-
-        // then
-        Assertions.assertEquals("123", savedValue);
-    }
-
-    @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @DisplayName("Checks that sub-property is loaded from file")
-    public void checkLoadSubSettings() {
-        // given
-        final Settings settings = Settings.getInstance();
-        final File settingsFile =
-                new File(SettingsTest.class.getResource("settings3.txt").getFile());
-        Assertions.assertTrue(settingsFile.exists());
-
-        // when
-        settings.getReconnect().asyncStreams = false;
-        settings.loadSettings(settingsFile);
-
-        // then
-        Assertions.assertTrue(settings.getReconnect().asyncStreams);
-    }
-
     /**
-     * Currently disabled until the Settings class gets rewritten to not use a singleton
-     * design pattern. There are tests that are run that modify these default values
-     * before this test is run, therefore resulting in this test failing.
+     * Currently disabled until the Settings class gets rewritten to not use a singleton design pattern. There are tests
+     * that are run that modify these default values before this test is run, therefore resulting in this test failing.
      */
     @Test
     @Disabled
@@ -348,7 +308,6 @@ class SettingsTest {
                 STALE_EVENT_PREVENTION_THRESHOLD_DEFAULT_VALUE, settings.getStaleEventPreventionThreshold());
         Assertions.assertEquals(
                 RESCUE_CHILDLESS_INVERSE_PROBABILITY_DEFAULT_VALUE, settings.getRescueChildlessInverseProbability());
-        Assertions.assertEquals(RUN_PAUSE_CHECK_TIMER_DEFAULT_VALUE, settings.isRunPauseCheckTimer());
         Assertions.assertEquals(ENABLE_EVENT_STREAMING_DEFAULT_VALUE, settings.isEnableEventStreaming());
         Assertions.assertEquals(EVENT_STREAM_QUEUE_CAPACITY_DEFAULT_VALUE, settings.getEventStreamQueueCapacity());
         Assertions.assertEquals(EVENTS_LOG_PERIOD_DEFAULT_VALUE, settings.getEventsLogPeriod());
@@ -438,7 +397,6 @@ class SettingsTest {
         Assertions.assertEquals(1, settings.getRandomEventProbability());
         Assertions.assertEquals(10, settings.getStaleEventPreventionThreshold());
         Assertions.assertEquals(15, settings.getRescueChildlessInverseProbability());
-        Assertions.assertTrue(settings.isRunPauseCheckTimer());
         Assertions.assertTrue(settings.isEnableEventStreaming());
         Assertions.assertEquals(1000, settings.getEventStreamQueueCapacity());
         Assertions.assertEquals(70, settings.getEventsLogPeriod());
@@ -451,9 +409,8 @@ class SettingsTest {
     }
 
     /**
-     * Currently disabled until the Settings class gets rewritten to not use a singleton
-     * design pattern. There are tests that are run that modify these default values
-     * before this test is run, therefore resulting in this test failing.
+     * Currently disabled until the Settings class gets rewritten to not use a singleton design pattern. There are tests
+     * that are run that modify these default values before this test is run, therefore resulting in this test failing.
      */
     @Test
     @Disabled
@@ -485,9 +442,8 @@ class SettingsTest {
     }
 
     /**
-     * Currently disabled until the Settings class gets rewritten to not use a singleton
-     * design pattern. There are tests that are run that modify these default values
-     * before this test is run, therefore resulting in this test failing.
+     * Currently disabled until the Settings class gets rewritten to not use a singleton design pattern. There are tests
+     * that are run that modify these default values before this test is run, therefore resulting in this test failing.
      */
     @Test
     @Disabled
@@ -526,9 +482,8 @@ class SettingsTest {
     }
 
     /**
-     * Currently disabled until the Settings class gets rewritten to not use a singleton
-     * design pattern. There are tests that are run that modify these default values
-     * before this test is run, therefore resulting in this test failing.
+     * Currently disabled until the Settings class gets rewritten to not use a singleton design pattern. There are tests
+     * that are run that modify these default values before this test is run, therefore resulting in this test failing.
      */
     @Test
     @Disabled
@@ -567,102 +522,8 @@ class SettingsTest {
     }
 
     /**
-     * Currently disabled until the Settings class gets rewritten to not use a singleton
-     * design pattern. There are tests that are run that modify these default values
-     * before this test is run, therefore resulting in this test failing.
-     */
-    @Test
-    @Disabled
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @DisplayName("Checks that default reconnect sub-settings are retrieved correctly")
-    public void checkGetDefaultReconnectSubSettings() {
-        // given
-        final ReconnectSettingsImpl reconnectSettings = Settings.getInstance().getReconnect();
-
-        // then
-        Assertions.assertFalse(reconnectSettings.isActive());
-        Assertions.assertEquals(-1, reconnectSettings.getReconnectWindowSeconds());
-        Assertions.assertEquals(0.5, reconnectSettings.getFallenBehindThreshold());
-        Assertions.assertEquals(100000, reconnectSettings.getAsyncStreamTimeoutMilliseconds());
-        Assertions.assertEquals(100, reconnectSettings.getAsyncOutputStreamFlushMilliseconds());
-        Assertions.assertEquals(10000, reconnectSettings.getAsyncStreamBufferSize());
-        Assertions.assertTrue(reconnectSettings.asyncStreams);
-        Assertions.assertEquals(10, reconnectSettings.getMaxAckDelayMilliseconds());
-        Assertions.assertEquals(10, reconnectSettings.getMaximumReconnectFailuresBeforeShutdown());
-        Assertions.assertEquals(Duration.ofMinutes(10), reconnectSettings.getMinimumTimeBetweenReconnects());
-    }
-
-    @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @DisplayName("Checks that loaded reconnect sub-settings are retrieved correctly")
-    public void checkGetLoadedReconnectSubSettings() {
-        // given
-        final Settings settings = Settings.getInstance();
-        final File settingsFile =
-                new File(SettingsTest.class.getResource("settings7.txt").getFile());
-        Assertions.assertTrue(settingsFile.exists());
-
-        // when
-        settings.loadSettings(settingsFile);
-        final ReconnectSettingsImpl reconnectSettings = Settings.getInstance().getReconnect();
-
-        // then
-        Assertions.assertTrue(reconnectSettings.isActive());
-        Assertions.assertEquals(1, reconnectSettings.getReconnectWindowSeconds());
-        Assertions.assertEquals(0.75, reconnectSettings.getFallenBehindThreshold());
-        Assertions.assertEquals(200000, reconnectSettings.getAsyncStreamTimeoutMilliseconds());
-        Assertions.assertEquals(150, reconnectSettings.getAsyncOutputStreamFlushMilliseconds());
-        Assertions.assertEquals(15000, reconnectSettings.getAsyncStreamBufferSize());
-        Assertions.assertFalse(reconnectSettings.asyncStreams);
-        Assertions.assertEquals(20, reconnectSettings.getMaxAckDelayMilliseconds());
-        Assertions.assertEquals(15, reconnectSettings.getMaximumReconnectFailuresBeforeShutdown());
-        Assertions.assertEquals(
-                ParsingUtils.parseDuration("11min"), reconnectSettings.getMinimumTimeBetweenReconnects());
-    }
-
-    /**
-     * Currently disabled until the Settings class gets rewritten to not use a singleton
-     * design pattern. There are tests that are run that modify these default values
-     * before this test is run, therefore resulting in this test failing.
-     */
-    @Test
-    @Disabled
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @DisplayName("Checks that default FCHashMap sub-settings are retrieved correctly")
-    public void checkGetDefaultFCHashMapSubSettings() {
-        // given
-        final FCHashMapSettingsImpl fcHashMapSettings = Settings.getInstance().getFcHashMap();
-
-        // then
-        Assertions.assertEquals(200, fcHashMapSettings.getMaximumGCQueueSize());
-        Assertions.assertEquals(Duration.ofMinutes(1), fcHashMapSettings.getGCQueueThresholdPeriod());
-        Assertions.assertTrue(fcHashMapSettings.isArchiveEnabled());
-    }
-
-    @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @DisplayName("Checks that loaded FCHashMap sub-settings are retrieved correctly")
-    public void checkGetLoadedFCHashMapSubSettings() {
-        // given
-        final Settings settings = Settings.getInstance();
-        final File settingsFile =
-                new File(SettingsTest.class.getResource("settings8.txt").getFile());
-        Assertions.assertTrue(settingsFile.exists());
-
-        // when
-        settings.loadSettings(settingsFile);
-        final FCHashMapSettingsImpl fcHashMapSettings = Settings.getInstance().getFcHashMap();
-
-        // then
-        Assertions.assertEquals(250, fcHashMapSettings.getMaximumGCQueueSize());
-        Assertions.assertEquals(ParsingUtils.parseDuration("2min"), fcHashMapSettings.getGCQueueThresholdPeriod());
-        Assertions.assertFalse(fcHashMapSettings.isArchiveEnabled());
-    }
-
-    /**
-     * Currently disabled until the Settings class gets rewritten to not use a singleton
-     * design pattern. There are tests that are run that modify these default values
-     * before this test is run, therefore resulting in this test failing.
+     * Currently disabled until the Settings class gets rewritten to not use a singleton design pattern. There are tests
+     * that are run that modify these default values before this test is run, therefore resulting in this test failing.
      */
     @Test
     @Disabled
@@ -724,9 +585,8 @@ class SettingsTest {
     }
 
     /**
-     * Currently disabled until the Settings class gets rewritten to not use a singleton
-     * design pattern. There are tests that are run that modify these default values
-     * before this test is run, therefore resulting in this test failing.
+     * Currently disabled until the Settings class gets rewritten to not use a singleton design pattern. There are tests
+     * that are run that modify these default values before this test is run, therefore resulting in this test failing.
      */
     @Test
     @Disabled
@@ -761,9 +621,8 @@ class SettingsTest {
     }
 
     /**
-     * Currently disabled until the Settings class gets rewritten to not use a singleton
-     * design pattern. There are tests that are run that modify these default values
-     * before this test is run, therefore resulting in this test failing.
+     * Currently disabled until the Settings class gets rewritten to not use a singleton design pattern. There are tests
+     * that are run that modify these default values before this test is run, therefore resulting in this test failing.
      */
     @Test
     @Disabled
@@ -842,9 +701,8 @@ class SettingsTest {
     }
 
     /**
-     * Currently disabled until the Settings class gets rewritten to not use a singleton
-     * design pattern. There are tests that are run that modify these default values
-     * before this test is run, therefore resulting in this test failing.
+     * Currently disabled until the Settings class gets rewritten to not use a singleton design pattern. There are tests
+     * that are run that modify these default values before this test is run, therefore resulting in this test failing.
      */
     @Test
     @Disabled
