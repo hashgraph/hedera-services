@@ -29,6 +29,7 @@ import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
@@ -101,6 +102,12 @@ public class TransactionDispatcher {
                     txn.consensusDeleteTopicOrThrow(), writableStoreFactory.createTopicStore());
             case CONSENSUS_SUBMIT_MESSAGE -> dispatchConsensusSubmitMessage(
                     txn, writableStoreFactory.createTopicStore());
+            case TOKEN_ASSOCIATE_TO_ACCOUNT -> dispatchTokenAssociateToAccount(
+                    txn,
+                    handleContext,
+                    writableStoreFactory.createAccountStore(),
+                    (ReadableTokenStore) writableStoreFactory.createTokenStore(),
+                    writableStoreFactory.createTokenRelStore());
             case TOKEN_GRANT_KYC_TO_ACCOUNT -> dispatchTokenGrantKycToAccount(
                     txn, writableStoreFactory.createTokenRelStore());
             case TOKEN_REVOKE_KYC_FROM_ACCOUNT -> dispatchTokenRevokeKycFromAccount(
@@ -307,6 +314,17 @@ public class TransactionDispatcher {
         finishTokenGrantKycToAccount(tokenRelStore);
     }
 
+    private void dispatchTokenAssociateToAccount(
+            @NonNull final TransactionBody tokenAssociate,
+            @NonNull final HandleContext handleContext,
+            @NonNull final WritableAccountStore accountStore,
+            @NonNull final ReadableTokenStore tokenStore,
+            @NonNull final WritableTokenRelationStore tokenRelStore) {
+        final var handler = handlers.tokenAssociateToAccountHandler();
+        handler.handle(tokenAssociate, handleContext, accountStore, tokenStore, tokenRelStore);
+        finishTokenAssociateToAccount(accountStore, tokenRelStore);
+    }
+
     /**
      * A temporary hook to isolate logic that we expect to move to a workflow, but
      * is currently needed when running with facility implementations that are adapters
@@ -339,6 +357,19 @@ public class TransactionDispatcher {
      * @param tokenRelStore the token rel store used for the message submission
      */
     protected void finishTokenRevokeKycFromAccount(@NonNull final WritableTokenRelationStore tokenRelStore) {
+        // No-op by default
+    }
+
+    /**
+     * A temporary hook to isolate logic that we expect to move to a workflow, but
+     * is currently needed when running with facility implementations that are adapters
+     * for either {@code mono-service} logic or integration tests.
+     *
+     * @param accountStore the account store that changes were made to
+     * @param tokenRelStore the token rel store that changes were made to
+     */
+    protected void finishTokenAssociateToAccount(
+            @NonNull final WritableAccountStore accountStore, @NonNull final WritableTokenRelationStore tokenRelStore) {
         // No-op by default
     }
 

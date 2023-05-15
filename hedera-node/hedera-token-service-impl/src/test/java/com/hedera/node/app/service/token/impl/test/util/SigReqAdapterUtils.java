@@ -23,7 +23,9 @@ import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ALIASES_KEY;
+import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKEN_RELS_KEY;
 import static com.hedera.node.app.service.token.impl.test.handlers.AdapterUtils.mockStates;
+import static com.hedera.node.app.service.token.impl.test.handlers.AdapterUtils.mockWritableStates;
 import static com.hedera.node.app.service.token.impl.test.handlers.AdapterUtils.wellKnownAliasState;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
@@ -33,6 +35,7 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.DEFAULT_BA
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.DEFAULT_PAYER_BALANCE;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.DELEGATING_SPENDER;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.DELEGATING_SPENDER_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.DELETED_TOKEN;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.DILIGENT_SIGNING_PAYER;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.DILIGENT_SIGNING_PAYER_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.FIRST_TOKEN_SENDER;
@@ -77,16 +80,22 @@ import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.AccountCryptoAllowance;
 import com.hedera.hapi.node.state.token.AccountFungibleTokenAllowance;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
+import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
+import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
+import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.StateKeyAdapter;
@@ -136,14 +145,54 @@ public class SigReqAdapterUtils {
                         toPbj(KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY),
                         toPbj(KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK),
                         toPbj(KNOWN_TOKEN_WITH_SUPPLY),
-                        toPbj(KNOWN_TOKEN_WITH_WIPE))
+                        toPbj(KNOWN_TOKEN_WITH_WIPE),
+                        toPbj(DELETED_TOKEN))
                 .forEach(id -> destination.put(EntityNum.fromLong(id.tokenNum()), asToken(source.get(fromPbj(id)))));
         final var wrappedState = new MapReadableKVState<>("TOKENS", destination);
         final var state = new StateKeyAdapter<>(wrappedState, Function.identity());
         return new ReadableTokenStoreImpl(mockStates(Map.of(TOKENS_KEY, state)));
     }
 
+    public static WritableTokenRelationStore wellKnownTokenRelStoreAt() {
+        final var miscAcctNum = MISC_ACCOUNT.getAccountNum();
+        final var destination = new HashMap<EntityNumPair, TokenRelation>();
+        destination.put(
+                EntityNumPair.fromLongs(KNOWN_TOKEN_IMMUTABLE.getTokenNum(), miscAcctNum),
+                TokenRelation.newBuilder()
+                        .accountNumber(miscAcctNum)
+                        .tokenNumber(KNOWN_TOKEN_IMMUTABLE.getTokenNum())
+                        .balance(10)
+                        .build());
+        destination.put(
+                EntityNumPair.fromLongs(KNOWN_TOKEN_NO_SPECIAL_KEYS.getTokenNum(), miscAcctNum),
+                TokenRelation.newBuilder()
+                        .accountNumber(miscAcctNum)
+                        .tokenNumber(KNOWN_TOKEN_NO_SPECIAL_KEYS.getTokenNum())
+                        .balance(20)
+                        .build());
+        destination.put(
+                EntityNumPair.fromLongs(KNOWN_TOKEN_WITH_KYC.getTokenNum(), miscAcctNum),
+                TokenRelation.newBuilder()
+                        .accountNumber(miscAcctNum)
+                        .tokenNumber(KNOWN_TOKEN_WITH_KYC.getTokenNum())
+                        .balance(30)
+                        .build());
+
+        final var wrappedState = new MapWritableKVState<>(TOKEN_RELS_KEY, destination);
+        return new WritableTokenRelationStore(mockWritableStates(Map.of(TOKEN_RELS_KEY, wrappedState)));
+    }
+
     public static ReadableAccountStoreImpl wellKnownAccountStoreAt() {
+        return new ReadableAccountStoreImpl(
+                mockStates(Map.of(ACCOUNTS_KEY, wrappedAccountState(), ALIASES_KEY, wellKnownAliasState())));
+    }
+
+    public static WritableAccountStore wellKnownWritableAccountStoreAt() {
+        return new WritableAccountStore(
+                mockWritableStates(Map.of(ACCOUNTS_KEY, wrappedAccountState(), ALIASES_KEY, wellKnownAliasState())));
+    }
+
+    private static WritableKVState<EntityNumVirtualKey, Account> wrappedAccountState() {
         final var destination = new HashMap<EntityNumVirtualKey, Account>();
         destination.put(
                 EntityNumVirtualKey.fromLong(FIRST_TOKEN_SENDER.getAccountNum()),
@@ -218,9 +267,7 @@ public class SigReqAdapterUtils {
         destination.put(
                 EntityNumVirtualKey.fromLong(FROM_OVERLAP_PAYER.getAccountNum()),
                 toPbjAccount(FROM_OVERLAP_PAYER.getAccountNum(), FROM_OVERLAP_PAYER_KT.asPbjKey(), DEFAULT_BALANCE));
-        final var wrappedState = new MapReadableKVState<>(ACCOUNTS_KEY, destination);
-        return new ReadableAccountStoreImpl(
-                mockStates(Map.of(ACCOUNTS_KEY, wrappedState, ALIASES_KEY, wellKnownAliasState())));
+        return new MapWritableKVState<>(ACCOUNTS_KEY, destination);
     }
 
     private static Account toPbjAccount(final long number, final Key key, long balance) {
