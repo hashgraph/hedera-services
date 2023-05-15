@@ -44,7 +44,7 @@ However, in other ledgers where accounts are `ECDSA` based (mostly EVM chains) i
 This is the rightmost 20 bytes of the 32-byte `Keccak-256` hash of the `ECDSA` public key of the account. This calculation is in the manner described in the Ethereum Yellow Paper.
 
 To support the use of this format as an alias the `Lazy Account Creation Flow` may be adopted.
-![Lazy Account Create Flow](/docs/design/images/lazy-account-create.png)
+![Lazy Account Create Flow](../../images/lazy-account-create.png)
 
 In this flow
 - An initial transaction may supply an accountId using the `<shard>.<realm>.<evmAddressAlias>`
@@ -53,7 +53,7 @@ In this flow
 - The ledger should extract the public key from a future transaction for which the account is the payer or some of the required accounts participating in the transaction and verify it maps to the alias on the account
 - The ledger should complete the account creation process by setting the key value of the account
 
-For more details about the completion of hollow accounts please refer to [Hollow Account Finalization](docs/design/services/token-service/hollow-finalization.md) document.
+For more details about the completion of hollow accounts please refer to [Hollow Account Finalization](./hollow-finalization.md) document.
 
 ### Lazy Account Creation Fee Charging
 
@@ -91,7 +91,7 @@ For more details about the completion of hollow accounts please refer to [Hollow
 
 ### Lazy Account Creation Phase 1 Through the EVM
 
-- Implement a new version of the EVM (see [the evm versioning design doc](/docs/design/services/smart-contract-service/evm-versioning.md)) that will allow transfers of value to non-existing addresses. In this way, instead of halting the execution frame with `INVALID_SOLIDITY_ADDRESS`, the transfer will be considered a lazy account creation attempt. 
+- Implement a new version of the EVM (see [the evm versioning design doc](../smart-contract-service/evm-versioning.md)) that will allow transfers of value to non-existing addresses. In this way, instead of halting the execution frame with `INVALID_SOLIDITY_ADDRESS`, the transfer will be considered a lazy account creation attempt. 
 - The account creation fees must be charged from the available gas in the frame
   - Any EVM execution that cannot pay for a lazy account creation through the available gas will halt with `INSUFFICIENT_GAS` exceptional halt reason
 - The EVM can plug into the pre-existing logic in `AbstractAutoCreationLogic.create()` in order to create the hollow accounts. 
@@ -117,7 +117,7 @@ For more details about the completion of hollow accounts please refer to [Hollow
 
 ### Lazy Account Creation Phase 2 (finalizing a `hollow account`)
 
-- For details about the completion of hollow accounts please refer to [Hollow Account Finalization](docs/design/services/token-service/hollow-finalization.md) document.
+- For details about the completion of hollow accounts please refer to [Hollow Account Finalization](./hollow-finalization.md) document.
 - `CREATE2` contract creation to an address already occupied by a hollow account must finalize it:
   - `AbstractRecordingCreateOperation` must be altered to check whether the targeted address is occupied by a `hollow account`, allow the creates in those cases, and, upon completion, convert the hollow account into a contract, setting its key to the default `JContractIDKey`.
 
@@ -131,7 +131,7 @@ For more details about the completion of hollow accounts please refer to [Hollow
 
 ## Cases
 
-See the scenarios described in the [HIP-583 test plan](/docs/test-plans/hip-583.md)
+See the scenarios described in the [HIP-583 test plan](../../../test-plans/hip-583.md)
 
 ### Notes
 
