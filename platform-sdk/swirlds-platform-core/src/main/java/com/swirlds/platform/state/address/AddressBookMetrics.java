@@ -41,7 +41,7 @@ public final class AddressBookMetrics {
     public static void registerAddressBookMetrics(
             @NonNull final Metrics metrics, @NonNull final AddressBook addressBook, @NonNull final NodeId selfId) {
 
-        metrics.getOrCreate(new FunctionGauge.Config<>(INFO_CATEGORY, "memberID", Long.class, selfId::getId)
+        metrics.getOrCreate(new FunctionGauge.Config<>(INFO_CATEGORY, "memberID", Long.class, selfId::id)
                 .withUnit("node ID")
                 .withDescription("The node ID number of this member"));
 

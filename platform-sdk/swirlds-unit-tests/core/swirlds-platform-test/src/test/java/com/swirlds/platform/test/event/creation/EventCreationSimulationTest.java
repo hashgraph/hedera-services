@@ -92,11 +92,10 @@ public class EventCreationSimulationTest {
 
     /**
      * Simulate event creation by a number of nodes. This test creates instances of nodes that create events and
-     * simulates gossip between them. It works by incrementing the fake clock in steps, then executing any work
-     * needed to be done, such as event creation and gossip. It is single threaded.
+     * simulates gossip between them. It works by incrementing the fake clock in steps, then executing any work needed
+     * to be done, such as event creation and gossip. It is single threaded.
      *
-     * @param params
-     * 		the test parameters to use
+     * @param params the test parameters to use
      */
     @ParameterizedTest
     @MethodSource("parameters")
@@ -112,7 +111,7 @@ public class EventCreationSimulationTest {
         final TestIntake consensus = new TestIntake(addressBook, time);
         final Set<NodeId> nodeIds = new HashSet<>(params.numNodes());
         for (final Address address : addressBook) {
-            nodeIds.add(NodeId.createMain(address.getId()));
+            nodeIds.add(new NodeId(address.getId()));
         }
         final NetworkLatency latency = NetworkLatency.randomLatency(nodeIds, params.maxDelay(), random);
         List<NodeConfig> nodeConfigs = params.nodeConfigs();
@@ -127,13 +126,13 @@ public class EventCreationSimulationTest {
         final List<SimulatedEventCreationNode> nodes = new ArrayList<>();
         int i = 0;
         for (NodeConfig nodeConfig : params.nodeConfigs()) {
-            final NodeId selfId = NodeId.createMain(i++);
+            final NodeId selfId = new NodeId(i++);
             final SimulatedEventCreationNode node = new SimulatedEventCreationNode(
                     new BasicSoftwareVersion(1),
                     random,
                     time,
                     addressBook,
-                    List.of(e -> gossip.gossipPayload(GossipMessage.toAll(e, selfId.getId())), consensus::addEvent),
+                    List.of(e -> gossip.gossipPayload(GossipMessage.toAll(e, selfId.id())), consensus::addEvent),
                     selfId,
                     h -> consensus.getShadowGraph().getEvent(h),
                     nodeConfig);

@@ -22,8 +22,16 @@ import com.swirlds.cli.commands.EventStreamCommand;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.platform.event.report.EventStreamScanner;
+import com.swirlds.platform.recovery.internal.EventStreamLowerBound;
+import com.swirlds.platform.recovery.internal.EventStreamRoundLowerBound;
+import com.swirlds.platform.recovery.internal.EventStreamTimestampLowerBound;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.Objects;
 import picocli.CommandLine;
 
 @CommandLine.Command(
@@ -33,10 +41,22 @@ import picocli.CommandLine;
 @SubcommandOf(EventStreamCommand.class)
 public final class EventStreamInfoCommand extends AbstractCommand {
 
+    /** a format for timestamps */
+    private static final String TIMESTAMP_FORMAT = "yyyy-MM-dd HH:mm:ss";
+
+    /** a formatter for timestamps */
+    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern(TIMESTAMP_FORMAT);
+
+    /** the directory containing the event stream files */
     private Path eventStreamDirectory;
 
-    private long firstRound = -1;
+    /** the timestamp of the lower bound */
+    private Instant timestampBound = Instant.MIN;
 
+    /** the round of the lower bound */
+    private long roundBound = -1;
+
+    /** the default temporal granularity of the data report, in seconds */
     private long granularityInSeconds = 10;
 
     @CommandLine.Parameters(description = "The path to a directory tree containing event stream files.")
@@ -46,9 +66,24 @@ public final class EventStreamInfoCommand extends AbstractCommand {
 
     @CommandLine.Option(
             names = {"-f", "--first-round"},
-            description = "The first to be considered.")
+            description = "The first round to be considered in the event stream.")
     private void setFirstRound(final long firstRound) {
-        this.firstRound = firstRound;
+        roundBound = firstRound;
+    }
+
+    @CommandLine.Option(
+            names = {"-t", "--timestamp"},
+            description = "The minimum timestamp to be considered in the event stream. The format is \""
+                    + TIMESTAMP_FORMAT + "\".")
+    private void setTimestamp(@NonNull final String timestamp) {
+        Objects.requireNonNull(timestamp, "timestamp must not be null");
+        try {
+            // the format used by log4j2
+            timestampBound = formatter.parse(timestamp, Instant::from);
+        } catch (final DateTimeParseException e) {
+            // the format used by Instant.toString()
+            timestampBound = Instant.parse(timestamp);
+        }
     }
 
     @CommandLine.Option(
@@ -66,8 +101,21 @@ public final class EventStreamInfoCommand extends AbstractCommand {
     @Override
     public Integer call() throws Exception {
         setupConstructableRegistry();
+        if (roundBound > 0 && !Instant.MIN.equals(timestampBound)) {
+            throw buildParameterException("Cannot set both round and timestamp");
+        }
+
+        final EventStreamLowerBound bound;
+        if (roundBound > 0) {
+            bound = new EventStreamRoundLowerBound(roundBound);
+        } else if (!Instant.MIN.equals(timestampBound)) {
+            bound = new EventStreamTimestampLowerBound(timestampBound);
+        } else {
+            bound = EventStreamLowerBound.UNBOUNDED;
+        }
+
         System.out.println(
-                new EventStreamScanner(eventStreamDirectory, firstRound, Duration.ofSeconds(granularityInSeconds), true)
+                new EventStreamScanner(eventStreamDirectory, bound, Duration.ofSeconds(granularityInSeconds), true)
                         .createReport());
         return 0;
     }

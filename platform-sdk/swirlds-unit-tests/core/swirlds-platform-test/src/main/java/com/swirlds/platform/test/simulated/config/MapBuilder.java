@@ -62,7 +62,7 @@ public class MapBuilder<T> {
      */
     public MapBuilder<T> times(final int num) {
         for (int i = 0; i < num; i++) {
-            map.put(NodeId.createMain(lastIndex++), lastElement);
+            map.put(new NodeId(lastIndex++), lastElement);
         }
         return this;
     }
@@ -74,7 +74,7 @@ public class MapBuilder<T> {
      */
     public Map<NodeId, T> build() {
         if (map.isEmpty()) {
-            map.put(NodeId.createMain(lastIndex++), lastElement);
+            map.put(new NodeId(lastIndex++), lastElement);
         }
         return map;
     }

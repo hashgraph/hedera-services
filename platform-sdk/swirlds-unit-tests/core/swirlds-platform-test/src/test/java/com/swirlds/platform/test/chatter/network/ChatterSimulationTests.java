@@ -146,7 +146,7 @@ public class ChatterSimulationTests {
                 new NetworkConfig("Initial Phase - All Fast Intake Queues", Duration.ofMillis(100), initialConfigMap);
 
         // One node suddenly has a slow intake queue
-        final NodeId slowNodeId = NodeId.createMain(0L);
+        final NodeId slowNodeId = new NodeId(0L);
         final NodeConfig node0SlowIntake = initialConfigMap.get(slowNodeId);
         final Map<NodeId, NodeConfig> node0SlowIntakeMap = MapBuilder.builder(NodeConfig.class)
                 .useElement(NodeConfigBuilder.builder(node0SlowIntake)
@@ -157,7 +157,7 @@ public class ChatterSimulationTests {
                 new NetworkConfig("Second Phase - Node 0 has Slow Intake Queue", PHASE_DURATION, node0SlowIntakeMap);
 
         // Slow node's intake queue is fast again
-        final NodeConfig node0FastIntake = initialConfigMap.get(NodeId.createMain(0L));
+        final NodeConfig node0FastIntake = initialConfigMap.get(slowNodeId);
         final Map<NodeId, NodeConfig> node0FastIntakeMap = MapBuilder.builder(NodeConfig.class)
                 .useElement(NodeConfigBuilder.builder(node0FastIntake)
                         .setIntakeQueueDelay(FAST_NODE_INTAKE_DELAY)
@@ -219,7 +219,7 @@ public class ChatterSimulationTests {
 
         // An event creator that creates events with a monotonically increasing event number across all nodes
         final TimedEventCreator<CountingChatterEvent> eventCreator =
-                new TimedEventCreator<>(params.time(), () -> new CountingChatterEvent(nodeId.getId()));
+                new TimedEventCreator<>(params.time(), () -> new CountingChatterEvent(nodeId.id()));
 
         // Keeps track of all events coming out of chatter and passes it straight to the intake queue
         final GossipEventTracker gossipRecorder = new GossipEventTracker(nodeId);

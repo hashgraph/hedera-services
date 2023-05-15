@@ -162,7 +162,7 @@ public class SimpleSimulatedGossip {
 
     private void sendToAllPeers(final GossipMessage message) {
         for (int i = 0; i < numNodes; i++) {
-            if (nodes.get(i).getNodeId().getId() != message.senderId()) {
+            if (nodes.get(i).getNodeId().id() != message.senderId()) {
                 final Duration delay = latency.getLatency(message.senderId(), i);
                 inTransit.get(i).add(new Payload(message, time.now().plus(delay)));
             }
@@ -198,7 +198,7 @@ public class SimpleSimulatedGossip {
             final NodeId nodeId = entry.getKey();
             final NodeConfig nodeConfig = entry.getValue();
             if (!nodeConfig.customLatency().isZero()) {
-                latency.setLatency(nodeId.getId(), nodeConfig.customLatency());
+                latency.setLatency(nodeId.id(), nodeConfig.customLatency());
             }
         }
     }

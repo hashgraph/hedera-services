@@ -142,7 +142,7 @@ public class InOrderOrphanBuffer extends AbstractSimulatedEventPipeline<Counting
     }
 
     private boolean isSelfEvent(final CountingChatterEvent event) {
-        return event.getCreator() == selfId.getId();
+        return event.getCreator() == selfId.id();
     }
 
     /**

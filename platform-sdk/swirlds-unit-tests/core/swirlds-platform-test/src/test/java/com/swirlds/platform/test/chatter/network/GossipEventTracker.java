@@ -52,7 +52,7 @@ public class GossipEventTracker extends AbstractSimulatedEventPipeline<CountingC
     @Override
     public void addEvent(final CountingChatterEvent event) {
         final long creator = event.getCreator();
-        if (creator == nodeId.getId()) {
+        if (creator == nodeId.id()) {
             selfEvents.add(event);
         } else {
             if (!peerEventsReceived.add(event.getOrder())) {
@@ -91,7 +91,7 @@ public class GossipEventTracker extends AbstractSimulatedEventPipeline<CountingC
         eventsReceivedByCreator.forEach((key, value) -> eventCounts.put(key, value.size()));
 
         final StringBuilder sb = new StringBuilder();
-        sb.append(String.format("Node %s", nodeId.getId())).append("\n");
+        sb.append(String.format("Node %s", nodeId.id())).append("\n");
         sb.append("\tGossiped Events").append("\n");
         sb.append(String.format("\t\tCreated: %s%n", selfEvents.size()));
         sb.append(String.format("\t\tDuplicates Received: %s%n", duplicateEventCounter));

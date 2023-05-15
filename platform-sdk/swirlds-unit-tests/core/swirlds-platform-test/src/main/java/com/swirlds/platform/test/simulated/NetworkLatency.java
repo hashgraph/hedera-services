@@ -43,7 +43,7 @@ public class NetworkLatency {
     public static NetworkLatency uniformLatency(final Set<NodeId> nodeIds, final Duration latency) {
         HashMap<Long, Latency> delays = new HashMap<>();
         for (final NodeId nodeId : nodeIds) {
-            delays.put(nodeId.getId(), new Latency(latency));
+            delays.put(nodeId.id(), new Latency(latency));
         }
         return new NetworkLatency(delays);
     }
@@ -66,7 +66,7 @@ public class NetworkLatency {
         for (final NodeId nodeId : nodeIds) {
             final Latency latency = new Latency(
                     Duration.ofMillis(random.nextInt((int) maxDelay.dividedBy(2).toMillis())));
-            delays.put(nodeId.getId(), latency);
+            delays.put(nodeId.id(), latency);
         }
         return new NetworkLatency(delays);
     }

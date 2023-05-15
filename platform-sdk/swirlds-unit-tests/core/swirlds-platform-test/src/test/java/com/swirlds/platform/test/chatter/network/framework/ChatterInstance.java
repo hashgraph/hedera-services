@@ -81,7 +81,7 @@ public class ChatterInstance<T extends SimulatedChatterEvent> implements GossipM
 
         for (long peerId = 0; peerId < numNodes; peerId++) {
             // Don't create a peer instance for self
-            if (selfId.getId() == peerId) {
+            if (selfId.id() == peerId) {
                 continue;
             }
 
@@ -157,14 +157,14 @@ public class ChatterInstance<T extends SimulatedChatterEvent> implements GossipM
     public List<GossipMessage> getMessagesToGossip() {
         final List<GossipMessage> gossipMessages = new ArrayList<>();
         for (long peerId : peerIds) {
-            if (peerId == selfId.getId()) {
+            if (peerId == selfId.id()) {
                 continue;
             }
             final PeerInstance peer = core.getPeerInstance(peerId);
 
             SelfSerializable message = peer.outputAggregator().getMessage();
             while (message != null) {
-                gossipMessages.add(GossipMessage.toPeer(message, selfId.getId(), peerId));
+                gossipMessages.add(GossipMessage.toPeer(message, selfId.id(), peerId));
                 message = peer.outputAggregator().getMessage();
             }
         }

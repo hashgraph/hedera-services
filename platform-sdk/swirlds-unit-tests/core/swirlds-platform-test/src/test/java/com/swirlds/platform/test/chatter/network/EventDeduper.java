@@ -44,7 +44,7 @@ public class EventDeduper<T extends SimulatedChatterEvent> extends AbstractSimul
      */
     @Override
     public void addEvent(final T event) {
-        if (event.getDescriptor().getCreator() == selfId.getId()) {
+        if (event.getDescriptor().getCreator() == selfId.id()) {
             next.addEvent(event);
             return;
         }
