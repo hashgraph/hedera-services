@@ -61,7 +61,7 @@ public class StaticTopology implements NetworkTopology {
     public List<NodeId> getNeighbors(final Predicate<NodeId> filter) {
         return Arrays.stream(connectionGraph.getNeighbors(selfId.getIdAsInt()))
                 .mapToLong(i -> (long) i)
-                .mapToObj(NodeId::createMain)
+                .mapToObj(NodeId::new)
                 .filter(filter)
                 .collect(Collectors.toList());
     }
@@ -71,7 +71,7 @@ public class StaticTopology implements NetworkTopology {
      */
     @Override
     public boolean shouldConnectToMe(final NodeId nodeId) {
-        return isNeighbor(nodeId) && (unidirectional || nodeId.getId() < selfId.getId());
+        return isNeighbor(nodeId) && (unidirectional || nodeId.id() < selfId.id());
     }
 
     /**
@@ -82,9 +82,8 @@ public class StaticTopology implements NetworkTopology {
      * @return true if this node is my neighbor, false if not
      */
     private boolean isNeighbor(final NodeId nodeId) {
-        return selfId.sameNetwork(nodeId)
-                && nodeId.getId() >= 0
-                && nodeId.getId() < networkSize
+        return nodeId.id() >= 0
+                && nodeId.id() < networkSize
                 && connectionGraph.isAdjacent(selfId.getIdAsInt(), nodeId.getIdAsInt());
     }
 
@@ -93,7 +92,7 @@ public class StaticTopology implements NetworkTopology {
      */
     @Override
     public boolean shouldConnectTo(final NodeId nodeId) {
-        return isNeighbor(nodeId) && (unidirectional || nodeId.getId() > selfId.getId());
+        return isNeighbor(nodeId) && (unidirectional || nodeId.id() > selfId.id());
     }
 
     /**

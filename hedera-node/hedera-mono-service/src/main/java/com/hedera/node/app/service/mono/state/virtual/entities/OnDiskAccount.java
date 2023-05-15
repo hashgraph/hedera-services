@@ -174,6 +174,11 @@ public class OnDiskAccount implements VirtualValue, HederaAccount {
         return copy;
     }
 
+    // Keep it in sync with serialize()
+    public static int getTypicalSerializedSize() {
+        return 256; // estimation based on mainnet state as of 05/2023
+    }
+
     @Override
     public void serialize(final ByteBuffer to) throws IOException {
         serializeTo(to::put, to::putInt, to::putLong, data -> to.put(data, 0, data.length));
