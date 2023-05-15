@@ -217,7 +217,8 @@ public interface Dispatch {
      * {@code VerificationStrategy}.
      *
      * <p>If the result is {@code SUCCESS}, but this scope or any of its parents revert, the record
-     * of this dispatched should have its stateful side effects cleared and its result set to {@code SUCCESS}.
+     * of this dispatch should have its stateful side effects cleared and its result set to
+     * {@code REVERTED_SUCCESS}.
      *
      * @param syntheticTransaction the synthetic transaction to dispatch
      * @param strategy the non-cryptographic signature verification to use
