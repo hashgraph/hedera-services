@@ -152,6 +152,7 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.impl.UnpauseP
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.UpdateTokenExpiryInfoPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.WipeFungiblePrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.WipeNonFungiblePrecompile;
+import com.hedera.node.app.service.mono.store.contracts.precompile.specification.SystemContractAbis;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.utils.accessors.AccessorFactory;

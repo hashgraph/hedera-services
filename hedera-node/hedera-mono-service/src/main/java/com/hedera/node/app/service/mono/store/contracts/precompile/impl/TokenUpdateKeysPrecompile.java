@@ -21,7 +21,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeTokenKeys;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.AbstractTokenUpdatePrecompile.UpdateType.UPDATE_TOKEN_KEYS;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.SystemContractAbis.UPDATE_TOKEN_KEYS_METHOD_V1;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.specification.SystemContractAbis.UPDATE_TOKEN_KEYS_METHOD_V1;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 
 import com.esaulpaugh.headlong.abi.Tuple;

@@ -65,8 +65,8 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.codec.Encodin
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.KeyValueWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenKeyWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenUpdateKeysWrapper;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.SystemContractAbis;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenUpdateKeysPrecompile;
+import com.hedera.node.app.service.mono.store.contracts.precompile.specification.SystemContractAbis;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompileUtils;
 import com.hedera.node.app.service.mono.store.models.NftId;

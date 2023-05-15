@@ -72,7 +72,7 @@ import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateU
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.BurnPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.SystemContractAbis;
+import com.hedera.node.app.service.mono.store.contracts.precompile.specification.SystemContractAbis;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hedera.node.app.service.mono.txns.token.BurnLogic;

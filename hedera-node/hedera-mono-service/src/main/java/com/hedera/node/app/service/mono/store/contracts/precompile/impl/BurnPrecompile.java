@@ -38,6 +38,7 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.Infrastructur
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.BurnWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.node.app.service.mono.store.contracts.precompile.specification.SystemContractAbis;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.KeyActivationUtils;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.store.models.Id;

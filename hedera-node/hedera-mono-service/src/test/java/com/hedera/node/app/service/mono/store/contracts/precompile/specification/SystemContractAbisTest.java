@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
+package com.hedera.node.app.service.mono.store.contracts.precompile.specification;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
 import com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.SystemContractAbis.Kind;
+import com.hedera.node.app.service.mono.store.contracts.precompile.specification.SystemContractAbis.Kind;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.EnumSet;
@@ -34,7 +34,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.assertj.core.api.SoftAssertions;
 import org.assertj.core.api.junit.jupiter.InjectSoftAssertions;
 import org.assertj.core.api.junit.jupiter.SoftAssertionsExtension;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,6 +42,8 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 @ExtendWith(SoftAssertionsExtension.class)
 class SystemContractAbisTest {
+
+    // Needs updating for Kind.EVENT ...
 
     @InjectSoftAssertions
     SoftAssertions softly;
@@ -81,7 +82,7 @@ class SystemContractAbisTest {
     }
 
     @Test
-    @Disabled("this test for debugging only - deliberately fails in order to dump enum strings")
+    // @Disabled("this test for debugging only - deliberately fails in order to dump enum strings")
     void toFullStringTest() {
         final var allKnownABIThings = EnumSet.allOf(SystemContractAbis.class);
 
@@ -150,23 +151,27 @@ class SystemContractAbisTest {
             delimiter = ';',
             textBlock =
                     """
-        METHOD; TEST_METHOD_V1; test; test(a,b,c); 1; true
-        METHOD; TEST_METHOD_V1; test; test(a,b,c;  1; false
-        METHOD; TEST_METH0D_V1; test; test(a,b,c); 1; false
-        METHOD; TEST_METHOD_V1; test; test(a,b,c); 2; false
-        METHOD; TEST_METHOD_V1; '';   (a,b,c);     1; false
-        TYPE;   TEST_STRUCT_V1; '';   (a,b,c);     1; true
-        TYPE;   TEST_ARRAY_V1;  '';   (a,b,c);     1; true
-        TYPE;   TEST_STRUCT_V1; '';   (a,b,c;      1; false
-        TYPE;   TEST_STRÜCT_V1; '';   (a,b,c);     1; false
-        TYPE;   TEST_ARRAY_V1;  '';   (a,b,c);     2; false
-        TYPE;   TEST_STRUCT_V1; test; test(a,b,c); 1; false
+        METHOD; TEST_METHOD_V1; test; test(a,b,c); (a);  1; true
+        METHOD; TEST_METHOD_V1; test; test(a,b,c;  (a);  1; false
+        METHOD; TEST_METH0D_V1; test; test(a,b,c); (a);  1; false
+        METHOD; TEST_METHOD_V1; test; test(a,b,c); (a);  2; false
+        METHOD; TEST_METHOD_V1; Test; Test(a,b,c); (a);  1; false
+        METHOD; TEST_METHOD_V1; Test; (a,b,c);     (a);  1; false
+        METHOD; TEST_METHOD_V1; test; (a,b,c);     (a,b; 1; false
+        TYPE;   TEST_STRUCT_V1; Test; (a,b,c);     '';   1; true
+        TYPE;   TEST_ARRAY_V1;  Test; (a,b,c);     '';   1; true
+        TYPE;   TEST_STRUCT_V1; Test; (a,b,c;      '';   1; false
+        TYPE;   TEST_STRÜCT_V1; Test; (a,b,c);     '';   1; false
+        TYPE;   TEST_ARRAY_V1;  Test; (a,b,c);     '';   2; false
+        TYPE;   TEST_ARRAY_V1;  test; (a,b,c);     '';   1; false
+        TYPE;   TEST_STRUCT_V1; test; test(a,b,c); '';   1; false
         """)
     void validateTheNameIsConsistentValidation(
             @NonNull final Kind abiKind,
             @NonNull final String enumName,
             @NonNull final String abiName,
             @NonNull final String abiSignature,
+            @NonNull final String abiReturnsSignature,
             final int abiVersion,
             final boolean expectedValidation) {
         if (expectedValidation) {
@@ -177,6 +182,7 @@ class SystemContractAbisTest {
                             enumName,
                             abiName,
                             abiSignature,
+                            abiReturnsSignature,
                             abiVersion));
         } else {
             assertThatIllegalArgumentException()
@@ -186,6 +192,7 @@ class SystemContractAbisTest {
                             enumName,
                             abiName,
                             abiSignature,
+                            abiReturnsSignature,
                             abiVersion));
         }
     }

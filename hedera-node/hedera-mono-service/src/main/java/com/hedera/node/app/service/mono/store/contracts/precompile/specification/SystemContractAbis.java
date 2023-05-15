@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
+package com.hedera.node.app.service.mono.store.contracts.precompile.specification;
 
 import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
@@ -30,6 +30,10 @@ import org.apache.tuweni.bytes.Bytes;
  * Ground truth for everything related to system contract ABIs: their names, signatures, argument
  * decoders, etc., for all versions of each ABI
  * <p>
+ * N.B.: Replace current parsing with _correct_ parsing that can use type (struct) names directly
+ * and include argument names and return types. Should also handle events (we've got a couple
+ * defined).
+ * <p>
  * N.B.: Currently ONLY the ABIs in multiple versions are in this enum; it is intended that ALL
  * system contract ABIs go in this enum
  * <p>
@@ -41,8 +45,6 @@ import org.apache.tuweni.bytes.Bytes;
  * N.B.: Currently this file needs to be maintained by hand when ABIs are added or versioned; it is
  * intended that this file be GENERATED from the actual Solidity contracts (in the smart contracts
  * repository)
- * <p>
- * N.B.: Need to add method return types and argument names (which could be used for various purposes)
  */
 @SuppressWarnings("java:S1192") // duplicate string literals - in this case, removing duplication makes code
 //                                 more difficult to read
@@ -53,139 +55,280 @@ public enum SystemContractAbis {
 
     // HTS, structs and arrays-of-structs
 
-    ACCOUNT_AMOUNT_STRUCT_V1(1, "accountAmount", "(address,int64)"),
-    ACCOUNT_AMOUNT_STRUCT_V2(2, "accountAmount", "(address,int64,bool)"),
+    ACCOUNT_AMOUNT_STRUCT_V1(1, "AccountAmount", "(address,int64)"),
+    ACCOUNT_AMOUNT_STRUCT_V2(2, "AccountAmount", "(address,int64,bool)"),
 
-    EXPIRY_STRUCT_V1(1, "expiry", "(uint32,address,uint32)"),
-    EXPIRY_STRUCT_V2(2, "expiry", "(int64,address,int64)"),
+    EXPIRY_STRUCT_V1(1, "Expiry", "(uint32,address,uint32)"),
+    EXPIRY_STRUCT_V2(2, "Expiry", "(int64,address,int64)"),
 
-    FIXED_FEE_STRUCT_V1(1, "fixedFee", "(uint32,address,bool,bool,address)"),
-    FIXED_FEE_STRUCT_V2(2, "fixedFee", "(int64,address,bool,bool,address)"),
+    FIXED_FEE_STRUCT_V1(1, "FixedFee", "(uint32,address,bool,bool,address)"),
+    FIXED_FEE_STRUCT_V2(2, "FixedFee", "(int64,address,bool,bool,address)"),
 
-    FRACTIONAL_FEE_STRUCT_V1(1, "fractionalFee", "(uint32,uint32,uint32,uint32,bool,address)"),
-    FRACTIONAL_FEE_STRUCT_V2(2, "fractionalFee", "(int64,int64,int64,int64,bool,address)"),
+    FRACTIONAL_FEE_STRUCT_V1(1, "FractionalFee", "(uint32,uint32,uint32,uint32,bool,address)"),
+    FRACTIONAL_FEE_STRUCT_V2(2, "FractionalFee", "(int64,int64,int64,int64,bool,address)"),
 
-    ROYALTY_FEE_STRUCT_V1(1, "royaltyFee", "(uint32,uint32,uint32,address,bool,address)"),
-    ROYALTY_FEE_STRUCT_V2(2, "royaltyFee", "(int64,int64,int64,address,bool,address)"),
+    ROYALTY_FEE_STRUCT_V1(1, "RoyaltyFee", "(uint32,uint32,uint32,address,bool,address)"),
+    ROYALTY_FEE_STRUCT_V2(2, "RoyaltyFee", "(int64,int64,int64,address,bool,address)"),
 
-    NFT_TRANSFER_STRUCT_V1(1, "nftTransfer", "(address,address,int64)"),
-    NFT_TRANSFER_STRUCT_V2(2, "nftTransfer", "(address,address,int64,bool)"),
+    NFT_TRANSFER_STRUCT_V1(1, "NftTransfer", "(address,address,int64)"),
+    NFT_TRANSFER_STRUCT_V2(2, "NftTransfer", "(address,address,int64,bool)"),
 
-    KEY_VALUE_STRUCT_V1(1, "keyValue", "(bool,address,bytes,bytes,address)"),
-    TOKEN_KEY_STRUCT_V1(1, "tokenKey", "(uint256,%s)".formatted(KEY_VALUE_STRUCT_V1)),
+    KEY_VALUE_STRUCT_V1(1, "KeyValue", "(bool,address,bytes,bytes,address)"),
+    TOKEN_KEY_STRUCT_V1(1, "TokenKey", "(uint256,%s)".formatted(KEY_VALUE_STRUCT_V1)),
 
     HEDERA_TOKEN_STRUCT_V1(
             1,
-            "hederaToken",
+            "HederaToken",
             "(string,string,address,string,bool,uint32,bool,%s[],%s)".formatted(TOKEN_KEY_STRUCT_V1, EXPIRY_STRUCT_V1)),
     HEDERA_TOKEN_STRUCT_V2(
             2,
-            "hederaToken",
+            "HederaToken",
             "(string,string,address,string,bool,int64,bool,%s[],%s)".formatted(TOKEN_KEY_STRUCT_V1, EXPIRY_STRUCT_V1)),
     HEDERA_TOKEN_STRUCT_V3(
             3,
-            "hederaToken",
+            "HederaToken",
             "(string,string,address,string,bool,int64,bool,%s[],%s)".formatted(TOKEN_KEY_STRUCT_V1, EXPIRY_STRUCT_V2)),
 
-    TRANSFER_LIST_ARRAY_V1(1, "transferList", "(%s[])".formatted(ACCOUNT_AMOUNT_STRUCT_V2)),
+    TRANSFER_LIST_ARRAY_V1(1, "TransferList", "(%s[])".formatted(ACCOUNT_AMOUNT_STRUCT_V2)),
 
     TOKEN_TRANSFER_LIST_ARRAY_V1(
-            1, "tokenTransferList", "(address,%s[],%s[])".formatted(ACCOUNT_AMOUNT_STRUCT_V1, NFT_TRANSFER_STRUCT_V1)),
+            1, "TokenTransferList", "(address,%s[],%s[])".formatted(ACCOUNT_AMOUNT_STRUCT_V1, NFT_TRANSFER_STRUCT_V1)),
     TOKEN_TRANSFER_LIST_ARRAY_V2(
-            2, "tokenTransferList", "(address,%s[],%s[])".formatted(ACCOUNT_AMOUNT_STRUCT_V2, NFT_TRANSFER_STRUCT_V2)),
+            2, "TokenTransferList", "(address,%s[],%s[])".formatted(ACCOUNT_AMOUNT_STRUCT_V2, NFT_TRANSFER_STRUCT_V2)),
 
     // HTS, versioned ABIs only
 
-    BURN_TOKEN_METHOD_V1(1, "burnToken(address,uint64,int64[])"),
-    BURN_TOKEN_METHOD_V2(2, "burnToken(address,int64,int64[])"),
+    BURN_TOKEN_METHOD_V1(1, "burnToken(address,uint64,int64[])", "(int64,uint64)", "BURN_TOKEN"),
+    BURN_TOKEN_METHOD_V2(2, "burnToken(address,int64,int64[])", "(int64,int64)", "BURN_TOKEN"),
 
-    CREATE_FUNGIBLE_TOKEN_METHOD_V1(1, "createFungibleToken(%s,uint256,uint256)".formatted(HEDERA_TOKEN_STRUCT_V1)),
-    CREATE_FUNGIBLE_TOKEN_METHOD_V2(2, "createFungibleToken(%s,uint64,uint32)".formatted(HEDERA_TOKEN_STRUCT_V2)),
-    CREATE_FUNGIBLE_TOKEN_METHOD_V3(3, "createFungibleToken(%s,int64,int32)".formatted(HEDERA_TOKEN_STRUCT_V3)),
+    CREATE_FUNGIBLE_TOKEN_METHOD_V1(
+            1,
+            "createFungibleToken(%s,uint256,uint256)".formatted(HEDERA_TOKEN_STRUCT_V1),
+            "(int64,address)",
+            Payable.YES,
+            "CREATE_FUNGIBLE_TOKEN"),
+    CREATE_FUNGIBLE_TOKEN_METHOD_V2(
+            2,
+            "createFungibleToken(%s,uint64,uint32)".formatted(HEDERA_TOKEN_STRUCT_V2),
+            "(int64,address)",
+            Payable.YES,
+            "CREATE_FUNGIBLE_TOKEN"),
+    CREATE_FUNGIBLE_TOKEN_METHOD_V3(
+            3,
+            "createFungibleToken(%s,int64,int32)".formatted(HEDERA_TOKEN_STRUCT_V3),
+            "(int64,address)",
+            Payable.YES,
+            "CREATE_FUNGIBLE_TOKEN"),
 
     CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_METHOD_V1(
             1,
             "createFungibleTokenWithCustomFees(%s,uint256,uint256,%s[],%s[])"
-                    .formatted(HEDERA_TOKEN_STRUCT_V1, FIXED_FEE_STRUCT_V1, FRACTIONAL_FEE_STRUCT_V1)),
+                    .formatted(HEDERA_TOKEN_STRUCT_V1, FIXED_FEE_STRUCT_V1, FRACTIONAL_FEE_STRUCT_V1),
+            "(int64,address)",
+            Payable.YES,
+            "CREATE_FUNGIBLE_TOKEN_WITH_FEES"),
     CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_METHOD_V2(
             2,
             "createFungibleTokenWithCustomFees(%s,uint64,uint32,%s[],%s[])"
-                    .formatted(HEDERA_TOKEN_STRUCT_V2, FIXED_FEE_STRUCT_V1, FRACTIONAL_FEE_STRUCT_V1)),
+                    .formatted(HEDERA_TOKEN_STRUCT_V2, FIXED_FEE_STRUCT_V1, FRACTIONAL_FEE_STRUCT_V1),
+            "(int64,address)",
+            Payable.YES,
+            "CREATE_FUNGIBLE_TOKEN_WITH_FEES"),
     CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_METHOD_V3(
             3,
             "createFungibleTokenWithCustomFees(%s,int64,int32,%s[],%s[])"
-                    .formatted(HEDERA_TOKEN_STRUCT_V3, FIXED_FEE_STRUCT_V2, FRACTIONAL_FEE_STRUCT_V2)),
+                    .formatted(HEDERA_TOKEN_STRUCT_V3, FIXED_FEE_STRUCT_V2, FRACTIONAL_FEE_STRUCT_V2),
+            "(int64,address)",
+            Payable.YES,
+            "CREATE_FUNGIBLE_TOKEN_WITH_FEES"),
 
-    CREATE_NON_FUNGIBLE_TOKEN_METHOD_V1(1, "createNonFungibleToken(%s)".formatted(HEDERA_TOKEN_STRUCT_V1)),
-    CREATE_NON_FUNGIBLE_TOKEN_METHOD_V2(2, "createNonFungibleToken(%s)".formatted(HEDERA_TOKEN_STRUCT_V2)),
-    CREATE_NON_FUNGIBLE_TOKEN_METHOD_V3(3, "createNonFungibleToken(%s)".formatted(HEDERA_TOKEN_STRUCT_V3)),
+    CREATE_NON_FUNGIBLE_TOKEN_METHOD_V1(
+            1,
+            "createNonFungibleToken(%s)".formatted(HEDERA_TOKEN_STRUCT_V1),
+            "(int64,address)",
+            Payable.YES,
+            "CREATE_NON_FUNGIBLE_TOKEN"),
+    CREATE_NON_FUNGIBLE_TOKEN_METHOD_V2(
+            2,
+            "createNonFungibleToken(%s)".formatted(HEDERA_TOKEN_STRUCT_V2),
+            "(int64,address)",
+            Payable.YES,
+            "CREATE_NON_FUNGIBLE_TOKEN"),
+    CREATE_NON_FUNGIBLE_TOKEN_METHOD_V3(
+            3,
+            "createNonFungibleToken(%s)".formatted(HEDERA_TOKEN_STRUCT_V3),
+            "(int64,address)",
+            Payable.YES,
+            "CREATE_NON_FUNGIBLE_TOKEN"),
 
     CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_METHOD_V1(
             1,
             "createNonFungibleTokenWithCustomFees(%s,%s[],%s[])"
-                    .formatted(HEDERA_TOKEN_STRUCT_V1, FIXED_FEE_STRUCT_V1, ROYALTY_FEE_STRUCT_V1)),
+                    .formatted(HEDERA_TOKEN_STRUCT_V1, FIXED_FEE_STRUCT_V1, ROYALTY_FEE_STRUCT_V1),
+            "(int64,address)",
+            Payable.YES,
+            "CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES"),
     CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_METHOD_V2(
             2,
             "createNonFungibleTokenWithCustomFees(%s,%s[],%s[])"
-                    .formatted(HEDERA_TOKEN_STRUCT_V2, FIXED_FEE_STRUCT_V1, ROYALTY_FEE_STRUCT_V1)),
+                    .formatted(HEDERA_TOKEN_STRUCT_V2, FIXED_FEE_STRUCT_V1, ROYALTY_FEE_STRUCT_V1),
+            "(int64,address)",
+            Payable.YES,
+            "CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES"),
     CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_METHOD_V3(
             3,
             "createNonFungibleTokenWithCustomFees(%s,%s[],%s[])"
-                    .formatted(HEDERA_TOKEN_STRUCT_V3, FIXED_FEE_STRUCT_V2, ROYALTY_FEE_STRUCT_V2)),
+                    .formatted(HEDERA_TOKEN_STRUCT_V3, FIXED_FEE_STRUCT_V2, ROYALTY_FEE_STRUCT_V2),
+            "(int64,address)",
+            Payable.YES,
+            "CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES"),
 
-    CRYPTO_TRANSFER_METHOD_V1(1, "cryptoTransfer(%s[])".formatted(TOKEN_TRANSFER_LIST_ARRAY_V1)),
+    CRYPTO_TRANSFER_METHOD_V1(
+            1, "cryptoTransfer(%s[] memory)".formatted(TOKEN_TRANSFER_LIST_ARRAY_V1), "(int)", "CRYPTO_TRANSFER"),
     CRYPTO_TRANSFER_METHOD_V2(
-            2, "cryptoTransfer(%s,%s[])".formatted(TRANSFER_LIST_ARRAY_V1, TOKEN_TRANSFER_LIST_ARRAY_V2)),
+            2,
+            "cryptoTransfer(%s memory, %s[] memory)".formatted(TRANSFER_LIST_ARRAY_V1, TOKEN_TRANSFER_LIST_ARRAY_V2),
+            "(int)",
+            "CRYPTO_TRANSFER"),
 
-    MINT_TOKEN_METHOD_V1(1, "mintToken(address,uint64,bytes[])"),
-    MINT_TOKEN_METHOD_V2(2, "mintToken(address,int64,bytes[])"),
+    MINT_TOKEN_METHOD_V1(1, "mintToken(address,uint64,bytes[])", "(int64,uint64,int64[])", "MINT_TOKEN"),
+    MINT_TOKEN_METHOD_V2(2, "mintToken(address,int64,bytes[])", "(int64,int64,int64[])", "MINT_TOKEN"),
 
-    UPDATE_TOKEN_EXPIRY_INFO_METHOD_V1(1, "updateTokenExpiryInfo(address,%s)".formatted(EXPIRY_STRUCT_V1)),
-    UPDATE_TOKEN_EXPIRY_INFO_METHOD_V2(2, "updateTokenExpiryInfo(address,%s)".formatted(EXPIRY_STRUCT_V2)),
+    UPDATE_TOKEN_EXPIRY_INFO_METHOD_V1(
+            1,
+            "updateTokenExpiryInfo(address,%s)".formatted(EXPIRY_STRUCT_V1),
+            "(int64, %s)".formatted(EXPIRY_STRUCT_V1),
+            "UPDATE_TOKEN_EXPIRY_INFO"),
+    UPDATE_TOKEN_EXPIRY_INFO_METHOD_V2(
+            2,
+            "updateTokenExpiryInfo(address,%s)".formatted(EXPIRY_STRUCT_V2),
+            "(int64, %s)".formatted(EXPIRY_STRUCT_V2),
+            "UPDATE_TOKEN_EXPIRY_INFO"),
 
-    UPDATE_TOKEN_INFO_METHOD_V1(1, "updateTokenInfo(address,%s)".formatted(HEDERA_TOKEN_STRUCT_V1)),
-    UPDATE_TOKEN_INFO_METHOD_V2(2, "updateTokenInfo(address,%s)".formatted(HEDERA_TOKEN_STRUCT_V2)),
-    UPDATE_TOKEN_INFO_METHOD_V3(3, "updateTokenInfo(address,%s)".formatted(HEDERA_TOKEN_STRUCT_V3)),
+    UPDATE_TOKEN_INFO_METHOD_V1(
+            1, "updateTokenInfo(address,%s)".formatted(HEDERA_TOKEN_STRUCT_V1), "(int64)", "UPDATE_TOKEN_INFO"),
+    UPDATE_TOKEN_INFO_METHOD_V2(
+            2, "updateTokenInfo(address,%s)".formatted(HEDERA_TOKEN_STRUCT_V2), "(int64)", "UPDATE_TOKEN_INFO"),
+    UPDATE_TOKEN_INFO_METHOD_V3(
+            3, "updateTokenInfo(address,%s)".formatted(HEDERA_TOKEN_STRUCT_V3), "(int64)", "UPDATE_TOKEN_INFO"),
 
-    WIPE_TOKEN_ACCOUNT_METHOD_V1(1, "wipeTokenAccount(address,address,uint32)"),
-    WIPE_TOKEN_ACCOUNT_METHOD_V2(2, "wipeTokenAccount(address,address,int64)"),
+    WIPE_TOKEN_ACCOUNT_METHOD_V1(
+            1, "wipeTokenAccount(address,address,uint32)", "(int64)", "WIPE_TOKEN_ACCOUNT_FUNGIBLE"),
+    WIPE_TOKEN_ACCOUNT_METHOD_V2(
+            2, "wipeTokenAccount(address,address,int64)", "(int64)", "WIPE_TOKEN_ACCOUNT_FUNGIBLE"),
 
     // HTS, non-versioned ABIs here (for now - ultimately, everything should be put in alphabetical
     // order for easier reading)
 
-    UPDATE_TOKEN_KEYS_METHOD_V1(1, "updateTokenKeys(address,%s[])".formatted(TOKEN_KEY_STRUCT_V1));
+    UPDATE_TOKEN_KEYS_METHOD_V1(
+            1, "updateTokenKeys(address,%s[])".formatted(TOKEN_KEY_STRUCT_V1), "(int64)", "UPDATE_TOKEN_KEYS");
+
+    public enum Kind {
+        METHOD,
+        TYPE,
+        EVENT
+    }
+
+    public enum Payable {
+        NO,
+        YES
+    }
+
+    public enum Anonymous {
+        NO,
+        YES
+    }
 
     /** Declare a METHOD */
-    SystemContractAbis(int version, @NonNull final String signature) {
+    SystemContractAbis(
+            final int version,
+            @NonNull final String givenSignature,
+            @NonNull final String givenReturnsSignature,
+            @NonNull final String abiConstantName) {
+        this(version, givenSignature, givenReturnsSignature, Payable.NO, abiConstantName);
+    }
+
+    SystemContractAbis(
+            final int version,
+            @NonNull final String givenSignature,
+            @NonNull final String givenReturnsSignature,
+            @NonNull final Payable payable,
+            @NonNull final String abiConstantName) {
         this.kind = Kind.METHOD;
         this.version = version;
-        this.signature = stripBlanks(signature);
+        this.givenSignature = givenSignature;
+        this.givenReturnsSignature = givenReturnsSignature;
+        this.signature = stripBlanks(removeTokens(this.givenSignature, "memory", "storage", "calldata", "payable"));
+        this.returnsSignature = stripBlanks(this.givenReturnsSignature);
         this.decoderSignature = stripName(addressToUint(this.signature));
         this.decoder = TypeFactory.create(this.decoderSignature);
         this.selector = Bytes.wrap(new Function(this.signature).selector());
         this.name = nameFrom(this.signature);
+        this.anonymous = Anonymous.NO;
+        this.abiConstantName = makeFullAbiConstantName(abiConstantName);
+        this.payable = payable;
     }
 
     /** Declare a TYPE (struct or array-of-struct) */
-    SystemContractAbis(final int version, @NonNull String name, @NonNull final String signature) {
+    SystemContractAbis(final int version, @NonNull final String name, @NonNull final String givenSignature) {
         this.kind = Kind.TYPE;
         this.version = version;
-        this.signature = stripBlanks(signature);
+        this.givenSignature = givenSignature;
+        this.givenReturnsSignature = "";
+        this.signature = stripBlanks(this.givenSignature);
+        this.returnsSignature = "";
         this.decoderSignature = stripName(addressToUint(this.signature));
         this.decoder = TypeFactory.create(this.decoderSignature);
         this.selector = Bytes.EMPTY;
         this.name = name;
+        this.anonymous = Anonymous.NO;
+        this.abiConstantName = "";
+        this.payable = Payable.NO;
     }
 
-    public enum Kind {
-        METHOD,
-        TYPE
+    SystemContractAbis(
+            final int version,
+            @NonNull final String name,
+            @NonNull Anonymous anonymous,
+            @NonNull final String givenSignature,
+            @NonNull final String abiConstantName) {
+        this.kind = Kind.EVENT;
+        this.version = version;
+        this.givenSignature = givenSignature;
+        this.givenReturnsSignature = "";
+        this.signature = stripBlanks(removeTokens(this.givenSignature, "indexed"));
+        this.returnsSignature = "";
+        this.decoderSignature = stripName(addressToUint(this.signature));
+        this.decoder = TypeFactory.create(this.decoderSignature);
+        this.selector = Bytes.EMPTY; // ** TBD!  An event "selector" is a different kind of thing ... **
+        this.name = name;
+        this.anonymous = anonymous;
+        this.abiConstantName = makeFullAbiConstantName(abiConstantName);
+        this.payable = Payable.NO;
     }
 
+    @NonNull
     public final Kind kind;
+
     public final int version;
-    public final String signature;
-    public final String decoderSignature;
+
+    @NonNull
+    public final String givenSignature; // full signature given as enum constructor argument
+
+    @NonNull
+    public final String signature; // signature as defined by Solidity
+
+    @NonNull
+    public final String givenReturnsSignature;
+
+    @NonNull
+    public final String returnsSignature; // returns specification (normalized)
+
+    @NonNull
+    public final String decoderSignature; // signature modified for headlong library
+
+    @NonNull
+    public final Payable payable;
 
     @NonNull
     public final ABIType<Tuple> decoder;
@@ -193,7 +336,14 @@ public enum SystemContractAbis {
     @NonNull
     public final Bytes selector; // METHOD ONLY
 
+    @NonNull
     private final String name;
+
+    @NonNull
+    public final Anonymous anonymous; // EVENT ONLY
+
+    @NonNull
+    public final String abiConstantName;
 
     @NonNull
     public String getName() {
@@ -213,6 +363,10 @@ public enum SystemContractAbis {
         return kind == Kind.TYPE;
     }
 
+    public boolean isEvent() {
+        return kind == Kind.EVENT;
+    }
+
     /** Returns the _signature_ of this ABI enum (intead of the standard `Enum.toString()` which returns
      * the actual spelling of the enum value.
      */
@@ -227,6 +381,7 @@ public enum SystemContractAbis {
         return switch (kind) {
             case METHOD -> methodToString();
             case TYPE -> typeToString();
+            case EVENT -> eventToString();
         };
     }
 
@@ -270,18 +425,28 @@ public enum SystemContractAbis {
 
     // End of the public API - internal methods only after this
 
-    static void validateNameIsConsistent(
-            @NonNull final Kind kind, @NonNull final String keywordsCsv, @NonNull SystemContractAbis abi) {
-        validateNameIsConsistent(kind, keywordsCsv, abi.name(), abi.name, abi.signature, abi.version);
+    @NonNull
+    String makeFullAbiConstantName(@NonNull String abiConstantName) {
+        return switch (kind) {
+            case METHOD -> "ABI_ID_%s_V%d".formatted(abiConstantName, version);
+            case TYPE -> "";
+            case EVENT -> "%s_EVENT_V%d".formatted(abiConstantName, version);
+        };
     }
 
-    @SuppressWarnings("java:S1301") // switch->if - I disagree: a switch on 2-elt enum is better than if
+    static void validateNameIsConsistent(
+            @NonNull final Kind kind, @NonNull final String keywordsCsv, @NonNull SystemContractAbis abi) {
+        validateNameIsConsistent(
+                kind, keywordsCsv, abi.name(), abi.name, abi.signature, abi.returnsSignature, abi.version);
+    }
+
     static void validateNameIsConsistent(
             @NonNull final Kind kind,
             @NonNull final String keywordsCsv,
             @NonNull final String abiEnumName,
             @NonNull final String abiName,
             @NonNull final String abiSignature,
+            @NonNull final String abiReturnsSignature,
             final int abiVersion) {
         final var keywords =
                 Arrays.stream(keywordsCsv.split(",")).map(s -> "_" + s + "_").toList();
@@ -305,11 +470,28 @@ public enum SystemContractAbis {
                 if (abiName.isEmpty())
                     throw new IllegalArgumentException("ABI %s %s must have a method name in its signature: '%s'"
                             .formatted(kind, abiEnumName, abiSignature));
+                if (!Character.isLowerCase(abiName.charAt(0)))
+                    throw new IllegalArgumentException("ABI %s %s name must start with lowercase letter: '%s'"
+                            .formatted(kind, abiEnumName, abiName));
+                if (!signatureValidates(abiReturnsSignature))
+                    throw new IllegalArgumentException("ABI %s %s returns signature is not well-formed: '%s'"
+                            .formatted(kind, abiEnumName, abiReturnsSignature));
             }
             case TYPE -> {
                 if (!nameFrom(abiSignature).isEmpty())
                     throw new IllegalArgumentException("ABI %s %s must have no method name in its signature: '%s'"
                             .formatted(kind, abiEnumName, abiSignature));
+                if (!Character.isUpperCase(abiName.charAt(0)))
+                    throw new IllegalArgumentException("ABI %s %s name must start with uppercase letter: '%s'"
+                            .formatted(kind, abiEnumName, abiName));
+            }
+            case EVENT -> {
+                if (abiName.isEmpty())
+                    throw new IllegalArgumentException("ABI %s %s must have an event name in its signature: '%s'"
+                            .formatted(kind, abiEnumName, abiSignature));
+                if (!Character.isUpperCase(abiName.charAt(0)))
+                    throw new IllegalArgumentException("ABI %s %s name must start with uppercase letter: '%s'"
+                            .formatted(kind, abiEnumName, abiName));
             }
         }
     }
@@ -320,7 +502,7 @@ public enum SystemContractAbis {
         return versionFromName == version;
     }
 
-    @SuppressWarnings({"java:S5852", "Java:S5843"}) // slow regular expression due to back-tracking could lead to DoS
+    @SuppressWarnings({"java:S5852", "java:S5843"}) // slow regular expression due to back-tracking could lead to DoS
     static boolean signatureValidates(@NonNull final String s) {
 
         // This regex matches ensures properly balanced and nested parenthesis, in Java (using
@@ -366,6 +548,13 @@ public enum SystemContractAbis {
     }
 
     @NonNull
+    static String removeTokens(@NonNull final String s, @NonNull final String... tokens) {
+        var r = s;
+        for (final var token : tokens) r = r.replaceAll(token, "");
+        return r;
+    }
+
+    @NonNull
     static String stripBlanks(@NonNull final String s) {
         return s.replaceAll("\\s+", "");
     }
@@ -391,12 +580,18 @@ public enum SystemContractAbis {
     private String methodToString() {
         if (!isMethod()) throw new IllegalArgumentException("must be called with a METHOD");
         return "method %s (%d) %s[%d]: %s {%s}"
-                .formatted(selectorAsHex(), selector.toInt(), name, version, signature, decoderSignature);
+                .formatted(selectorAsHex(), selector.toInt(), name, version, givenSignature, decoderSignature);
     }
 
     @NonNull
     private String typeToString() {
         if (!isType()) throw new IllegalArgumentException("must be called with a TYPE");
-        return "struct %s[%d]: %s {%s}".formatted(name, version, signature, decoderSignature);
+        return "struct %s[%d]: %s {%s}".formatted(name, version, givenSignature, decoderSignature);
+    }
+
+    @NonNull
+    private String eventToString() {
+        if (!isEvent()) throw new IllegalArgumentException("must be called with an EVENT");
+        return "event %s[%d]: %s {%s}".formatted(name, version, givenSignature, decoderSignature);
     }
 }

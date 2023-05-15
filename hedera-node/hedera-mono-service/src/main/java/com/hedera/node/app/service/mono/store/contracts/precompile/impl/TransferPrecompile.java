@@ -30,8 +30,8 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeAccountIds;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.generateAccountIDWithAliasCalculatedFrom;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.SystemContractAbis.CRYPTO_TRANSFER_METHOD_V1;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.SystemContractAbis.CRYPTO_TRANSFER_METHOD_V2;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.specification.SystemContractAbis.CRYPTO_TRANSFER_METHOD_V1;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.specification.SystemContractAbis.CRYPTO_TRANSFER_METHOD_V2;
 import static com.hedera.node.app.service.mono.txns.span.SpanMapManager.reCalculateXferMeta;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
