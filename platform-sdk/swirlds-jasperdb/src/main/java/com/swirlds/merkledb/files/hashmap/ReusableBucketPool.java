@@ -16,12 +16,9 @@
 
 package com.swirlds.merkledb.files.hashmap;
 
+import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.virtualmap.VirtualKey;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReferenceArray;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 /**
  * HalfDiskHashMap buckets are somewhat expensive resources. Every bucket has an
@@ -53,38 +50,13 @@ import java.util.concurrent.locks.ReentrantLock;
 public class ReusableBucketPool<K extends VirtualKey> {
 
     /** Default number of reusable buckets in this pool */
-    private static final int DEFAULT_POOL_SIZE = 8192;
-
-    /** Pool size */
-    private final int poolSize;
+    private static final int DEFAULT_POOL_SIZE = 64;
 
     /** Buckets */
-    private final AtomicReferenceArray<Bucket<K>> buckets;
-    /**
-     * To avoid synchronization on a single object, every bucket has its own lock. The
-     * locks are used to wait, if the pool is empty (no available buckets), or to wake
-     * up the waiting thread, when a bucket is released back to the pool.
-     */
-    private final AtomicReferenceArray<Lock> locks;
-    /** Condition objects for the locks above, to await and signal on */
-    private final AtomicReferenceArray<Condition> conditions;
+    private final ConcurrentLinkedDeque<Bucket<K>> buckets;
 
-    /**
-     * Index in the array of the next available (non-null) bucket. When a bucket is
-     * requested from the pool, it's served from this index, and the corresponding
-     * array element is set to null.
-     *
-     * <p>This index may point to an empty element in the array. It happens, when the
-     * pool is empty. In this case, the thread that requests a new bucket from will be
-     * blocked, until a bucket is released into the array at the index.
-     */
-    private final AtomicInteger nextIndexToGet = new AtomicInteger(0);
-    /**
-     * Index in the array of the next empty slot. When a bucket is released to the pool,
-     * it's put to the array at this index, and the index is increased by one. If another
-     * thread is waiting for a bucket to be released at the given index, it is notified.
-     */
-    private final AtomicInteger nextIndexToRelease = new AtomicInteger(0);
+    /** Key serializer */
+    private final KeySerializer<K> keySerializer;
 
     /**
      * Creates a new reusable bucket pool of the default size.
@@ -101,15 +73,10 @@ public class ReusableBucketPool<K extends VirtualKey> {
      * @param serializer Key serializer used by the buckets in the pool
      */
     public ReusableBucketPool(final int size, final BucketSerializer<K> serializer) {
-        poolSize = size;
-        buckets = new AtomicReferenceArray<>(poolSize);
-        locks = new AtomicReferenceArray<>(poolSize);
-        conditions = new AtomicReferenceArray<>(poolSize);
-        for (int i = 0; i < poolSize; i++) {
-            buckets.set(i, new Bucket<>(serializer.getKeySerializer(), this));
-            final Lock lock = new ReentrantLock();
-            locks.set(i, lock);
-            conditions.set(i, lock.newCondition());
+        buckets = new ConcurrentLinkedDeque<>();
+        keySerializer = serializer.getKeySerializer();
+        for (int i = 0; i < size; i++) {
+            buckets.offerLast(new Bucket<K>(keySerializer, this));
         }
     }
 
@@ -121,55 +88,21 @@ public class ReusableBucketPool<K extends VirtualKey> {
      * to the pool
      */
     public Bucket<K> getBucket() {
-        // Every call to this method is bound to a particular index in the pool
-        final int index = nextIndexToGet.getAndUpdate(t -> (t + 1) % poolSize);
-        // Try optimistic get first
-        Bucket<K> bucket = buckets.getAndSet(index, null);
+        Bucket<K> bucket = buckets.pollLast();
         if (bucket == null) {
-            final Lock lock = locks.get(index);
-            final Condition cond = conditions.get(index);
-            lock.lock();
-            try {
-                bucket = buckets.getAndSet(index, null);
-                // Wait until a bucket at the given index is released
-                while (bucket == null) {
-                    try {
-                        cond.await();
-                    } catch (final InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        throw new RuntimeException(e);
-                    }
-                    bucket = buckets.getAndSet(index, null);
-                }
-            } finally {
-                lock.unlock();
-            }
+            bucket = new Bucket<K>(keySerializer, this);
         }
         bucket.clear();
         return bucket;
     }
 
     /**
-     * Releases a bucket back to this pool. The bucket cannot be used after this
-     * call, until it's borrowed from the pool again using {@link #getBucket()}.
+     * Releases a bucket back to this pool. The bucket cannot be used after this call, until it's
+     * borrowed from the pool again using {@link #getBucket()}.
      *
      * @param bucket A bucket to release to this pool
      */
     public void releaseBucket(final Bucket<K> bucket) {
-        assert bucket.getBucketPool() == this;
-        int index = nextIndexToRelease.getAndUpdate(t -> (t + 1) % poolSize);
-        boolean released = buckets.compareAndSet(index, null, bucket);
-        while (!released) {
-            Thread.onSpinWait();
-            released = buckets.compareAndSet(index, null, bucket);
-        }
-        final Lock lock = locks.get(index);
-        final Condition cond = conditions.get(index);
-        lock.lock();
-        try {
-            cond.signalAll();
-        } finally {
-            lock.unlock();
-        }
+        buckets.offerLast(bucket);
     }
 }
