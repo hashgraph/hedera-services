@@ -452,7 +452,7 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
      */
     private void addNewAddress(@NonNull final Address address) {
         if (address.getNodeId().compareTo(nextNodeId) < 0) {
-            throw new IllegalStateException("Can not add address for node with ID " + address.getNodeId()
+            throw new IllegalArgumentException("Can not add address for node with ID " + address.getNodeId()
                     + ", the next address to be added is required have a node ID greater or equal to "
                     + nextNodeId);
         }

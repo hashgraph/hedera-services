@@ -279,7 +279,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         if (logWeightingBehavior.get()) {
             logger.info(STARTUP.getMarker(), "Weighting Behavior 1: updating all nodes to have 10 weight.");
         }
-        for (Address address : addressBook) {
+        for (final Address address : addressBook) {
             addressBook.updateWeight(address.getNodeId(), 10);
         }
         return addressBook;
@@ -298,7 +298,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
                     STARTUP.getMarker(),
                     "Weighting Behavior 2: updating all nodes to have weight equal to their nodeId.");
         }
-        for (Address address : addressBook) {
+        for (final Address address : addressBook) {
             addressBook.updateWeight(address.getNodeId(), address.getNodeId().id());
         }
         return addressBook;
