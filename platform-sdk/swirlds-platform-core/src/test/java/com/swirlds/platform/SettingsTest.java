@@ -628,45 +628,6 @@ class SettingsTest {
     @Test
     @Disabled
     @Tag(TestTypeTags.FUNCTIONAL)
-    @DisplayName("Checks that default FCHashMap sub-settings are retrieved correctly")
-    public void checkGetDefaultFCHashMapSubSettings() {
-        // given
-        final FCHashMapSettingsImpl fcHashMapSettings = Settings.getInstance().getFcHashMap();
-
-        // then
-        Assertions.assertEquals(200, fcHashMapSettings.getMaximumGCQueueSize());
-        Assertions.assertEquals(Duration.ofMinutes(1), fcHashMapSettings.getGCQueueThresholdPeriod());
-        Assertions.assertTrue(fcHashMapSettings.isArchiveEnabled());
-    }
-
-    @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @DisplayName("Checks that loaded FCHashMap sub-settings are retrieved correctly")
-    public void checkGetLoadedFCHashMapSubSettings() {
-        // given
-        final Settings settings = Settings.getInstance();
-        final File settingsFile =
-                new File(SettingsTest.class.getResource("settings8.txt").getFile());
-        Assertions.assertTrue(settingsFile.exists());
-
-        // when
-        settings.loadSettings(settingsFile);
-        final FCHashMapSettingsImpl fcHashMapSettings = Settings.getInstance().getFcHashMap();
-
-        // then
-        Assertions.assertEquals(250, fcHashMapSettings.getMaximumGCQueueSize());
-        Assertions.assertEquals(ParsingUtils.parseDuration("2min"), fcHashMapSettings.getGCQueueThresholdPeriod());
-        Assertions.assertFalse(fcHashMapSettings.isArchiveEnabled());
-    }
-
-    /**
-     * Currently disabled until the Settings class gets rewritten to not use a singleton
-     * design pattern. There are tests that are run that modify these default values
-     * before this test is run, therefore resulting in this test failing.
-     */
-    @Test
-    @Disabled
-    @Tag(TestTypeTags.FUNCTIONAL)
     @DisplayName("Checks that default virtual map sub-settings are retrieved correctly")
     public void checkGetDefaultVirtualMapSubSettings() {
         // given

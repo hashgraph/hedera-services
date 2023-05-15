@@ -22,6 +22,7 @@ import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -64,6 +65,7 @@ public final class GuiPlatformAccessor {
      * @param about  wha should show in the "about" window from the menu
      */
     public void setAbout(final long nodeId, final String about) {
+        Objects.requireNonNull(about);
         aboutStrings.put(nodeId, about);
     }
 
@@ -84,6 +86,7 @@ public final class GuiPlatformAccessor {
      * @param platformName a platform name
      */
     public void setPlatformName(final long nodeId, @NonNull final String platformName) {
+        Objects.requireNonNull(platformName);
         platformNames.put(nodeId, platformName);
     }
 
@@ -105,6 +108,7 @@ public final class GuiPlatformAccessor {
      * @param swirldId the swirld ID
      */
     public void setSwirldId(final long nodeId, @NonNull final byte[] swirldId) {
+        Objects.requireNonNull(swirldId);
         swirldIds.put(nodeId, swirldId);
     }
 
@@ -146,6 +150,7 @@ public final class GuiPlatformAccessor {
      * @param shadowGraph the shadow graph
      */
     public void setShadowGraph(final long nodeId, @NonNull final ShadowGraph shadowGraph) {
+        Objects.requireNonNull(shadowGraph);
         shadowGraphs.put(nodeId, shadowGraph);
     }
 
@@ -168,6 +173,7 @@ public final class GuiPlatformAccessor {
      */
     public void setStateManagementComponent(
             final long nodeId, @NonNull final StateManagementComponent stateManagementComponent) {
+        Objects.requireNonNull(stateManagementComponent);
         stateManagementComponents.put(nodeId, stateManagementComponent);
     }
 
@@ -189,6 +195,7 @@ public final class GuiPlatformAccessor {
      * @param consensus the consensus
      */
     public void setConsensusReference(final long nodeId, @NonNull final AtomicReference<Consensus> consensus) {
+        Objects.requireNonNull(consensus);
         consensusReferences.put(nodeId, consensus);
     }
 
