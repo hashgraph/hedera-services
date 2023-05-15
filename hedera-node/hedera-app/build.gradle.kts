@@ -14,7 +14,11 @@
  * limitations under the License.
  */
 
-plugins { id("com.hedera.hashgraph.conventions") }
+plugins {
+  id("com.hedera.hashgraph.conventions")
+  id("com.hedera.hashgraph.benchmark-conventions")
+  `java-test-fixtures`
+}
 
 description = "Hedera Application - Implementation"
 
@@ -38,10 +42,9 @@ dependencies {
   implementation(project(":hedera-node:hedera-mono-service"))
   implementation(project(":hedera-node:hapi-utils"))
   implementation(project(":hedera-node:hapi-fees"))
-  implementation(project(":hedera-node:hedera-admin-service-impl"))
+  implementation(project(":hedera-node:hedera-networkadmin-service-impl"))
   implementation(project(":hedera-node:hedera-consensus-service-impl"))
   implementation(project(":hedera-node:hedera-file-service-impl"))
-  implementation(project(":hedera-node:hedera-network-service-impl"))
   implementation(project(":hedera-node:hedera-schedule-service-impl"))
   implementation(project(":hedera-node:hedera-smart-contract-service-impl"))
   implementation(project(":hedera-node:hedera-token-service-impl"))
@@ -52,6 +55,11 @@ dependencies {
   implementation(libs.bundles.helidon)
   implementation(libs.helidon.grpc.server)
   implementation(libs.pbj.runtime)
+  implementation(libs.commons.codec) // Temporarily needed for AdaptedMonoProcessLogic
+
+  jmhImplementation(project(":hedera-node:hedera-app"))
+  jmhImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
+  jmhImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
 
   itestImplementation(project(":hedera-node:hapi"))
   itestImplementation(testFixtures(project(":hedera-node:hapi")))
@@ -69,6 +77,13 @@ dependencies {
   testImplementation(testLibs.classgraph)
   testImplementation(testLibs.bundles.testing)
   testCompileOnly(libs.spotbugs.annotations)
+
+  testFixturesImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
+  testFixturesImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
+  testFixturesImplementation(project(":hedera-node:hedera-app"))
+  testFixturesImplementation(testLibs.classgraph)
+  testFixturesImplementation(testLibs.bundles.testing)
+  testFixturesCompileOnly(libs.spotbugs.annotations)
 }
 
 tasks.withType<Test> {

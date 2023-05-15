@@ -25,8 +25,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.grpc.GrpcServiceBuilder;
-import com.hedera.node.app.service.admin.FreezeService;
-import com.hedera.node.app.service.admin.impl.FreezeServiceImpl;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import com.hedera.node.app.service.contract.ContractService;
@@ -47,8 +45,10 @@ import com.hedera.node.app.service.mono.state.submerkle.SequenceNumber;
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.NamedDigestFactory;
-import com.hedera.node.app.service.network.NetworkService;
-import com.hedera.node.app.service.network.impl.NetworkServiceImpl;
+import com.hedera.node.app.service.networkadmin.FreezeService;
+import com.hedera.node.app.service.networkadmin.NetworkService;
+import com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl;
+import com.hedera.node.app.service.networkadmin.impl.NetworkServiceImpl;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
 import com.hedera.node.app.service.token.TokenService;
@@ -501,7 +501,7 @@ public final class Hedera implements SwirldMain {
     private void onPreHandle(@NonNull final Event event, @NonNull final HederaState state) {
         // For now, we will delegate pre-handle to the mono-service. But this needs to be moved to
         // use the Pre-Handle workflow instead.
-        daggerApp.adaptedMonoEventExpansion().expand(event, state);
+        daggerApp.adaptedMonoEventExpansion().expand(event, state, daggerApp.nodeInfo());
     }
 
     /**

@@ -22,7 +22,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
@@ -71,7 +70,8 @@ final class ReconnectTest {
     static void setUp() throws ConstructableRegistryException {
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
         registry.registerConstructables("com.swirlds.common");
-        registry.registerConstructable(new ClassConstructorPair(State.class, State::new));
+        registry.registerConstructables("com.swirlds.platform.state");
+        registry.registerConstructables("com.swirlds.platform.state.signed");
     }
 
     @Test

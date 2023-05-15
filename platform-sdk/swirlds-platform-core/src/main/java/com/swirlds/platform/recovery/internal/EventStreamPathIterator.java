@@ -16,15 +16,20 @@
 
 package com.swirlds.platform.recovery.internal;
 
+import static com.swirlds.platform.recovery.internal.EventStreamLowerBound.UNBOUNDED;
+
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.system.events.DetailedConsensusEvent;
 import com.swirlds.common.utility.BinarySearch;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 /**
@@ -43,14 +48,17 @@ public class EventStreamPathIterator implements Iterator<Path> {
      *
      * @param eventStreamDirectory
      * 		a directory containing event stream files
-     * @param startingRound
-     * 		return files guaranteed to contain all the events starting with a particular round.
-     * 		May return some files that contain data prior to the indicated round. Will walk over
-     * 		all event stream files if starting round is {@link #FIRST_ROUND_AVAILABLE}.
+     * @param bound
+     * 		return files guaranteed to contain all the events starting at the lower bound.
+     * 		May return some files that contain data prior the lower bound. Will walk over
+     * 		all event stream files if the lower bound is unbounded.
      * @throws IOException
      * 		if there is a problem reading files
      */
-    public EventStreamPathIterator(final Path eventStreamDirectory, final long startingRound) throws IOException {
+    public EventStreamPathIterator(@NonNull final Path eventStreamDirectory, @NonNull final EventStreamLowerBound bound)
+            throws IOException {
+        Objects.requireNonNull(eventStreamDirectory, "the event stream directory must not be null");
+        Objects.requireNonNull(bound, "the lower bound must not be null");
 
         final List<Path> eventStreamFiles = new ArrayList<>();
         try (final Stream<Path> walk = Files.walk(eventStreamDirectory)) {
@@ -59,19 +67,35 @@ public class EventStreamPathIterator implements Iterator<Path> {
                     .forEachOrdered(eventStreamFiles::add);
         }
 
-        if (startingRound <= FIRST_ROUND_AVAILABLE) {
-            // We are attempting to get events from the beginning of time.
+        if (eventStreamFiles.isEmpty()) {
+            iterator = Collections.emptyIterator();
+            return;
+        }
+
+        final DetailedConsensusEvent firstEvent = getFirstEventInEventStreamFile(eventStreamFiles.get(0));
+        if (bound == UNBOUNDED || bound.compareTo(firstEvent) == 0) {
+            // We are attempting to get events from the beginning of the event stream.
             iterator = eventStreamFiles.iterator();
         } else {
+            final EventStreamLowerBound usedBound;
+            if (bound instanceof final EventStreamRoundLowerBound roundBound) {
+                // Since we are only checking the first event in each file, if the first event is of the desired round,
+                // we can't be sure that there are not events of the same round at the end of the previous file.
+                // Therefore, we need to start at the previous round to capture all events of the desired round.
+                final long round = roundBound.getRound();
+                final long usedRound = round == FIRST_ROUND_AVAILABLE ? FIRST_ROUND_AVAILABLE : round - 1;
+                usedBound = new EventStreamRoundLowerBound(usedRound);
+            } else {
+                usedBound = bound;
+            }
 
-            // This binary search is guaranteed to return a file that contains events
-            // from the round before where we want to start. As long as there are no gaps
-            // in the event stream files, this guarantees that we will observe all the events
-            // from the target round.
+            // If the bound has a round, this binary search is guaranteed to return a file that contains events
+            // from the round before where we want to start. As long as there are no gaps in the event stream files,
+            // this guarantees that we will observe all the events from the target round.
             final int startingIndex =
                     (int) BinarySearch.throwingSearch(0, eventStreamFiles.size(), (final Long index) -> {
                         final Path eventStreamFile = eventStreamFiles.get(index.intValue());
-                        return Long.compare(getFirstRoundInEventStreamFile(eventStreamFile), startingRound - 1);
+                        return usedBound.compareTo(getFirstEventInEventStreamFile(eventStreamFile));
                     });
 
             iterator = eventStreamFiles
@@ -96,18 +120,19 @@ public class EventStreamPathIterator implements Iterator<Path> {
     }
 
     /**
-     * Look inside an event stream file and return the round of the first event.
+     * Look inside an event stream file and return the first event
      *
      * @param path
      * 		a path to an event stream file
-     * @return the round of the first event in the file
+     * @return the DetailedConsensusEvent of the first event in the file
      */
-    private static long getFirstRoundInEventStreamFile(final Path path) throws IOException {
+    @NonNull
+    private static DetailedConsensusEvent getFirstEventInEventStreamFile(@NonNull final Path path) throws IOException {
         try (final IOIterator<DetailedConsensusEvent> iterator = new EventStreamSingleFileIterator(path, true)) {
             if (!iterator.hasNext()) {
                 throw new IllegalStateException("Event stream file contains no events");
             }
-            return iterator.next().getConsensusData().getRoundReceived();
+            return iterator.next();
         }
     }
 

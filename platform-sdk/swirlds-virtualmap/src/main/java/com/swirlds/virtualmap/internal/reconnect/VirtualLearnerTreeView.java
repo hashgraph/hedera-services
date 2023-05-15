@@ -232,7 +232,7 @@ public final class VirtualLearnerTreeView<K extends VirtualKey, V extends Virtua
             firstLeaf = false;
         }
 
-        final VirtualLeafRecord<K, V> leaf = in.readSerializable();
+        final VirtualLeafRecord<K, V> leaf = in.readSerializable(false, VirtualLeafRecord::new);
         nodeRemover.newLeafNode(leaf.getPath(), leaf.getKey());
         root.handleReconnectLeaf(leaf); // may block if hashing is slower than ingest
         return leaf.getPath();

@@ -59,7 +59,7 @@ import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.node.app.service.file.impl.handlers.FileGetInfoHandler;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.stats.HapiOpCounters;
-import com.hedera.node.app.service.network.impl.handlers.NetworkGetExecutionTimeHandler;
+import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkGetExecutionTimeHandler;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryHandler;
@@ -148,7 +148,8 @@ class QueryWorkflowImplTest extends AppTestBase {
         txBody = TransactionBody.newBuilder().transactionID(transactionID).build();
 
         final var signatureMap = SignatureMap.newBuilder().build();
-        transactionInfo = new TransactionInfo(payment, txBody, signatureMap, CRYPTO_TRANSFER);
+        transactionInfo =
+                new TransactionInfo(payment, txBody, signatureMap, payment.signedTransactionBytes(), CRYPTO_TRANSFER);
         when(ingestChecker.runAllChecks(state, payment)).thenReturn(transactionInfo);
 
         when(handler.extractHeader(query)).thenReturn(queryHeader);

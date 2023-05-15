@@ -1088,7 +1088,8 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     @Override
     public void copyStatisticsFrom(final VirtualDataSource<K, V> that) {
         if (!(that instanceof MerkleDbDataSource<?, ?> thatDataSource)) {
-            throw new IllegalArgumentException("can only copy statistics from MerkleDbDataSource");
+            logger.warn(MERKLE_DB.getMarker(), "Can only copy statistics from MerkleDbDataSource");
+            return;
         }
         statistics = thatDataSource.statistics;
     }
