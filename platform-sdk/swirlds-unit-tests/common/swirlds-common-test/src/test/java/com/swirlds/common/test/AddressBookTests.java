@@ -390,7 +390,7 @@ class AddressBookTests {
         final Address addressToRemove = addressBook.getAddress(addressBook.getNodeId(50));
         addressBook.remove(addressBook.getNodeId(50));
         assertThrows(
-                IllegalStateException.class,
+                IllegalArgumentException.class,
                 () -> addressBook.add(addressToRemove),
                 "should not be able to insert an address once it has been removed");
     }
