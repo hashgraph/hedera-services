@@ -430,7 +430,6 @@ public class Settings {
         SettingsCommon.showInternalStats = getInstance().isShowInternalStats();
         SettingsCommon.verboseStatistics = getInstance().isVerboseStatistics();
 
-        FCHashMapSettingsFactory.configure(getInstance().getFcHashMap());
         VirtualMapSettingsFactory.configure(getInstance().getVirtualMap());
         JasperDbSettingsFactory.configure(getInstance().getJasperDb());
         MerkleDbSettingsFactory.configure(getInstance().getMerkleDb());
@@ -920,10 +919,6 @@ public class Settings {
 
     public int getMaxTransactionCountPerEvent() {
         return maxTransactionCountPerEvent;
-    }
-
-    public FCHashMapSettingsImpl getFcHashMap() {
-        return fcHashMap;
     }
 
     public VirtualMapSettingsImpl getVirtualMap() {
