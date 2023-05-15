@@ -58,16 +58,16 @@ import javax.inject.Singleton;
 @Singleton
 @Component(
         modules = {
-                LegacyMonoDaggerModule.class,
-                ServicesDaggerModule.class,
-                WorkflowsDaggerModule.class,
-                HederaStateDaggerModule.class,
-                FeesDaggerModule.class,
-                MetricsDaggerModule.class,
-                AuthorizerDaggerModule.class,
-                InfoDaggerModule.class,
-                ThrottleDaggerModule.class,
-                SolvencyDaggerModule.class
+            LegacyMonoDaggerModule.class,
+            ServicesDaggerModule.class,
+            WorkflowsDaggerModule.class,
+            HederaStateDaggerModule.class,
+            FeesDaggerModule.class,
+            MetricsDaggerModule.class,
+            AuthorizerDaggerModule.class,
+            InfoDaggerModule.class,
+            ThrottleDaggerModule.class,
+            SolvencyDaggerModule.class
         })
 public interface HederaApp extends ServicesApp {
     /* Needed by ServicesState */

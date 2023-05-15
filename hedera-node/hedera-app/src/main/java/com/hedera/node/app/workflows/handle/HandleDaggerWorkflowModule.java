@@ -80,8 +80,8 @@ public interface HandleDaggerWorkflowModule {
     @SuppressWarnings({"unchecked", "rawtypes"})
     static Supplier<AutoCloseableWrapper<HederaState>> provideStateSupplier(@NonNull final Platform platform) {
         // Always return the latest immutable state until we support state proofs
-        return () -> (AutoCloseableWrapper) platform.getLatestImmutableState(
-                HandleDaggerWorkflowModule.class.getName());
+        return () ->
+                (AutoCloseableWrapper) platform.getLatestImmutableState(HandleDaggerWorkflowModule.class.getName());
     }
 
     @Provides

@@ -29,12 +29,11 @@ import dagger.Module;
  */
 @Module(
         includes = {
-                ConsensusServiceDaggerModule.class,
-                FileServiceDaggerModule.class,
-                NetworkAdminServiceDaggerModule.class,
-                ScheduleServiceDaggerModule.class,
-                TokenServiceDaggerModule.class,
-                UtilServiceDaggerModule.class,
+            ConsensusServiceDaggerModule.class,
+            FileServiceDaggerModule.class,
+            NetworkAdminServiceDaggerModule.class,
+            ScheduleServiceDaggerModule.class,
+            TokenServiceDaggerModule.class,
+            UtilServiceDaggerModule.class,
         })
-public interface ServicesDaggerModule {
-}
+public interface ServicesDaggerModule {}
