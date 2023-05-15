@@ -34,8 +34,10 @@ class FallenBehindManagerTest {
     final RandomGraph graph = new RandomGraph(numNodes, numNodes + (numNodes % 2), numNodes);
     final AtomicInteger platformNotification = new AtomicInteger(0);
     final AtomicInteger fallenBehindNotification = new AtomicInteger(0);
-    final ReconnectConfig config = new TestConfigBuilder().withValue("reconnect.fallenBehindThreshold",
-            fallenBehindThreshold).getOrCreateConfig().getConfigData(ReconnectConfig.class);
+    final ReconnectConfig config = new TestConfigBuilder()
+            .withValue("reconnect.fallenBehindThreshold", fallenBehindThreshold)
+            .getOrCreateConfig()
+            .getConfigData(ReconnectConfig.class);
     final FallenBehindManager manager = new FallenBehindManagerImpl(
             selfId, graph, platformNotification::incrementAndGet, fallenBehindNotification::incrementAndGet, config);
 
