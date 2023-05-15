@@ -27,27 +27,35 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 @Deprecated(forRemoval = true)
 public final class ParameterProvider {
 
-    private static String[] parameters;
+    private String[] parameters;
+    private static final ParameterProvider INSTANCE = new ParameterProvider();
 
     private ParameterProvider() {}
+
+    /**
+     * Get the static instance of the ParameterProvider.
+     *
+     * @return the static instance of the ParameterProvider
+     */
+    public static ParameterProvider getInstance() {
+        return INSTANCE;
+    }
 
     /**
      * Set the command line parameters.
      *
      * @param parameters the command line parameters
      */
-    static synchronized void setParameters(@Nullable final String[] parameters) {
-        ParameterProvider.parameters = parameters;
+    synchronized void setParameters(@Nullable final String[] parameters) {
+        this.parameters = parameters;
     }
 
     /**
      * Get the command line parameters. Only populated of launching using the Browser.java.
      *
      * @return the command line parameters
-     * @deprecated use configuration instead
      */
-    @Deprecated(forRemoval = true)
-    public static synchronized @Nullable String[] getParameters() {
+    public synchronized @Nullable String[] getParameters() {
         return parameters;
     }
 }

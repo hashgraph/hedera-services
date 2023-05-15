@@ -108,7 +108,7 @@ public class ISSTestingToolMain implements SwirldMain {
 
         platform.getNotificationEngine().register(IssListener.class, this::issListener);
 
-        parseArguments(ParameterProvider.getParameters());
+        parseArguments(ParameterProvider.getInstance().getParameters());
     }
 
     private void parseArguments(final String[] args) {

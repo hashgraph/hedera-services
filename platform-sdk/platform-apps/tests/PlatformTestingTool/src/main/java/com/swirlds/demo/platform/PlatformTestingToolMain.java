@@ -83,7 +83,7 @@ import com.swirlds.merkle.map.test.pta.MapKey;
 import com.swirlds.merkle.map.test.pta.TransactionRecord;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.ParameterProvider;
-import com.swirlds.platform.gui.SwirldsGui;
+import com.swirlds.platform.gui.GuiPlatformAccessor;
 import com.swirlds.virtualmap.internal.merkle.VirtualLeafNode;
 import java.io.File;
 import java.io.FileInputStream;
@@ -538,7 +538,7 @@ public class PlatformTestingToolMain implements SwirldMain {
         platform.getNotificationEngine().register(PlatformStatusChangeListener.class, this::platformStatusChange);
         registerReconnectCompleteListener();
 
-        SwirldsGui.setAbout(selfId.id(), "Platform Testing Demo");
+        GuiPlatformAccessor.getInstance().setAbout(selfId.id(), "Platform Testing Demo");
         try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper = UnsafeMutablePTTStateAccessor.getInstance()
                 .getUnsafeMutableState(platform.getSelfId().id())) {
             final PlatformTestingToolState state = wrapper.get();
@@ -549,7 +549,7 @@ public class PlatformTestingToolMain implements SwirldMain {
             final String myName = platform.getSelfAddress().getSelfName();
 
             String jsonFileName = null;
-            final String[] parameters = ParameterProvider.getParameters();
+            final String[] parameters = ParameterProvider.getInstance().getParameters();
             if (parameters != null && parameters.length > 0) {
                 jsonFileName = parameters[0];
             }

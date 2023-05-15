@@ -1234,7 +1234,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
 
         // If parameter exists, load PayloadCfgSimple from top level json configuration file
         // Otherwise, load the default setting
-        final String[] parameters = ParameterProvider.getParameters();
+        final String[] parameters = ParameterProvider.getInstance().getParameters();
         if (parameters != null && parameters.length > 0) {
             final String jsonFileName = parameters[0];
             final PayloadCfgSimple payloadCfgSimple = PlatformTestingToolMain.getPayloadCfgSimple(jsonFileName);

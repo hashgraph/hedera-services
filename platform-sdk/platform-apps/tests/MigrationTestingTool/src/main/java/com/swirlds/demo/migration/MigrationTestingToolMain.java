@@ -27,7 +27,7 @@ import com.swirlds.fcqueue.FCQueueStatistics;
 import com.swirlds.logging.payloads.ApplicationFinishedPayload;
 import com.swirlds.merkle.map.MerkleMapMetrics;
 import com.swirlds.platform.ParameterProvider;
-import com.swirlds.platform.gui.SwirldsGui;
+import com.swirlds.platform.gui.GuiPlatformAccessor;
 import java.security.SignatureException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -68,13 +68,13 @@ public class MigrationTestingToolMain implements SwirldMain {
     public void init(final Platform platform, final NodeId selfId) {
         this.platform = platform;
 
-        final String[] parameters = ParameterProvider.getParameters();
+        final String[] parameters = ParameterProvider.getInstance().getParameters();
         logger.info(MARKER, "Parsing arguments {}", (Object) parameters);
         seed = Long.parseLong(parameters[0]) + selfId.id();
         maximumTransactionsPerNode = Integer.parseInt(parameters[1]);
 
         generator = new TransactionGenerator(seed);
-        SwirldsGui.setAbout(platform.getSelfId().id(), "MigrationTestingApp");
+        GuiPlatformAccessor.getInstance().setAbout(platform.getSelfId().id(), "MigrationTestingApp");
 
         // Initialize application statistics
         initAppStats();

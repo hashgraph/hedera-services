@@ -86,7 +86,7 @@ import com.swirlds.platform.dispatch.DispatchConfiguration;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventStreamConfig;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
-import com.swirlds.platform.gui.SwirldsGui;
+import com.swirlds.platform.gui.GuiPlatformAccessor;
 import com.swirlds.platform.gui.internal.InfoApp;
 import com.swirlds.platform.gui.internal.InfoMember;
 import com.swirlds.platform.gui.internal.InfoSwirld;
@@ -197,7 +197,7 @@ public class Browser {
         final ApplicationDefinition appDefinition =
                 ApplicationDefinitionLoader.load(configurationProperties, localNodesToStart);
 
-        ParameterProvider.setParameters(appDefinition.getAppParameters());
+        ParameterProvider.getInstance().setParameters(appDefinition.getAppParameters());
 
         // Load all SwirldMain instances for locally run nodes.
         final Map<Long, SwirldMain> appMains = loadSwirldMains(appDefinition, localNodesToStart);
@@ -668,9 +668,9 @@ public class Browser {
                 // set here, then given to the state in run(). A copy of it is given to hashgraph.
                 final AddressBook initialAddressBook = addressBookInitializer.getInitialAddressBook();
 
-                SwirldsGui.setPlatformName(address.getId(), platformName);
-                SwirldsGui.setSwirldId(address.getId(), appDefinition.getSwirldId());
-                SwirldsGui.setInstanceNumber(address.getId(), i);
+                GuiPlatformAccessor.getInstance().setPlatformName(address.getId(), platformName);
+                GuiPlatformAccessor.getInstance().setSwirldId(address.getId(), appDefinition.getSwirldId());
+                GuiPlatformAccessor.getInstance().setInstanceNumber(address.getId(), i);
 
                 final SwirldsPlatform platform = new SwirldsPlatform(
                         // all key pairs and CSPRNG state for this member
