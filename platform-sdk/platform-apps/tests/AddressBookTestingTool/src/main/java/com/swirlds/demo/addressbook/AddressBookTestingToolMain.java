@@ -21,7 +21,6 @@ import static com.swirlds.logging.LogMarker.STARTUP;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.PlatformWithDeprecatedMethods;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.config.api.Configuration;
@@ -85,21 +84,6 @@ public class AddressBookTestingToolMain implements SwirldMain {
 
         logger.info(STARTUP.getMarker(), "init called in Main for node {}.", id);
         this.platform = platform;
-
-        parseArguments(((PlatformWithDeprecatedMethods) platform).getParameters());
-    }
-
-    /**
-     * Parses the arguments.  Currently, no arguments are expected.
-     *
-     * @param args the arguments
-     * @throws IllegalArgumentException if the arguments array has length other than 0.
-     */
-    private void parseArguments(@NonNull final String[] args) {
-        Objects.requireNonNull(args, "The arguments must not be null.");
-        if (args.length != 0) {
-            throw new IllegalArgumentException("Expected no arguments. See javadocs for details.");
-        }
     }
 
     /**
