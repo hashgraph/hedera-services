@@ -111,6 +111,8 @@ module com.swirlds.platform {
             com.swirlds.platform.test;
     exports com.swirlds.platform.uptime to
             com.swirlds.config.impl;
+    exports com.swirlds.platform.gossip.sync.config to
+            com.swirlds.config.impl;
 
     opens com.swirlds.platform.cli to
             info.picocli;
