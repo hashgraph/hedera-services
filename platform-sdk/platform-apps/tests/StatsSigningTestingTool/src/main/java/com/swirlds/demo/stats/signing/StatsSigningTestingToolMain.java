@@ -46,7 +46,8 @@ import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.demo.stats.signing.algorithms.ECSecP256K1Algorithm;
 import com.swirlds.demo.stats.signing.algorithms.X25519SigningAlgorithm;
 import com.swirlds.platform.Browser;
-import com.swirlds.platform.gui.SwirldsGui;
+import com.swirlds.platform.ParameterProvider;
+import com.swirlds.platform.gui.GuiPlatformAccessor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -158,13 +159,11 @@ public class StatsSigningTestingToolMain implements SwirldMain {
             return;
         }
 
-        final long syncDelay;
         this.platform = platform;
         selfId = id.id();
         // parse the config.txt parameters, and allow optional _ as in 1_000_000
-        final String[] parameters = ((PlatformWithDeprecatedMethods) platform).getParameters();
+        final String[] parameters = ParameterProvider.getInstance().getParameters();
         headless = (parameters[0].equals("1"));
-        syncDelay = Integer.parseInt(parameters[2].replaceAll("_", ""));
         bytesPerTrans = Integer.parseInt(parameters[3].replaceAll("_", ""));
         transPerEventMax = Integer.parseInt(parameters[4].replaceAll("_", ""));
         transPerSecToCreate = Integer.parseInt(parameters[5].replaceAll("_", ""));
@@ -183,11 +182,11 @@ public class StatsSigningTestingToolMain implements SwirldMain {
             // they shouldn't both be -1, so set one of them
             transPerEventMax = 1024;
         }
-        SwirldsGui.setAbout(
-                platform.getSelfId().id(),
-                "Stats Signing Demo v. 1.3\nThis writes statistics to a log file,"
-                        + " such as the number of transactions per second.");
-        ((PlatformWithDeprecatedMethods) platform).setSleepAfterSync(syncDelay);
+        GuiPlatformAccessor.getInstance()
+                .setAbout(
+                        platform.getSelfId().id(),
+                        "Stats Signing Demo v. 1.3\nThis writes statistics to a log file,"
+                                + " such as the number of transactions per second.");
 
         transactionPool = new TransactionPool(
                 platform.getSelfId().id(),
