@@ -28,6 +28,7 @@ import com.swirlds.merkle.map.test.lifecycle.ExpectedValue;
 import com.swirlds.merkle.map.test.lifecycle.LifecycleStatus;
 import com.swirlds.merkle.map.test.lifecycle.TransactionState;
 import com.swirlds.merkle.map.test.pta.MapKey;
+import java.time.Instant;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -53,8 +54,7 @@ public class ExpectedMapUtils {
         try {
             final PlatformTestingToolState state = ((PlatformWithDeprecatedMethods) platform).getState();
             // rebuild ExpectedMap
-            state.rebuildExpectedMapFromState(
-                    ((PlatformWithDeprecatedMethods) platform).getLastSignedStateTimestamp(), true);
+            state.rebuildExpectedMapFromState(Instant.EPOCH, true);
         } finally {
             ((PlatformWithDeprecatedMethods) platform).releaseState();
         }

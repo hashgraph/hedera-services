@@ -17,8 +17,6 @@
 package com.swirlds.common.system;
 
 import com.swirlds.common.system.events.PlatformEvent;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.time.Instant;
 
 /**
  * Platform methods that have been deprecated.
@@ -27,46 +25,6 @@ import java.time.Instant;
  */
 @Deprecated(forRemoval = true)
 public interface PlatformWithDeprecatedMethods extends Platform {
-
-    /**
-     * Get the number of milliseconds the Platform should delay after each gossip sync it initiates. This is
-     * zero by default, but can be changed to slow down the system. This can be useful for testing.
-     *
-     * @return the delay in milliseconds
-     * @deprecated this has no effect when chatter is enabled
-     */
-    @Deprecated(forRemoval = true)
-    long getSleepAfterSync();
-
-    /**
-     * Set the number of milliseconds the Platform should delay after each gossip sync it initiates. This is
-     * zero by default, but can be changed to slow down the system. This can be useful for testing.
-     *
-     * @param delay
-     * 		the delay in milliseconds
-     * @deprecated this has no effect when chatter is enabled
-     */
-    @Deprecated(forRemoval = true)
-    void setSleepAfterSync(final long delay);
-
-    /**
-     * Get command line arguments.
-     *
-     * @deprecated use configuration engine
-     */
-    @Deprecated(forRemoval = true)
-    String[] getParameters();
-
-    /**
-     * Get the ID of the current swirld. A given app can be used to create many different swirlds (also
-     * called networks, or ledgers, or shared worlds). This is a unique identifier for this particular
-     * swirld.
-     *
-     * @return a copy of the swirld ID
-     * @deprecated this is only used by GUI code, will be removed after inversion of control
-     */
-    @Deprecated
-    byte[] getSwirldId();
 
     /**
      * Get the latest mutable state. This method is not thread safe. use at your own risk.
@@ -96,12 +54,4 @@ public interface PlatformWithDeprecatedMethods extends Platform {
      */
     @Deprecated(forRemoval = true)
     PlatformEvent[] getAllEvents();
-
-    /**
-     * @return consensusTimestamp of the last signed state
-     * @deprecated this method doesn't belong in the platform
-     */
-    @Deprecated(forRemoval = true)
-    @Nullable
-    Instant getLastSignedStateTimestamp();
 }
