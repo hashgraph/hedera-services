@@ -18,11 +18,12 @@ package com.swirlds.platform.test.reconnect;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.gossip.FallenBehindManagerImpl;
 import com.swirlds.platform.network.RandomGraph;
-import com.swirlds.platform.reconnect.ReconnectSettingsImpl;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 
@@ -30,17 +31,18 @@ class FallenBehindManagerTest {
     final int numNodes = 11;
     final double fallenBehindThreshold = 0.5;
     final NodeId selfId = new NodeId(0L);
-    ;
     final RandomGraph graph = new RandomGraph(numNodes, numNodes + (numNodes % 2), numNodes);
     final AtomicInteger platformNotification = new AtomicInteger(0);
     final AtomicInteger fallenBehindNotification = new AtomicInteger(0);
-    final ReconnectSettingsImpl settings = new ReconnectSettingsImpl();
+    final ReconnectConfig config = new TestConfigBuilder()
+            .withValue("reconnect.fallenBehindThreshold", fallenBehindThreshold)
+            .getOrCreateConfig()
+            .getConfigData(ReconnectConfig.class);
     final FallenBehindManager manager = new FallenBehindManagerImpl(
-            selfId, graph, platformNotification::incrementAndGet, fallenBehindNotification::incrementAndGet, settings);
+            selfId, graph, platformNotification::incrementAndGet, fallenBehindNotification::incrementAndGet, config);
 
     @Test
     void test() {
-        settings.fallenBehindThreshold = fallenBehindThreshold;
 
         assertFallenBehind(false, 0, "default should be none report fallen behind");
 

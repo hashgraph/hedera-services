@@ -40,6 +40,7 @@ import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.route.MerkleRouteIterator;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
@@ -553,7 +554,9 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         consensusRef = new AtomicReference<>();
 
-        reconnectThrottle = new ReconnectThrottle(settings.getReconnect());
+        final ReconnectConfig reconnectConfig =
+                platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
+        reconnectThrottle = new ReconnectThrottle(reconnectConfig);
 
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
 
@@ -575,7 +578,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     }
                     reconnectController.get().start();
                 },
-                settings.getReconnect());
+                reconnectConfig);
 
         // FUTURE WORK remove this when there are no more ShutdownRequestedTriggers being dispatched
         components.add(new Shutdown());
@@ -1228,6 +1231,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 !syncConfig.syncAsProtocolEnabled(),
                 () -> {});
 
+        final ReconnectConfig reconnectConfig =
+                platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
         syncPermitProvider = new SyncPermitProvider(syncConfig.syncProtocolPermitCount());
 
         final Runnable stopGossip;
@@ -1253,10 +1258,14 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 clearAllPipelines,
                 swirldStateManager::getConsensusState,
                 stateManagementComponent::getLastCompleteRound,
-                new ReconnectLearnerThrottle(selfId, settings.getReconnect()),
+                new ReconnectLearnerThrottle(selfId, reconnectConfig),
                 this::loadReconnectState,
                 new ReconnectLearnerFactory(
-                        platformContext, threadManager, initialAddressBook, settings.getReconnect(), reconnectMetrics));
+                        platformContext,
+                        threadManager,
+                        initialAddressBook,
+                        reconnectConfig.asyncStreamTimeoutMilliseconds(),
+                        reconnectMetrics));
         if (chatterConfig.useChatter()) {
             reconnectController.set(new ReconnectController(threadManager, reconnectHelper, chatterCore::startChatter));
             startChatterNetwork();
@@ -1402,6 +1411,9 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                         intakeCycle.waitForCurrentSequenceEnd();
                     });
 
+            final ReconnectConfig reconnectConfig =
+                    platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
+
             chatterThreads.add(new StoppableThreadConfiguration<>(threadManager)
                     .setPriority(Thread.NORM_PRIORITY)
                     .setNodeId(selfId.id())
@@ -1425,7 +1437,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                                             emergencyRecoveryManager,
                                             reconnectThrottle,
                                             stateManagementComponent,
-                                            settings.getReconnect().getAsyncStreamTimeoutMilliseconds(),
+                                            reconnectConfig.asyncStreamTimeoutMilliseconds(),
                                             reconnectMetrics,
                                             reconnectController.get()),
                                     new ReconnectProtocol(
@@ -1434,7 +1446,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                                             reconnectThrottle,
                                             () -> stateManagementComponent.getLatestSignedState(
                                                     "SwirldsPlatform: ReconnectProtocol"),
-                                            settings.getReconnect().getAsyncStreamTimeoutMilliseconds(),
+                                            reconnectConfig.asyncStreamTimeoutMilliseconds(),
                                             reconnectMetrics,
                                             reconnectController.get(),
                                             new DefaultSignedStateValidator(),
@@ -1516,6 +1528,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
 
         final StaticConnectionManagers connectionManagers = startCommonNetwork();
+        final ReconnectConfig reconnectConfig =
+                platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
 
         if (syncConfig.syncAsProtocolEnabled()) {
             reconnectController.set(
@@ -1538,7 +1552,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                         new ReconnectProtocolResponder(
                                 threadManager,
                                 stateManagementComponent,
-                                settings.getReconnect(),
+                                reconnectConfig,
                                 reconnectThrottle,
                                 reconnectMetrics)),
                 ProtocolMapping.map(
@@ -1590,7 +1604,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
-
+        final ReconnectConfig reconnectConfig =
+                platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
         final Duration hangingThreadDuration = basicConfig.hangingThreadDuration();
 
         // if this is a single node network, start dedicated thread to "sync" and create events
@@ -1648,7 +1663,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                                             emergencyRecoveryManager,
                                             reconnectThrottle,
                                             stateManagementComponent,
-                                            settings.getReconnect().getAsyncStreamTimeoutMilliseconds(),
+                                            reconnectConfig.asyncStreamTimeoutMilliseconds(),
                                             reconnectMetrics,
                                             reconnectController.get()),
                                     new ReconnectProtocol(
@@ -1657,7 +1672,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                                             reconnectThrottle,
                                             () -> stateManagementComponent.getLatestSignedState(
                                                     "SwirldsPlatform: ReconnectProtocol"),
-                                            settings.getReconnect().getAsyncStreamTimeoutMilliseconds(),
+                                            reconnectConfig.asyncStreamTimeoutMilliseconds(),
                                             reconnectMetrics,
                                             reconnectController.get(),
                                             new DefaultSignedStateValidator(),
