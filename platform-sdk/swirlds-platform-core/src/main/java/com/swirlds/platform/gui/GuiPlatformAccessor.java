@@ -48,9 +48,7 @@ public final class GuiPlatformAccessor {
      * Get the static instance of the GuiPlatformAccessor.
      *
      * @return the static instance of the GuiPlatformAccessor
-     * @deprecated this method is deprecated and will be removed in a future release
      */
-    @Deprecated(forRemoval = true)
     public static GuiPlatformAccessor getInstance() {
         return INSTANCE;
     }
@@ -74,9 +72,7 @@ public final class GuiPlatformAccessor {
      *
      * @param nodeId the ID of the node
      * @return an "about" string
-     * @deprecated this method is deprecated and will be removed in a future release
      */
-    @Deprecated(forRemoval = true)
     public String getAbout(final long nodeId) {
         return aboutStrings.getOrDefault(nodeId, "");
     }
@@ -96,9 +92,7 @@ public final class GuiPlatformAccessor {
      *
      * @param nodeId the ID of the node
      * @return a platform name
-     * @deprecated this method is deprecated and will be removed in a future release
      */
-    @Deprecated(forRemoval = true)
     @NonNull
     public String getPlatformName(final long nodeId) {
         return platformNames.getOrDefault(nodeId, "");
@@ -119,9 +113,7 @@ public final class GuiPlatformAccessor {
      *
      * @param nodeId the ID of the node
      * @return the swirld ID
-     * @deprecated this method is deprecated and will be removed in a future release
      */
-    @Deprecated(forRemoval = true)
     @Nullable
     public byte[] getSwirldId(final long nodeId) {
         return swirldIds.getOrDefault(nodeId, null);
@@ -142,9 +134,7 @@ public final class GuiPlatformAccessor {
      *
      * @param nodeId the ID of the node
      * @return the instance number
-     * @deprecated this method is deprecated and will be removed in a future release
      */
-    @Deprecated(forRemoval = true)
     public int getInstanceNumber(final long nodeId) {
         return instanceNumbers.getOrDefault(nodeId, -1);
     }
@@ -164,9 +154,7 @@ public final class GuiPlatformAccessor {
      *
      * @param nodeId the ID of the node
      * @return the shadow graph
-     * @deprecated this method is deprecated and will be removed in a future release
      */
-    @Deprecated(forRemoval = true)
     @Nullable
     public ShadowGraph getShadowGraph(final long nodeId) {
         return shadowGraphs.getOrDefault(nodeId, null);
@@ -188,9 +176,7 @@ public final class GuiPlatformAccessor {
      *
      * @param nodeId the ID of the node
      * @return the state management component
-     * @deprecated this method is deprecated and will be removed in a future release
      */
-    @Deprecated(forRemoval = true)
     @Nullable
     public StateManagementComponent getStateManagementComponent(final long nodeId) {
         return stateManagementComponents.getOrDefault(nodeId, null);
@@ -211,9 +197,7 @@ public final class GuiPlatformAccessor {
      *
      * @param nodeId the ID of the node
      * @return the consensus
-     * @deprecated this method is deprecated and will be removed in a future release
      */
-    @Deprecated(forRemoval = true)
     @Nullable
     public Consensus getConsensus(final long nodeId) {
         final AtomicReference<Consensus> consensusReference = consensusReferences.getOrDefault(nodeId, null);

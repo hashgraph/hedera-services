@@ -36,9 +36,7 @@ public final class ParameterProvider {
      * Get the static instance of the ParameterProvider.
      *
      * @return the static instance of the ParameterProvider
-     * @deprecated use configuration instead
      */
-    @Deprecated(forRemoval = true)
     public static ParameterProvider getInstance() {
         return INSTANCE;
     }
@@ -56,9 +54,7 @@ public final class ParameterProvider {
      * Get the command line parameters. Only populated of launching using the Browser.java.
      *
      * @return the command line parameters
-     * @deprecated use configuration instead
      */
-    @Deprecated(forRemoval = true)
     public synchronized @Nullable String[] getParameters() {
         return parameters;
     }
