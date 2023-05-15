@@ -20,6 +20,7 @@ import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.BaseEventHashedData;
@@ -60,7 +61,7 @@ class CriticalQuorumTest {
         }
 
         public CriticalQuorum getCriticalQuorum() {
-            return new CriticalQuorumImpl(addressBook);
+            return new CriticalQuorumImpl(new NoOpMetrics(), 0, addressBook);
         }
 
         @Override

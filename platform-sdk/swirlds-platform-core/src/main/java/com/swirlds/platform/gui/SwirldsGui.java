@@ -63,7 +63,7 @@ public final class SwirldsGui {
         }
 
         final AddressBook addressBook = platform.getAddressBook();
-        final long selfId = platform.getSelfId().getId();
+        final long selfId = platform.getSelfId().id();
         final int winNum = platform.getInstanceNumber();
 
         final Rectangle winRect = winRect(addressBook, winNum);
@@ -90,7 +90,7 @@ public final class SwirldsGui {
         }
 
         final AddressBook addressBook = platform.getAddressBook();
-        final long selfId = platform.getSelfId().getId();
+        final long selfId = platform.getSelfId().id();
         final int winNum = platform.getInstanceNumber();
 
         final Rectangle winRect = winRect(addressBook, winNum);

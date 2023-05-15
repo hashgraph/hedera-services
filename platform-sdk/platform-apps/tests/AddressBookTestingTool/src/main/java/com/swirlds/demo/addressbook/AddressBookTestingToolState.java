@@ -29,12 +29,12 @@ package com.swirlds.demo.addressbook;
 import static com.swirlds.logging.LogMarker.DEMO_INFO;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
-import static com.swirlds.platform.AddressBookInitializer.CONFIG_ADDRESS_BOOK_HEADER;
-import static com.swirlds.platform.AddressBookInitializer.CONFIG_ADDRESS_BOOK_USED;
-import static com.swirlds.platform.AddressBookInitializer.STATE_ADDRESS_BOOK_HEADER;
-import static com.swirlds.platform.AddressBookInitializer.STATE_ADDRESS_BOOK_NULL;
-import static com.swirlds.platform.AddressBookInitializer.STATE_ADDRESS_BOOK_USED;
-import static com.swirlds.platform.AddressBookInitializer.USED_ADDRESS_BOOK_HEADER;
+import static com.swirlds.platform.state.address.AddressBookInitializer.CONFIG_ADDRESS_BOOK_HEADER;
+import static com.swirlds.platform.state.address.AddressBookInitializer.CONFIG_ADDRESS_BOOK_USED;
+import static com.swirlds.platform.state.address.AddressBookInitializer.STATE_ADDRESS_BOOK_HEADER;
+import static com.swirlds.platform.state.address.AddressBookInitializer.STATE_ADDRESS_BOOK_NULL;
+import static com.swirlds.platform.state.address.AddressBookInitializer.STATE_ADDRESS_BOOK_USED;
+import static com.swirlds.platform.state.address.AddressBookInitializer.USED_ADDRESS_BOOK_HEADER;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -159,7 +159,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
             parseArguments(((PlatformWithDeprecatedMethods) platform).getParameters());
         }
 
-        this.selfId = platform.getSelfId().getId();
+        this.selfId = platform.getSelfId().id();
     }
 
     /**
