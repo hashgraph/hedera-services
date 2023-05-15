@@ -223,6 +223,10 @@ public final class VirtualMap<K extends VirtualKey, V extends VirtualValue> exte
         return root;
     }
 
+    /**
+     * Does a full rehash of the persisted leaves of the map.
+     * Delegates the call to {@link VirtualRootNode#fullLeafRehash()} which does the actual work.
+     */
     public void fullLeafRehash() {
         root.fullLeafRehash();
     }

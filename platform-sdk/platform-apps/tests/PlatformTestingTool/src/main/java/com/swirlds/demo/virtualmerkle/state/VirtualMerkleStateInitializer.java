@@ -83,11 +83,11 @@ public final class VirtualMerkleStateInitializer {
                         new VirtualLeafRecordSerializer<>(
                                 (short) 1,
                                 keySerializer.getSerializedSize(),
-                            new AccountVirtualMapKeyBuilder(),
-                            (short) 1,
-                            AccountVirtualMapValue.getSizeInBytes(),
-                            new AccountVirtualMapValueBuilder(),
-                            false);
+                                new AccountVirtualMapKeyBuilder(),
+                                (short) 1,
+                                AccountVirtualMapValue.getSizeInBytes(),
+                                new AccountVirtualMapValueBuilder(),
+                                false);
 
                 final JasperDbBuilder<AccountVirtualMapKey, AccountVirtualMapValue> jasperDbBuilder =
                         new JasperDbBuilder<AccountVirtualMapKey, AccountVirtualMapValue>()
@@ -117,11 +117,11 @@ public final class VirtualMerkleStateInitializer {
                         new VirtualLeafRecordSerializer<>(
                                 (short) 1,
                                 keySerializer.getSerializedSize(),
-                            new SmartContractMapKeyBuilder(),
-                            (short) 1,
-                            SmartContractMapValue.getSizeInBytes(),
-                            new SmartContractMapValueBuilder(),
-                            false);
+                                new SmartContractMapKeyBuilder(),
+                                (short) 1,
+                                SmartContractMapValue.getSizeInBytes(),
+                                new SmartContractMapValueBuilder(),
+                                false);
 
                 final JasperDbBuilder<SmartContractMapKey, SmartContractMapValue> jasperDbBuilder = new JasperDbBuilder<
                                 SmartContractMapKey, SmartContractMapValue>()
@@ -148,11 +148,11 @@ public final class VirtualMerkleStateInitializer {
                         leafRecordSerializer = new VirtualLeafRecordSerializer<>(
                                 (short) 1,
                                 keySerializer.getSerializedSize(),
-                            new SmartContractByteCodeMapKeyBuilder(),
-                            (short) 1,
-                            DataFileCommon.VARIABLE_DATA_SIZE,
-                            new SmartContractByteCodeMapValueBuilder(),
-                            false);
+                                new SmartContractByteCodeMapKeyBuilder(),
+                                (short) 1,
+                                DataFileCommon.VARIABLE_DATA_SIZE,
+                                new SmartContractByteCodeMapValueBuilder(),
+                                false);
 
                 final JasperDbBuilder<SmartContractByteCodeMapKey, SmartContractByteCodeMapValue> jasperDbBuilder =
                         new JasperDbBuilder<SmartContractByteCodeMapKey, SmartContractByteCodeMapValue>()
