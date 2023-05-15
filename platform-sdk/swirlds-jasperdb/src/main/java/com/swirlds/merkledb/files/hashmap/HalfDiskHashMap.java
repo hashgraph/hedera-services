@@ -48,6 +48,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -434,41 +435,60 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
                     oneTransactionsData.keyValuesView().toList();
             final int size = bucketUpdates.size();
             final Queue<ReadBucketResult<K>> queue = new ConcurrentLinkedQueue<>();
+            final AtomicBoolean endWritingRunning = new AtomicBoolean(true);
             for (final IntObjectPair<BucketMutation<K>> keyValue : bucketUpdates) {
                 final int bucketIndex = keyValue.getOne();
                 final BucketMutation<K> bucketMap = keyValue.getTwo();
-                flushExecutor.execute(() -> readUpdateQueueBucket(bucketIndex, bucketMap, queue));
-            }
-            //  write to files
-            fileCollection.startWriting();
-            int processed = 0;
-            while (processed < size) {
-                final ReadBucketResult<K> res = queue.poll();
-                if (res == null) {
-                    continue;
-                }
-                if (res.error != null) {
-                    throw new RuntimeException(res.error);
-                }
-                try (final Bucket<K> bucket = res.bucket) {
-                    final int bucketIndex = bucket.getBucketIndex();
-                    if (bucket.getBucketEntryCount() == 0) {
-                        // bucket is missing or empty, remove it from the index
-                        bucketIndexToBucketLocation.remove(bucketIndex);
-                    } else {
-                        // save bucket
-                        final long bucketLocation = fileCollection.storeDataItem(bucket);
-                        // update bucketIndexToBucketLocation
-                        bucketIndexToBucketLocation.put(bucketIndex, bucketLocation);
+                flushExecutor.execute(() -> {
+                    if (endWritingRunning.get()) {
+                        readUpdateQueueBucket(bucketIndex, bucketMap, queue);
                     }
-                } finally {
-                    processed++;
+                });
+            }
+            try {
+                //  write to files
+                fileCollection.startWriting();
+                int processed = 0;
+                while (processed < size) {
+                    final ReadBucketResult<K> res = queue.poll();
+                    if (res == null) {
+                        Thread.onSpinWait();
+                        continue;
+                    }
+                    if (res.error != null) {
+                        throw new RuntimeException(res.error);
+                    }
+                    try (final Bucket<K> bucket = res.bucket) {
+                        final int bucketIndex = bucket.getBucketIndex();
+                        if (bucket.getBucketEntryCount() == 0) {
+                            // bucket is missing or empty, remove it from the index
+                            bucketIndexToBucketLocation.remove(bucketIndex);
+                        } else {
+                            // save bucket
+                            final long bucketLocation = fileCollection.storeDataItem(bucket);
+                            // update bucketIndexToBucketLocation
+                            bucketIndexToBucketLocation.put(bucketIndex, bucketLocation);
+                        }
+                    } finally {
+                        processed++;
+                    }
+                }
+                // close files session
+                final DataFileReader<Bucket<K>> dataFileReader = fileCollection.endWriting(0, numOfBuckets);
+                // we have updated all indexes so the data file can now be included in merges
+                dataFileReader.setFileCompleted();
+            } finally {
+                endWritingRunning.set(false);
+                // When the flushing thread is interrupted, the chances are all flushExecutor threads
+                // are stuck waiting on reusable buckets to become available. To unblock them, process
+                // remaining results in the queue and release all updated buckets
+                ReadBucketResult<K> res;
+                while ((res = queue.poll()) != null) {
+                    if (res.bucket != null) {
+                        res.bucket.close();
+                    }
                 }
             }
-            // close files session
-            final DataFileReader<Bucket<K>> dataFileReader = fileCollection.endWriting(0, numOfBuckets);
-            // we have updated all indexes so the data file can now be included in merges
-            dataFileReader.setFileCompleted();
         }
         // clear put cache
         oneTransactionsData = null;

@@ -1108,7 +1108,8 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
     @Override
     public void copyStatisticsFrom(final VirtualDataSource<K, V> that) {
         if (!(that instanceof VirtualDataSourceJasperDB)) {
-            throw new IllegalArgumentException("can only copy statistics from VirtualDataSourceJasperDB");
+            logger.warn(JASPER_DB.getMarker(), "Can only copy statistics from VirtualDataSourceJasperDB");
+            return;
         }
         this.statistics = ((VirtualDataSourceJasperDB<?, ?>) that).statistics;
     }

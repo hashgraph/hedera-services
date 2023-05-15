@@ -39,7 +39,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 
 class ChatterSyncTest {
-    private static final NodeId PEER_ID = new NodeId(false, 1L);
+    private static final NodeId PEER_ID = new NodeId(1L);
     final CommunicationState state = new CommunicationState();
     final ShadowGraphSynchronizer synchronizer = Mockito.mock(ShadowGraphSynchronizer.class);
     final Connection connection = Mockito.mock(Connection.class);
@@ -89,7 +89,7 @@ class ChatterSyncTest {
         Assertions.assertTrue(
                 chatterSync.shouldAccept(), "if the peer has not reported us as fallen behind, we should sync");
 
-        when(fallenBehindManager.getNeededForFallenBehind()).thenReturn(List.of(0L, PEER_ID.getId()));
+        when(fallenBehindManager.getNeededForFallenBehind()).thenReturn(List.of(0L, PEER_ID.id()));
         Assertions.assertTrue(
                 chatterSync.shouldInitiate(), "if the peer has not reported us as fallen behind, we should sync");
         Assertions.assertTrue(

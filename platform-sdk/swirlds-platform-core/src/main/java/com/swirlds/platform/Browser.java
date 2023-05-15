@@ -44,6 +44,7 @@ import com.swirlds.common.config.WiringConfig;
 import com.swirlds.common.config.export.ConfigExport;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.config.sources.LegacyFileConfigSource;
+import com.swirlds.common.config.sources.ThreadCountPropertyConfigSource;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.DefaultPlatformContext;
@@ -97,6 +98,7 @@ import com.swirlds.platform.health.filesystem.OSFileSystemChecker;
 import com.swirlds.platform.network.Network;
 import com.swirlds.platform.reconnect.emergency.EmergencySignedStateValidator;
 import com.swirlds.platform.state.EmergencyRecoveryManager;
+import com.swirlds.platform.state.address.AddressBookInitializer;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SavedStateInfo;
 import com.swirlds.platform.state.signed.SignedStateFileUtils;
@@ -190,6 +192,7 @@ public class Browser {
         final ConfigSource mappedSettingsConfigSource = ConfigMappings.addConfigMapping(settingsConfigSource);
 
         final ConfigSource configPropertiesConfigSource = new ConfigPropertiesSource(configurationProperties);
+        final ConfigSource threadCountPropertyConfigSource = new ThreadCountPropertyConfigSource();
 
         // Load config.txt file, parse application jar file name, main class name, address book, and parameters
         final ApplicationDefinition appDefinition =
@@ -202,6 +205,7 @@ public class Browser {
         final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create()
                 .withSource(mappedSettingsConfigSource)
                 .withSource(configPropertiesConfigSource)
+                .withSource(threadCountPropertyConfigSource)
                 .withConfigDataType(BasicConfig.class)
                 .withConfigDataType(StateConfig.class)
                 .withConfigDataType(CryptoConfig.class)
@@ -623,7 +627,7 @@ public class Browser {
                         + " - " + address.getSelfName()
                         + " - " + infoSwirld.name
                         + " - " + infoSwirld.app.name;
-                final NodeId nodeId = NodeId.createMain(i);
+                final NodeId nodeId = new NodeId(i);
 
                 final PlatformContext platformContext =
                         new DefaultPlatformContext(nodeId, metricsProvider, configuration);
@@ -692,7 +696,7 @@ public class Browser {
                 appMain.init(platform, nodeId);
 
                 final Thread appThread = new ThreadConfiguration(getStaticThreadManager())
-                        .setNodeId(nodeId.getId())
+                        .setNodeId(nodeId.id())
                         .setComponent("app")
                         .setThreadName("appMain")
                         .setRunnable(appMain)
