@@ -80,8 +80,8 @@ import org.junit.jupiter.api.Test;
 public class EmergencyReconnectTests {
     private static final Future<Boolean> trueFuture = mock(Future.class);
     private final RandomSignedStateGenerator signedStateGenerator = new RandomSignedStateGenerator();
-    private final NodeId learnerId = new NodeId(false, 0L);
-    private final NodeId teacherId = new NodeId(false, 1L);
+    private final NodeId learnerId = new NodeId(0L);
+    private final NodeId teacherId = new NodeId(1L);
     private final ReconnectThrottle reconnectThrottle = mock(ReconnectThrottle.class);
     private final SignedStateManager signedStateManager = mock(SignedStateManager.class);
     private final ParallelExecutor executor = new CachedPoolParallelExecutor(getStaticThreadManager(), "test-executor");

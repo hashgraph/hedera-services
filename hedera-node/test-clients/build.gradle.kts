@@ -182,6 +182,19 @@ val validationJar =
       }
     }
 
+val copyValidation =
+    tasks.register<Copy>("copyValidation") {
+      group = "copy"
+      from(validationJar)
+      into(project.file("validation-scenarios"))
+    }
+
+val cleanValidation =
+    tasks.register<Delete>("cleanValidation") {
+      group = "build"
+      delete(File(project.file("validation-scenarios"), "ValidationScenarios.jar"))
+    }
+
 val copyYahCli =
     tasks.register<Copy>("copyYahCli") {
       group = "copy"
@@ -201,4 +214,7 @@ tasks.assemble {
   dependsOn(copyYahCli)
 }
 
-tasks.clean { dependsOn(cleanYahCli) }
+tasks.clean {
+  dependsOn(cleanYahCli)
+  dependsOn(cleanValidation)
+}

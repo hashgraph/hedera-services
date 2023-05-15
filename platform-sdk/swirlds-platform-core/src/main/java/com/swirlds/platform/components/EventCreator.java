@@ -184,7 +184,7 @@ public class EventCreator {
 
         final BaseEventHashedData hashedData = new BaseEventHashedData(
                 softwareVersion,
-                selfId.getId(),
+                selfId.id(),
                 EventUtils.getEventGeneration(selfParent),
                 EventUtils.getEventGeneration(otherParent),
                 EventUtils.getEventHash(selfParent),
@@ -208,7 +208,7 @@ public class EventCreator {
      * 		the ID of the node supplying the other parent
      */
     protected boolean hasOtherParentAlreadyBeenUsed(final long otherId) {
-        return !selfId.equalsMain(otherId) && eventMapper.hasMostRecentEventBeenUsedAsOtherParent(otherId);
+        return selfId.id() != otherId && eventMapper.hasMostRecentEventBeenUsedAsOtherParent(otherId);
     }
 
     /**

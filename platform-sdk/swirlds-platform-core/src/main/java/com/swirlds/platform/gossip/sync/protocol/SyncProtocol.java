@@ -144,7 +144,7 @@ public class SyncProtocol implements Protocol {
     private boolean peerNeededForFallenBehind() {
         final List<Long> neededForFallenBehind = fallenBehindManager.getNeededForFallenBehind();
 
-        return neededForFallenBehind != null && neededForFallenBehind.contains(peerId.getId());
+        return neededForFallenBehind != null && neededForFallenBehind.contains(peerId.id());
     }
 
     /**
@@ -169,7 +169,7 @@ public class SyncProtocol implements Protocol {
         }
 
         // is there a reason to initiate?
-        if (peerNeededForFallenBehind() || criticalQuorum.isInCriticalQuorum(peerId.getId())) {
+        if (peerNeededForFallenBehind() || criticalQuorum.isInCriticalQuorum(peerId.id())) {
             permit = permitProvider.tryAcquire();
             final boolean isLockAcquired = permit.isLockAcquired();
 

@@ -71,7 +71,7 @@ class StateManagementComponentTests {
 
     private static final String MAIN = "main";
     private static final String SWIRLD = "swirld123";
-    private static final NodeId NODE_ID = new NodeId(false, 0L);
+    private static final NodeId NODE_ID = new NodeId(0L);
     private static final int NUM_NODES = 4;
     private final int roundsToKeepForSigning = 5;
     private final TestPrioritySystemTransactionConsumer systemTransactionConsumer =
@@ -440,7 +440,7 @@ class StateManagementComponentTests {
                 null, 3L, issStateSignatureTransaction(signedState, 3L, otherHash));
 
         assertEquals(signedState.getRound(), issConsumer.getIssRound(), "Incorrect round reported to iss consumer");
-        assertEquals(NODE_ID.getId(), issConsumer.getIssNodeId(), "ISS should have been reported as self ISS");
+        assertEquals(NODE_ID.id(), issConsumer.getIssNodeId(), "ISS should have been reported as self ISS");
         assertEquals(
                 IssNotification.IssType.SELF_ISS,
                 issConsumer.getIssType(),

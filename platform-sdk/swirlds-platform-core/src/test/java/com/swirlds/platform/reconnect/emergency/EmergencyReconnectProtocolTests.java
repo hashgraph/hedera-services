@@ -54,7 +54,7 @@ import org.junit.jupiter.params.provider.ValueSource;
  */
 public class EmergencyReconnectProtocolTests {
 
-    private static final NodeId PEER_ID = new NodeId(false, 1L);
+    private static final NodeId PEER_ID = new NodeId(1L);
 
     private static Stream<Arguments> initiateParams() {
         return Stream.of(
@@ -210,6 +210,6 @@ public class EmergencyReconnectProtocolTests {
                 () -> protocol.runProtocol(throwingConnection),
                 "expected an exception to be thrown");
 
-        assertTrue(teacherThrottle.initiateReconnect(PEER_ID.getId()), "Teacher throttle should be released");
+        assertTrue(teacherThrottle.initiateReconnect(PEER_ID.id()), "Teacher throttle should be released");
     }
 }

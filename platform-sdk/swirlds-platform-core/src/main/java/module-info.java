@@ -109,6 +109,8 @@ module com.swirlds.platform {
             com.swirlds.platform.test;
     exports com.swirlds.platform.recovery.internal to
             com.swirlds.platform.test;
+    exports com.swirlds.platform.uptime to
+            com.swirlds.config.impl;
 
     opens com.swirlds.platform.cli to
             info.picocli;
