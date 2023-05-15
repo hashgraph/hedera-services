@@ -107,6 +107,7 @@ public class TransactionDispatcher {
                     txn, writableStoreFactory.createTokenRelStore());
             case TOKEN_PAUSE -> dispatchTokenPause(txn, writableStoreFactory.createTokenStore());
             case TOKEN_UNPAUSE -> dispatchTokenUnpause(txn, writableStoreFactory.createTokenStore());
+            case TOKEN_FEE_SCHEDULE_UPDATE -> dispatchTokenFeeScheduleUpdate(txn, writableStoreFactory.createTokenStore());
             case CRYPTO_CREATE -> dispatchCryptoCreate(txn, writableStoreFactory.createAccountStore());
             case UTIL_PRNG -> dispatchPrng(txn);
             default -> throw new IllegalArgumentException(TYPE_NOT_SUPPORTED);
@@ -463,9 +464,9 @@ public class TransactionDispatcher {
      * is currently needed when running with facility implementations that are adapters
      * for either {@code mono-service} logic or integration tests.
      *
-     * @param tokenStore the token store used for the creation
+     * @param tokenStore the token store used for fee schedule update
      */
-    protected void finishTokenCreate(@NonNull final WritableTokenStore tokenStore) {
+    protected void finishTokenFeeScheduleUpdate(@NonNull final WritableTokenStore tokenStore) {
         // No-op by default
     }
 }
