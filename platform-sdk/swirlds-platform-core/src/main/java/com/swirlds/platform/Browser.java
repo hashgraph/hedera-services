@@ -87,6 +87,7 @@ import com.swirlds.platform.dispatch.DispatchConfiguration;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventStreamConfig;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
+import com.swirlds.platform.gui.GuiPlatformAccessor;
 import com.swirlds.platform.gui.internal.InfoApp;
 import com.swirlds.platform.gui.internal.InfoMember;
 import com.swirlds.platform.gui.internal.InfoSwirld;
@@ -197,6 +198,8 @@ public class Browser {
         // Load config.txt file, parse application jar file name, main class name, address book, and parameters
         final ApplicationDefinition appDefinition =
                 ApplicationDefinitionLoader.load(configurationProperties, localNodesToStart);
+
+        ParameterProvider.getInstance().setParameters(appDefinition.getAppParameters());
 
         // Load all SwirldMain instances for locally run nodes.
         final Map<Long, SwirldMain> appMains = loadSwirldMains(appDefinition, localNodesToStart);
@@ -668,21 +671,18 @@ public class Browser {
                 // set here, then given to the state in run(). A copy of it is given to hashgraph.
                 final AddressBook initialAddressBook = addressBookInitializer.getInitialAddressBook();
 
+                GuiPlatformAccessor.getInstance().setPlatformName(address.getId(), platformName);
+                GuiPlatformAccessor.getInstance().setSwirldId(address.getId(), appDefinition.getSwirldId());
+                GuiPlatformAccessor.getInstance().setInstanceNumber(address.getId(), i);
+
                 final SwirldsPlatform platform = new SwirldsPlatform(
-                        // window index
-                        ownHostIndex,
-                        // parameters from the app line of the config.txt file
-                        appDefinition.getAppParameters(),
                         // all key pairs and CSPRNG state for this member
                         crypto[i],
-                        // the ID for this swirld (immutable since creation of this swirld)
-                        appDefinition.getSwirldId(),
                         // address book index, which is the member ID
                         nodeId,
                         // copy of the address book,
                         initialAddressBook,
                         platformContext,
-                        platformName,
                         mainClassName,
                         swirldName,
                         appVersion,

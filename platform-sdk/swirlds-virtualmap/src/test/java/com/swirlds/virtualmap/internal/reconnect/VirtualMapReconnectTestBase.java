@@ -28,12 +28,11 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.synchronization.internal.QueryResponse;
-import com.swirlds.common.merkle.synchronization.settings.ReconnectSettings;
-import com.swirlds.common.merkle.synchronization.settings.ReconnectSettingsFactory;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.test.merkle.dummy.DummyMerkleInternal;
 import com.swirlds.common.test.merkle.dummy.DummyMerkleLeaf;
 import com.swirlds.common.test.merkle.util.MerkleTestUtils;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.virtualmap.TestKey;
 import com.swirlds.virtualmap.TestValue;
 import com.swirlds.virtualmap.VirtualMap;
@@ -48,7 +47,6 @@ import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -114,53 +112,11 @@ public abstract class VirtualMapReconnectTestBase {
         registry.registerConstructable(new ClassConstructorPair(TestValue.class, TestValue::new));
         registry.registerConstructable(new ClassConstructorPair(BrokenBuilder.class, BrokenBuilder::new));
 
-        ReconnectSettingsFactory.configure(new ReconnectSettings() {
-            @Override
-            public boolean isActive() {
-                return true;
-            }
-
-            @Override
-            public int getReconnectWindowSeconds() {
-                return -1;
-            }
-
-            @Override
-            public double getFallenBehindThreshold() {
-                return 0.5;
-            }
-
-            @Override
-            public int getAsyncStreamTimeoutMilliseconds() {
+        new TestConfigBuilder()
+                .withValue("reconnect.active", "true")
                 // This is lower than the default, helps test that is supposed to fail to finish faster.
-                return 5000;
-            }
-
-            @Override
-            public int getAsyncOutputStreamFlushMilliseconds() {
-                return 100;
-            }
-
-            @Override
-            public int getAsyncStreamBufferSize() {
-                return 10_000;
-            }
-
-            @Override
-            public int getMaxAckDelayMilliseconds() {
-                return 1000;
-            }
-
-            @Override
-            public int getMaximumReconnectFailuresBeforeShutdown() {
-                return 10;
-            }
-
-            @Override
-            public Duration getMinimumTimeBetweenReconnects() {
-                return Duration.ofMinutes(10);
-            }
-        });
+                .withValue("reconnect.asyncStreamTimeoutMilliseconds", "5000")
+                .getOrCreateConfig();
     }
 
     protected MerkleInternal createTreeForMap(VirtualMap<TestKey, TestValue> map) {
