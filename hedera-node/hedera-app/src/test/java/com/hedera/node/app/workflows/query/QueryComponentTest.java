@@ -24,7 +24,7 @@ import static org.mockito.Mockito.when;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.DaggerHederaApp;
 import com.hedera.node.app.HederaApp;
-import com.hedera.node.app.components.QueryComponent;
+import com.hedera.node.app.components.QueryDaggerComponent;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.context.PlatformContext;
@@ -78,7 +78,7 @@ class QueryComponentTest {
     void objectGraphRootsAreAvailable() {
         given(platform.getSelfId()).willReturn(new NodeId(false, 0L));
 
-        final QueryComponent subject = app.queryComponentFactory().get().create();
+        final QueryDaggerComponent subject = app.queryComponentFactory().get().create();
 
         assertNotNull(subject.queryWorkflow());
     }

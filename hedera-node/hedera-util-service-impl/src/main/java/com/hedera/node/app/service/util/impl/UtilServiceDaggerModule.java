@@ -14,20 +14,16 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.components;
+package com.hedera.node.app.service.util.impl;
 
-import com.hedera.node.app.workflows.query.QueryWorkflow;
-import dagger.Subcomponent;
+import com.hedera.node.app.service.util.impl.handlers.UtilHandlers;
+import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
+import dagger.Module;
 
-/**
- * A Dagger subcomponent that provides the query workflow.
- */
-@Subcomponent
-public interface QueryComponent {
-    QueryWorkflow queryWorkflow();
+@Module
+public interface UtilServiceDaggerModule {
 
-    @Subcomponent.Factory
-    interface Factory {
-        QueryComponent create();
-    }
+    UtilPrngHandler prngHandler();
+
+    UtilHandlers utilHandlers();
 }

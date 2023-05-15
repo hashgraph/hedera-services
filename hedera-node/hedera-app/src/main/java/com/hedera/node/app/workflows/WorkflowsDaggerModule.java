@@ -17,20 +17,20 @@
 
 package com.hedera.node.app.workflows;
 
-import com.hedera.node.app.workflows.handle.HandleWorkflowModule;
-import com.hedera.node.app.workflows.ingest.IngestWorkflowModule;
-import com.hedera.node.app.workflows.prehandle.PreHandleWorkflowModule;
-import com.hedera.node.app.workflows.query.QueryWorkflowModule;
+import com.hedera.node.app.workflows.handle.HandleDaggerWorkflowModule;
+import com.hedera.node.app.workflows.ingest.IngestWorkflowDaggerModule;
+import com.hedera.node.app.workflows.prehandle.PreHandleWorkflowDaggerModule;
+import com.hedera.node.app.workflows.query.QueryWorkflowDaggerModule;
 import dagger.Module;
 
 /**
  * Dagger module for all workflows
  */
 @Module(includes = {
-        HandleWorkflowModule.class,
-        IngestWorkflowModule.class,
-        PreHandleWorkflowModule.class,
-        QueryWorkflowModule.class
+        HandleDaggerWorkflowModule.class,
+        IngestWorkflowDaggerModule.class,
+        PreHandleWorkflowDaggerModule.class,
+        QueryWorkflowDaggerModule.class
 })
-public interface WorkflowsModule {
+public interface WorkflowsDaggerModule {
 }

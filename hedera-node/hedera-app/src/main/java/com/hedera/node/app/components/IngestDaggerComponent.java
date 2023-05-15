@@ -14,20 +14,20 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.authorization;
+package com.hedera.node.app.components;
 
-import com.hedera.node.app.service.mono.context.domain.security.HapiOpPermissions;
-import dagger.Module;
-import dagger.Provides;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import javax.inject.Singleton;
+import com.hedera.node.app.workflows.ingest.IngestWorkflow;
+import dagger.Subcomponent;
 
-/** A Dagger module for providing dependencies based on {@link Authorizer}. */
-@Module
-public interface AuthorizerModule {
-    @Provides
-    @Singleton
-    static Authorizer provideAuthorizer(@NonNull final HapiOpPermissions permissions) {
-        return new AuthorizerImpl(permissions);
+/**
+ * A Dagger subcomponent that provides the Ingest workflow.
+ */
+@Subcomponent
+public interface IngestDaggerComponent {
+    IngestWorkflow ingestWorkflow();
+
+    @Subcomponent.Factory
+    interface Factory {
+        IngestDaggerComponent create();
     }
 }

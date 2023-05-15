@@ -14,20 +14,15 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.fees;
+package com.hedera.node.app.throttle;
 
-import com.hedera.node.app.service.mono.fees.FeeCalculator;
 import dagger.Binds;
 import dagger.Module;
 import javax.inject.Singleton;
 
 @Module
-public interface FeesModule {
+public interface ThrottleDaggerModule {
     @Binds
     @Singleton
-    FeeCalculator bindFeeCalculator(AdaptedMonoFeeCalculator adaptedMonoFeeCalculator);
-
-    @Binds
-    @Singleton
-    QueryFeeCheck bindQueryFeeCheck(MonoQueryFeeCheck monoQueryFeeCheck);
+    ThrottleAccumulator bindThrottleAccumulator(MonoThrottleAccumulator throttleAccumulator);
 }

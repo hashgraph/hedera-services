@@ -14,24 +14,20 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.components;
+package com.hedera.node.app.authorization;
 
-import com.hedera.node.app.meta.HandleScope;
-import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
-import dagger.BindsInstance;
-import dagger.Subcomponent;
+import com.hedera.node.app.service.mono.context.domain.security.HapiOpPermissions;
+import dagger.Module;
+import dagger.Provides;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import javax.inject.Singleton;
 
-/**
- * A Dagger subcomponent that provides the readable store factory.
- */
-@Subcomponent
-@HandleScope
-public interface StoreComponent {
-    ReadableStoreFactory storeFactory();
-
-    @Subcomponent.Factory
-    interface Factory {
-        StoreComponent create(@BindsInstance HederaState hederastate);
+/** A Dagger module for providing dependencies based on {@link Authorizer}. */
+@Module
+public interface AuthorizerDaggerModule {
+    @Provides
+    @Singleton
+    static Authorizer provideAuthorizer(@NonNull final HapiOpPermissions permissions) {
+        return new AuthorizerImpl(permissions);
     }
 }

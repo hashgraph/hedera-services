@@ -14,15 +14,20 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.solvency;
+package com.hedera.node.app.fees;
 
+import com.hedera.node.app.service.mono.fees.FeeCalculator;
 import dagger.Binds;
 import dagger.Module;
 import javax.inject.Singleton;
 
 @Module
-public interface SolvencyModule {
+public interface FeesDaggerModule {
     @Binds
     @Singleton
-    SolvencyPreCheck bindSolvencyPreCheck(MonoSolvencyPreCheck solvencyPreCheck);
+    FeeCalculator bindFeeCalculator(AdaptedMonoFeeCalculator adaptedMonoFeeCalculator);
+
+    @Binds
+    @Singleton
+    QueryFeeCheck bindQueryFeeCheck(MonoQueryFeeCheck monoQueryFeeCheck);
 }

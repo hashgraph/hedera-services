@@ -14,24 +14,15 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.state;
+package com.hedera.node.app.solvency;
 
-import com.hedera.node.app.state.merkle.MerkleRecordCache;
+import dagger.Binds;
 import dagger.Module;
-import dagger.Provides;
 import javax.inject.Singleton;
 
 @Module
-public interface HederaStateModule {
-    @Provides
+public interface SolvencyDaggerModule {
+    @Binds
     @Singleton
-    static RecordCache provideRecordCache() {
-        return new MerkleRecordCache();
-    }
-
-    @Provides
-    @Singleton
-    static WorkingStateAccessor provideWorkingStateAccessor() {
-        return new WorkingStateAccessor();
-    }
+    SolvencyPreCheck bindSolvencyPreCheck(MonoSolvencyPreCheck solvencyPreCheck);
 }

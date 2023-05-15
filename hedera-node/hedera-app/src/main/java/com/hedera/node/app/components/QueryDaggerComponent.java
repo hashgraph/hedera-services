@@ -14,15 +14,20 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.throttle;
+package com.hedera.node.app.components;
 
-import dagger.Binds;
-import dagger.Module;
-import javax.inject.Singleton;
+import com.hedera.node.app.workflows.query.QueryWorkflow;
+import dagger.Subcomponent;
 
-@Module
-public interface ThrottleModule {
-    @Binds
-    @Singleton
-    ThrottleAccumulator bindThrottleAccumulator(MonoThrottleAccumulator throttleAccumulator);
+/**
+ * A Dagger subcomponent that provides the query workflow.
+ */
+@Subcomponent
+public interface QueryDaggerComponent {
+    QueryWorkflow queryWorkflow();
+
+    @Subcomponent.Factory
+    interface Factory {
+        QueryDaggerComponent create();
+    }
 }

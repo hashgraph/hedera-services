@@ -14,20 +14,17 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.components;
+package com.hedera.node.app.workflows.ingest;
 
-import com.hedera.node.app.workflows.ingest.IngestWorkflow;
-import dagger.Subcomponent;
+import com.hedera.node.app.components.IngestDaggerComponent;
+import dagger.Binds;
+import dagger.Module;
 
 /**
- * A Dagger subcomponent that provides the Ingest workflow.
+ * Module for Ingest processing.
  */
-@Subcomponent
-public interface IngestComponent {
-    IngestWorkflow ingestWorkflow();
-
-    @Subcomponent.Factory
-    interface Factory {
-        IngestComponent create();
-    }
+@Module(subcomponents = {IngestDaggerComponent.class})
+public interface IngestWorkflowDaggerModule {
+    @Binds
+    IngestWorkflow bindIngestWorkflow(IngestWorkflowImpl ingestWorkflow);
 }

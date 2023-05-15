@@ -79,7 +79,7 @@ class IngestComponentTest {
     void objectGraphRootsAreAvailable() {
         given(platform.getSelfId()).willReturn(new NodeId(false, 0L));
 
-        final IngestComponent subject = app.ingestComponentFactory().get().create();
+        final IngestDaggerComponent subject = app.ingestComponentFactory().get().create();
 
         assertNotNull(subject.ingestWorkflow());
     }

@@ -24,7 +24,7 @@ import com.hedera.node.app.service.schedule.impl.handlers.ScheduleSignHandler;
 import dagger.Module;
 
 @Module
-public interface ScheduleServiceModule {
+public interface ScheduleServiceDaggerModule {
 
     ScheduleCreateHandler scheduleCreateHandler();
 

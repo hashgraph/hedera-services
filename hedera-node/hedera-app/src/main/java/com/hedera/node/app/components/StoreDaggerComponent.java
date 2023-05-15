@@ -14,16 +14,24 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.util.impl;
+package com.hedera.node.app.components;
 
-import com.hedera.node.app.service.util.impl.handlers.UtilHandlers;
-import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
-import dagger.Module;
+import com.hedera.node.app.meta.HandleScope;
+import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import dagger.BindsInstance;
+import dagger.Subcomponent;
 
-@Module
-public interface UtilServiceModule {
+/**
+ * A Dagger subcomponent that provides the readable store factory.
+ */
+@Subcomponent
+@HandleScope
+public interface StoreDaggerComponent {
+    ReadableStoreFactory storeFactory();
 
-    UtilPrngHandler prngHandler();
-
-    UtilHandlers utilHandlers();
+    @Subcomponent.Factory
+    interface Factory {
+        StoreDaggerComponent create(@BindsInstance HederaState hederastate);
+    }
 }

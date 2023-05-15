@@ -37,7 +37,7 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.function.Function;
 
 @Module
-public interface PreHandleWorkflowModule {
+public interface PreHandleWorkflowDaggerModule {
     @Provides
     static Function<SignatureMap, PubKeyToSigBytes> provideKeyToSigFactory() {
         return signatureMap -> new PojoSigMapPubKeyToSigBytes(PbjConverter.fromPbj(signatureMap));

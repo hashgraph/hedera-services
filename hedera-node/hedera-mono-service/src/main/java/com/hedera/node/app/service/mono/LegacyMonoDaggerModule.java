@@ -67,5 +67,5 @@ import dagger.Module;
         FeesModule.class
 })
 @Deprecated(forRemoval = true)
-public class LegacyMonoModule {
+public class LegacyMonoDaggerModule {
 }

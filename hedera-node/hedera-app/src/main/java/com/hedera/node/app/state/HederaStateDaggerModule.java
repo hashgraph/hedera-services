@@ -14,17 +14,24 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.ingest;
+package com.hedera.node.app.state;
 
-import com.hedera.node.app.components.IngestComponent;
-import dagger.Binds;
+import com.hedera.node.app.state.merkle.MerkleRecordCache;
 import dagger.Module;
+import dagger.Provides;
+import javax.inject.Singleton;
 
-/**
- * Module for Ingest processing.
- */
-@Module(subcomponents = {IngestComponent.class})
-public interface IngestWorkflowModule {
-    @Binds
-    IngestWorkflow bindIngestWorkflow(IngestWorkflowImpl ingestWorkflow);
+@Module
+public interface HederaStateDaggerModule {
+    @Provides
+    @Singleton
+    static RecordCache provideRecordCache() {
+        return new MerkleRecordCache();
+    }
+
+    @Provides
+    @Singleton
+    static WorkingStateAccessor provideWorkingStateAccessor() {
+        return new WorkingStateAccessor();
+    }
 }
