@@ -72,9 +72,9 @@ class RandomVirtualMapJPDBReconnectTests extends VirtualMapReconnectTestBase {
         originalConfig = ConfigurationHolder.getInstance().get();
 
         final Configuration config = new TestConfigBuilder()
-                .withValue("keySetHalfDiskHashMapSize", "10000")
-                .withValue("keySetHalfDiskHashMapBuffer", "1000")
-                .withValue("keySetBloomFilterSizeInBytes", "16777216")
+                .withValue("jasperDb.keySetHalfDiskHashMapSize", "10000")
+                .withValue("jasperDb.keySetHalfDiskHashMapBuffer", "1000")
+                .withValue("jasperDb.keySetBloomFilterSizeInBytes", "16777216")
                 .getOrCreateConfig();
 
         ConfigurationHolder.getInstance().setConfiguration(config);
