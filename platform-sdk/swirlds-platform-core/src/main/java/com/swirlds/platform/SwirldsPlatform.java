@@ -158,7 +158,7 @@ import com.swirlds.platform.gossip.sync.SyncProtocolResponder;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.gossip.sync.protocol.PeerAgnosticSyncChecks;
 import com.swirlds.platform.gossip.sync.protocol.SyncProtocol;
-import com.swirlds.platform.gui.SwirldsGui;
+import com.swirlds.platform.gui.GuiPlatformAccessor;
 import com.swirlds.platform.heartbeats.HeartbeatProtocol;
 import com.swirlds.platform.intake.IntakeCycleStats;
 import com.swirlds.platform.internal.EventImpl;
@@ -845,9 +845,9 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                         Pair.of(swirldStateManager, "swirldStateManager")));
 
         // To be removed once the GUI component is better integrated with the platform.
-        SwirldsGui.setShadowGraph(selfId.id(), shadowGraph);
-        SwirldsGui.setStateManagementComponent(selfId.id(), stateManagementComponent);
-        SwirldsGui.setConsensusReference(selfId.id(), consensusRef);
+        GuiPlatformAccessor.getInstance().setShadowGraph(selfId.id(), shadowGraph);
+        GuiPlatformAccessor.getInstance().setStateManagementComponent(selfId.id(), stateManagementComponent);
+        GuiPlatformAccessor.getInstance().setConsensusReference(selfId.id(), consensusRef);
     }
 
     /**

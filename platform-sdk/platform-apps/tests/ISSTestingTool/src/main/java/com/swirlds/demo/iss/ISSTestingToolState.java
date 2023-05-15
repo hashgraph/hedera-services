@@ -138,7 +138,7 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
         throwIfImmutable();
 
         if (trigger == InitTrigger.GENESIS) {
-            parseArguments(ParameterProvider.getParameters());
+            parseArguments(ParameterProvider.getInstance().getParameters());
         }
 
         this.selfId = platform.getSelfId().id();

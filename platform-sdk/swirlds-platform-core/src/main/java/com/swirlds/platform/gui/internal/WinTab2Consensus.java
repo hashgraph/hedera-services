@@ -21,7 +21,7 @@ import static com.swirlds.platform.gui.internal.GuiUtils.wrap;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.components.state.StateManagementComponent;
-import com.swirlds.platform.gui.SwirldsGui;
+import com.swirlds.platform.gui.GuiPlatformAccessor;
 import com.swirlds.platform.state.signed.SignedStateInfo;
 import java.awt.Font;
 import java.awt.Graphics;
@@ -55,14 +55,15 @@ class WinTab2Consensus extends PrePaintableJPanel {
             }
             SwirldsPlatform platform = WinBrowser.memberDisplayed.platform;
             String s = "";
-            s += SwirldsGui.getPlatformName(platform.getSelfId().id());
-            final Consensus consensus =
-                    SwirldsGui.getConsensus(platform.getSelfId().id());
+            s += GuiPlatformAccessor.getInstance()
+                    .getPlatformName(platform.getSelfId().id());
+            final Consensus consensus = GuiPlatformAccessor.getInstance()
+                    .getConsensus(platform.getSelfId().id());
             long r1 = consensus.getDeleteRound();
             long r2 = consensus.getFameDecidedBelow();
             long r3 = consensus.getMaxRound();
-            final StateManagementComponent stateManagementComponent =
-                    SwirldsGui.getStateManagementComponent(platform.getSelfId().id());
+            final StateManagementComponent stateManagementComponent = GuiPlatformAccessor.getInstance()
+                    .getStateManagementComponent(platform.getSelfId().id());
             long r0 = stateManagementComponent.getLastCompleteRound();
 
             if (r1 == -1) {

@@ -40,6 +40,7 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.PlatformEvent;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.ParameterProvider;
+import com.swirlds.platform.gui.GuiPlatformAccessor;
 import com.swirlds.platform.gui.SwirldsGui;
 import com.swirlds.platform.network.ExternalIpAddress;
 import com.swirlds.platform.network.IpAddressStatus;
@@ -392,21 +393,22 @@ public class HashgraphDemoMain implements SwirldMain {
     public void init(final Platform platform, final NodeId id) {
         this.platform = platform;
         this.selfId = id.id();
-        final String[] parameters = ParameterProvider.getParameters();
+        final String[] parameters = ParameterProvider.getInstance().getParameters();
 
-        SwirldsGui.setAbout(
-                platform.getSelfId().id(),
-                "Hashgraph Demo v. 1.1\n" + "\n"
-                        + "trans/sec = # transactions added to the hashgraph per second\n"
-                        + "events/sec = # events added to the hashgraph per second\n"
-                        + "duplicate events = percentage of events a member receives that they already know.\n"
-                        + "bad events/sec = number of events per second received by a member that are invalid.\n"
-                        + "propagation time = average seconds from creating a new event to a given member receiving it.\n"
-                        + "create to consensus = average seconds from creating a new event to knowing its consensus order.\n"
-                        + "receive to consensus = average seconds from receiving an event to knowing its consensus order.\n"
-                        + "Witnesses are colored circles, non-witnesses are black/gray.\n"
-                        + "Dark circles are part of the consensus, light are not.\n"
-                        + "Fame is true for green, false for blue, unknown for red.\n");
+        GuiPlatformAccessor.getInstance()
+                .setAbout(
+                        platform.getSelfId().id(),
+                        "Hashgraph Demo v. 1.1\n" + "\n"
+                                + "trans/sec = # transactions added to the hashgraph per second\n"
+                                + "events/sec = # events added to the hashgraph per second\n"
+                                + "duplicate events = percentage of events a member receives that they already know.\n"
+                                + "bad events/sec = number of events per second received by a member that are invalid.\n"
+                                + "propagation time = average seconds from creating a new event to a given member receiving it.\n"
+                                + "create to consensus = average seconds from creating a new event to knowing its consensus order.\n"
+                                + "receive to consensus = average seconds from receiving an event to knowing its consensus order.\n"
+                                + "Witnesses are colored circles, non-witnesses are black/gray.\n"
+                                + "Dark circles are part of the consensus, light are not.\n"
+                                + "Fame is true for green, false for blue, unknown for red.\n");
         window = SwirldsGui.createWindow(platform, false); // Uses BorderLayout. Size is chosen by the Platform
         window.setLayout(new GridBagLayout()); // use a layout more powerful than BorderLayout
         int p = 0; // which parameter to use

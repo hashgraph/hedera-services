@@ -23,19 +23,11 @@ import com.swirlds.common.Console;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.platform.Consensus;
-import com.swirlds.platform.components.state.StateManagementComponent;
-import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gui.internal.SwirldMenu;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.GraphicsEnvironment;
 import java.awt.Rectangle;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicReference;
 import javax.swing.JFrame;
 import javax.swing.WindowConstants;
 import org.apache.logging.log4j.LogManager;
@@ -47,14 +39,6 @@ import org.apache.logging.log4j.Logger;
 public final class SwirldsGui {
 
     private static final Logger logger = LogManager.getLogger(SwirldsGui.class);
-
-    private static final Map<Long, String> aboutStrings = new ConcurrentHashMap<>();
-    private static final Map<Long, String> platformNames = new ConcurrentHashMap<>();
-    private static final Map<Long, byte[]> swirldIds = new ConcurrentHashMap<>();
-    private static final Map<Long, Integer> instanceNumbers = new ConcurrentHashMap<>();
-    private static final Map<Long, ShadowGraph> shadowGraphs = new ConcurrentHashMap<>();
-    private static final Map<Long, StateManagementComponent> stateManagementComponents = new ConcurrentHashMap<>();
-    private static final Map<Long, AtomicReference<Consensus>> consensusReferences = new ConcurrentHashMap<>();
 
     private SwirldsGui() {}
 
@@ -73,7 +57,8 @@ public final class SwirldsGui {
 
         final AddressBook addressBook = platform.getAddressBook();
         final long selfId = platform.getSelfId().id();
-        final int winNum = SwirldsGui.getInstanceNumber(platform.getSelfId().id());
+        final int winNum = GuiPlatformAccessor.getInstance()
+                .getInstanceNumber(platform.getSelfId().id());
 
         final Rectangle winRect = winRect(addressBook, winNum);
         // if SwirldMain calls createConsole, this remembers the window created
@@ -99,7 +84,8 @@ public final class SwirldsGui {
 
         final AddressBook addressBook = platform.getAddressBook();
         final long selfId = platform.getSelfId().id();
-        final int winNum = SwirldsGui.getInstanceNumber(platform.getSelfId().id());
+        final int winNum = GuiPlatformAccessor.getInstance()
+                .getInstanceNumber(platform.getSelfId().id());
 
         final Rectangle winRect = winRect(addressBook, winNum);
 
@@ -123,161 +109,5 @@ public final class SwirldsGui {
         }
 
         return frame;
-    }
-
-    /**
-     * The SwirldMain calls this to set the string that is shown when the user chooses "About" from the Swirlds menu in
-     * the upper-right corner of the window. It is recommended that this be a short string that includes the name of the
-     * app, the version number, and the year.
-     *
-     * @param nodeId the ID of the node
-     * @param about  wha should show in the "about" window from the menu
-     */
-    public static void setAbout(final long nodeId, final String about) {
-        aboutStrings.put(nodeId, about);
-    }
-
-    /**
-     * Get the "about" string, or an empty string if none has been set.
-     *
-     * @param nodeId the ID of the node
-     * @return an "about" string
-     * @deprecated this method is deprecated and will be removed in a future release
-     */
-    @Deprecated(forRemoval = true)
-    public static String getAbout(final long nodeId) {
-        return aboutStrings.getOrDefault(nodeId, "");
-    }
-
-    /**
-     * Set a platform name, given the node ID.
-     *
-     * @param nodeId       the ID of the node
-     * @param platformName a platform name
-     */
-    public static void setPlatformName(final long nodeId, @NonNull final String platformName) {
-        platformNames.put(nodeId, platformName);
-    }
-
-    /**
-     * Get a platform name, given the node ID, or an empty string if none has been set.
-     *
-     * @param nodeId the ID of the node
-     * @return a platform name
-     * @deprecated this method is deprecated and will be removed in a future release
-     */
-    @Deprecated(forRemoval = true)
-    @NonNull
-    public static String getPlatformName(final long nodeId) {
-        return platformNames.getOrDefault(nodeId, "");
-    }
-
-    /**
-     * Set the swirld ID for a node.
-     * @param nodeId the ID of the node
-     * @param swirldId the swirld ID
-     */
-    public static void setSwirldId(final long nodeId, @NonNull final byte[] swirldId) {
-        swirldIds.put(nodeId, swirldId);
-    }
-
-    /**
-     * Get the swirld ID for a node, or null if none is set.
-     * @param nodeId the ID of the node
-     * @return the swirld ID
-     * @deprecated this method is deprecated and will be removed in a future release
-     */
-    @Deprecated(forRemoval = true)
-    @Nullable
-    public static byte[] getSwirldId(final long nodeId) {
-        return swirldIds.getOrDefault(nodeId, null);
-    }
-
-    /**
-     * Set the instance number for a node.
-     * @param nodeId the ID of the node
-     * @param instanceNumber the instance number
-     */
-    public static void setInstanceNumber(final long nodeId, final int instanceNumber) {
-        instanceNumbers.put(nodeId, instanceNumber);
-    }
-
-    /**
-     * Get the instance number for a node, or -1 if none is set.
-     * @param nodeId the ID of the node
-     * @return the instance number
-     * @deprecated this method is deprecated and will be removed in a future release
-     */
-    @Deprecated(forRemoval = true)
-    public static int getInstanceNumber(final long nodeId) {
-        return instanceNumbers.getOrDefault(nodeId, -1);
-    }
-
-    /**
-     * Set the shadow graph for a node.
-     * @param nodeId the ID of the node
-     * @param shadowGraph the shadow graph
-     */
-    public static void setShadowGraph(final long nodeId, @NonNull final ShadowGraph shadowGraph) {
-        shadowGraphs.put(nodeId, shadowGraph);
-    }
-
-    /**
-     * Get the shadow graph for a node, or null if none is set.
-     * @param nodeId the ID of the node
-     * @return the shadow graph
-     * @deprecated this method is deprecated and will be removed in a future release
-     */
-    @Deprecated(forRemoval = true)
-    @Nullable
-    public static ShadowGraph getShadowGraph(final long nodeId) {
-        return shadowGraphs.getOrDefault(nodeId, null);
-    }
-
-    /**
-     * Set the state management component for a node.
-     * @param nodeId the ID of the node
-     * @param stateManagementComponent the state management component
-     */
-    public static void setStateManagementComponent(
-            final long nodeId, @NonNull final StateManagementComponent stateManagementComponent) {
-        stateManagementComponents.put(nodeId, stateManagementComponent);
-    }
-
-    /**
-     * Get the state management component for a node, or null if none is set.
-     * @param nodeId the ID of the node
-     * @return the state management component
-     * @deprecated this method is deprecated and will be removed in a future release
-     */
-    @Deprecated(forRemoval = true)
-    @Nullable
-    public static StateManagementComponent getStateManagementComponent(final long nodeId) {
-        return stateManagementComponents.getOrDefault(nodeId, null);
-    }
-
-    /**
-     * Set the consensus for a node.
-     * @param nodeId the ID of the node
-     * @param consensus the consensus
-     */
-    public static void setConsensusReference(final long nodeId, @NonNull final AtomicReference<Consensus> consensus) {
-        consensusReferences.put(nodeId, consensus);
-    }
-
-    /**
-     * Get the consensus for a node, or null if none is set.
-     * @param nodeId the ID of the node
-     * @return the consensus
-     * @deprecated this method is deprecated and will be removed in a future release
-     */
-    @Deprecated(forRemoval = true)
-    @Nullable
-    public static Consensus getConsensus(final long nodeId) {
-        final AtomicReference<Consensus> consensusReference = consensusReferences.getOrDefault(nodeId, null);
-        if (consensusReference == null) {
-            return null;
-        }
-        return consensusReference.get();
     }
 }

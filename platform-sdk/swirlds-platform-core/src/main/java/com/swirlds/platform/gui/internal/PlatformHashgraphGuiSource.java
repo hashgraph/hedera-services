@@ -19,7 +19,7 @@ package com.swirlds.platform.gui.internal;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
-import com.swirlds.platform.gui.SwirldsGui;
+import com.swirlds.platform.gui.GuiPlatformAccessor;
 import com.swirlds.platform.gui.hashgraph.internal.ShadowgraphGuiSource;
 
 /**
@@ -44,7 +44,8 @@ public class PlatformHashgraphGuiSource implements ShadowgraphGuiSource {
         if (platform == null) {
             return null;
         }
-        return SwirldsGui.getShadowGraph(platform.getSelfId().id());
+        return GuiPlatformAccessor.getInstance()
+                .getShadowGraph(platform.getSelfId().id());
     }
 
     private SwirldsPlatform getPlatform() {

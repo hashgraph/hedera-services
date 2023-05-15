@@ -43,7 +43,7 @@ import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.ParameterProvider;
-import com.swirlds.platform.gui.SwirldsGui;
+import com.swirlds.platform.gui.GuiPlatformAccessor;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -211,7 +211,7 @@ public class StatsDemoMain implements SwirldMain {
         this.platform = platform;
         selfId = id.id();
         // parse the config.txt parameters, and allow optional _ as in 1_000_000
-        final String[] parameters = ParameterProvider.getParameters();
+        final String[] parameters = ParameterProvider.getInstance().getParameters();
         headless = (parameters[0].equals("1"));
         writePeriod = Integer.parseInt(parameters[1].replaceAll("_", ""));
         bytesPerTrans = Integer.parseInt(parameters[3].replaceAll("_", ""));
@@ -224,10 +224,11 @@ public class StatsDemoMain implements SwirldMain {
         if (!headless) { // create the window, make it visible
             console = createConsole(platform, true);
         }
-        SwirldsGui.setAbout(
-                platform.getSelfId().id(),
-                "Stats Demo v. 1.2\nThis writes statistics to a log file,"
-                        + " such as the number of transactions per second.");
+        GuiPlatformAccessor.getInstance()
+                .setAbout(
+                        platform.getSelfId().id(),
+                        "Stats Demo v. 1.2\nThis writes statistics to a log file,"
+                                + " such as the number of transactions per second.");
     }
 
     @Override
