@@ -60,7 +60,6 @@ import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.events.PlatformEvent;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.common.system.transaction.internal.SystemTransaction;
 import com.swirlds.common.threading.SyncPermitProvider;
@@ -225,7 +224,6 @@ import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -1770,43 +1768,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     @Override
     public boolean createTransaction(@NonNull final byte[] transaction) {
         return transactionSubmitter.submitTransaction(new SwirldTransaction(transaction));
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Deprecated(forRemoval = true)
-    @Override
-    public PlatformEvent[] getAllEvents() {
-        // There is currently a race condition that can cause an exception if event order changes at
-        // just the right moment. Since this is just a testing utility method and not used in production
-        // environments, we can just retry until we succeed.
-        int maxRetries = 100;
-        while (maxRetries-- > 0) {
-            try {
-                final EventImpl[] allEvents = shadowGraph.getAllEvents();
-                Arrays.sort(allEvents, (o1, o2) -> {
-                    if (o1.getConsensusOrder() != -1 && o2.getConsensusOrder() != -1) {
-                        // both are consensus
-                        return Long.compare(o1.getConsensusOrder(), o2.getConsensusOrder());
-                    } else if (o1.getConsensusTimestamp() == null && o2.getConsensusTimestamp() == null) {
-                        // neither are consensus
-                        return o1.getTimeReceived().compareTo(o2.getTimeReceived());
-                    } else {
-                        // one is consensus, the other is not
-                        if (o1.getConsensusTimestamp() == null) {
-                            return 1;
-                        } else {
-                            return -1;
-                        }
-                    }
-                });
-                return allEvents;
-            } catch (final IllegalArgumentException e) {
-                logger.error(EXCEPTION.getMarker(), "Exception while sorting events", e);
-            }
-        }
-        throw new IllegalStateException("Unable to sort events after 100 retries");
     }
 
     /**

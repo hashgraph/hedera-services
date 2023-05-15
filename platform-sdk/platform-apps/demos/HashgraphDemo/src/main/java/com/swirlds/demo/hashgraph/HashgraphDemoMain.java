@@ -32,7 +32,6 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.PlatformWithDeprecatedMethods;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.Address;
@@ -477,7 +476,8 @@ public class HashgraphDemoMain implements SwirldMain {
     public void run() {
         while (true) {
             if (window != null && !freezeCheckbox.getState()) {
-                eventsCache = ((PlatformWithDeprecatedMethods) platform).getAllEvents();
+                eventsCache = GuiPlatformAccessor.getInstance()
+                        .getAllEvents(platform.getSelfId().id());
                 // after this getAllEvents call, the set of events to draw is frozen
                 // for the duration of this screen redraw. But their status (consensus or not) may change
                 // while it is being drawn. If an event is discarded while being drawn, then it forgets its

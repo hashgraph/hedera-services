@@ -16,8 +16,6 @@
 
 package com.swirlds.common.system;
 
-import com.swirlds.common.system.events.PlatformEvent;
-
 /**
  * Platform methods that have been deprecated.
  *
@@ -41,17 +39,4 @@ public interface PlatformWithDeprecatedMethods extends Platform {
      */
     @Deprecated(forRemoval = true)
     void releaseState();
-
-    /**
-     * Get an array of all the events in the hashgraph. This method is slow, so do not call it very often.
-     * The returned array is a shallow copy, so the caller may change it, and no other threads will change
-     * it. However, the events it references may have fields that are changed by other threads, and must not
-     * be changed by the caller. The array will contain first the consensus events (in consensus order),
-     * then the non-consensus events (sorted by time received).
-     *
-     * @return an array of all the events
-     * @deprecated this is UI code and doesn't belong in the platform interface
-     */
-    @Deprecated(forRemoval = true)
-    PlatformEvent[] getAllEvents();
 }
