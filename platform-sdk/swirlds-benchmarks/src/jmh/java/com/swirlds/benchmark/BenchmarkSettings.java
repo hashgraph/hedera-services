@@ -17,11 +17,7 @@
 package com.swirlds.benchmark;
 
 import com.swirlds.common.settings.ParsingUtils;
-import com.swirlds.fchashmap.FCHashMapSettingsFactory;
-import com.swirlds.jasperdb.settings.JasperDbSettingsFactory;
 import com.swirlds.merkledb.settings.MerkleDbSettingsFactory;
-import com.swirlds.platform.FCHashMapSettingsImpl;
-import com.swirlds.platform.JasperDbSettingsImpl;
 import com.swirlds.platform.MerkleDbSettingsImpl;
 import com.swirlds.platform.VirtualMapSettingsImpl;
 import com.swirlds.virtualmap.VirtualMapSettingsFactory;
