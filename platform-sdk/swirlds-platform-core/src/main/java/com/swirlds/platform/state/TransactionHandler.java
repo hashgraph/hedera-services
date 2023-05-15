@@ -62,7 +62,7 @@ public class TransactionHandler {
             logger.error(
                     EXCEPTION.getMarker(),
                     "error invoking SwirldState.preHandle() [ nodeId = {} ] with event {}",
-                    selfId.getId(),
+                    selfId.id(),
                     event.toMediumString(),
                     t);
         }
@@ -105,7 +105,7 @@ public class TransactionHandler {
             logger.error(
                     EXCEPTION.getMarker(),
                     "error invoking SwirldState.handleConsensusRound() [ nodeId = {} ] with round {}",
-                    selfId.getId(),
+                    selfId.id(),
                     round.getRoundNum(),
                     t);
         }

@@ -70,11 +70,11 @@ public class MigrationTestingToolMain implements SwirldMain {
 
         final String[] parameters = ((PlatformWithDeprecatedMethods) platform).getParameters();
         logger.info(MARKER, "Parsing arguments {}", (Object) parameters);
-        seed = Long.parseLong(parameters[0]) + selfId.getId();
+        seed = Long.parseLong(parameters[0]) + selfId.id();
         maximumTransactionsPerNode = Integer.parseInt(parameters[1]);
 
         generator = new TransactionGenerator(seed);
-        SwirldsGui.setAbout(platform.getSelfId().getId(), "MigrationTestingApp");
+        SwirldsGui.setAbout(platform.getSelfId().id(), "MigrationTestingApp");
 
         // Initialize application statistics
         initAppStats();

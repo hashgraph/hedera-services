@@ -17,35 +17,36 @@
 package com.hedera.node.app.workflows.prehandle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.UNKNOWN;
-import static com.hedera.node.app.service.mono.Utils.asHederaKeys;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
+import static com.hedera.node.app.spi.HapiUtils.isHollow;
+import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
+import static com.hedera.node.app.workflows.prehandle.PreHandleResult.nodeDueDiligenceFailure;
+import static com.hedera.node.app.workflows.prehandle.PreHandleResult.preHandleFailure;
+import static com.hedera.node.app.workflows.prehandle.PreHandleResult.unknownFailure;
+import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.SignatureMap;
-import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
-import com.hedera.node.app.signature.SignaturePreparer;
-import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.SignaturePair;
+import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.signature.ExpandedSignaturePair;
+import com.hedera.node.app.signature.SignatureExpander;
+import com.hedera.node.app.signature.SignatureVerifier;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.workflows.TransactionChecker;
+import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.crypto.Cryptography;
-import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.function.Function;
+import java.util.HashSet;
+import java.util.concurrent.Future;
+import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -54,192 +55,169 @@ import org.apache.logging.log4j.Logger;
 /** Implementation of {@link PreHandleWorkflow} */
 @Singleton
 public class PreHandleWorkflowImpl implements PreHandleWorkflow {
-
-    private static final Logger LOG = LogManager.getLogger(PreHandleWorkflowImpl.class);
-
+    private static final Logger logger = LogManager.getLogger(PreHandleWorkflowImpl.class);
+    /**
+     * Used to verify basic syntactic and semantic validity of a transaction.
+     *
+     * <p>The hashgraph platform gossips {@link Event}s between nodes. Each {@link Event} contains zero or
+     * more transactions. We have to parse the bytes for those transactions, and check their validity both
+     * semantically and syntactically. This is done by the {@link TransactionChecker}. It is possible that
+     * a misbehaving node, or a malicious node, will gossip a transaction that is invalid.
+     */
     private final TransactionChecker transactionChecker;
+    /** Dispatches transactions to the appropriate {@link TransactionHandler} based on the type of transaction. */
     private final TransactionDispatcher dispatcher;
-    private final SignaturePreparer signaturePreparer;
-    private final Cryptography cryptography;
-    private final Function<Runnable, CompletableFuture<Void>> runner;
+    /** "Expands" {@link SignaturePair}s by converting prefixes into full keys. */
+    private final SignatureExpander signatureExpander;
+    /** Verifies signatures */
+    private final SignatureVerifier signatureVerifier;
 
     /**
-     * Constructor of {@code PreHandleWorkflowImpl}
+     * Creates a new instance of {@code PreHandleWorkflowImpl}.
      *
-     * @param exe the {@link ExecutorService} to use when submitting new tasks
-     * @param dispatcher the {@link TransactionDispatcher} that will call transaction-specific
-     * {@code preHandle()}-methods
-     * @param transactionChecker the {@link TransactionChecker} that pre-processes the {@link byte[]} of a transaction
-     * @param signaturePreparer the {@link SignaturePreparer} to prepare signatures
-     * @param cryptography the {@link Cryptography} component used to verify signatures
+     * @param dispatcher the {@link TransactionDispatcher} for invoking the {@link TransactionHandler} for each
+     *                   transaction.
+     * @param transactionChecker the {@link TransactionChecker} for parsing and verifying the transaction
+     * @param signatureVerifier the {@link SignatureVerifier} to verify signatures
      * @throws NullPointerException if any of the parameters is {@code null}
      */
     @Inject
     public PreHandleWorkflowImpl(
-            @NonNull final ExecutorService exe,
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final TransactionChecker transactionChecker,
-            @NonNull final SignaturePreparer signaturePreparer,
-            @NonNull final Cryptography cryptography) {
-        requireNonNull(exe);
+            @NonNull final SignatureVerifier signatureVerifier,
+            @NonNull final SignatureExpander signatureExpander) {
         this.dispatcher = requireNonNull(dispatcher);
         this.transactionChecker = requireNonNull(transactionChecker);
-        this.signaturePreparer = requireNonNull(signaturePreparer);
-        this.cryptography = requireNonNull(cryptography);
-        this.runner = runnable -> CompletableFuture.runAsync(runnable, exe);
+        this.signatureVerifier = requireNonNull(signatureVerifier);
+        this.signatureExpander = requireNonNull(signatureExpander);
     }
 
-    // Used only for testing
-    PreHandleWorkflowImpl(
-            @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final TransactionChecker transactionChecker,
-            @NonNull final SignaturePreparer signaturePreparer,
-            @NonNull final Cryptography cryptography,
-            @NonNull final Function<Runnable, CompletableFuture<Void>> runner) {
-        this.dispatcher = requireNonNull(dispatcher);
-        this.transactionChecker = requireNonNull(transactionChecker);
-        this.signaturePreparer = requireNonNull(signaturePreparer);
-        this.cryptography = requireNonNull(cryptography);
-        this.runner = requireNonNull(runner);
-    }
-
+    /** {@inheritDoc} */
     @Override
-    public void start(@NonNull final HederaState state, @NonNull final Event event) {
-        preHandle(requireNonNull(event).transactionIterator(), requireNonNull(state));
-    }
+    public void preHandle(
+            @NonNull final ReadableStoreFactory readableStoreFactory,
+            @NonNull final AccountID creator,
+            @NonNull final Stream<Transaction> transactions) {
 
-    public void preHandle(@NonNull final Iterator<Transaction> itr, @NonNull final HederaState state) {
-        // Each transaction in the event will go through pre-handle using a background thread
-        // from the executor service. The Future representing that work is stored on the
-        // platform transaction. The HandleTransactionWorkflow will pull this future back
-        // out and use it to block until the pre handle work is done, if needed.
-        final ArrayList<CompletableFuture<Void>> futures = new ArrayList<>();
-        while (itr.hasNext()) {
-            final var platformTx = itr.next();
-            final var future = runner.apply(() -> {
-                try {
-                    final var metadata = securePreHandle(state, platformTx);
-                    platformTx.setMetadata(metadata);
-                } catch (final PreCheckException e) {
-                    platformTx.setMetadata(createInvalidResult(e.responseCode()));
-                }
-            });
-            futures.add(future);
-        }
+        requireNonNull(readableStoreFactory);
+        requireNonNull(creator);
+        requireNonNull(transactions);
 
-        // wait until all transactions were processed before returning
-        final CompletableFuture<?>[] array = futures.toArray(new CompletableFuture<?>[0]);
-        CompletableFuture.allOf(array).join();
-    }
+        // Used for looking up payer account information.
+        final var accountStore = readableStoreFactory.createStore(ReadableAccountStore.class);
 
-    private PreHandleResult securePreHandle(
-            final HederaState state, final com.swirlds.common.system.transaction.Transaction platformTx)
-            throws PreCheckException {
-        try {
-            return preHandle(state, platformTx);
-        } catch (Exception ex) {
-            // Some unknown and unexpected failure happened. If this was non-deterministic, I could
-            // end up with an ISS. It is critical that I log whatever happened, because we should
-            // have caught all legitimate failures in another catch block.
-            LOG.error("An unexpected exception was thrown during pre-handle", ex);
-            return createInvalidResult(UNKNOWN);
-        }
-    }
-
-    PreHandleResult preHandle(
-            final HederaState state, final com.swirlds.common.system.transaction.Transaction platformTx) {
-        TransactionBody txBody;
-        try {
-            // Parse the Transaction and check the syntax
-            final var txBytes = Bytes.wrap(platformTx.getContents());
-
-            // 1. Parse the Transaction and check the syntax
-            final var tx = transactionChecker.parse(txBytes);
-            final var transactionInfo = transactionChecker.check(tx);
-            txBody = transactionInfo.txBody();
-
-            // 2. Call PreTransactionHandler to do transaction-specific checks, get list of required
-            // keys, and prefetch required data
-            final var storeFactory = new ReadableStoreFactory(state);
-            final var context = new PreHandleContextImpl(storeFactory, txBody);
-            dispatcher.dispatchPreHandle(context);
-
-            // 3. Prepare and verify signature-data
-            final var signatureMap = transactionInfo.signatureMap();
-            final var txBodyBytes = transactionInfo.transaction().bodyBytes();
-            final var payerSignature = verifyPayerSignature(state, context, txBodyBytes, signatureMap);
-            final var otherSignatures = verifyOtherSignatures(state, context, txBodyBytes, signatureMap);
-
-            // 4. Eventually prepare and verify signatures of inner transaction
-            final var innerContext = context.innerContext();
-            PreHandleResult innerResult = null;
-            if (innerContext != null) {
-                // VERIFY: the txBytes used for inner transactions is the same as the outer transaction
-                final var innerPayerSignature = verifyPayerSignature(state, innerContext, txBytes, signatureMap);
-                final var innerOtherSignatures = verifyOtherSignatures(state, innerContext, txBytes, signatureMap);
-                innerResult = createResult(innerContext, signatureMap, innerPayerSignature, innerOtherSignatures, null);
+        // In parallel, we will pre-handle each transaction.
+        transactions.parallel().forEach(tx -> {
+            if (tx.isSystem()) return;
+            try {
+                tx.setMetadata(preHandleTransaction(creator, readableStoreFactory, accountStore, tx));
+            } catch (final Throwable unexpectedException) {
+                // If some random exception happened, then we should not charge the node for it. Instead,
+                // we will just record the exception and try again during handle. Then if we fail again
+                // at handle, then we will throw away the transaction (hopefully, deterministically!)
+                logger.error("Unexpected error while pre handling a transaction!", unexpectedException);
+                tx.setMetadata(unknownFailure());
             }
-
-            // 5. Return PreHandleResult
-            return createResult(context, signatureMap, payerSignature, otherSignatures, innerResult);
-
-        } catch (PreCheckException preCheckException) {
-            return createInvalidResult(preCheckException.responseCode());
-        } catch (Exception ex) {
-            // Some unknown and unexpected failure happened. If this was non-deterministic, I could
-            // end up with an ISS. It is critical that I log whatever happened, because we should
-            // have caught all legitimate failures in another catch block.
-            LOG.error("An unexpected exception was thrown during pre-handle", ex);
-            return createInvalidResult(UNKNOWN);
-        }
+        });
     }
 
-    @Nullable
-    private TransactionSignature verifyPayerSignature(
-            @NonNull final HederaState state,
-            @NonNull final PreHandleContext context,
-            @NonNull Bytes bytes,
-            @NonNull SignatureMap signatureMap) {
-        if (context.payerKey() == null) {
-            return null;
+    // For each transaction, we will use a background thread to parse the transaction, validate it, lookup the
+    // payer, collect non-payer keys, and warm up the cache. Then, once all the keys have been collected, we will
+    // pass the keys and signatures to the platform for verification.
+    private PreHandleResult preHandleTransaction(
+            @NonNull final AccountID creator,
+            @NonNull final ReadableStoreFactory storeFactory,
+            @NonNull final ReadableAccountStore accountStore,
+            @NonNull final Transaction platformTx) {
+
+        // 1. Parse the Transaction and check the syntax
+        final var txBytes = Bytes.wrap(platformTx.getContents());
+        final TransactionInfo txInfo;
+        try {
+            txInfo = transactionChecker.parseAndCheck(txBytes);
+        } catch (PreCheckException preCheck) {
+            // The node SHOULD have verified the transaction before it was submitted to the network.
+            // Since it didn't, it has failed in its due diligence and will be charged accordingly.
+            return nodeDueDiligenceFailure(creator, preCheck.responseCode(), null);
         }
 
-        final var payerSignature =
-                signaturePreparer.prepareSignature(state, PbjConverter.asBytes(bytes), signatureMap, context.payer());
-        cryptography.verifyAsync(payerSignature);
-        return payerSignature;
-    }
-
-    @NonNull
-    private Map<HederaKey, TransactionSignature> verifyOtherSignatures(
-            @NonNull final HederaState state,
-            @NonNull final PreHandleContext context,
-            @NonNull final Bytes txBodyBytes,
-            @NonNull final SignatureMap signatureMap) {
-        final var otherSignatures = signaturePreparer.prepareSignatures(
-                state, PbjConverter.asBytes(txBodyBytes), signatureMap, asHederaKeys(context.requiredNonPayerKeys()));
-        cryptography.verifyAsync(new ArrayList<>(otherSignatures.values()));
-        return otherSignatures;
-    }
-
-    @NonNull
-    private static PreHandleResult createResult(
-            @NonNull final PreHandleContext context,
-            @NonNull final SignatureMap signatureMap,
-            @Nullable final TransactionSignature payerSignature,
-            @NonNull final Map<HederaKey, TransactionSignature> otherSignatures,
-            @Nullable final PreHandleResult innerResult) {
-        final var otherSigs = otherSignatures.values();
-        final var allSigs = new ArrayList<TransactionSignature>(otherSigs.size() + 1);
-        if (payerSignature != null) {
-            allSigs.add(payerSignature);
+        // 2. Get Payer Account
+        final var txId = txInfo.txBody().transactionID();
+        assert txId != null : "TransactionID should never be null, transactionChecker forbids it";
+        final var payer = txId.accountID();
+        assert payer != null : "Payer account cannot be null, transactionChecker forbids it";
+        final var payerAccount = accountStore.getAccountById(payer);
+        if (payerAccount == null) {
+            // If the payer account doesn't exist, then we cannot gather signatures for it, and will need to do
+            // so later during the handle phase. Technically, we could still try to gather and verify the other
+            // signatures, but that might be tricky and complicated with little gain. So just throw.
+            return preHandleFailure(creator, null, PAYER_ACCOUNT_NOT_FOUND, txInfo, null);
         }
-        allSigs.addAll(otherSigs);
-        return new PreHandleResult(context, OK, signatureMap, allSigs, innerResult);
+
+        // Bootstrap the expanded signature pairs by grabbing all prefixes that are "full" keys already
+        final var originals = txInfo.signatureMap().sigPairOrElse(emptyList());
+        final var expanded = new HashSet<ExpandedSignaturePair>();
+        signatureExpander.expand(originals, expanded);
+
+        // 3. Expand the Payer signature
+        final Key payerKey;
+        if (isHollow(payerAccount)) {
+            payerKey = null;
+            signatureExpander.expand(payerAccount, originals, expanded);
+        } else {
+            payerKey = payerAccount.keyOrThrow();
+            signatureExpander.expand(payerKey, originals, expanded);
+        }
+
+        // 4a. Create the PreHandleContext. This will get reused across several calls to the transaction handlers
+        final PreHandleContext context;
+        try {
+            // NOTE: Once PreHandleContext is moved from being a concrete implementation in SPI, to being an Interface/
+            // implementation pair, with the implementation in `hedera-app`, then we will change the constructor,
+            // so I can pass the payer account in directly, since I've already looked it up. But I don't really want
+            // that as a public API in the SPI, so for now, we do a double lookup. Boo.
+            context = new PreHandleContextImpl(storeFactory, txInfo.txBody());
+        } catch (PreCheckException preCheck) {
+            // This should NEVER happen. The only way an exception is thrown from the PreHandleContext constructor
+            // is if the payer account doesn't exist, but by the time we reach this line of code, we already know
+            // that it does exist.
+            throw new RuntimeException(
+                    "Payer account disappeared between preHandle and preHandleContext creation!", preCheck);
+        }
+
+        // 4b. Call Pre-Transaction Handlers
+        try {
+            // FUTURE: First, perform semantic checks on the transaction (TBD)
+            // Then gather the signatures from the transaction handler
+            dispatcher.dispatchPreHandle(context);
+            // FUTURE: Finally, let the transaction handler do warm up of other state it may want to use later (TBD)
+        } catch (PreCheckException preCheck) {
+            // It is quite possible those semantic checks and other tasks will fail and throw a PreCheckException.
+            // In that case, the payer will end up paying for the transaction. So we still need to do the signature
+            // verifications that we have determined so far.
+            final var results = signatureVerifier.verify(txInfo.signedBytes(), expanded);
+            return preHandleFailure(payer, payerKey, preCheck.responseCode(), txInfo, results);
+        }
+
+        // 5. Expand additional SignaturePairs based on gathered keys and hollow accounts
+        final var nonPayerKeys = context.requiredNonPayerKeys();
+        for (final var key : nonPayerKeys) {
+            signatureExpander.expand(key, originals, expanded);
+        }
+
+        final var nonPayerHollowAccounts = context.requiredHollowAccounts();
+        for (final var hollowAccount : nonPayerHollowAccounts) {
+            signatureExpander.expand(hollowAccount, originals, expanded);
+        }
+
+        // 6. Submit the expanded SignaturePairs to the cryptography engine for verification
+        final var results = signatureVerifier.verify(txInfo.signedBytes(), expanded);
+
+        // 7. Create and return TransactionMetadata
+        return new PreHandleResult(payer, payerKey, SO_FAR_SO_GOOD, OK, txInfo, results, null);
     }
 
-    @NonNull
-    private static PreHandleResult createInvalidResult(@NonNull final ResponseCodeEnum responseCode) {
-        return new PreHandleResult(responseCode);
-    }
+    /** A platform transaction and the future that produces its {@link PreHandleResult} */
+    private record WorkItem(@NonNull Transaction platformTx, @NonNull Future<PreHandleResult> future) {}
 }

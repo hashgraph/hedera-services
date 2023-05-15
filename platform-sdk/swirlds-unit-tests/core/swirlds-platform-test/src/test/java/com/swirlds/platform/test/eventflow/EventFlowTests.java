@@ -30,6 +30,7 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Round;
@@ -100,7 +101,7 @@ class EventFlowTests {
     protected static final long selfId = 0L;
     private static final int THROTTLE_TRANSACTION_QUEUE_SIZE = 100_000;
 
-    private final NodeId selfNodeId = new NodeId(false, selfId);
+    private final NodeId selfNodeId = new NodeId(selfId);
 
     private final SettingsProvider settingsProvider = mock(SettingsProvider.class);
     protected AddressBook addressBook;
@@ -622,7 +623,7 @@ class EventFlowTests {
                 TestPlatformContextBuilder.create().build();
 
         preConsensusEventHandler = new PreConsensusEventHandler(
-                getStaticThreadManager(), selfNodeId, swirldStateManager, consensusMetrics);
+                new NoOpMetrics(), getStaticThreadManager(), selfNodeId, swirldStateManager, consensusMetrics);
         consensusEventHandler = new ConsensusRoundHandler(
                 platformContext,
                 getStaticThreadManager(),

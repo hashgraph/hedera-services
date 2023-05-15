@@ -99,7 +99,6 @@ import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.utility.PlatformVersion;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.fchashmap.FCHashMapSettingsFactory;
 import com.swirlds.jasperdb.settings.JasperDbSettingsFactory;
 import com.swirlds.merkledb.settings.MerkleDbSettingsFactory;
 import com.swirlds.platform.internal.SubSetting;
@@ -411,10 +410,6 @@ public class Settings {
      */
     private ReconnectSettingsImpl reconnect = new ReconnectSettingsImpl();
     /**
-     * Settings controlling FCHashMap.
-     */
-    private FCHashMapSettingsImpl fcHashMap = new FCHashMapSettingsImpl();
-    /**
      * Settings controlling VirtualMap.
      */
     private VirtualMapSettingsImpl virtualMap = new VirtualMapSettingsImpl();
@@ -449,7 +444,6 @@ public class Settings {
         SettingsCommon.verboseStatistics = getInstance().isVerboseStatistics();
 
         ReconnectSettingsFactory.configure(getInstance().getReconnect());
-        FCHashMapSettingsFactory.configure(getInstance().getFcHashMap());
         VirtualMapSettingsFactory.configure(getInstance().getVirtualMap());
         JasperDbSettingsFactory.configure(getInstance().getJasperDb());
         MerkleDbSettingsFactory.configure(getInstance().getMerkleDb());
@@ -953,10 +947,6 @@ public class Settings {
 
     public ReconnectSettingsImpl getReconnect() {
         return reconnect;
-    }
-
-    public FCHashMapSettingsImpl getFcHashMap() {
-        return fcHashMap;
     }
 
     public VirtualMapSettingsImpl getVirtualMap() {

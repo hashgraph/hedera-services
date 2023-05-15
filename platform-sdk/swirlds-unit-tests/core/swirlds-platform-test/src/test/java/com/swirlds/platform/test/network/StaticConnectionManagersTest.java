@@ -52,7 +52,7 @@ class StaticConnectionManagersTest {
     @MethodSource("topologicalVariations")
     void test(final int numNodes, final int numNeighbors) throws Exception {
         final Random r = RandomUtils.getRandomPrintSeed();
-        final NodeId selfId = NodeId.createMain(r.nextInt(numNodes));
+        final NodeId selfId = new NodeId(r.nextInt(numNodes));
         Mockito.when(connectionCreator.createConnection(Mockito.any())).thenAnswer(inv -> {
             final NodeId peerId = inv.getArgument(0, NodeId.class);
             return new FakeConnection(selfId, peerId);

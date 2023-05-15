@@ -69,7 +69,7 @@ import org.mockito.Mockito;
 
 @DisplayName("Event Creator Tests")
 class EventCreatorTests {
-    private static final NodeId selfId = new NodeId(false, 1234);
+    private static final NodeId selfId = new NodeId(1234);
     private static final Signer noOpSigner =
             (bytes) -> new Signature(SignatureType.RSA, new byte[SignatureType.RSA.signatureLength()]);
     private static final GraphGenerations defaultGenerations = new Generations(
@@ -345,7 +345,7 @@ class EventCreatorTests {
         final EventImpl selfParentImpl = EventMocks.mockEvent(selfParent);
 
         final Map<Long, EventImpl> recentEvents = new HashMap<>();
-        recentEvents.put(selfId.getId(), selfParentImpl);
+        recentEvents.put(selfId.id(), selfParentImpl);
         recentEvents.put(1L, otherParent);
 
         final AccessibleEventCreator eventCreator = new AccessibleEventCreator(
@@ -364,7 +364,7 @@ class EventCreatorTests {
         assertEquals(1, events.size(), "expected an event to have been created");
         final EventImpl event = events.remove();
 
-        assertEquals(selfId.getId(), event.getCreatorId(), "expected id to match self ID");
+        assertEquals(selfId.id(), event.getCreatorId(), "expected id to match self ID");
         assertTrue(
                 event.getTimeCreated().isAfter(prevEventTime.plusNanos(previousTransactions.length - 1)),
                 "expected timestamp to be greater than previous timestamp");
