@@ -652,7 +652,8 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         final PlatformTestingToolState mutableCopy = new PlatformTestingToolState(this);
 
         if (platform != null) {
-            UnsafeMutablePTTStateAccessor.setMutableState(platform.getSelfId().id(), mutableCopy);
+            UnsafeMutablePTTStateAccessor.getInstance()
+                    .setMutableState(platform.getSelfId().id(), mutableCopy);
         }
 
         return mutableCopy;
@@ -1224,7 +1225,8 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
             final SoftwareVersion previousSoftwareVersion) {
 
         this.platform = platform;
-        UnsafeMutablePTTStateAccessor.setMutableState(platform.getSelfId().id(), this);
+        UnsafeMutablePTTStateAccessor.getInstance()
+                .setMutableState(platform.getSelfId().id(), this);
 
         initialized.set(true);
 

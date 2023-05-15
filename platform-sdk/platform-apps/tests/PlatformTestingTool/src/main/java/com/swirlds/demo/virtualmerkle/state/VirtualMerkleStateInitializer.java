@@ -16,12 +16,11 @@
 
 package com.swirlds.demo.virtualmerkle.state;
 
-import static com.swirlds.demo.platform.UnsafeMutablePTTStateAccessor.getUnsafeMutableState;
-
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.demo.platform.PlatformTestingToolState;
+import com.swirlds.demo.platform.UnsafeMutablePTTStateAccessor;
 import com.swirlds.demo.virtualmerkle.config.VirtualMerkleConfig;
 import com.swirlds.demo.virtualmerkle.map.account.AccountVirtualMapKey;
 import com.swirlds.demo.virtualmerkle.map.account.AccountVirtualMapKeyBuilder;
@@ -71,8 +70,8 @@ public final class VirtualMerkleStateInitializer {
     public static void initStateChildren(
             Platform platform, final long nodeId, final VirtualMerkleConfig virtualMerkleConfig) {
 
-        try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
-                getUnsafeMutableState(platform.getSelfId().id())) {
+        try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper = UnsafeMutablePTTStateAccessor.getInstance()
+                .getUnsafeMutableState(platform.getSelfId().id())) {
 
             final Path pathToJasperDBStorageDir =
                     Path.of(virtualMerkleConfig.getJasperDBStoragePath(), Long.toString(nodeId));

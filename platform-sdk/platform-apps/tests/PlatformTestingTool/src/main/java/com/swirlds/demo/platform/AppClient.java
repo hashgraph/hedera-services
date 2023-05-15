@@ -16,8 +16,6 @@
 
 package com.swirlds.demo.platform;
 
-import static com.swirlds.demo.platform.UnsafeMutablePTTStateAccessor.getUnsafeMutableState;
-
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.demo.merkle.map.internal.ExpectedFCMFamily;
@@ -58,8 +56,8 @@ public class AppClient extends Thread {
 
         SubmitConfig submitConfig = currentConfig.getSubmitConfig();
 
-        try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
-                getUnsafeMutableState(platform.getSelfId().id())) {
+        try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper = UnsafeMutablePTTStateAccessor.getInstance()
+                .getUnsafeMutableState(platform.getSelfId().id())) {
             final PlatformTestingToolState state = wrapper.get();
             submitter = new TransactionSubmitter(submitConfig, state.getControlQuorum());
             expectedFCMFamily = state.getStateExpectedMap();

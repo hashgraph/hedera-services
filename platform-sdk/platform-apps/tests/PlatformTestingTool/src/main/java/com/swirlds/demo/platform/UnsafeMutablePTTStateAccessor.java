@@ -32,9 +32,20 @@ public final class UnsafeMutablePTTStateAccessor {
     /**
      * A map is used to be compatible with running multiple PTT nodes in the same JVM.
      */
-    private static final Map<Long /* node ID */, PlatformTestingToolState> states = new HashMap<>();
+    private final Map<Long /* node ID */, PlatformTestingToolState> states = new HashMap<>();
+
+    private static final UnsafeMutablePTTStateAccessor INSTANCE = new UnsafeMutablePTTStateAccessor();
 
     private UnsafeMutablePTTStateAccessor() {}
+
+    /**
+     * Get the singleton instance.
+     *
+     * @return the instance
+     */
+    public static UnsafeMutablePTTStateAccessor getInstance() {
+        return INSTANCE;
+    }
 
     /**
      * Set the most recent mutable copy of the PTT state.
@@ -42,7 +53,7 @@ public final class UnsafeMutablePTTStateAccessor {
      * @param nodeId the node ID
      * @param state  the state
      */
-    public static synchronized void setMutableState(final long nodeId, final PlatformTestingToolState state) {
+    public synchronized void setMutableState(final long nodeId, final PlatformTestingToolState state) {
         state.reserve();
         final PlatformTestingToolState previousState = states.put(nodeId, state);
         if (previousState != null) {
@@ -58,7 +69,7 @@ public final class UnsafeMutablePTTStateAccessor {
      * @param nodeId the node ID
      * @return the state, or a wrapper around null
      */
-    public static synchronized AutoCloseableWrapper<PlatformTestingToolState> getUnsafeMutableState(final long nodeId) {
+    public synchronized AutoCloseableWrapper<PlatformTestingToolState> getUnsafeMutableState(final long nodeId) {
         final PlatformTestingToolState state = states.get(nodeId);
         if (state == null) {
             return new AutoCloseableWrapper<>(null, () -> {});

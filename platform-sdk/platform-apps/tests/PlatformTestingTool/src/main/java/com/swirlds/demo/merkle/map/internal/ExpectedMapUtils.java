@@ -16,8 +16,6 @@
 
 package com.swirlds.demo.merkle.map.internal;
 
-import static com.swirlds.demo.platform.UnsafeMutablePTTStateAccessor.getUnsafeMutableState;
-
 import com.swirlds.common.notification.listeners.ReconnectCompleteNotification;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.utility.AutoCloseableWrapper;
@@ -26,6 +24,7 @@ import com.swirlds.demo.platform.PAYLOAD_TYPE;
 import com.swirlds.demo.platform.PayloadConfig;
 import com.swirlds.demo.platform.PlatformTestingToolState;
 import com.swirlds.demo.platform.SuperConfig;
+import com.swirlds.demo.platform.UnsafeMutablePTTStateAccessor;
 import com.swirlds.merkle.map.test.lifecycle.ExpectedValue;
 import com.swirlds.merkle.map.test.lifecycle.LifecycleStatus;
 import com.swirlds.merkle.map.test.lifecycle.TransactionState;
@@ -53,8 +52,8 @@ public class ExpectedMapUtils {
             return;
         }
 
-        try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
-                getUnsafeMutableState(platform.getSelfId().id())) {
+        try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper = UnsafeMutablePTTStateAccessor.getInstance()
+                .getUnsafeMutableState(platform.getSelfId().id())) {
             final PlatformTestingToolState state = wrapper.get();
             // rebuild ExpectedMap
             state.rebuildExpectedMapFromState(Instant.EPOCH, true);
@@ -77,8 +76,8 @@ public class ExpectedMapUtils {
             return;
         }
 
-        try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
-                getUnsafeMutableState(platform.getSelfId().id())) {
+        try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper = UnsafeMutablePTTStateAccessor.getInstance()
+                .getUnsafeMutableState(platform.getSelfId().id())) {
             final PlatformTestingToolState state = wrapper.get();
             state.rebuildExpectedMapFromState(notification.getConsensusTimestamp(), false);
         }
