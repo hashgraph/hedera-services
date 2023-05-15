@@ -83,7 +83,7 @@ public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
         final var op = txn.tokenRevokeKycOrThrow();
         final var tokenId = op.tokenOrThrow().tokenNum();
         final var accountId = op.accountOrElse(AccountID.DEFAULT).accountNumOrThrow();
-        final var tokenRel = tokenRelStore.getForModify(tokenId, accountId);
+        final var tokenRel = tokenRelStore.getForModify(accountId, tokenId);
 
         final var tokenRelBuilder = tokenRel.orElseThrow().copyBuilder();
         tokenRelBuilder.kycGranted(false);

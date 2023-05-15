@@ -56,7 +56,7 @@ public class WritableTokenRelationStore {
     public void put(@NonNull final TokenRelation tokenRelation) {
         requireNonNull(tokenRelState)
                 .put(
-                        EntityNumPair.fromLongs(tokenRelation.tokenNumber(), tokenRelation.accountNumber()),
+                        EntityNumPair.fromLongs(tokenRelation.accountNumber(), tokenRelation.tokenNumber()),
                         Objects.requireNonNull(tokenRelation));
     }
 
@@ -69,14 +69,14 @@ public class WritableTokenRelationStore {
     }
 
     /**
-     * Returns the {@link TokenRelation} with the given number. If no such token relation exists, returns {@code Optional.empty()}
+     * Returns the {@link TokenRelation} with the given entity numbers. If no such token relation exists, returns {@code Optional.empty()}
      *
-     * @param tokenNum - the number of the token relation to be retrieved
      * @param accountNum - the number of the account relation to be retrieved
+     * @param tokenNum   - the number of the token relation to be retrieved
      */
-    public Optional<TokenRelation> get(final long tokenNum, final long accountNum) {
+    public Optional<TokenRelation> get(final long accountNum, final long tokenNum) {
         final var tokenRelation =
-                Objects.requireNonNull(tokenRelState).get(EntityNumPair.fromLongs(tokenNum, accountNum));
+                Objects.requireNonNull(tokenRelState).get(EntityNumPair.fromLongs(accountNum, tokenNum));
         return Optional.ofNullable(tokenRelation);
     }
 
@@ -84,18 +84,17 @@ public class WritableTokenRelationStore {
      * Returns the {@link TokenRelation} with the given token number and account number.
      * If no such token relation exists, returns {@code Optional.empty()}
      *
-     * @param tokenNum - the number of the token to be retrieved
      * @param accountNum - the number of the account to be retrieved
+     * @param tokenNum   - the number of the token to be retrieved
      */
-    public Optional<TokenRelation> getForModify(final long tokenNum, final long accountNum) {
+    public Optional<TokenRelation> getForModify(final long accountNum, final long tokenNum) {
         final var token =
-                Objects.requireNonNull(tokenRelState).getForModify(EntityNumPair.fromLongs(tokenNum, accountNum));
+                Objects.requireNonNull(tokenRelState).getForModify(EntityNumPair.fromLongs(accountNum, tokenNum));
         return Optional.ofNullable(token);
     }
 
     /**
-     * Returns the number of tokens in the state.
-     * @return the number of tokens in the state.
+     * @return the number of token relations in state
      */
     public long sizeOfState() {
         return tokenRelState.size();
