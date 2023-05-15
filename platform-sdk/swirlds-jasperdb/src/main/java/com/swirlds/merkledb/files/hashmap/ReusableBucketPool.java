@@ -76,7 +76,7 @@ public class ReusableBucketPool<K extends VirtualKey> {
         buckets = new ConcurrentLinkedDeque<>();
         keySerializer = serializer.getKeySerializer();
         for (int i = 0; i < size; i++) {
-            buckets.offerLast(new Bucket<K>(keySerializer, this));
+            buckets.offerLast(new Bucket<>(keySerializer, this));
         }
     }
 
@@ -90,7 +90,7 @@ public class ReusableBucketPool<K extends VirtualKey> {
     public Bucket<K> getBucket() {
         Bucket<K> bucket = buckets.pollLast();
         if (bucket == null) {
-            bucket = new Bucket<K>(keySerializer, this);
+            bucket = new Bucket<>(keySerializer, this);
         }
         bucket.clear();
         return bucket;
