@@ -22,7 +22,6 @@ import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
 
 import com.hedera.hapi.node.base.FileID;
@@ -83,7 +82,7 @@ class FileAppendHandlerTest extends FileHandlerTestBase {
         subject = new FileAppendHandler();
         config = new FilesConfig(101L, 121L, 112L, 111L, 122L, 102L, 123L, 1000000L, 1024);
         lenient().when(handleContext.getConfiguration()).thenReturn(configuration);
-        lenient().when(configuration.getConfigData(any())).thenReturn(config);
+        lenient().when(configuration.getConfigData(FilesConfig.class)).thenReturn(config);
     }
 
     @Test

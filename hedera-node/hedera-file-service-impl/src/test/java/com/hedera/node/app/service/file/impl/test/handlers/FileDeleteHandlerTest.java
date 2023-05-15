@@ -75,26 +75,6 @@ class FileDeleteHandlerTest extends FileHandlerTestBase {
         writableStore = new WritableFileStoreImpl(writableStates);
     }
 
-    //    @Test
-    //    @DisplayName("File keys sig required")
-    //  commented out this test, need to recheck if we need to set nonPayersKey in preHandle() since it's not set
-    // currently.
-    //    void keysSigRequired() throws PreCheckException {
-    //        // given:
-    //        final var payerKey = mockPayerLookup();
-    //        mockFileLookup(keys, mockStore);
-    //        final var context = new PreHandleContext(keyLookup, newDeleteTxn());
-    //
-    //        // when:
-    //        subject.preHandle(context, mockStore);
-    //
-    //        // then:
-    //        assertThat(context.payerKey()).isEqualTo(payerKey);
-    //        final var expectedKeys = Utils.asHederaKeys(keys);
-    //
-    //        assertThat(context.requiredNonPayerKeys()).anyMatch(expectedKeys::contains);
-    //    }
-
     @Test
     void returnsExpectedRecordBuilderType() {
         assertInstanceOf(DeleteFileRecordBuilder.class, subject.newRecordBuilder());

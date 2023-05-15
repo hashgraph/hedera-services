@@ -19,25 +19,32 @@ package com.hedera.node.app.service.file.impl.utils;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_CONTENT_EMPTY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_FILE_SIZE_EXCEEDED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.file.FileAppendTransactionBody;
 import com.hedera.node.app.service.file.FileMetadata;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.config.data.FilesConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * Provides utility methods for file operations.
  */
-public class FileUtils {
-    private static final Logger logger = LogManager.getLogger(FileUtils.class);
+public class FileServiceUtils {
 
+    /**
+     * Validates the content of a file that it is not empty and not above max size 1MB.
+     * @param content the file content
+     * @param fileServiceConfig the file service configuration
+     */
     public static void validateContent(@NonNull byte[] content, @NonNull FilesConfig fileServiceConfig) {
         var contentLength = content.length;
 
@@ -50,6 +57,13 @@ public class FileUtils {
         }
     }
 
+    /**
+     * The function validation the file id and returns the file metadata.
+     * @param fileAppendTransactionBody
+     * @param fileStore
+     * @return
+     * @throws PreCheckException
+     */
     public static @NonNull FileMetadata preValidate(
             @NonNull final FileAppendTransactionBody fileAppendTransactionBody,
             @NonNull final ReadableFileStore fileStore)
@@ -63,5 +77,23 @@ public class FileUtils {
         final var fileMeta = fileStore.getFileMetadata(fileAppendTransactionBody.fileID());
         mustExist(fileMeta, INVALID_FILE_ID);
         return fileMeta;
+    }
+
+    /**
+     * The function validates the keys and adds them to the context.
+     * @param listKeys the list of keys to validate and add to required keys in context
+     * @param context the prehandle context for the transaction.
+     * @param areKeysRequired create allows files to be created without additional keys. Therefore, this flag is needed.
+     * @throws PreCheckException
+     */
+    public static void validateAndAddRequiredKeys(
+            @Nullable final KeyList listKeys, @NonNull final PreHandleContext context, final boolean areKeysRequired)
+            throws PreCheckException {
+        if (listKeys == null || !listKeys.hasKeys() || listKeys.keys().isEmpty()) {
+            // @todo('protobuf change needed') change to immutable file response code
+            if (areKeysRequired) throw new PreCheckException(UNAUTHORIZED);
+        }
+
+        if (listKeys != null && listKeys.hasKeys()) for (Key key : listKeys.keys()) context.requireKey(key);
     }
 }

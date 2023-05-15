@@ -63,6 +63,6 @@ public class EntityNumCodec implements Codec<EntityNum> {
 
     @Override
     public boolean fastEquals(final @NonNull EntityNum item, final @NonNull ReadableSequentialData input) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 }

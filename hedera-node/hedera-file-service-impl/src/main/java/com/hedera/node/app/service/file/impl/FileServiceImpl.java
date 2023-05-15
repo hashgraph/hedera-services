@@ -34,7 +34,6 @@ public final class FileServiceImpl implements FileService {
     private static final SemanticVersion CURRENT_VERSION =
             SemanticVersion.newBuilder().minor(34).build();
     public static final String BLOBS_KEY = "FILES";
-    public static final String UPGRADE_FILES_KEY = "SPECIAL_FILES";
 
     @Override
     public void registerMonoAdapterSchemas(@NonNull final SchemaRegistry registry) {

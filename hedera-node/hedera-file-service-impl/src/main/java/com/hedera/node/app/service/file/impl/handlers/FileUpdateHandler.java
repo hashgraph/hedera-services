@@ -20,13 +20,13 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_FILE_SIZE_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
+import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateAndAddRequiredKeys;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.file.FileUpdateTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.FileMetadata;
@@ -70,15 +70,8 @@ public class FileUpdateHandler implements TransactionHandler {
         final var transactionBody = context.body().fileUpdateOrThrow();
         final var fileStore = context.createStore(ReadableFileStoreImpl.class);
 
-        final var fileMeta = preValidate(transactionBody, fileStore);
-
-        final var listKeys = fileMeta.keys();
-        if (!listKeys.hasKeys() || listKeys.keys().isEmpty()) {
-            throw new PreCheckException(UNAUTHORIZED);
-        }
-
-        final var candidate = Key.newBuilder().keyList(transactionBody.keys()).build();
-        if (transactionBody.hasKeys()) context.requireKey(candidate);
+        preValidate(transactionBody, fileStore);
+        validateAndAddRequiredKeys(transactionBody.keys(), context, true);
     }
 
     /**

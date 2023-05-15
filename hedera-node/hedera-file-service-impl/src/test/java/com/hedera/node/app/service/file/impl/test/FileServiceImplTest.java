@@ -24,7 +24,6 @@ import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -35,19 +34,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class FileServiceImplTest {
     @Mock
     private SchemaRegistry registry;
-
-    @Test
-    void testSpi() {
-        // when
-        final FileService service = FileService.getInstance();
-
-        // then
-        Assertions.assertNotNull(service, "We must always receive an instance");
-        assertEquals(
-                FileServiceImpl.class,
-                service.getClass(),
-                "We must always receive an instance of type " + FileServiceImpl.class.getName());
-    }
 
     @Test
     void registersExpectedSchema() {
@@ -67,6 +53,6 @@ class FileServiceImplTest {
     }
 
     private FileService subject() {
-        return FileService.getInstance();
+        return new FileServiceImpl();
     }
 }

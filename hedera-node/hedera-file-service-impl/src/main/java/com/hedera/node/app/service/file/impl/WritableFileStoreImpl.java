@@ -59,7 +59,7 @@ public class WritableFileStoreImpl extends ReadableFileStoreImpl {
      * @param file - the file to be mapped onto a new {@link MerkleTopic} and persisted.
      */
     public void put(@NonNull final File file) {
-        filesState.put(EntityNum.fromLong(Objects.requireNonNull(file).fileNumber()), Objects.requireNonNull(file));
+        filesState.put(EntityNum.fromLong(Objects.requireNonNull(file).fileNumber()), file);
     }
 
     /**
@@ -67,7 +67,6 @@ public class WritableFileStoreImpl extends ReadableFileStoreImpl {
      * TODO: Not sure if the stores have responsibility of committing the changes. This might change in the future.
      */
     public void commit() {
-        requireNonNull(filesState);
         if (filesState instanceof WritableKVStateBase) ((WritableKVStateBase) filesState).commit();
     }
 

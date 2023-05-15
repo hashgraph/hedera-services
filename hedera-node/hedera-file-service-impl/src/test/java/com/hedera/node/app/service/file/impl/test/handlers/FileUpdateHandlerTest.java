@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.lenient;
@@ -91,7 +90,7 @@ class FileUpdateHandlerTest extends FileHandlerTestBase {
         subject = new FileUpdateHandler();
         config = new FilesConfig(101L, 121L, 112L, 111L, 122L, 102L, 123L, 1000000L, 1024);
         lenient().when(handleContext.getConfiguration()).thenReturn(configuration);
-        lenient().when(configuration.getConfigData(any())).thenReturn(config);
+        lenient().when(configuration.getConfigData(FilesConfig.class)).thenReturn(config);
     }
 
     @Test

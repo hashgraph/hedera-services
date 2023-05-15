@@ -19,12 +19,12 @@ package com.hedera.node.app.service.file.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
-import static com.hedera.node.app.service.file.impl.utils.FileUtils.validateContent;
+import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateAndAddRequiredKeys;
+import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateContent;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.file.FileCreateTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
@@ -63,12 +63,11 @@ public class FileCreateHandler implements TransactionHandler {
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
 
-        final var op = context.body().fileCreateOrThrow();
+        final var transactionBody = context.body().fileCreateOrThrow();
 
-        final var candidate = Key.newBuilder().keyList(op.keys()).build();
-        if (op.hasKeys()) context.requireKey(candidate);
+        validateAndAddRequiredKeys(transactionBody.keys(), context, false);
 
-        if (!op.hasExpirationTime()) {
+        if (!transactionBody.hasExpirationTime()) {
             throw new PreCheckException(INVALID_EXPIRATION_TIME);
         }
     }

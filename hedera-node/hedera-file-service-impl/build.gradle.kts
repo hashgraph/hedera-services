@@ -28,8 +28,7 @@ configurations.all {
 }
 
 dependencies {
-  implementation(project(mapOf("path" to ":hedera-node:hedera-config")))
-  implementation(project(mapOf("path" to ":hedera-node:hedera-config")))
+  implementation(project(":hedera-node:hedera-config"))
   annotationProcessor(libs.dagger.compiler)
   api(project(":hedera-node:hedera-file-service"))
   api(project(":hedera-node:hapi"))

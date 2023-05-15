@@ -19,13 +19,12 @@ package com.hedera.node.app.service.file.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_CONTENT_EMPTY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
-import static com.hedera.node.app.service.file.impl.utils.FileUtils.preValidate;
-import static com.hedera.node.app.service.file.impl.utils.FileUtils.validateContent;
+import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.preValidate;
+import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateAndAddRequiredKeys;
+import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateContent;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.file.FileAppendTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
@@ -74,13 +73,7 @@ public class FileAppendHandler implements TransactionHandler {
         final var fileStore = context.createStore(ReadableFileStoreImpl.class);
         final var fileMeta = preValidate(transactionBody, fileStore);
 
-        final var listKeys = fileMeta.keys();
-        if (listKeys == null || !listKeys.hasKeys() || listKeys.keys().isEmpty()) {
-            throw new PreCheckException(UNAUTHORIZED);
-        }
-
-        final var candidate = Key.newBuilder().keyList(listKeys).build();
-        context.requireKey(candidate);
+        validateAndAddRequiredKeys(fileMeta.keys(), context, true);
     }
 
     /**

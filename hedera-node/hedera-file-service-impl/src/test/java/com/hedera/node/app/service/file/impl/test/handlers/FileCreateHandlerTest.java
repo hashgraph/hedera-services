@@ -123,7 +123,7 @@ class FileCreateHandlerTest extends FileHandlerTestBase {
         config = new FilesConfig(101L, 121L, 112L, 111L, 122L, 102L, 123L, 1000000L, 1024);
         recordBuilder = new CreateFileRecordBuilder();
         lenient().when(handleContext.getConfiguration()).thenReturn(configuration);
-        lenient().when(configuration.getConfigData(any())).thenReturn(config);
+        lenient().when(configuration.getConfigData(FilesConfig.class)).thenReturn(config);
     }
 
     @Test
