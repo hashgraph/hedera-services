@@ -142,7 +142,9 @@ public record MerkleDbConfig(
         @ConfigProperty(defaultValue = "1000000") int keySetHalfDiskHashMapBuffer,
         @ConfigProperty(defaultValue = "false") boolean indexRebuildingEnforced,
         @ConfigProperty(defaultValue = "50.0") double percentHalfDiskHashMapFlushThreads,
-        @ConfigProperty(defaultValue = "-1") int numHalfDiskHashMapFlushThreads) {
+        @ConfigProperty(defaultValue = "-1") int numHalfDiskHashMapFlushThreads,
+        @ConfigProperty(defaultValue = "262144") int reservedBufferLengthForLeafList,
+        @ConfigProperty(defaultValue = "1048576") int leafRecordCacheSize) {
 
     public ConfigViolation maxNumberOfFilesInMergeValidation(final Configuration configuration) {
         final long maxNumberOfFilesInMerge =

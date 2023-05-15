@@ -17,14 +17,12 @@
 package com.swirlds.platform.reconnect;
 
 import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.utility.Units.BYTES_TO_BITS;
-import static com.swirlds.common.utility.Units.MEBIBYTES_TO_BYTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.merkle.MerkleInternal;
@@ -32,12 +30,12 @@ import com.swirlds.common.test.merkle.dummy.DummyMerkleInternal;
 import com.swirlds.common.test.merkle.util.MerkleTestUtils;
 import com.swirlds.common.test.set.RandomAccessHashSet;
 import com.swirlds.common.test.set.RandomAccessSet;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
-import com.swirlds.merkledb.settings.MerkleDbSettings;
-import com.swirlds.merkledb.settings.MerkleDbSettingsFactory;
 import com.swirlds.test.framework.TestQualifierTags;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import java.io.IOException;
@@ -67,38 +65,24 @@ class RandomVirtualMapMerkleDbReconnectTests extends VirtualMapReconnectTestBase
     public static final String LETTERS = "abcdefghijklmnopqrstuvwxyz";
     public static final int ZZZZZ = 26 * 26 * 26 * 26 * 26; // key value corresponding to five Z's (plus 1)
 
-    private static MerkleDbSettings originalSettings;
+    private static Configuration originalConfig;
 
     @BeforeAll
-    static void beforeAll() throws Exception {
-        originalSettings = MerkleDbSettingsFactory.get();
-        MerkleDbSettingsFactory.configure(new TestMerkleDbSettings(originalSettings) {
-            @Override
-            public int getKeySetBloomFilterHashCount() {
-                return 10;
-            }
+    static void beforeAll() {
+        originalConfig = ConfigurationHolder.getInstance().get();
 
-            @Override
-            public long getKeySetBloomFilterSizeInBytes() {
-                return 2 * MEBIBYTES_TO_BYTES * BYTES_TO_BITS;
-            }
+        final Configuration config = new TestConfigBuilder()
+                .withValue("merkleDb.keySetBloomFilterSizeInBytes", "16777216")
+                .withValue("merkleDb.keySetHalfDiskHashMapSize", "10000")
+                .withValue("merkleDb.keySetHalfDiskHashMapBuffer", "1000")
+                .getOrCreateConfig();
 
-            @Override
-            public long getKeySetHalfDiskHashMapSize() {
-                return 10_000;
-            }
-
-            @Override
-            public int getKeySetHalfDiskHashMapBuffer() {
-                return 1_000;
-            }
-        });
-        ConstructableRegistry.getInstance().registerConstructables("com.swirlds.platform");
+        ConfigurationHolder.getInstance().setConfiguration(config);
     }
 
     @AfterAll
     static void afterAll() {
-        MerkleDbSettingsFactory.configure(originalSettings);
+        ConfigurationHolder.getInstance().setConfiguration(originalConfig);
     }
 
     @Override

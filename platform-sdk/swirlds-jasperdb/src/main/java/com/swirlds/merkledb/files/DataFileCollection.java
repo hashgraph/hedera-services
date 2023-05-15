@@ -16,7 +16,6 @@
 
 package com.swirlds.merkledb.files;
 
-import static com.swirlds.common.utility.Units.GIBIBYTES_TO_BYTES;
 import static com.swirlds.common.utility.Units.MEBIBYTES_TO_BYTES;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.MERKLE_DB;
@@ -33,8 +32,6 @@ import com.swirlds.merkledb.collections.ImmutableIndexedObjectList;
 import com.swirlds.merkledb.collections.ImmutableIndexedObjectListUsingArray;
 import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
-import com.swirlds.merkledb.settings.MerkleDbSettings;
-import com.swirlds.merkledb.settings.MerkleDbSettingsFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -84,13 +81,6 @@ public class DataFileCollection<D> implements Snapshotable {
     private static final Logger logger = LogManager.getLogger(DataFileCollection.class);
 
     /**
-     * Since {@code com.swirlds.platform.Browser} populates settings, and it is loaded before any
-     * application classes that might instantiate a data source, the {@link MerkleDbSettingsFactory}
-     * holder will have been configured by the time this static initializer runs.
-     */
-    private static final MerkleDbSettings settings = MerkleDbSettingsFactory.get();
-
-    /**
      * Maximum number of data items that can be in a data file. This is dictated by the maximum size
      * of the movesMap used during merge, which in turn is limited by the maximum RAM to be used for
      * merging.
@@ -104,12 +94,7 @@ public class DataFileCollection<D> implements Snapshotable {
      * legacyStoreName + suffix is tried.
      */
     private static final String METADATA_FILENAME_SUFFIX = "_metadata.dfc";
-    /**
-     * Maximum number of items that can be in a data file, this is computed based on the max ram we
-     * are willing to use while merging.
-     */
-    private static final int MAX_DATA_FILE_NUM_ITEMS = (int)
-            Math.max((settings.getMaxRamUsedForMergingGb() * GIBIBYTES_TO_BYTES) / (Long.BYTES * 3), Integer.MAX_VALUE);
+
     /** The number of times to retry index based reads */
     private static final int NUM_OF_READ_RETRIES = 5;
 
