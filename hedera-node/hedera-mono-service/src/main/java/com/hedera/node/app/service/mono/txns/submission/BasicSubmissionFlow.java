@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.mono.txns.submission;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.node.app.service.mono.context.NodeInfo;
@@ -50,10 +49,6 @@ public final class BasicSubmissionFlow implements SubmissionFlow {
 
     @Override
     public TransactionResponse submit(final Transaction signedTxn) {
-        if (nodeInfo.isSelfZeroStake()) {
-            return responseWith(INVALID_NODE_ACCOUNT);
-        }
-
         final var precheckResult = precheck.performForTopLevel(signedTxn);
         final var precheckResultMeta = precheckResult.getLeft();
         final var precheckResultValidity = precheckResultMeta.getValidity();

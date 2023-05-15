@@ -18,7 +18,6 @@ package com.hedera.node.app.service.mono.txns.submission;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -56,15 +55,6 @@ class BasicSubmissionFlowTest {
     private PlatformSubmissionManager submissionManager;
 
     private BasicSubmissionFlow subject;
-
-    @Test
-    void rejectsAllOnZeroStakeNode() {
-        setupZeroStakeNode();
-
-        final var response = subject.submit(someTxn);
-
-        assertEquals(INVALID_NODE_ACCOUNT, response.getNodeTransactionPrecheckCode());
-    }
 
     @Test
     void rejectsPrecheckFailures() {
