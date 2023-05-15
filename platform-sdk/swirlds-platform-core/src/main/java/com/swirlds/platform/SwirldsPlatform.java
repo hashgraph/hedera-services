@@ -228,8 +228,6 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -246,8 +244,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     public static final String PLATFORM_THREAD_POOL_NAME = "platform-core";
     /** use this for all logging, as controlled by the optional data/log4j2.xml file */
     private static final Logger logger = LogManager.getLogger(SwirldsPlatform.class);
-    /** alert threshold for java app pause */
-    private static final long PAUSE_ALERT_INTERVAL = 5000;
     /** logging string prefix for hash stream operation logged events. */
     private static final String HASH_STREAM_OPERATION_PREFIX = ">>> ";
     /**
@@ -337,8 +333,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     private SharedConnectionLocks sharedConnectionLocks;
 
     private final StateManagementComponent stateManagementComponent;
-    /** last time stamp when pause check timer is active */
-    private long pauseCheckTimeStamp;
     /** Tracks recent events created in the network */
     private final CriticalQuorum criticalQuorum;
 
@@ -1314,29 +1308,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         }
 
         metrics.start();
-
-        if (settings.isRunPauseCheckTimer()) {
-            // periodically check current time stamp to detect whether the java application
-            // has been paused for a long period
-            final Timer pauseCheckTimer = new Timer("pause check", true);
-            pauseCheckTimer.schedule(
-                    new TimerTask() {
-                        @Override
-                        public void run() {
-                            final long currentTimeStamp = System.currentTimeMillis();
-                            if ((currentTimeStamp - pauseCheckTimeStamp) > PAUSE_ALERT_INTERVAL
-                                    && pauseCheckTimeStamp != 0) {
-                                logger.error(
-                                        EXCEPTION.getMarker(),
-                                        "ERROR, a pause larger than {} is detected ",
-                                        PAUSE_ALERT_INTERVAL);
-                            }
-                            pauseCheckTimeStamp = currentTimeStamp;
-                        }
-                    },
-                    0,
-                    PAUSE_ALERT_INTERVAL / 2);
-        }
 
         // FUTURE WORK: validate that status is still STARTING_UP (sanity check until we refactor platform status)
         // FUTURE WORK: set platform status REPLAYING_EVENTS

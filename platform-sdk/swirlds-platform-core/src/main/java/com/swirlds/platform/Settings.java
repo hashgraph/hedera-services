@@ -65,7 +65,6 @@ import static com.swirlds.platform.SettingConstants.PROMETHEUS_ENDPOINT_PORT_NUM
 import static com.swirlds.platform.SettingConstants.RANDOM_EVENT_PROBABILITY_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.REQUIRE_STATE_LOAD_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.RESCUE_CHILDLESS_INVERSE_PROBABILITY_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.RUN_PAUSE_CHECK_TIMER_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.SAVED_STRING;
 import static com.swirlds.platform.SettingConstants.SETTINGS_TXT;
 import static com.swirlds.platform.SettingConstants.SHOW_INTERNAL_STATS_DEFAULT_VALUE;
@@ -367,11 +366,6 @@ public class Settings {
      * that a node will not create any children for childless events.
      */
     private int rescueChildlessInverseProbability = RESCUE_CHILDLESS_INVERSE_PROBABILITY_DEFAULT_VALUE;
-
-    ///////////////////////////////////////////
-    // Beta Mirror Nodes
-    /** Run a thread that checks if the JVM pauses for a long time */
-    private boolean runPauseCheckTimer = RUN_PAUSE_CHECK_TIMER_DEFAULT_VALUE;
 
     ///////////////////////////////////////////
     // Setting for stream event
@@ -1037,10 +1031,6 @@ public class Settings {
 
     public int getRescueChildlessInverseProbability() {
         return rescueChildlessInverseProbability;
-    }
-
-    public boolean isRunPauseCheckTimer() {
-        return runPauseCheckTimer;
     }
 
     public boolean isEnableEventStreaming() {
