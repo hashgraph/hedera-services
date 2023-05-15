@@ -20,7 +20,7 @@ import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressF
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.accountAmount;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.transferList;
-import static com.hedera.services.bdd.suites.regression.factories.LazyCreatePrecompileFuzzingFactory.*;
+import static com.hedera.services.bdd.suites.regression.factories.IdFuzzingProviderFactory.*;
 import static com.hedera.services.bdd.suites.utils.ECDSAKeysUtils.getEvmAddressFromString;
 
 import com.esaulpaugh.headlong.abi.Tuple;

@@ -16,21 +16,10 @@
 
 package com.hedera.services.bdd.suites.utils;
 
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-
-import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
-import com.hedera.services.bdd.spec.keys.SigControl;
-import java.util.stream.IntStream;
 
 public class ECDSAKeysUtils {
     private ECDSAKeysUtils() {}
-
-    public static HapiSpecOperation[] onlyEcdsaKeys(int numDistinctEcdsaKeys) {
-        return IntStream.range(0, numDistinctEcdsaKeys)
-                .mapToObj(i -> newKeyNamed("Fuzz#" + i).shape(SigControl.SECP256K1_ON))
-                .toArray(HapiSpecOperation[]::new);
-    }
 
     public static byte[] getEvmAddressFromString(HapiSpecRegistry registry, String keyName) {
         return registry.getKey(keyName).getECDSASecp256K1().toByteArray();

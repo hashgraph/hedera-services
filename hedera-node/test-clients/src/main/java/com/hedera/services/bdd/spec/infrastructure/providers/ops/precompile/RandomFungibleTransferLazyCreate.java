@@ -26,7 +26,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
-import static com.hedera.services.bdd.suites.regression.factories.LazyCreatePrecompileFuzzingFactory.*;
+import static com.hedera.services.bdd.suites.regression.factories.IdFuzzingProviderFactory.*;
 import static com.hedera.services.bdd.suites.utils.ECDSAKeysUtils.getEvmAddressFromString;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
