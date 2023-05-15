@@ -129,7 +129,7 @@ class RecordStreamRecoveryTest {
 
     @BeforeEach
     void setUp() {
-        given(platform.getSelfId()).willReturn(new NodeId(false, 0L));
+        given(platform.getSelfId()).willReturn(new NodeId(0L));
 
         given(nodeLocalProperties.isRecordStreamEnabled()).willReturn(true);
         given(nodeLocalProperties.recordLogDir()).willReturn(tmpDir.toString());

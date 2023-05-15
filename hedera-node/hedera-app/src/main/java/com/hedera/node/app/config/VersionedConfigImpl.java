@@ -19,10 +19,12 @@ package com.hedera.node.app.config;
 import com.hedera.node.config.VersionedConfiguration;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collection;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -105,5 +107,28 @@ public class VersionedConfigImpl implements VersionedConfiguration {
     @Override
     public Collection<Class<? extends Record>> getConfigDataTypes() {
         return wrappedConfig.getConfigDataTypes();
+    }
+
+    @Override
+    public Set<String> getValueSet(@NonNull String propertyName) {
+        return wrappedConfig.getValueSet(propertyName);
+    }
+
+    @Override
+    public Set<String> getValueSet(@NonNull String propertyName, @Nullable Set<String> defaultValue) {
+        return wrappedConfig.getValueSet(propertyName, defaultValue);
+    }
+
+    @Override
+    public <T> Set<T> getValueSet(@NonNull String propertyName, @NonNull Class<T> propertyType)
+            throws NoSuchElementException, IllegalArgumentException {
+        return wrappedConfig.getValueSet(propertyName, propertyType);
+    }
+
+    @Override
+    public <T> Set<T> getValueSet(
+            @NonNull String propertyName, @NonNull Class<T> propertyType, @Nullable Set<T> defaultValue)
+            throws IllegalArgumentException {
+        return wrappedConfig.getValueSet(propertyName, propertyType, defaultValue);
     }
 }
