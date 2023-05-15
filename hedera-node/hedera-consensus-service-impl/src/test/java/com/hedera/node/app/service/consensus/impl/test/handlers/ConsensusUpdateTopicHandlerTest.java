@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
@@ -32,6 +33,7 @@ import static org.mockito.BDDMockito.willThrow;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TopicID;
@@ -153,6 +155,21 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
 
         final var newTopic = writableTopicState.get(topicEntityNum);
         assertEquals(anotherKey, newTopic.adminKey());
+    }
+
+    @Test
+    @DisplayName("Delete admin key as expected")
+    void appliesDeleteAdminKey() {
+        givenValidTopic(0, false);
+        refreshStoresWithCurrentTopicInBothReadableAndWritable();
+
+        final var op = OP_BUILDER.topicID(topicId).adminKey(Key.DEFAULT).build();
+        given(handleContext.attributeValidator()).willReturn(attributeValidator);
+
+        subject.handle(handleContext, op, writableStore);
+
+        final var newTopic = writableTopicState.get(topicEntityNum);
+        assertNull(newTopic.adminKey());
     }
 
     @Test

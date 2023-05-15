@@ -19,6 +19,7 @@ package com.hedera.node.app.service.consensus.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
+import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
@@ -26,6 +27,7 @@ import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.consensus.ConsensusUpdateTopicTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
@@ -75,7 +77,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
 
         // If the transaction is setting a new admin key, then the transaction must also be signed by that new key
         if (op.hasAdminKey()) {
-            context.requireKeyOrThrow(op.adminKeyOrThrow(), UNAUTHORIZED);
+            context.requireKey(op.adminKeyOrThrow());
         }
 
         // If the transaction is setting a new account for auto-renewals, then that account must also
@@ -135,7 +137,12 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
             @NonNull final Topic.Builder builder,
             @NonNull final Topic topic) {
         if (op.hasAdminKey()) {
-            builder.adminKey(op.adminKey());
+            var key = op.adminKey();
+            if (isEmpty(key)) {
+                builder.adminKey((Key) null);
+            } else {
+                builder.adminKey(key);
+            }
         } else {
             builder.adminKey(topic.adminKey());
         }
