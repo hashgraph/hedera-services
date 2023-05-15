@@ -6,6 +6,9 @@ import com.swirlds.common.time.Time;
 
 import static com.swirlds.base.ArgumentUtils.throwArgNull;
 
+/**
+ * Configuration for the metrics that will be applied to a queue thread
+ */
 public class QueueThreadMetricsConfiguration {
 	/** The metrics system that will hold metrics */
 	private final Metrics metrics;
@@ -20,15 +23,35 @@ public class QueueThreadMetricsConfiguration {
 	/** If true, this thread will add a busy time metric */
 	private boolean busyTimeMetricEnabled;
 
+	/**
+	 * Create a new configuration object
+	 *
+	 * @param metrics
+	 * 		The metrics system that will hold metrics
+	 */
 	public QueueThreadMetricsConfiguration(final Metrics metrics) {
 		this.metrics = throwArgNull(metrics, "metrics");
 	}
 
+	/**
+	 * Set the category to use for metrics
+	 *
+	 * @param category
+	 * 		The category to use for metrics
+	 * @return this object
+	 */
 	public QueueThreadMetricsConfiguration setCategory(final String category) {
 		this.category = category;
 		return this;
 	}
 
+	/**
+	 * Set the time object to use for metrics
+	 *
+	 * @param time
+	 * 		The time object to use for metrics
+	 * @return this object
+	 */
 	public QueueThreadMetricsConfiguration setTime(final Time time) {
 		this.time = time;
 		return this;

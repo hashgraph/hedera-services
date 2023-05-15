@@ -50,7 +50,6 @@ import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfigura
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.framework.internal.QueueThreadMetrics;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
-import com.swirlds.common.time.Time;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestQualifierTags;

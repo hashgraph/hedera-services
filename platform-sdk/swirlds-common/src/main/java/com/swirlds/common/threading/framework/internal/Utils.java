@@ -5,7 +5,13 @@ import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfigura
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-public class Utils {
+/**
+ * Static utility methods for the threading framework
+ */
+final class Utils {
+	private Utils() {
+	}
+
 	/**
 	 * Get the queue. If it doesn't exist then initialize with a default queue, and return that new queue. If the
 	 * {@code metrics} field was set and any queue metrics are enabled, then {@code MeasuredBlockingQueue} will be
@@ -13,7 +19,7 @@ public class Utils {
 	 *
 	 * @return the queue that should be used
 	 */
-	public static <T> BlockingQueue<T> getOrBuildQueue(final AbstractQueueThreadConfiguration<?,T> config){
+	static <T> BlockingQueue<T> getOrBuildQueue(final AbstractQueueThreadConfiguration<?,T> config){
 		BlockingQueue<T> queue = config.getQueue();
 		if(queue == null) {
 			// if no queue is set, build a default queue

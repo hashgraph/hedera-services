@@ -53,6 +53,7 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
      * Incremented each time we timeout while waiting for work from the queue.
      */
     private final AtomicLong noWorkCount = new AtomicLong();
+    /** Tracks metrics related to this queue thread */
     private final QueueThreadMetrics metrics;
 
     /**
