@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.workflows.ingest;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
 import static com.swirlds.common.system.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
@@ -88,10 +87,6 @@ public class IngestChecker {
      * @throws PreCheckException if the node is unable to process queries
      */
     public void checkNodeState() throws PreCheckException {
-        if (nodeInfo.isSelfZeroStake()) {
-            // Zero stake nodes are currently not supported
-            throw new PreCheckException(INVALID_NODE_ACCOUNT);
-        }
         if (currentPlatformStatus.get() != ACTIVE) {
             throw new PreCheckException(PLATFORM_NOT_ACTIVE);
         }
