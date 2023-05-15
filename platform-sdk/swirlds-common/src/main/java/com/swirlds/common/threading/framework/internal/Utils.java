@@ -50,7 +50,7 @@ final class Utils {
             queue = new MeasuredBlockingQueue<>(
                     queue,
                     new MeasuredBlockingQueue.Config(
-                            metricsConfig.getMetrics(), metricsConfig.getCategory(), config.getThreadName())
+                                    metricsConfig.getMetrics(), metricsConfig.getCategory(), config.getThreadName())
                             .withMaxSizeMetricEnabled(metricsConfig.isMaxSizeMetricEnabled())
                             .withMinSizeMetricEnabled(metricsConfig.isMinSizeMetricEnabled()));
         }
