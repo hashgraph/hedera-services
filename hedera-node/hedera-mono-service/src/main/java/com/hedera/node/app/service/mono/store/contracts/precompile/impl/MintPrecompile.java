@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
-import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.INT;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
@@ -28,10 +27,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
-import com.esaulpaugh.headlong.abi.ABIType;
-import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
-import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
@@ -51,6 +47,7 @@ import com.hedera.node.app.service.mono.store.models.Id;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -64,11 +61,6 @@ public class MintPrecompile extends AbstractWritePrecompile {
     private final int functionId;
     private static final List<ByteString> NO_METADATA = Collections.emptyList();
     private static final String MINT = String.format(FAILURE_MESSAGE, "mint");
-    private static final Function MINT_TOKEN_FUNCTION = new Function("mintToken(address,uint64,bytes[])", INT);
-    private static final Function MINT_TOKEN_FUNCTION_V2 = new Function("mintToken(address,int64,bytes[])", INT);
-    public static final Bytes MINT_TOKEN_SELECTOR = Bytes.wrap(MINT_TOKEN_FUNCTION.selector());
-    private static final Bytes MINT_TOKEN_SELECTOR_V2 = Bytes.wrap(MINT_TOKEN_FUNCTION_V2.selector());
-    private static final ABIType<Tuple> MINT_TOKEN_DECODER = TypeFactory.create("(bytes32,int64,bytes[])");
     private final EncodingFacade encoder;
     private final ContractAliases aliases;
     private final EvmSigsVerifier sigsVerifier;
@@ -98,10 +90,13 @@ public class MintPrecompile extends AbstractWritePrecompile {
     @Override
     public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         this.transactionBody = null;
-        mintOp = switch (functionId) {
-            case AbiConstants.ABI_ID_MINT_TOKEN -> decodeMint(input);
-            case AbiConstants.ABI_ID_MINT_TOKEN_V2 -> decodeMintV2(input);
-            default -> null;};
+        final var mintAbi =
+                switch (functionId) {
+                    case AbiConstants.ABI_ID_MINT_TOKEN -> SystemContractAbis.MINT_TOKEN_V1;
+                    case AbiConstants.ABI_ID_MINT_TOKEN_V2 -> SystemContractAbis.MINT_TOKEN_V2;
+                    default -> throw new IllegalArgumentException("invalid selector to mint precompile");
+                };
+        mintOp = getMintWrapper(input, mintAbi);
         transactionBody = syntheticTxnFactory.createMint(mintOp);
         return transactionBody;
     }
@@ -155,15 +150,11 @@ public class MintPrecompile extends AbstractWritePrecompile {
         return encoder.encodeMintFailure(status);
     }
 
-    public static MintWrapper decodeMint(final Bytes input) {
-        return getMintWrapper(input, MINT_TOKEN_SELECTOR);
-    }
-
-    private static MintWrapper getMintWrapper(final Bytes input, final Bytes mintTokenSelector) {
-        final Tuple decodedArguments = decodeFunctionCall(input, mintTokenSelector, MINT_TOKEN_DECODER);
+    public static MintWrapper getMintWrapper(final Bytes input, @NonNull final SystemContractAbis abi) {
+        final Tuple decodedArguments = decodeFunctionCall(input, abi.selector, abi.decoder);
 
         final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
-        final var fungibleAmount = (long) decodedArguments.get(1);
+        final var fungibleAmount = SystemContractAbis.toLongSafely(decodedArguments.get(1));
         final var metadataList = (byte[][]) decodedArguments.get(2);
         final List<ByteString> wrappedMetadata = new ArrayList<>();
         for (final var meta : metadataList) {
@@ -175,9 +166,5 @@ public class MintPrecompile extends AbstractWritePrecompile {
         } else {
             return MintWrapper.forNonFungible(tokenID, wrappedMetadata);
         }
-    }
-
-    public static MintWrapper decodeMintV2(final Bytes input) {
-        return getMintWrapper(input, MINT_TOKEN_SELECTOR_V2);
     }
 }
