@@ -32,7 +32,7 @@ public class ListBuilder<T> {
         return new ListBuilder<>();
     }
 
-    public ListBuilder<T> useElement(T e) {
+    public ListBuilder<T> useElement(final T e) {
         lastElement = e;
         return this;
     }

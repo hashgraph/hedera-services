@@ -152,7 +152,6 @@ public class ChatterSimulationTests {
                 .useElement(NodeConfigBuilder.builder(node0SlowIntake)
                         .setIntakeQueueDelay(SLOW_NODE_INTAKE_DELAY)
                         .build())
-                .times(1)
                 .build();
         final NetworkConfig oneSlowNodeNetworkConfig =
                 new NetworkConfig("Second Phase - Node 0 has Slow Intake Queue", PHASE_DURATION, node0SlowIntakeMap);
@@ -163,7 +162,6 @@ public class ChatterSimulationTests {
                 .useElement(NodeConfigBuilder.builder(node0FastIntake)
                         .setIntakeQueueDelay(FAST_NODE_INTAKE_DELAY)
                         .build())
-                .times(1)
                 .build();
         final NetworkConfig slowNodeRecoversNetworkConfig =
                 new NetworkConfig("Third Phase - Node 0 Recovers", PHASE_DURATION, node0FastIntakeMap);
@@ -237,7 +235,7 @@ public class ChatterSimulationTests {
         final InOrderOrphanBuffer orphanBuffer = new InOrderOrphanBuffer(nodeId);
 
         final SimulatedEventPipeline<CountingChatterEvent> pipeline = new SimulatedEventPipelineBuilder<
-                        CountingChatterEvent>()
+                CountingChatterEvent>()
                 .next(gossipRecorder)
                 .next(intakeQueue)
                 .next(eventDeduper)

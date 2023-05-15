@@ -40,7 +40,6 @@ public class SimpleSimulatedGossip {
     private final Time time;
     /** Map from node id to that node's message handler */
     private final Map<Integer, GossipMessageHandler> nodes;
-
     private final List<Deque<Payload>> inTransit;
     private final List<Deque<GossipMessage>> delivered;
     private final List<Deque<GossipMessage>> sentBy;
@@ -188,9 +187,14 @@ public class SimpleSimulatedGossip {
         }
     }
 
-    public void applyConfig(final NetworkConfig nextConfig) {
+    /**
+     * Applies a network configuration to this gossip simulation.
+     *
+     * @param networkConfig the configuration to apply
+     */
+    public void applyConfig(final NetworkConfig networkConfig) {
         for (final Map.Entry<NodeId, NodeConfig> entry :
-                nextConfig.nodeConfigs().entrySet()) {
+                networkConfig.nodeConfigs().entrySet()) {
             final NodeId nodeId = entry.getKey();
             final NodeConfig nodeConfig = entry.getValue();
             if (!nodeConfig.customLatency().isZero()) {

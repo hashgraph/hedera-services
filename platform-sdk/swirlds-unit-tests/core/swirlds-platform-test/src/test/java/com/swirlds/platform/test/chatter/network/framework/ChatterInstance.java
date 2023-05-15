@@ -16,20 +16,10 @@
 
 package com.swirlds.platform.test.chatter.network.framework;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.metrics.config.MetricsConfig;
-import com.swirlds.common.metrics.platform.DefaultMetrics;
-import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
-import com.swirlds.common.metrics.platform.MetricKeyRegistry;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.time.Time;
-import com.swirlds.config.api.Configuration;
-import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
 import com.swirlds.platform.gossip.chatter.protocol.PeerMessageException;
@@ -39,7 +29,6 @@ import com.swirlds.platform.test.simulated.GossipMessageHandler;
 import com.swirlds.platform.test.simulated.config.NodeConfig;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Executors;
 
 /**
  * <p>
@@ -88,7 +77,7 @@ public class ChatterInstance<T extends SimulatedChatterEvent> implements GossipM
         this.newEventCreator = newEventCreator;
         this.eventPipeline = eventPipeline;
 
-        core = new ChatterCore<>(time, clazz, e -> {}, config, (id, ping) -> {}, newDefaultMetrics(selfId));
+        core = new ChatterCore<>(time, clazz, e -> {}, config, (id, ping) -> {}, new NoOpMetrics());
 
         for (long peerId = 0; peerId < numNodes; peerId++) {
             // Don't create a peer instance for self
@@ -219,18 +208,4 @@ public class ChatterInstance<T extends SimulatedChatterEvent> implements GossipM
         return selfId;
     }
 
-    private static Metrics newDefaultMetrics(final NodeId selfId) {
-        final MetricKeyRegistry registry = mock(MetricKeyRegistry.class);
-        when(registry.register(any(), any(), any())).thenReturn(true);
-        final Configuration configuration = ConfigurationBuilder.create()
-                .withConfigDataType(MetricsConfig.class)
-                .build();
-        final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
-        return new DefaultMetrics(
-                selfId,
-                registry,
-                Executors.newSingleThreadScheduledExecutor(),
-                new DefaultMetricsFactory(),
-                metricsConfig);
-    }
 }

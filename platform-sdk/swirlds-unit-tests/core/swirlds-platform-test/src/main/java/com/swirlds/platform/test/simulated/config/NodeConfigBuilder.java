@@ -29,10 +29,20 @@ public class NodeConfigBuilder {
 
     private NodeConfigBuilder() {}
 
+    /**
+     * Creates and returns a new builder with the default configuration.
+     *
+     * @return the new builder
+     */
     public static NodeConfigBuilder builder() {
         return new NodeConfigBuilder();
     }
 
+    /**
+     * Creates and returns a new builder with the provided configuration.
+     *
+     * @return the new builder
+     */
     public static NodeConfigBuilder builder(final NodeConfig config) {
         final NodeConfigBuilder builder = builder();
         builder.setCustomLatency(config.customLatency());
@@ -41,21 +51,44 @@ public class NodeConfigBuilder {
         return builder;
     }
 
+    /**
+     * Sets the interval at which events will be created.
+     *
+     * @param createEventEvery the event creation interval
+     * @return {@code this}
+     */
     public NodeConfigBuilder setCreateEventEvery(final Duration createEventEvery) {
         this.createEventEvery = createEventEvery;
         return this;
     }
 
+    /**
+     * Sets the latency of this node. A single round trip if this latency plus the latency of the peer.
+     *
+     * @param customLatency the latency of this node
+     * @return {@code this}
+     */
     public NodeConfigBuilder setCustomLatency(final Latency customLatency) {
         this.customLatency = customLatency;
         return this;
     }
 
+    /**
+     * Sets the intake queue delay. Events in the queue will wait this long until being handled.
+     *
+     * @param intakeQueueDelay the intake queue delay
+     * @return {@code this}
+     */
     public NodeConfigBuilder setIntakeQueueDelay(final Duration intakeQueueDelay) {
         this.intakeQueueDelay = intakeQueueDelay;
         return this;
     }
 
+    /**
+     * Builds the node configuration.
+     *
+     * @return the node configuration
+     */
     public NodeConfig build() {
         return new NodeConfig(createEventEvery, customLatency, intakeQueueDelay);
     }

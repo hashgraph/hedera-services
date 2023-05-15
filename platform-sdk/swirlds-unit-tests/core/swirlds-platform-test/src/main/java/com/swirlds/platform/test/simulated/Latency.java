@@ -30,6 +30,6 @@ public record Latency(Duration delay) {
      * Returns {@code true} if this latency is equal to {@link Duration#ZERO};
      */
     public boolean isZero() {
-        return delay().isZero();
+        return delay.isZero();
     }
 }

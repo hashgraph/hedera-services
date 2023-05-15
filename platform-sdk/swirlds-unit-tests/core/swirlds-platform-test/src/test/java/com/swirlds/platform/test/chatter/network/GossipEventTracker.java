@@ -73,6 +73,11 @@ public class GossipEventTracker extends AbstractSimulatedEventPipeline<CountingC
         // Do nothing, this class only tracks events that pass through it
     }
 
+    /**
+     * Returns the number of duplicate events encountered so far across all peers.
+     *
+     * @return number of duplicate events
+     */
     public long getNumDuplicates() {
         return duplicateEventCounter;
     }

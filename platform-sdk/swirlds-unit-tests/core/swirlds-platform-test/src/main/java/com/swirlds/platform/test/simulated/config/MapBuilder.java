@@ -21,8 +21,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * A convenience class for building maps with repeating elements, keyed by monotonically increasing longs, starting at
- * zero.
+ * A convenience class for building maps with repeating elements, keyed by {@link NodeId}s with monotonically increasing
+ * longs, starting at zero.
  */
 public class MapBuilder<T> {
     private final Map<NodeId, T> map = new HashMap<>();
@@ -31,15 +31,35 @@ public class MapBuilder<T> {
 
     private MapBuilder() {}
 
+    /**
+     * Creates a new builder of the specified type.
+     *
+     * @param type the class of the type of map to build
+     * @param <T>  the type of the map to build
+     * @return the new builder
+     */
     public static <T> MapBuilder<T> builder(final Class<T> type) {
         return new MapBuilder<>();
     }
 
+    /**
+     * Sets the element to put in the map
+     *
+     * @param e the element
+     * @return {@code this}
+     */
     public MapBuilder<T> useElement(T e) {
         lastElement = e;
         return this;
     }
 
+    /**
+     * The number of times to put the element in the map. Elements are added with node ids with monotonically increasing
+     * ids.
+     *
+     * @param num the number of times to repeat the element
+     * @return {@code this}
+     */
     public MapBuilder<T> times(final int num) {
         for (int i = 0; i < num; i++) {
             map.put(NodeId.createMain(lastIndex++), lastElement);
@@ -47,7 +67,15 @@ public class MapBuilder<T> {
         return this;
     }
 
+    /**
+     * Builds the map. If the map is empty at the time of call, the last element set is added to the map once.
+     *
+     * @return the map
+     */
     public Map<NodeId, T> build() {
+        if (map.isEmpty()) {
+            map.put(NodeId.createMain(lastIndex++), lastElement);
+        }
         return map;
     }
 }
