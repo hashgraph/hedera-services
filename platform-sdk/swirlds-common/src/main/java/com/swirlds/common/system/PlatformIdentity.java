@@ -46,11 +46,4 @@ public interface PlatformIdentity {
     default Address getSelfAddress() {
         return getAddressBook().getAddress(getSelfId().id());
     }
-
-    /**
-     * If there are multiple platforms running in the same JVM, each will have a unique instance number.
-     *
-     * @return this platform's instance number
-     */
-    int getInstanceNumber();
 }
