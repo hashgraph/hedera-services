@@ -26,7 +26,7 @@ import javax.inject.Singleton;
 
 /** A Dagger module for facilities in the {@link com.hedera.node.app.info} package. */
 @Module
-public interface InfoDaggerModule {
+public interface InfoModule {
 
     @Provides
     @Singleton
