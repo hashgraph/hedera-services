@@ -131,13 +131,7 @@ class IngestCheckerTest extends AppTestBase {
         when(transactionChecker.check(tx)).thenReturn(transactionInfo);
 
         subject = new IngestChecker(
-                MOCK_NODE_ACCOUNT_ID,
-                nodeInfo,
-                currentPlatformStatus,
-                transactionChecker,
-                throttleAccumulator,
-                solvencyPreCheck,
-                signaturePreparer);
+                currentPlatformStatus, transactionChecker, throttleAccumulator, solvencyPreCheck, signaturePreparer);
     }
 
     @Nested

@@ -26,7 +26,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 
-import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.mono.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -44,9 +43,6 @@ class BasicSubmissionFlowTest {
 
     private static final Transaction someTxn = Transaction.getDefaultInstance();
     private static final SignedTxnAccessor someAccessor = SignedTxnAccessor.uncheckedFrom(someTxn);
-
-    @Mock
-    private NodeInfo nodeInfo;
 
     @Mock
     private TransactionPrecheck precheck;
@@ -109,11 +105,6 @@ class BasicSubmissionFlowTest {
     }
 
     private void setupNonZeroStakeNode() {
-        subject = new BasicSubmissionFlow(nodeInfo, precheck, submissionManager);
-    }
-
-    private void setupZeroStakeNode() {
-        given(nodeInfo.isSelfZeroStake()).willReturn(true);
-        subject = new BasicSubmissionFlow(nodeInfo, precheck, submissionManager);
+        subject = new BasicSubmissionFlow(precheck, submissionManager);
     }
 }

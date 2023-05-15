@@ -19,7 +19,6 @@ package com.hedera.node.app.service.mono.txns.submission;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.mono.txns.SubmissionFlow;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -33,17 +32,12 @@ import javax.inject.Singleton;
  */
 @Singleton
 public final class BasicSubmissionFlow implements SubmissionFlow {
-    private final NodeInfo nodeInfo;
     private final TransactionPrecheck precheck;
     private final PlatformSubmissionManager submissionManager;
 
     @Inject
-    public BasicSubmissionFlow(
-            final NodeInfo nodeInfo,
-            final TransactionPrecheck precheck,
-            final PlatformSubmissionManager submissionManager) {
+    public BasicSubmissionFlow(final TransactionPrecheck precheck, final PlatformSubmissionManager submissionManager) {
         this.precheck = precheck;
-        this.nodeInfo = nodeInfo;
         this.submissionManager = submissionManager;
     }
 
