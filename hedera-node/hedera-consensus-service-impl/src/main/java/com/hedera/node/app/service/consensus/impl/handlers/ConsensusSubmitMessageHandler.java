@@ -120,7 +120,6 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
 
             recordBuilder.setNewTopic(
                     asBytes(updatedTopic.runningHash()), updatedTopic.sequenceNumber(), RUNNING_HASH_VERSION);
-
         } catch (IOException e) {
             throw new HandleException(INVALID_TRANSACTION);
         }
