@@ -44,12 +44,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ConsensusDeleteTopicHandlerParityTest {
     @Mock
-    private ReadableAccountStore accountStore;
-
-    @Mock
     private ReadableTopicStore mockStore;
 
     private ConsensusDeleteTopicHandler subject;
+    private ReadableAccountStore accountStore;
 
     @BeforeEach
     void setUp() {
