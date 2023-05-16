@@ -28,7 +28,6 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_TOPIC
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
 
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;
@@ -38,8 +37,11 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class ConsensusDeleteTopicHandlerParityTest {
     @Mock
     private ReadableAccountStore accountStore;
@@ -52,7 +54,6 @@ class ConsensusDeleteTopicHandlerParityTest {
     @BeforeEach
     void setUp() {
         subject = new ConsensusDeleteTopicHandler();
-        mockStore = mock(ReadableTopicStore.class);
         accountStore = AdapterUtils.wellKnownKeyLookupAt();
     }
 
