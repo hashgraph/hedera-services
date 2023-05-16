@@ -17,16 +17,18 @@
 package com.swirlds.common.system.transaction.internal;
 
 import static com.swirlds.common.io.streams.AugmentedDataOutputStream.getArraySerializedLength;
-import static com.swirlds.common.system.transaction.SystemTransactionType.SYS_TRANS_PING_MICROSECONDS;
 
 import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.system.transaction.SystemTransactionType;
 import java.io.IOException;
-import java.util.Arrays;
 
-/** A system transaction giving all avgPingMilliseconds stats (sent as ping time in microseconds) */
+/**
+ * A system transaction giving all avgPingMilliseconds stats (sent as ping time in microseconds)
+ *
+ * @deprecated to be removed once we no longer have to migrate events that may contain this transaction type
+ */
+@Deprecated
 public final class SystemTransactionPing extends SystemTransaction {
     /** class identifier for the purposes of serialization */
     private static final long PING_CLASS_ID = 0xe98d3e2c500a6647L;
@@ -40,31 +42,12 @@ public final class SystemTransactionPing extends SystemTransaction {
      */
     public SystemTransactionPing() {}
 
-    public SystemTransactionPing(final int[] avgPingMilliseconds) {
-        this.avgPingMilliseconds = avgPingMilliseconds;
-    }
-
-    /**
-     * @return the integer array of average ping values between nodes, in the unit of millisecond
-     */
-    public int[] getAvgPingMilliseconds() {
-        return avgPingMilliseconds;
-    }
-
     /**
      * {@inheritDoc}
      */
     @Override
     public int getSize() {
         return getSerializedLength();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public SystemTransactionType getType() {
-        return SYS_TRANS_PING_MICROSECONDS;
     }
 
     /**
@@ -113,30 +96,5 @@ public final class SystemTransactionPing extends SystemTransaction {
     @Override
     public int getSerializedLength() {
         return getArraySerializedLength(avgPingMilliseconds);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-
-        final SystemTransactionPing that = (SystemTransactionPing) o;
-
-        return Arrays.equals(avgPingMilliseconds, that.avgPingMilliseconds);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int hashCode() {
-        return Arrays.hashCode(avgPingMilliseconds);
     }
 }

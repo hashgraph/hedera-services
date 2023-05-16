@@ -17,7 +17,7 @@
 package com.swirlds.platform.test.eventflow;
 
 import com.swirlds.common.system.transaction.Transaction;
-import com.swirlds.common.system.transaction.internal.SystemTransactionPing;
+import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.common.test.TransactionUtils;
 import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionConsumer;
 import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionTypedHandler;
@@ -49,10 +49,10 @@ public class SystemTransactionTracker
      * transactions
      *
      * @param creatorId   the id of the node which created the transaction
-     * @param transaction the transaction to consume. of type {@link SystemTransactionPing}, since
+     * @param transaction the transaction to consume. of type {@link StateSignatureTransaction}, since
      *                    {@link TransactionUtils#incrementingSystemTransaction()} uses them
      */
-    public void handlePreConsensusSystemTransaction(final long creatorId, final SystemTransactionPing transaction) {
+    public void handlePreConsensusSystemTransaction(final long creatorId, final StateSignatureTransaction transaction) {
         preConsByCreator.putIfAbsent(creatorId, 0);
 
         final int prevVal = preConsByCreator.get(creatorId);
@@ -70,11 +70,11 @@ public class SystemTransactionTracker
      *
      * @param state       the state (unused, since we don't need to do any state modifications)
      * @param creatorId   the id of the node which created the transaction
-     * @param transaction the transaction to consume. of type {@link SystemTransactionPing}, since
+     * @param transaction the transaction to consume. of type {@link StateSignatureTransaction}, since
      *                    {@link TransactionUtils#incrementingSystemTransaction()} uses them
      */
     public void handlePostConsensusSystemTransaction(
-            final State state, final long creatorId, final SystemTransactionPing transaction) {
+            final State state, final long creatorId, final StateSignatureTransaction transaction) {
 
         if (!consensusTransactions.add(transaction)) {
             addFailure(String.format(
@@ -107,12 +107,12 @@ public class SystemTransactionTracker
     @Override
     public List<PreConsensusSystemTransactionTypedHandler<?>> getPreConsensusHandleMethods() {
         return List.of(new PreConsensusSystemTransactionTypedHandler<>(
-                SystemTransactionPing.class, this::handlePreConsensusSystemTransaction));
+                StateSignatureTransaction.class, this::handlePreConsensusSystemTransaction));
     }
 
     @Override
     public List<PostConsensusSystemTransactionTypedHandler<?>> getPostConsensusHandleMethods() {
         return List.of(new PostConsensusSystemTransactionTypedHandler<>(
-                SystemTransactionPing.class, this::handlePostConsensusSystemTransaction));
+                StateSignatureTransaction.class, this::handlePostConsensusSystemTransaction));
     }
 }

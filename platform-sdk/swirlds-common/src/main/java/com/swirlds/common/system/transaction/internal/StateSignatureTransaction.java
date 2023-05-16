@@ -17,7 +17,6 @@
 package com.swirlds.common.system.transaction.internal;
 
 import static com.swirlds.common.io.streams.AugmentedDataOutputStream.getArraySerializedLength;
-import static com.swirlds.common.system.transaction.SystemTransactionType.SYS_TRANS_STATE_SIG;
 import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
 import com.swirlds.common.crypto.DigestType;
@@ -26,13 +25,11 @@ import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.system.transaction.SystemTransactionType;
 import java.io.IOException;
 import java.util.Objects;
 
 /**
- * Every round, the signature of a signed state is put in this transaction
- * and gossiped to other nodes
+ * Every round, the signature of a signed state is put in this transaction and gossiped to other nodes
  */
 public final class StateSignatureTransaction extends SystemTransaction {
 
@@ -69,10 +66,8 @@ public final class StateSignatureTransaction extends SystemTransaction {
     /**
      * Create a state signature transaction
      *
-     * @param round
-     * 		The round number of the signed state that this transaction belongs to
-     * @param stateSignature
-     * 		The byte array of signature of the signed state
+     * @param round          The round number of the signed state that this transaction belongs to
+     * @param stateSignature The byte array of signature of the signed state
      */
     public StateSignatureTransaction(final long round, final Signature stateSignature, final Hash stateHash) {
         this.stateSignature = throwArgNull(stateSignature, "stateSignature");
@@ -107,14 +102,6 @@ public final class StateSignatureTransaction extends SystemTransaction {
     @Override
     public int getSize() {
         return getSerializedLength();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public SystemTransactionType getType() {
-        return SYS_TRANS_STATE_SIG;
     }
 
     /**

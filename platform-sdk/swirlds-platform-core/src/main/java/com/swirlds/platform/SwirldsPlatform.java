@@ -173,7 +173,6 @@ import com.swirlds.platform.metrics.TransactionMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionTracker;
 import com.swirlds.platform.network.NetworkMetrics;
-import com.swirlds.platform.network.NetworkStatsTransmitter;
 import com.swirlds.platform.network.communication.NegotiationProtocols;
 import com.swirlds.platform.network.communication.NegotiatorThread;
 import com.swirlds.platform.network.communication.handshake.VersionCompareHandshake;
@@ -528,10 +527,6 @@ public class SwirldsPlatform implements Platform, ConnectionTracker, Startable {
                 preConsensusEventWriter,
                 currentPlatformStatus::get);
         wiring.registerComponents(components);
-
-        final NetworkStatsTransmitter networkStatsTransmitter =
-                new NetworkStatsTransmitter(platformContext, this::createSystemTransaction, networkMetrics);
-        components.add(networkStatsTransmitter);
 
         final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager =
                 new PreConsensusSystemTransactionManagerFactory()

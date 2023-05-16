@@ -18,7 +18,6 @@ package com.swirlds.common.system.transaction.internal;
 
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.crypto.TransactionSignature;
-import com.swirlds.common.system.transaction.SystemTransactionType;
 import java.util.Collections;
 import java.util.List;
 
@@ -29,13 +28,6 @@ public abstract class SystemTransaction extends ConsensusTransactionImpl {
 
     /** All system transactions have empty contents. */
     private static final byte[] EMPTY_CONTENTS = new byte[0];
-
-    /**
-     * The type of system transaction
-     *
-     * @return transaction type
-     */
-    public abstract SystemTransactionType getType();
 
     /**
      * {@inheritDoc}
