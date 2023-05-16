@@ -36,7 +36,6 @@ import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.route.MerkleRouteIterator;
-import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
@@ -110,14 +109,12 @@ import com.swirlds.platform.event.validation.StaticValidators;
 import com.swirlds.platform.event.validation.TransactionSizeValidator;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.eventhandling.PreConsensusEventHandler;
-import com.swirlds.platform.gossip.FallenBehindManagerImpl;
 import com.swirlds.platform.gossip.Gossip;
 import com.swirlds.platform.gossip.GossipFactory;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEventDescriptor;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphEventObserver;
-import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
 import com.swirlds.platform.intake.IntakeCycleStats;
 import com.swirlds.platform.internal.EventImpl;
@@ -129,8 +126,6 @@ import com.swirlds.platform.metrics.EventIntakeMetrics;
 import com.swirlds.platform.metrics.RuntimeMetrics;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.metrics.TransactionMetrics;
-import com.swirlds.platform.network.topology.NetworkTopology;
-import com.swirlds.platform.network.topology.StaticTopology;
 import com.swirlds.platform.observers.ConsensusRoundObserver;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.observers.PreConsensusEventObserver;
@@ -192,7 +187,7 @@ public class SwirldsPlatform implements Platform, Startable {
      * the object used to calculate consensus. it is volatile because the whole object is replaced when reading a state
      * from disk or getting it through reconnect
      */
-    private final AtomicReference<Consensus> consensusRef;
+    private final AtomicReference<Consensus> consensusRef = new AtomicReference<>();
     /** set in the constructor and given to the SwirldState object in run() */
     private final AddressBook initialAddressBook;
 
@@ -383,42 +378,13 @@ public class SwirldsPlatform implements Platform, Startable {
                         .addHandlers(stateManagementComponent.getPostConsensusHandleMethods())
                         .build();
 
-        consensusRef = new AtomicReference<>();
-
         // TODO these are suspicious!
-        final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
         final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
-
-        // TODO remove
-        // unidirectional connections are ONLY used for old-style syncs, that don't run as a protocol
-        final Settings settings = Settings.getInstance();
-        NetworkTopology topology = new StaticTopology( // TODO remove
-                selfId,
-                initialAddressBook.getSize(),
-                settings.getNumConnections(),
-                // unidirectional connections are ONLY used for old-style syncs, that don't run as a protocol
-                !chatterConfig.useChatter() && !syncConfig.syncAsProtocolEnabled());
-
-        final ReconnectConfig reconnectConfig =
-                platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
-
-        // TODO put into gossip
-        // if we are using old-style syncs, don't start the reconnect controller
-        FallenBehindManagerImpl fallenBehindManager = new FallenBehindManagerImpl(
-                selfId,
-                topology.getConnectionGraph(),
-                this::checkPlatformStatus,
-                () -> {
-                    // if we are using old-style syncs, don't start the reconnect controller
-                    if (!chatterConfig.useChatter() && !syncConfig.syncAsProtocolEnabled()) {
-                        return;
-                    }
-                    reconnectController.get().start();
-                },
-                reconnectConfig);
 
         // FUTURE WORK remove this when there are no more ShutdownRequestedTriggers being dispatched
         components.add(new Shutdown());
+
+        final Settings settings = Settings.getInstance();
 
         // if this setting is 0 or less, there is no startup freeze
         if (settings.getFreezeSecondsAfterStartup() > 0) {
@@ -673,7 +639,6 @@ public class SwirldsPlatform implements Platform, Startable {
                 intakeQueue,
                 freezeManager,
                 startUpEventFrozenManager,
-                fallenBehindManager,
                 swirldStateManager,
                 startedFromGenesis,
                 stateManagementComponent,

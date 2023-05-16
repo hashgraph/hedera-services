@@ -122,7 +122,6 @@ public class ChatterGossip extends AbstractGossip {
             @NonNull final QueueThread<EventIntakeTask> intakeQueue,
             @NonNull final FreezeManager freezeManager,
             @NonNull final StartUpEventFrozenManager startUpEventFrozenManager,
-            @NonNull final FallenBehindManagerImpl fallenBehindManager,
             @NonNull final SwirldStateManager swirldStateManager,
             final boolean startedFromGenesis,
             @NonNull final StateManagementComponent stateManagementComponent,
@@ -147,7 +146,6 @@ public class ChatterGossip extends AbstractGossip {
                 intakeQueue,
                 freezeManager,
                 startUpEventFrozenManager,
-                fallenBehindManager,
                 swirldStateManager,
                 stateManagementComponent,
                 eventMapper,
@@ -334,6 +332,19 @@ public class ChatterGossip extends AbstractGossip {
         final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
         return new CriticalQuorumImpl(
                 platformContext.getMetrics(), selfId.id(), addressBook, false, chatterConfig.criticalQuorumSoftening());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected FallenBehindManagerImpl buildFallenBehindManager() {
+        return new FallenBehindManagerImpl(
+                selfId,
+                topology.getConnectionGraph(),
+                updatePlatformStatus,
+                reconnectController::start,
+                platformContext.getConfiguration().getConfigData(ReconnectConfig.class));
     }
 
     /**

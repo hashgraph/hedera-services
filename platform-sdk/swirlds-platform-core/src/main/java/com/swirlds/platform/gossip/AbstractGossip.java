@@ -142,7 +142,6 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
             @NonNull final QueueThread<EventIntakeTask> intakeQueue,
             @NonNull final FreezeManager freezeManager,
             @NonNull final StartUpEventFrozenManager startUpEventFrozenManager,
-            @NonNull final FallenBehindManagerImpl fallenBehindManager,
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final StateManagementComponent stateManagementComponent,
             @NonNull final EventMapper eventMapper,
@@ -163,7 +162,6 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
         this.intakeQueue = Objects.requireNonNull(intakeQueue);
         this.freezeManager = Objects.requireNonNull(freezeManager);
         this.startUpEventFrozenManager = Objects.requireNonNull(startUpEventFrozenManager);
-        this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager);
         this.swirldStateManager = Objects.requireNonNull(swirldStateManager);
         this.stateManagementComponent = Objects.requireNonNull(stateManagementComponent);
         this.eventMapper = Objects.requireNonNull(eventMapper);
@@ -223,6 +221,8 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
                 .build()
                 .start();
 
+        fallenBehindManager = buildFallenBehindManager();
+
         syncManager = new SyncManagerImpl(
                 platformContext.getMetrics(),
                 intakeQueue,
@@ -269,6 +269,11 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
                         reconnectConfig.asyncStreamTimeoutMilliseconds(),
                         reconnectMetrics));
     }
+
+    /**
+     * Build the fallen behind manager.
+     */
+    protected abstract FallenBehindManagerImpl buildFallenBehindManager();
 
     /**
      * If true, use unidirectional connections between nodes.

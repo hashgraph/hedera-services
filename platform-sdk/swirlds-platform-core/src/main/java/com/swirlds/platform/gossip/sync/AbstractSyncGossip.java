@@ -19,6 +19,7 @@ package com.swirlds.platform.gossip.sync;
 import static com.swirlds.logging.LogMarker.RECONNECT;
 
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
@@ -82,7 +83,6 @@ public abstract class AbstractSyncGossip extends AbstractGossip { // TODO should
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final FreezeManager freezeManager,
             @NonNull final StartUpEventFrozenManager startUpEventFrozenManager,
-            @NonNull final FallenBehindManagerImpl fallenBehindManager,
             @NonNull final StateManagementComponent stateManagementComponent,
             @NonNull final InterruptableConsumer<EventIntakeTask> eventIntakeLambda,
             @NonNull final EventMapper eventMapper,
@@ -104,7 +104,6 @@ public abstract class AbstractSyncGossip extends AbstractGossip { // TODO should
                 intakeQueue,
                 freezeManager,
                 startUpEventFrozenManager,
-                fallenBehindManager,
                 swirldStateManager,
                 stateManagementComponent,
                 eventMapper,
@@ -146,6 +145,19 @@ public abstract class AbstractSyncGossip extends AbstractGossip { // TODO should
     @Override
     protected CriticalQuorum buildCriticalQuorum() {
         return new CriticalQuorumImpl(platformContext.getMetrics(), selfId.id(), addressBook);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected FallenBehindManagerImpl buildFallenBehindManager() {
+        return new FallenBehindManagerImpl(
+                selfId,
+                topology.getConnectionGraph(),
+                updatePlatformStatus,
+                () -> {},
+                platformContext.getConfiguration().getConfigData(ReconnectConfig.class));
     }
 
     /**

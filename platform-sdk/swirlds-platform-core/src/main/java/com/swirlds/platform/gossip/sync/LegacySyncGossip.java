@@ -38,7 +38,6 @@ import com.swirlds.platform.StartUpEventFrozenManager;
 import com.swirlds.platform.components.EventMapper;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.event.EventIntakeTask;
-import com.swirlds.platform.gossip.FallenBehindManagerImpl;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.SimultaneousSyncThrottle;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
@@ -82,7 +81,6 @@ public class LegacySyncGossip extends AbstractSyncGossip {
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final FreezeManager freezeManager,
             @NonNull final StartUpEventFrozenManager startUpEventFrozenManager,
-            @NonNull final FallenBehindManagerImpl fallenBehindManager,
             @NonNull final StateManagementComponent stateManagementComponent,
             @NonNull final Runnable updatePlatformStatus,
             @NonNull final InterruptableConsumer<EventIntakeTask> eventIntakeLambda,
@@ -106,7 +104,6 @@ public class LegacySyncGossip extends AbstractSyncGossip {
                 swirldStateManager,
                 freezeManager,
                 startUpEventFrozenManager,
-                fallenBehindManager,
                 stateManagementComponent,
                 eventIntakeLambda,
                 eventMapper,
