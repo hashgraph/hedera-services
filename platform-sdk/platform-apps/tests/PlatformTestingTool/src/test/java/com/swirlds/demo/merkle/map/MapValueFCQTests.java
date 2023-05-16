@@ -43,7 +43,6 @@ import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkle.map.test.lifecycle.ExpectedValue;
 import com.swirlds.merkle.map.test.pta.MapKey;
 import com.swirlds.merkle.map.test.pta.TransactionRecord;
-import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.state.DualStateImpl;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -83,7 +82,7 @@ public class MapValueFCQTests {
 
         mapKey = new MapKey(0, 0, random.nextLong());
         state = Mockito.spy(PlatformTestingToolState.class);
-        Platform platform = Mockito.spy(SwirldsPlatform.class);
+        final Platform platform = Mockito.mock(Platform.class);
         when(platform.getSelfId()).thenReturn(new NodeId(0L));
         AddressBook addressBook = Mockito.spy(AddressBook.class);
         when(addressBook.getNumberWithWeight()).thenReturn(4);
