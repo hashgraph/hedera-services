@@ -24,6 +24,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CompareTo;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Objects;
@@ -169,7 +170,7 @@ public class VirtualPipeline {
     /**
      * Create a new pipeline for a family of fast copies on a virtual root.
      */
-    public VirtualPipeline(final VirtualMapConfig config) {
+    public VirtualPipeline(@NonNull final VirtualMapConfig config) {
         this.config = Objects.requireNonNull(config);
         copies = new PipelineList<>();
         unhashedCopies = new ConcurrentLinkedDeque<>();
@@ -208,17 +209,15 @@ public class VirtualPipeline {
      * Slow down the fast copy operation if there are too many copies that need to be flushed.
      */
     private void applyFlushBackpressure() {
-        final int backlogExcess =
-                flushBacklog.size() - config.preferredFlushQueueSize();
+        final int backlogExcess = flushBacklog.size() - config.preferredFlushQueueSize();
 
         if (backlogExcess <= 0) {
             return;
         }
 
         // Sleep time grows quadratically.
-        final Duration computedSleepTime = config
-                .flushThrottleStepSize()
-                .multipliedBy((long) backlogExcess * backlogExcess);
+        final Duration computedSleepTime =
+                config.flushThrottleStepSize().multipliedBy((long) backlogExcess * backlogExcess);
 
         final Duration maxSleepTime = config.maximumFlushThrottlePeriod();
         final Duration sleepTime = CompareTo.min(computedSleepTime, maxSleepTime);

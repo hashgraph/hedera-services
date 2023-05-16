@@ -254,7 +254,8 @@ class VirtualRootNodeTest extends VirtualTestBase {
     @Test
     @DisplayName("Default flush threshold not zero")
     void defaultFlushThresholdTest() {
-        final VirtualMapConfig config = ConfigurationHolder.getConfigData(VirtualMapConfig.class);
+        final VirtualMapConfig config =
+                new TestConfigBuilder().getOrCreateConfig().getConfigData(VirtualMapConfig.class);
         VirtualRootNode<TestKey, TestValue> root = createRoot();
         assertEquals(config.copyFlushThreshold(), root.getFlushThreshold());
         root.release();
@@ -264,7 +265,8 @@ class VirtualRootNodeTest extends VirtualTestBase {
     @DisplayName("Flush interval is inherited by copies")
     void flushIntervalInheritedTest() {
         final long threshold = 12345678L;
-        final VirtualMapConfig config = ConfigurationHolder.getConfigData(VirtualMapConfig.class);
+        final VirtualMapConfig config =
+                new TestConfigBuilder().getOrCreateConfig().getConfigData(VirtualMapConfig.class);
 
         final int flushInterval = config.flushInterval();
         VirtualRootNode<TestKey, TestValue> root = createRoot();
@@ -282,7 +284,8 @@ class VirtualRootNodeTest extends VirtualTestBase {
     @Test
     @DisplayName("Zero flush threshold enables round based flushes")
     void zeroFlushThresholdTest() {
-        final VirtualMapConfig config = ConfigurationHolder.getConfigData(VirtualMapConfig.class);
+        final VirtualMapConfig config =
+                new TestConfigBuilder().getOrCreateConfig().getConfigData(VirtualMapConfig.class);
         final int flushInterval = config.flushInterval();
         VirtualRootNode<TestKey, TestValue> root = createRoot();
         root.setFlushThreshold(0);
