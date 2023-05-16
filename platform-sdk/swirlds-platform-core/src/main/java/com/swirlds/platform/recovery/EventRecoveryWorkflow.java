@@ -35,6 +35,7 @@ import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.stream.RunningHashCalculatorForStream;
 import com.swirlds.common.system.InitTrigger;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldMain;
@@ -104,7 +105,7 @@ public final class EventRecoveryWorkflow {
             final Boolean allowPartialRounds,
             final Long finalRound,
             final Path resultingStateDirectory,
-            final Long selfId,
+            final NodeId selfId,
             final boolean loadSigningKeys)
             throws IOException {
 
@@ -241,15 +242,16 @@ public final class EventRecoveryWorkflow {
             @NonNull final SwirldMain appMain,
             @NonNull final IOIterator<Round> roundIterator,
             final long finalRound,
-            final long selfId,
+            @NonNull final NodeId selfId,
             final boolean loadSigningKeys)
             throws IOException {
 
-        Objects.requireNonNull(platformContext);
-        Objects.requireNonNull(configuration);
-        Objects.requireNonNull(initialState);
-        Objects.requireNonNull(appMain);
-        Objects.requireNonNull(roundIterator);
+        Objects.requireNonNull(platformContext, "platformContext must not be null");
+        Objects.requireNonNull(configuration, "configuration must not be null");
+        Objects.requireNonNull(initialState, "initialState must not be null");
+        Objects.requireNonNull(appMain, "appMain must not be null");
+        Objects.requireNonNull(roundIterator, "roundIterator must not be null");
+        Objects.requireNonNull(selfId, "selfId must not be null");
 
         final long roundsNonAncient =
                 configuration.getConfigData(ConsensusConfig.class).roundsNonAncient();

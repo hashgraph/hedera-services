@@ -24,7 +24,10 @@ import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.system.NodeId;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.util.Objects;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -57,20 +60,24 @@ public class SigInfo implements FastCopyable, SelfSerializable {
     /** the signed state reflects all events with received round less than or equal to this */
     private long round;
     /** the member who signed the state */
-    private long memberId;
+    private NodeId memberId;
     /** the hash of the state that was signed. The signature algorithm may internally hash this hash. */
     private Hash hash;
     /** the signature */
     private Signature signature;
 
-    private boolean immutable;
+    private boolean immutable = false;
 
-    public SigInfo(final long round, final long memberId, final Hash hash, final Signature signature) {
+    public SigInfo(
+            final long round,
+            @NonNull final NodeId memberId,
+            @NonNull final Hash hash,
+            @NonNull final Signature signature) {
         classVersion = 1;
         this.round = round;
-        this.memberId = memberId;
-        this.hash = hash;
-        this.signature = signature;
+        this.memberId = Objects.requireNonNull(memberId, "memberId must not be null");
+        this.hash = Objects.requireNonNull(hash, "hash must not be null");
+        this.signature = Objects.requireNonNull(signature, "signature must not be null");
     }
 
     /** the default constructor is needed for FastCopyable */
@@ -108,7 +115,7 @@ public class SigInfo implements FastCopyable, SelfSerializable {
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         round = in.readLong();
-        memberId = in.readLong();
+        memberId = new NodeId(in.readLong());
 
         if (version < CLassVersion.USE_HASH_SIGNATURE_WRAPPER) {
             final byte[] hashBytes = in.readByteArray(DigestType.SHA_384.digestLength());
@@ -141,7 +148,7 @@ public class SigInfo implements FastCopyable, SelfSerializable {
      *
      * @return member who signed the state
      */
-    public long getMemberId() {
+    public NodeId getMemberId() {
         return memberId;
     }
 

@@ -20,6 +20,7 @@ import static com.swirlds.platform.reconnect.emergency.EmergencyReconnectTeacher
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.RandomUtils;
@@ -37,7 +38,7 @@ public class EmergencyStateFinderTests extends AbstractSignedStateManagerTest {
     private final AddressBook addressBook = new RandomAddressBookGenerator(random)
             .setSize(4)
             .setWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
-            .setSequentialIds(true)
+            .setSequentialIds(false)
             .build();
 
     @DisplayName("Emergency State Finder Test")
@@ -63,9 +64,9 @@ public class EmergencyStateFinderTests extends AbstractSignedStateManagerTest {
             // Add some signatures to one of the previous states
             final long roundToSign = round - roundAgeToSign;
             if (roundToSign >= 0) {
-                addSignature(manager, roundToSign, 1);
-                addSignature(manager, roundToSign, 2);
-                addSignature(manager, roundToSign, 3);
+                addSignature(manager, roundToSign, new NodeId(1));
+                addSignature(manager, roundToSign, new NodeId(2));
+                addSignature(manager, roundToSign, new NodeId(3));
             }
         }
 

@@ -56,7 +56,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
-import java.util.stream.LongStream;
+import java.util.stream.IntStream;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -474,13 +476,15 @@ class StateManagementComponentTests {
     }
 
     private void allNodesSign(final SignedState signedState, final DefaultStateManagementComponent component) {
-        LongStream.range(0, NUM_NODES)
-                .forEach(id -> component.handleStateSignatureTransactionPreConsensus(
-                        id, stateSignatureTransaction(id, signedState)));
+        AddressBook addressBook = signedState.getAddressBook();
+        IntStream.range(0, NUM_NODES)
+                .forEach(index -> component.handleStateSignatureTransactionPreConsensus(
+                        addressBook.getNodeId(index),
+                        stateSignatureTransaction(addressBook.getNodeId(index), signedState)));
     }
 
     private static StateSignatureTransaction stateSignatureTransaction(
-            final long signingNodeId, final SignedState stateToSign) {
+            @NonNull final NodeId signingNodeId, @Nullable final SignedState stateToSign) {
 
         if (stateToSign == null) {
             // We are being asked to sign a non-existent round.
@@ -506,8 +510,8 @@ class StateManagementComponentTests {
 
         final AddressBook addressBook = stateToSign.getAddressBook();
 
-        final Signature signature =
-                buildFakeSignature(addressBook.getAddress(signingNodeId).getSigPublicKey(), hash);
+        final Signature signature = buildFakeSignature(
+                addressBook.getAddress(new NodeId(signingNodeId)).getSigPublicKey(), hash);
 
         return new StateSignatureTransaction(stateToSign.getRound(), signature, hash);
     }
@@ -546,7 +550,7 @@ class StateManagementComponentTests {
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(NUM_NODES)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
-                .setSequentialIds(true)
+                .setSequentialIds(false)
                 .build();
 
         final PlatformSigner signer = mock(PlatformSigner.class);

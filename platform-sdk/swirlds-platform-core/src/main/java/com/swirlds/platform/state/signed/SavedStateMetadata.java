@@ -33,8 +33,11 @@ import static com.swirlds.platform.state.signed.SavedStateMetadataField.WALL_CLO
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.formatting.TextTable;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.PlatformState;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileReader;
@@ -49,6 +52,7 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -89,8 +93,8 @@ public record SavedStateMetadata(
         Long minimumGenerationNonAncient,
         String softwareVersion,
         Instant wallClockTime,
-        Long nodeId,
-        List<Long> signingNodes,
+        NodeId nodeId,
+        List<NodeId> signingNodes,
         Long signingWeightSum,
         Long totalWeight) {
 
@@ -102,7 +106,7 @@ public record SavedStateMetadata(
     /**
      * Use this constant for the node ID if the thing writing the state is not a node.
      */
-    public static final long NO_NODE_ID = -1;
+    public static final NodeId NO_NODE_ID = null;
 
     private static final Logger logger = LogManager.getLogger(SavedStateMetadata.class);
 
@@ -122,8 +126,8 @@ public record SavedStateMetadata(
                 parseLong(data, MINIMUM_GENERATION_NON_ANCIENT),
                 parseString(data, SOFTWARE_VERSION),
                 parseInstant(data, WALL_CLOCK_TIME),
-                parseLong(data, NODE_ID),
-                parseLongList(data, SIGNING_NODES),
+                parseNodeId(data),
+                parseNodeIdList(data, SIGNING_NODES),
                 parseLong(data, SIGNING_WEIGHT_SUM),
                 parseLong(data, TOTAL_WEIGHT));
     }
@@ -136,12 +140,15 @@ public record SavedStateMetadata(
      * @param now         the current time
      * @return the signed state metadata
      */
-    public static SavedStateMetadata create(final SignedState signedState, final long selfId, final Instant now) {
+    public static SavedStateMetadata create(
+            @NonNull final SignedState signedState, @Nullable final NodeId selfId, @NonNull final Instant now) {
+        Objects.requireNonNull(signedState, "signedState must not be null");
+        Objects.requireNonNull(now, "now must not be null");
 
         final PlatformState platformState = signedState.getState().getPlatformState();
         final PlatformData platformData = platformState.getPlatformData();
 
-        final List<Long> signingNodes = signedState.getSigSet().getSigningNodes();
+        final List<NodeId> signingNodes = signedState.getSigSet().getSigningNodes();
         Collections.sort(signingNodes);
 
         return new SavedStateMetadata(
@@ -306,14 +313,29 @@ public record SavedStateMetadata(
     }
 
     /**
-     * Attempt to parse a list of longs from the data map.
+     * Attempt to parse a NodeId from the data map.
+     *
+     * @param data the data map
+     * @return the parsed NodeId, or null if the field is not present or the value is not a valid Long
+     */
+    @Nullable
+    private static NodeId parseNodeId(final Map<SavedStateMetadataField, String> data) {
+        Long longValue = parseLong(data, SavedStateMetadataField.NODE_ID);
+        if (longValue == null) {
+            return null;
+        }
+        return new NodeId(longValue);
+    }
+
+    /**
+     * Attempt to parse a list of NodeIds from the data map.
      *
      * @param data  the data map
      * @param field the field to parse
      * @return the parsed list of longs, or null if the field is not present or the value is not a valid list of longs
      */
     @SuppressWarnings("SameParameterValue")
-    private static List<Long> parseLongList(
+    private static List<NodeId> parseNodeIdList(
             final Map<SavedStateMetadataField, String> data, final SavedStateMetadataField field) {
 
         if (!data.containsKey(field)) {
@@ -323,7 +345,7 @@ public record SavedStateMetadata(
 
         final String value = data.get(field);
         final String[] parts = value.split(",");
-        final List<Long> list = new ArrayList<>();
+        final List<NodeId> list = new ArrayList<>();
 
         if (parts.length == 1 && parts[0].isBlank()) {
             // List is empty.
@@ -332,7 +354,7 @@ public record SavedStateMetadata(
 
         for (final String part : parts) {
             try {
-                list.add(Long.parseLong(part.strip()));
+                list.add(new NodeId(Long.parseLong(part.strip())));
             } catch (final NumberFormatException e) {
                 logInvalidField(field, value, e);
                 return null;

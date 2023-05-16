@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.crypto.KeyType;
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.crypto.PreGeneratedPublicKeys;
 import com.swirlds.platform.crypto.CryptoStatic;
@@ -61,10 +62,11 @@ class KeysAndCertsTest {
         // choose a random node to test
         final Random random = new Random();
         final int node = random.nextInt(addressBook.getSize());
+        final NodeId nodeId = addressBook.getNodeId(node);
 
         final PlatformSigner signer = PlatformConstructor.platformSigner(keysAndCerts[node]);
-        testSignVerify(signer, addressBook.getAddress(node).getSigPublicKey());
+        testSignVerify(signer, addressBook.getAddress(nodeId).getSigPublicKey());
         // test it twice to verify that the signer is reusable
-        testSignVerify(signer, addressBook.getAddress(node).getSigPublicKey());
+        testSignVerify(signer, addressBook.getAddress(nodeId).getSigPublicKey());
     }
 }

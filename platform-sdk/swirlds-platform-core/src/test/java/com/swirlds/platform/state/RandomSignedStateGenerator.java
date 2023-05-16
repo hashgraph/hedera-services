@@ -27,6 +27,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.system.BasicSoftwareVersion;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
@@ -60,8 +61,8 @@ public class RandomSignedStateGenerator {
     private Boolean freezeState = false;
     private List<MinGenInfo> minGenInfo;
     private SoftwareVersion softwareVersion;
-    private List<Long> signingNodeIds;
-    private Map<Long, Signature> signatures;
+    private List<NodeId> signingNodeIds;
+    private Map<NodeId, Signature> signatures;
     private boolean protectionEnabled = false;
     private Hash stateHash = null;
     private Integer roundsNonAncient = null;
@@ -98,7 +99,7 @@ public class RandomSignedStateGenerator {
             addressBookInstance = new RandomAddressBookGenerator(random)
                     .setWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
                     .setHashStrategy(RandomAddressBookGenerator.HashStrategy.REAL_HASH)
-                    .setSequentialIds(true)
+                    .setSequentialIds(false)
                     .build();
         } else {
             addressBookInstance = addressBook;
@@ -209,14 +210,14 @@ public class RandomSignedStateGenerator {
             stateInstance.setHash(stateHash);
         }
 
-        final Map<Long, Signature> signaturesInstance;
+        final Map<NodeId, Signature> signaturesInstance;
         if (signatures == null) {
-            final List<Long> signingNodeIdsInstance;
+            final List<NodeId> signingNodeIdsInstance;
             if (signingNodeIds == null) {
                 signingNodeIdsInstance = new LinkedList<>();
                 if (addressBookInstance.getSize() > 0) {
                     for (int i = 0; i < addressBookInstance.getSize() / 3 + 1; i++) {
-                        signingNodeIdsInstance.add(addressBookInstance.getId(i));
+                        signingNodeIdsInstance.add(addressBookInstance.getNodeId(i));
                     }
                 }
             } else {
@@ -225,7 +226,7 @@ public class RandomSignedStateGenerator {
 
             signaturesInstance = new HashMap<>();
 
-            for (final long nodeID : signingNodeIdsInstance) {
+            for (final NodeId nodeID : signingNodeIdsInstance) {
                 final Signature signature = randomSignature(random);
 
                 final Signature wrappedSignature = spy(signature);
@@ -245,7 +246,7 @@ public class RandomSignedStateGenerator {
             signaturesInstance = signatures;
         }
 
-        for (final long nodeId : signaturesInstance.keySet()) {
+        for (final NodeId nodeId : signaturesInstance.keySet()) {
             signedState.getSigSet().addSignature(nodeId, signaturesInstance.get(nodeId));
         }
 
@@ -377,7 +378,7 @@ public class RandomSignedStateGenerator {
      * @param signingNodeIds a list of nodes that have signed this state
      * @return this object
      */
-    public RandomSignedStateGenerator setSigningNodeIds(final List<Long> signingNodeIds) {
+    public RandomSignedStateGenerator setSigningNodeIds(final List<NodeId> signingNodeIds) {
         this.signingNodeIds = signingNodeIds;
         return this;
     }
@@ -387,7 +388,7 @@ public class RandomSignedStateGenerator {
      *
      * @return this object
      */
-    public RandomSignedStateGenerator setSignatures(final Map<Long, Signature> signatures) {
+    public RandomSignedStateGenerator setSignatures(final Map<NodeId, Signature> signatures) {
         this.signatures = signatures;
         return this;
     }

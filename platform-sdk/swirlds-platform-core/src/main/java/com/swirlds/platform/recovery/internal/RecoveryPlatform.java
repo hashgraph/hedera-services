@@ -67,15 +67,15 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
     public RecoveryPlatform(
             final Configuration configuration,
             final SignedState initialState,
-            final long selfId,
+            final NodeId selfId,
             final boolean loadSigningKeys) {
 
-        this.selfId = new NodeId(selfId);
+        this.selfId = selfId;
 
         this.addressBook = initialState.getAddressBook();
 
         if (loadSigningKeys) {
-            crypto = initNodeSecurity(addressBook, configuration)[(int) selfId];
+            crypto = initNodeSecurity(addressBook, configuration).get(selfId);
         } else {
             crypto = null;
         }

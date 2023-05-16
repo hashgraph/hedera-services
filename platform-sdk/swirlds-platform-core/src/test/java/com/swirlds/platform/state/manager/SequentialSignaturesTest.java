@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
@@ -49,7 +50,7 @@ public class SequentialSignaturesTest extends AbstractSignedStateManagerTest {
     private final AddressBook addressBook = new RandomAddressBookGenerator(random)
             .setSize(4)
             .setWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
-            .setSequentialIds(true)
+            .setSequentialIds(false)
             .build();
 
     /**
@@ -99,12 +100,12 @@ public class SequentialSignaturesTest extends AbstractSignedStateManagerTest {
 
             // Add some signatures to one of the previous states
             final long roundToSign = round - roundAgeToSign;
-            addSignature(manager, roundToSign, 0);
-            addSignature(manager, roundToSign, 1);
-            addSignature(manager, roundToSign, 2);
+            addSignature(manager, roundToSign, new NodeId(0));
+            addSignature(manager, roundToSign, new NodeId(1));
+            addSignature(manager, roundToSign, new NodeId(2));
             if (random.nextBoolean()) {
-                addSignature(manager, roundToSign, 1);
-                addSignature(manager, roundToSign, 1);
+                addSignature(manager, roundToSign, new NodeId(1));
+                addSignature(manager, roundToSign, new NodeId(1));
             }
 
             try (final ReservedSignedState lastState = manager.getLatestImmutableState("test")) {

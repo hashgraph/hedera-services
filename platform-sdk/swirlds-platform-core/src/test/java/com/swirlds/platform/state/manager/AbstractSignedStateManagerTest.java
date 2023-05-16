@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.signed.SignedState;
@@ -78,7 +79,7 @@ public class AbstractSignedStateManagerTest {
     /**
      * Add a signature for a node on a state from a given round.
      */
-    protected void addSignature(final SignedStateManager manager, final long round, final long nodeId) {
+    protected void addSignature(final SignedStateManager manager, final long round, final NodeId nodeId) {
 
         final SignedState signedState = signedStates.get(round);
 

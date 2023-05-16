@@ -21,6 +21,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
@@ -46,7 +47,7 @@ public class EarlySignaturesTest extends AbstractSignedStateManagerTest {
     private final AddressBook addressBook = new RandomAddressBookGenerator(random)
             .setSize(4)
             .setWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
-            .setSequentialIds(true)
+            .setSequentialIds(false)
             .build();
 
     /**
@@ -82,12 +83,12 @@ public class EarlySignaturesTest extends AbstractSignedStateManagerTest {
         // send out signatures super early. Many will be rejected.
         for (long round = 0; round < count; round++) {
             // All node 0 and 2 signatures are sent very early.
-            manager.preConsensusSignatureObserver(round, 0L, buildReallyFakeSignature());
-            manager.preConsensusSignatureObserver(round, 2L, buildReallyFakeSignature());
+            manager.preConsensusSignatureObserver(round, new NodeId(0L), buildReallyFakeSignature());
+            manager.preConsensusSignatureObserver(round, new NodeId(2L), buildReallyFakeSignature());
 
             // Even numbered rounds have 3 sent very early.
             if (round % 2 == 0) {
-                manager.preConsensusSignatureObserver(round, 3L, buildReallyFakeSignature());
+                manager.preConsensusSignatureObserver(round, new NodeId(3L), buildReallyFakeSignature());
             }
         }
 
@@ -113,13 +114,13 @@ public class EarlySignaturesTest extends AbstractSignedStateManagerTest {
 
             if (roundToSign > 0) {
                 if (roundToSign >= futureSignatures) {
-                    addSignature(manager, roundToSign, 0);
-                    addSignature(manager, roundToSign, 1);
-                    addSignature(manager, roundToSign, 2);
+                    addSignature(manager, roundToSign, new NodeId(0));
+                    addSignature(manager, roundToSign, new NodeId(1));
+                    addSignature(manager, roundToSign, new NodeId(2));
                     expectedCompletedStateCount++;
                 } else if (roundToSign % 2 != 0) {
-                    addSignature(manager, roundToSign, 0);
-                    addSignature(manager, roundToSign, 1);
+                    addSignature(manager, roundToSign, new NodeId(0));
+                    addSignature(manager, roundToSign, new NodeId(1));
                     expectedCompletedStateCount++;
                 }
             }
