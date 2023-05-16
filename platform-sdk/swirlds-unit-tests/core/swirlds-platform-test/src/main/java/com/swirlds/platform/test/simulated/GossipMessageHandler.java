@@ -18,6 +18,7 @@ package com.swirlds.platform.test.simulated;
 
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.system.NodeId;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * An interface for test classes that handle gossiped messages
@@ -30,12 +31,13 @@ public interface GossipMessageHandler {
      * @param msg      the message received
      * @param fromPeer the peer who sent the message
      */
-    void handleMessageFromWire(final SelfSerializable msg, final long fromPeer);
+    void handleMessageFromWire(@NonNull final SelfSerializable msg, @NonNull final NodeId fromPeer);
 
     /**
      * Get the node id of this handler
      *
      * @return the node id
      */
+    @NonNull
     NodeId getNodeId();
 }

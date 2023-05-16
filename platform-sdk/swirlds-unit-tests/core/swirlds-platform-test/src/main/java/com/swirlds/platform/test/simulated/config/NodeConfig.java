@@ -17,6 +17,7 @@
 package com.swirlds.platform.test.simulated.config;
 
 import com.swirlds.platform.test.simulated.Latency;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 
 /**
@@ -26,4 +27,5 @@ import java.time.Duration;
  * @param customLatency    set the network latency for this node to this value
  * @param intakeQueueDelay the amount of time an event sits in the intake queue before being processed.
  */
-public record NodeConfig(Duration createEventEvery, Latency customLatency, Duration intakeQueueDelay) {}
+public record NodeConfig(
+        @NonNull Duration createEventEvery, @NonNull Latency customLatency, @NonNull Duration intakeQueueDelay) {}

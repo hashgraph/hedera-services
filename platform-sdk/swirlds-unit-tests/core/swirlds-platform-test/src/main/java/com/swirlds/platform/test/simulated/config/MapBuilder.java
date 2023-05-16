@@ -17,6 +17,7 @@
 package com.swirlds.platform.test.simulated.config;
 
 import com.swirlds.common.system.NodeId;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -38,7 +39,7 @@ public class MapBuilder<T> {
      * @param <T>  the type of the map to build
      * @return the new builder
      */
-    public static <T> MapBuilder<T> builder(final Class<T> type) {
+    public static <T> @NonNull MapBuilder<T> builder(@NonNull final Class<T> type) {
         return new MapBuilder<>();
     }
 
@@ -48,7 +49,7 @@ public class MapBuilder<T> {
      * @param e the element
      * @return {@code this}
      */
-    public MapBuilder<T> useElement(T e) {
+    public @NonNull MapBuilder<T> useElement(@NonNull T e) {
         lastElement = e;
         return this;
     }
@@ -60,7 +61,7 @@ public class MapBuilder<T> {
      * @param num the number of times to repeat the element
      * @return {@code this}
      */
-    public MapBuilder<T> times(final int num) {
+    public @NonNull MapBuilder<T> times(final int num) {
         for (int i = 0; i < num; i++) {
             map.put(new NodeId(lastIndex++), lastElement);
         }
@@ -72,7 +73,7 @@ public class MapBuilder<T> {
      *
      * @return the map
      */
-    public Map<NodeId, T> build() {
+    public @NonNull Map<NodeId, T> build() {
         if (map.isEmpty()) {
             map.put(new NodeId(lastIndex++), lastElement);
         }

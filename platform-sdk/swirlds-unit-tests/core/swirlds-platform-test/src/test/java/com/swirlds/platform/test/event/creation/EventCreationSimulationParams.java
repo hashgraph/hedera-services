@@ -16,9 +16,10 @@
 
 package com.swirlds.platform.test.event.creation;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.test.simulated.config.NodeConfig;
 import java.time.Duration;
-import java.util.List;
+import java.util.Map;
 
 /**
  * Parameters for an event creation simulation
@@ -36,7 +37,7 @@ import java.util.List;
  */
 public record EventCreationSimulationParams(
         long seed,
-        List<NodeConfig> nodeConfigs,
+        Map<NodeId, NodeConfig> nodeConfigs,
         Duration maxDelay,
         Duration simulatedTime,
         Duration simulationStep,

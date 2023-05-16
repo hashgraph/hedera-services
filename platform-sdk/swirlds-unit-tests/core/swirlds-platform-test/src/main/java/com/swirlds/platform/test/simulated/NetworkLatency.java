@@ -17,9 +17,11 @@
 package com.swirlds.platform.test.simulated;
 
 import com.swirlds.common.system.NodeId;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 
@@ -27,9 +29,10 @@ import java.util.Set;
  * Generates random latencies between nodes in the provided address book
  */
 public class NetworkLatency {
-    private final Map<Long, Latency> delays = new HashMap<>();
+    private final Map<NodeId, Latency> delays = new HashMap<>();
 
-    private NetworkLatency(final HashMap<Long, Latency> delays) {
+    private NetworkLatency(@NonNull final HashMap<NodeId, Latency> delays) {
+        Objects.requireNonNull(delays);
         this.delays.putAll(delays);
     }
 
@@ -40,33 +43,39 @@ public class NetworkLatency {
      * @param latency the latency between each pair of peers
      * @return the {@link NetworkLatency} object
      */
-    public static NetworkLatency uniformLatency(final Set<NodeId> nodeIds, final Duration latency) {
-        HashMap<Long, Latency> delays = new HashMap<>();
+    public static @NonNull NetworkLatency uniformLatency(
+            @NonNull final Set<NodeId> nodeIds, @NonNull final Duration latency) {
+        Objects.requireNonNull(nodeIds);
+        Objects.requireNonNull(latency);
+        final HashMap<NodeId, Latency> delays = new HashMap<>();
         for (final NodeId nodeId : nodeIds) {
-            delays.put(nodeId.id(), new Latency(latency));
+            delays.put(nodeId, new Latency(latency));
         }
         return new NetworkLatency(delays);
     }
 
     /**
      * Creates a hub-and-spoke {@link NetworkLatency} model with randomized latencies. Each node is assigned a randomly
-     * generated delay. The delay between any two peers for a one-way trip is the sum nodes' delays. Some spokes
-     * may be long, others may be short, but all messages sent to a from a particular peer include that peer's set
-     * delay. This differs from real life in that it does not allow two nodes to have low latency with each other while
-     * also having high latency with other nodes.
+     * generated delay. The delay between any two peers for a one-way trip is the sum nodes' delays. Some spokes may be
+     * long, others may be short, but all messages sent to a from a particular peer include that peer's set delay. This
+     * differs from real life in that it does not allow two nodes to have low latency with each other while also having
+     * high latency with other nodes.
      *
      * @param nodeIds  the nodeIds of all nodes in the network
      * @param maxDelay the maximum one-way delay between 2 peers
      * @param random   source of randomness
      * @return the {@link NetworkLatency} object
      */
-    public static NetworkLatency randomLatency(
-            final Set<NodeId> nodeIds, final Duration maxDelay, final Random random) {
-        HashMap<Long, Latency> delays = new HashMap<>();
+    public @NonNull static NetworkLatency randomLatency(
+            @NonNull final Set<NodeId> nodeIds, @NonNull final Duration maxDelay, @NonNull final Random random) {
+        Objects.requireNonNull(nodeIds);
+        Objects.requireNonNull(maxDelay);
+        Objects.requireNonNull(random);
+        HashMap<NodeId, Latency> delays = new HashMap<>();
         for (final NodeId nodeId : nodeIds) {
             final Latency latency = new Latency(
                     Duration.ofMillis(random.nextInt((int) maxDelay.dividedBy(2).toMillis())));
-            delays.put(nodeId.id(), latency);
+            delays.put(nodeId, latency);
         }
         return new NetworkLatency(delays);
     }
@@ -77,7 +86,9 @@ public class NetworkLatency {
      * @param nodeId  the node whose latency we are setting
      * @param latency the latency to set
      */
-    public void setLatency(final long nodeId, final Latency latency) {
+    public void setLatency(@NonNull final NodeId nodeId, @NonNull final Latency latency) {
+        Objects.requireNonNull(nodeId);
+        Objects.requireNonNull(latency);
         delays.put(nodeId, latency);
     }
 
@@ -86,7 +97,9 @@ public class NetworkLatency {
      * @param to   the ID of the second node
      * @return the delay between the two nodes
      */
-    public Duration getLatency(final long from, final long to) {
+    public @NonNull Duration getLatency(@NonNull final NodeId from, @NonNull final NodeId to) {
+        Objects.requireNonNull(from);
+        Objects.requireNonNull(to);
         return delays.get(from).delay().plus(delays.get(to).delay());
     }
 }

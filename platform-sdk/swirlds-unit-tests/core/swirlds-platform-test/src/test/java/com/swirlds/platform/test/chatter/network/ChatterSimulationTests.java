@@ -235,7 +235,7 @@ public class ChatterSimulationTests {
         final InOrderOrphanBuffer orphanBuffer = new InOrderOrphanBuffer(nodeId);
 
         final SimulatedEventPipeline<CountingChatterEvent> pipeline = new SimulatedEventPipelineBuilder<
-                CountingChatterEvent>()
+                        CountingChatterEvent>()
                 .next(gossipRecorder)
                 .next(intakeQueue)
                 .next(eventDeduper)

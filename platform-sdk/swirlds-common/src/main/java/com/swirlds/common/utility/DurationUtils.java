@@ -16,6 +16,7 @@
 
 package com.swirlds.common.utility;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 
 /**
@@ -29,7 +30,7 @@ public final class DurationUtils {
      * @param b the second duration to compare
      * @return true if 'a' is longer than 'b', false if 'a' is shorter or equal
      */
-    public static boolean isLonger(final Duration a, final Duration b) {
+    public static boolean isLonger(@NonNull final Duration a, @NonNull final Duration b) {
         return a.compareTo(b) > 0;
     }
 
@@ -38,7 +39,7 @@ public final class DurationUtils {
      * @param b the second duration to compare
      * @return true if 'a' is shorter than 'b', false if 'a' is shorter or equal
      */
-    public static boolean isShorter(final Duration a, final Duration b) {
+    public static boolean isShorter(@NonNull final Duration a, @NonNull final Duration b) {
         return a.compareTo(b) < 0;
     }
 
@@ -47,7 +48,7 @@ public final class DurationUtils {
      * @param b the second duration
      * @return the longer of the two durations
      */
-    public static Duration max(final Duration a, final Duration b) {
+    public static Duration max(@NonNull final Duration a, @NonNull final Duration b) {
         return isLonger(a, b) ? a : b;
     }
 }

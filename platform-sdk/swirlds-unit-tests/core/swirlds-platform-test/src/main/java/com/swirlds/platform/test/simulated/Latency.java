@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.test.simulated;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 
 /**
@@ -24,7 +25,7 @@ import java.time.Duration;
  * @param delay the delay of this node. The time for a message to reach a peer is the sum of this delay and the peer's
  *              delay
  */
-public record Latency(Duration delay) {
+public record Latency(@NonNull Duration delay) {
 
     /**
      * Returns {@code true} if this latency is equal to {@link Duration#ZERO};

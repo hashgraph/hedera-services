@@ -144,6 +144,7 @@ public class SimulatedEventCreationNode implements GossipMessageHandler {
         nextEventCreation = time.now();
     }
 
+    @NonNull
     @Override
     public NodeId getNodeId() {
         return nodeId;
@@ -170,7 +171,7 @@ public class SimulatedEventCreationNode implements GossipMessageHandler {
      * @param msg the message to add
      */
     @Override
-    public void handleMessageFromWire(final SelfSerializable msg, final long fromPeer) {
+    public void handleMessageFromWire(@NonNull final SelfSerializable msg, @NonNull final NodeId fromPeer) {
         if (msg instanceof final GossipEvent event) {
             notifyCriticalQuorum(event);
             chatterEventMapper.mapEvent(event);
@@ -179,7 +180,7 @@ public class SimulatedEventCreationNode implements GossipMessageHandler {
         }
     }
 
-    private void notifyCriticalQuorum(final GossipEvent event) {
+    private void notifyCriticalQuorum(@NonNull final GossipEvent event) {
         criticalQuorum.eventAdded(eventByHash.apply(event.getHashedData().getHash()));
     }
 }

@@ -56,11 +56,11 @@ public class ChatterInstance<T extends SimulatedChatterEvent> implements GossipM
     /** Creator of self events */
     private final SimulatedEventCreator<T> newEventCreator;
     /** List of all peers in the network */
-    private final List<Long> peerIds = new ArrayList<>();
+    private final List<NodeId> peerIds = new ArrayList<>();
     /**
      * The first of N event pipeline components chained together in a singly linked list. Each event component passes
      * the event to the next component when it is time to do so. This first component provided events as they are
-     * received via {@link #handleMessageFromWire(SelfSerializable, long)}
+     * received via {@link #handleMessageFromWire(SelfSerializable, NodeId)}
      */
     private final SimulatedEventPipeline<T> eventPipeline;
 
@@ -86,7 +86,7 @@ public class ChatterInstance<T extends SimulatedChatterEvent> implements GossipM
             }
 
             core.newPeerInstance(peerId, this.eventPipeline::addEvent);
-            peerIds.add(peerId);
+            peerIds.add(new NodeId(peerId));
         }
     }
 
@@ -156,15 +156,15 @@ public class ChatterInstance<T extends SimulatedChatterEvent> implements GossipM
      */
     public List<GossipMessage> getMessagesToGossip() {
         final List<GossipMessage> gossipMessages = new ArrayList<>();
-        for (long peerId : peerIds) {
-            if (peerId == selfId.id()) {
+        for (final NodeId peerId : peerIds) {
+            if (peerId == selfId) {
                 continue;
             }
-            final PeerInstance peer = core.getPeerInstance(peerId);
+            final PeerInstance peer = core.getPeerInstance(peerId.id());
 
             SelfSerializable message = peer.outputAggregator().getMessage();
             while (message != null) {
-                gossipMessages.add(GossipMessage.toPeer(message, selfId.id(), peerId));
+                gossipMessages.add(GossipMessage.toPeer(message, selfId, peerId));
                 message = peer.outputAggregator().getMessage();
             }
         }
@@ -178,15 +178,15 @@ public class ChatterInstance<T extends SimulatedChatterEvent> implements GossipM
      * @param fromPeer the peer who sent the message
      */
     @Override
-    public void handleMessageFromWire(final SelfSerializable msg, final long fromPeer) {
+    public void handleMessageFromWire(final SelfSerializable msg, final NodeId fromPeer) {
         try {
             if (msg instanceof final SimulatedChatterEvent event) {
                 // Create a copy so that each node sets its own time received
                 final SimulatedChatterEvent eventCopy = event.copy();
                 eventCopy.setTimeReceived(time.now());
-                core.getPeerInstance(fromPeer).inputHandler().handleMessage(eventCopy);
+                core.getPeerInstance(fromPeer.id()).inputHandler().handleMessage(eventCopy);
             } else {
-                core.getPeerInstance(fromPeer).inputHandler().handleMessage(msg);
+                core.getPeerInstance(fromPeer.id()).inputHandler().handleMessage(msg);
             }
         } catch (PeerMessageException e) {
             throw new RuntimeException(e);
@@ -207,5 +207,4 @@ public class ChatterInstance<T extends SimulatedChatterEvent> implements GossipM
     public NodeId getNodeId() {
         return selfId;
     }
-
 }

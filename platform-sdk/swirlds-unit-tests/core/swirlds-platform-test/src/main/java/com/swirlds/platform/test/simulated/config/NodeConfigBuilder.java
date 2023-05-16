@@ -17,7 +17,9 @@
 package com.swirlds.platform.test.simulated.config;
 
 import com.swirlds.platform.test.simulated.Latency;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
+import java.util.Objects;
 
 /**
  * A builder for {@link NodeConfig}
@@ -34,7 +36,7 @@ public class NodeConfigBuilder {
      *
      * @return the new builder
      */
-    public static NodeConfigBuilder builder() {
+    public static @NonNull NodeConfigBuilder builder() {
         return new NodeConfigBuilder();
     }
 
@@ -43,7 +45,7 @@ public class NodeConfigBuilder {
      *
      * @return the new builder
      */
-    public static NodeConfigBuilder builder(final NodeConfig config) {
+    public static @NonNull NodeConfigBuilder builder(@NonNull final NodeConfig config) {
         final NodeConfigBuilder builder = builder();
         builder.setCustomLatency(config.customLatency());
         builder.setCreateEventEvery(config.createEventEvery());
@@ -57,8 +59,8 @@ public class NodeConfigBuilder {
      * @param createEventEvery the event creation interval
      * @return {@code this}
      */
-    public NodeConfigBuilder setCreateEventEvery(final Duration createEventEvery) {
-        this.createEventEvery = createEventEvery;
+    public @NonNull NodeConfigBuilder setCreateEventEvery(@NonNull final Duration createEventEvery) {
+        this.createEventEvery = Objects.requireNonNull(createEventEvery);
         return this;
     }
 
@@ -68,8 +70,8 @@ public class NodeConfigBuilder {
      * @param customLatency the latency of this node
      * @return {@code this}
      */
-    public NodeConfigBuilder setCustomLatency(final Latency customLatency) {
-        this.customLatency = customLatency;
+    public @NonNull NodeConfigBuilder setCustomLatency(@NonNull final Latency customLatency) {
+        this.customLatency = Objects.requireNonNull(customLatency);
         return this;
     }
 
@@ -79,8 +81,8 @@ public class NodeConfigBuilder {
      * @param intakeQueueDelay the intake queue delay
      * @return {@code this}
      */
-    public NodeConfigBuilder setIntakeQueueDelay(final Duration intakeQueueDelay) {
-        this.intakeQueueDelay = intakeQueueDelay;
+    public @NonNull NodeConfigBuilder setIntakeQueueDelay(@NonNull final Duration intakeQueueDelay) {
+        this.intakeQueueDelay = Objects.requireNonNull(intakeQueueDelay);
         return this;
     }
 
@@ -89,7 +91,7 @@ public class NodeConfigBuilder {
      *
      * @return the node configuration
      */
-    public NodeConfig build() {
+    public @NonNull NodeConfig build() {
         return new NodeConfig(createEventEvery, customLatency, intakeQueueDelay);
     }
 }

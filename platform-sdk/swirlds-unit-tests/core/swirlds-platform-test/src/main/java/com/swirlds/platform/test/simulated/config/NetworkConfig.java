@@ -17,6 +17,8 @@
 package com.swirlds.platform.test.simulated.config;
 
 import com.swirlds.common.system.NodeId;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.util.Map;
 
@@ -27,9 +29,5 @@ import java.util.Map;
  * @param duration    the amount of time this list of configs will be in effect
  * @param nodeConfigs configurations for each node in the network
  */
-public record NetworkConfig(String name, Duration duration, Map<NodeId, NodeConfig> nodeConfigs) {
-
-    public int getNumConfigs() {
-        return nodeConfigs.size();
-    }
-}
+public record NetworkConfig(
+        @Nullable String name, @NonNull Duration duration, @NonNull Map<NodeId, NodeConfig> nodeConfigs) {}

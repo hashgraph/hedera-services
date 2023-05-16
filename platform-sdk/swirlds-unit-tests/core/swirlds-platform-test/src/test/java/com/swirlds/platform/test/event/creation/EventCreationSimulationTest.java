@@ -28,13 +28,15 @@ import com.swirlds.platform.test.simulated.GossipMessage;
 import com.swirlds.platform.test.simulated.NetworkLatency;
 import com.swirlds.platform.test.simulated.SimpleSimulatedGossip;
 import com.swirlds.platform.test.simulated.SimulatedEventCreationNode;
-import com.swirlds.platform.test.simulated.config.ListBuilder;
+import com.swirlds.platform.test.simulated.config.MapBuilder;
 import com.swirlds.platform.test.simulated.config.NodeConfig;
 import com.swirlds.platform.test.simulated.config.NodeConfigBuilder;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -53,7 +55,7 @@ public class EventCreationSimulationTest {
                 // this
                 Arguments.of(new EventCreationSimulationParams(
                         1,
-                        ListBuilder.builder(NodeConfig.class)
+                        MapBuilder.builder(NodeConfig.class)
                                 .useElement(NodeConfigBuilder.builder()
                                         .setCreateEventEvery(Duration.ofMillis(20))
                                         .build())
@@ -72,7 +74,7 @@ public class EventCreationSimulationTest {
                 // tests whether we stop creating events after a while if we dont have supermajority
                 Arguments.of(new EventCreationSimulationParams(
                         1,
-                        ListBuilder.builder(NodeConfig.class)
+                        MapBuilder.builder(NodeConfig.class)
                                 .useElement(NodeConfigBuilder.builder()
                                         .setCreateEventEvery(Duration.ofMillis(20))
                                         .build())
@@ -114,25 +116,25 @@ public class EventCreationSimulationTest {
             nodeIds.add(new NodeId(address.getId()));
         }
         final NetworkLatency latency = NetworkLatency.randomLatency(nodeIds, params.maxDelay(), random);
-        List<NodeConfig> nodeConfigs = params.nodeConfigs();
-        for (int i = 0; i < nodeConfigs.size(); i++) {
-            final NodeConfig nodeConfig = nodeConfigs.get(i);
+        Map<NodeId, NodeConfig> nodeConfigs = params.nodeConfigs();
+        for (final Entry<NodeId, NodeConfig> entry : nodeConfigs.entrySet()) {
+            final NodeConfig nodeConfig = entry.getValue();
             if (!nodeConfig.customLatency().isZero()) {
-                latency.setLatency(i, nodeConfig.customLatency());
+                latency.setLatency(entry.getKey(), nodeConfig.customLatency());
             }
         }
         final SimpleSimulatedGossip gossip = new SimpleSimulatedGossip(params.numNodes(), latency, time);
 
         final List<SimulatedEventCreationNode> nodes = new ArrayList<>();
         int i = 0;
-        for (NodeConfig nodeConfig : params.nodeConfigs()) {
+        for (NodeConfig nodeConfig : params.nodeConfigs().values()) {
             final NodeId selfId = new NodeId(i++);
             final SimulatedEventCreationNode node = new SimulatedEventCreationNode(
                     new BasicSoftwareVersion(1),
                     random,
                     time,
                     addressBook,
-                    List.of(e -> gossip.gossipPayload(GossipMessage.toAll(e, selfId.id())), consensus::addEvent),
+                    List.of(e -> gossip.gossipPayload(GossipMessage.toAll(e, selfId)), consensus::addEvent),
                     selfId,
                     h -> consensus.getShadowGraph().getEvent(h),
                     nodeConfig);
