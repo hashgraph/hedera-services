@@ -91,7 +91,7 @@ public class RecordStreamManagerTest {
 
     @BeforeAll
     public static void init() throws Exception {
-        given(platform.getSelfId()).willReturn(new NodeId(false, 0L));
+        given(platform.getSelfId()).willReturn(new NodeId(0L));
         NodeLocalProperties disabledProps = mock(NodeLocalProperties.class);
         given(disabledProps.isRecordStreamEnabled()).willReturn(false);
         NodeLocalProperties enabledProps = mock(NodeLocalProperties.class);
