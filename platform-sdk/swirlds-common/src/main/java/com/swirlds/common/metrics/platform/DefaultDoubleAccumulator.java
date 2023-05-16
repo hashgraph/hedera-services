@@ -71,6 +71,11 @@ public class DefaultDoubleAccumulator extends DefaultMetric implements DoubleAcc
         container.accumulate(other);
     }
 
+    @Override
+    public void reset() {
+        container.reset();
+    }
+
     /**
      * {@inheritDoc}
      */

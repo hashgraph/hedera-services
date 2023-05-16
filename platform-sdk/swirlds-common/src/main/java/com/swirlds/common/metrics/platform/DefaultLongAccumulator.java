@@ -75,6 +75,14 @@ public class DefaultLongAccumulator extends DefaultMetric implements LongAccumul
      * {@inheritDoc}
      */
     @Override
+    public void reset() {
+        container.reset();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public String toString() {
         return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
                 .appendSuper(super.toString())
