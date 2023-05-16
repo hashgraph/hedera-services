@@ -30,7 +30,6 @@ import com.swirlds.virtualmap.TestKey;
 import com.swirlds.virtualmap.TestValue;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualTestBase;
-import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import java.util.Iterator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -136,19 +135,15 @@ class VirtualMerkleNavigationTest extends VirtualTestBase {
     @Test
     @Tags({@Tag("VirtualMerkle"), @Tag("TreeNav")})
     @DisplayName("Verify that the tree is navigable using 'getChild'")
-    @SuppressWarnings("unchecked")
     void treeIsNavigableByGetChild() {
         // Verify that all the internal nodes are where they should be
-        assertEquals(APPLE, ((VirtualLeafRecord<TestKey, TestValue>) a.getVirtualRecord()).getValue(), "Wrong value");
-        assertEquals(BANANA, ((VirtualLeafRecord<TestKey, TestValue>) b.getVirtualRecord()).getValue(), "Wrong value");
-        assertEquals(CHERRY, ((VirtualLeafRecord<TestKey, TestValue>) c.getVirtualRecord()).getValue(), "Wrong value");
-        assertEquals(DATE, ((VirtualLeafRecord<TestKey, TestValue>) d.getVirtualRecord()).getValue(), "Wrong value");
-        assertEquals(
-                EGGPLANT,
-                ((VirtualLeafRecord<TestKey, TestValue>) e.getVirtualRecord()).getValue(),
-                "Wrong " + "value");
-        assertEquals(FIG, ((VirtualLeafRecord<TestKey, TestValue>) f.getVirtualRecord()).getValue(), "Wrong value");
-        assertEquals(GRAPE, ((VirtualLeafRecord<TestKey, TestValue>) g.getVirtualRecord()).getValue(), "Wrong value");
+        assertEquals(APPLE, a.getValue(), "Wrong value");
+        assertEquals(BANANA, b.getValue(), "Wrong value");
+        assertEquals(CHERRY, c.getValue(), "Wrong value");
+        assertEquals(DATE, d.getValue(), "Wrong value");
+        assertEquals(EGGPLANT, e.getValue(), "Wrong " + "value");
+        assertEquals(FIG, f.getValue(), "Wrong value");
+        assertEquals(GRAPE, g.getValue(), "Wrong value");
     }
 
     @Test
