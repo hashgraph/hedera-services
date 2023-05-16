@@ -44,6 +44,7 @@ import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.ConnectionTracker;
+import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.reconnect.ReconnectHelper;
 import com.swirlds.platform.reconnect.ReconnectThrottle;
 import com.swirlds.platform.state.SwirldStateManager;
@@ -86,7 +87,8 @@ public abstract class AbstractSyncGossip extends AbstractGossip { // TODO should
             @NonNull final ReconnectMetrics reconnectMetrics,
             @NonNull final InterruptableConsumer<EventIntakeTask> eventIntakeLambda,
             @NonNull final EventMapper eventMapper,
-            @NonNull final EventIntakeMetrics eventIntakeMetrics) {
+            @NonNull final EventIntakeMetrics eventIntakeMetrics,
+            @NonNull final EventObserverDispatcher eventObserverDispatcher) {
 
         super(
                 platformContext,
@@ -110,7 +112,8 @@ public abstract class AbstractSyncGossip extends AbstractGossip { // TODO should
                 stateManagementComponent,
                 reconnectMetrics,
                 eventMapper,
-                eventIntakeMetrics);
+                eventIntakeMetrics,
+                eventObserverDispatcher);
 
         this.updatePlatformStatus = Objects.requireNonNull(updatePlatformStatus);
         this.eventIntakeLambda = Objects.requireNonNull(eventIntakeLambda);

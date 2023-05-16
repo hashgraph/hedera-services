@@ -59,6 +59,7 @@ import com.swirlds.platform.network.connectivity.SocketFactory;
 import com.swirlds.platform.network.topology.NetworkTopology;
 import com.swirlds.platform.network.topology.StaticConnectionManagers;
 import com.swirlds.platform.network.topology.StaticTopology;
+import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.reconnect.ReconnectHelper;
 import com.swirlds.platform.reconnect.ReconnectThrottle;
 import com.swirlds.platform.state.SwirldStateManager;
@@ -103,6 +104,7 @@ public abstract class AbstractGossip implements Gossip {
     protected final ReconnectMetrics reconnectMetrics;
     protected final EventMapper eventMapper;
     protected final EventIntakeMetrics eventIntakeMetrics;
+    protected final EventObserverDispatcher eventObserverDispatcher;
 
     // TODO: things to construct internally:
     //  - connection tracker
@@ -132,7 +134,8 @@ public abstract class AbstractGossip implements Gossip {
             @NonNull final StateManagementComponent stateManagementComponent,
             @NonNull final ReconnectMetrics reconnectMetrics,
             @NonNull final EventMapper eventMapper,
-            @NonNull final EventIntakeMetrics eventIntakeMetrics) {
+            @NonNull final EventIntakeMetrics eventIntakeMetrics,
+            @NonNull final EventObserverDispatcher eventObserverDispatcher) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
         this.threadManager = Objects.requireNonNull(threadManager);
@@ -154,8 +157,10 @@ public abstract class AbstractGossip implements Gossip {
         this.reconnectMetrics = Objects.requireNonNull(reconnectMetrics);
         this.eventMapper = Objects.requireNonNull(eventMapper);
         this.eventIntakeMetrics = Objects.requireNonNull(eventIntakeMetrics);
+        this.eventObserverDispatcher = Objects.requireNonNull(eventObserverDispatcher);
 
         criticalQuorum = buildCriticalQuorum();
+        eventObserverDispatcher.addObserver(criticalQuorum);
 
         topology = new StaticTopology(
                 selfId,

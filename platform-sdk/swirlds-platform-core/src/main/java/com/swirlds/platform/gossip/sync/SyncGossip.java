@@ -52,6 +52,7 @@ import com.swirlds.platform.network.ConnectionTracker;
 import com.swirlds.platform.network.communication.NegotiationProtocols;
 import com.swirlds.platform.network.communication.NegotiatorThread;
 import com.swirlds.platform.network.communication.handshake.VersionCompareHandshake;
+import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.reconnect.DefaultSignedStateValidator;
 import com.swirlds.platform.reconnect.ReconnectController;
 import com.swirlds.platform.reconnect.ReconnectHelper;
@@ -109,7 +110,8 @@ public class SyncGossip extends AbstractSyncGossip {
             @NonNull final ReconnectMetrics reconnectMetrics,
             @NonNull final InterruptableConsumer<EventIntakeTask> eventIntakeLambda,
             @NonNull final EventMapper eventMapper,
-            @NonNull final EventIntakeMetrics eventIntakeMetrics) {
+            @NonNull final EventIntakeMetrics eventIntakeMetrics,
+            @NonNull final EventObserverDispatcher eventObserverDispatcher) {
         super(
                 platformContext,
                 threadManager,
@@ -134,7 +136,8 @@ public class SyncGossip extends AbstractSyncGossip {
                 reconnectMetrics,
                 eventIntakeLambda,
                 eventMapper,
-                eventIntakeMetrics);
+                eventIntakeMetrics,
+                eventObserverDispatcher);
 
         this.time = Objects.requireNonNull(time);
         this.emergencyRecoveryManager = Objects.requireNonNull(emergencyRecoveryManager);

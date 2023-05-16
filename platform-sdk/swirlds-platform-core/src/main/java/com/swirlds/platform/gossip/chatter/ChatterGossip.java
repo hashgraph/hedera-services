@@ -126,10 +126,7 @@ public class ChatterGossip extends AbstractGossip {
             @NonNull final StateManagementComponent stateManagementComponent,
             @NonNull final ReconnectMetrics reconnectMetrics,
             @NonNull final InterruptableConsumer<EventIntakeTask> eventIntakeLambda,
-            @NonNull
-                    final EventObserverDispatcher
-                            eventObserverDispatcher, // TODO future Cody: we need to register the event observer
-            // dispatcher with this!
+            @NonNull final EventObserverDispatcher eventObserverDispatcher,
             @NonNull final EventMapper eventMapper,
             @NonNull final EventIntakeMetrics eventIntakeMetrics) {
         super(
@@ -154,7 +151,8 @@ public class ChatterGossip extends AbstractGossip {
                 stateManagementComponent,
                 reconnectMetrics,
                 eventMapper,
-                eventIntakeMetrics);
+                eventIntakeMetrics,
+                eventObserverDispatcher);
 
         this.emergencyRecoveryManager = Objects.requireNonNull(emergencyRecoveryManager);
 

@@ -759,7 +759,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     reconnectMetrics,
                     taskDispatcher::dispatchTask,
                     eventMapper,
-                    eventIntakeMetrics);
+                    eventIntakeMetrics,
+                    eventObserverDispatcher);
         } else {
             gossip = new LegacySyncGossip(
                     platformContext,
@@ -785,7 +786,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     this::checkPlatformStatus,
                     taskDispatcher::dispatchTask,
                     eventMapper,
-                    eventIntakeMetrics);
+                    eventIntakeMetrics,
+                    eventObserverDispatcher);
         }
 
         // To be removed once the GUI component is better integrated with the platform.

@@ -51,6 +51,7 @@ import com.swirlds.platform.network.unidirectional.MultiProtocolResponder;
 import com.swirlds.platform.network.unidirectional.ProtocolMapping;
 import com.swirlds.platform.network.unidirectional.SharedConnectionLocks;
 import com.swirlds.platform.network.unidirectional.UnidirectionalProtocols;
+import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.reconnect.DefaultSignedStateValidator;
 import com.swirlds.platform.reconnect.ReconnectHelper;
 import com.swirlds.platform.reconnect.ReconnectProtocolResponder;
@@ -92,7 +93,8 @@ public class LegacySyncGossip extends AbstractSyncGossip {
             @NonNull final Runnable updatePlatformStatus,
             @NonNull final InterruptableConsumer<EventIntakeTask> eventIntakeLambda,
             @NonNull final EventMapper eventMapper,
-            @NonNull final EventIntakeMetrics eventIntakeMetrics) {
+            @NonNull final EventIntakeMetrics eventIntakeMetrics,
+            @NonNull final EventObserverDispatcher eventObserverDispatcher) {
         super(
                 platformContext,
                 threadManager,
@@ -117,7 +119,8 @@ public class LegacySyncGossip extends AbstractSyncGossip {
                 reconnectMetrics,
                 eventIntakeLambda,
                 eventMapper,
-                eventIntakeMetrics);
+                eventIntakeMetrics,
+                eventObserverDispatcher);
 
         sharedConnectionLocks = new SharedConnectionLocks(topology, connectionManagers);
 
