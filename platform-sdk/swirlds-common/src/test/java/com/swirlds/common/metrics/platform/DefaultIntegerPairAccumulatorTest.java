@@ -54,7 +54,7 @@ class DefaultIntegerPairAccumulatorTest {
         final BiFunction<Integer, Integer, String> resultFunction = mock(BiFunction.class);
         when(resultFunction.apply(anyInt(), anyInt())).thenReturn("Hello World");
         final IntegerPairAccumulator.Config<String> config = new IntegerPairAccumulator.Config<>(
-                CATEGORY, NAME, String.class, resultFunction)
+                        CATEGORY, NAME, String.class, resultFunction)
                 .withDescription(DESCRIPTION)
                 .withUnit(UNIT)
                 .withFormat(FORMAT);
@@ -134,7 +134,7 @@ class DefaultIntegerPairAccumulatorTest {
     void testGetAndUpdateWithCustomFunctions() {
         // given
         final IntegerPairAccumulator.Config<Long> config = new IntegerPairAccumulator.Config<>(
-                CATEGORY, NAME, Long.class, Math::multiplyFull)
+                        CATEGORY, NAME, Long.class, Math::multiplyFull)
                 .withLeftAccumulator(Integer::max)
                 .withRightAccumulator(Integer::sum);
         final IntegerPairAccumulator<Long> accumulator = new DefaultIntegerPairAccumulator<>(config);
@@ -182,9 +182,7 @@ class DefaultIntegerPairAccumulatorTest {
 
         // then
         assertThrows(
-                NullPointerException.class,
-                () -> accumulator.get(null),
-                "Calling get() with null should throw an IAE");
+                NullPointerException.class, () -> accumulator.get(null), "Calling get() with null should throw an IAE");
         assertThrows(
                 IllegalArgumentException.class,
                 () -> accumulator.get(Metric.ValueType.MIN),
@@ -249,7 +247,7 @@ class DefaultIntegerPairAccumulatorTest {
     void testToString() {
         // given
         final IntegerPairAccumulator.Config<Double> config = new IntegerPairAccumulator.Config<>(
-                CATEGORY, NAME, Double.class, AVERAGE)
+                        CATEGORY, NAME, Double.class, AVERAGE)
                 .withDescription(DESCRIPTION)
                 .withUnit(UNIT)
                 .withFormat(FORMAT);
@@ -263,8 +261,8 @@ class DefaultIntegerPairAccumulatorTest {
     @Test
     void testResetValue() {
         // given
-        final IntegerPairAccumulator.Config<Double> config = new IntegerPairAccumulator.Config<>(
-                CATEGORY, NAME, Double.class, AVERAGE);
+        final IntegerPairAccumulator.Config<Double> config =
+                new IntegerPairAccumulator.Config<>(CATEGORY, NAME, Double.class, AVERAGE);
         final IntegerPairAccumulator<Double> accumulator = new DefaultIntegerPairAccumulator<>(config);
         accumulator.update(42, 4711);
 

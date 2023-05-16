@@ -289,7 +289,6 @@ public interface IntegerAccumulator extends Metric {
                     initialValue);
         }
 
-
         /**
          * {@inheritDoc}
          */
