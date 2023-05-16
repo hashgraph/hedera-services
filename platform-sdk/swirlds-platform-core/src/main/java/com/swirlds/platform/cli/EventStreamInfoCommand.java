@@ -105,11 +105,11 @@ public final class EventStreamInfoCommand extends AbstractCommand {
     @CommandLine.Option(
             names = {"-g", "--granularity"},
             description = "The temporal granularity of the data report, in seconds.")
-    private void setGranularityInSeconds(final long granularity) {
-        if (granularity < 1) {
+    private void setGranularityInSeconds(final long granularityInSeconds) {
+        if (granularityInSeconds < 1) {
             throw buildParameterException("Granularity must be strictly greater than 1");
         }
-        this.granularity = Duration.ofSeconds(granularity);
+        this.granularity = Duration.ofSeconds(granularityInSeconds);
     }
 
     @CommandLine.Option(
@@ -130,7 +130,9 @@ public final class EventStreamInfoCommand extends AbstractCommand {
      * @return the report, or null if the directory does not contain any event stream files
      */
     @Nullable
-    private EventStreamReport getReport(@NonNull final Path directory, @NonNull final EventStreamLowerBound bound) {
+    private EventStreamReport generateReport(
+            @NonNull final Path directory, @NonNull final EventStreamLowerBound bound) {
+
         Objects.requireNonNull(directory);
         Objects.requireNonNull(bound);
 
@@ -184,7 +186,7 @@ public final class EventStreamInfoCommand extends AbstractCommand {
 
                 final Path directory = streamElement.normalize();
 
-                final EventStreamReport individualReport = getReport(directory, bound);
+                final EventStreamReport individualReport = generateReport(directory, bound);
 
                 if (individualReport == null) {
                     System.out.printf("No event stream files found in `%s`%n", directory);
@@ -219,7 +221,7 @@ public final class EventStreamInfoCommand extends AbstractCommand {
             generateMultiNodeReport(bound);
         } else {
             // an individual report has been requested. Simply print the report to stdout.
-            System.out.println(getReport(eventStreamDirectory, bound));
+            System.out.println(generateReport(eventStreamDirectory, bound));
         }
         return 0;
     }

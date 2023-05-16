@@ -37,6 +37,9 @@ public class EventStreamSingleFileIterator implements IOIterator<DetailedConsens
     private boolean finished;
     private final boolean toleratePartialFile;
 
+    /**
+     * The path to the file being iterated over
+     */
     private final Path filePath;
 
     /**
