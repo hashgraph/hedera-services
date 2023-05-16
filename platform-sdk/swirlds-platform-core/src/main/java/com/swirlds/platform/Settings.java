@@ -103,7 +103,6 @@ import com.swirlds.platform.internal.SubSetting;
 import com.swirlds.platform.state.StateSettings;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.SignedStateManager;
-import com.swirlds.virtualmap.VirtualMapSettingsFactory;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -391,10 +390,6 @@ public class Settings {
     private StateSettings state = new StateSettings();
 
     /**
-     * Settings controlling VirtualMap.
-     */
-    private VirtualMapSettingsImpl virtualMap = new VirtualMapSettingsImpl();
-    /**
      * Settings controlling JasperDB.
      */
     private JasperDbSettingsImpl jasperDb = new JasperDbSettingsImpl();
@@ -424,7 +419,6 @@ public class Settings {
         SettingsCommon.showInternalStats = getInstance().isShowInternalStats();
         SettingsCommon.verboseStatistics = getInstance().isVerboseStatistics();
 
-        VirtualMapSettingsFactory.configure(getInstance().getVirtualMap());
         JasperDbSettingsFactory.configure(getInstance().getJasperDb());
         MerkleDbSettingsFactory.configure(getInstance().getMerkleDb());
     }
@@ -699,13 +693,13 @@ public class Settings {
                         final Field[] subFields = f.getType().getDeclaredFields();
                         for (final Field subField : subFields) {
                             final Object subFieldValue = subField.get(f.get(this));
-                            list.add(new String[] {
-                                f.getName() + "." + subField.getName(),
-                                subFieldValue == null ? "null" : subFieldValue.toString()
+                            list.add(new String[]{
+                                    f.getName() + "." + subField.getName(),
+                                    subFieldValue == null ? "null" : subFieldValue.toString()
                             });
                         }
                     } else {
-                        list.add(new String[] {f.getName(), f.get(this).toString()});
+                        list.add(new String[]{f.getName(), f.get(this).toString()});
                     }
                 } catch (final IllegalArgumentException | IllegalAccessException e) {
                     logger.error(EXCEPTION.getMarker(), "error while reading settings.txt", e);
@@ -913,10 +907,6 @@ public class Settings {
 
     public int getMaxTransactionCountPerEvent() {
         return maxTransactionCountPerEvent;
-    }
-
-    public VirtualMapSettingsImpl getVirtualMap() {
-        return virtualMap;
     }
 
     public JasperDbSettingsImpl getJasperDb() {

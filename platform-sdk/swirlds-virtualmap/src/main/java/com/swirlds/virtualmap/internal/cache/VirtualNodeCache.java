@@ -21,6 +21,7 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.FastCopyable;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.exceptions.PlatformException;
 import com.swirlds.common.io.SelfSerializable;
@@ -30,8 +31,8 @@ import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.futures.StandardFuture;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
-import com.swirlds.virtualmap.VirtualMapSettingsFactory;
 import com.swirlds.virtualmap.VirtualValue;
+import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.datasource.VirtualInternalRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.datasource.VirtualRecord;
@@ -152,11 +153,17 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
             new MutationComparator<>();
 
     /**
+     * Since {@code com.swirlds.platform.Browser} populates settings, and it is loaded before any
+     * application classes that might instantiate a data source, the {@link ConfigurationHolder}
+     * holder will have been configured by the time this static initializer runs.
+     */
+    private static final VirtualMapConfig config = ConfigurationHolder.getConfigData(VirtualMapConfig.class);
+
+    /**
      * The number of threads to use when cleaning. Can either be supplied by a system property, or
      * will compute a default based on "percentCleanerThreads".
      */
-    private static final int CACHE_CLEANER_THREAD_COUNT =
-            Math.max(1, VirtualMapSettingsFactory.get().getNumCleanerThreads());
+    private static final int CACHE_CLEANER_THREAD_COUNT = Math.max(1, config.numCleanerThreads());
 
     /**
      * This thread pool contains the threads that purge unneeded key/mutation list pairs from the indexes.
@@ -538,7 +545,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      * @param leaf
      * 		The leaf to put. Must not be null. Must have the correct key and path
      * @return
-     * 		The leaf that was put to the cache
+     *        The leaf that was put to the cache
      * @throws NullPointerException
      * 		if the leaf is null
      * @throws MutabilityException
@@ -672,8 +679,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
         // create a new value and a new mutation and return the new mutation.
         if (forModify && mutation.version < fastCopyVersion.get()) {
             assert !leafIndexesAreImmutable.get() : "You cannot create leaf records at this time!";
-            @SuppressWarnings("unchecked")
-            final VirtualLeafRecord<K, V> leaf =
+            @SuppressWarnings("unchecked") final VirtualLeafRecord<K, V> leaf =
                     new VirtualLeafRecord<>(mutation.value.getPath(), null, mutation.value.getKey(), (V)
                             mutation.value.getValue().copy());
             return putLeaf(leaf);
@@ -942,7 +948,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      * Gets estimated number of dirty internal nodes in this cache.
      *
      * @return
-     * 		Estimated number of dirty internal nodes
+     *        Estimated number of dirty internal nodes
      */
     public long estimatedInternalsCount(final long firstLeafPath) {
         return (dirtyInternals == null) ? 0 : dirtyInternals.size();

@@ -21,8 +21,6 @@ import com.swirlds.jasperdb.settings.JasperDbSettingsFactory;
 import com.swirlds.merkledb.settings.MerkleDbSettingsFactory;
 import com.swirlds.platform.JasperDbSettingsImpl;
 import com.swirlds.platform.MerkleDbSettingsImpl;
-import com.swirlds.platform.VirtualMapSettingsImpl;
-import com.swirlds.virtualmap.VirtualMapSettingsFactory;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.lang.reflect.Field;
@@ -42,11 +40,6 @@ public final class BenchmarkSettings {
     private static final Logger logger = LogManager.getLogger(BenchmarkSettings.class);
 
     static final File settingsPath = new File(".", "settings.txt");
-
-    /**
-     * Settings controlling VirtualMap.
-     */
-    static VirtualMapSettingsImpl virtualMap = new VirtualMapSettingsImpl();
 
     /**
      * Settings controlling JasperDB.
@@ -77,7 +70,6 @@ public final class BenchmarkSettings {
 
     public static void init() {
         loadSettings();
-        VirtualMapSettingsFactory.configure(virtualMap);
         JasperDbSettingsFactory.configure(jasperDb);
         MerkleDbSettingsFactory.configure(merkleDb);
     }
