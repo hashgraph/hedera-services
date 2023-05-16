@@ -17,6 +17,7 @@
 package com.swirlds.platform.gossip.chatter;
 
 import static com.swirlds.common.utility.CommonUtils.combineConsumers;
+import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.common.config.BasicConfig;
@@ -37,6 +38,8 @@ import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.common.threading.utility.SequenceCycle;
 import com.swirlds.common.time.OSTime;
 import com.swirlds.common.time.Time;
+import com.swirlds.common.utility.Clearable;
+import com.swirlds.common.utility.LoggingClearables;
 import com.swirlds.common.utility.PlatformVersion;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.Crypto;
@@ -60,6 +63,7 @@ import com.swirlds.platform.event.creation.LoggingEventCreationRules;
 import com.swirlds.platform.event.creation.OtherParentTracker;
 import com.swirlds.platform.event.creation.StaticCreationRules;
 import com.swirlds.platform.event.intake.ChatterEventMapper;
+import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.gossip.AbstractGossip;
 import com.swirlds.platform.gossip.FallenBehindManagerImpl;
 import com.swirlds.platform.gossip.chatter.communication.ChatterProtocol;
@@ -84,11 +88,13 @@ import com.swirlds.platform.reconnect.emergency.EmergencyReconnectProtocol;
 import com.swirlds.platform.state.EmergencyRecoveryManager;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.threading.PauseAndClear;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * Gossip implemented with the chatter protocol.
@@ -101,6 +107,8 @@ public class ChatterGossip extends AbstractGossip {
     private final List<StoppableThread> chatterThreads = new LinkedList<>();
     private final ChatterEventMapper chatterEventMapper = new ChatterEventMapper();
     private final SequenceCycle<EventIntakeTask> intakeCycle;
+    private final Clearable clearAllPipelines;
+    private final EventCreatorThread eventCreatorThread;
 
     public ChatterGossip(
             @NonNull PlatformContext platformContext,
@@ -128,7 +136,8 @@ public class ChatterGossip extends AbstractGossip {
             @NonNull final InterruptableConsumer<EventIntakeTask> eventIntakeLambda,
             @NonNull final EventObserverDispatcher eventObserverDispatcher,
             @NonNull final EventMapper eventMapper,
-            @NonNull final EventIntakeMetrics eventIntakeMetrics) {
+            @NonNull final EventIntakeMetrics eventIntakeMetrics,
+            @NonNull final EventLinker eventLinker) {
         super(
                 platformContext,
                 threadManager,
@@ -291,7 +300,7 @@ public class ChatterGossip extends AbstractGossip {
             // ever be created without an other-parent
             chatterEventCreator.createGenesisEvent();
         }
-        final EventCreatorThread eventCreatorThread = new EventCreatorThread(
+        eventCreatorThread = new EventCreatorThread(
                 threadManager,
                 selfId,
                 chatterConfig.attemptedChatterEventPerSecond(),
@@ -302,24 +311,18 @@ public class ChatterGossip extends AbstractGossip {
         eventObserverDispatcher.addObserver(new ChatterNotifier(selfId, chatterCore));
         eventObserverDispatcher.addObserver(chatterEventMapper);
 
-        // TODO
-        //        clearAllPipelines = new LoggingClearables(
-        //                RECONNECT.getMarker(),
-        //                List.of(
-        //                        // chatter event creator needs to be cleared first, because it sends event to intake
-        //                        Pair.of(eventCreatorThread, "eventCreatorThread"),
-        //                        Pair.of(intakeQueue, "intakeQueue"),
-        //                        // eventLinker is not thread safe, so the intake thread needs to be paused while its
-        // being
-        //                        // cleared
-        //                        Pair.of(new PauseAndClear(intakeQueue, eventLinker), "eventLinker"),
-        //                        Pair.of(eventMapper, "eventMapper"),
-        //                        Pair.of(chatterEventMapper, "chatterEventMapper"),
-        //                        Pair.of(shadowGraph, "shadowGraph"),
-        //                        Pair.of(preConsensusEventHandler, "preConsensusEventHandler"),
-        //                        Pair.of(consensusRoundHandler, "consensusRoundHandler"),
-        //                        Pair.of(swirldStateManager, "swirldStateManager")));
-        eventCreatorThread.start();
+        clearAllPipelines = new LoggingClearables(
+                RECONNECT.getMarker(),
+                List.of(
+                        // chatter event creator needs to be cleared first, because it sends event to intake
+                        Pair.of(eventCreatorThread, "eventCreatorThread"),
+                        Pair.of(intakeQueue, "intakeQueue"),
+                        // eventLinker is not thread safe, so the intake thread needs to be paused while it's being
+                        // cleared
+                        Pair.of(new PauseAndClear(intakeQueue, eventLinker), "eventLinker"),
+                        Pair.of(eventMapper, "eventMapper"),
+                        Pair.of(chatterEventMapper, "chatterEventMapper"),
+                        Pair.of(shadowGraph, "shadowGraph")));
     }
 
     /**
@@ -358,6 +361,11 @@ public class ChatterGossip extends AbstractGossip {
         return intakeCycle;
     }
 
+    @Override
+    public void start() {
+        eventCreatorThread.start();
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -368,5 +376,13 @@ public class ChatterGossip extends AbstractGossip {
         for (final StoppableThread thread : chatterThreads) {
             thread.stop();
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void clear() {
+        clearAllPipelines.clear();
     }
 }

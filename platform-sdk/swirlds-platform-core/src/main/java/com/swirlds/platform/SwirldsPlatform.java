@@ -181,17 +181,12 @@ public class SwirldsPlatform implements Platform, ConnectionTracker, Startable {
     public static final String PLATFORM_THREAD_POOL_NAME = "platform-core";
     /** use this for all logging, as controlled by the optional data/log4j2.xml file */
     private static final Logger logger = LogManager.getLogger(SwirldsPlatform.class);
-    /** alert threshold for java app pause */
-    private static final long PAUSE_ALERT_INTERVAL = 5000;
     /**
      * the ID of the member running this. Since a node can be a main node or a mirror node, the ID is not a primitive
      * value
      */
     private final NodeId selfId;
-    /** tell which pairs of members should establish connections */
-    private final NetworkTopology topology;
 
-    private final Settings settings = Settings.getInstance();
     /** A type used by Hashgraph, Statistics, and SyncUtils. Only Hashgraph modifies this type instance. */
     private final EventMapper eventMapper;
     /** The platforms freeze manager */
@@ -241,9 +236,6 @@ public class SwirldsPlatform implements Platform, ConnectionTracker, Startable {
     private ReconnectHelper reconnectHelper;
 
     private final StateManagementComponent stateManagementComponent;
-    /** last time stamp when pause check timer is active */
-    private long pauseCheckTimeStamp;
-
     private final QueueThread<EventIntakeTask> intakeQueue;
     private final EventLinker eventLinker;
     /** Stores and processes consensus events including sending them to {@link SwirldStateManager} for handling */
@@ -253,7 +245,7 @@ public class SwirldsPlatform implements Platform, ConnectionTracker, Startable {
     /** Checks the validity of transactions and submits valid ones to the event transaction pool */
     private final SwirldTransactionSubmitter transactionSubmitter;
     /** clears all pipelines to prepare for a reconnect */
-    private Clearable clearAllPipelines;
+    private final Clearable clearAllPipelines;
 
     /**
      * Responsible for managing the lifecycle of threads on this platform.
@@ -428,7 +420,10 @@ public class SwirldsPlatform implements Platform, ConnectionTracker, Startable {
 
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
 
-        topology = new StaticTopology( // TODO remove
+        // TODO remove
+        // unidirectional connections are ONLY used for old-style syncs, that don't run as a protocol
+        final Settings settings = Settings.getInstance();
+        NetworkTopology topology = new StaticTopology( // TODO remove
                 selfId,
                 initialAddressBook.getSize(),
                 settings.getNumConnections(),
@@ -437,7 +432,6 @@ public class SwirldsPlatform implements Platform, ConnectionTracker, Startable {
 
         // TODO put into gossip
         // if we are using old-style syncs, don't start the reconnect controller
-        /** tracks if we have fallen behind or not, takes appropriate action if we have */
         FallenBehindManagerImpl fallenBehindManager = new FallenBehindManagerImpl(
                 selfId,
                 topology.getConnectionGraph(),
@@ -584,6 +578,8 @@ public class SwirldsPlatform implements Platform, ConnectionTracker, Startable {
 
             final List<Predicate<ChatterEventDescriptor>> isDuplicateChecks = new ArrayList<>();
             isDuplicateChecks.add(d -> shadowGraph.isHashInGraph(d.getHash()));
+
+            // TODO can we get the linker into gossip?
             if (chatterConfig.useChatter()) {
                 final OrphanBufferingLinker orphanBuffer = new OrphanBufferingLinker(
                         platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
@@ -691,16 +687,6 @@ public class SwirldsPlatform implements Platform, ConnectionTracker, Startable {
                 swirldStateManager::submitTransaction,
                 new TransactionMetrics(metrics));
 
-        clearAllPipelines = new LoggingClearables(
-                RECONNECT.getMarker(),
-                List.of(
-                        Pair.of(intakeQueue, "intakeQueue"),
-                        Pair.of(eventMapper, "eventMapper"),
-                        Pair.of(shadowGraph, "shadowGraph"),
-                        Pair.of(preConsensusEventHandler, "preConsensusEventHandler"),
-                        Pair.of(consensusRoundHandler, "consensusRoundHandler"),
-                        Pair.of(swirldStateManager, "swirldStateManager")));
-
         // TODO put this into a static function in some other class
         if (chatterConfig.useChatter()) {
             gossip = new ChatterGossip(
@@ -729,7 +715,8 @@ public class SwirldsPlatform implements Platform, ConnectionTracker, Startable {
                     taskDispatcher::dispatchTask,
                     eventObserverDispatcher,
                     eventMapper,
-                    eventIntakeMetrics);
+                    eventIntakeMetrics,
+                    eventLinker);
         } else if (syncConfig.syncAsProtocolEnabled()) {
             gossip = new SyncGossip(
                     platformContext,
@@ -786,6 +773,14 @@ public class SwirldsPlatform implements Platform, ConnectionTracker, Startable {
                     eventIntakeMetrics,
                     eventObserverDispatcher);
         }
+
+        clearAllPipelines = new LoggingClearables(
+                RECONNECT.getMarker(),
+                List.of(
+                        Pair.of(gossip, "gossip"),
+                        Pair.of(preConsensusEventHandler, "preConsensusEventHandler"),
+                        Pair.of(consensusRoundHandler, "consensusRoundHandler"),
+                        Pair.of(swirldStateManager, "swirldStateManager")));
 
         // To be removed once the GUI component is better integrated with the platform.
         GuiPlatformAccessor.getInstance().setShadowGraph(selfId.id(), shadowGraph);

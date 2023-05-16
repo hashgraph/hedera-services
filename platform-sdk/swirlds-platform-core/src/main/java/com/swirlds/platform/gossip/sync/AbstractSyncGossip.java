@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.gossip.sync;
 
+import static com.swirlds.logging.LogMarker.RECONNECT;
+
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
@@ -26,6 +28,8 @@ import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.common.time.Time;
+import com.swirlds.common.utility.Clearable;
+import com.swirlds.common.utility.LoggingClearables;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.Crypto;
 import com.swirlds.platform.FreezeManager;
@@ -50,8 +54,10 @@ import com.swirlds.platform.reconnect.ReconnectThrottle;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * Boilerplate code for sync gossip.
@@ -62,6 +68,7 @@ public abstract class AbstractSyncGossip extends AbstractGossip { // TODO should
     protected final Runnable updatePlatformStatus;
     protected final ShadowGraphSynchronizer syncShadowgraphSynchronizer;
     private final InterruptableConsumer<EventIntakeTask> eventIntakeLambda;
+    private final Clearable clearAllPipelines;
 
     public AbstractSyncGossip(
             @NonNull PlatformContext platformContext,
@@ -134,6 +141,13 @@ public abstract class AbstractSyncGossip extends AbstractGossip { // TODO should
                 // don't send or receive init bytes if running sync as a protocol. the negotiator handles this
                 !syncConfig.syncAsProtocolEnabled(),
                 () -> {});
+
+        clearAllPipelines = new LoggingClearables(
+                RECONNECT.getMarker(),
+                List.of(
+                        Pair.of(intakeQueue, "intakeQueue"),
+                        Pair.of(eventMapper, "eventMapper"),
+                        Pair.of(shadowGraph, "shadowGraph")));
     }
 
     /**
@@ -159,5 +173,13 @@ public abstract class AbstractSyncGossip extends AbstractGossip { // TODO should
     @Override
     public InterruptableConsumer<EventIntakeTask> getEventIntakeLambda() {
         return eventIntakeLambda;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void clear() {
+        clearAllPipelines.clear();
     }
 }

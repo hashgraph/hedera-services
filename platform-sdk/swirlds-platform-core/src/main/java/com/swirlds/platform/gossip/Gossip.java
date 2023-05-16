@@ -18,6 +18,7 @@ package com.swirlds.platform.gossip;
 
 import com.swirlds.base.state.Lifecycle;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
+import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.event.EventIntakeTask;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -25,7 +26,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * This object is responsible for talking to other nodes and distributing events.
  */
-public interface Gossip extends Lifecycle {
+public interface Gossip extends Lifecycle, Clearable {
 
     /**
      * Load data from a signed state.
@@ -52,4 +53,10 @@ public interface Gossip extends Lifecycle {
      * @return true if we have fallen behind
      */
     boolean hasFallenBehind();
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    void clear();
 }
