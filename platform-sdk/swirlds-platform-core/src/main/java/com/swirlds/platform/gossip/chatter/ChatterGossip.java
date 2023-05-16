@@ -74,7 +74,6 @@ import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
 import com.swirlds.platform.metrics.ReconnectMetrics;
-import com.swirlds.platform.network.ConnectionTracker;
 import com.swirlds.platform.network.communication.NegotiationProtocols;
 import com.swirlds.platform.network.communication.NegotiatorThread;
 import com.swirlds.platform.network.communication.handshake.VersionCompareHandshake;
@@ -119,7 +118,6 @@ public class ChatterGossip extends AbstractGossip {
             @NonNull AddressBook addressBook,
             @NonNull NodeId selfId,
             @NonNull SoftwareVersion appVersion,
-            @NonNull ConnectionTracker connectionTracker,
             @NonNull final ShadowGraph shadowGraph,
             @NonNull final ReconnectHelper reconnectHelper,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
@@ -137,7 +135,8 @@ public class ChatterGossip extends AbstractGossip {
             @NonNull final EventObserverDispatcher eventObserverDispatcher,
             @NonNull final EventMapper eventMapper,
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
-            @NonNull final EventLinker eventLinker) {
+            @NonNull final EventLinker eventLinker,
+            @NonNull final Runnable updatePlatformStatus) {
         super(
                 platformContext,
                 threadManager,
@@ -147,7 +146,6 @@ public class ChatterGossip extends AbstractGossip {
                 addressBook,
                 selfId,
                 appVersion,
-                connectionTracker,
                 shadowGraph,
                 reconnectHelper,
                 consensusRef,
@@ -161,7 +159,8 @@ public class ChatterGossip extends AbstractGossip {
                 reconnectMetrics,
                 eventMapper,
                 eventIntakeMetrics,
-                eventObserverDispatcher);
+                eventObserverDispatcher,
+                updatePlatformStatus);
 
         this.emergencyRecoveryManager = Objects.requireNonNull(emergencyRecoveryManager);
 

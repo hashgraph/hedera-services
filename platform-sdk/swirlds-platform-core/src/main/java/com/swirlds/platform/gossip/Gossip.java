@@ -20,13 +20,14 @@ import com.swirlds.base.state.Lifecycle;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.event.EventIntakeTask;
+import com.swirlds.platform.network.ConnectionTracker;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * This object is responsible for talking to other nodes and distributing events.
  */
-public interface Gossip extends Lifecycle, Clearable {
+public interface Gossip extends Clearable, ConnectionTracker, Lifecycle {
 
     /**
      * Load data from a signed state.
@@ -59,4 +60,10 @@ public interface Gossip extends Lifecycle, Clearable {
      */
     @Override
     void clear();
+
+    /**
+     * Get the number of active connections.
+     * @return the number of active connections
+     */
+    int activeConnectionNumber();
 }

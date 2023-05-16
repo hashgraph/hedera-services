@@ -43,7 +43,6 @@ import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.SimultaneousSyncThrottle;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
 import com.swirlds.platform.metrics.ReconnectMetrics;
-import com.swirlds.platform.network.ConnectionTracker;
 import com.swirlds.platform.network.unidirectional.HeartbeatProtocolResponder;
 import com.swirlds.platform.network.unidirectional.HeartbeatSender;
 import com.swirlds.platform.network.unidirectional.Listener;
@@ -78,7 +77,6 @@ public class LegacySyncGossip extends AbstractSyncGossip {
             @NonNull AddressBook addressBook,
             @NonNull NodeId selfId,
             @NonNull SoftwareVersion appVersion,
-            @NonNull ConnectionTracker connectionTracker,
             @NonNull final ShadowGraph shadowGraph,
             @NonNull final AtomicReference<Consensus> consensusRef,
             @NonNull final QueueThread<EventIntakeTask> intakeQueue,
@@ -104,7 +102,6 @@ public class LegacySyncGossip extends AbstractSyncGossip {
                 addressBook,
                 selfId,
                 appVersion,
-                connectionTracker,
                 reconnectHelper,
                 updatePlatformStatus,
                 intakeQueue,

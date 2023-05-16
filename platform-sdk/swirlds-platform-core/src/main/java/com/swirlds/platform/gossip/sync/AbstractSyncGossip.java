@@ -47,7 +47,6 @@ import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
 import com.swirlds.platform.metrics.ReconnectMetrics;
-import com.swirlds.platform.network.ConnectionTracker;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.reconnect.ReconnectHelper;
 import com.swirlds.platform.reconnect.ReconnectThrottle;
@@ -65,7 +64,6 @@ import org.apache.commons.lang3.tuple.Pair;
 public abstract class AbstractSyncGossip extends AbstractGossip { // TODO should this class even exist?
 
     protected final SyncConfig syncConfig;
-    protected final Runnable updatePlatformStatus;
     protected final ShadowGraphSynchronizer syncShadowgraphSynchronizer;
     private final InterruptableConsumer<EventIntakeTask> eventIntakeLambda;
     private final Clearable clearAllPipelines;
@@ -79,7 +77,6 @@ public abstract class AbstractSyncGossip extends AbstractGossip { // TODO should
             @NonNull AddressBook addressBook,
             @NonNull NodeId selfId,
             @NonNull SoftwareVersion appVersion,
-            @NonNull ConnectionTracker connectionTracker,
             @NonNull final ReconnectHelper reconnectHelper,
             @NonNull final Runnable updatePlatformStatus,
             @NonNull final QueueThread<EventIntakeTask> intakeQueue,
@@ -106,7 +103,6 @@ public abstract class AbstractSyncGossip extends AbstractGossip { // TODO should
                 addressBook,
                 selfId,
                 appVersion,
-                connectionTracker,
                 shadowGraph,
                 reconnectHelper,
                 consensusRef,
@@ -120,9 +116,9 @@ public abstract class AbstractSyncGossip extends AbstractGossip { // TODO should
                 reconnectMetrics,
                 eventMapper,
                 eventIntakeMetrics,
-                eventObserverDispatcher);
+                eventObserverDispatcher,
+                updatePlatformStatus);
 
-        this.updatePlatformStatus = Objects.requireNonNull(updatePlatformStatus);
         this.eventIntakeLambda = Objects.requireNonNull(eventIntakeLambda);
 
         syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);

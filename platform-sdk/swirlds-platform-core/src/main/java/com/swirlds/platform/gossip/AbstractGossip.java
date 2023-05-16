@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.gossip;
 
+import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.base.state.LifecyclePhase;
@@ -50,6 +51,7 @@ import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.metrics.SyncMetrics;
+import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionTracker;
 import com.swirlds.platform.network.NetworkMetrics;
 import com.swirlds.platform.network.connectivity.ConnectionServer;
@@ -67,12 +69,17 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Boilerplate code for gossip.
  */
-public abstract class AbstractGossip implements Gossip {
+public abstract class AbstractGossip implements ConnectionTracker, Gossip {
+
+    private static final Logger logger = LogManager.getLogger(AbstractGossip.class);
 
     private LifecyclePhase lifecyclePhase = LifecyclePhase.NOT_STARTED;
 
@@ -105,6 +112,10 @@ public abstract class AbstractGossip implements Gossip {
     protected final EventMapper eventMapper;
     protected final EventIntakeMetrics eventIntakeMetrics;
     protected final EventObserverDispatcher eventObserverDispatcher;
+    protected final Runnable updatePlatformStatus;
+
+    /** the number of active connections this node has to other nodes */
+    private final AtomicInteger activeConnectionNumber = new AtomicInteger(0);
 
     // TODO: things to construct internally:
     //  - connection tracker
@@ -121,7 +132,6 @@ public abstract class AbstractGossip implements Gossip {
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
             @NonNull final SoftwareVersion appVersion,
-            @NonNull final ConnectionTracker connectionTracker,
             @NonNull final ShadowGraph shadowGraph,
             @NonNull final ReconnectHelper reconnectHelper,
             @NonNull final AtomicReference<Consensus> consensusRef,
@@ -135,7 +145,8 @@ public abstract class AbstractGossip implements Gossip {
             @NonNull final ReconnectMetrics reconnectMetrics,
             @NonNull final EventMapper eventMapper,
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
-            @NonNull final EventObserverDispatcher eventObserverDispatcher) {
+            @NonNull final EventObserverDispatcher eventObserverDispatcher,
+            @NonNull final Runnable updatePlatformStatus) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
         this.threadManager = Objects.requireNonNull(threadManager);
@@ -158,6 +169,7 @@ public abstract class AbstractGossip implements Gossip {
         this.eventMapper = Objects.requireNonNull(eventMapper);
         this.eventIntakeMetrics = Objects.requireNonNull(eventIntakeMetrics);
         this.eventObserverDispatcher = Objects.requireNonNull(eventObserverDispatcher);
+        this.updatePlatformStatus = Objects.requireNonNull(updatePlatformStatus);
 
         criticalQuorum = buildCriticalQuorum();
         eventObserverDispatcher.addObserver(criticalQuorum);
@@ -178,7 +190,7 @@ public abstract class AbstractGossip implements Gossip {
         final OutboundConnectionCreator connectionCreator = new OutboundConnectionCreator(
                 selfId,
                 StaticSettingsProvider.getSingleton(),
-                connectionTracker,
+                this,
                 socketFactory,
                 addressBook,
                 // only do a version check for old-style sync
@@ -186,7 +198,7 @@ public abstract class AbstractGossip implements Gossip {
                 appVersion);
         connectionManagers = new StaticConnectionManagers(topology, connectionCreator);
         final InboundConnectionHandler inboundConnectionHandler = new InboundConnectionHandler(
-                connectionTracker,
+                this,
                 selfId,
                 addressBook,
                 connectionManagers::newConnection,
@@ -289,5 +301,37 @@ public abstract class AbstractGossip implements Gossip {
     @Override
     public boolean hasFallenBehind() {
         return syncManager.hasFallenBehind();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void newConnectionOpened(final Connection sc) {
+        activeConnectionNumber.getAndIncrement();
+        updatePlatformStatus.run();
+        networkMetrics.connectionEstablished(sc);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void connectionClosed(final boolean outbound, final Connection conn) {
+        final int connectionNumber = activeConnectionNumber.decrementAndGet();
+        if (connectionNumber < 0) {
+            logger.error(EXCEPTION.getMarker(), "activeConnectionNumber is {}, this is a bug!", connectionNumber);
+        }
+        updatePlatformStatus.run();
+
+        networkMetrics.recordDisconnect(conn);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int activeConnectionNumber() {
+        return activeConnectionNumber.get();
     }
 }

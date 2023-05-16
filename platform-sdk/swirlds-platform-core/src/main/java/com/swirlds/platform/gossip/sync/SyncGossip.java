@@ -48,7 +48,6 @@ import com.swirlds.platform.gossip.sync.protocol.SyncProtocol;
 import com.swirlds.platform.heartbeats.HeartbeatProtocol;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
 import com.swirlds.platform.metrics.ReconnectMetrics;
-import com.swirlds.platform.network.ConnectionTracker;
 import com.swirlds.platform.network.communication.NegotiationProtocols;
 import com.swirlds.platform.network.communication.NegotiatorThread;
 import com.swirlds.platform.network.communication.handshake.VersionCompareHandshake;
@@ -94,7 +93,6 @@ public class SyncGossip extends AbstractSyncGossip {
             @NonNull AddressBook addressBook,
             @NonNull NodeId selfId,
             @NonNull SoftwareVersion appVersion,
-            @NonNull ConnectionTracker connectionTracker,
             @NonNull final ReconnectHelper reconnectHelper,
             @NonNull final Runnable updatePlatformStatus,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
@@ -121,7 +119,6 @@ public class SyncGossip extends AbstractSyncGossip {
                 addressBook,
                 selfId,
                 appVersion,
-                connectionTracker,
                 reconnectHelper,
                 updatePlatformStatus,
                 intakeQueue,

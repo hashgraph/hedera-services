@@ -112,13 +112,11 @@ import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.eventhandling.PreConsensusEventHandler;
 import com.swirlds.platform.gossip.FallenBehindManagerImpl;
 import com.swirlds.platform.gossip.Gossip;
-import com.swirlds.platform.gossip.chatter.ChatterGossip;
+import com.swirlds.platform.gossip.GossipFactory;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEventDescriptor;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphEventObserver;
-import com.swirlds.platform.gossip.sync.LegacySyncGossip;
-import com.swirlds.platform.gossip.sync.SyncGossip;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
 import com.swirlds.platform.intake.IntakeCycleStats;
@@ -132,8 +130,6 @@ import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.metrics.RuntimeMetrics;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.metrics.TransactionMetrics;
-import com.swirlds.platform.network.Connection;
-import com.swirlds.platform.network.ConnectionTracker;
 import com.swirlds.platform.network.NetworkMetrics;
 import com.swirlds.platform.network.NetworkStatsTransmitter;
 import com.swirlds.platform.network.topology.NetworkTopology;
@@ -168,7 +164,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -176,7 +171,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class SwirldsPlatform implements Platform, ConnectionTracker, Startable {
+public class SwirldsPlatform implements Platform, Startable {
 
     public static final String PLATFORM_THREAD_POOL_NAME = "platform-core";
     /** use this for all logging, as controlled by the optional data/log4j2.xml file */
@@ -200,8 +195,6 @@ public class SwirldsPlatform implements Platform, ConnectionTracker, Startable {
     private final ShadowGraph shadowGraph;
     /** The last status of the platform that was determined, is null until the platform starts up */
     private final AtomicReference<PlatformStatus> currentPlatformStatus = new AtomicReference<>(null);
-    /** the number of active connections this node has to other nodes */
-    private final AtomicInteger activeConnectionNumber = new AtomicInteger(0);
     /**
      * the object used to calculate consensus. it is volatile because the whole object is replaced when reading a state
      * from disk or getting it through reconnect
@@ -360,7 +353,7 @@ public class SwirldsPlatform implements Platform, ConnectionTracker, Startable {
 
         EventIntakeMetrics eventIntakeMetrics = new EventIntakeMetrics(metrics, time);
         SyncMetrics syncMetrics = new SyncMetrics(metrics);
-        this.networkMetrics =
+        this.networkMetrics = // TODO this is a duplicate definition!
                 new NetworkMetrics(metrics, selfId, getAddressBook().getSize());
         metrics.addUpdater(networkMetrics::update);
         this.reconnectMetrics = new ReconnectMetrics(metrics);
@@ -687,92 +680,34 @@ public class SwirldsPlatform implements Platform, ConnectionTracker, Startable {
                 swirldStateManager::submitTransaction,
                 new TransactionMetrics(metrics));
 
-        // TODO put this into a static function in some other class
-        if (chatterConfig.useChatter()) {
-            gossip = new ChatterGossip(
-                    platformContext,
-                    threadManager,
-                    time,
-                    crypto,
-                    notificationEngine,
-                    initialAddressBook,
-                    selfId,
-                    appVersion,
-                    this,
-                    shadowGraph,
-                    reconnectHelper,
-                    emergencyRecoveryManager,
-                    consensusRef,
-                    intakeQueue,
-                    freezeManager,
-                    startUpEventFrozenManager,
-                    fallenBehindManager,
-                    swirldStateManager,
-                    startedFromGenesis,
-                    reconnectThrottle,
-                    stateManagementComponent,
-                    reconnectMetrics,
-                    taskDispatcher::dispatchTask,
-                    eventObserverDispatcher,
-                    eventMapper,
-                    eventIntakeMetrics,
-                    eventLinker);
-        } else if (syncConfig.syncAsProtocolEnabled()) {
-            gossip = new SyncGossip(
-                    platformContext,
-                    threadManager,
-                    time,
-                    crypto,
-                    notificationEngine,
-                    initialAddressBook,
-                    selfId,
-                    appVersion,
-                    this,
-                    reconnectHelper,
-                    this::checkPlatformStatus,
-                    emergencyRecoveryManager,
-                    intakeQueue,
-                    shadowGraph,
-                    consensusRef,
-                    swirldStateManager,
-                    freezeManager,
-                    startUpEventFrozenManager,
-                    fallenBehindManager,
-                    stateManagementComponent,
-                    reconnectThrottle,
-                    reconnectMetrics,
-                    taskDispatcher::dispatchTask,
-                    eventMapper,
-                    eventIntakeMetrics,
-                    eventObserverDispatcher);
-        } else {
-            gossip = new LegacySyncGossip(
-                    platformContext,
-                    threadManager,
-                    time,
-                    crypto,
-                    notificationEngine,
-                    initialAddressBook,
-                    selfId,
-                    appVersion,
-                    this,
-                    shadowGraph,
-                    consensusRef, // TODO should we just pass in the getter?
-                    intakeQueue,
-                    swirldStateManager,
-                    freezeManager,
-                    startUpEventFrozenManager,
-                    fallenBehindManager,
-                    stateManagementComponent,
-                    reconnectThrottle,
-                    reconnectMetrics,
-                    reconnectHelper,
-                    this::checkPlatformStatus,
-                    taskDispatcher::dispatchTask,
-                    eventMapper,
-                    eventIntakeMetrics,
-                    eventObserverDispatcher);
-        }
+        gossip = GossipFactory.buildGossip(
+                platformContext,
+                threadManager,
+                time,
+                crypto,
+                notificationEngine,
+                initialAddressBook,
+                selfId,
+                appVersion,
+                shadowGraph,
+                reconnectHelper,
+                emergencyRecoveryManager,
+                consensusRef,
+                intakeQueue,
+                freezeManager,
+                startUpEventFrozenManager,
+                fallenBehindManager,
+                swirldStateManager,
+                startedFromGenesis,
+                reconnectThrottle,
+                stateManagementComponent,
+                reconnectMetrics,
+                taskDispatcher::dispatchTask,
+                eventObserverDispatcher,
+                eventMapper,
+                eventIntakeMetrics,
+                eventLinker,
+                this::checkPlatformStatus);
 
         clearAllPipelines = new LoggingClearables(
                 RECONNECT.getMarker(),
@@ -1147,7 +1082,7 @@ public class SwirldsPlatform implements Platform, ConnectionTracker, Startable {
 
         synchronized (currentPlatformStatus) {
             final PlatformStatus newStatus;
-            if (numNodes > 1 && activeConnectionNumber.get() == 0) {
+            if (numNodes > 1 && gossip.activeConnectionNumber() == 0) {
                 newStatus = PlatformStatus.DISCONNECTED;
             } else if (gossip.hasFallenBehind()) {
                 newStatus = PlatformStatus.BEHIND;
@@ -1172,32 +1107,6 @@ public class SwirldsPlatform implements Platform, ConnectionTracker, Startable {
                         PlatformStatusChangeListener.class, new PlatformStatusChangeNotification(newStatus));
             }
         }
-    }
-
-    // TODO get this out of the platform
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void newConnectionOpened(final Connection sc) {
-        activeConnectionNumber.getAndIncrement();
-        checkPlatformStatus();
-        networkMetrics.connectionEstablished(sc);
-    }
-
-    // TODO get this out of the platform
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void connectionClosed(final boolean outbound, final Connection conn) {
-        final int connectionNumber = activeConnectionNumber.decrementAndGet();
-        if (connectionNumber < 0) {
-            logger.error(EXCEPTION.getMarker(), "activeConnectionNumber is {}, this is a bug!", connectionNumber);
-        }
-        checkPlatformStatus();
-
-        networkMetrics.recordDisconnect(conn);
     }
 
     /** {@inheritDoc} */
