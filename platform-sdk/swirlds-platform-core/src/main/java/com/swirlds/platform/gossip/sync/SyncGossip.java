@@ -40,6 +40,7 @@ import com.swirlds.platform.StartUpEventFrozenManager;
 import com.swirlds.platform.components.EventMapper;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.event.EventIntakeTask;
+import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.gossip.sync.protocol.PeerAgnosticSyncChecks;
@@ -91,22 +92,21 @@ public class SyncGossip extends AbstractSyncGossip {
             @NonNull AddressBook addressBook,
             @NonNull NodeId selfId,
             @NonNull SoftwareVersion appVersion,
-            @NonNull final Runnable updatePlatformStatus,
-            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
-            @NonNull final QueueThread<EventIntakeTask> intakeQueue,
             @NonNull final ShadowGraph shadowGraph,
+            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
             @NonNull final AtomicReference<Consensus> consensusRef,
-            @NonNull final SwirldStateManager swirldStateManager,
+            @NonNull final QueueThread<EventIntakeTask> intakeQueue,
             @NonNull final FreezeManager freezeManager,
             @NonNull final StartUpEventFrozenManager startUpEventFrozenManager,
+            @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final StateManagementComponent stateManagementComponent,
             @NonNull final InterruptableConsumer<EventIntakeTask> eventIntakeLambda,
+            @NonNull final EventObserverDispatcher eventObserverDispatcher,
             @NonNull final EventMapper eventMapper,
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
-            @NonNull final EventObserverDispatcher eventObserverDispatcher,
+            @NonNull final Runnable updatePlatformStatus,
             @NonNull final Consumer<SignedState> loadReconnectState) {
-        super(
-                platformContext,
+        super(platformContext,
                 threadManager,
                 time,
                 crypto,
@@ -114,18 +114,18 @@ public class SyncGossip extends AbstractSyncGossip {
                 addressBook,
                 selfId,
                 appVersion,
-                updatePlatformStatus,
-                intakeQueue,
                 shadowGraph,
                 consensusRef,
-                swirldStateManager,
+                intakeQueue,
                 freezeManager,
                 startUpEventFrozenManager,
+                swirldStateManager,
                 stateManagementComponent,
                 eventIntakeLambda,
+                eventObserverDispatcher,
                 eventMapper,
                 eventIntakeMetrics,
-                eventObserverDispatcher,
+                updatePlatformStatus,
                 loadReconnectState);
 
         this.time = Objects.requireNonNull(time);
