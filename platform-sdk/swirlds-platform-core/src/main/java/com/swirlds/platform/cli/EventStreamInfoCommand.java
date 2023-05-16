@@ -21,11 +21,17 @@ import static com.swirlds.platform.util.BootstrapUtils.setupConstructableRegistr
 import com.swirlds.cli.commands.EventStreamCommand;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
+import com.swirlds.platform.event.report.EventStreamMultiNodeReport;
+import com.swirlds.platform.event.report.EventStreamReport;
 import com.swirlds.platform.event.report.EventStreamScanner;
 import com.swirlds.platform.recovery.internal.EventStreamLowerBound;
 import com.swirlds.platform.recovery.internal.EventStreamRoundLowerBound;
 import com.swirlds.platform.recovery.internal.EventStreamTimestampLowerBound;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
@@ -56,8 +62,17 @@ public final class EventStreamInfoCommand extends AbstractCommand {
     /** the round of the lower bound */
     private long roundBound = -1;
 
-    /** the default temporal granularity of the data report, in seconds */
-    private long granularityInSeconds = 10;
+    /** the default temporal granularity of the data report */
+    private Duration granularity = Duration.ofSeconds(10);
+
+    /**
+     * If true, a separate report will be generated for each child directory contained in the specified parent.
+     * <p>
+     * Each individual report will be written to a file in the respective child directory
+     * <p>
+     * In addition to individual reports, a summary report will be generated and printed to stdout.
+     */
+    private boolean multiNodeReport = false;
 
     @CommandLine.Parameters(description = "The path to a directory tree containing event stream files.")
     private void setEventStreamDirectory(final Path eventStreamDirectory) {
@@ -89,14 +104,65 @@ public final class EventStreamInfoCommand extends AbstractCommand {
     @CommandLine.Option(
             names = {"-g", "--granularity"},
             description = "The temporal granularity of the data report, in seconds.")
-    private void setGranularityInSeconds(final long granularityInSeconds) {
-        if (granularityInSeconds < 1) {
+    private void setGranularityInSeconds(final long granularity) {
+        if (granularity < 1) {
             throw buildParameterException("Granularity must be strictly greater than 1");
         }
-        this.granularityInSeconds = granularityInSeconds;
+        this.granularity = Duration.ofSeconds(granularity);
+    }
+
+    @CommandLine.Option(
+            names = {"-m", "--multi-node-report"},
+            description =
+                    "Generate a separate report for each direct child of the specified directory, as well as a summary report.")
+    private void requestMultiNodeReport(final boolean multiNodeReport) {
+        this.multiNodeReport = multiNodeReport;
     }
 
     private EventStreamInfoCommand() {}
+
+    private EventStreamReport getReport(@NonNull final Path directory, @NonNull final EventStreamLowerBound bound) {
+        Objects.requireNonNull(directory);
+        Objects.requireNonNull(bound);
+
+        try {
+            return new EventStreamScanner(directory, bound, granularity, true).createReport();
+        } catch (final IOException e) {
+            throw new UncheckedIOException("Failed to generate event stream report", e);
+        }
+    }
+
+    private void writeNodeReportToFile(@NonNull final Path nodeDirectory, @NonNull final EventStreamReport nodeReport) {
+        final Path reportFile = nodeDirectory.resolve("event-stream-report.txt");
+
+        try {
+            Files.writeString(reportFile, nodeReport.toString());
+        } catch (final IOException e) {
+            throw new UncheckedIOException("Failed to write report to file", e);
+        }
+    }
+
+    private void generateMultiNodeReport(@NonNull final EventStreamLowerBound bound) throws IOException {
+        Objects.requireNonNull(bound);
+
+        final EventStreamMultiNodeReport multiReport = new EventStreamMultiNodeReport(granularity, bound);
+
+        try (final DirectoryStream<Path> stream = Files.newDirectoryStream(eventStreamDirectory)) {
+            stream.forEach(streamElement -> {
+                // child elements that aren't directories are ignored
+                if (!Files.isDirectory(streamElement)) {
+                    return;
+                }
+
+                final EventStreamReport individualReport = getReport(streamElement, bound);
+
+                multiReport.addIndividualReport(streamElement, individualReport);
+                writeNodeReportToFile(streamElement, individualReport);
+            });
+        }
+
+        System.out.println(multiReport);
+    }
 
     @Override
     public Integer call() throws Exception {
@@ -114,9 +180,12 @@ public final class EventStreamInfoCommand extends AbstractCommand {
             bound = EventStreamLowerBound.UNBOUNDED;
         }
 
-        System.out.println(
-                new EventStreamScanner(eventStreamDirectory, bound, Duration.ofSeconds(granularityInSeconds), true)
-                        .createReport());
+        if (multiNodeReport) {
+            generateMultiNodeReport(bound);
+        } else {
+            // an individual report has been requested. Simply print the report to stdout.
+            System.out.println(getReport(eventStreamDirectory, bound));
+        }
         return 0;
     }
 }
