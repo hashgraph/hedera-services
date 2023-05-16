@@ -129,7 +129,6 @@ import com.swirlds.platform.metrics.TransactionMetrics;
 import com.swirlds.platform.observers.ConsensusRoundObserver;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.observers.PreConsensusEventObserver;
-import com.swirlds.platform.reconnect.ReconnectController;
 import com.swirlds.platform.state.EmergencyRecoveryManager;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.StateSettings;
@@ -194,23 +193,21 @@ public class SwirldsPlatform implements Platform, Startable {
     private final Metrics metrics;
 
     private final ConsensusMetrics consensusMetrics;
-    /** Reference to the instance responsible for executing reconnect when chatter is used */
-    private final AtomicReference<ReconnectController> reconnectController = new AtomicReference<>(); // TODO
 
     /** the object that contains all key pairs and CSPRNG state for this member */
     private final Crypto crypto;
     /**
      * True if this node started from genesis.
      */
-    private boolean startedFromGenesis;
+    private final boolean startedFromGenesis;
     /**
      * If a state was loaded from disk, this will have the round of that state.
      */
-    private long diskStateRound;
+    private final long diskStateRound;
     /**
      * If a state was loaded from disk, this will have the hash of that state.
      */
-    private Hash diskStateHash;
+    private final Hash diskStateHash;
 
     private final StateManagementComponent stateManagementComponent;
     private final QueueThread<EventIntakeTask> intakeQueue;
@@ -417,6 +414,16 @@ public class SwirldsPlatform implements Platform, Startable {
 
         final EventTaskDispatcher taskDispatcher;
         final EventObserverDispatcher eventObserverDispatcher;
+
+        if (loadedSignedState.isNotNull()) {
+            diskStateHash = loadedSignedState.get().getState().getHash();
+            diskStateRound = loadedSignedState.get().getRound();
+            startedFromGenesis = false;
+        } else {
+            diskStateHash = null;
+            diskStateRound = -1;
+            startedFromGenesis = true;
+        }
 
         final LoadedState loadedState = initializeLoadedStateFromSignedState(loadedSignedState);
         final PreConsensusEventHandler preConsensusEventHandler;
@@ -741,14 +748,10 @@ public class SwirldsPlatform implements Platform, Startable {
         try (signedStateFromDisk) {
             if (signedStateFromDisk.isNotNull()) {
                 updateLoadedStateAddressBook(signedStateFromDisk.get(), initialAddressBook);
-                diskStateHash = signedStateFromDisk.get().getState().getHash();
-                diskStateRound = signedStateFromDisk.get().getRound();
                 final State initialState = loadSavedState(signedStateFromDisk.get());
                 return new LoadedState(
                         signedStateFromDisk.getAndReserve("SwirldsPlatform.initializeLoadedStateFromSignedState()"),
                         initialState);
-            } else {
-                startedFromGenesis = true;
             }
         } catch (final Exception e) {
             logger.error(EXCEPTION.getMarker(), "Saved state not loaded:", e);
