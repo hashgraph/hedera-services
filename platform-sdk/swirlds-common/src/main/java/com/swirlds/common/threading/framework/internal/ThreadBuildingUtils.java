@@ -18,7 +18,6 @@ package com.swirlds.common.threading.framework.internal;
 
 import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
