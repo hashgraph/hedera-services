@@ -343,8 +343,15 @@ public class ChatterGossip extends AbstractGossip {
                 selfId,
                 topology.getConnectionGraph(),
                 updatePlatformStatus,
-                reconnectController::start,
+                () -> getReconnectController().start(),
                 platformContext.getConfiguration().getConfigData(ReconnectConfig.class));
+    }
+
+    /**
+     * Get teh reconnect controller. This method is needed to break a circular dependency.
+     */
+    public com.swirlds.platform.reconnect.ReconnectController getReconnectController() {
+        return reconnectController;
     }
 
     /**
