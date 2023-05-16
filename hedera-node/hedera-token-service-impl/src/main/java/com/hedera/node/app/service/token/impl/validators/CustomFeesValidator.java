@@ -24,6 +24,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUS
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Token;
@@ -103,7 +104,7 @@ public class CustomFeesValidator {
             @NonNull final List<CustomFee> customFees) {
         final var tokenType = token.tokenType();
         for (final var fee : customFees) {
-            final var collector = accountStore.getAccountById(fee.feeCollectorAccountId());
+            final var collector = accountStore.getAccountById(fee.feeCollectorAccountIdOrElse(AccountID.DEFAULT));
             validateTrue(collector != null, INVALID_CUSTOM_FEE_COLLECTOR);
 
             switch (fee.fee().kind()) {
@@ -111,7 +112,6 @@ public class CustomFeesValidator {
                     final var fixedFee = fee.fixedFee();
                     if (fixedFee.hasDenominatingTokenId()) {
                         validateExplicitTokenDenomination(
-                                tokenType,
                                 collector.accountNumber(),
                                 fixedFee.denominatingTokenId().tokenNum(),
                                 tokenRelationStore,
@@ -133,7 +133,7 @@ public class CustomFeesValidator {
                                 .denominatingTokenId()
                                 .tokenNum();
                         validateExplicitTokenDenomination(
-                                tokenType, collector.accountNumber(), tokenNum, tokenRelationStore, tokenStore);
+                                collector.accountNumber(), tokenNum, tokenRelationStore, tokenStore);
                     }
                 }
             }
@@ -141,14 +141,13 @@ public class CustomFeesValidator {
     }
 
     private void validateExplicitTokenDenomination(
-            TokenType tokenType,
             long feeCollectorNum,
             long tokenNum,
             ReadableTokenRelationStore tokenRelationStore,
             WritableTokenStore tokenStore) {
         final var denomToken = tokenStore.get(tokenNum);
-        validateTrue(denomToken != null, INVALID_TOKEN_ID_IN_CUSTOM_FEES);
-        validateTrue(isFungibleCommon(tokenType), CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON);
+        validateTrue(denomToken.isPresent(), INVALID_TOKEN_ID_IN_CUSTOM_FEES);
+        validateTrue(isFungibleCommon(denomToken.get().tokenType()), CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON);
         validateTrue(
                 tokenRelationStore.get(tokenNum, feeCollectorNum).isPresent(), TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
     }
@@ -183,7 +182,6 @@ public class CustomFeesValidator {
                 fees.add(fee);
             } else {
                 validateExplicitTokenDenomination(
-                        tokenType,
                         fee.feeCollectorAccountId().accountNum(),
                         fixedFee.denominatingTokenId().tokenNum(),
                         tokenRelationStore,
@@ -205,11 +203,7 @@ public class CustomFeesValidator {
                         fallbackFee.denominatingTokenId().tokenNum();
                 validateTrue(denominatingTokenNum != 0, CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON);
                 validateExplicitTokenDenomination(
-                        tokenType,
-                        fee.feeCollectorAccountId().accountNum(),
-                        denominatingTokenNum,
-                        tokenRelationStore,
-                        tokenStore);
+                        fee.feeCollectorAccountId().accountNum(), denominatingTokenNum, tokenRelationStore, tokenStore);
             }
         }
     }

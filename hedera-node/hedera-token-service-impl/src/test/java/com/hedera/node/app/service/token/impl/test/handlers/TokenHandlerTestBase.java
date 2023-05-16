@@ -26,6 +26,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
+import com.hedera.hapi.node.base.Fraction;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
@@ -33,6 +34,10 @@ import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.transaction.CustomFee;
+import com.hedera.hapi.node.transaction.FixedFee;
+import com.hedera.hapi.node.transaction.FractionalFee;
+import com.hedera.hapi.node.transaction.RoyaltyFee;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
@@ -45,6 +50,7 @@ import com.hedera.node.app.spi.state.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -91,6 +97,27 @@ public class TokenHandlerTestBase {
     protected final AccountID TEST_DEFAULT_PAYER =
             AccountID.newBuilder().accountNum(13257).build();
 
+    protected FixedFee fixedFee = FixedFee.newBuilder()
+            .amount(1_000L)
+            .denominatingTokenId(TokenID.newBuilder().tokenNum(1L).build())
+            .build();
+    protected FractionalFee fractionalFee = FractionalFee.newBuilder()
+            .maximumAmount(1_000L)
+            .minimumAmount(1L)
+            .fractionalAmount(Fraction.newBuilder().numerator(1).denominator(2).build())
+            .build();
+    protected RoyaltyFee royaltyFee = RoyaltyFee.newBuilder()
+            .exchangeValueFraction(
+                    Fraction.newBuilder().numerator(1).denominator(2).build())
+            .fallbackFee(fixedFee)
+            .build();
+
+    protected CustomFee customFee = CustomFee.newBuilder()
+            .fixedFee(fixedFee)
+            .fractionalFee(fractionalFee)
+            .royaltyFee(royaltyFee)
+            .build();
+
     protected Token token;
 
     @Mock
@@ -102,11 +129,11 @@ public class TokenHandlerTestBase {
     protected MapReadableKVState<EntityNum, Token> readableTokenState;
     protected MapWritableKVState<EntityNum, Token> writableTokenState;
 
-    protected ReadableTokenStore readableStore;
-    protected WritableTokenStore writableStore;
+    protected ReadableTokenStore readableTokenStore;
+    protected WritableTokenStore writableTokenStore;
 
     @BeforeEach
-    void commonSetUp() {
+    public void commonSetUp() {
         givenValidToken();
         refreshStoresWithCurrentTokenOnlyInReadable();
     }
@@ -116,8 +143,8 @@ public class TokenHandlerTestBase {
         writableTokenState = emptyWritableTokenState();
         given(readableStates.<EntityNum, Token>get(TOKENS)).willReturn(readableTokenState);
         given(writableStates.<EntityNum, Token>get(TOKENS)).willReturn(writableTokenState);
-        readableStore = new ReadableTokenStoreImpl(readableStates);
-        writableStore = new WritableTokenStore(writableStates);
+        readableTokenStore = new ReadableTokenStoreImpl(readableStates);
+        writableTokenStore = new WritableTokenStore(writableStates);
     }
 
     protected void refreshStoresWithCurrentTokenInWritable() {
@@ -125,8 +152,8 @@ public class TokenHandlerTestBase {
         writableTokenState = writableTokenStateWithOneKey();
         given(readableStates.<EntityNum, Token>get(TOKENS)).willReturn(readableTokenState);
         given(writableStates.<EntityNum, Token>get(TOKENS)).willReturn(writableTokenState);
-        readableStore = new ReadableTokenStoreImpl(readableStates);
-        writableStore = new WritableTokenStore(writableStates);
+        readableTokenStore = new ReadableTokenStoreImpl(readableStates);
+        writableTokenStore = new WritableTokenStore(writableStates);
     }
 
     @NonNull
@@ -217,6 +244,7 @@ public class TokenHandlerTestBase {
                 .paused(true)
                 .accountsFrozenByDefault(true)
                 .accountsKycGrantedByDefault(true)
+                .customFees(List.of(customFee))
                 .build();
     }
 

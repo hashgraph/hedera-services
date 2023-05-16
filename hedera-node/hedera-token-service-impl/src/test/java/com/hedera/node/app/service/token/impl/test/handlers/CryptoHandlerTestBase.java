@@ -55,7 +55,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class CryptoHandlerTestBase {
-    protected static final String ACCOUNTS = "ACCOUNTS";
+    public static final String ACCOUNTS = "ACCOUNTS";
     protected static final String ALIASES = "ALIASES";
     protected final Key key = A_COMPLEX_KEY;
     protected final Key otherKey = C_COMPLEX_KEY;
@@ -126,7 +126,7 @@ public class CryptoHandlerTestBase {
     protected CryptoSignatureWaiversImpl waivers;
 
     @BeforeEach
-    protected void setUp() {
+    public void setUp() {
         givenValidAccount();
         refreshStoresWithCurrentTokenOnlyInReadable();
     }

@@ -38,4 +38,7 @@ module com.hedera.node.app.service.token.impl.test {
     opens com.hedera.node.app.service.token.impl.test.config to
             org.junit.platform.commons,
             org.mockito;
+    opens com.hedera.node.app.service.token.impl.test.validators to
+            org.junit.platform.commons,
+            org.mockito;
 }

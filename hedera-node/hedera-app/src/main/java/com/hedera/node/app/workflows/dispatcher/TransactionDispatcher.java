@@ -107,7 +107,8 @@ public class TransactionDispatcher {
                     txn, writableStoreFactory.createTokenRelStore());
             case TOKEN_PAUSE -> dispatchTokenPause(txn, writableStoreFactory.createTokenStore());
             case TOKEN_UNPAUSE -> dispatchTokenUnpause(txn, writableStoreFactory.createTokenStore());
-            case TOKEN_FEE_SCHEDULE_UPDATE -> dispatchTokenFeeScheduleUpdate(txn, writableStoreFactory.createTokenStore());
+            case TOKEN_FEE_SCHEDULE_UPDATE -> dispatchTokenFeeScheduleUpdate(
+                    txn, writableStoreFactory.createTokenStore());
             case CRYPTO_CREATE -> dispatchCryptoCreate(txn, writableStoreFactory.createAccountStore());
             case UTIL_PRNG -> dispatchPrng(txn);
             default -> throw new IllegalArgumentException(TYPE_NOT_SUPPORTED);
@@ -456,7 +457,7 @@ public class TransactionDispatcher {
 
         final var handler = handlers.tokenFeeScheduleUpdateHandler();
         handler.handle(handleContext, feeScheduleUpdate, tokenStore);
-        tokenStore.commit();
+        finishTokenFeeScheduleUpdate(tokenStore);
     }
 
     /**
