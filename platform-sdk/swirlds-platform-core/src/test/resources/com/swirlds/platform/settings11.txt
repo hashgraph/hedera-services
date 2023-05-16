@@ -1,5 +1,5 @@
 jasperDb.maxNumOfKeys, 250000000
-jasperDb.internalHashesRamToDiskThreshold, 1
+jasperDb.hashesRamToDiskThreshold, 1
 jasperDb.smallMergeCutoffMb, 4096
 jasperDb.mediumMergeCutoffMb, 40960
 jasperDb.moveListChunkSize, 250000

@@ -17,6 +17,7 @@
 package com.swirlds.merkledb;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
@@ -24,20 +25,26 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.merkledb.files.VirtualInternalRecordSerializer;
+import com.swirlds.merkledb.files.VirtualHashRecordSerializer;
 import com.swirlds.merkledb.serialize.DataItemHeader;
-import com.swirlds.virtualmap.datasource.VirtualInternalRecord;
+import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class VirtualInternalRecordSerializerTest {
+class VirtualHashRecordSerializerTest {
+
+    private VirtualHashRecordSerializer subject;
+
+    @BeforeEach
+    void setUp() {
+        subject = new VirtualHashRecordSerializer();
+    }
 
     @Test
     void deserializeEnforcesCurrentVersion() {
         final ByteBuffer someBuffer = ByteBuffer.allocate(1);
-        final VirtualInternalRecordSerializer subject = new VirtualInternalRecordSerializer();
-
         assertThrows(
                 IllegalArgumentException.class,
                 () -> subject.deserialize(someBuffer, 123),
@@ -48,8 +55,7 @@ class VirtualInternalRecordSerializerTest {
     void serializeEnforcesDefaultDigest() {
         final ByteBuffer bbuf = mock(ByteBuffer.class);
         final Hash nonDefaultHash = new Hash(DigestType.SHA_512);
-        final VirtualInternalRecordSerializer subject = new VirtualInternalRecordSerializer();
-        final VirtualInternalRecord data = new VirtualInternalRecord(1L, nonDefaultHash);
+        final VirtualHashRecord data = new VirtualHashRecord(1L, nonDefaultHash);
         assertEquals(Long.BYTES, subject.getHeaderSize(), "Header size should be 8 bytes");
         assertEquals(
                 56, subject.getSerializedSize(), "Serialized size should be 8 bytes for header + 48 bytes for digest");
@@ -65,12 +71,26 @@ class VirtualInternalRecordSerializerTest {
     void deserializeHappyPath() throws IOException {
         final ByteBuffer bb = mock(ByteBuffer.class);
         final Hash validHash = new Hash(DigestType.SHA_384);
-        final VirtualInternalRecord expectedData = new VirtualInternalRecord(42L, validHash);
-        final VirtualInternalRecordSerializer subject = new VirtualInternalRecordSerializer();
+        final VirtualHashRecord expectedData = new VirtualHashRecord(42L, validHash);
         when(bb.getLong()).thenReturn(42L);
         when(bb.get(any())).thenReturn(bb);
         final DataItemHeader expectedHeader = new DataItemHeader(56, 42L);
         assertEquals(expectedHeader, subject.deserializeHeader(bb), "Deserialized header should match serialized");
         assertEquals(expectedData, subject.deserialize(bb, 1L), "Deserialized data should match serialized");
+    }
+
+    @Test
+    void testEquals() {
+        final VirtualHashRecordSerializer other = new VirtualHashRecordSerializer();
+        assertEquals(subject, other, "Should be equal");
+        assertEquals(subject, subject, "Should be equal");
+        assertFalse(subject.equals(null), "Should not be equal to null");
+        assertFalse(other.equals(new Object()), "Should not be equal to Object");
+    }
+
+    @Test
+    void testHashCode() {
+        final VirtualHashRecordSerializer other = new VirtualHashRecordSerializer();
+        assertEquals(subject.hashCode(), other.hashCode(), "Should have same hash code");
     }
 }

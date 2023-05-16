@@ -69,7 +69,7 @@ public class VirtualKeySetSerializer implements KeySerializer<VirtualLongKey> {
      * {@inheritDoc}
      */
     @Override
-    public int getSerializedSize() {
+    public int getSerializedSize(final long dataVersion) {
         return BYTES_PER_LONG;
     }
 
