@@ -126,8 +126,8 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
     @Override
     protected void finishTokenAssociateToAccount(
             @NonNull final WritableAccountStore accountStore, @NonNull final WritableTokenRelationStore tokenRelStore) {
-        accountStore.commit();
-        tokenRelStore.commit();
+        requireNonNull(accountStore).commit();
+        requireNonNull(tokenRelStore).commit();
     }
 
     @Override

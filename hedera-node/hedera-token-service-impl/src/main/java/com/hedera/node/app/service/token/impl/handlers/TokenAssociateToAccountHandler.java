@@ -210,11 +210,12 @@ public class TokenAssociateToAccountHandler implements TransactionHandler {
         }
     }
 
-    private record Validated(Account account, List<Token> tokens) {}
+    private record Validated(@NonNull Account account, @NonNull List<Token> tokens) {}
 
     /**
      * Performs checks that require state and context
      */
+    @NonNull
     private Validated validateSemantics(
             @NonNull final List<TokenID> tokenIds,
             @NonNull final AccountID accountId,

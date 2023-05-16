@@ -74,6 +74,7 @@ public class WritableTokenRelationStore {
      * @param accountNum - the number of the account relation to be retrieved
      * @param tokenNum   - the number of the token relation to be retrieved
      */
+    @NonNull
     public Optional<TokenRelation> get(final long accountNum, final long tokenNum) {
         final var tokenRelation =
                 Objects.requireNonNull(tokenRelState).get(EntityNumPair.fromLongs(accountNum, tokenNum));
@@ -87,6 +88,7 @@ public class WritableTokenRelationStore {
      * @param accountNum - the number of the account to be retrieved
      * @param tokenNum   - the number of the token to be retrieved
      */
+    @NonNull
     public Optional<TokenRelation> getForModify(final long accountNum, final long tokenNum) {
         final var token =
                 Objects.requireNonNull(tokenRelState).getForModify(EntityNumPair.fromLongs(accountNum, tokenNum));
