@@ -95,7 +95,8 @@ public class SimpleSimulatedGossip {
      * @return all messages delivered to the node
      */
     public @NonNull Deque<GossipMessage> getDeliveredTo(@NonNull final NodeId nodeId) {
-        return delivered.get(nodeId.getIdAsInt());
+        Objects.requireNonNull(nodeId);
+        return delivered.get(nodeId);
     }
 
     /**

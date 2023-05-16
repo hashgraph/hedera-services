@@ -38,13 +38,16 @@ public class CountingChatterEvent implements SimulatedChatterEvent {
     private static long orderCounter = 0;
 
     /** A unique description of this event */
-    private final EventDescriptor descriptor;
+    private EventDescriptor descriptor;
     /** The creator of this event */
     private long creator;
     /** The unique, monotonically increasing number assigned to each event across all nodes */
     private long order;
     /** The time this event was received by a node. */
     private Instant timeReceived;
+
+    /** Default constructor for constructable registry */
+    public CountingChatterEvent() {}
 
     public CountingChatterEvent(final long creator) {
         this(creator, orderCounter++);
@@ -83,6 +86,7 @@ public class CountingChatterEvent implements SimulatedChatterEvent {
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         creator = in.readLong();
         order = in.readLong();
+        this.descriptor = new CountingEventDescriptor(creator, order);
     }
 
     @Override

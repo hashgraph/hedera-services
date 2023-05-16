@@ -34,9 +34,12 @@ public class CountingEventDescriptor implements EventDescriptor {
     }
 
     /** The creator of the event */
-    private final long creator;
+    private long creator;
     /** The unique order number of this event */
-    private final long order;
+    private long order;
+
+    /** Default constructor for constructable registry */
+    public CountingEventDescriptor() {}
 
     public CountingEventDescriptor(final long creator, final long order) {
         this.creator = creator;
