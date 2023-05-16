@@ -372,8 +372,8 @@ class AddressBookInitializerTest {
                         .get()
                         .add(configAddressBook
                                 .get()
-                                .getAddress(0)
-                                .copySetId(configAddressBook.get().getNextNodeId())));
+                                .getAddress(configAddressBook.get().getNodeId(0))
+                                .copySetNodeId(configAddressBook.get().getNextNodeId())));
                 break;
             case 7:
                 stub.thenAnswer(foo -> copyWithWeightChanges(configAddressBook.get(), 7));
@@ -393,7 +393,7 @@ class AddressBookInitializerTest {
     @NonNull
     private AddressBook getRandomAddressBook() {
         return new RandomAddressBookGenerator()
-                .setSequentialIds(true)
+                .setSequentialIds(false)
                 .setSize(5)
                 .setCustomWeightGenerator(i -> i)
                 .build();

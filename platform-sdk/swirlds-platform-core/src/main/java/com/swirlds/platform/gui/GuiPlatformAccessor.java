@@ -16,15 +16,22 @@
 
 package com.swirlds.platform.gui;
 
+import static com.swirlds.logging.LogMarker.EXCEPTION;
+
+import com.swirlds.common.system.events.PlatformEvent;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
+import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Provides a way to access private platform objects from the GUI. Suboptimal, but necessary to preserve the current UI
@@ -34,6 +41,8 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 @Deprecated(forRemoval = true)
 public final class GuiPlatformAccessor {
+
+    private static final Logger logger = LogManager.getLogger(GuiPlatformAccessor.class);
 
     private final Map<Long, String> aboutStrings = new ConcurrentHashMap<>();
     private final Map<Long, String> platformNames = new ConcurrentHashMap<>();
@@ -163,6 +172,41 @@ public final class GuiPlatformAccessor {
     @Nullable
     public ShadowGraph getShadowGraph(final long nodeId) {
         return shadowGraphs.getOrDefault(nodeId, null);
+    }
+
+    /**
+     * Get a sorted list of events.
+     */
+    public PlatformEvent[] getAllEvents(final long nodeId) {
+        // There is currently a race condition that can cause an exception if event order changes at
+        // just the right moment. Since this is just a testing utility method and not used in production
+        // environments, we can just retry until we succeed.
+        int maxRetries = 100;
+        while (maxRetries-- > 0) {
+            try {
+                final EventImpl[] allEvents = getShadowGraph(nodeId).getAllEvents();
+                Arrays.sort(allEvents, (o1, o2) -> {
+                    if (o1.getConsensusOrder() != -1 && o2.getConsensusOrder() != -1) {
+                        // both are consensus
+                        return Long.compare(o1.getConsensusOrder(), o2.getConsensusOrder());
+                    } else if (o1.getConsensusTimestamp() == null && o2.getConsensusTimestamp() == null) {
+                        // neither are consensus
+                        return o1.getTimeReceived().compareTo(o2.getTimeReceived());
+                    } else {
+                        // one is consensus, the other is not
+                        if (o1.getConsensusTimestamp() == null) {
+                            return 1;
+                        } else {
+                            return -1;
+                        }
+                    }
+                });
+                return allEvents;
+            } catch (final IllegalArgumentException e) {
+                logger.error(EXCEPTION.getMarker(), "Exception while sorting events", e);
+            }
+        }
+        throw new IllegalStateException("Unable to sort events after 100 retries");
     }
 
     /**
