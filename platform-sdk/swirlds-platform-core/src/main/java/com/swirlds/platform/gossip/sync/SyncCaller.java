@@ -22,6 +22,7 @@ import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.logging.LogMarker.SOCKET_EXCEPTIONS;
 import static com.swirlds.logging.LogMarker.SYNC_START;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
@@ -29,16 +30,21 @@ import com.swirlds.common.threading.locks.locked.MaybeLocked;
 import com.swirlds.common.threading.locks.locked.MaybeLockedResource;
 import com.swirlds.logging.payloads.ReconnectPeerInfoPayload;
 import com.swirlds.platform.Settings;
-import com.swirlds.platform.SwirldsPlatform;
+import com.swirlds.platform.components.EventTaskCreator;
+import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
+import com.swirlds.platform.gossip.shadowgraph.SimultaneousSyncThrottle;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionManager;
 import com.swirlds.platform.network.NetworkUtils;
+import com.swirlds.platform.network.unidirectional.SharedConnectionLocks;
 import com.swirlds.platform.reconnect.ReconnectHelper;
 import com.swirlds.platform.reconnect.ReconnectUtils;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
@@ -51,8 +57,6 @@ public class SyncCaller implements Runnable {
     private static final Logger logger = LogManager.getLogger(SyncCaller.class);
     /** ID number for this caller thread (0 is the first created by this platform, 1 next, etc) */
     final int callerNumber;
-    /** the Platform object that is using this to call other members */
-    private final SwirldsPlatform platform;
     /** the address book with all member IP addresses and ports, etc. */
     private final AddressBook addressBook;
     /** the member ID for self */
@@ -60,6 +64,12 @@ public class SyncCaller implements Runnable {
 
     private final ReconnectHelper reconnectHelper;
     private final SignedStateValidator signedStateValidator;
+    private final SimultaneousSyncThrottle simultaneousSyncThrottle;
+    private final SyncManagerImpl syncManager;
+    private final SharedConnectionLocks sharedConnectionLocks;
+    private final EventTaskCreator eventTaskCreator;
+    private final Runnable updatePlatformStatus;
+    private ShadowGraphSynchronizer syncShadowgraphSynchronizer;
 
     private static final SpeedometerMetric.Config SLEEP_1_PER_SECOND_CONFIG = new SpeedometerMetric.Config(
                     INTERNAL_CATEGORY, "sleep1/sec")
@@ -70,27 +80,46 @@ public class SyncCaller implements Runnable {
      * The platform instantiates this, and gives it the self ID number, plus other info that will be useful to it. The
      * platform can then create a thread to call run(). It will then repeatedly initiate syncs with others.
      *
-     * @param platform     the platform using this caller
-     * @param addressBook  the address book listing who can be called
-     * @param selfId       the ID number for self /** ID number for this caller thread (0 is the first created by this
-     *                     platform, 1 next, etc)
-     * @param callerNumber 0 for the first caller thread created by this platform, 1 for the next, etc
+     * @param platformContext             the platform context
+     * @param addressBook                 the address book listing who can be called
+     * @param selfId                      the ID number for self /** ID number for this caller thread (0 is the first
+     *                                    created by this platform, 1 next, etc)
+     * @param callerNumber                0 for the first caller thread created by this platform, 1 for the next, etc
+     * @param reconnectHelper             assists with the reconnect workflow
+     * @param signedStateValidator        validates states received via reconnect
+     * @param simultaneousSyncThrottle    the throttle to use to limit the number of simultaneous syncs
+     * @param syncManager                 the sync manager
+     * @param sharedConnectionLocks       the shared connection locks
+     * @param eventTaskCreator            responsible for scheduling the creation of events
+     * @param updatePlatformStatus        calling this method causes the platform to re-evaluate its status
+     * @param syncShadowgraphSynchronizer the shadowgraph synchronizer
      */
     public SyncCaller(
-            final SwirldsPlatform platform,
-            final AddressBook addressBook,
-            final NodeId selfId,
+            @NonNull final PlatformContext platformContext,
+            @NonNull final AddressBook addressBook,
+            @NonNull final NodeId selfId,
             final int callerNumber,
-            final ReconnectHelper reconnectHelper,
-            final SignedStateValidator signedStateValidator) {
-        this.platform = platform;
-        this.addressBook = addressBook;
-        this.selfId = selfId;
+            @NonNull final ReconnectHelper reconnectHelper,
+            @NonNull final SignedStateValidator signedStateValidator,
+            @NonNull final SimultaneousSyncThrottle simultaneousSyncThrottle,
+            @NonNull final SyncManagerImpl syncManager,
+            @NonNull final SharedConnectionLocks sharedConnectionLocks,
+            @NonNull final EventTaskCreator eventTaskCreator,
+            @NonNull final Runnable updatePlatformStatus,
+            @NonNull final ShadowGraphSynchronizer syncShadowgraphSynchronizer) {
+        this.addressBook = Objects.requireNonNull(addressBook);
+        this.selfId = Objects.requireNonNull(selfId);
         this.callerNumber = callerNumber;
-        this.reconnectHelper = reconnectHelper;
-        this.signedStateValidator = signedStateValidator;
+        this.reconnectHelper = Objects.requireNonNull(reconnectHelper);
+        this.signedStateValidator = Objects.requireNonNull(signedStateValidator);
+        this.simultaneousSyncThrottle = Objects.requireNonNull(simultaneousSyncThrottle);
+        this.syncManager = Objects.requireNonNull(syncManager);
+        this.sharedConnectionLocks = Objects.requireNonNull(sharedConnectionLocks);
+        this.eventTaskCreator = Objects.requireNonNull(eventTaskCreator);
+        this.updatePlatformStatus = Objects.requireNonNull(updatePlatformStatus);
+        this.syncShadowgraphSynchronizer = Objects.requireNonNull(syncShadowgraphSynchronizer);
 
-        sleep1perSecond = platform.getContext().getMetrics().getOrCreate(SLEEP_1_PER_SECOND_CONFIG);
+        sleep1perSecond = platformContext.getMetrics().getOrCreate(SLEEP_1_PER_SECOND_CONFIG);
     }
 
     /**
@@ -105,7 +134,6 @@ public class SyncCaller implements Runnable {
                 final long otherId = callRequestSync();
                 if (otherId >= 0) { // successful sync
                     failedAttempts = 0;
-                    sleepAfterSync();
                 } else {
                     failedAttempts++;
                     if (failedAttempts >= Settings.getInstance().getCallerSkipsBeforeSleep()) {
@@ -130,17 +158,6 @@ public class SyncCaller implements Runnable {
     }
 
     /**
-     * If configured, sleeps a defined amount of time after a successful sync
-     *
-     * @throws InterruptedException if the thread is interrupted
-     */
-    private void sleepAfterSync() throws InterruptedException {
-        if (platform.getSleepAfterSync() > 0) {
-            Thread.sleep(platform.getSleepAfterSync());
-        }
-    }
-
-    /**
      * Chose another member at random, request a sync with them, and perform one sync if they accept the request. A -1
      * is returned if the sync did not happen for some reason, such as the chosen member wasn't connected, or had a
      * communication error, or was already syncing by calling self, or the lock was still held by the heartbeat thread,
@@ -151,7 +168,7 @@ public class SyncCaller implements Runnable {
     private int callRequestSync() {
         int otherId = -1; // the ID of the member that I am syncing with now
         try { // catch any exceptions, log them, and ignore them
-            if (platform.getSyncManager().hasFallenBehind()) {
+            if (syncManager.hasFallenBehind()) {
                 // we will not sync if we have fallen behind
                 if (callerNumber == 0) {
                     // caller number 0 will do the reconnect, the others will wait
@@ -172,20 +189,22 @@ public class SyncCaller implements Runnable {
             }
 
             // check with sync manager for any reasons not to sync
-            if (!platform.getSyncManager().shouldInitiateSync()) {
+            if (!syncManager.shouldInitiateSync()) {
                 return -1;
             }
 
             if (addressBook.getSize() == 1 && callerNumber == 0) {
-                platform.checkPlatformStatus();
+                updatePlatformStatus.run();
                 // Only one member exists (self), so create an event and add it to the hashgraph.
                 // Only one caller is allowed to do this (caller number 0).
                 // This is like syncing with self, and then creating an event with otherParent being self.
 
                 // self is the only member, so create an event for just this one transaction,
                 // and immediately put it into the hashgraph. No syncing is needed.
-                platform.getEventTaskCreator()
-                        .createEvent(selfId.id() /*selfId assumed to be main*/); // otherID (so self will count as the
+
+                eventTaskCreator.createEvent(
+                        selfId.id() /*selfId assumed to be main*/); // otherID (so self will count as the
+
                 // "other")
                 Thread.sleep(50);
                 // selfId assumed to be main
@@ -197,7 +216,7 @@ public class SyncCaller implements Runnable {
             }
 
             // the sync manager will tell us who we need to call
-            final List<Long> nodeList = platform.getSyncManager().getNeighborsToCall();
+            final List<Long> nodeList = syncManager.getNeighborsToCall();
 
             // the array is sorted in ascending or from highest to lowest priority, so we go through the array and
             // try to
@@ -209,15 +228,14 @@ public class SyncCaller implements Runnable {
 
                 logger.debug(SYNC_START.getMarker(), "{} about to call {} (connection looks good)", selfId, otherId);
 
-                try (final MaybeLocked lock =
-                        platform.getSimultaneousSyncThrottle().trySync(otherId, true)) {
+                try (final MaybeLocked lock = simultaneousSyncThrottle.trySync(otherId, true)) {
                     // Try to get both locks. If either is unavailable, then try the next node. Never block.
                     if (!lock.isLockAcquired()) {
                         continue;
                     }
 
                     try (final MaybeLockedResource<ConnectionManager> resource =
-                            platform.getSharedConnectionLocks().tryLockConnection(new NodeId(otherId))) {
+                            sharedConnectionLocks.tryLockConnection(new NodeId(otherId))) {
                         if (!resource.isLockAcquired()) {
                             continue;
                         }
@@ -228,8 +246,7 @@ public class SyncCaller implements Runnable {
                         }
                         // try to initiate a sync. If they accept the request, then sync
                         try {
-                            syncAccepted =
-                                    platform.getSyncShadowGraphSynchronizer().synchronize(conn);
+                            syncAccepted = syncShadowgraphSynchronizer.synchronize(conn);
                             if (syncAccepted) {
                                 break;
                             }
@@ -241,7 +258,7 @@ public class SyncCaller implements Runnable {
                                     SOCKET_EXCEPTIONS.getMarker(),
                                     "SyncCaller.sync SocketException (so incrementing iCSyncPerSec) while {} "
                                             + "listening for {}: {}",
-                                    platform.getSelfId(),
+                                    selfId,
                                     otherId,
                                     formattedException);
 
@@ -256,7 +273,7 @@ public class SyncCaller implements Runnable {
                                         marker,
                                         "! SyncCaller.sync Exception (so incrementing iCSyncPerSec) while {} "
                                                 + "listening for {}: {}",
-                                        platform.getSelfId(),
+                                        selfId,
                                         otherId,
                                         formattedException);
                             } else {
@@ -264,7 +281,7 @@ public class SyncCaller implements Runnable {
                                         marker,
                                         "! SyncCaller.sync Exception (so incrementing iCSyncPerSec) while {} "
                                                 + "listening for {}:",
-                                        platform.getSelfId(),
+                                        selfId,
                                         otherId,
                                         e);
                             }
@@ -285,7 +302,7 @@ public class SyncCaller implements Runnable {
             logger.warn(
                     EXCEPTION.getMarker(),
                     "! SyncCaller.sync Interrupted (so incrementing iCSyncPerSec) while {} listening for {}:",
-                    platform.getSelfId(),
+                    selfId,
                     otherId,
                     e);
 
@@ -294,7 +311,7 @@ public class SyncCaller implements Runnable {
             logger.error(
                     EXCEPTION.getMarker(),
                     "! SyncCaller.sync Exception (so incrementing iCSyncPerSec) while {} listening for {}:",
-                    platform.getSelfId(),
+                    selfId,
                     otherId,
                     e);
             return -1;
@@ -307,19 +324,18 @@ public class SyncCaller implements Runnable {
      * @return true if the reconnect attempt completed successfully; otherwise false
      */
     private boolean doReconnect() {
-        logger.info(
-                RECONNECT.getMarker(), "{} has fallen behind, will wait for all syncs to finish", platform.getSelfId());
+        logger.info(RECONNECT.getMarker(), "{} has fallen behind, will wait for all syncs to finish", selfId);
 
         // clear handlers and transaction pool to make sure that the pre-consensus event queue (q1)
         // and consensus round queue (q2) are empty during reconnect
         reconnectHelper.prepareForReconnect();
 
-        final List<Long> reconnectNeighbors = platform.getSyncManager().getNeighborsForReconnect();
+        final List<Long> reconnectNeighbors = syncManager.getNeighborsForReconnect();
         logger.info(
                 RECONNECT.getMarker(),
                 "{} has fallen behind, will try to reconnect with {}",
-                platform::getSelfId,
-                reconnectNeighbors::toString);
+                selfId,
+                reconnectNeighbors);
 
         return doReconnect(reconnectNeighbors);
     }
@@ -331,7 +347,7 @@ public class SyncCaller implements Runnable {
         for (final Long neighborId : reconnectNeighbors) {
             // try to get the lock, it should be available if we have fallen behind
             try (final MaybeLockedResource<ConnectionManager> resource =
-                    platform.getSharedConnectionLocks().tryLockConnection(new NodeId(neighborId))) {
+                    sharedConnectionLocks.tryLockConnection(new NodeId(neighborId))) {
                 if (!resource.isLockAcquired()) {
                     peerInfo.addPeerInfo(neighborId, "failed to acquire lock, blocked by heartbeat thread");
                     continue;
@@ -365,7 +381,7 @@ public class SyncCaller implements Runnable {
         logger.info(
                 RECONNECT.getMarker(),
                 "{} `doReconnect` : finished, could not reconnect with any peer, reasons:\n{}",
-                platform.getSelfId(),
+                selfId,
                 peerInfo);
 
         // if no nodes were found to reconnect with, return false

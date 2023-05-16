@@ -42,7 +42,6 @@ import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.PlatformWithDeprecatedMethods;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldDualState;
@@ -94,6 +93,7 @@ import com.swirlds.merkle.map.test.lifecycle.EntityType;
 import com.swirlds.merkle.map.test.lifecycle.TransactionState;
 import com.swirlds.merkle.map.test.lifecycle.TransactionType;
 import com.swirlds.merkle.map.test.pta.MapKey;
+import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.Utilities;
 import com.swirlds.virtualmap.VirtualMap;
 import java.io.File;
@@ -649,7 +649,14 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         throwIfImmutable();
         roundCounter++;
 
-        return new PlatformTestingToolState(this);
+        final PlatformTestingToolState mutableCopy = new PlatformTestingToolState(this);
+
+        if (platform != null) {
+            UnsafeMutablePTTStateAccessor.getInstance()
+                    .setMutableState(platform.getSelfId().id(), mutableCopy);
+        }
+
+        return mutableCopy;
     }
 
     /**
@@ -1218,6 +1225,8 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
             final SoftwareVersion previousSoftwareVersion) {
 
         this.platform = platform;
+        UnsafeMutablePTTStateAccessor.getInstance()
+                .setMutableState(platform.getSelfId().id(), this);
 
         initialized.set(true);
 
@@ -1225,7 +1234,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
 
         // If parameter exists, load PayloadCfgSimple from top level json configuration file
         // Otherwise, load the default setting
-        final String[] parameters = ((PlatformWithDeprecatedMethods) platform).getParameters();
+        final String[] parameters = ParameterProvider.getInstance().getParameters();
         if (parameters != null && parameters.length > 0) {
             final String jsonFileName = parameters[0];
             final PayloadCfgSimple payloadCfgSimple = PlatformTestingToolMain.getPayloadCfgSimple(jsonFileName);
@@ -1388,11 +1397,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     public void rebuildExpectedMapFromState(final Instant consensusTimestamp, final boolean isRestart) {
         // rebuild ExpectedMap
         logger.info(LOGM_DEMO_INFO, "Start Rebuilding ExpectedMap");
-        long timestampMilliseconds = 0;
-        if (consensusTimestamp != null) {
-            timestampMilliseconds = consensusTimestamp.toEpochMilli();
-        }
-        this.expectedFCMFamily.rebuildExpectedMap(getStateMap(), isRestart, timestampMilliseconds);
+        this.expectedFCMFamily.rebuildExpectedMap(getStateMap(), isRestart, 0);
         logger.info(LOGM_DEMO_INFO, "Finish Rebuilding ExpectedMap [ size = {} ]", () -> expectedFCMFamily
                 .getExpectedMap()
                 .size());
