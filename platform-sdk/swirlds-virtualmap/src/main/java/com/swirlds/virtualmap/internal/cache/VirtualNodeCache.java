@@ -679,7 +679,8 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
         // create a new value and a new mutation and return the new mutation.
         if (forModify && mutation.version < fastCopyVersion.get()) {
             assert !leafIndexesAreImmutable.get() : "You cannot create leaf records at this time!";
-            @SuppressWarnings("unchecked") final VirtualLeafRecord<K, V> leaf =
+            @SuppressWarnings("unchecked")
+            final VirtualLeafRecord<K, V> leaf =
                     new VirtualLeafRecord<>(mutation.value.getPath(), null, mutation.value.getKey(), (V)
                             mutation.value.getValue().copy());
             return putLeaf(leaf);

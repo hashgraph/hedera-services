@@ -755,7 +755,7 @@ class VirtualMapTests extends VirtualTestBase {
         assertEquals("Apple", value.value());
     }
 
-    @Test(/* no exception expected */)
+    @Test(/* no exception expected */ )
     @DisplayName("Partly dirty maps have missing hashes only on dirty leaves and parents")
     void nullHashesOnDirtyNodes() throws ExecutionException, InterruptedException {
         VirtualMap<TestKey, TestValue> fcm = createMap();

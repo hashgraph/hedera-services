@@ -608,7 +608,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
             assert workQueue.size() > 0 || hasLastQueue : "Work queue is empty for rank " + rank;
             assert threadCount > 0 || hasLastQueue
                     : "Thread count is zero for rank " + rank + ", max hashing threads configured to be "
-                    + HASHING_THREAD_COUNT;
+                            + HASHING_THREAD_COUNT;
 
             // This latch is used to cause this thread to wait until all hashing threads complete their work.
             final CountDownLatch latch = new CountDownLatch(threadCount);

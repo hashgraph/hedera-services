@@ -104,7 +104,6 @@ import com.swirlds.common.config.sources.LegacyFileConfigSource;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.common.io.utility.FileUtils;
-import com.swirlds.common.settings.ParsingUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.state.StateSettings;
