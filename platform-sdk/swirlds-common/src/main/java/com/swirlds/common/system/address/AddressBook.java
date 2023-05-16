@@ -241,20 +241,6 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
     }
 
     /**
-     * Find the ID for the member whose address has the given public key. for now, this uses the nickname instead of the
-     * public key. Returns -1 if it does not exist.
-     *
-     * @param publicKey the public key to look up
-     * @return the ID of the member with that key, or -1 if it was not found
-     * @deprecated use {@link #getNodeId(String)} instead
-     */
-    @Deprecated(since = "0.39.0", forRemoval = true)
-    public long getId(@NonNull final String publicKey) {
-        final NodeId nodeId = getNodeId(publicKey);
-        return nodeId == null ? -1L : nodeId.id();
-    }
-
-    /**
      * Find the NodeId for the member at a given index within the address book.
      *
      * @param index the index within the address book
