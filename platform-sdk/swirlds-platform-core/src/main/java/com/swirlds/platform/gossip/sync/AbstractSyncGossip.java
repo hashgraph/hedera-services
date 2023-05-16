@@ -55,9 +55,7 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * Boilerplate code for sync gossip.
  */
-public abstract class AbstractSyncGossip extends AbstractGossip {
-
-    // TODO split apart legacy sync and sync as a protocol
+public abstract class AbstractSyncGossip extends AbstractGossip { // TODO should this class even exist?
 
     protected final SyncConfig syncConfig;
     protected final Runnable updatePlatformStatus;
