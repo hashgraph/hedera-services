@@ -38,6 +38,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import picocli.CommandLine;
 
@@ -197,8 +198,12 @@ public final class EventStreamInfoCommand extends AbstractCommand {
                 writeNodeReportToFile(directory, individualReport);
             });
         }
-
-        System.out.println(multiReport);
+        try {
+            System.out.println(multiReport);
+        } catch (final NoSuchElementException e) {
+            // the multi report is empty
+            System.out.println("No event stream files found in any child directory of `" + eventStreamDirectory + "`");
+        }
     }
 
     @Override
@@ -220,9 +225,16 @@ public final class EventStreamInfoCommand extends AbstractCommand {
         if (multiNodeReport) {
             generateMultiNodeReport(bound);
         } else {
-            // an individual report has been requested. Simply print the report to stdout.
-            System.out.println(generateReport(eventStreamDirectory, bound));
+            final EventStreamReport report = generateReport(eventStreamDirectory, bound);
+
+            if (report == null) {
+                System.out.printf("No event stream files found in `%s`%n", eventStreamDirectory);
+            } else {
+                // an individual report was requested. Simply print the report to stdout.
+                System.out.println(report);
+            }
         }
+
         return 0;
     }
 }
