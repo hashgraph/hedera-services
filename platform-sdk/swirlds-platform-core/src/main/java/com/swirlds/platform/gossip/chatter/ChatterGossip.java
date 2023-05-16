@@ -22,6 +22,7 @@ import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
@@ -208,6 +209,9 @@ public class ChatterGossip extends AbstractGossip {
                         intakeCycle.waitForCurrentSequenceEnd();
                     });
 
+            final ReconnectConfig reconnectConfig =
+                    platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
+
             chatterThreads.add(new StoppableThreadConfiguration<>(threadManager)
                     .setPriority(Thread.NORM_PRIORITY)
                     .setNodeId(selfId.id())
@@ -231,7 +235,7 @@ public class ChatterGossip extends AbstractGossip {
                                             emergencyRecoveryManager,
                                             reconnectThrottle,
                                             stateManagementComponent,
-                                            settings.getReconnect().getAsyncStreamTimeoutMilliseconds(),
+                                            reconnectConfig.asyncStreamTimeoutMilliseconds(),
                                             reconnectMetrics,
                                             reconnectController),
                                     new ReconnectProtocol(
@@ -240,7 +244,7 @@ public class ChatterGossip extends AbstractGossip {
                                             reconnectThrottle,
                                             () -> stateManagementComponent.getLatestSignedState(
                                                     "SwirldsPlatform: ReconnectProtocol"),
-                                            settings.getReconnect().getAsyncStreamTimeoutMilliseconds(),
+                                            reconnectConfig.asyncStreamTimeoutMilliseconds(),
                                             reconnectMetrics,
                                             reconnectController,
                                             new DefaultSignedStateValidator(),

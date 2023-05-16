@@ -19,6 +19,7 @@ package com.swirlds.platform.gossip.sync;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
@@ -123,6 +124,9 @@ public class LegacySyncGossip extends AbstractSyncGossip {
         simultaneousSyncThrottle = new SimultaneousSyncThrottle(
                 platformContext.getMetrics(), settings.getMaxIncomingSyncsInc() + settings.getMaxOutgoingSyncs());
 
+        final ReconnectConfig reconnectConfig =
+                platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
+
         final MultiProtocolResponder protocolHandlers = new MultiProtocolResponder(List.of(
                 ProtocolMapping.map(
                         UnidirectionalProtocols.SYNC.getInitialByte(),
@@ -136,7 +140,7 @@ public class LegacySyncGossip extends AbstractSyncGossip {
                         new ReconnectProtocolResponder(
                                 threadManager,
                                 stateManagementComponent,
-                                settings.getReconnect(),
+                                reconnectConfig,
                                 reconnectThrottle,
                                 reconnectMetrics)),
                 ProtocolMapping.map(

@@ -36,6 +36,7 @@ import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.route.MerkleRouteIterator;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
@@ -169,8 +170,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -426,7 +425,9 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         consensusRef = new AtomicReference<>();
 
         // TODO can we put this into the gossip class?
-        final ReconnectThrottle reconnectThrottle = new ReconnectThrottle(settings.getReconnect());
+        final ReconnectConfig reconnectConfig =
+                platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
+        final ReconnectThrottle reconnectThrottle = new ReconnectThrottle(reconnectConfig);
 
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
 
@@ -451,7 +452,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     }
                     reconnectController.get().start();
                 },
-                settings.getReconnect());
+                reconnectConfig);
 
         // FUTURE WORK remove this when there are no more ShutdownRequestedTriggers being dispatched
         components.add(new Shutdown());
@@ -1110,41 +1111,23 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         }
 
         // TODO belongs in gossip
-
+        final ReconnectConfig reconnectConfig =
+                platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
         reconnectHelper = new ReconnectHelper(
                 gossip::stop,
                 clearAllPipelines,
                 swirldStateManager::getConsensusState,
                 stateManagementComponent::getLastCompleteRound,
-                new ReconnectLearnerThrottle(selfId, settings.getReconnect()),
+                new ReconnectLearnerThrottle(selfId, reconnectConfig),
                 this::loadReconnectState,
                 new ReconnectLearnerFactory(
-                        platformContext, threadManager, initialAddressBook, settings.getReconnect(), reconnectMetrics));
+                        platformContext,
+                        threadManager,
+                        initialAddressBook,
+                        reconnectConfig.asyncStreamTimeoutMilliseconds(),
+                        reconnectMetrics));
 
         metrics.start();
-
-        if (settings.isRunPauseCheckTimer()) {
-            // periodically check current time stamp to detect whether the java application
-            // has been paused for a long period
-            final Timer pauseCheckTimer = new Timer("pause check", true);
-            pauseCheckTimer.schedule(
-                    new TimerTask() {
-                        @Override
-                        public void run() {
-                            final long currentTimeStamp = System.currentTimeMillis();
-                            if ((currentTimeStamp - pauseCheckTimeStamp) > PAUSE_ALERT_INTERVAL
-                                    && pauseCheckTimeStamp != 0) {
-                                logger.error(
-                                        EXCEPTION.getMarker(),
-                                        "ERROR, a pause larger than {} is detected ",
-                                        PAUSE_ALERT_INTERVAL);
-                            }
-                            pauseCheckTimeStamp = currentTimeStamp;
-                        }
-                    },
-                    0,
-                    PAUSE_ALERT_INTERVAL / 2);
-        }
 
         // FUTURE WORK: validate that status is still STARTING_UP (sanity check until we refactor platform status)
         // FUTURE WORK: set platform status REPLAYING_EVENTS
@@ -1296,24 +1279,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     @Override
     public AddressBook getAddressBook() {
         return initialAddressBook;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Deprecated(forRemoval = true)
-    @Override
-    public <T extends SwirldState> T getState() {
-        return (T) swirldStateManager.getCurrentSwirldState();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Deprecated(forRemoval = true)
-    @Override
-    public void releaseState() {
-        swirldStateManager.releaseCurrentSwirldState();
     }
 
     /**
