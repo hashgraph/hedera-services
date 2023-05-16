@@ -93,7 +93,7 @@ import org.mockito.ArgumentCaptor;
 @ExtendWith(LogCaptureExtension.class)
 class SignedStateBalancesExporterTest {
 
-    private static final NodeId nodeId = new NodeId(false, 1);
+    private static final NodeId nodeId = new NodeId(1);
     private final MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
     private final MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
     private TokenRelStorageAdapter tokenRels;

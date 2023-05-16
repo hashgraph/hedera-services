@@ -97,7 +97,7 @@ class ServicesStatsManagerTest {
         ServicesStatsManager.loopFactory = threads;
         ServicesStatsManager.pause = pause;
 
-        given(platform.getSelfId()).willReturn(new NodeId(false, 123L));
+        given(platform.getSelfId()).willReturn(new NodeId(123L));
         given(properties.hapiOpsStatsUpdateIntervalMs()).willReturn(OPS_UPDATE_INTERVAL_MS);
         given(properties.entityUtilStatsUpdateIntervalMs()).willReturn(ENTITY_UTIL_GAUGES_UPDATE_INTERVAL_MS);
         given(properties.throttleUtilStatsUpdateIntervalMs()).willReturn(THROTTLE_GAUGES_UPDATE_INTERVAL_MS);

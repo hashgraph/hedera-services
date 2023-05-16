@@ -89,7 +89,7 @@ class StateLifecyclesTest extends ResponsibleVMapUser {
         merkleState.setChild(StateChildIndices.RECORD_STREAM_RUNNING_HASH, recordsRunningHashLeaf);
         final var app = createApp(platform);
 
-        APPS.save(platform.getSelfId().getId(), app);
+        APPS.save(platform.getSelfId().getIdAsInt(), app);
 
         assertDoesNotThrow(() -> merkleState.init(platform, new DualStateImpl(), InitTrigger.GENESIS, null));
     }
@@ -114,7 +114,7 @@ class StateLifecyclesTest extends ResponsibleVMapUser {
 
     private Platform createMockPlatformWithCrypto() {
         final var platform = mock(Platform.class);
-        when(platform.getSelfId()).thenReturn(new NodeId(false, 0));
+        when(platform.getSelfId()).thenReturn(new NodeId(0));
         when(platform.getContext().getCryptography())
                 .thenReturn(new CryptoEngine(getStaticThreadManager(), CryptoConfigUtils.MINIMAL_CRYPTO_CONFIG));
         assertNotNull(platform.getContext().getCryptography());
@@ -127,7 +127,7 @@ class StateLifecyclesTest extends ResponsibleVMapUser {
         if (withKeyDetails) {
             given(pubKey.getEncoded()).willReturn(Longs.toByteArray(Long.MAX_VALUE));
         }
-        final var nodeId = platform.getSelfId().getId();
+        final var nodeId = platform.getSelfId().getIdAsInt();
         final var address = new Address(
                 nodeId,
                 "",
@@ -157,7 +157,7 @@ class StateLifecyclesTest extends ResponsibleVMapUser {
                 .crypto(CryptographyHolder.get())
                 .consoleCreator((ignore, visible) -> null)
                 .selfId(AccountID.newBuilder()
-                        .accountNum(platform.getSelfId().getId())
+                        .accountNum(platform.getSelfId().getIdAsInt())
                         .build())
                 .staticAccountMemo("memo")
                 .maxSignedTxnSize(MAX_SIGNED_TXN_SIZE)
