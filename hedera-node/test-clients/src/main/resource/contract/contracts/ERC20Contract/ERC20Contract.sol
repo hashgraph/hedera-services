@@ -35,6 +35,11 @@ contract ERC20Contract {
         IERC20(token).transfer(recipient, amount);
     }
 
+    function transferUint256Max(address token, address recipient) public {
+        //9223372036854775807 is Java Long.MAX_VALUE
+        IERC20(token).transfer(recipient, 9223372036854775808);
+    }
+
     function transferThenRevert(address token, address recipient, uint256 amount) public {
         IERC20(token).transfer(recipient, amount);
         revert();

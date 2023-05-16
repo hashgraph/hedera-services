@@ -204,7 +204,8 @@ public class ERCPrecompileSuite extends HapiSuite {
                 erc20TransferFrom(),
                 erc20TransferFromSelf(),
                 getErc20TokenNameExceedingLimits(),
-                transferErc20TokenFromContractWithNoApproval());
+                transferErc20TokenFromContractWithNoApproval(),
+                transferERC20WithMaxUint256());
     }
 
     List<HapiSpec> erc721() {
@@ -838,6 +839,47 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 transferFromOtherContractWithSignaturesTxn,
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith().status(SPENDER_DOES_NOT_HAVE_ALLOWANCE)));
+    }
+
+    private HapiSpec transferERC20WithMaxUint256() {
+        final AtomicReference<String> tokenAddr = new AtomicReference<>();
+        final AtomicReference<String> accountAddr = new AtomicReference<>();
+
+        return defaultHapiSpec("ERC_20_TRANSFER")
+                .given(
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(ACCOUNT)
+                                .balance(100 * ONE_HUNDRED_HBARS)
+                                .exposingCreatedIdTo(id -> accountAddr.set(asHexedSolidityAddress(id))),
+                        cryptoCreate(RECIPIENT),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .initialSupply(5)
+                                .treasury(TOKEN_TREASURY)
+                                .adminKey(MULTI_KEY)
+                                .supplyKey(MULTI_KEY)
+                                .exposingCreatedIdTo(id -> tokenAddr.set(
+                                        HapiPropertySource.asHexedSolidityAddress(HapiPropertySource.asToken(id)))),
+                        uploadInitCode(ERC_20_CONTRACT),
+                        contractCreate(ERC_20_CONTRACT),
+                        tokenAssociate(ACCOUNT, List.of(FUNGIBLE_TOKEN)),
+                        tokenAssociate(RECIPIENT, List.of(FUNGIBLE_TOKEN)),
+                        tokenAssociate(ERC_20_CONTRACT, List.of(FUNGIBLE_TOKEN)),
+                        cryptoTransfer(moving(5, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, ERC_20_CONTRACT)))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        ERC_20_CONTRACT,
+                                        "transferUint256Max",
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(RECIPIENT))))
+                                .via(TRANSFER_TXN)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
+                .then();
     }
 
     private HapiSpec erc20Allowance() {

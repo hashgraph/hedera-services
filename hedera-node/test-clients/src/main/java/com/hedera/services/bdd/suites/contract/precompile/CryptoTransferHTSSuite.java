@@ -75,7 +75,6 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
-import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
@@ -89,7 +88,6 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.OptionalLong;
-import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -166,8 +164,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                 hapiTransferFromForNFTWithCustomFeesWithApproveForAll(),
                 hapiTransferFromForNFTWithCustomFeesWithBothApproveForAllAndAssignedSpender(),
                 hapiTransferFromForFungibleTokenWithCustomFeesWithoutApproveFails(),
-                hapiTransferFromForFungibleTokenWithCustomFeesWithBothApproveForAllAndAssignedSpender(),
-                transferTokenUint256());
+                hapiTransferFromForFungibleTokenWithCustomFeesWithBothApproveForAllAndAssignedSpender());
     }
 
     private HapiSpec hapiTransferFromForFungibleToken() {
@@ -1999,51 +1996,6 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                                         BigInteger.valueOf(1L))
                                 .payingWith(GENESIS)
                                 .alsoSigningWithFullPrefix(RECEIVER_SIGNATURE))))
-                .then();
-    }
-
-    private HapiSpec transferTokenUint256() {
-        final AtomicReference<String> tokenAddr = new AtomicReference<>();
-        BigInteger maxAmountOfUint256 = BigInteger.ONE.shiftLeft(256).subtract(BigInteger.ONE);
-        long maxSupply = Long.MAX_VALUE;
-        return defaultHapiSpec("transferTokenUint256")
-                .given(
-                        newKeyNamed(MULTI_KEY),
-                        cryptoCreate(TOKEN_TREASURY),
-                        cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
-                        cryptoCreate(RECEIVER),
-                        tokenCreate(FUNGIBLE_TOKEN)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .initialSupply(maxSupply)
-                                .treasury(TOKEN_TREASURY)
-                                .adminKey(MULTI_KEY)
-                                .supplyKey(MULTI_KEY)
-                                .exposingCreatedIdTo(id -> tokenAddr.set(
-                                        HapiPropertySource.asHexedSolidityAddress(HapiPropertySource.asToken(id)))),
-                        uploadInitCode(TRANSFER_PRECOMPILE),
-                        contractCreate(TRANSFER_PRECOMPILE),
-                        tokenAssociate(OWNER, List.of(FUNGIBLE_TOKEN)),
-                        tokenAssociate(RECEIVER, List.of(FUNGIBLE_TOKEN)),
-                        cryptoTransfer(moving(maxSupply, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, OWNER)))
-                .when(withOpContext((spec, opLog) -> {
-                    allRunFor(
-                            spec,
-                            contractCall(
-                                            TRANSFER_PRECOMPILE,
-                                            "transferTokenCall",
-                                            HapiParserUtil.asHeadlongAddress(
-                                                    asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
-                                            HapiParserUtil.asHeadlongAddress(
-                                                    asAddress(spec.registry().getAccountID(OWNER))),
-                                            HapiParserUtil.asHeadlongAddress(
-                                                    asAddress(spec.registry().getAccountID(RECEIVER))),
-                                            maxAmountOfUint256)
-                                    .via(TRANSFER_UINT256_TOKEN_TXN)
-                                    .alsoSigningWithFullPrefix(OWNER)
-                                    .gas(GAS_TO_OFFER)
-                                    .hasKnownStatus(SUCCESS),
-                            getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, maxSupply));
-                }))
                 .then();
     }
 
