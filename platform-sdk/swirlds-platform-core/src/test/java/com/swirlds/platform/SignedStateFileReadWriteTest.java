@@ -77,7 +77,7 @@ import org.junit.jupiter.api.io.TempDir;
 @DisplayName("SignedState Read/Write Test")
 class SignedStateFileReadWriteTest {
 
-    private static final NodeId SELF_ID = new NodeId(false, 1234);
+    private static final NodeId SELF_ID = new NodeId(1234);
     private static final String MAIN_CLASS_NAME = "com.swirlds.foobar";
     private static final String SWIRLD_NAME = "mySwirld";
     /**
@@ -205,14 +205,14 @@ class SignedStateFileReadWriteTest {
 
         assertEquals(
                 getAbsolutePath("./data/saved/com.swirlds.foobar/1234"),
-                getSignedStatesDirectoryForNode("com.swirlds.foobar", new NodeId(false, 1234)),
+                getSignedStatesDirectoryForNode("com.swirlds.foobar", new NodeId(1234)),
                 "unexpected saved state file");
 
         Settings.getInstance().getState().savedStateDirectory = "foo/bar/baz";
 
         assertEquals(
                 getAbsolutePath("./foo/bar/baz/com.swirlds.barfoo/4321"),
-                getSignedStatesDirectoryForNode("com.swirlds.barfoo", new NodeId(false, 4321)),
+                getSignedStatesDirectoryForNode("com.swirlds.barfoo", new NodeId(4321)),
                 "unexpected saved state file");
 
         Settings.getInstance().getState().savedStateDirectory = "data/saved";
@@ -225,14 +225,14 @@ class SignedStateFileReadWriteTest {
 
         assertEquals(
                 getAbsolutePath("./data/saved/com.swirlds.foobar/1234/mySwirld"),
-                getSignedStatesDirectoryForSwirld("com.swirlds.foobar", new NodeId(false, 1234), "mySwirld"),
+                getSignedStatesDirectoryForSwirld("com.swirlds.foobar", new NodeId(1234), "mySwirld"),
                 "unexpected saved state file");
 
         Settings.getInstance().getState().savedStateDirectory = "foo/bar/baz";
 
         assertEquals(
                 getAbsolutePath("./foo/bar/baz/com.swirlds.barfoo/4321/myOtherSwirld"),
-                getSignedStatesDirectoryForSwirld("com.swirlds.barfoo", new NodeId(false, 4321), "myOtherSwirld"),
+                getSignedStatesDirectoryForSwirld("com.swirlds.barfoo", new NodeId(4321), "myOtherSwirld"),
                 "unexpected saved state file");
 
         Settings.getInstance().getState().savedStateDirectory = "data/saved";
@@ -245,14 +245,14 @@ class SignedStateFileReadWriteTest {
 
         assertEquals(
                 getAbsolutePath("./data/saved/com.swirlds.foobar/1234/mySwirld/1337"),
-                getSignedStateDirectory("com.swirlds.foobar", new NodeId(false, 1234), "mySwirld", 1337),
+                getSignedStateDirectory("com.swirlds.foobar", new NodeId(1234), "mySwirld", 1337),
                 "unexpected saved state file");
 
         Settings.getInstance().getState().savedStateDirectory = "foo/bar/baz";
 
         assertEquals(
                 getAbsolutePath("./foo/bar/baz/com.swirlds.barfoo/4321/myOtherSwirld/42"),
-                getSignedStateDirectory("com.swirlds.barfoo", new NodeId(false, 4321), "myOtherSwirld", 42),
+                getSignedStateDirectory("com.swirlds.barfoo", new NodeId(4321), "myOtherSwirld", 42),
                 "unexpected saved state file");
 
         Settings.getInstance().getState().savedStateDirectory = "data/saved";

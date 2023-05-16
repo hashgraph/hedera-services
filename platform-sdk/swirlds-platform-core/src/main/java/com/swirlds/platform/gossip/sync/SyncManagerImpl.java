@@ -232,8 +232,8 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
         }
 
         // check 3: if neither node is part of the superMinority in the latest round, don't create an event
-        if (!criticalQuorum.isInCriticalQuorum(info.getOtherId().getId())
-                && !criticalQuorum.isInCriticalQuorum(selfId.getId())) {
+        if (!criticalQuorum.isInCriticalQuorum(info.getOtherId().id())
+                && !criticalQuorum.isInCriticalQuorum(selfId.id())) {
             return false;
         }
 

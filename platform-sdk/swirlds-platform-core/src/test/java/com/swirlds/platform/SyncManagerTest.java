@@ -52,7 +52,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class SyncManagerTest {
     private static final long ID = 0L;
-    private static final NodeId OTHER_ID = new NodeId(false, 1L);
+    private static final NodeId OTHER_ID = new NodeId(1L);
 
     /**
      * A helper class that contains dummy data to feed into SyncManager lambdas.
@@ -70,11 +70,11 @@ public class SyncManagerTest {
         public DummyEventQueue eventQueue;
 
         public SyncManagerTestData() {
-            this(new NodeId(false, ID), spy(SwirldStateManager.class));
+            this(new NodeId(ID), spy(SwirldStateManager.class));
         }
 
         public SyncManagerTestData(final SwirldStateManager swirldStateManager) {
-            this(new NodeId(false, ID), swirldStateManager);
+            this(new NodeId(ID), swirldStateManager);
         }
 
         public SyncManagerTestData(final NodeId nodeId) {
@@ -118,7 +118,7 @@ public class SyncManagerTest {
                     eventQueue,
                     connectionGraph,
                     nodeId,
-                    new EventCreationRules(List.of(nodeId, startUpEventFrozenManager, freezeManager)),
+                    new EventCreationRules(List.of(startUpEventFrozenManager, freezeManager)),
                     criticalQuorum,
                     hashgraph.getAddressBook(),
                     new FallenBehindManagerImpl(
@@ -156,8 +156,8 @@ public class SyncManagerTest {
         assertNull(test.syncManager.getNeededForFallenBehind());
 
         // neighbors 0 and 1 report fallen behind
-        test.syncManager.reportFallenBehind(new NodeId(false, neighbors[0]));
-        test.syncManager.reportFallenBehind(new NodeId(false, neighbors[1]));
+        test.syncManager.reportFallenBehind(new NodeId(neighbors[0]));
+        test.syncManager.reportFallenBehind(new NodeId(neighbors[1]));
 
         // we still dont have enough reports that we have fallen behind, we need more than [fallenBehindThreshold] of
         // the neighbors
@@ -165,7 +165,7 @@ public class SyncManagerTest {
 
         // add more reports
         for (int i = 2; i < 10; i++) {
-            test.syncManager.reportFallenBehind(new NodeId(false, neighbors[i]));
+            test.syncManager.reportFallenBehind(new NodeId(neighbors[i]));
         }
 
         // we are still missing 1 report
@@ -181,7 +181,7 @@ public class SyncManagerTest {
         }
 
         // add the report that will go over the [fallenBehindThreshold]
-        test.syncManager.reportFallenBehind(new NodeId(false, neighbors[10]));
+        test.syncManager.reportFallenBehind(new NodeId(neighbors[10]));
 
         // we should now say we have fallen behind
         assertTrue(test.syncManager.hasFallenBehind());
@@ -274,29 +274,17 @@ public class SyncManagerTest {
                 "if neither node is part of the superMinority in the latest round, don't create an event");
 
         // If the other node is in the critical quorum then an event should be created.
-        test.hashgraph.isInCriticalQuorum.put(OTHER_ID.getId(), true);
+        test.hashgraph.isInCriticalQuorum.put(OTHER_ID.id(), true);
         assertTrue(test.syncManager.shouldCreateEvent(OTHER_ID, false, 0, 0));
-        test.hashgraph.isInCriticalQuorum.put(OTHER_ID.getId(), false);
+        test.hashgraph.isInCriticalQuorum.put(OTHER_ID.id(), false);
         assertFalse(
                 test.syncManager.shouldCreateEvent(OTHER_ID, false, 0, 0),
                 "if neither node is part of the superMinority in the latest round, don't create an event");
 
         // If both are in the critical quorum then an event should be created.
         test.hashgraph.isInCriticalQuorum.put(ID, true);
-        test.hashgraph.isInCriticalQuorum.put(OTHER_ID.getId(), true);
+        test.hashgraph.isInCriticalQuorum.put(OTHER_ID.id(), true);
         assertTrue(test.syncManager.shouldCreateEvent(OTHER_ID, false, 0, 0));
-    }
-
-    /**
-     * A mirror node should not create events
-     */
-    @Test
-    @Order(6)
-    void shouldCreateEventTestMirrorNode() {
-        final SyncManagerTestData test = new SyncManagerTestData(new NodeId(true, ID));
-        resetTestSettings();
-        test.hashgraph.isInCriticalQuorum.put(ID, true);
-        assertFalse(test.syncManager.shouldCreateEvent(OTHER_ID, false, 0, 0), "mirror node cannot create events");
     }
 
     /**
@@ -352,7 +340,7 @@ public class SyncManagerTest {
         final int eventsRead = 0;
         final int eventsWritten = 0;
 
-        final NodeId mainNodeId = new NodeId(false, ID);
+        final NodeId mainNodeId = new NodeId(ID);
         final SyncManagerTestData test = new SyncManagerTestData(mainNodeId);
         test.hashgraph.isInCriticalQuorum.put(ID, true);
 
