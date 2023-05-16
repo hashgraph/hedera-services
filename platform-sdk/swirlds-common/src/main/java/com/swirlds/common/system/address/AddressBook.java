@@ -250,7 +250,7 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
      */
     @Deprecated(since = "0.39.0", forRemoval = true)
     public long getId(@NonNull final String publicKey) {
-        NodeId nodeId = getNodeId(publicKey);
+        final NodeId nodeId = getNodeId(publicKey);
         return nodeId == null ? -1L : nodeId.id();
     }
 
