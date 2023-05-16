@@ -28,6 +28,7 @@ import com.swirlds.platform.recovery.internal.EventStreamLowerBound;
 import com.swirlds.platform.recovery.internal.EventStreamRoundLowerBound;
 import com.swirlds.platform.recovery.internal.EventStreamTimestampLowerBound;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.DirectoryStream;
@@ -121,6 +122,14 @@ public final class EventStreamInfoCommand extends AbstractCommand {
 
     private EventStreamInfoCommand() {}
 
+    /**
+     * Generate an {@link EventStreamReport} for the event stream files contained in the specified directory
+     *
+     * @param directory the directory containing the event stream files
+     * @param bound     the lower bound to use when generating the reports
+     * @return the report, or null if the directory does not contain any event stream files
+     */
+    @Nullable
     private EventStreamReport getReport(@NonNull final Path directory, @NonNull final EventStreamLowerBound bound) {
         Objects.requireNonNull(directory);
         Objects.requireNonNull(bound);
@@ -129,9 +138,18 @@ public final class EventStreamInfoCommand extends AbstractCommand {
             return new EventStreamScanner(directory, bound, granularity, true).createReport();
         } catch (final IOException e) {
             throw new UncheckedIOException("Failed to generate event stream report", e);
+        } catch (final IllegalStateException e) {
+            // the directory does not contain any event stream files. return null and let the caller sort it out
+            return null;
         }
     }
 
+    /**
+     * Write an {@link EventStreamReport} to a file in the specified directory
+     *
+     * @param nodeDirectory the directory to write the report to
+     * @param nodeReport    the report to write to file
+     */
     private void writeNodeReportToFile(@NonNull final Path nodeDirectory, @NonNull final EventStreamReport nodeReport) {
         final Path reportFile = nodeDirectory.resolve("event-stream-report.txt");
 
@@ -142,10 +160,20 @@ public final class EventStreamInfoCommand extends AbstractCommand {
         }
     }
 
+    /**
+     * Generate an {@link EventStreamReport} for each child directory contained in {@link #eventStreamDirectory}, as
+     * well as a summary of these individual reports
+     * <p>
+     * The individual reports will be written to files in the respective child directories, and the summary report will
+     * be printed to stdout
+     *
+     * @param bound the lower bound to use when generating the reports
+     * @throws IOException if the directory stream cannot be opened
+     */
     private void generateMultiNodeReport(@NonNull final EventStreamLowerBound bound) throws IOException {
         Objects.requireNonNull(bound);
 
-        final EventStreamMultiNodeReport multiReport = new EventStreamMultiNodeReport(granularity, bound);
+        final EventStreamMultiNodeReport multiReport = new EventStreamMultiNodeReport();
 
         try (final DirectoryStream<Path> stream = Files.newDirectoryStream(eventStreamDirectory)) {
             stream.forEach(streamElement -> {
@@ -154,10 +182,17 @@ public final class EventStreamInfoCommand extends AbstractCommand {
                     return;
                 }
 
-                final EventStreamReport individualReport = getReport(streamElement, bound);
+                final Path directory = streamElement.normalize();
 
-                multiReport.addIndividualReport(streamElement, individualReport);
-                writeNodeReportToFile(streamElement, individualReport);
+                final EventStreamReport individualReport = getReport(directory, bound);
+
+                if (individualReport == null) {
+                    System.out.printf("No event stream files found in `%s`%n", directory);
+                    return;
+                }
+
+                multiReport.addIndividualReport(directory, individualReport);
+                writeNodeReportToFile(directory, individualReport);
             });
         }
 

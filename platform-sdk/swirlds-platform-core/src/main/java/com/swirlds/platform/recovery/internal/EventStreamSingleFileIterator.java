@@ -65,7 +65,8 @@ public class EventStreamSingleFileIterator implements IOIterator<DetailedConsens
         final SelfSerializable firstObject = iterator.next();
         if (firstObject != null && firstObject.getClassId() != Hash.CLASS_ID) {
             throw new IOException(
-                    "Illegal object in event stream file `%s` at position 0, expected a Hash: ".formatted(filePath) + firstObject.getClass());
+                    "Illegal object in event stream file `%s` at position 0, expected a Hash: ".formatted(filePath)
+                            + firstObject.getClass());
         }
         this.startHash = (Hash) firstObject;
 
@@ -114,7 +115,8 @@ public class EventStreamSingleFileIterator implements IOIterator<DetailedConsens
         }
 
         if (next.getClassId() != DetailedConsensusEvent.CLASS_ID) {
-            throw new IOException("Invalid object type found in event stream file `%s`: ".formatted(filePath) + next.getClass());
+            throw new IOException(
+                    "Invalid object type found in event stream file `%s`: ".formatted(filePath) + next.getClass());
         }
 
         return true;
