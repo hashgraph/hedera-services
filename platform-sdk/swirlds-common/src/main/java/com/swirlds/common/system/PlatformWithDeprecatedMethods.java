@@ -27,22 +27,6 @@ import com.swirlds.common.system.events.PlatformEvent;
 public interface PlatformWithDeprecatedMethods extends Platform {
 
     /**
-     * Get the latest mutable state. This method is not thread safe. use at your own risk.
-     *
-     * @deprecated this workflow is not thread safe
-     */
-    @Deprecated(forRemoval = true)
-    <T extends SwirldState> T getState();
-
-    /**
-     * Should be called after {@link #getState()}.
-     *
-     * @deprecated this workflow is not thread safe
-     */
-    @Deprecated(forRemoval = true)
-    void releaseState();
-
-    /**
      * Get an array of all the events in the hashgraph. This method is slow, so do not call it very often.
      * The returned array is a shallow copy, so the caller may change it, and no other threads will change
      * it. However, the events it references may have fields that are changed by other threads, and must not
