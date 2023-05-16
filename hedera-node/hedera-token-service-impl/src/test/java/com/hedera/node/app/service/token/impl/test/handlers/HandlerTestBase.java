@@ -416,7 +416,7 @@ public class HandlerTestBase {
                 paused,
                 accountsFrozenByDefault,
                 accountsKycGrantedByDefault,
-                customFees);
+                Collections.emptyList());
     }
 
     protected void givenValidNonFungibleToken() {
@@ -424,7 +424,7 @@ public class HandlerTestBase {
         nonFungibleToken = fungibleToken
                 .copyBuilder()
                 .tokenNumber(nonFungibleTokenNum.longValue())
-                .customFees(List.of(withRoyaltyFee(royaltyFee)))
+                .customFees(List.of())
                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                 .build();
     }

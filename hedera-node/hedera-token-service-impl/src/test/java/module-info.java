@@ -21,6 +21,7 @@ module com.hedera.node.app.service.token.impl.test {
     requires com.swirlds.merkle;
     requires com.hedera.node.app;
     requires com.hedera.node.config;
+    requires com.swirlds.config;
 
     opens com.hedera.node.app.service.token.impl.test.util to
             org.junit.platform.commons;

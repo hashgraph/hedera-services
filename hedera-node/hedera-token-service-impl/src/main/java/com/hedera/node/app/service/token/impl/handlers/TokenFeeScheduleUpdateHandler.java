@@ -81,7 +81,10 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
     }
 
     /**
-     * {@inheritDoc}
+     * Handles a transaction with {@link HederaFunctionality#TOKEN_FEE_SCHEDULE_UPDATE}
+     * @param context the context of the transaction
+     * @param txn the transaction body
+     * @param tokenStore the writable token store
      */
     public void handle(
             @NonNull final HandleContext context,
@@ -97,6 +100,7 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
 
         // validate checks in handle
         final var token = validateSemantics(op, tokenStore, config);
+
         // create readable stores from the context
         final var readableAccountStore = context.createReadableStore(ReadableAccountStore.class);
         final var readableTokenRelsStore = context.createReadableStore(ReadableTokenRelationStore.class);
@@ -119,7 +123,9 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
      * @return the token
      */
     private Token validateSemantics(
-            TokenFeeScheduleUpdateTransactionBody op, WritableTokenStore tokenStore, TokenServiceConfig config) {
+            @NonNull final TokenFeeScheduleUpdateTransactionBody op,
+            @NonNull final WritableTokenStore tokenStore,
+            @NonNull final TokenServiceConfig config) {
         var token = tokenStore.get(op.tokenIdOrElse(TokenID.DEFAULT).tokenNum());
         validateTrue(token.isPresent(), INVALID_TOKEN_ID);
         validateTrue(token.get().hasFeeScheduleKey(), TOKEN_HAS_NO_FEE_SCHEDULE_KEY);
@@ -127,6 +133,12 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
         return token.get();
     }
 
+    /**
+     * Perform pure semantic checks on the transaction body, that doesn't involve any state lookups or dynamic property
+     * checks.
+     * @param op the transaction body
+     * @throws PreCheckException if any of the checks fail
+     */
     private void pureChecks(@NonNull final TokenFeeScheduleUpdateTransactionBody op) throws PreCheckException {
         if (!op.hasTokenId()) {
             throw new PreCheckException(INVALID_TOKEN_ID);
