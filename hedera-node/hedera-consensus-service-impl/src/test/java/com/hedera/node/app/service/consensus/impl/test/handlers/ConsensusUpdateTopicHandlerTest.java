@@ -20,7 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOU
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.A_NONNULL_KEY;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.EMPTY_KEYLIST;
-import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.ENPTY_THRESHOLD_KEY;
+import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.EMPTY_THRESHOLD_KEY;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -196,7 +196,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
         givenValidTopic(0, false);
         refreshStoresWithCurrentTopicInBothReadableAndWritable();
 
-        final var op = OP_BUILDER.topicID(topicId).adminKey(ENPTY_THRESHOLD_KEY).build();
+        final var op = OP_BUILDER.topicID(topicId).adminKey(EMPTY_THRESHOLD_KEY).build();
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
 
         subject.handle(handleContext, op, writableStore);

@@ -45,7 +45,7 @@ public final class ConsensusTestUtils {
             .build();
     static final Key A_NONNULL_KEY = Key.DEFAULT;
     static final Key EMPTY_KEYLIST = Key.newBuilder().keyList(KeyList.DEFAULT).build();
-    static final Key ENPTY_THRESHOLD_KEY = Key.newBuilder()
+    static final Key EMPTY_THRESHOLD_KEY = Key.newBuilder()
             .thresholdKey(ThresholdKey.newBuilder()
                     .threshold(2)
                     .keys(KeyList.newBuilder().keys(Key.DEFAULT, Key.DEFAULT).build())
