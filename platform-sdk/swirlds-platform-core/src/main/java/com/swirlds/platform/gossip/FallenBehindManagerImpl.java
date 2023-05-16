@@ -16,11 +16,13 @@
 
 package com.swirlds.platform.gossip;
 
-import com.swirlds.common.merkle.synchronization.settings.ReconnectSettings;
+import com.swirlds.base.ArgumentUtils;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.system.EventCreationRule;
 import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.network.RandomGraph;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -48,16 +50,19 @@ public class FallenBehindManagerImpl implements FallenBehindManager, EventCreati
     /** Called when the status becomes fallen behind */
     private final Runnable fallenBehindCallback;
 
-    private final ReconnectSettings settings;
+    private final ReconnectConfig config;
     /** number of neighbors who think this node has fallen behind */
     volatile int numReportFallenBehind;
 
     public FallenBehindManagerImpl(
-            final NodeId selfId,
-            final RandomGraph connectionGraph,
-            final Runnable notifyPlatform,
-            final Runnable fallenBehindCallback,
-            final ReconnectSettings settings) {
+            @NonNull final NodeId selfId,
+            @NonNull final RandomGraph connectionGraph,
+            @NonNull final Runnable notifyPlatform,
+            @NonNull final Runnable fallenBehindCallback,
+            @NonNull final ReconnectConfig config) {
+        ArgumentUtils.throwArgNull(selfId, "selfId");
+        ArgumentUtils.throwArgNull(connectionGraph, "connectionGraph");
+
         notYetReportFallenBehind = ConcurrentHashMap.newKeySet();
         reportFallenBehind = new HashSet<>();
         allNeighbors = new HashSet<>();
@@ -67,9 +72,9 @@ public class FallenBehindManagerImpl implements FallenBehindManager, EventCreati
         for (final int neighbor : neighbors) {
             allNeighbors.add((long) neighbor);
         }
-        this.notifyPlatform = notifyPlatform;
-        this.fallenBehindCallback = fallenBehindCallback;
-        this.settings = settings;
+        this.notifyPlatform = ArgumentUtils.throwArgNull(notifyPlatform, "notifyPlatform");
+        this.fallenBehindCallback = ArgumentUtils.throwArgNull(fallenBehindCallback, "fallenBehindCallback");
+        this.config = ArgumentUtils.throwArgNull(config, "config");
     }
 
     @Override
@@ -103,7 +108,7 @@ public class FallenBehindManagerImpl implements FallenBehindManager, EventCreati
 
     @Override
     public boolean hasFallenBehind() {
-        return numNeighbors * settings.getFallenBehindThreshold() < numReportFallenBehind;
+        return numNeighbors * config.fallenBehindThreshold() < numReportFallenBehind;
     }
 
     @Override
