@@ -1,7 +1,24 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app.spi.meta.bni;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenRelationship;
+import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.common.Int256Value;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Id;
@@ -36,8 +53,7 @@ public interface Dispatch {
      * @return the NFT, or {@code null} if no such NFT exists
      */
     @Nullable
-    Nft getNftAndExternalizeResult(
-            Id id, long callingContractNumber, @NonNull ResultTranslator<Nft> translator);
+    Nft getNftAndExternalizeResult(Id id, long callingContractNumber, @NonNull ResultTranslator<Nft> translator);
 
     /**
      * Returns the {@link Token} with the given number, and also externalizes the result of the state read
@@ -125,10 +141,7 @@ public interface Dispatch {
      * @return the result of the transfer attempt
      */
     ResponseCodeEnum transferValue(
-            long amount,
-            long fromEntityNumber,
-            long toEntityNumber,
-            @NonNull VerificationStrategy strategy);
+            long amount, long fromEntityNumber, long toEntityNumber, @NonNull VerificationStrategy strategy);
 
     /**
      * Links the given {@code evmAddress} to the given {@code entityNumber} as an alias.
@@ -236,7 +249,7 @@ public interface Dispatch {
      * @return the account or contract number, or {@code null} if the address is not an alias
      */
     @Nullable
-    Long resolveAlias(@NonNull Bytes evmAddress);
+    EntityNumber resolveAlias(@NonNull Bytes evmAddress);
 
     /**
      * Returns the {@link Account} with the given number.

@@ -28,6 +28,7 @@ configurations.all {
 }
 
 dependencies {
+  testImplementation("org.junit.jupiter:junit-jupiter:5.8.1")
   annotationProcessor(libs.dagger.compiler)
   api(project(":hedera-node:hedera-smart-contract-service"))
   implementation(project(":hedera-node:hedera-mono-service"))

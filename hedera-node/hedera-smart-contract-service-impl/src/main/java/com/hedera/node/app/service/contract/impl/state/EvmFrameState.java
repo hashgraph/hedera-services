@@ -1,0 +1,92 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.hedera.node.app.service.contract.impl.state;
+
+import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
+import com.hedera.node.app.spi.meta.bni.Scope;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.units.bigints.UInt256;
+import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.datatypes.Hash;
+import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.account.Account;
+import org.hyperledger.besu.evm.account.EvmAccount;
+
+/**
+ * Exposes the full Hedera state that may be read and changed <b>directly </b> from an EVM frame,
+ * using data types appropriate to the Besu EVM API.
+ *
+ * <p>Of course, implementations must still reflect the state changes made by any calls to
+ * the {@code 0x167} system contract from within the EVM frame. But those changes are, in a
+ * sense, the result of "escaping" the EVM; so they are not part of this API.
+ */
+public interface EvmFrameState {
+    /**
+     * Constructs an {@link EvmFrameState} from the given {@link Scope}.
+     *
+     * @param scope the scope
+     * @return an {@link EvmFrameState} that client code can use to manipulate scoped state via Besu data types
+     */
+    static EvmFrameState from(@NonNull final Scope scope) {
+        return new DispatchingEvmFrameState(
+                scope.dispatch(),
+                scope.contractState().get(ContractServiceImpl.STORAGE_KEY),
+                scope.contractState().get(ContractServiceImpl.BYTECODE_KEY));
+    }
+
+    /**
+     * Returns the read-only account with the given address, or {@code null} if the account is missing,
+     * deleted, or expired; or if this get() used the account's "long zero" address and not is priority
+     * EVM address.
+     *
+     * @param address the account address
+     * @return the read-only account; or {@code null} if the account is missing, deleted, or expired
+     */
+    @Nullable
+    Account getAccount(Address address);
+
+    /**
+     * Returns the mutable account with the given address, or {@code null} if the account is missing,
+     * deleted, or expired; or if this get() used the account's "long zero" address and not is priority
+     * EVM address.
+     *
+     * @param address the account address
+     * @return the mutable account; or {@code null} if the account is missing, deleted, or expired
+     */
+    @Nullable
+    EvmAccount getMutableAccount(Address address);
+
+    @NonNull
+    UInt256 getStorageValue(long number, @NonNull UInt256 key);
+
+    void setStorageValue(long number, @NonNull UInt256 key, @NonNull UInt256 value);
+
+    @NonNull
+    UInt256 getOriginalStorageValue(long number, @NonNull UInt256 key);
+
+    Bytes getCode(long number);
+
+    Hash getCodeHash(long number);
+
+    long getNonce(long number);
+
+    Wei getBalance(long number);
+
+    Address getAddress(long number);
+}
