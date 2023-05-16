@@ -28,13 +28,17 @@ import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.metrics.extensions.CountPerSecond;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.address.Address;
+import com.swirlds.common.system.address.AddressBook;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.LongAdder;
-import java.util.stream.IntStream;
 
 /**
  * Collection of metrics related to the network
@@ -58,57 +62,71 @@ public class NetworkMetrics {
             .withFormat(FORMAT_10_0)
             .withHalfLife(0.0);
 
+    /** this node's id */
     private final NodeId selfId;
     /** all connections of this platform */
     private final Queue<Connection> connections = new ConcurrentLinkedQueue<>();
     /** total number of connections created so far (both caller and listener) */
     private final LongAdder connsCreated = new LongAdder();
 
-    private final List<RunningAverageMetric> avgPingMilliseconds;
-    private final List<SpeedometerMetric> avgBytePerSecSent;
+    /** the average ping time for each node */
+    private final Map<NodeId, RunningAverageMetric> avgPingMilliseconds = new HashMap<>();
+    /** the average number of bytes sent per second for each node */
+    private final Map<NodeId, SpeedometerMetric> avgBytePerSecSent = new HashMap<>();
+    /** the average ping to all nodes */
     private final RunningAverageMetric avgPing;
+    /** the total bytes per second to all nodes */
     private final SpeedometerMetric bytesPerSecondSent;
+    /** the average number of connections created per second */
     private final RunningAverageMetric avgConnsCreated;
     /**
      * Number of disconnects per second per peer in the address book.
      */
-    private final List<CountPerSecond> disconnectFrequency;
+    private final Map<NodeId, CountPerSecond> disconnectFrequency = new HashMap<>();
 
     /**
      * Constructor of {@code NetworkMetrics}
      *
      * @param metrics         a reference to the metrics-system
      * @param selfId          this node's id
-     * @param addressBookSize the number of nodes in the address book
+     * @param addressBook     the address book
      * @throws IllegalArgumentException if {@code platform} is {@code null}
      */
-    public NetworkMetrics(final Metrics metrics, final NodeId selfId, final int addressBookSize) {
-        Objects.requireNonNull(selfId, "The selfId must not be null.");
-        this.selfId = selfId;
+    public NetworkMetrics(
+            @NonNull final Metrics metrics, @NonNull final NodeId selfId, @NonNull final AddressBook addressBook) {
+        Objects.requireNonNull(metrics, "The metrics must not be null.");
+        this.selfId = Objects.requireNonNull(selfId, "The selfId must not be null.");
+        Objects.requireNonNull(addressBook, "The addressBook must not be null.");
 
-        avgPingMilliseconds = IntStream.range(0, addressBookSize)
-                .mapToObj(i -> metrics.getOrCreate(new RunningAverageMetric.Config(
-                                PING_CATEGORY, String.format("ping_ms_%02d", i))
-                        .withDescription(String.format("milliseconds to send node %02d a byte and receive a reply", i))
-                        .withFormat(FORMAT_4_2)))
-                .toList();
-        avgBytePerSecSent = IntStream.range(0, addressBookSize)
-                .mapToObj(i -> metrics.getOrCreate(
-                        new SpeedometerMetric.Config(BPSS_CATEGORY, String.format("bytes/sec_sent_%02d", i))
-                                .withDescription(String.format("bytes per second sent to node %02d", i))
-                                .withFormat(FORMAT_16_2)))
-                .toList();
         avgPing = metrics.getOrCreate(AVG_PING_CONFIG);
         bytesPerSecondSent = metrics.getOrCreate(BYTES_PER_SECOND_SENT_CONFIG);
         avgConnsCreated = metrics.getOrCreate(AVG_CONNS_CREATED_CONFIG);
-        disconnectFrequency = IntStream.range(0, addressBookSize)
-                // The metric for disconnects between a node and itself is always 0.
-                // To remove the self-metric, use: `i -> i == selfId.getIdAsInt() ? null : <object>`
-                .mapToObj(i -> new CountPerSecond(
-                        metrics,
-                        new CountPerSecond.Config(PLATFORM_CATEGORY, String.format("disconnects/sec_with_%02d", i))
-                                .withDescription(String.format("number of disconnects with node %02d per second", i))))
-                .toList();
+
+        for (final Address address : addressBook) {
+            final NodeId nodeId = address.getNodeId();
+            avgPingMilliseconds.put(
+                    nodeId,
+                    metrics.getOrCreate(
+                            new RunningAverageMetric.Config(PING_CATEGORY, String.format("ping_ms_%02d", nodeId.id()))
+                                    .withDescription(String.format(
+                                            "milliseconds to send node %02d a byte and receive a reply", nodeId.id()))
+                                    .withFormat(FORMAT_4_2)));
+            avgBytePerSecSent.put(
+                    nodeId,
+                    metrics.getOrCreate(new SpeedometerMetric.Config(
+                                    BPSS_CATEGORY, String.format("bytes/sec_sent_%02d", nodeId.id()))
+                            .withDescription(String.format("bytes per second sent to node %02d", nodeId.id()))
+                            .withFormat(FORMAT_16_2)));
+            disconnectFrequency.put(
+                    nodeId,
+                    new CountPerSecond(
+                            metrics,
+                            new CountPerSecond.Config(
+                                            PLATFORM_CATEGORY, String.format("disconnects/sec_%02d", nodeId.id()))
+                                    .withDescription(String.format(
+                                            "number of disconnects per second from node %02d", nodeId.id()))
+                                    .withFormat(FORMAT_10_0)));
+        }
     }
 
     /**
@@ -116,7 +134,7 @@ public class NetworkMetrics {
      *
      * @param connection a new connection
      */
-    public void connectionEstablished(final Connection connection) {
+    public void connectionEstablished(@Nullable final Connection connection) {
         if (connection == null) {
             return;
         }
@@ -130,8 +148,9 @@ public class NetworkMetrics {
      * @param node      the node to which the latency is referring to
      * @param pingNanos the ping time, in nanoseconds
      */
-    public void recordPingTime(final NodeId node, final long pingNanos) {
-        avgPingMilliseconds.get(node.getIdAsInt()).update((pingNanos) / 1_000_000.0);
+    public void recordPingTime(@NonNull final NodeId node, final long pingNanos) {
+        Objects.requireNonNull(node, "The node must not be null.");
+        avgPingMilliseconds.get(node).update((pingNanos) / 1_000_000.0);
     }
 
     /**
@@ -142,12 +161,12 @@ public class NetworkMetrics {
     public void update() {
         // calculate the value for otherStatPing (the average of all, not including self)
         double sum = 0;
-        final double[] times = getPingMilliseconds(); // times are in seconds
-        for (final double time : times) {
+        final Map<NodeId, Double> times = getPingMilliseconds(); // times are in seconds
+        for (final double time : times.values()) {
             sum += time;
         }
         // don't average in the times[selfId]==0, so subtract 1 from the length
-        final double pingValue = sum / (times.length - 1); // pingValue is in milliseconds
+        final double pingValue = sum / (times.size() - 1); // pingValue is in milliseconds
 
         avgPing.update(pingValue);
 
@@ -157,8 +176,8 @@ public class NetworkMetrics {
             if (conn != null) {
                 final long bytesSent = conn.getDos().getConnectionByteCounter().getAndResetCount();
                 totalBytesSent += bytesSent;
-                final int otherId = conn.getOtherId().getIdAsInt();
-                if (otherId < avgBytePerSecSent.size() && avgBytePerSecSent.get(otherId) != null) {
+                final NodeId otherId = conn.getOtherId();
+                if (avgBytePerSecSent.get(otherId) != null) {
                     avgBytePerSecSent.get(otherId).update(bytesSent);
                 }
                 if (!conn.connected()) {
@@ -177,17 +196,22 @@ public class NetworkMetrics {
      *
      * @return the average times, for each member, in milliseconds
      */
-    public double[] getPingMilliseconds() {
-        final double[] times = new double[avgPingMilliseconds.size()];
-        for (int i = 0; i < times.length; i++) {
-            times[i] = avgPingMilliseconds.get(i).get();
-        }
-        times[selfId.getIdAsInt()] = 0;
+    @NonNull
+    public Map<NodeId, Double> getPingMilliseconds() {
+        final Map<NodeId, Double> times = new HashMap<>();
+        avgPingMilliseconds.forEach((nodeId, metric) -> times.put(nodeId, metric.get()));
+        times.put(selfId, 0.0);
         return times;
     }
 
-    public List<RunningAverageMetric> getAvgPingMilliseconds() {
-        return avgPingMilliseconds;
+    /**
+     * Returns the average number of bytes sent per second to each member.
+     *
+     * @return the average number of bytes sent per second to each member
+     */
+    @NonNull
+    public Map<NodeId, RunningAverageMetric> getAvgPingMilliseconds() {
+        return new HashMap<>(avgPingMilliseconds);
     }
 
     /**
@@ -196,8 +220,8 @@ public class NetworkMetrics {
      * @param connection the connection that was closed.
      */
     public void recordDisconnect(final Connection connection) {
-        int otherId = connection.getOtherId().getIdAsInt();
-        if (otherId >= 0 && otherId < disconnectFrequency.size()) {
+        NodeId otherId = connection.getOtherId();
+        if (disconnectFrequency.containsKey(otherId)) {
             disconnectFrequency.get(otherId).count();
         }
     }

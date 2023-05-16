@@ -23,9 +23,12 @@ import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.metrics.RunningAverageMetric;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.transaction.internal.SystemTransaction;
 import com.swirlds.common.system.transaction.internal.SystemTransactionPing;
 import com.swirlds.platform.components.common.query.SystemTransactionSubmitter;
+import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -64,7 +67,8 @@ public final class NetworkStatsTransmitter implements Startable, Stoppable {
     @Override
     public void start() {
         if (basicConfig.enablePingTrans()) {
-            executorService.scheduleAtFixedRate(this::transmitStats, 0, basicConfig.pingTransFreq(), TimeUnit.SECONDS);
+            executorService.scheduleAtFixedRate(
+                    this::transmitStatsWithExceptionHandling, 0, basicConfig.pingTransFreq(), TimeUnit.SECONDS);
         }
     }
 
@@ -79,16 +83,24 @@ public final class NetworkStatsTransmitter implements Startable, Stoppable {
     private void transmitStats() {
         // Send a transaction giving the average ping time from self to all others (in microseconds).
         // This data will eventually be used by chatter to optimize broadcast trees when they are implemented.
-        final int n = networkMetrics.getAvgPingMilliseconds().size();
-        final int[] avgPingMilliseconds = new int[n];
-        for (int i = 0; i < n; i++) {
-            avgPingMilliseconds[i] =
-                    (int) (networkMetrics.getAvgPingMilliseconds().get(i).get() * MILLISECONDS_TO_SECONDS);
-        }
+        Map<NodeId, RunningAverageMetric> nodePingAvgs = networkMetrics.getAvgPingMilliseconds();
+        // 2023-05-16: This transaction is no longer going to be used and does not support non-contiguous node IDs.
+        // 2023-05-16: the order of the ping values is not being guaranteed.
+        final int[] avgPingMilliseconds = nodePingAvgs.keySet().stream()
+                .mapToInt(nodeId -> (int) (nodePingAvgs.get(nodeId).get() * MILLISECONDS_TO_SECONDS))
+                .toArray();
         final SystemTransaction systemTransaction = new SystemTransactionPing(avgPingMilliseconds);
         final boolean good = transactionSubmitter.submit(systemTransaction);
         if (!good) {
             logger.error(EXCEPTION.getMarker(), "failed to create ping time system transaction)");
+        }
+    }
+
+    private void transmitStatsWithExceptionHandling() {
+        try {
+            transmitStats();
+        } catch (Exception e) {
+            logger.error(EXCEPTION.getMarker(), "exception while creating ping time system transaction)", e);
         }
     }
 }
