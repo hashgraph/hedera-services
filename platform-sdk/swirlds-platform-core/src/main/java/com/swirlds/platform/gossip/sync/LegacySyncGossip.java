@@ -88,7 +88,8 @@ public class LegacySyncGossip extends AbstractSyncGossip {
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
             @NonNull final Runnable updatePlatformStatus,
             @NonNull final Consumer<SignedState> loadReconnectState) {
-        super(platformContext,
+        super(
+                platformContext,
                 threadManager,
                 time,
                 crypto,

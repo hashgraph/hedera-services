@@ -40,7 +40,6 @@ import com.swirlds.platform.StartUpEventFrozenManager;
 import com.swirlds.platform.components.EventMapper;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.event.EventIntakeTask;
-import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.gossip.sync.protocol.PeerAgnosticSyncChecks;
@@ -106,7 +105,8 @@ public class SyncGossip extends AbstractSyncGossip {
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
             @NonNull final Runnable updatePlatformStatus,
             @NonNull final Consumer<SignedState> loadReconnectState) {
-        super(platformContext,
+        super(
+                platformContext,
                 threadManager,
                 time,
                 crypto,

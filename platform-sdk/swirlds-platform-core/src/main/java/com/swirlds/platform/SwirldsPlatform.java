@@ -29,7 +29,6 @@ import static com.swirlds.platform.state.signed.ReservedSignedState.createNullRe
 import com.swirlds.base.state.Startable;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.StateConfig;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
@@ -316,9 +315,7 @@ public class SwirldsPlatform implements Platform, Startable {
 
         this.appVersion = appVersion;
 
-        // the memberId of the member running this Platform object
         this.selfId = id;
-        // set here, then given to the state in run(). A copy of it is given to hashgraph.
         this.initialAddressBook = initialAddressBook;
 
         this.eventMapper = new EventMapper(platformContext.getMetrics(), selfId);
@@ -358,7 +355,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 actualMainClassName,
                 selfId,
                 swirldName,
-                this::createPrioritySystemTransaction,
+                txn -> this.createSystemTransaction(txn, true),
                 this::haltRequested,
                 appCommunicationComponent,
                 preConsensusEventWriter,
@@ -578,8 +575,7 @@ public class SwirldsPlatform implements Platform, Startable {
 
             final List<GossipEventValidator> validators = new ArrayList<>();
             // it is very important to discard ancient events, otherwise the deduplication will not work, since it
-            // doesn't
-            // track ancient events
+            // doesn't track ancient events
             validators.add(new AncientValidator(consensusRef::get));
             validators.add(new EventDeduplication(isDuplicateChecks, eventIntakeMetrics));
             validators.add(StaticValidators::isParentDataValid);
@@ -606,8 +602,8 @@ public class SwirldsPlatform implements Platform, Startable {
                     .setThreadName("event-intake")
                     .setHandler(e -> getGossip().getEventIntakeLambda().accept(e))
                     .setCapacity(settings.getEventIntakeQueueSize())
-                    .setLogAfterPauseDuration(ConfigurationHolder.getInstance()
-                            .get()
+                    .setLogAfterPauseDuration(platformContext
+                            .getConfiguration()
                             .getConfigData(ThreadConfig.class)
                             .logStackTracePauseDuration())
                     .enableMaxSizeMetric(metrics)
@@ -671,7 +667,9 @@ public class SwirldsPlatform implements Platform, Startable {
         GuiPlatformAccessor.getInstance().setConsensusReference(selfId.id(), consensusRef);
     }
 
-    // TODO javadoc, needed to break circular dependency
+    /**
+     * Get the gossip engine. This method exists to break a circular dependency.
+     */
     private Gossip getGossip() {
         return gossip;
     }
@@ -685,21 +683,14 @@ public class SwirldsPlatform implements Platform, Startable {
     }
 
     /**
-     * Stores a new system transaction that will be added to an event in the future. Transactions submitted here are not
-     * given priority, meaning any priority transaction waiting to be included in an event will be selected first.
+     * Stores a new system transaction that will be added to an event in the future.
      *
      * @param systemTransaction the new system transaction to be included in a future event
      * @return {@code true} if successful, {@code false} otherwise
      */
-    public boolean createPrioritySystemTransaction(final SystemTransaction systemTransaction) {
-        return createSystemTransaction(systemTransaction, true);
-    }
-
-    private boolean createSystemTransaction(final SystemTransaction systemTransaction, final boolean priority) {
-        if (systemTransaction == null) {
-            return false;
-        }
-
+    private boolean createSystemTransaction(
+            @NonNull final SystemTransaction systemTransaction, final boolean priority) {
+        Objects.requireNonNull(systemTransaction);
         return swirldStateManager.submitTransaction(systemTransaction, priority);
     }
 
@@ -965,13 +956,6 @@ public class SwirldsPlatform implements Platform, Startable {
                     StateLoadedFromDiskCompleteListener.class, new StateLoadedFromDiskNotification());
         }
 
-        if (Thread.getDefaultUncaughtExceptionHandler() == null) {
-            // If there is no default uncaught exception handler already provided, make sure we set one to avoid threads
-            // silently dying from exceptions.
-            Thread.setDefaultUncaughtExceptionHandler((Thread t, Throwable e) ->
-                    logger.error(EXCEPTION.getMarker(), "exception on thread {}", t.getName(), e));
-        }
-
         metrics.start();
 
         // FUTURE WORK: validate that status is still STARTING_UP (sanity check until we refactor platform status)
@@ -1012,9 +996,8 @@ public class SwirldsPlatform implements Platform, Startable {
 
             final PlatformStatus oldStatus = currentPlatformStatus.getAndSet(newStatus);
             if (oldStatus != newStatus) {
-                final PlatformStatus ns = newStatus;
                 logger.info(PLATFORM_STATUS.getMarker(), () -> new PlatformStatusPayload(
-                                "Platform status changed.", oldStatus == null ? "" : oldStatus.name(), ns.name())
+                                "Platform status changed.", oldStatus == null ? "" : oldStatus.name(), newStatus.name())
                         .toString());
 
                 logger.info(PLATFORM_STATUS.getMarker(), "Platform status changed to: {}", newStatus.toString());
