@@ -246,6 +246,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
                 ThreadLocalRandom::current);
 
         networkMetrics = new NetworkMetrics(platformContext.getMetrics(), selfId, addressBook.getSize());
+        platformContext.getMetrics().addUpdater(networkMetrics::update);
         syncMetrics = new SyncMetrics(platformContext.getMetrics());
     }
 

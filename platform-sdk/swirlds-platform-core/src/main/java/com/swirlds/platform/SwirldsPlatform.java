@@ -130,8 +130,6 @@ import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.metrics.RuntimeMetrics;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.metrics.TransactionMetrics;
-import com.swirlds.platform.network.NetworkMetrics;
-import com.swirlds.platform.network.NetworkStatsTransmitter;
 import com.swirlds.platform.network.topology.NetworkTopology;
 import com.swirlds.platform.network.topology.StaticTopology;
 import com.swirlds.platform.observers.ConsensusRoundObserver;
@@ -206,7 +204,6 @@ public class SwirldsPlatform implements Platform, Startable {
     private final Metrics metrics;
 
     private final ConsensusMetrics consensusMetrics;
-    private final NetworkMetrics networkMetrics;
     private final ReconnectMetrics reconnectMetrics;
     /** Reference to the instance responsible for executing reconnect when chatter is used */
     private final AtomicReference<ReconnectController> reconnectController = new AtomicReference<>();
@@ -353,9 +350,6 @@ public class SwirldsPlatform implements Platform, Startable {
 
         EventIntakeMetrics eventIntakeMetrics = new EventIntakeMetrics(metrics, time);
         SyncMetrics syncMetrics = new SyncMetrics(metrics);
-        this.networkMetrics = // TODO this is a duplicate definition!
-                new NetworkMetrics(metrics, selfId, getAddressBook().getSize());
-        metrics.addUpdater(networkMetrics::update);
         this.reconnectMetrics = new ReconnectMetrics(metrics);
         RuntimeMetrics.setup(metrics);
 
@@ -389,10 +383,6 @@ public class SwirldsPlatform implements Platform, Startable {
                 preConsensusEventWriter,
                 currentPlatformStatus::get);
         wiring.registerComponents(components);
-
-        final NetworkStatsTransmitter networkStatsTransmitter =
-                new NetworkStatsTransmitter(platformContext, this::createSystemTransaction, networkMetrics);
-        components.add(networkStatsTransmitter);
 
         final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager =
                 new PreConsensusSystemTransactionManagerFactory()
