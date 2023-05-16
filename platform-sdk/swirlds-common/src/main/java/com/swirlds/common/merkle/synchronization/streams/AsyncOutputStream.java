@@ -18,10 +18,10 @@ package com.swirlds.common.merkle.synchronization.streams;
 
 import static com.swirlds.logging.LogMarker.RECONNECT;
 
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.merkle.synchronization.settings.ReconnectSettings;
-import com.swirlds.common.merkle.synchronization.settings.ReconnectSettingsFactory;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import java.io.IOException;
@@ -38,17 +38,16 @@ import org.apache.logging.log4j.Logger;
  * </p>
  *
  * <p>
- * Only one type of message is allowed to be sent using an instance of this class. Originally this class was capable
- * of supporting arbitrary message types, but there was a significant memory footprint optimization that was made
- * possible by switching to single message type.
+ * Only one type of message is allowed to be sent using an instance of this class. Originally this class was capable of
+ * supporting arbitrary message types, but there was a significant memory footprint optimization that was made possible
+ * by switching to single message type.
  * </p>
  *
  * <p>
  * This object is not thread safe. Only one thread should attempt to send data over this stream at any point in time.
  * </p>
  *
- * @param <T>
- * 		the type of the message to send
+ * @param <T> the type of the message to send
  */
 public class AsyncOutputStream<T extends SelfSerializable> implements AutoCloseable {
 
@@ -92,26 +91,24 @@ public class AsyncOutputStream<T extends SelfSerializable> implements AutoClosea
     private final StandardWorkGroup workGroup;
 
     /**
-     * Constructs a new instance using the given underlying {@link SerializableDataOutputStream} and {@link
-     * StandardWorkGroup}.
+     * Constructs a new instance using the given underlying {@link SerializableDataOutputStream} and
+     * {@link StandardWorkGroup}.
      *
-     * @param outputStream
-     * 		the outputStream to which all objects are written
-     * @param workGroup
-     * 		the work group that should be used to execute this thread
+     * @param outputStream the outputStream to which all objects are written
+     * @param workGroup    the work group that should be used to execute this thread
      */
     public AsyncOutputStream(final SerializableDataOutputStream outputStream, final StandardWorkGroup workGroup) {
 
-        final ReconnectSettings settings = ReconnectSettingsFactory.get();
+        final ReconnectConfig config = ConfigurationHolder.getConfigData(ReconnectConfig.class);
 
         this.outputStream = outputStream;
         this.workGroup = workGroup;
-        this.outgoingMessages = new LinkedBlockingQueue<>(settings.getAsyncStreamBufferSize());
+        this.outgoingMessages = new LinkedBlockingQueue<>(config.asyncStreamBufferSize());
         this.alive = true;
         this.timeSinceLastFlush = new StopWatch();
         this.timeSinceLastFlush.start();
-        this.flushIntervalMs = settings.getAsyncOutputStreamFlushMilliseconds();
-        this.timeoutMs = settings.getAsyncStreamTimeoutMilliseconds();
+        this.flushIntervalMs = config.asyncOutputStreamFlushMilliseconds();
+        this.timeoutMs = config.asyncStreamTimeoutMilliseconds();
     }
 
     /**
@@ -193,8 +190,8 @@ public class AsyncOutputStream<T extends SelfSerializable> implements AutoClosea
     }
 
     /**
-     * Close this buffer and release resources.
-     * If there are still messages awaiting transmission then resources will not be immediately freed.
+     * Close this buffer and release resources. If there are still messages awaiting transmission then resources will
+     * not be immediately freed.
      */
     @Override
     public void close() {
