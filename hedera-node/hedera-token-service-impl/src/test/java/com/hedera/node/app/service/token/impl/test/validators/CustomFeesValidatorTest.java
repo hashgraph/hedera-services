@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEE_DENOMINATION
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatNoException;
@@ -28,10 +29,13 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.CustomFee;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
+import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.test.handlers.HandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.CustomFeesValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -44,12 +48,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class CustomFeesValidatorTest extends HandlerTestBase {
+class CustomFeesValidatorTest extends HandlerTestBase {
     private final CustomFeesValidator subject = new CustomFeesValidator();
 
     @BeforeEach
     public void commonSetUp() {
         super.setUp();
+        refreshStoresWithEntitiesInWritable();
     }
 
     @Test
@@ -113,6 +118,80 @@ public class CustomFeesValidatorTest extends HandlerTestBase {
                         fungibleToken, readableAccountStore, readableTokenRelStore, writableTokenStore, feeWithRoyalty))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE));
+    }
+
+    @Test
+    @DisplayName("royalty fee can be set for non fungible unique tokens")
+    void royaltyFeeForNonFungibleTokenSucceeds() {
+        refreshStoresWithEntitiesInWritable();
+        final List<CustomFee> feeWithRoyalty = new ArrayList<>();
+        feeWithRoyalty.add(withRoyaltyFee(royaltyFee));
+        assertThatNoException()
+                .isThrownBy(() -> subject.validateForFeeScheduleUpdate(
+                        nonFungibleToken,
+                        readableAccountStore,
+                        readableTokenRelStore,
+                        writableTokenStore,
+                        feeWithRoyalty));
+    }
+
+    @Test
+    @DisplayName("royalty fee for NFTs will fail if the denominating token is missing")
+    void royaltyFeeFailsWithMissingToken() {
+        writableTokenState = emptyWritableTokenState();
+        given(writableStates.<EntityNum, Token>get(TOKENS)).willReturn(writableTokenState);
+        writableTokenStore = new WritableTokenStore(writableStates);
+
+        final List<CustomFee> feeWithRoyalty = new ArrayList<>();
+        feeWithRoyalty.add(withRoyaltyFee(royaltyFee));
+        assertThatThrownBy(() -> subject.validateForFeeScheduleUpdate(
+                        nonFungibleToken,
+                        readableAccountStore,
+                        readableTokenRelStore,
+                        writableTokenStore,
+                        feeWithRoyalty))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(INVALID_TOKEN_ID_IN_CUSTOM_FEES));
+    }
+
+    @Test
+    @DisplayName("royalty fee for NFTs will fail if the denominating token is missing")
+    void royaltyFeeFailsFungibleDenom() {
+        refreshStoresWithEntitiesInWritable();
+        final List<CustomFee> feeWithRoyalty = new ArrayList<>();
+        final var nftDenom = royaltyFee
+                .copyBuilder()
+                .fallbackFee(fixedFee.copyBuilder()
+                        .denominatingTokenId(TokenID.newBuilder()
+                                .tokenNum(nonFungibleTokenNum.longValue())
+                                .build()))
+                .build();
+        feeWithRoyalty.add(withRoyaltyFee(nftDenom));
+        assertThatThrownBy(() -> subject.validateForFeeScheduleUpdate(
+                        nonFungibleToken,
+                        readableAccountStore,
+                        readableTokenRelStore,
+                        writableTokenStore,
+                        feeWithRoyalty))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON));
+    }
+
+    @Test
+    void missingTokenAssociationForRoyaltyFeeFails() {
+        refreshStoresWithEntitiesInWritable();
+        readableTokenRelState = emptyReadableTokenRelsStateBuilder().build();
+        given(readableStates.<EntityNumPair, TokenRelation>get(TOKEN_RELS)).willReturn(readableTokenRelState);
+        readableTokenRelStore = new ReadableTokenRelationStoreImpl(readableStates);
+
+        assertThatThrownBy(() -> subject.validateForFeeScheduleUpdate(
+                        nonFungibleToken,
+                        readableAccountStore,
+                        readableTokenRelStore,
+                        writableTokenStore,
+                        List.of(withRoyaltyFee(royaltyFee))))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR));
     }
 
     @Test
@@ -196,6 +275,33 @@ public class CustomFeesValidatorTest extends HandlerTestBase {
                         List.of(withFixedFee(newFee))))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON));
+    }
+
+    @Test
+    @DisplayName("Custom fee validation for TokenCreate is not implemented")
+    void validateCustomFeeForCreation() {
+        assertThatThrownBy(() -> subject.validateCreation(
+                        fungibleToken, readableAccountStore, readableTokenRelStore, writableTokenStore, customFees))
+                .isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    @Test
+    void nullParamsThrow() {
+        assertThatThrownBy(() -> subject.validateForFeeScheduleUpdate(
+                        null, readableAccountStore, readableTokenRelStore, writableTokenStore, customFees))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> subject.validateForFeeScheduleUpdate(
+                        fungibleToken, null, readableTokenRelStore, writableTokenStore, customFees))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> subject.validateForFeeScheduleUpdate(
+                        fungibleToken, readableAccountStore, null, writableTokenStore, customFees))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> subject.validateForFeeScheduleUpdate(
+                        fungibleToken, readableAccountStore, readableTokenRelStore, null, customFees))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> subject.validateForFeeScheduleUpdate(
+                        fungibleToken, readableAccountStore, readableTokenRelStore, writableTokenStore, null))
+                .isInstanceOf(NullPointerException.class);
     }
 
     private List<CustomFee> setFeeCollector(List<CustomFee> original, AccountID feeCollector) {
