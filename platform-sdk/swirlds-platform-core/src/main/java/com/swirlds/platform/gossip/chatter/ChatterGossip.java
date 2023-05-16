@@ -73,16 +73,13 @@ import com.swirlds.platform.gossip.chatter.protocol.peer.PeerInstance;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
-import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.communication.NegotiationProtocols;
 import com.swirlds.platform.network.communication.NegotiatorThread;
 import com.swirlds.platform.network.communication.handshake.VersionCompareHandshake;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.reconnect.DefaultSignedStateValidator;
 import com.swirlds.platform.reconnect.ReconnectController;
-import com.swirlds.platform.reconnect.ReconnectHelper;
 import com.swirlds.platform.reconnect.ReconnectProtocol;
-import com.swirlds.platform.reconnect.ReconnectThrottle;
 import com.swirlds.platform.reconnect.emergency.EmergencyReconnectProtocol;
 import com.swirlds.platform.state.EmergencyRecoveryManager;
 import com.swirlds.platform.state.SwirldStateManager;
@@ -93,6 +90,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import org.apache.commons.lang3.tuple.Pair;
 
 /**
@@ -119,7 +117,6 @@ public class ChatterGossip extends AbstractGossip {
             @NonNull NodeId selfId,
             @NonNull SoftwareVersion appVersion,
             @NonNull final ShadowGraph shadowGraph,
-            @NonNull final ReconnectHelper reconnectHelper,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
             @NonNull final AtomicReference<Consensus> consensusRef,
             @NonNull final QueueThread<EventIntakeTask> intakeQueue,
@@ -128,15 +125,14 @@ public class ChatterGossip extends AbstractGossip {
             @NonNull final FallenBehindManagerImpl fallenBehindManager,
             @NonNull final SwirldStateManager swirldStateManager,
             final boolean startedFromGenesis,
-            @NonNull final ReconnectThrottle reconnectThrottle,
             @NonNull final StateManagementComponent stateManagementComponent,
-            @NonNull final ReconnectMetrics reconnectMetrics,
             @NonNull final InterruptableConsumer<EventIntakeTask> eventIntakeLambda,
             @NonNull final EventObserverDispatcher eventObserverDispatcher,
             @NonNull final EventMapper eventMapper,
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
             @NonNull final EventLinker eventLinker,
-            @NonNull final Runnable updatePlatformStatus) {
+            @NonNull final Runnable updatePlatformStatus,
+            @NonNull final Consumer<SignedState> loadReconnectState) {
         super(
                 platformContext,
                 threadManager,
@@ -147,20 +143,18 @@ public class ChatterGossip extends AbstractGossip {
                 selfId,
                 appVersion,
                 shadowGraph,
-                reconnectHelper,
                 consensusRef,
                 intakeQueue,
                 freezeManager,
                 startUpEventFrozenManager,
                 fallenBehindManager,
                 swirldStateManager,
-                reconnectThrottle,
                 stateManagementComponent,
-                reconnectMetrics,
                 eventMapper,
                 eventIntakeMetrics,
                 eventObserverDispatcher,
-                updatePlatformStatus);
+                updatePlatformStatus,
+                loadReconnectState);
 
         this.emergencyRecoveryManager = Objects.requireNonNull(emergencyRecoveryManager);
 

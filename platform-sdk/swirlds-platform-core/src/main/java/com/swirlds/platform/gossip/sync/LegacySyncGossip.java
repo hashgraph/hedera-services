@@ -42,7 +42,6 @@ import com.swirlds.platform.gossip.FallenBehindManagerImpl;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.SimultaneousSyncThrottle;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
-import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.unidirectional.HeartbeatProtocolResponder;
 import com.swirlds.platform.network.unidirectional.HeartbeatSender;
 import com.swirlds.platform.network.unidirectional.Listener;
@@ -52,13 +51,13 @@ import com.swirlds.platform.network.unidirectional.SharedConnectionLocks;
 import com.swirlds.platform.network.unidirectional.UnidirectionalProtocols;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.reconnect.DefaultSignedStateValidator;
-import com.swirlds.platform.reconnect.ReconnectHelper;
 import com.swirlds.platform.reconnect.ReconnectProtocolResponder;
-import com.swirlds.platform.reconnect.ReconnectThrottle;
 import com.swirlds.platform.state.SwirldStateManager;
+import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 /**
  * Sync gossip without the protocol negotiator.
@@ -85,14 +84,12 @@ public class LegacySyncGossip extends AbstractSyncGossip {
             @NonNull final StartUpEventFrozenManager startUpEventFrozenManager,
             @NonNull final FallenBehindManagerImpl fallenBehindManager,
             @NonNull final StateManagementComponent stateManagementComponent,
-            @NonNull final ReconnectThrottle reconnectThrottle,
-            @NonNull final ReconnectMetrics reconnectMetrics,
-            @NonNull final ReconnectHelper reconnectHelper,
             @NonNull final Runnable updatePlatformStatus,
             @NonNull final InterruptableConsumer<EventIntakeTask> eventIntakeLambda,
             @NonNull final EventMapper eventMapper,
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
-            @NonNull final EventObserverDispatcher eventObserverDispatcher) {
+            @NonNull final EventObserverDispatcher eventObserverDispatcher,
+            @NonNull final Consumer<SignedState> loadReconnectState) {
         super(
                 platformContext,
                 threadManager,
@@ -102,7 +99,6 @@ public class LegacySyncGossip extends AbstractSyncGossip {
                 addressBook,
                 selfId,
                 appVersion,
-                reconnectHelper,
                 updatePlatformStatus,
                 intakeQueue,
                 shadowGraph,
@@ -112,12 +108,11 @@ public class LegacySyncGossip extends AbstractSyncGossip {
                 startUpEventFrozenManager,
                 fallenBehindManager,
                 stateManagementComponent,
-                reconnectThrottle,
-                reconnectMetrics,
                 eventIntakeLambda,
                 eventMapper,
                 eventIntakeMetrics,
-                eventObserverDispatcher);
+                eventObserverDispatcher,
+                loadReconnectState);
 
         sharedConnectionLocks = new SharedConnectionLocks(topology, connectionManagers);
 

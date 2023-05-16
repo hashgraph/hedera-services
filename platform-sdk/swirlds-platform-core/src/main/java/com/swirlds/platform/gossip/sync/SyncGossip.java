@@ -47,19 +47,17 @@ import com.swirlds.platform.gossip.sync.protocol.PeerAgnosticSyncChecks;
 import com.swirlds.platform.gossip.sync.protocol.SyncProtocol;
 import com.swirlds.platform.heartbeats.HeartbeatProtocol;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
-import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.communication.NegotiationProtocols;
 import com.swirlds.platform.network.communication.NegotiatorThread;
 import com.swirlds.platform.network.communication.handshake.VersionCompareHandshake;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.reconnect.DefaultSignedStateValidator;
 import com.swirlds.platform.reconnect.ReconnectController;
-import com.swirlds.platform.reconnect.ReconnectHelper;
 import com.swirlds.platform.reconnect.ReconnectProtocol;
-import com.swirlds.platform.reconnect.ReconnectThrottle;
 import com.swirlds.platform.reconnect.emergency.EmergencyReconnectProtocol;
 import com.swirlds.platform.state.EmergencyRecoveryManager;
 import com.swirlds.platform.state.SwirldStateManager;
+import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -67,6 +65,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 /**
  * Sync gossip using the protocol negotiator.
@@ -93,7 +92,6 @@ public class SyncGossip extends AbstractSyncGossip {
             @NonNull AddressBook addressBook,
             @NonNull NodeId selfId,
             @NonNull SoftwareVersion appVersion,
-            @NonNull final ReconnectHelper reconnectHelper,
             @NonNull final Runnable updatePlatformStatus,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
             @NonNull final QueueThread<EventIntakeTask> intakeQueue,
@@ -104,12 +102,11 @@ public class SyncGossip extends AbstractSyncGossip {
             @NonNull final StartUpEventFrozenManager startUpEventFrozenManager,
             @NonNull final FallenBehindManagerImpl fallenBehindManager,
             @NonNull final StateManagementComponent stateManagementComponent,
-            @NonNull final ReconnectThrottle reconnectThrottle,
-            @NonNull final ReconnectMetrics reconnectMetrics,
             @NonNull final InterruptableConsumer<EventIntakeTask> eventIntakeLambda,
             @NonNull final EventMapper eventMapper,
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
-            @NonNull final EventObserverDispatcher eventObserverDispatcher) {
+            @NonNull final EventObserverDispatcher eventObserverDispatcher,
+            @NonNull final Consumer<SignedState> loadReconnectState) {
         super(
                 platformContext,
                 threadManager,
@@ -119,7 +116,6 @@ public class SyncGossip extends AbstractSyncGossip {
                 addressBook,
                 selfId,
                 appVersion,
-                reconnectHelper,
                 updatePlatformStatus,
                 intakeQueue,
                 shadowGraph,
@@ -129,12 +125,11 @@ public class SyncGossip extends AbstractSyncGossip {
                 startUpEventFrozenManager,
                 fallenBehindManager,
                 stateManagementComponent,
-                reconnectThrottle,
-                reconnectMetrics,
                 eventIntakeLambda,
                 eventMapper,
                 eventIntakeMetrics,
-                eventObserverDispatcher);
+                eventObserverDispatcher,
+                loadReconnectState);
 
         this.time = Objects.requireNonNull(time);
         this.emergencyRecoveryManager = Objects.requireNonNull(emergencyRecoveryManager);

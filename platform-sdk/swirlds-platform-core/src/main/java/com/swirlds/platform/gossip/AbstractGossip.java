@@ -22,6 +22,7 @@ import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 import com.swirlds.base.state.LifecyclePhase;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.config.CryptoConfig;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
@@ -63,14 +64,18 @@ import com.swirlds.platform.network.topology.StaticConnectionManagers;
 import com.swirlds.platform.network.topology.StaticTopology;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.reconnect.ReconnectHelper;
+import com.swirlds.platform.reconnect.ReconnectLearnerFactory;
+import com.swirlds.platform.reconnect.ReconnectLearnerThrottle;
 import com.swirlds.platform.reconnect.ReconnectThrottle;
 import com.swirlds.platform.state.SwirldStateManager;
+import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -133,20 +138,18 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
             @NonNull final NodeId selfId,
             @NonNull final SoftwareVersion appVersion,
             @NonNull final ShadowGraph shadowGraph,
-            @NonNull final ReconnectHelper reconnectHelper,
             @NonNull final AtomicReference<Consensus> consensusRef,
             @NonNull final QueueThread<EventIntakeTask> intakeQueue,
             @NonNull final FreezeManager freezeManager,
             @NonNull final StartUpEventFrozenManager startUpEventFrozenManager,
             @NonNull final FallenBehindManagerImpl fallenBehindManager,
             @NonNull final SwirldStateManager swirldStateManager,
-            @NonNull final ReconnectThrottle reconnectThrottle,
             @NonNull final StateManagementComponent stateManagementComponent,
-            @NonNull final ReconnectMetrics reconnectMetrics,
             @NonNull final EventMapper eventMapper,
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
             @NonNull final EventObserverDispatcher eventObserverDispatcher,
-            @NonNull final Runnable updatePlatformStatus) {
+            @NonNull final Runnable updatePlatformStatus,
+            @NonNull final Consumer<SignedState> loadReconnectState) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
         this.threadManager = Objects.requireNonNull(threadManager);
@@ -156,16 +159,13 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
         this.addressBook = Objects.requireNonNull(addressBook);
         this.selfId = Objects.requireNonNull(selfId);
         this.shadowGraph = Objects.requireNonNull(shadowGraph);
-        this.reconnectHelper = Objects.requireNonNull(reconnectHelper);
         this.consensusRef = Objects.requireNonNull(consensusRef);
         this.intakeQueue = Objects.requireNonNull(intakeQueue);
         this.freezeManager = Objects.requireNonNull(freezeManager);
         this.startUpEventFrozenManager = Objects.requireNonNull(startUpEventFrozenManager);
         this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager);
         this.swirldStateManager = Objects.requireNonNull(swirldStateManager);
-        this.reconnectThrottle = Objects.requireNonNull(reconnectThrottle);
         this.stateManagementComponent = Objects.requireNonNull(stateManagementComponent);
-        this.reconnectMetrics = Objects.requireNonNull(reconnectMetrics);
         this.eventMapper = Objects.requireNonNull(eventMapper);
         this.eventIntakeMetrics = Objects.requireNonNull(eventIntakeMetrics);
         this.eventObserverDispatcher = Objects.requireNonNull(eventObserverDispatcher);
@@ -245,9 +245,29 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
                 syncManager,
                 ThreadLocalRandom::current);
 
+        final ReconnectConfig reconnectConfig =
+                platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
+        reconnectThrottle = new ReconnectThrottle(reconnectConfig);
+
         networkMetrics = new NetworkMetrics(platformContext.getMetrics(), selfId, addressBook.getSize());
         platformContext.getMetrics().addUpdater(networkMetrics::update);
         syncMetrics = new SyncMetrics(platformContext.getMetrics());
+
+        reconnectMetrics = new ReconnectMetrics(platformContext.getMetrics());
+
+        reconnectHelper = new ReconnectHelper(
+                this::stop,
+                this::clear,
+                swirldStateManager::getConsensusState,
+                stateManagementComponent::getLastCompleteRound,
+                new ReconnectLearnerThrottle(selfId, reconnectConfig),
+                loadReconnectState,
+                new ReconnectLearnerFactory(
+                        platformContext,
+                        threadManager,
+                        addressBook,
+                        reconnectConfig.asyncStreamTimeoutMilliseconds(),
+                        reconnectMetrics));
     }
 
     /**

@@ -46,16 +46,14 @@ import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
-import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.observers.EventObserverDispatcher;
-import com.swirlds.platform.reconnect.ReconnectHelper;
-import com.swirlds.platform.reconnect.ReconnectThrottle;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import org.apache.commons.lang3.tuple.Pair;
 
 /**
@@ -77,7 +75,6 @@ public abstract class AbstractSyncGossip extends AbstractGossip { // TODO should
             @NonNull AddressBook addressBook,
             @NonNull NodeId selfId,
             @NonNull SoftwareVersion appVersion,
-            @NonNull final ReconnectHelper reconnectHelper,
             @NonNull final Runnable updatePlatformStatus,
             @NonNull final QueueThread<EventIntakeTask> intakeQueue,
             @NonNull final ShadowGraph shadowGraph,
@@ -87,12 +84,11 @@ public abstract class AbstractSyncGossip extends AbstractGossip { // TODO should
             @NonNull final StartUpEventFrozenManager startUpEventFrozenManager,
             @NonNull final FallenBehindManagerImpl fallenBehindManager,
             @NonNull final StateManagementComponent stateManagementComponent,
-            @NonNull final ReconnectThrottle reconnectThrottle,
-            @NonNull final ReconnectMetrics reconnectMetrics,
             @NonNull final InterruptableConsumer<EventIntakeTask> eventIntakeLambda,
             @NonNull final EventMapper eventMapper,
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
-            @NonNull final EventObserverDispatcher eventObserverDispatcher) {
+            @NonNull final EventObserverDispatcher eventObserverDispatcher,
+            @NonNull final Consumer<SignedState> loadReconnectState) {
 
         super(
                 platformContext,
@@ -104,20 +100,18 @@ public abstract class AbstractSyncGossip extends AbstractGossip { // TODO should
                 selfId,
                 appVersion,
                 shadowGraph,
-                reconnectHelper,
                 consensusRef,
                 intakeQueue,
                 freezeManager,
                 startUpEventFrozenManager,
                 fallenBehindManager,
                 swirldStateManager,
-                reconnectThrottle,
                 stateManagementComponent,
-                reconnectMetrics,
                 eventMapper,
                 eventIntakeMetrics,
                 eventObserverDispatcher,
-                updatePlatformStatus);
+                updatePlatformStatus,
+                loadReconnectState);
 
         this.eventIntakeLambda = Objects.requireNonNull(eventIntakeLambda);
 

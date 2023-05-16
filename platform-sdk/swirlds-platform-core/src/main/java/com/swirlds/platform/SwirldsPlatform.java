@@ -126,7 +126,6 @@ import com.swirlds.platform.metrics.ConsensusHandlingMetrics;
 import com.swirlds.platform.metrics.ConsensusMetrics;
 import com.swirlds.platform.metrics.ConsensusMetricsImpl;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
-import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.metrics.RuntimeMetrics;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.metrics.TransactionMetrics;
@@ -136,10 +135,6 @@ import com.swirlds.platform.observers.ConsensusRoundObserver;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.observers.PreConsensusEventObserver;
 import com.swirlds.platform.reconnect.ReconnectController;
-import com.swirlds.platform.reconnect.ReconnectHelper;
-import com.swirlds.platform.reconnect.ReconnectLearnerFactory;
-import com.swirlds.platform.reconnect.ReconnectLearnerThrottle;
-import com.swirlds.platform.reconnect.ReconnectThrottle;
 import com.swirlds.platform.state.EmergencyRecoveryManager;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.StateSettings;
@@ -204,9 +199,8 @@ public class SwirldsPlatform implements Platform, Startable {
     private final Metrics metrics;
 
     private final ConsensusMetrics consensusMetrics;
-    private final ReconnectMetrics reconnectMetrics;
     /** Reference to the instance responsible for executing reconnect when chatter is used */
-    private final AtomicReference<ReconnectController> reconnectController = new AtomicReference<>();
+    private final AtomicReference<ReconnectController> reconnectController = new AtomicReference<>(); // TODO
 
     /** the object that contains all key pairs and CSPRNG state for this member */
     private final Crypto crypto;
@@ -222,8 +216,6 @@ public class SwirldsPlatform implements Platform, Startable {
      * If a state was loaded from disk, this will have the hash of that state.
      */
     private Hash diskStateHash;
-    /** Helps when executing a reconnect */
-    private ReconnectHelper reconnectHelper;
 
     private final StateManagementComponent stateManagementComponent;
     private final QueueThread<EventIntakeTask> intakeQueue;
@@ -350,10 +342,7 @@ public class SwirldsPlatform implements Platform, Startable {
 
         EventIntakeMetrics eventIntakeMetrics = new EventIntakeMetrics(metrics, time);
         SyncMetrics syncMetrics = new SyncMetrics(metrics);
-        this.reconnectMetrics = new ReconnectMetrics(metrics);
         RuntimeMetrics.setup(metrics);
-
-        final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
 
         this.shadowGraph = new ShadowGraph(syncMetrics, initialAddressBook.getSize());
 
@@ -396,12 +385,9 @@ public class SwirldsPlatform implements Platform, Startable {
 
         consensusRef = new AtomicReference<>();
 
-        // TODO can we put this into the gossip class?
-        final ReconnectConfig reconnectConfig =
-                platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
-        final ReconnectThrottle reconnectThrottle = new ReconnectThrottle(reconnectConfig);
-
+        // TODO these are suspicious!
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
+        final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
 
         // TODO remove
         // unidirectional connections are ONLY used for old-style syncs, that don't run as a protocol
@@ -412,6 +398,9 @@ public class SwirldsPlatform implements Platform, Startable {
                 settings.getNumConnections(),
                 // unidirectional connections are ONLY used for old-style syncs, that don't run as a protocol
                 !chatterConfig.useChatter() && !syncConfig.syncAsProtocolEnabled());
+
+        final ReconnectConfig reconnectConfig =
+                platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
 
         // TODO put into gossip
         // if we are using old-style syncs, don't start the reconnect controller
@@ -562,7 +551,6 @@ public class SwirldsPlatform implements Platform, Startable {
             final List<Predicate<ChatterEventDescriptor>> isDuplicateChecks = new ArrayList<>();
             isDuplicateChecks.add(d -> shadowGraph.isHashInGraph(d.getHash()));
 
-            // TODO can we get the linker into gossip?
             if (chatterConfig.useChatter()) {
                 final OrphanBufferingLinker orphanBuffer = new OrphanBufferingLinker(
                         platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
@@ -680,7 +668,6 @@ public class SwirldsPlatform implements Platform, Startable {
                 selfId,
                 appVersion,
                 shadowGraph,
-                reconnectHelper,
                 emergencyRecoveryManager,
                 consensusRef,
                 intakeQueue,
@@ -689,15 +676,14 @@ public class SwirldsPlatform implements Platform, Startable {
                 fallenBehindManager,
                 swirldStateManager,
                 startedFromGenesis,
-                reconnectThrottle,
                 stateManagementComponent,
-                reconnectMetrics,
                 taskDispatcher::dispatchTask,
                 eventObserverDispatcher,
                 eventMapper,
                 eventIntakeMetrics,
                 eventLinker,
-                this::checkPlatformStatus);
+                this::checkPlatformStatus,
+                this::loadReconnectState);
 
         clearAllPipelines = new LoggingClearables(
                 RECONNECT.getMarker(),
@@ -724,17 +710,6 @@ public class SwirldsPlatform implements Platform, Startable {
     @Override
     public NodeId getSelfId() {
         return selfId;
-    }
-
-    /**
-     * Stores a new system transaction that will be added to an event in the future. Transactions submitted here are not
-     * given priority. Any priority transactions waiting to be included in an event will be included first.
-     *
-     * @param systemTransaction the new system transaction to be included in a future event
-     * @return {@code true} if successful, {@code false} otherwise
-     */
-    public boolean createSystemTransaction(final SystemTransaction systemTransaction) {
-        return createSystemTransaction(systemTransaction, false);
     }
 
     /**
@@ -1028,23 +1003,6 @@ public class SwirldsPlatform implements Platform, Startable {
             Thread.setDefaultUncaughtExceptionHandler((Thread t, Throwable e) ->
                     logger.error(EXCEPTION.getMarker(), "exception on thread {}", t.getName(), e));
         }
-
-        // TODO belongs in gossip
-        final ReconnectConfig reconnectConfig =
-                platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
-        reconnectHelper = new ReconnectHelper(
-                gossip::stop,
-                clearAllPipelines,
-                swirldStateManager::getConsensusState,
-                stateManagementComponent::getLastCompleteRound,
-                new ReconnectLearnerThrottle(selfId, reconnectConfig),
-                this::loadReconnectState,
-                new ReconnectLearnerFactory(
-                        platformContext,
-                        threadManager,
-                        initialAddressBook,
-                        reconnectConfig.asyncStreamTimeoutMilliseconds(),
-                        reconnectMetrics));
 
         metrics.start();
 
