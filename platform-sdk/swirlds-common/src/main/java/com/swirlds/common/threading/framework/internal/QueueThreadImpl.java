@@ -70,7 +70,7 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
      * 		the configuration object
      */
     public QueueThreadImpl(final AbstractQueueThreadConfiguration<?, T> configuration) {
-        super(Utils.getOrBuildQueue(configuration));
+        super(ThreadBuildingUtils.getOrBuildQueue(configuration));
 
         this.configuration = configuration;
 

@@ -17,14 +17,16 @@
 package com.swirlds.common.threading.framework.internal;
 
 import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * Static utility methods for the threading framework
  */
-final class Utils {
-    private Utils() {}
+final class ThreadBuildingUtils {
+    private ThreadBuildingUtils() {}
 
     /**
      * Get the queue. If it doesn't exist then initialize with a default queue, and return that new queue. If the
@@ -33,7 +35,7 @@ final class Utils {
      *
      * @return the queue that should be used
      */
-    static <T> BlockingQueue<T> getOrBuildQueue(final AbstractQueueThreadConfiguration<?, T> config) {
+    static <T> BlockingQueue<T> getOrBuildQueue(@NonNull final AbstractQueueThreadConfiguration<?, T> config) {
         BlockingQueue<T> queue = config.getQueue();
         if (queue == null) {
             // if no queue is set, build a default queue

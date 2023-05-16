@@ -18,13 +18,14 @@ package com.swirlds.common.threading.framework.internal;
 
 import com.swirlds.common.metrics.extensions.BusyTime;
 import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A class that holds the metrics for a queue thread
  */
 public class QueueThreadMetrics {
     /** Tracks how busy a thread is */
-    final BusyTime busyTime;
+    private final BusyTime busyTime;
 
     /**
      * Constructs a new {@link QueueThreadMetrics} instance
@@ -32,7 +33,7 @@ public class QueueThreadMetrics {
      * @param configuration
      * 		the configuration for the queue thread
      */
-    public QueueThreadMetrics(final AbstractQueueThreadConfiguration<?, ?> configuration) {
+    public QueueThreadMetrics(@NonNull final AbstractQueueThreadConfiguration<?, ?> configuration) {
         final QueueThreadMetricsConfiguration metricsConfig = configuration.getMetricsConfiguration();
         if (metricsConfig == null || !metricsConfig.isBusyTimeMetricEnabled()) {
             this.busyTime = null;
@@ -53,7 +54,7 @@ public class QueueThreadMetrics {
      * 		the name of the thread
      * @return the name of the busy time metric
      */
-    public static String buildBusyTimeMetricName(final String threadName) {
+    public static String buildBusyTimeMetricName(@NonNull final String threadName) {
         return "thread-busy-" + threadName;
     }
 

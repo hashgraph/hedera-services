@@ -39,7 +39,7 @@ public class QueueThreadPoolImpl<T> extends AbstractBlockingQueue<T> implements 
      * 		configuration for the thread pool
      */
     protected QueueThreadPoolImpl(final AbstractQueueThreadPoolConfiguration<?, T> configuration) {
-        super(Utils.getOrBuildQueue(configuration));
+        super(ThreadBuildingUtils.getOrBuildQueue(configuration));
 
         configuration.enableThreadNumbering();
 

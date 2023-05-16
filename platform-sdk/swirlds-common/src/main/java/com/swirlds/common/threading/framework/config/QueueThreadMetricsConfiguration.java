@@ -21,6 +21,7 @@ import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.time.OSTime;
 import com.swirlds.common.time.Time;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Configuration for the metrics that will be applied to a queue thread
@@ -45,7 +46,7 @@ public class QueueThreadMetricsConfiguration {
      * @param metrics
      * 		The metrics system that will hold metrics
      */
-    public QueueThreadMetricsConfiguration(final Metrics metrics) {
+    public QueueThreadMetricsConfiguration(@NonNull final Metrics metrics) {
         this.metrics = throwArgNull(metrics, "metrics");
     }
 
@@ -56,7 +57,7 @@ public class QueueThreadMetricsConfiguration {
      * 		The category to use for metrics
      * @return this object
      */
-    public QueueThreadMetricsConfiguration setCategory(final String category) {
+    public QueueThreadMetricsConfiguration setCategory(@NonNull final String category) {
         this.category = category;
         return this;
     }
@@ -68,7 +69,7 @@ public class QueueThreadMetricsConfiguration {
      * 		The time object to use for metrics
      * @return this object
      */
-    public QueueThreadMetricsConfiguration setTime(final Time time) {
+    public QueueThreadMetricsConfiguration setTime(@NonNull final Time time) {
         this.time = time;
         return this;
     }
