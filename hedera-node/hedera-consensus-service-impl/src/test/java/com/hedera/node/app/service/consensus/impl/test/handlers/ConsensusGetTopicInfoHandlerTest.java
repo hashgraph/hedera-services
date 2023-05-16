@@ -75,7 +75,7 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
     }
 
     @Test
-    @DisplayName("extractHeader as expected")
+    @DisplayName("Query header is extracted correctly")
     void extractsHeader() {
         final var query = createGetTopicInfoQuery(topicEntityNum.intValue());
         final var header = subject.extractHeader(query);
@@ -84,7 +84,7 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
     }
 
     @Test
-    @DisplayName("createEmptyResponse as expected")
+    @DisplayName("Check empty query response is created correctly")
     void createsEmptyResponse() {
         final var responseHeader = ResponseHeader.newBuilder()
                 .nodeTransactionPrecheckCode(ResponseCodeEnum.FAIL_FEE)
@@ -98,7 +98,7 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
     }
 
     @Test
-    @DisplayName("requiresNodePayment as expected")
+    @DisplayName("Check node payment requirement is correct with each response type")
     void requiresPayment() {
         assertTrue(subject.requiresNodePayment(ResponseType.ANSWER_ONLY));
         assertTrue(subject.requiresNodePayment(ResponseType.ANSWER_STATE_PROOF));
@@ -107,7 +107,7 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
     }
 
     @Test
-    @DisplayName("needsAnswerOnlyCost as expected")
+    @DisplayName("Check Answer Only Cost is correct with each response type")
     void needsAnswerOnlyCostForCostAnswer() {
         assertFalse(subject.needsAnswerOnlyCost(ResponseType.ANSWER_ONLY));
         assertFalse(subject.needsAnswerOnlyCost(ResponseType.ANSWER_STATE_PROOF));
@@ -116,7 +116,7 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
     }
 
     @Test
-    @DisplayName("validate as expected")
+    @DisplayName("Validate query is good")
     void validatesQueryWhenValidTopic() {
         givenValidTopic();
 

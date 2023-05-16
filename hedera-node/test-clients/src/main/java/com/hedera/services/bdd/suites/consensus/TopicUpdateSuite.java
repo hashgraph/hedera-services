@@ -40,6 +40,9 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicUpdate;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.ThresholdKey;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Arrays;
@@ -55,6 +58,14 @@ public class TopicUpdateSuite extends HapiSuite {
     private static final long defaultMaxLifetime =
             Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
 
+    private static final Key EMPTY_THRESHOLDKEY = Key.newBuilder()
+            .setThresholdKey(ThresholdKey.newBuilder()
+                    .setThreshold(2)
+                    .setKeys(KeyList.newBuilder()
+                            .addKeys(Key.newBuilder().build())
+                            .addKeys(Key.newBuilder().build())))
+            .build();
+
     public static void main(String... args) {
         new TopicUpdateSuite().runSuiteAsync();
     }
@@ -67,6 +78,7 @@ public class TopicUpdateSuite extends HapiSuite {
                 updateSubmitKeyToDiffKey(),
                 updateAdminKeyToDiffKey(),
                 updateAdminKeyToEmpty(),
+                updateAdminKeyToEmptyThresholdKey(),
                 updateMultipleFields(),
                 expirationTimestampIsValidated(),
                 updateSubmitKeyOnTopicWithNoAdminKeyFails(),
@@ -116,7 +128,7 @@ public class TopicUpdateSuite extends HapiSuite {
                 .adminKey("newAdminKey")
                 .autoRenewAccountId("newAutoRenewAccount")
                 .signedBy(signers);
-        ;
+
         return defaultHapiSpec("topicUpdateSigReqsEnforcedAtConsensus")
                 .given(
                         newKeyNamed("oldAdminKey"),
@@ -175,6 +187,14 @@ public class TopicUpdateSuite extends HapiSuite {
                 .given(newKeyNamed("adminKey"), createTopic("testTopic").adminKeyName("adminKey"))
                 /* if adminKey is empty list should clear adminKey */
                 .when(updateTopic("testTopic").adminKey(EMPTY_KEY))
+                .then(getTopicInfo("testTopic").hasNoAdminKey().logged());
+    }
+
+    private HapiSpec updateAdminKeyToEmptyThresholdKey() {
+        return defaultHapiSpec("updateAdminKeyToEmptyThresholdKey")
+                .given(newKeyNamed("adminKey"), createTopic("testTopic").adminKeyName("adminKey"))
+                /* if adminKey is empty list should clear adminKey */
+                .when(updateTopic("testTopic").adminKey(EMPTY_THRESHOLDKEY))
                 .then(getTopicInfo("testTopic").hasNoAdminKey().logged());
     }
 

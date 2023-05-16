@@ -26,6 +26,8 @@ import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.KeyList;
+import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
@@ -42,6 +44,13 @@ public final class ConsensusTestUtils {
             .ed25519(Bytes.wrap("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".getBytes()))
             .build();
     static final Key A_NONNULL_KEY = Key.DEFAULT;
+    static final Key EMPTY_KEYLIST = Key.newBuilder().keyList(KeyList.DEFAULT).build();
+    static final Key ENPTY_THRESHOLD_KEY = Key.newBuilder()
+            .thresholdKey(ThresholdKey.newBuilder()
+                    .threshold(2)
+                    .keys(KeyList.newBuilder().keys(Key.DEFAULT, Key.DEFAULT).build())
+                    .build())
+            .build();
 
     private ConsensusTestUtils() {
         throw new UnsupportedOperationException("Utility class");

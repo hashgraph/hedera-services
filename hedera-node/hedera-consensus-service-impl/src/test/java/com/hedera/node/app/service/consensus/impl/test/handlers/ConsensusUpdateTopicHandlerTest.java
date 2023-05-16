@@ -18,6 +18,9 @@ package com.hedera.node.app.service.consensus.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
+import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.A_NONNULL_KEY;
+import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.EMPTY_KEYLIST;
+import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.ENPTY_THRESHOLD_KEY;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -25,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -33,7 +37,6 @@ import static org.mockito.BDDMockito.willThrow;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
-import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TopicID;
@@ -163,13 +166,43 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
         givenValidTopic(0, false);
         refreshStoresWithCurrentTopicInBothReadableAndWritable();
 
-        final var op = OP_BUILDER.topicID(topicId).adminKey(Key.DEFAULT).build();
+        final var op = OP_BUILDER.topicID(topicId).adminKey(A_NONNULL_KEY).build();
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
 
         subject.handle(handleContext, op, writableStore);
 
         final var newTopic = writableTopicState.get(topicEntityNum);
         assertNull(newTopic.adminKey());
+    }
+
+    @Test
+    @DisplayName("Delete admin key with empty KeyList as expected")
+    void appliesDeleteEmptyKeyListAdminKey() {
+        givenValidTopic(0, false);
+        refreshStoresWithCurrentTopicInBothReadableAndWritable();
+
+        final var op = OP_BUILDER.topicID(topicId).adminKey(EMPTY_KEYLIST).build();
+        given(handleContext.attributeValidator()).willReturn(attributeValidator);
+
+        subject.handle(handleContext, op, writableStore);
+
+        final var newTopic = writableTopicState.get(topicEntityNum);
+        assertNull(newTopic.adminKey());
+    }
+
+    @Test
+    @DisplayName("Delete admin key with empty KeyList as expected")
+    void appliesDeleteEmptyThresholdKeyListAdminKey() {
+        givenValidTopic(0, false);
+        refreshStoresWithCurrentTopicInBothReadableAndWritable();
+
+        final var op = OP_BUILDER.topicID(topicId).adminKey(ENPTY_THRESHOLD_KEY).build();
+        given(handleContext.attributeValidator()).willReturn(attributeValidator);
+
+        subject.handle(handleContext, op, writableStore);
+
+        final var newTopic = writableTopicState.get(topicEntityNum);
+        assertNotNull(newTopic.adminKey());
     }
 
     @Test
@@ -367,21 +400,21 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
     }
 
     @Test
-    @DisplayName("Validate Mutate NonExpiryField memo as expected")
+    @DisplayName("Check if there is memo update")
     void memoMutationsIsNonExpiry() {
         final var op = OP_BUILDER.memo("HI").build();
         assertTrue(ConsensusUpdateTopicHandler.wantsToMutateNonExpiryField(op));
     }
 
     @Test
-    @DisplayName("Validate Mutate NonExpiryField adminKey as expected")
+    @DisplayName("Check if there is adminKey update")
     void adminKeyMutationIsNonExpiry() {
         final var op = OP_BUILDER.adminKey(key).build();
         assertTrue(ConsensusUpdateTopicHandler.wantsToMutateNonExpiryField(op));
     }
 
     @Test
-    @DisplayName("Validate Mutate NonExpiryField submitKey as expected")
+    @DisplayName("Check if there is submitKey update")
     void submitKeyMutationIsNonExpiry() {
         final var op = OP_BUILDER.submitKey(key).build();
         assertTrue(ConsensusUpdateTopicHandler.wantsToMutateNonExpiryField(op));
@@ -396,14 +429,14 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
     }
 
     @Test
-    @DisplayName("Validate Mutate NonExpiryField autoRenew account as expected")
+    @DisplayName("Check if there is autoRenewAccount update")
     void autoRenewAccountMutationIsNonExpiry() {
         final var op = OP_BUILDER.autoRenewAccount(autoRenewId).build();
         assertTrue(ConsensusUpdateTopicHandler.wantsToMutateNonExpiryField(op));
     }
 
     @Test
-    @DisplayName("Validate Mutate NonExpiryField expireTime as expected")
+    @DisplayName("Check if there is autoRenewPeriod update")
     void expiryMutationIsExpiry() {
         final var expiryTime = Timestamp.newBuilder().seconds(123L).build();
         final var op = OP_BUILDER.expirationTime(expiryTime).build();
