@@ -30,7 +30,7 @@ import dagger.Module;
  * Dagger module of the networkadmin service
  */
 @Module
-public interface NetworkAdminServiceModule {
+public interface NetworkAdminServiceInjectionModule {
 
     FreezeHandler freezeHandler();
 

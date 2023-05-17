@@ -30,7 +30,7 @@ import javax.inject.Singleton;
 
 /** A Dagger module for providing dependencies based on {@link Metrics}. */
 @Module
-public interface MetricsDaggerModule {
+public interface MetricsInjectionModule {
     @Provides
     @Singleton
     static Metrics provideMetrics(@NonNull final Platform platform) {

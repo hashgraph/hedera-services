@@ -22,9 +22,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.node.app.DaggerHederaApp;
-import com.hedera.node.app.HederaApp;
-import com.hedera.node.app.components.QueryComponent;
+import com.hedera.node.app.DaggerHederaInjectionComponent;
+import com.hedera.node.app.HederaInjectionComponent;
+import com.hedera.node.app.components.QueryInjectionComponent;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.context.PlatformContext;
@@ -51,7 +51,7 @@ class QueryComponentTest {
     @Mock
     private Platform platform;
 
-    private HederaApp app;
+    private HederaInjectionComponent app;
 
     @BeforeEach
     void setUp() {
@@ -61,7 +61,7 @@ class QueryComponentTest {
         when(platformContext.getConfiguration()).thenReturn(configuration);
         when(platform.getContext()).thenReturn(platformContext);
         when(platformContext.getCryptography()).thenReturn(cryptography);
-        app = DaggerHederaApp.builder()
+        app = DaggerHederaInjectionComponent.builder()
                 .initTrigger(InitTrigger.GENESIS)
                 .platform(platform)
                 .crypto(CryptographyHolder.get())
@@ -80,7 +80,8 @@ class QueryComponentTest {
     void objectGraphRootsAreAvailable() {
         given(platform.getSelfId()).willReturn(new NodeId(0L));
 
-        final QueryComponent subject = app.queryComponentFactory().get().create();
+        final QueryInjectionComponent subject =
+                app.queryComponentFactory().get().create();
 
         assertNotNull(subject.queryWorkflow());
     }

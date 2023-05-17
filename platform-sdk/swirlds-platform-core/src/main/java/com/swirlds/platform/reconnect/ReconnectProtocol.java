@@ -215,6 +215,7 @@ public class ReconnectProtocol implements Protocol {
                     .execute(state.get());
         } finally {
             teacherThrottle.reconnectAttemptFinished();
+            teacherState = null;
         }
     }
 
