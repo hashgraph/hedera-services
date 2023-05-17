@@ -38,11 +38,20 @@ public interface BaseSerializer<T> {
     }
 
     /**
-     * Get the number of bytes a data item takes when serialized
+     * Get the number of bytes a data item takes when serialized. Uses data version of the serializer.
      *
      * @return Either a number of bytes or DataFileCommon.VARIABLE_DATA_SIZE if size is variable
      */
-    int getSerializedSize();
+    default int getSerializedSize() {
+        return getSerializedSize(getCurrentDataVersion());
+    }
+    /**
+     * Get the number of bytes a data item takes when serialized.
+     *
+     * @param dataVersion The serialization version the data item was written with
+     * @return Either a number of bytes or DataFileCommon.VARIABLE_DATA_SIZE if size is variable
+     */
+    int getSerializedSize(long dataVersion);
 
     /**
      * For variable sized data get the typical  number of bytes a data item takes when serialized

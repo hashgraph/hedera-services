@@ -17,9 +17,12 @@
 package com.swirlds.virtualmap;
 
 import static com.swirlds.virtualmap.VirtualMapTestUtils.createMap;
+import static org.apache.commons.lang3.RandomUtils.nextInt;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.MerkleInternal;
@@ -28,15 +31,17 @@ import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.test.merkle.util.MerkleTestUtils;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
-import com.swirlds.virtualmap.datasource.VirtualInternalRecord;
 import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
+import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 @DisplayName("VirtualMap Hashing Tests")
 class VirtualMapHashingTest {
@@ -303,14 +308,16 @@ class VirtualMapHashingTest {
     /**
      * This test failed prior to a race condition that used to exist.
      */
-    @Test
+    @ParameterizedTest
+    @ValueSource(
+            ints = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 16, 17, 30, 31, 32, 33, 62, 64, 120, 256, 1000, 1022, 1023, 1024
+            })
     @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
     @DisplayName("Internal node operations are properly synchronized")
-    void internalNodeSynchronization() throws ExecutionException, InterruptedException {
+    void internalNodeSynchronization(int nKeys) throws ExecutionException, InterruptedException {
         VirtualMap<TestKey, TestValue> current = createMap();
-        final int NKEYS = 1000;
-        for (int i = 0; i < NKEYS; ++i) {
+        for (int i = 0; i < nKeys; ++i) {
             current.put(new TestKey(i), new TestValue(Integer.toString(i)));
         }
 
@@ -319,7 +326,7 @@ class VirtualMapHashingTest {
         Future<Hash> future = MerkleCryptoFactory.getInstance().digestTreeAsync(prev);
 
         final long numInternals = current.getState().getFirstLeafPath();
-        for (int i = 0; i < NKEYS; ++i) {
+        for (int i = 0; i < nKeys; ++i) {
             current.remove(new TestKey(i));
         }
 
@@ -329,12 +336,57 @@ class VirtualMapHashingTest {
         final VirtualNodeCache<TestKey, TestValue> cache = current.getRoot().getCache();
         int deletedInternals = 1; // path 0 internal node is preserved for an empty map
         for (int path = 1; path < numInternals; ++path) {
-            final VirtualInternalRecord internal = cache.lookupInternalByPath(path, false);
-            assertNotNull(internal, "Unexpected null");
-            if (internal == VirtualNodeCache.DELETED_INTERNAL_RECORD) {
+            final Hash hash = cache.lookupHashByPath(path, false);
+            assertNotNull(hash, "Unexpected null");
+            if (hash == VirtualNodeCache.DELETED_HASH) {
                 deletedInternals++;
             }
         }
         assertEquals(numInternals, deletedInternals, "The number of deleted internals doesn't match");
+    }
+
+    @Test
+    void fullLeavesRehash() {
+        final VirtualMap<TestKey, TestValue> map = createMap();
+
+        // add 100 elements
+        IntStream.range(1, 101).forEach(index -> {
+            map.put(new TestKey(index), new TestValue(nextInt()));
+        });
+
+        VirtualRootNode<TestKey, TestValue> root = map.getRoot();
+        root.enableFlush();
+        // make sure that the elements have no hashes
+        IntStream.range(1, 101).forEach(index -> {
+            assertNull(root.getRecords().findHash(index));
+        });
+
+        // prepare the root for h full leaf rehash
+        doFullRehash(root);
+
+        // make sure that the elements have hashes
+        IntStream.range(1, 101).forEach(index -> {
+            assertNotNull(root.getRecords().findHash(index));
+        });
+
+        // should not throw any exceptions
+        map.fullLeafRehash();
+    }
+
+    private static void doFullRehash(VirtualRootNode<TestKey, TestValue> root) {
+        root.setImmutable(true);
+        root.getCache().seal();
+        root.flush();
+        root.fullLeafRehash();
+    }
+
+    @Test
+    void fullLeavesRehashOnEmptyMap() {
+        final VirtualMap<TestKey, TestValue> map = createMap();
+
+        VirtualRootNode<TestKey, TestValue> root = map.getRoot();
+        root.enableFlush();
+        // shouldn't throw any exceptions
+        assertDoesNotThrow(() -> doFullRehash(root));
     }
 }

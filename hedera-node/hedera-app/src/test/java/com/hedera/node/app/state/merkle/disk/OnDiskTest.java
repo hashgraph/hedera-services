@@ -79,6 +79,9 @@ class OnDiskTest extends MerkleTestBase {
         final var builder = new JasperDbBuilder<OnDiskKey<AccountID>, OnDiskValue<Account>>()
                 // Force all hashes to disk, to make sure we're going through all the
                 // serialization paths we can
+                // FIXME: use hashesRamToDiskThreshold after the merge of
+                // https://github.com/hashgraph/hedera-services/pull/5825
+                // (see https://github.com/hashgraph/hedera-services/issues/6037)
                 .internalHashesRamToDiskThreshold(0)
                 .storageDir(storageDir)
                 .maxNumOfKeys(100)
