@@ -421,10 +421,9 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      * The {@code state} parameter isn't used in this function, since a signature transaction doesn't modify the state
      */
     public void handleStateSignatureTransactionPostConsensus(
-            @NonNull final State state,
+            @Nullable final State state,
             @NonNull final NodeId creatorId,
             @NonNull final StateSignatureTransaction stateSignatureTransaction) {
-        Objects.requireNonNull(state, "state must not be null");
         Objects.requireNonNull(creatorId, "creatorId must not be null");
         Objects.requireNonNull(stateSignatureTransaction, "stateSignatureTransaction must not be null");
 
