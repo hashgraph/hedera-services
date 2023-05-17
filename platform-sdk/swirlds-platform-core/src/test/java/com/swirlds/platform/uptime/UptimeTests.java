@@ -28,6 +28,7 @@ import static org.mockito.Mockito.when;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.ConsensusEvent;
@@ -306,7 +307,7 @@ class UptimeTests {
         // Simulate a following round with a different address book
         final AddressBook newAddressBook = addressBook.copy();
         final long nodeToRemove = addressBook.getId(0);
-        newAddressBook.remove(nodeToRemove);
+        newAddressBook.remove(new NodeId(nodeToRemove));
         final Address newAddress = addressBook.getAddress(addressBook.getId(0)).copySetId(12345);
         newAddressBook.add(newAddress);
         final UptimeDataImpl nextRoundUptimeData = genesisUptimeData.copy();

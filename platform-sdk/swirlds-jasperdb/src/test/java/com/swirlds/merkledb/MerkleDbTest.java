@@ -16,11 +16,15 @@
 
 package com.swirlds.merkledb;
 
+import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.virtualmap.datasource.VirtualKeySet;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -121,8 +125,56 @@ public class MerkleDbTest {
     }
 
     @Test
-    @DisplayName("Check data source table config")
-    public void testDataSourceConfig() throws IOException {
+    @DisplayName("Load existing datasource")
+    void testLoadExistingDatasource() throws IOException {
+        final MerkleDb instance = MerkleDb.getDefaultInstance();
+        final String tableName = randomAlphabetic(10);
+        final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();
+        instance.createDataSource(tableName, tableConfig, false).close();
+
+        // create datasource reusing existing metadata
+        MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dataSource =
+                new MerkleDbDataSource<>(instance, tableName, instance.getNextTableId() - 1, tableConfig, false);
+        Assertions.assertNotNull(dataSource);
+        // This datasource cannot be properly closed because MerkleDb instance is not aware of this.
+        // Assertion error is expected
+        assertThrows(AssertionError.class, dataSource::close);
+    }
+
+    @Test
+    @DisplayName("Create datasource with corrupted file structure - directory exists but metadata is missing")
+    void testDataSourceUsingAbsentDir() throws IOException {
+        final MerkleDb instance = MerkleDb.getDefaultInstance();
+        final String tableName = randomAlphabetic(10);
+        final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();
+        // creating empty table directory with no metadata
+        Path tableStorageDir = instance.getTableDir(tableName, instance.getNextTableId() + 1);
+        Files.createDirectories(tableStorageDir);
+        assertThrows(IOException.class, () -> instance.createDataSource(tableName, tableConfig, false));
+        Files.delete(tableStorageDir);
+    }
+
+    @Test
+    @DisplayName("Test creation of a virtual key set")
+    void testBuildKeySet() throws IOException {
+        final MerkleDb instance = MerkleDb.getDefaultInstance();
+        final String tableName = randomAlphabetic(10);
+        final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();
+        final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dataSource =
+                instance.createDataSource(tableName, tableConfig, false);
+        VirtualKeySet<ExampleLongKeyFixedSize> keySet = dataSource.buildKeySet();
+        Assertions.assertNotNull(keySet);
+        for (int i = 0; i < 100; i++) {
+            keySet.add(new ExampleLongKeyFixedSize(i));
+        }
+        for (int i = 0; i < 100; i++) {
+            assertTrue(keySet.contains(new ExampleLongKeyFixedSize(i)));
+        }
+        dataSource.close();
+    }
+
+    @Test
+    void testVirtualKeySet() throws IOException {
         final MerkleDb instance = MerkleDb.getDefaultInstance();
         final String tableName = "tablea";
         final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();

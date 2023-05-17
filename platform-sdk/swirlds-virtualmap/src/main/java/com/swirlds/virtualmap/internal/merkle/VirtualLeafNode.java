@@ -19,13 +19,13 @@ package com.swirlds.virtualmap.internal.merkle;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.swirlds.common.constructable.ConstructableIgnored;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
-import com.swirlds.virtualmap.datasource.VirtualInternalRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import java.io.IOException;
 import java.util.Objects;
@@ -36,7 +36,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
  */
 @ConstructableIgnored
 public final class VirtualLeafNode<K extends VirtualKey, V extends VirtualValue> extends PartialMerkleLeaf
-        implements MerkleLeaf, VirtualNode<VirtualLeafRecord<K, V>> {
+        implements MerkleLeaf, VirtualNode {
 
     public static final long CLASS_ID = 0x499677a326fb04caL;
 
@@ -46,23 +46,18 @@ public final class VirtualLeafNode<K extends VirtualKey, V extends VirtualValue>
     }
 
     /**
-     * The {@link VirtualLeafRecord} is the backing data for this node. There are different types
-     * of records, {@link VirtualInternalRecord} for internal nodes and
-     * {@link VirtualLeafRecord} for leaf nodes.
+     * The {@link VirtualLeafRecord} is the backing data for this node.
      */
     private final VirtualLeafRecord<K, V> virtualRecord;
 
-    public VirtualLeafNode(final VirtualLeafRecord<K, V> virtualRecord) {
+    public VirtualLeafNode(final VirtualLeafRecord<K, V> virtualRecord, final Hash hash) {
         this.virtualRecord = Objects.requireNonNull(virtualRecord);
-        setHash(virtualRecord.getHash());
+        setHash(hash);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public VirtualLeafRecord<K, V> getVirtualRecord() {
-        return virtualRecord;
+    public long getPath() {
+        return virtualRecord.getPath();
     }
 
     /**
@@ -145,7 +140,7 @@ public final class VirtualLeafNode<K extends VirtualKey, V extends VirtualValue>
             return false;
         }
         final VirtualLeafNode<?, ?> that = (VirtualLeafNode<?, ?>) o;
-        return virtualRecord.equals(that.getVirtualRecord());
+        return virtualRecord.equals(that.virtualRecord);
     }
 
     /**

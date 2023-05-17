@@ -28,10 +28,11 @@ import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.SignaturePair;
 import com.hedera.hapi.node.base.SignaturePair.SignatureOneOfType;
 import com.hedera.hapi.node.base.ThresholdKey;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.AppTestBase;
+import com.hedera.node.app.service.mono.sigs.utils.MiscCryptoUtils;
 import com.hedera.node.app.signature.ExpandedSignaturePair;
 import com.hedera.node.app.spi.fixtures.Scenarios;
+import com.hedera.node.app.spi.fixtures.TestKeyInfo;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -47,7 +48,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
 
 final class SignatureExpanderImplTest extends AppTestBase implements Scenarios {
     private static final int PREFIX_LENGTH = 10;
@@ -71,14 +71,18 @@ final class SignatureExpanderImplTest extends AppTestBase implements Scenarios {
         @DisplayName("Empty prefixes ignored on expansion")
         void emptyPrefixes() {
             // Given a list of sig pairs where there are empty prefixes
-            final List<SignaturePair> sigPairs = List.of(ed25519Sig("", 0), ecdsaSig("", 0), ed25519Sig("abc", 32));
+            final List<SignaturePair> sigPairs = List.of(
+                    ed25519Sig(FAKE_ED25519_KEY_INFOS[0], 0),
+                    ecdsaSig(FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[0], 0),
+                    ed25519Sig(FAKE_ED25519_KEY_INFOS[1], 32));
 
             // When we expand them,
             final Set<ExpandedSignaturePair> expanded = new HashSet<>();
             subject.expand(sigPairs, expanded);
 
             // Then we find empty prefixes are skipped
-            assertThat(expanded).containsExactlyInAnyOrderElementsOf(Set.of(ed25519Expanded("abc", 32)));
+            assertThat(expanded)
+                    .containsExactlyInAnyOrderElementsOf(Set.of(ed25519Expanded(FAKE_ED25519_KEY_INFOS[1])));
         }
 
         @ParameterizedTest
@@ -94,49 +98,126 @@ final class SignatureExpanderImplTest extends AppTestBase implements Scenarios {
             assertThat(expanded).containsExactlyInAnyOrderElementsOf(expected);
         }
 
+        @Test
+        @DisplayName("Expected \"full\" ECDSA_SECP256K1 prefixes include the evm alias")
+        void expandsEvmAlias() {
+            // Given a list of sig pairs with an ECDSA_SECP256K1 prefix,
+            final var prefix = FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[0].publicKey().ecdsaSecp256k1OrThrow();
+            final var signature = randomBytes(64);
+            final var sigPairs = List.of(SignaturePair.newBuilder()
+                    .pubKeyPrefix(prefix)
+                    .ecdsaSecp256k1(signature)
+                    .build());
+
+            // When we expand them,
+            final Set<ExpandedSignaturePair> expanded = new HashSet<>();
+            subject.expand(sigPairs, expanded);
+
+            // Then we find the EVM address has been computed properly
+            assertThat(expanded)
+                    .containsExactlyInAnyOrderElementsOf(Set.of(new ExpandedSignaturePair(
+                            FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[0].publicKey(),
+                            FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[0]
+                                    .uncompressedPublicKey()
+                                    .ecdsaSecp256k1OrThrow(),
+                            FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[0].alias(),
+                            sigPairs.get(0))));
+        }
+
         /** Provides a stream of arguments for the {@link #expandsSignaturesWithFullPrefix(List, Set)} test. */
         static Stream<Arguments> provideFullKeyPrefixSignaturePairs() {
             return Stream.of(
                     Arguments.of(
                             named(
                                     "[Full, Prefix, Prefix]",
-                                    List.of(ed25519Sig("aaa", 32), ecdsaSig("abb", 3), ed25519Sig("abc", 3))),
-                            named("[First]", Set.of(ed25519Expanded("aaa", 32)))),
+                                    List.of(
+                                            ed25519Sig(FAKE_ED25519_KEY_INFOS[0], 32),
+                                            ecdsaSig(FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[0], 3),
+                                            ed25519Sig(FAKE_ED25519_KEY_INFOS[1], 3))),
+                            named("[First]", Set.of(ed25519Expanded(FAKE_ED25519_KEY_INFOS[0])))),
                     Arguments.of(
                             named(
                                     "[Prefix, Full, Prefix]",
-                                    List.of(ed25519Sig("aaa", 3), ecdsaSig("abb", 33), ed25519Sig("abc", 3))),
-                            named("[Middle]", Set.of(ecdsaExpanded("abb", 33)))),
+                                    List.of(
+                                            ed25519Sig(FAKE_ED25519_KEY_INFOS[0], 3),
+                                            ecdsaSig(FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[0], 33),
+                                            ed25519Sig(FAKE_ED25519_KEY_INFOS[1], 3))),
+                            named("[Middle]", Set.of(ecdsaExpanded(FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[0])))),
                     Arguments.of(
                             named(
                                     "[Prefix, Prefix, Full]",
-                                    List.of(ed25519Sig("aaa", 3), ecdsaSig("abb", 3), ed25519Sig("abc", 32))),
-                            named("[Last]", Set.of(ed25519Expanded("abc", 32)))),
+                                    List.of(
+                                            ed25519Sig(FAKE_ED25519_KEY_INFOS[0], 3),
+                                            ecdsaSig(FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[0], 3),
+                                            ed25519Sig(FAKE_ED25519_KEY_INFOS[1], 32))),
+                            named("[Last]", Set.of(ed25519Expanded(FAKE_ED25519_KEY_INFOS[1])))),
                     Arguments.of(
                             named(
                                     "[Full, Full, Prefix]",
-                                    List.of(ed25519Sig("aaa", 32), ecdsaSig("abb", 33), ed25519Sig("abc", 3))),
-                            named("[First, Middle]", Set.of(ed25519Expanded("aaa", 32), ecdsaExpanded("abb", 33)))),
+                                    List.of(
+                                            ed25519Sig(FAKE_ED25519_KEY_INFOS[0], 32),
+                                            ecdsaSig(FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[0], 33),
+                                            ed25519Sig(FAKE_ED25519_KEY_INFOS[1], 3))),
+                            named(
+                                    "[First, Middle]",
+                                    Set.of(
+                                            ed25519Expanded(FAKE_ED25519_KEY_INFOS[0]),
+                                            ecdsaExpanded(FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[0])))),
                     Arguments.of(
                             named(
                                     "[Full, Prefix, Full]",
-                                    List.of(ed25519Sig("aaa", 32), ecdsaSig("abb", 3), ed25519Sig("abc", 32))),
-                            named("[First, Last]", Set.of(ed25519Expanded("aaa", 32), ed25519Expanded("abc", 32)))),
+                                    List.of(
+                                            ed25519Sig(FAKE_ED25519_KEY_INFOS[0], 32),
+                                            ecdsaSig(FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[0], 3),
+                                            ed25519Sig(FAKE_ED25519_KEY_INFOS[1], 32))),
+                            named(
+                                    "[First, Last]",
+                                    Set.of(
+                                            ed25519Expanded(FAKE_ED25519_KEY_INFOS[0]),
+                                            ed25519Expanded(FAKE_ED25519_KEY_INFOS[1])))),
                     Arguments.of(
                             named(
                                     "[Prefix, Full, Full]",
-                                    List.of(ed25519Sig("aaa", 3), ecdsaSig("abb", 33), ed25519Sig("abc", 32))),
-                            named("[Middle, Last]", Set.of(ecdsaExpanded("abb", 33), ed25519Expanded("abc", 32)))),
+                                    List.of(
+                                            ed25519Sig(FAKE_ED25519_KEY_INFOS[0], 3),
+                                            ecdsaSig(FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[0], 33),
+                                            ed25519Sig(FAKE_ED25519_KEY_INFOS[1], 32))),
+                            named(
+                                    "[Middle, Last]",
+                                    Set.of(
+                                            ecdsaExpanded(FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[0]),
+                                            ed25519Expanded(FAKE_ED25519_KEY_INFOS[1])))),
                     Arguments.of(
                             named(
                                     "[Full, Full, Full]",
-                                    List.of(ed25519Sig("aaa", 32), ecdsaSig("abb", 33), ed25519Sig("abc", 32))),
+                                    List.of(
+                                            ed25519Sig(FAKE_ED25519_KEY_INFOS[0], 32),
+                                            ecdsaSig(FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[0], 33),
+                                            ed25519Sig(FAKE_ED25519_KEY_INFOS[1], 32))),
                             named(
                                     "[First, Middle, Last]",
                                     Set.of(
-                                            ed25519Expanded("aaa", 32),
-                                            ecdsaExpanded("abb", 33),
-                                            ed25519Expanded("abc", 32)))));
+                                            ed25519Expanded(FAKE_ED25519_KEY_INFOS[0]),
+                                            ecdsaExpanded(FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[0]),
+                                            ed25519Expanded(FAKE_ED25519_KEY_INFOS[1])))));
+        }
+
+        /** Utility to create an ExpandedSignaturePair for an ED25519 key prefix */
+        private static ExpandedSignaturePair ed25519Expanded(@NonNull final TestKeyInfo keyInfo) {
+            final var key = keyInfo.publicKey();
+            final var sigPair = ed25519Sig(keyInfo, 32);
+            return new ExpandedSignaturePair(key, key.ed25519OrThrow(), null, sigPair);
+        }
+
+        /** Utility to create an ExpandedSignaturePair for an ECDSA_SECP256K1 key prefix */
+        private static ExpandedSignaturePair ecdsaExpanded(@NonNull final TestKeyInfo keyInfo) {
+            final var key = keyInfo.publicKey();
+            final var sigPair = ecdsaSig(keyInfo, 33);
+            final var compressed = key.ecdsaSecp256k1OrThrow();
+            final var array = new byte[(int) compressed.length()];
+            compressed.getBytes(0, array);
+            final var decompressed = MiscCryptoUtils.decompressSecp256k1(array);
+            return new ExpandedSignaturePair(key, Bytes.wrap(decompressed), keyInfo.alias(), sigPair);
         }
     }
 
@@ -283,10 +364,13 @@ final class SignatureExpanderImplTest extends AppTestBase implements Scenarios {
             // and full prefixes, and includes prefixes that DO NOT get used,
             final var key = thresholdKey(
                     3,
-                    keyList(FAKE_ED25519_KEY_INFOS[0].publicKey(), FAKE_ECDSA_KEY_INFOS[0].publicKey()),
+                    keyList(FAKE_ED25519_KEY_INFOS[0].publicKey(), FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[0].publicKey()),
                     FAKE_ED25519_KEY_INFOS[2].publicKey(),
-                    FAKE_ECDSA_KEY_INFOS[2].publicKey(),
-                    thresholdKey(1, FAKE_ECDSA_KEY_INFOS[1].publicKey(), FAKE_ECDSA_KEY_INFOS[1].publicKey()));
+                    FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[2].publicKey(),
+                    thresholdKey(
+                            1,
+                            FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[1].publicKey(),
+                            FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[1].publicKey()));
 
             final var sigList = List.of(
                     ed25519Sig(FAKE_ED25519_KEY_INFOS[0].publicKey(), false),
@@ -294,11 +378,11 @@ final class SignatureExpanderImplTest extends AppTestBase implements Scenarios {
                     ed25519Sig(FAKE_ED25519_KEY_INFOS[2].publicKey(), false),
                     ed25519Sig(FAKE_ED25519_KEY_INFOS[3].publicKey(), true),
                     ed25519Sig(FAKE_ED25519_KEY_INFOS[4].publicKey(), false),
-                    ecdsaSig(FAKE_ECDSA_KEY_INFOS[0].publicKey(), true),
-                    ecdsaSig(FAKE_ECDSA_KEY_INFOS[1].publicKey(), false),
-                    ecdsaSig(FAKE_ECDSA_KEY_INFOS[2].publicKey(), true),
-                    ecdsaSig(FAKE_ECDSA_KEY_INFOS[3].publicKey(), false),
-                    ecdsaSig(FAKE_ECDSA_KEY_INFOS[4].publicKey(), true));
+                    ecdsaSig(FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[0].publicKey(), true),
+                    ecdsaSig(FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[1].publicKey(), false),
+                    ecdsaSig(FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[2].publicKey(), true),
+                    ecdsaSig(FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[3].publicKey(), false),
+                    ecdsaSig(FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[4].publicKey(), true));
 
             // When we expand the signatures
             final var expanded = new HashSet<ExpandedSignaturePair>();
@@ -308,95 +392,40 @@ final class SignatureExpanderImplTest extends AppTestBase implements Scenarios {
             assertThat(expanded)
                     .containsExactlyInAnyOrder(
                             new ExpandedSignaturePair(
-                                    FAKE_ED25519_KEY_INFOS[0].uncompressedPublicKey(), null, sigList.get(0)),
+                                    FAKE_ED25519_KEY_INFOS[0].publicKey(),
+                                    FAKE_ED25519_KEY_INFOS[0]
+                                            .uncompressedPublicKey()
+                                            .ed25519OrThrow(),
+                                    null,
+                                    sigList.get(0)),
                             new ExpandedSignaturePair(
-                                    FAKE_ED25519_KEY_INFOS[2].uncompressedPublicKey(), null, sigList.get(2)),
+                                    FAKE_ED25519_KEY_INFOS[2].publicKey(),
+                                    FAKE_ED25519_KEY_INFOS[2]
+                                            .uncompressedPublicKey()
+                                            .ed25519OrThrow(),
+                                    null,
+                                    sigList.get(2)),
                             new ExpandedSignaturePair(
-                                    FAKE_ECDSA_KEY_INFOS[0].uncompressedPublicKey(), null, sigList.get(5)),
+                                    FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[0].publicKey(),
+                                    FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[0]
+                                            .uncompressedPublicKey()
+                                            .ecdsaSecp256k1OrThrow(),
+                                    null,
+                                    sigList.get(5)),
                             new ExpandedSignaturePair(
-                                    FAKE_ECDSA_KEY_INFOS[1].uncompressedPublicKey(), null, sigList.get(6)),
+                                    FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[1].publicKey(),
+                                    FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[1]
+                                            .uncompressedPublicKey()
+                                            .ecdsaSecp256k1OrThrow(),
+                                    null,
+                                    sigList.get(6)),
                             new ExpandedSignaturePair(
-                                    FAKE_ECDSA_KEY_INFOS[2].uncompressedPublicKey(), null, sigList.get(7)));
-        }
-    }
-
-    @Nested
-    @DisplayName("Expand Hollow Signatures")
-    final class ExpandHollowTest {
-        @Test
-        @DisplayName("Null args are not allowed")
-        @SuppressWarnings("DataFlowIssue")
-        void nullArgs() {
-            final List<SignaturePair> sigPairs = emptyList();
-            final Set<ExpandedSignaturePair> expanded = emptySet();
-            assertThatThrownBy(() -> subject.expand((Account) null, sigPairs, expanded))
-                    .isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> subject.expand(Account.DEFAULT, null, expanded))
-                    .isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> subject.expand(Account.DEFAULT, sigPairs, null))
-                    .isInstanceOf(NullPointerException.class);
-        }
-
-        @ParameterizedTest
-        @ValueSource(ints = {0, 1, 10, 19, 21})
-        @DisplayName("Passing a non-hollow account expands to empty expanded")
-        void notHollowAccount(final int aliasLength) {
-            // Given an account that is NOT hollow because the alias is of the wrong length, and a signature list
-            // that has what would otherwise have been a valid prefix
-            final var alias = aliasLength < 20
-                    ? ERIN.account().alias().slice(0, aliasLength)
-                    : join(ERIN.account().alias(), randomBytes(aliasLength - 20));
-
-            final var notHollow = ERIN.account().copyBuilder().alias(alias).build();
-
-            final var sigList = List.of(SignaturePair.newBuilder()
-                    .pubKeyPrefix(ERIN.keyInfo().publicKey().ecdsaSecp256k1OrThrow())
-                    .ecdsaSecp256k1(randomBytes(64))
-                    .build());
-
-            // When we expand it,
-            final var expanded = new HashSet<ExpandedSignaturePair>();
-            subject.expand(notHollow, sigList, expanded);
-
-            // Then we find the expanded set is empty
-            assertThat(expanded).isEmpty();
-        }
-
-        @Test
-        @DisplayName("A hollow account with no matching prefix")
-        void noMatchingPrefix() {
-            // Given a hollow account with no matching prefix
-            final var hollow = ERIN.account();
-            final var sigList = List.of(SignaturePair.newBuilder()
-                    .pubKeyPrefix(ALICE.keyInfo().publicKey().ecdsaSecp256k1OrThrow())
-                    .ecdsaSecp256k1(randomBytes(64))
-                    .build());
-
-            // When we expand it,
-            final var expanded = new HashSet<ExpandedSignaturePair>();
-            subject.expand(hollow, sigList, expanded);
-
-            // Then we find the expanded set is empty
-            assertThat(expanded).isEmpty();
-        }
-
-        @Test
-        @DisplayName("A hollow account with matching prefix")
-        void matchingPrefix() {
-            // Given a hollow account with matching prefix
-            final var hollow = ERIN.account();
-            final var sigList = List.of(SignaturePair.newBuilder()
-                    .pubKeyPrefix(ERIN.keyInfo().publicKey().ecdsaSecp256k1OrThrow())
-                    .ecdsaSecp256k1(randomBytes(64))
-                    .build());
-
-            // When we expand it,
-            final var expanded = new HashSet<ExpandedSignaturePair>();
-            subject.expand(hollow, sigList, expanded);
-
-            // Then we find the expanded key
-            assertThat(expanded)
-                    .containsExactly(new ExpandedSignaturePair(ERIN.keyInfo().publicKey(), hollow, sigList.get(0)));
+                                    FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[2].publicKey(),
+                                    FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[2]
+                                            .uncompressedPublicKey()
+                                            .ecdsaSecp256k1OrThrow(),
+                                    null,
+                                    sigList.get(7)));
         }
     }
 
@@ -586,38 +615,6 @@ final class SignatureExpanderImplTest extends AppTestBase implements Scenarios {
         return sigPairs;
     }
 
-    /** Utility to create an ExpandedSignaturePair for an ED25519 key prefix */
-    private static ExpandedSignaturePair ed25519Expanded(@NonNull final String startPrefixWith, int prefixLength) {
-        final var key = ed25519Key(startPrefixWith);
-        final var sigPair = ed25519Sig(startPrefixWith, prefixLength);
-        return new ExpandedSignaturePair(key, null, sigPair);
-    }
-
-    /** Utility to create an ExpandedSignaturePair for an ECDSA_SECP256K1 key prefix */
-    private static ExpandedSignaturePair ecdsaExpanded(@NonNull final String startPrefixWith, int prefixLength) {
-        final var key = ecdsaKey(startPrefixWith);
-        final var sigPair = ecdsaSig(startPrefixWith, prefixLength);
-        return new ExpandedSignaturePair(key, null, sigPair);
-    }
-
-    /** Utility to create an ED25519 Key that starts with the given prefix. This is a fake key. */
-    private static Key ed25519Key(@NonNull final String startPrefixWith) {
-        final var startPrefixWithBytes = startPrefixWith.getBytes();
-        final var key = new byte[32];
-        Arrays.fill(key, (byte) 255);
-        System.arraycopy(startPrefixWithBytes, 0, key, 0, startPrefixWithBytes.length);
-        return Key.newBuilder().ed25519(Bytes.wrap(key)).build();
-    }
-
-    /** Utility to create an ECDSA_SECP256K1 Key that starts with the given prefix. This is a fake key. */
-    private static Key ecdsaKey(@NonNull final String startPrefixWith) {
-        final var startPrefixWithBytes = startPrefixWith.getBytes();
-        final var key = new byte[33];
-        Arrays.fill(key, (byte) 255);
-        System.arraycopy(startPrefixWithBytes, 0, key, 0, startPrefixWithBytes.length);
-        return Key.newBuilder().ecdsaSecp256k1(Bytes.wrap(key)).build();
-    }
-
     /** Utility to create an ED25519 SignaturePair where the prefix and key start with the given prefix. */
     private static SignaturePair ed25519Sig(@NonNull final String startPrefixWith, int prefixLength) {
         final var startPrefixWithBytes = startPrefixWith.getBytes();
@@ -630,6 +627,24 @@ final class SignatureExpanderImplTest extends AppTestBase implements Scenarios {
         return SignaturePair.newBuilder()
                 .pubKeyPrefix(Bytes.wrap(prefix))
                 .ed25519(Bytes.wrap(key))
+                .build();
+    }
+
+    /** Utility to create an ED25519 SignaturePair based on a TestKeyInfo with the given prefix length. */
+    private static SignaturePair ed25519Sig(@NonNull final TestKeyInfo keyInfo, int prefixLength) {
+        final var fullKey = keyInfo.publicKey().ed25519OrThrow();
+        return SignaturePair.newBuilder()
+                .pubKeyPrefix(fullKey.slice(0, prefixLength))
+                .ed25519(fullKey)
+                .build();
+    }
+
+    /** Utility to create an ECDSA_SECP256K1 SignaturePair based on a TestKeyInfo with the given prefix length. */
+    private static SignaturePair ecdsaSig(@NonNull final TestKeyInfo keyInfo, int prefixLength) {
+        final var fullKey = keyInfo.publicKey().ecdsaSecp256k1OrThrow();
+        return SignaturePair.newBuilder()
+                .pubKeyPrefix(fullKey.slice(0, prefixLength))
+                .ecdsaSecp256k1(fullKey)
                 .build();
     }
 

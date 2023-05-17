@@ -17,10 +17,8 @@
 package com.swirlds.jasperdb;
 
 import static com.swirlds.jasperdb.files.DataFileCommon.VARIABLE_DATA_SIZE;
-import static com.swirlds.jasperdb.utilities.HashTools.byteBufferToHash;
+import static com.swirlds.jasperdb.utilities.HashTools.DEFAULT_DIGEST;
 
-import com.swirlds.common.crypto.DigestType;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -33,6 +31,8 @@ import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 
 /**
  * VirtualLeafRecordSerializer serializer responsible for serializing and deserializing virtual leaf records. It depends
@@ -49,8 +49,11 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
 
     private static final long CLASS_ID = 0x39f4704ad17104fL;
 
-    private static final class ClassVersion {
+    static final class ClassVersion {
         public static final int ORIGINAL = 1;
+        public static final int REMOVED_LEAF_HASHES = 2;
+
+        private ClassVersion() {}
     }
 
     private static final int DEFAULT_TYPICAL_VARIABLE_SIZE = 1024;
@@ -78,10 +81,6 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
     /**
      * Construct a new VirtualLeafRecordSerializer
      *
-     * @param hashSerializationVersion
-     * 		The serialization version for hash, less than 65,536
-     * @param hashDigest
-     * 		The digest uses for hashes
      * @param keySerializationVersion
      * 		The serialization version for key, less than 65,536
      * @param keySizeBytes
@@ -98,8 +97,6 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
      * 		Is max size of serialized key and value is less than (255-(1+8+48)) = 198
      */
     public VirtualLeafRecordSerializer(
-            final short hashSerializationVersion,
-            final DigestType hashDigest,
             final short keySerializationVersion,
             final int keySizeBytes,
             final SelfSerializableSupplier<K> keyConstructor,
@@ -108,16 +105,14 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
             final SelfSerializableSupplier<V> valueConstructor,
             final boolean maxKeyValueSizeLessThan198) {
         /* FUTURE WORK - https://github.com/swirlds/swirlds-platform/issues/3941 */
-        this.currentVersion = (0x000000000000FFFFL & hashSerializationVersion)
-                | ((0x000000000000FFFFL & keySerializationVersion) << 16)
+        this.currentVersion = ((0x000000000000FFFFL & keySerializationVersion) << 16)
                 | ((0x000000000000FFFFL & valueSerializationVersion) << 32);
         this.keyConstructor = keyConstructor;
         this.valueConstructor = valueConstructor;
         this.byteMaxSize = maxKeyValueSizeLessThan198;
         this.hasVariableDataSize = keySizeBytes == VARIABLE_DATA_SIZE || valueSizeBytes == VARIABLE_DATA_SIZE;
-        this.totalSerializedSize = hasVariableDataSize
-                ? VARIABLE_DATA_SIZE
-                : (Long.BYTES + hashDigest.digestLength() + keySizeBytes + valueSizeBytes);
+        this.totalSerializedSize =
+                hasVariableDataSize ? VARIABLE_DATA_SIZE : (Long.BYTES + keySizeBytes + valueSizeBytes);
         this.headerSize = Long.BYTES; // key
         if (hasVariableDataSize) {
             this.headerSize += (byteMaxSize ? 1 : Integer.BYTES); // size
@@ -137,7 +132,7 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
      */
     @Override
     public int getVersion() {
-        return ClassVersion.ORIGINAL;
+        return ClassVersion.REMOVED_LEAF_HASHES;
     }
 
     /**
@@ -158,7 +153,7 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
      * @return The read header
      */
     @Override
-    public DataItemHeader deserializeHeader(final ByteBuffer buffer) {
+    public DataItemHeader deserializeHeader(final ByteBuffer buffer, final long dataVersion) {
         final int size;
         if (isVariableSize()) {
             if (byteMaxSize) {
@@ -167,7 +162,7 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
                 size = buffer.getInt();
             }
         } else {
-            size = totalSerializedSize;
+            size = getSerializedSize(dataVersion);
         }
         final long key = buffer.getLong();
         return new DataItemHeader(size, key);
@@ -189,8 +184,14 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
      * @return Either a number of bytes or DataFileCommon.VARIABLE_DATA_SIZE if size is variable
      */
     @Override
-    public int getSerializedSize() {
-        return totalSerializedSize;
+    public int getSerializedSize(final long dataVersion) {
+        if (hasVariableDataSize) {
+            return VARIABLE_DATA_SIZE;
+        }
+        final int hashSerializationVersion = (int) (0x000000000000FFFFL & dataVersion);
+        return hashSerializationVersion == 1
+                ? totalSerializedSize + DEFAULT_DIGEST.digestLength()
+                : totalSerializedSize;
     }
 
     /**
@@ -226,11 +227,13 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
         final int hashSerializationVersion = (int) (0x000000000000FFFFL & dataVersion);
         final int keySerializationVersion = (int) (0x000000000000FFFFL & (dataVersion >>> 16));
         final int valueSerializationVersion = (int) (0x000000000000FFFFL & (dataVersion >>> 32));
-        final DataItemHeader dataItemHeader = deserializeHeader(buffer);
+        final DataItemHeader dataItemHeader = deserializeHeader(buffer, dataVersion);
         // deserialize path
         final long path = dataItemHeader.getKey();
-        // deserialize hash
-        final Hash hash = byteBufferToHash(buffer, hashSerializationVersion);
+        if (hashSerializationVersion != 0) {
+            // skip hash worth of bytes
+            buffer.position(buffer.position() + DEFAULT_DIGEST.digestLength());
+        }
         // deserialize key
         final K key = keyConstructor.get();
         key.deserialize(buffer, keySerializationVersion);
@@ -238,7 +241,7 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
         final V value = valueConstructor.get();
         value.deserialize(buffer, valueSerializationVersion);
         // return new VirtualLeafRecord
-        return new VirtualLeafRecord<>(path, hash, key, value);
+        return new VirtualLeafRecord<>(path, key, value);
     }
 
     /**
@@ -252,12 +255,12 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
     @Override
     public int serialize(final VirtualLeafRecord<K, V> leafRecord, final SerializableDataOutputStream outputStream)
             throws IOException {
+        assert (int) (0x000000000000FFFFL & currentVersion) == 0;
         final SerializableDataOutputStream serializableDataOutputStream =
                 hasVariableDataSize ? DATA_FILE_OUTPUT_STREAM_THREAD_LOCAL.get().reset() : outputStream;
+
         // put path (data item key)
         serializableDataOutputStream.writeLong(leafRecord.getPath());
-        // put hash
-        serializableDataOutputStream.write(leafRecord.getHash().getValue());
         // put key
         leafRecord.getKey().serialize(serializableDataOutputStream);
         // put value
@@ -309,6 +312,15 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
         totalSerializedSize = in.readInt();
         headerSize = in.readInt();
         byteMaxSize = in.readBoolean();
+        // if the instance was created by deserializing, we need to adjust parameters to match the new serialization
+        // for all the newly serialized objects
+        if (version < ClassVersion.REMOVED_LEAF_HASHES) {
+            assert ((int) 0x000000000000FFFFL & currentVersion) != 0;
+            if (!hasVariableDataSize) {
+                totalSerializedSize -= DEFAULT_DIGEST.digestLength();
+            }
+            currentVersion = currentVersion & 0xFFFFFFFFFFFF0000L;
+        }
     }
 
     /**
@@ -345,5 +357,16 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
                 totalSerializedSize,
                 headerSize,
                 byteMaxSize);
+    }
+
+    @Override
+    public String toString() {
+        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
+                .append("currentVersion", currentVersion)
+                .append("hasVariableDataSize", hasVariableDataSize)
+                .append("totalSerializedSize", totalSerializedSize)
+                .append("headerSize", headerSize)
+                .append("byteMaxSize", byteMaxSize)
+                .toString();
     }
 }

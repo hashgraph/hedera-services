@@ -18,7 +18,6 @@ package com.swirlds.demo.migration;
 
 import static com.swirlds.demo.migration.MigrationTestingToolMain.MARKER;
 
-import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
@@ -39,7 +38,7 @@ import com.swirlds.demo.migration.virtual.AccountVirtualMapKeySerializer;
 import com.swirlds.demo.migration.virtual.AccountVirtualMapValue;
 import com.swirlds.demo.migration.virtual.AccountVirtualMapValueBuilder;
 import com.swirlds.jasperdb.JasperDbBuilder;
-import com.swirlds.jasperdb.VirtualInternalRecordSerializer;
+import com.swirlds.jasperdb.VirtualHashRecordSerializer;
 import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
@@ -52,7 +51,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class MigrationTestingToolState extends PartialNaryMerkleInternal implements MerkleInternal, SwirldState {
-
     private static final Logger logger = LogManager.getLogger(MigrationTestingToolState.class);
 
     /**
@@ -202,8 +200,6 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
         final VirtualLeafRecordSerializer<AccountVirtualMapKey, AccountVirtualMapValue> leafRecordSerializer =
                 new VirtualLeafRecordSerializer<>(
                         (short) 1,
-                        DigestType.SHA_384,
-                        (short) 1,
                         keySerializer.getSerializedSize(),
                         new AccountVirtualMapKeyBuilder(),
                         (short) 1,
@@ -214,10 +210,10 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
         final JasperDbBuilder<AccountVirtualMapKey, AccountVirtualMapValue> jasperDbBuilder = new JasperDbBuilder<
                         AccountVirtualMapKey, AccountVirtualMapValue>()
                 .virtualLeafRecordSerializer(leafRecordSerializer)
-                .virtualInternalRecordSerializer(new VirtualInternalRecordSerializer())
+                .virtualInternalRecordSerializer(new VirtualHashRecordSerializer())
                 .keySerializer(keySerializer)
                 .maxNumOfKeys(Integer.MAX_VALUE)
-                .internalHashesRamToDiskThreshold(0)
+                .hashesRamToDiskThreshold(0)
                 .preferDiskBasedIndexes(false);
 
         setVirtualMap(new VirtualMap<>("virtualMap", jasperDbBuilder));
@@ -257,7 +253,16 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
         }
 
         if (trigger == InitTrigger.GENESIS) {
+            logger.info(MARKER, "Doing genesis initialization");
             genesisInit(platform);
+        } else {
+            if (virtualMap != null) {
+                // enable full rehash on load
+                logger.info(MARKER, "Doing full rehash for the initialized VirtualMap");
+                // the tree leaves no longer contain hashes, so we need to rehash
+                virtualMap.fullLeafRehash();
+                logger.info(MARKER, "Full rehash is complete");
+            }
         }
     }
 

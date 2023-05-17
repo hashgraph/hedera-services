@@ -42,6 +42,7 @@ import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.workflows.TransactionInfo;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
@@ -111,11 +112,11 @@ final class PreHandleResultTest implements Scenarios {
             assertThat(result.payer()).isNull();
             assertThat(result.txInfo()).isNull();
             assertThat(result.verificationResults()).isNull();
-            assertThat(result.verificationFor(ALICE.account()))
+            assertThat(result.verificationFor(ERIN.account().alias()))
                     .succeedsWithin(1, TimeUnit.SECONDS)
                     .extracting(SignatureVerification::passed)
                     .isEqualTo(false);
-            ;
+
             assertThat(result.verificationFor(Key.DEFAULT))
                     .succeedsWithin(1, TimeUnit.SECONDS)
                     .extracting(SignatureVerification::passed)
@@ -136,11 +137,11 @@ final class PreHandleResultTest implements Scenarios {
             assertThat(result.payer()).isEqualTo(nodeAccountId);
             assertThat(result.txInfo()).isSameAs(txInfo);
             assertThat(result.verificationResults()).isNull();
-            assertThat(result.verificationFor(ALICE.account()))
+            assertThat(result.verificationFor(ERIN.account().alias()))
                     .succeedsWithin(1, TimeUnit.SECONDS)
                     .extracting(SignatureVerification::passed)
                     .isEqualTo(false);
-            ;
+
             assertThat(result.verificationFor(Key.DEFAULT))
                     .succeedsWithin(1, TimeUnit.SECONDS)
                     .extracting(SignatureVerification::passed)
@@ -149,7 +150,7 @@ final class PreHandleResultTest implements Scenarios {
 
         @Test
         @DisplayName("Pre-Handle Failures set the payer, status, responseCode, and txInfo")
-        void preHandleFailure(@Mock TransactionInfo txInfo, @Mock SignatureVerification payerVerification) {
+        void preHandleFailure(@Mock TransactionInfo txInfo) {
             final var payer = AccountID.newBuilder().accountNum(1001).build();
             final var responseCode = INVALID_PAYER_ACCOUNT_ID;
             final var result = PreHandleResult.preHandleFailure(payer, null, responseCode, txInfo, null);
@@ -160,11 +161,11 @@ final class PreHandleResultTest implements Scenarios {
             assertThat(result.payer()).isEqualTo(payer);
             assertThat(result.txInfo()).isSameAs(txInfo);
             assertThat(result.verificationResults()).isNull();
-            assertThat(result.verificationFor(ALICE.account()))
+            assertThat(result.verificationFor(ERIN.account().alias()))
                     .succeedsWithin(1, TimeUnit.SECONDS)
                     .extracting(SignatureVerification::passed)
                     .isEqualTo(false);
-            ;
+
             assertThat(result.verificationFor(Key.DEFAULT))
                     .succeedsWithin(1, TimeUnit.SECONDS)
                     .extracting(SignatureVerification::passed)
@@ -181,12 +182,12 @@ final class PreHandleResultTest implements Scenarios {
     @ExtendWith(MockitoExtension.class)
     final class FindingSignatureVerificationWithCryptoKeyTests {
         @Test
-        @DisplayName("Null key or account throws exception")
+        @DisplayName("Null key or alias throws exception")
         @SuppressWarnings("DataFlowIssue")
         void nullKeyThrowsException() {
             final var result = PreHandleResult.unknownFailure();
             assertThatThrownBy(() -> result.verificationFor((Key) null)).isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> result.verificationFor((Account) null)).isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> result.verificationFor((Bytes) null)).isInstanceOf(NullPointerException.class);
         }
 
         @ParameterizedTest
@@ -1171,11 +1172,11 @@ final class PreHandleResultTest implements Scenarios {
         @DisplayName("Cannot verify hollow account when the signature list is empty")
         void failToVerifyIfSignaturesAreEmpty() {
             // Given a hollow account and no verification results
-            final var hollowAccount = ERIN.account();
+            final var alias = ERIN.account().alias();
             // When we pre-handle the transaction
             final var result = preHandle(emptyMap());
             // Then we find the verification result is failed
-            assertThat(result.verificationFor(hollowAccount))
+            assertThat(result.verificationFor(alias))
                     .succeedsWithin(1, TimeUnit.SECONDS)
                     .extracting(SignatureVerification::passed)
                     .isEqualTo(false);
@@ -1186,7 +1187,7 @@ final class PreHandleResultTest implements Scenarios {
         @DisplayName("Cannot verify hollow account if it is not in the verification results")
         void failToVerifyIfHollowAccountIsNotInVerificationResults() {
             // Given a hollow account and no verification results
-            final var hollowAccount = ERIN.account();
+            final var alias = ERIN.account().alias();
             Map<Key, SignatureVerificationFuture> verificationResults = Map.of(
                     ALICE.keyInfo().publicKey(), goodFuture(ALICE.keyInfo().publicKey()),
                     BOB.keyInfo().publicKey(), goodFuture(BOB.keyInfo().publicKey()),
@@ -1194,7 +1195,7 @@ final class PreHandleResultTest implements Scenarios {
             // When we pre-handle the transaction
             final var result = preHandle(verificationResults);
             // Then we find the verification result is failed
-            assertThat(result.verificationFor(hollowAccount))
+            assertThat(result.verificationFor(alias))
                     .succeedsWithin(1, TimeUnit.SECONDS)
                     .extracting(SignatureVerification::passed)
                     .isEqualTo(false);
@@ -1205,7 +1206,7 @@ final class PreHandleResultTest implements Scenarios {
         @DisplayName("Able to verify if the hollow account is in the verification results")
         void failToVerifyIfHollowAccountIsNotInVerificationResults(final boolean passes) {
             // Given a hollow account and no verification results
-            final var hollowAccount = ERIN.account();
+            final var alias = ERIN.account().alias();
             Map<Key, SignatureVerificationFuture> verificationResults = Map.of(
                     ALICE.keyInfo().publicKey(), goodFuture(ALICE.keyInfo().publicKey()),
                     BOB.keyInfo().publicKey(), goodFuture(BOB.keyInfo().publicKey()),
@@ -1217,7 +1218,7 @@ final class PreHandleResultTest implements Scenarios {
             // When we pre-handle the transaction
             final var result = preHandle(verificationResults);
             // Then we find the verification result is as expected
-            assertThat(result.verificationFor(hollowAccount))
+            assertThat(result.verificationFor(alias))
                     .succeedsWithin(1, TimeUnit.SECONDS)
                     .extracting(SignatureVerification::passed)
                     .isEqualTo(passes);
@@ -1250,7 +1251,7 @@ final class PreHandleResultTest implements Scenarios {
 
     /** Convenience method for creating a SignatureVerificationFuture that passes */
     private static FakeSignatureVerificationFuture goodFuture(@NonNull final Key key, @NonNull final Account account) {
-        return new FakeSignatureVerificationFuture(new SignatureVerificationImpl(key, account, true));
+        return new FakeSignatureVerificationFuture(new SignatureVerificationImpl(key, account.alias(), true));
     }
 
     /** Convenience method for creating a SignatureVerificationFuture that fails */
@@ -1260,7 +1261,7 @@ final class PreHandleResultTest implements Scenarios {
 
     /** Convenience method for creating a SignatureVerificationFuture that passes */
     private static FakeSignatureVerificationFuture badFuture(@NonNull final Key key, @NonNull final Account account) {
-        return new FakeSignatureVerificationFuture(new SignatureVerificationImpl(key, account, false));
+        return new FakeSignatureVerificationFuture(new SignatureVerificationImpl(key, account.alias(), false));
     }
 
     /** A simple implementation of {@link SignatureVerificationFuture} that is backed by a {@link CompletableFuture} */
@@ -1276,8 +1277,8 @@ final class PreHandleResultTest implements Scenarios {
 
         @Nullable
         @Override
-        public Account hollowAccount() {
-            return verification.hollowAccount();
+        public Bytes evmAlias() {
+            return verification.evmAlias();
         }
 
         @NonNull

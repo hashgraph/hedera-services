@@ -27,6 +27,6 @@ public interface PlatformModule {
     @Provides
     @Singleton
     static long selfId(@NonNull final Platform platform) {
-        return platform.getSelfId().getId();
+        return platform.getSelfId().getIdAsInt();
     }
 }

@@ -140,7 +140,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
     private final SoftwareVersion currentVersion = SEMANTIC_VERSIONS.deployedSoftwareVersion();
     private final SoftwareVersion futureVersion = forHapiAndHedera("1.0.0", "1.0.0");
     private final SoftwareVersion configVersion = forHapiAndHedera("0.32.0", "0.32.0");
-    private final NodeId selfId = new NodeId(false, 1L);
+    private final NodeId selfId = new NodeId(1L);
     private static final String bookMemo = "0.0.4";
 
     @Mock
@@ -256,8 +256,8 @@ class ServicesStateTest extends ResponsibleVMapUser {
 
     @AfterEach
     void cleanup() {
-        if (APPS.includes(selfId.getId())) {
-            APPS.clear(selfId.getId());
+        if (APPS.includes(selfId.getIdAsInt())) {
+            APPS.clear(selfId.getIdAsInt());
         }
     }
 
@@ -337,7 +337,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         subject.setPlatform(platform);
         given(platform.getAddressBook()).willReturn(addressBook);
 
-        given(addressBook.getAddress(selfId.getId())).willReturn(address);
+        given(addressBook.getAddress(selfId.getIdAsInt())).willReturn(address);
         given(address.getMemo()).willReturn("0.0.3");
 
         // when:
@@ -424,7 +424,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(platform.getSelfId()).willReturn(selfId);
         given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
 
-        APPS.save(selfId.getId(), app);
+        APPS.save(selfId.getIdAsInt(), app);
 
         assertDoesNotThrow(() -> subject.init(platform, null, RESTART, currentVersion));
     }
@@ -483,9 +483,9 @@ class ServicesStateTest extends ResponsibleVMapUser {
         verify(appBuilder).bootstrapProps(any());
         verify(appBuilder).initialHash(EMPTY_HASH);
         verify(appBuilder).platform(platform);
-        verify(appBuilder).selfId(selfId.getId());
+        verify(appBuilder).selfId(selfId.getIdAsInt());
         // and:
-        assertTrue(APPS.includes(selfId.getId()));
+        assertTrue(APPS.includes(selfId.getIdAsInt()));
 
         // cleanup:
         ServicesState.setAppBuilder(DaggerServicesApp::builder);
@@ -551,7 +551,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(app.maybeNewRecoveredStateListener()).willReturn(Optional.of(recoveredStateListener));
         given(platform.getNotificationEngine()).willReturn(notificationEngine);
         // and:
-        APPS.save(selfId.getId(), app);
+        APPS.save(selfId.getIdAsInt(), app);
 
         // when:
         subject.init(platform, dualState, RECONNECT, currentVersion);
@@ -577,7 +577,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(app.systemExits()).willReturn(mockExit);
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         // and:
-        APPS.save(selfId.getId(), app);
+        APPS.save(selfId.getIdAsInt(), app);
 
         // when:
         subject.init(platform, dualState, RESTART, futureVersion);
@@ -602,7 +602,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(app.sysFilesManager()).willReturn(systemFilesManager);
         given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
         // and:
-        APPS.save(selfId.getId(), app);
+        APPS.save(selfId.getIdAsInt(), app);
 
         // when:
         subject.init(platform, dualState, RESTART, currentVersion);
@@ -638,7 +638,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(app.sysFilesManager()).willReturn(systemFilesManager);
         given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
         // and:
-        APPS.save(selfId.getId(), app);
+        APPS.save(selfId.getIdAsInt(), app);
 
         // when:
 
@@ -667,7 +667,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(app.sysFilesManager()).willReturn(systemFilesManager);
         given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
         // and:
-        APPS.save(selfId.getId(), app);
+        APPS.save(selfId.getIdAsInt(), app);
 
         // when:
         subject.init(platform, dualState, RESTART, justPriorVersion);
@@ -699,7 +699,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(app.sysFilesManager()).willReturn(systemFilesManager);
         given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
         // and:
-        APPS.save(selfId.getId(), app);
+        APPS.save(selfId.getIdAsInt(), app);
 
         // when:
         subject.init(platform, dualState, RESTART, justPriorVersion);
@@ -729,7 +729,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(platform.getSelfId()).willReturn(selfId);
         // and:
-        APPS.save(selfId.getId(), app);
+        APPS.save(selfId.getIdAsInt(), app);
 
         // when:
         subject.init(platform, dualState, RECONNECT, currentVersion);
@@ -768,7 +768,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(app.sysFilesManager()).willReturn(systemFilesManager);
         given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
         // and:
-        APPS.save(selfId.getId(), app);
+        APPS.save(selfId.getIdAsInt(), app);
 
         // when:
         subject.init(platform, dualState, RESTART, currentVersion);
@@ -817,7 +817,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(app.sysFilesManager()).willReturn(systemFilesManager);
         given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
         // and:
-        APPS.save(selfId.getId(), app);
+        APPS.save(selfId.getIdAsInt(), app);
 
         // when:
         subject.init(platform, dualState, RESTART, currentVersion);
@@ -937,7 +937,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         servicesState.setChild(StateChildIndices.RECORD_STREAM_RUNNING_HASH, recordsRunningHashLeaf);
         final var app = createApp(platform);
 
-        APPS.save(platform.getSelfId().getId(), app);
+        APPS.save(platform.getSelfId().getIdAsInt(), app);
         assertDoesNotThrow(() -> servicesState.init(platform, new DualStateImpl(), InitTrigger.GENESIS, null));
     }
 
@@ -990,7 +990,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
                 .platform(platform)
                 .crypto(CryptographyHolder.get())
                 .consoleCreator((ignore, visible) -> null)
-                .selfId(platform.getSelfId().getId())
+                .selfId(platform.getSelfId().getIdAsInt())
                 .staticAccountMemo("memo")
                 .bootstrapProps(new BootstrapProperties())
                 .build();
@@ -999,7 +999,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
     private Platform createMockPlatformWithCrypto() {
         final var platform = mock(Platform.class);
         final var platformContext = mock(PlatformContext.class);
-        when(platform.getSelfId()).thenReturn(new NodeId(false, 0));
+        when(platform.getSelfId()).thenReturn(new NodeId(0));
         when(platformContext.getCryptography())
                 .thenReturn(new CryptoEngine(getStaticThreadManager(), CryptoConfigUtils.MINIMAL_CRYPTO_CONFIG));
         assertNotNull(platformContext.getCryptography());

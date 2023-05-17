@@ -52,7 +52,7 @@ public class VirtualMerkleMerkleDbTransactionHandlerTest {
                         (short) 1, keySerializer,
                         (short) 1, valueSerializer)
                 .maxNumberOfKeys(maximumNumberOfKeyValuePairsCreation)
-                .internalHashesRamToDiskThreshold(0)
+                .hashesRamToDiskThreshold(0)
                 .preferDiskIndices(false);
         final MerkleDbDataSourceBuilder<SmartContractMapKey, SmartContractMapValue> dataSourceBuilder =
                 new MerkleDbDataSourceBuilder<>(tableConfig);
@@ -71,7 +71,7 @@ public class VirtualMerkleMerkleDbTransactionHandlerTest {
                                 (short) 1, keySerializer2,
                                 (short) 1, valueSerializer2)
                         .maxNumberOfKeys(totalSmartContractCreations)
-                        .internalHashesRamToDiskThreshold(0)
+                        .hashesRamToDiskThreshold(0)
                         .preferDiskIndices(false);
         final MerkleDbDataSourceBuilder<SmartContractByteCodeMapKey, SmartContractByteCodeMapValue> dataSourceBuilder2 =
                 new MerkleDbDataSourceBuilder<>(tableConfig2);
