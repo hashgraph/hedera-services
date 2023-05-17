@@ -492,7 +492,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
         @DisplayName("Happy path with a Hollow Account payer")
         void happyPathHollowAccountAsPayer(@Mock SignatureVerificationFuture sigFuture) throws Exception {
             // Given a transaction that is perfectly good, with a hollow account for the payer (!)
-            final var hollowAccount = ERIN.account();
+            final var hollowAccountAlias = ERIN.account().alias();
             final var hollowAccountID = ERIN.accountID();
             final var finalizedKey = ERIN.keyInfo().publicKey();
             final var txInfo = scenario().withPayer(hollowAccountID).txInfo();
@@ -500,9 +500,9 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             final Transaction platformTx = new SwirldTransaction(txBytes);
             when(transactionChecker.parseAndCheck(any(Bytes.class))).thenReturn(txInfo);
             when(signatureVerifier.verify(any(), any())).thenReturn(Map.of(finalizedKey, sigFuture));
-            when(sigFuture.hollowAccount()).thenReturn(hollowAccount);
+            when(sigFuture.evmAlias()).thenReturn(hollowAccountAlias);
             when(sigFuture.get(anyLong(), any()))
-                    .thenReturn(new SignatureVerificationImpl(finalizedKey, hollowAccount, true));
+                    .thenReturn(new SignatureVerificationImpl(finalizedKey, hollowAccountAlias, true));
 
             // When we pre-handle the transaction
             workflow.preHandle(storeFactory, NODE_1.nodeAccountID(), Stream.of(platformTx));
@@ -512,11 +512,11 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             assertThat(result.status()).isEqualTo(SO_FAR_SO_GOOD);
             assertThat(result.responseCode()).isEqualTo(OK);
             assertThat(result.payer()).isEqualTo(hollowAccountID);
-            final var payerFuture = result.verificationFor(hollowAccount);
+            final var payerFuture = result.verificationFor(hollowAccountAlias);
             assertThat(payerFuture).isNotNull();
             final var payerFutureResult = payerFuture.get(1, TimeUnit.MILLISECONDS);
             assertThat(payerFutureResult.passed()).isTrue();
-            assertThat(payerFutureResult.hollowAccount()).isEqualTo(hollowAccount);
+            assertThat(payerFutureResult.evmAlias()).isEqualTo(hollowAccountAlias);
             assertThat(payerFutureResult.key()).isEqualTo(finalizedKey);
             assertThat(result.txInfo()).isNotNull();
             assertThat(result.txInfo()).isSameAs(txInfo);
@@ -531,6 +531,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             final var payerAccountID = ALICE.accountID();
             final var payerKey = ALICE.keyInfo().publicKey();
             final var hollowAccount = ERIN.account();
+            final var hollowAccountAlias = hollowAccount.alias();
             final var finalizedKey = ERIN.keyInfo().publicKey();
             final var txInfo = scenario().withPayer(payerAccountID).txInfo();
             final var txBytes = asByteArray(txInfo.transaction());
@@ -540,8 +541,8 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
                     .thenReturn(Map.of(payerKey, payerSigFuture, finalizedKey, nonPayerSigFuture));
             when(payerSigFuture.get(anyLong(), any())).thenReturn(new SignatureVerificationImpl(payerKey, null, true));
             when(nonPayerSigFuture.get(anyLong(), any()))
-                    .thenReturn(new SignatureVerificationImpl(finalizedKey, hollowAccount, true));
-            when(nonPayerSigFuture.hollowAccount()).thenReturn(hollowAccount);
+                    .thenReturn(new SignatureVerificationImpl(finalizedKey, hollowAccountAlias, true));
+            when(nonPayerSigFuture.evmAlias()).thenReturn(hollowAccountAlias);
             doAnswer(invocation -> {
                         final var ctx = invocation.getArgument(0, PreHandleContext.class);
                         ctx.requireSignatureForHollowAccount(hollowAccount); // we need a hollow account
@@ -564,10 +565,10 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             final var payerFutureResult = payerFuture.get(1, TimeUnit.MILLISECONDS);
             assertThat(payerFutureResult.passed()).isTrue();
             // and the non-payer sig check for the hollow account works
-            final var nonPayerHollowFuture = result.verificationFor(hollowAccount);
+            final var nonPayerHollowFuture = result.verificationFor(hollowAccountAlias);
             assertThat(nonPayerHollowFuture).isNotNull();
             final var nonPayerResult = nonPayerHollowFuture.get(1, TimeUnit.MILLISECONDS);
-            assertThat(nonPayerResult.hollowAccount()).isEqualTo(hollowAccount);
+            assertThat(nonPayerResult.evmAlias()).isEqualTo(hollowAccountAlias);
             assertThat(nonPayerResult.key()).isEqualTo(finalizedKey);
             assertThat(result.txInfo()).isNotNull();
             assertThat(result.txInfo()).isSameAs(txInfo);
