@@ -44,8 +44,8 @@ import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import javax.inject.Singleton;
 
-@Module(includes = {HandlersModule.class})
-public interface HandleWorkflowModule {
+@Module(includes = {HandlersInjectionModule.class})
+public interface HandleWorkflowInjectionModule {
     @Provides
     static Expansion.CryptoSigsCreation provideCryptoSigsCreation() {
         return PlatformSigOps::createCryptoSigsFrom;
@@ -80,7 +80,8 @@ public interface HandleWorkflowModule {
     @SuppressWarnings({"unchecked", "rawtypes"})
     static Supplier<AutoCloseableWrapper<HederaState>> provideStateSupplier(@NonNull final Platform platform) {
         // Always return the latest immutable state until we support state proofs
-        return () -> (AutoCloseableWrapper) platform.getLatestImmutableState(HandleWorkflowModule.class.getName());
+        return () ->
+                (AutoCloseableWrapper) platform.getLatestImmutableState(HandleWorkflowInjectionModule.class.getName());
     }
 
     @Provides

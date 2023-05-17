@@ -14,16 +14,20 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.util.impl;
+package com.hedera.node.app.authorization;
 
-import com.hedera.node.app.service.util.impl.handlers.UtilHandlers;
-import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
+import com.hedera.node.app.service.mono.context.domain.security.HapiOpPermissions;
 import dagger.Module;
+import dagger.Provides;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import javax.inject.Singleton;
 
+/** A Dagger module for providing dependencies based on {@link Authorizer}. */
 @Module
-public interface UtilServiceModule {
-
-    UtilPrngHandler prngHandler();
-
-    UtilHandlers utilHandlers();
+public interface AuthorizerInjectionModule {
+    @Provides
+    @Singleton
+    static Authorizer provideAuthorizer(@NonNull final HapiOpPermissions permissions) {
+        return new AuthorizerImpl(permissions);
+    }
 }

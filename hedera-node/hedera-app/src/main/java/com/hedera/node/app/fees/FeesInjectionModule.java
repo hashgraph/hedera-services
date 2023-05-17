@@ -14,17 +14,20 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.ingest;
+package com.hedera.node.app.fees;
 
-import com.hedera.node.app.components.IngestComponent;
+import com.hedera.node.app.service.mono.fees.FeeCalculator;
 import dagger.Binds;
 import dagger.Module;
+import javax.inject.Singleton;
 
-/**
- * Module for Ingest processing.
- */
-@Module(subcomponents = {IngestComponent.class})
-public interface IngestModule {
+@Module
+public interface FeesInjectionModule {
     @Binds
-    IngestWorkflow bindIngestWorkflow(IngestWorkflowImpl ingestWorkflow);
+    @Singleton
+    FeeCalculator bindFeeCalculator(AdaptedMonoFeeCalculator adaptedMonoFeeCalculator);
+
+    @Binds
+    @Singleton
+    QueryFeeCheck bindQueryFeeCheck(MonoQueryFeeCheck monoQueryFeeCheck);
 }
