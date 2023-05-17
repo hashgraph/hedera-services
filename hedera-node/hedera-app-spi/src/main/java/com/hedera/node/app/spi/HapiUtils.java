@@ -39,7 +39,7 @@ public class HapiUtils {
     private static final Key EMPTY_KEY_LIST =
             Key.newBuilder().keyList(KeyList.DEFAULT).build();
 
-    /** A simple {@link Camparator} for {@link Timestamp}s. */
+    /** A simple {@link Comparator} for {@link Timestamp}s. */
     public static final Comparator<Timestamp> TIMESTAMP_COMPARATOR =
             Comparator.comparingLong(Timestamp::seconds).thenComparingInt(Timestamp::nanos);
 
