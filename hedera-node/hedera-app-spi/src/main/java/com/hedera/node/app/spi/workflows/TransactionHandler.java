@@ -24,7 +24,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public interface TransactionHandler {
 
-
     /**
      * Validates a {@link TransactionBody}
      *

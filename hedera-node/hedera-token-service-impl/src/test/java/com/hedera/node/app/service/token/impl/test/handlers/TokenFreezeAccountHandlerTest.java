@@ -151,8 +151,7 @@ class TokenFreezeAccountHandlerTest {
         @SuppressWarnings("DataFlowIssue")
         @Test
         void nullArgThrowsException() {
-            assertThatThrownBy(() -> subject.handle(null))
-                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> subject.handle(null)).isInstanceOf(NullPointerException.class);
         }
 
         @Test
@@ -160,8 +159,7 @@ class TokenFreezeAccountHandlerTest {
             final var noTokenTxn = newFreezeTxn(null, ACCOUNT_13257);
             given(context.body()).willReturn(noTokenTxn);
 
-            assertThatThrownBy(
-                            () -> subject.handle(context))
+            assertThatThrownBy(() -> subject.handle(context))
                     .isInstanceOf(HandleException.class)
                     .has(responseCode(INVALID_TOKEN_ID));
             verifyNoPut();

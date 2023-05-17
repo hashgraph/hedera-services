@@ -79,8 +79,8 @@ public class TransactionRunner {
         try {
             final var serviceScope = serviceScopeLookup.getServiceName(txBody);
             final var stack = new SavepointStackImpl(configProvider, rootSavepoint);
-            final var context = new HandleContextImpl(
-                    serviceScope, consensusNow, txBody, recordBuilder, stack, base, this);
+            final var context =
+                    new HandleContextImpl(serviceScope, consensusNow, txBody, recordBuilder, stack, base, this);
             dispatcher.dispatchHandle(context);
 
             stack.flatten();

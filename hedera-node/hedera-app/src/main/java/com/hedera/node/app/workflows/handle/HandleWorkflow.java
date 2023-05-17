@@ -124,24 +124,25 @@ public class HandleWorkflow {
         // TODO: handle system tasks
     }
 
-    private SingleTransactionRecord handleTransaction(@NonNull final HederaState state, @NonNull final TransactionBody txBody) {
+    private SingleTransactionRecord handleTransaction(
+            @NonNull final HederaState state, @NonNull final TransactionBody txBody) {
         final var recordBuilder = new SingleTransactionRecordBuilder();
-//        try {
-//            final var context = prepareHandleContext(state, platformTxn, consensusTimestamp);
-//            dispatcher.dispatchHandle(context);
-//
-//            // TODO: Finalize transaction
-//
-//            // TODO: Commit state
-//
-//            recordManager.recordTransaction(recordBuilder.build());
-//        } catch (HandleException e) {
-//            recordBuilder.status(e.getStatus());
-//            recordManager.recordTransaction(recordBuilder.build());
-//        } catch (Throwable e) {
-//            LOG.error("An unexpected exception was thrown during handle", e);
-//            // TODO; Updated receipt
-//        }
+        //        try {
+        //            final var context = prepareHandleContext(state, platformTxn, consensusTimestamp);
+        //            dispatcher.dispatchHandle(context);
+        //
+        //            // TODO: Finalize transaction
+        //
+        //            // TODO: Commit state
+        //
+        //            recordManager.recordTransaction(recordBuilder.build());
+        //        } catch (HandleException e) {
+        //            recordBuilder.status(e.getStatus());
+        //            recordManager.recordTransaction(recordBuilder.build());
+        //        } catch (Throwable e) {
+        //            LOG.error("An unexpected exception was thrown during handle", e);
+        //            // TODO; Updated receipt
+        //        }
 
         throw new UnsupportedOperationException("Not implemented yet.");
     }
@@ -155,33 +156,33 @@ public class HandleWorkflow {
         // We do not know how long transactions are kept in memory. Clearing metadata to avoid keeping it for too long.
         platformTxn.setMetadata(null);
 
-//        PreHandleResult preHandleResult;
-//        if (preHandleStillValid(metadata)) {
-//            final var previousResult = (PreHandleResult) metadata;
-//            if (previousResult.isDueDiligenceFailure()) {
-//                final var fee = calculateNetworkFee();
-//                final var cryptoTransfer = createPenaltyPayment(fee);
-//                return new HandleContextImpl();
-//            }
-//
-//            if (previousResult.status() == OK) {
-//                preHandleResult = addMissingSignatures(previousResult);
-//            } else {
-//                preHandleResult = preHandleWorkflow.preHandleTransaction(creator, storeFactory, platformTxn);
-//            }
-//        } else {
-//            preHandleResult = preHandleWorkflow.preHandleTransaction(creator, storeFactory, platformTxn);
-//        }
-//
-//        if (preHandleResult.status() != OK) {
-//            throw new PreCheckException(preHandleResult.status());
-//        }
-//
-//
-//
-//        if (! checkSignature(preHandleResult.payerVerification())) {
-//            return new HandleContextImpl();
-//        }
+        //        PreHandleResult preHandleResult;
+        //        if (preHandleStillValid(metadata)) {
+        //            final var previousResult = (PreHandleResult) metadata;
+        //            if (previousResult.isDueDiligenceFailure()) {
+        //                final var fee = calculateNetworkFee();
+        //                final var cryptoTransfer = createPenaltyPayment(fee);
+        //                return new HandleContextImpl();
+        //            }
+        //
+        //            if (previousResult.status() == OK) {
+        //                preHandleResult = addMissingSignatures(previousResult);
+        //            } else {
+        //                preHandleResult = preHandleWorkflow.preHandleTransaction(creator, storeFactory, platformTxn);
+        //            }
+        //        } else {
+        //            preHandleResult = preHandleWorkflow.preHandleTransaction(creator, storeFactory, platformTxn);
+        //        }
+        //
+        //        if (preHandleResult.status() != OK) {
+        //            throw new PreCheckException(preHandleResult.status());
+        //        }
+        //
+        //
+        //
+        //        if (! checkSignature(preHandleResult.payerVerification())) {
+        //            return new HandleContextImpl();
+        //        }
 
         throw new UnsupportedOperationException("Not implemented yet");
     }
@@ -239,6 +240,7 @@ public class HandleWorkflow {
                 @NonNull final Transaction platformTx) {
             throw new UnsupportedOperationException("Not implemented yet");
         }
+
         private PreHandleResult preHandleTransaction(
                 @NonNull final AccountID creator,
                 @NonNull final ReadableStoreFactory storeFactory,

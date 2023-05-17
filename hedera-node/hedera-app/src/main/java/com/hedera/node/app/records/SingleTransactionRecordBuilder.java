@@ -292,7 +292,6 @@ public class SingleTransactionRecordBuilder
         return status;
     }
 
-
     @NonNull
     public SingleTransactionRecordBuilder accountID(@NonNull final AccountID accountID) {
         this.accountID = accountID;

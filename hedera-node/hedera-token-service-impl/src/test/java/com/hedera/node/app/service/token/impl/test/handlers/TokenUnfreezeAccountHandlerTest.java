@@ -146,8 +146,7 @@ class TokenUnfreezeAccountHandlerTest {
         @SuppressWarnings("DataFlowIssue")
         @Test
         void nullArgThrowsException() {
-            assertThatThrownBy(() -> subject.handle(null))
-                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> subject.handle(null)).isInstanceOf(NullPointerException.class);
         }
 
         @Test

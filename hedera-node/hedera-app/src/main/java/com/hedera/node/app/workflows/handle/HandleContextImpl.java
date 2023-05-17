@@ -46,8 +46,6 @@ public class HandleContextImpl implements HandleContext {
 
     private ReadableStoreFactory readableStoreFactory;
 
-
-
     public HandleContextImpl(
             @NonNull final String serviceScope,
             @NonNull final Instant consensusNow,

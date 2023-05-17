@@ -96,7 +96,6 @@ public interface WritableKVState<K, V> extends ReadableKVState<K, V> {
      * @return {@code true} if this {@link WritableKVState} has been modified since it was created
      */
     default boolean isModified() {
-        return ! modifiedKeys().isEmpty();
+        return !modifiedKeys().isEmpty();
     }
-
 }
