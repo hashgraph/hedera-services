@@ -34,7 +34,6 @@ import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
-import com.swirlds.virtualmap.datasource.VirtualInternalRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.Path;
 import java.util.Iterator;
@@ -149,7 +148,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
      * has been intentionally shut down), then don't log/throw if the rug is pulled from
      * underneath the hashing threads.
      */
-    private AtomicBoolean shutdown = new AtomicBoolean(false);
+    private final AtomicBoolean shutdown = new AtomicBoolean(false);
 
     /**
      * Create a new {@link VirtualHasher}. There should be one {@link VirtualHasher} shared across all copies
@@ -178,10 +177,8 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
      * Hash the given dirty leaves and the minimal subset of the tree necessary to produce a single root hash.
      * The root hash is returned.
      *
-     * @param leafReader
-     * 		Return a {@link VirtualLeafRecord} by path. Used when this method needs to look up clean leaves.
-     * @param internalReader
-     * 		Return a {@link VirtualInternalRecord} by path. Used when this method needs to look up clean internals.
+     * @param hashReader
+     * 		Return a {@link Hash} by path. Used when this method needs to look up clean nodes.
      * @param sortedDirtyLeaves
      * 		A stream of dirty leaves sorted in <strong>ASCENDING PATH ORDER</strong>, such that path
      * 		1234 comes before 1235. If null or empty, a null hash result is returned.
@@ -194,22 +191,19 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
      * @return The hash of the root of the tree
      */
     public Hash hash(
-            final LongFunction<VirtualLeafRecord<K, V>> leafReader,
-            final LongFunction<VirtualInternalRecord> internalReader,
+            final LongFunction<Hash> hashReader,
             Iterator<VirtualLeafRecord<K, V>> sortedDirtyLeaves,
             final long firstLeafPath,
             final long lastLeafPath) {
-        return hash(leafReader, internalReader, sortedDirtyLeaves, firstLeafPath, lastLeafPath, null);
+        return hash(hashReader, sortedDirtyLeaves, firstLeafPath, lastLeafPath, null);
     }
 
     /**
      * Hash the given dirty leaves and the minimal subset of the tree necessary to produce a single root hash.
      * The root hash is returned.
      *
-     * @param leafReader
-     * 		Return a {@link VirtualLeafRecord} by path. Used when this method needs to look up clean leaves.
-     * @param internalReader
-     * 		Return a {@link VirtualInternalRecord} by path. Used when this method needs to look up clean internals.
+     * @param hashReader
+     * 		Return a {@link Hash} by path. Used when this method needs to look up clean nodes.
      * @param sortedDirtyLeaves
      * 		A stream of dirty leaves sorted in <strong>ASCENDING PATH ORDER</strong>, such that path
      * 		1234 comes before 1235. If null or empty, a null hash result is returned.
@@ -224,8 +218,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
      * @return The hash of the root of the tree
      */
     public Hash hash(
-            final LongFunction<VirtualLeafRecord<K, V>> leafReader,
-            final LongFunction<VirtualInternalRecord> internalReader,
+            final LongFunction<Hash> hashReader,
             final Iterator<VirtualLeafRecord<K, V>> sortedDirtyLeaves,
             final long firstLeafPath,
             final long lastLeafPath,
@@ -428,18 +421,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
             final HashingQueue<K, V> pq = queue2.reset();
             final HashingQueue<K, V> sq = rank == maxLeafRank ? maxRankStopQueue : minRankStopQueue;
             listener.onBatchStarted();
-            hashSubTree(
-                    leafReader,
-                    internalReader,
-                    listener,
-                    wq,
-                    pq,
-                    null,
-                    sq,
-                    firstLeafPath,
-                    lastLeafPath,
-                    rank,
-                    stopRank);
+            hashSubTree(hashReader, listener, wq, pq, null, sq, firstLeafPath, lastLeafPath, rank, stopRank);
             listener.onBatchCompleted();
         }
 
@@ -451,8 +433,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
             final HashingQueue<K, V> pq = queue2.reset();
             listener.onBatchStarted();
             hashSubTree(
-                    leafReader,
-                    internalReader,
+                    hashReader,
                     listener,
                     wq,
                     pq,
@@ -470,8 +451,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
         // We use a CompoundHashingQueue to combine the two stop queues to avoid any array copies.
         listener.onBatchStarted();
         hashSubTree(
-                leafReader,
-                internalReader,
+                hashReader,
                 listener,
                 new CompoundHashingQueue<>(maxRankStopQueue, minRankStopQueue),
                 queue1.reset(),
@@ -490,7 +470,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
         final HashJob<K, V> rootJob = queue2.get(0);
         rootJob.hash(HASH_BUILDER_THREAD_LOCAL.get());
         listener.onRankStarted();
-        listener.onInternalHashed(rootJob.getInternal());
+        listener.onNodeHashed(rootJob.getPath(), rootJob.getHash());
         listener.onRankCompleted();
         listener.onBatchCompleted();
         listener.onHashingCompleted();
@@ -500,10 +480,8 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
     /**
      * Hashes a sub-tree using multiple threads.
      *
-     * @param leafReader
-     * 		Return a {@link VirtualLeafRecord} by path. Used when this method needs to look up clean leaves.
-     * @param internalReader
-     * 		Return a {@link VirtualInternalRecord} by path. Used when this method needs to look up clean internals.
+     * @param hashReader
+     * 		Return a {@link Hash} by path. Used when this method needs to look up clean nodes.
      * @param listener
      * 		A {@link VirtualHashListener} that will receive notification of all hashing events. Cannot be null.
      * @param wq
@@ -524,8 +502,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
      * 		The stopRank. Can be the same as the startRank. Must be greater than or equal to zero.
      */
     private void hashSubTree(
-            final LongFunction<VirtualLeafRecord<K, V>> leafReader,
-            final LongFunction<VirtualInternalRecord> internalReader,
+            final LongFunction<Hash> hashReader,
             final VirtualHashListener<K, V> listener,
             HashingQueue<K, V> wq,
             HashingQueue<K, V> pq,
@@ -542,8 +519,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
         assert stopRank >= 0 : "stopRank was negative!";
         assert listener != null : "Listener cannot be null in hashSubTree";
 
-        Objects.requireNonNull(leafReader, "leaf reader is not permitted to be null");
-        Objects.requireNonNull(internalReader, "internal reader is not permitted to be null");
+        Objects.requireNonNull(hashReader, "hash reader is not permitted to be null");
 
         // We maintain two different HashQueues, one for the current list of HashJobs in a single rank
         // (sorted in ascending order by path), and one for the next list of HashJobs for the next rank
@@ -608,7 +584,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
             assert workQueue.size() > 0 || hasLastQueue : "Work queue is empty for rank " + rank;
             assert threadCount > 0 || hasLastQueue
                     : "Thread count is zero for rank " + rank + ", max hashing threads configured to be "
-                            + HASHING_THREAD_COUNT;
+                    + HASHING_THREAD_COUNT;
 
             // This latch is used to cause this thread to wait until all hashing threads complete their work.
             final CountDownLatch latch = new CountDownLatch(threadCount);
@@ -659,7 +635,6 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
                                 // In that case, we create a new internal node. When it is hashed,
                                 // it will end up being saved in the cache.
                                 final long parentPath = getParentPath(nodePath);
-                                final VirtualInternalRecord internal = new VirtualInternalRecord(parentPath);
 
                                 // We place the hash job that we create for the parent into the pending
                                 // queue at this location. Since multiple threads are running concurrently,
@@ -676,57 +651,27 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
                                     nextJob.hash(hashBuilder);
                                     pendingQueue
                                             .addHashJob(pendingQueueIndex)
-                                            .dirtyInternal(parentPath, internal, hashJob.getHash(), nextJob.getHash());
+                                            .dirtyInternal(parentPath, hashJob.getHash(), nextJob.getHash());
                                 } else if (nodePath == firstLeafPath && nodePath == lastLeafPath) {
                                     // There is only one leaf, and hashJob is it! There is no sibling
                                     pendingQueue
                                             .addHashJob(pendingQueueIndex)
-                                            .dirtyInternal(parentPath, internal, hashJob.getHash(), null);
-                                } else if (siblingPath >= firstLeafPath) {
-                                    // The sibling is *DEFINITELY* a leaf because its path is equal to
-                                    // or greater than the first leaf path. But, since the sibling wasn't
-                                    // part of the unit, I know it was clean. So we need to load the hash for it.
+                                            .dirtyInternal(parentPath, hashJob.getHash(), null);
+                                } else {
                                     // I know the hash MUST exist, because either it was dirty in a previous
                                     // round and is stored in the cache, or it was written to disk. Otherwise, if
                                     // it were dirty this round, it would have been in the work queue and part
                                     // of this unit.
-
-                                    final VirtualLeafRecord<K, V> sibling = leafReader.apply(siblingPath);
-
-                                    if (sibling == null) {
-                                        throw new NullPointerException("Failed to find leaf for " + siblingPath
-                                                + ", which is a sibling of " + nodePath);
-                                    }
-
-                                    final Hash siblingHash = sibling.getHash();
-
+                                    final Hash siblingHash = hashReader.apply(siblingPath);
                                     if (siblingHash == null) {
-                                        throw new IllegalStateException("Failed to find leaf hash for " + siblingPath
+                                        throw new IllegalStateException("Failed to find a hash for " + siblingPath
                                                 + ", which is a sibling of " + nodePath);
                                     }
-
                                     final Hash leftHash = nodePath < siblingPath ? hashJob.getHash() : siblingHash;
                                     final Hash rightHash = nodePath < siblingPath ? siblingHash : hashJob.getHash();
                                     pendingQueue
                                             .addHashJob(pendingQueueIndex)
-                                            .dirtyInternal(parentPath, internal, leftHash, rightHash);
-                                } else {
-                                    // The sibling *MUST* be a clean internal node. It isn't a clean leaf, or
-                                    // a dirty sibling, so it must be a clean internal.
-                                    final VirtualInternalRecord siblingInternal = internalReader.apply(siblingPath);
-                                    assert siblingInternal != null : "Should never be able to be null";
-                                    final Hash siblingHash = siblingInternal.getHash();
-
-                                    if (siblingHash == null) {
-                                        throw new IllegalStateException("Failed to find internal hash for "
-                                                + siblingPath + ", which is a sibling of " + nodePath);
-                                    }
-
-                                    final Hash leftHash = nodePath < siblingPath ? hashJob.getHash() : siblingHash;
-                                    final Hash rightHash = nodePath < siblingPath ? siblingHash : hashJob.getHash();
-                                    pendingQueue
-                                            .addHashJob(pendingQueueIndex)
-                                            .dirtyInternal(parentPath, internal, leftHash, rightHash);
+                                            .dirtyInternal(parentPath, leftHash, rightHash);
                                 }
                             }
                         }
@@ -778,9 +723,8 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
                 final VirtualLeafRecord<K, V> leaf = j.getLeaf();
                 if (leaf != null) {
                     listener.onLeafHashed(leaf);
-                } else {
-                    listener.onInternalHashed(j.getInternal());
                 }
+                listener.onNodeHashed(j.getPath(), j.getHash());
             });
             listener.onRankCompleted();
 
@@ -848,7 +792,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
 
     public Hash emptyRootHash() {
         final var hashJob = new HashJob<K, V>();
-        hashJob.dirtyInternal(ROOT_PATH, new VirtualInternalRecord(0), null, null);
+        hashJob.dirtyInternal(ROOT_PATH, null, null);
         hashJob.hash(new HashBuilder(Cryptography.DEFAULT_DIGEST_TYPE));
         return hashJob.getHash();
     }

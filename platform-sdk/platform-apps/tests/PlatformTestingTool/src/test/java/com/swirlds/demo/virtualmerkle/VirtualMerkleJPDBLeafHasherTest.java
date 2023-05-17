@@ -19,7 +19,6 @@ package com.swirlds.demo.virtualmerkle;
 import static com.swirlds.demo.virtualmerkle.VirtualMerkleLeafHasher.hashOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.demo.virtualmerkle.map.smartcontracts.bytecode.SmartContractByteCodeMapKey;
 import com.swirlds.demo.virtualmerkle.map.smartcontracts.bytecode.SmartContractByteCodeMapKeyBuilder;
@@ -27,7 +26,7 @@ import com.swirlds.demo.virtualmerkle.map.smartcontracts.bytecode.SmartContractB
 import com.swirlds.demo.virtualmerkle.map.smartcontracts.bytecode.SmartContractByteCodeMapValue;
 import com.swirlds.demo.virtualmerkle.map.smartcontracts.bytecode.SmartContractByteCodeMapValueBuilder;
 import com.swirlds.jasperdb.JasperDbBuilder;
-import com.swirlds.jasperdb.VirtualInternalRecordSerializer;
+import com.swirlds.jasperdb.VirtualHashRecordSerializer;
 import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
 import com.swirlds.jasperdb.files.DataFileCommon;
 import com.swirlds.virtualmap.VirtualMap;
@@ -57,8 +56,6 @@ class VirtualMerkleJPDBLeafHasherTest {
         keySerializer = new SmartContractByteCodeMapKeySerializer();
         leafRecordSerializer = new VirtualLeafRecordSerializer<>(
                 (short) 1,
-                DigestType.SHA_384,
-                (short) 1,
                 keySerializer.getSerializedSize(),
                 new SmartContractByteCodeMapKeyBuilder(),
                 (short) 1,
@@ -68,10 +65,10 @@ class VirtualMerkleJPDBLeafHasherTest {
 
         jasperDbBuilder = new JasperDbBuilder()
                 .virtualLeafRecordSerializer(leafRecordSerializer)
-                .virtualInternalRecordSerializer(new VirtualInternalRecordSerializer())
+                .virtualInternalRecordSerializer(new VirtualHashRecordSerializer())
                 .keySerializer(keySerializer)
                 .maxNumOfKeys(50_000_000)
-                .internalHashesRamToDiskThreshold(0)
+                .hashesRamToDiskThreshold(0)
                 .preferDiskBasedIndexes(false);
     }
 

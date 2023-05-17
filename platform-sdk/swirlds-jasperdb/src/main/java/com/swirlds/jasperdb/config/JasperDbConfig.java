@@ -33,7 +33,7 @@ import java.time.temporal.ChronoUnit;
  * 		Get the maximum number of unique keys we expect to be stored in this database. This is used for
  * 		calculating in memory index sizes. IMPORTANT: This can only be set before a new database is created, changing
  * 		on an existing database will break it.
- * @param internalHashesRamToDiskThreshold
+ * @param hashesRamToDiskThreshold
  * 		Get threshold where we switch from storing internal hashes in ram to
  * 		storing them on disk. If it is 0 then everything is on disk, if it is Long.MAX_VALUE then everything is in ram.
  * 		Any value in the middle is the path value at
@@ -113,7 +113,7 @@ import java.time.temporal.ChronoUnit;
 @ConfigData("jasperDb")
 public record JasperDbConfig(
         @Positive @ConfigProperty(defaultValue = "500000000") long maxNumOfKeys,
-        @Min(0) @ConfigProperty(defaultValue = "0") long internalHashesRamToDiskThreshold,
+        @Min(0) @ConfigProperty(defaultValue = "0") long hashesRamToDiskThreshold,
         @ConfigProperty(defaultValue = "10240") int mediumMergeCutoffMb,
         @ConfigProperty(defaultValue = "3072") int smallMergeCutoffMb,
         @ConfigProperty(defaultValue = "MINUTES") ChronoUnit mergePeriodUnit,

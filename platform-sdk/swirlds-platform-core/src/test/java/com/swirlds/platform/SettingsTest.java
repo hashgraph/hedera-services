@@ -17,8 +17,8 @@
 package com.swirlds.platform;
 
 import static com.swirlds.jasperdb.settings.DefaultJasperDbSettings.DEFAULT_FULL_MERGE_PERIOD;
+import static com.swirlds.jasperdb.settings.DefaultJasperDbSettings.DEFAULT_HASHES_RAM_TO_DISK_THRESHOLD;
 import static com.swirlds.jasperdb.settings.DefaultJasperDbSettings.DEFAULT_INDEX_REBUILDING_ENFORCED;
-import static com.swirlds.jasperdb.settings.DefaultJasperDbSettings.DEFAULT_INTERNAL_HASHES_RAM_TO_DISK_THRESHOLD;
 import static com.swirlds.jasperdb.settings.DefaultJasperDbSettings.DEFAULT_ITERATOR_INPUT_BUFFER_BYTES;
 import static com.swirlds.jasperdb.settings.DefaultJasperDbSettings.DEFAULT_KEY_SET_BLOOM_FILTER_HASH_COUNT;
 import static com.swirlds.jasperdb.settings.DefaultJasperDbSettings.DEFAULT_KEY_SET_BLOOM_FILTER_SIZE_IN_BYTES;
@@ -560,8 +560,7 @@ class SettingsTest {
 
         // then
         Assertions.assertEquals(DEFAULT_MAX_NUM_OF_KEYS, jasperDbSettings.getMaxNumOfKeys());
-        Assertions.assertEquals(
-                DEFAULT_INTERNAL_HASHES_RAM_TO_DISK_THRESHOLD, jasperDbSettings.getInternalHashesRamToDiskThreshold());
+        Assertions.assertEquals(DEFAULT_HASHES_RAM_TO_DISK_THRESHOLD, jasperDbSettings.getHashesRamToDiskThreshold());
         Assertions.assertEquals(DEFAULT_SMALL_MERGE_CUTOFF_MB, jasperDbSettings.getSmallMergeCutoffMb());
         Assertions.assertEquals(DEFAULT_MEDIUM_MERGE_CUTOFF_MB, jasperDbSettings.getMediumMergeCutoffMb());
         Assertions.assertEquals(DEFAULT_MOVE_LIST_CHUNK_SIZE, jasperDbSettings.getMoveListChunkSize());
@@ -604,7 +603,7 @@ class SettingsTest {
 
         // then
         Assertions.assertEquals(250000000, jasperDbSettings.getMaxNumOfKeys());
-        Assertions.assertEquals(1, jasperDbSettings.getInternalHashesRamToDiskThreshold());
+        Assertions.assertEquals(1, jasperDbSettings.getHashesRamToDiskThreshold());
         Assertions.assertEquals(4096, jasperDbSettings.getSmallMergeCutoffMb());
         Assertions.assertEquals(40960, jasperDbSettings.getMediumMergeCutoffMb());
         Assertions.assertEquals(250000, jasperDbSettings.getMoveListChunkSize());

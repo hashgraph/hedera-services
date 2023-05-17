@@ -16,7 +16,9 @@
 
 package com.swirlds.common.system.address.internal;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
@@ -26,12 +28,13 @@ import java.util.Objects;
  */
 public class AddressBookIterator implements Iterator<Address> {
 
-    private final Iterator<Long> orderedNodeIds;
-    private final Map<Long, Address> addresses;
+    private final Iterator<NodeId> orderedNodeIds;
+    private final Map<NodeId, Address> addresses;
 
-    public AddressBookIterator(final Iterator<Long> orderedNodeIds, final Map<Long, Address> addresses) {
-        this.orderedNodeIds = orderedNodeIds;
-        this.addresses = addresses;
+    public AddressBookIterator(
+            @NonNull final Iterator<NodeId> orderedNodeIds, @NonNull final Map<NodeId, Address> addresses) {
+        this.orderedNodeIds = Objects.requireNonNull(orderedNodeIds, "the orderedNodeIds cannot be null");
+        this.addresses = Objects.requireNonNull(addresses, "the addresses cannot be null");
     }
 
     /**
