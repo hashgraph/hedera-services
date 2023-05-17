@@ -48,7 +48,6 @@ import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -65,12 +64,8 @@ class RandomVirtualMapMerkleDbReconnectTests extends VirtualMapReconnectTestBase
     public static final String LETTERS = "abcdefghijklmnopqrstuvwxyz";
     public static final int ZZZZZ = 26 * 26 * 26 * 26 * 26; // key value corresponding to five Z's (plus 1)
 
-    private static Configuration originalConfig;
-
     @BeforeAll
     static void beforeAll() {
-        originalConfig = ConfigurationHolder.getInstance().get();
-
         final Configuration config = new TestConfigBuilder()
                 .withValue("merkleDb.keySetBloomFilterSizeInBytes", "16777216")
                 .withValue("merkleDb.keySetHalfDiskHashMapSize", "10000")
@@ -78,11 +73,6 @@ class RandomVirtualMapMerkleDbReconnectTests extends VirtualMapReconnectTestBase
                 .getOrCreateConfig();
 
         ConfigurationHolder.getInstance().setConfiguration(config);
-    }
-
-    @AfterAll
-    static void afterAll() {
-        ConfigurationHolder.getInstance().setConfiguration(originalConfig);
     }
 
     @Override

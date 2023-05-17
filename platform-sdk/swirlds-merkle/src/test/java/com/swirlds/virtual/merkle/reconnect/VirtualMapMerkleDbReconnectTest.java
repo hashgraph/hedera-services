@@ -18,7 +18,6 @@ package com.swirlds.virtual.merkle.reconnect;
 
 import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.swirlds.common.config.singleton.ConfigurationHolder;
@@ -41,7 +40,6 @@ import java.util.Queue;
 import java.util.Random;
 import java.util.function.Function;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -55,12 +53,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 @DisplayName("Virtual Map MerkleDB Reconnect Test")
 class VirtualMapMerkleDbReconnectTest extends VirtualMapMerkleDbReconnectTestBase {
 
-    private static Configuration originalConfig;
-
     @BeforeAll
-    static void beforeAll() {
-        originalConfig = ConfigurationHolder.getInstance().get();
-
+    static void beforeAll() throws Exception {
         final Configuration config = new TestConfigBuilder()
                 .withValue("merkleDb.keySetBloomFilterSizeInBytes", "16777216")
                 .withValue("merkleDb.keySetHalfDiskHashMapSize", "10000")
@@ -68,11 +62,6 @@ class VirtualMapMerkleDbReconnectTest extends VirtualMapMerkleDbReconnectTestBas
                 .getOrCreateConfig();
 
         ConfigurationHolder.getInstance().setConfiguration(config);
-    }
-
-    @AfterAll
-    static void afterAll() {
-        ConfigurationHolder.getInstance().setConfiguration(originalConfig);
     }
 
     @Test
