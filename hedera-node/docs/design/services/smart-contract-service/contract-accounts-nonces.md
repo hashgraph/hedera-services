@@ -56,6 +56,10 @@ No new classes expected to be created as part of this design.
 ### Positive Tests
 
 * Verify that when contract A successfully deploys contract B, the nonce of contract A is incremented by 1 and the nonce of contract B is set to 1.
+* Verify that when contact A with nonce 2 calls contract B with nonce 1 that creates contract C and contract D, the nonce of contract A is still 2 and the resulting `ContractFunctionResult` has the following nonce values:
+  * B -> 3
+  * C -> 1
+  * D -> 1
 * Verify that when contract A is merged into hollow account H, the nonce of the resulting account is set to 1.
 * Verify that when contract A is merged into hollow account H and the init code of A also deploys contract B, the nonce of the resulting account is 2 and the nonce of contract B is set to 1.
 
