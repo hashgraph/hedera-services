@@ -78,7 +78,7 @@ public class TopicUpdateSuite extends HapiSuite {
                 updateSubmitKeyToDiffKey(),
                 updateAdminKeyToDiffKey(),
                 updateAdminKeyToEmpty(),
-//                updateAdminKeyToEmptyThresholdKey(),
+                //                updateAdminKeyToEmptyThresholdKey(),
                 updateMultipleFields(),
                 expirationTimestampIsValidated(),
                 updateSubmitKeyOnTopicWithNoAdminKeyFails(),
