@@ -73,7 +73,6 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
         Objects.requireNonNull(configuration, "configuration must not be null");
         Objects.requireNonNull(initialState, "initialState must not be null");
         this.selfId = Objects.requireNonNull(selfId, "selfId must not be null");
-        ;
 
         this.addressBook = initialState.getAddressBook();
 
