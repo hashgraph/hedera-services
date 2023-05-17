@@ -19,5 +19,10 @@ package com.hedera.node.app.service.token.impl.config;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
+/**
+ * Provides configuration for the token service. Currently, it just has the maximum number of custom fees allowed.
+ * In the future all the configurations needed by handlers in the token service will be added here.
+ * @param maxCustomFeesAllowed the maximum number of custom fees allowed
+ */
 @ConfigData("token")
 public record TokenServiceConfig(@ConfigProperty(defaultValue = "10") long maxCustomFeesAllowed) {}

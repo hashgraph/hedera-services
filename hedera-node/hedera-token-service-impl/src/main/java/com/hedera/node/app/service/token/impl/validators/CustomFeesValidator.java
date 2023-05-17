@@ -69,6 +69,13 @@ public class CustomFeesValidator {
 
     /**
      * Validates custom fees for {@code TokenFeeScheduleUpdate} operation.
+     * This method validates the following:
+     * 1. Fixed fee with denominating token id set to sentinel value of 0.0.0 is not allowed.
+     * 2. Fractional fee can be only applied to fungible common tokens.
+     * 3. Royalty fee can be only applied to non-fungible unique tokens.
+     * 4. The token must be associated to the fee collector account and fee collector account must exist.
+     * 5. The token denomination must be a valid token
+     *
      * @param token  The token being updated.
      * @param accountStore The account store.
      * @param tokenRelationStore The token relation store.
@@ -95,6 +102,7 @@ public class CustomFeesValidator {
             switch (fee.fee().kind()) {
                 case FIXED_FEE -> {
                     final var fixedFee = fee.fixedFee();
+                    // validate any explicit token denomination set
                     if (fixedFee.hasDenominatingTokenId()) {
                         validateExplicitTokenDenomination(
                                 collector.accountNumber(),
@@ -104,11 +112,13 @@ public class CustomFeesValidator {
                     }
                 }
                 case FRACTIONAL_FEE -> {
+                    // fractional fee can be only applied to fungible common tokens
                     validateTrue(isFungibleCommon(tokenType), CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON);
                     final var relation = tokenRelationStore.get(token.tokenNumber(), collector.accountNumber());
                     validateTrue(relation.isPresent(), TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
                 }
                 case ROYALTY_FEE -> {
+                    // royalty fee can be only applied to non-fungible unique tokens
                     validateTrue(
                             isNonFungibleUnique(tokenType), CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE);
                     if (fee.royaltyFee().hasFallbackFee()
@@ -146,10 +156,20 @@ public class CustomFeesValidator {
                 tokenRelationStore.get(tokenNum, feeCollectorNum).isPresent(), TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
     }
 
+    /**
+     * Validates that the given token type is fungible common.
+     * @param tokenType The token type to validate.
+     * @return {@code true} if the token type is fungible common, otherwise {@code false}.
+     */
     private boolean isFungibleCommon(@NonNull final TokenType tokenType) {
         return tokenType.equals(TokenType.FUNGIBLE_COMMON);
     }
 
+    /**
+     * Validates that the given token type is non-fungible unique.
+     * @param tokenType The token type to validate.
+     * @return {@code true} if the token type is non-fungible unique, otherwise {@code false}.
+     */
     private boolean isNonFungibleUnique(@NonNull final TokenType tokenType) {
         return tokenType.equals(TokenType.NON_FUNGIBLE_UNIQUE);
     }
