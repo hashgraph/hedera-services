@@ -39,7 +39,7 @@ public class AddresBookUtils {
         if (withKeyDetails) {
             given(pubKey.getEncoded()).willReturn(Longs.toByteArray(Long.MAX_VALUE));
         }
-        final var nodeId = platform.getSelfId().getId();
+        final var nodeId = platform.getSelfId().getIdAsInt();
         final var address = new Address(
                 nodeId,
                 "",

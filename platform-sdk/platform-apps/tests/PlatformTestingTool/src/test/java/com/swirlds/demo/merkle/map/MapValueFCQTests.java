@@ -34,7 +34,6 @@ import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.PlatformWithDeprecatedMethods;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.io.InputOutputStream;
@@ -83,7 +82,7 @@ public class MapValueFCQTests {
 
         mapKey = new MapKey(0, 0, random.nextLong());
         state = Mockito.spy(PlatformTestingToolState.class);
-        Platform platform = Mockito.spy(PlatformWithDeprecatedMethods.class);
+        final Platform platform = Mockito.mock(Platform.class);
         when(platform.getSelfId()).thenReturn(new NodeId(0L));
         AddressBook addressBook = Mockito.spy(AddressBook.class);
         when(addressBook.getNumberWithWeight()).thenReturn(4);

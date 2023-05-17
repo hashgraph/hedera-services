@@ -44,7 +44,7 @@ public interface JasperDbSettings {
      * <p><b>IMPORTANT: This can only be set before a new database is created, changing on an existing database will
      * break it.</b></p>
      */
-    long getInternalHashesRamToDiskThreshold();
+    long getHashesRamToDiskThreshold();
 
     /**
      * The cutoff size in MB of files to include in a "medium" merge. Default is 10240MB.

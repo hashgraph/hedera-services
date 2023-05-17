@@ -710,7 +710,7 @@ public final class Hedera implements SwirldMain {
 
     private void initializeDagger(@NonNull final MerkleHederaState state, @NonNull final InitTrigger trigger) {
         logger.debug("Initializing dagger");
-        final var selfId = platform.getSelfId().getId();
+        final var selfId = platform.getSelfId().getIdAsInt();
         if (daggerApp == null) {
             stateChildren = state.getStateChildrenProvider(platform);
             final var nodeAddress = stateChildren.addressBook().getAddress(selfId);
