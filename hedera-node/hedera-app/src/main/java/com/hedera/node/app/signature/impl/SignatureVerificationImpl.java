@@ -17,8 +17,8 @@
 package com.hedera.node.app.signature.impl;
 
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -26,8 +26,8 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * An implementation of {@link SignatureVerification}.
  *
  * @param key The key, if any
- * @param hollowAccount The hollow account, if any
+ * @param evmAlias The evm alias of the key if supplied.
  * @param passed Whether the verification passed (VALID) or not.
  */
-public record SignatureVerificationImpl(@NonNull Key key, @Nullable Account hollowAccount, boolean passed)
+public record SignatureVerificationImpl(@NonNull Key key, @Nullable Bytes evmAlias, boolean passed)
         implements SignatureVerification {}

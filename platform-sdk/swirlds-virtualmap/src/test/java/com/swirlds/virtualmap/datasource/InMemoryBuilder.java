@@ -107,7 +107,7 @@ public class InMemoryBuilder implements VirtualDataSourceBuilder<TestKey, TestVa
     }
 
     protected InMemoryDataSource<TestKey, TestValue> createDataSource(final String name) {
-        return new InMemoryDataSource<>(name, TestKey.BYTES, TestKey::new, 1024, TestValue::new);
+        return new InMemoryDataSource<>(name);
     }
 
     private String createUniqueDataSourceName(final String name) {

@@ -23,15 +23,15 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.jasperdb.files.DataItemHeader;
 import com.swirlds.jasperdb.files.DataItemSerializer;
-import com.swirlds.virtualmap.datasource.VirtualInternalRecord;
+import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
 /**
- * Serializer for VirtualInternalRecord objects
+ * Serializer for VirtualHashRecord objects
  */
-public class VirtualInternalRecordSerializer implements DataItemSerializer<VirtualInternalRecord>, SelfSerializable {
+public class VirtualHashRecordSerializer implements DataItemSerializer<VirtualHashRecord>, SelfSerializable {
 
     private static final long CLASS_ID = 0x16b097b6e74e0659L;
 
@@ -46,7 +46,7 @@ public class VirtualInternalRecordSerializer implements DataItemSerializer<Virtu
     /** number of bytes a data item takes when serialized */
     private final int serializedSize;
 
-    public VirtualInternalRecordSerializer() {
+    public VirtualHashRecordSerializer() {
         this.serializedSize = Long.BYTES + DEFAULT_DIGEST.digestLength();
     }
 
@@ -84,7 +84,7 @@ public class VirtualInternalRecordSerializer implements DataItemSerializer<Virtu
      * @return The read header
      */
     @Override
-    public DataItemHeader deserializeHeader(final ByteBuffer buffer) {
+    public DataItemHeader deserializeHeader(final ByteBuffer buffer, final long dataVersion) {
         return new DataItemHeader(serializedSize, buffer.getLong());
     }
 
@@ -94,7 +94,7 @@ public class VirtualInternalRecordSerializer implements DataItemSerializer<Virtu
      * @return Either a number of bytes or DataFileCommon.VARIABLE_DATA_SIZE if size is variable
      */
     @Override
-    public int getSerializedSize() {
+    public int getSerializedSize(final long dataVersion) {
         return serializedSize;
     }
 
@@ -118,7 +118,7 @@ public class VirtualInternalRecordSerializer implements DataItemSerializer<Virtu
      * 		if used with version other than current
      */
     @Override
-    public VirtualInternalRecord deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
+    public VirtualHashRecord deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
         if (dataVersion != CURRENT_SERIALIZATION_VERSION) {
             throw new IllegalArgumentException(
                     "Cannot deserialize version " + dataVersion + ", current is " + CURRENT_SERIALIZATION_VERSION);
@@ -127,7 +127,7 @@ public class VirtualInternalRecordSerializer implements DataItemSerializer<Virtu
         /* FUTURE WORK - https://github.com/swirlds/swirlds-platform/issues/3928 */
         final Hash newHash = new Hash(DEFAULT_DIGEST);
         buffer.get(newHash.getValue());
-        return new VirtualInternalRecord(path, newHash);
+        return new VirtualHashRecord(path, newHash);
     }
 
     /**
@@ -139,15 +139,15 @@ public class VirtualInternalRecordSerializer implements DataItemSerializer<Virtu
      * 		Output stream to write to
      */
     @Override
-    public int serialize(final VirtualInternalRecord data, final SerializableDataOutputStream outputStream)
+    public int serialize(final VirtualHashRecord data, final SerializableDataOutputStream outputStream)
             throws IOException {
-        final DigestType digestType = data.getHash().getDigestType();
+        final DigestType digestType = data.hash().getDigestType();
         if (DEFAULT_DIGEST != digestType) {
             throw new IllegalArgumentException(
                     "Only " + DEFAULT_DIGEST + " digests allowed, but received hash with digest " + digestType);
         }
-        outputStream.writeLong(data.getPath());
-        outputStream.write(data.getHash().getValue());
+        outputStream.writeLong(data.path());
+        outputStream.write(data.hash().getValue());
         return serializedSize;
     }
 
@@ -178,7 +178,7 @@ public class VirtualInternalRecordSerializer implements DataItemSerializer<Virtu
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        final VirtualInternalRecordSerializer that = (VirtualInternalRecordSerializer) o;
+        final VirtualHashRecordSerializer that = (VirtualHashRecordSerializer) o;
         return serializedSize == that.serializedSize;
     }
 

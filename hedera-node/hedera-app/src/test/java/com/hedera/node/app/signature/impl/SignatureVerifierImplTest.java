@@ -28,6 +28,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SignaturePair;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.AppTestBase;
+import com.hedera.node.app.service.mono.sigs.utils.MiscCryptoUtils;
 import com.hedera.node.app.signature.ExpandedSignaturePair;
 import com.hedera.node.app.signature.SignatureVerifier;
 import com.hedera.node.app.spi.fixtures.Scenarios;
@@ -150,6 +151,11 @@ final class SignatureVerifierImplTest extends AppTestBase implements Scenarios {
         sigs.add(hollowPair(ERIN.keyInfo().publicKey(), ERIN.account()));
         doNothing().when(cryptoEngine).verifyAsync(sigsCaptor.capture());
 
+        // The signed bytes for ECDSA keys are keccak hashes
+        final var signedBytesArray = new byte[(int) signedBytes.length()];
+        signedBytes.getBytes(0, signedBytesArray, 0, signedBytesArray.length);
+        final var keccakSignedBytes = Bytes.wrap(MiscCryptoUtils.keccak256DigestOf(signedBytesArray));
+
         // When we verify them
         verifier.verify(signedBytes, sigs);
 
@@ -163,7 +169,7 @@ final class SignatureVerifierImplTest extends AppTestBase implements Scenarios {
             final var txSig = txSigs.get(i);
             final var contents = Bytes.wrap(txSig.getContents());
             assertThat(contents.slice(txSig.getMessageOffset(), txSig.getMessageLength())
-                            .matchesPrefix(signedBytes))
+                            .matchesPrefix(i == 1 ? signedBytes : keccakSignedBytes)) // index 1 is ed25519
                     .isTrue();
 
             assertThat(contents.slice(txSig.getSignatureOffset(), txSig.getSignatureLength())
@@ -178,11 +184,15 @@ final class SignatureVerifierImplTest extends AppTestBase implements Scenarios {
 
     /** Simple utility to create an ECDSA_SECP256K1 expanded signature */
     private ExpandedSignaturePair ecdsaPair(final Key key) {
+        final var compressed = key.ecdsaSecp256k1OrThrow();
+        final var array = new byte[(int) compressed.length()];
+        compressed.getBytes(0, array);
+        final var decompressed = MiscCryptoUtils.decompressSecp256k1(array);
         final var sigPair = SignaturePair.newBuilder()
                 .pubKeyPrefix(key.ecdsaSecp256k1OrThrow())
                 .ecdsaSecp256k1(key.ecdsaSecp256k1OrThrow())
                 .build();
-        return new ExpandedSignaturePair(key, null, sigPair);
+        return new ExpandedSignaturePair(key, Bytes.wrap(decompressed), null, sigPair);
     }
 
     /** Simple utility to create an ED25519 expanded signature */
@@ -191,15 +201,19 @@ final class SignatureVerifierImplTest extends AppTestBase implements Scenarios {
                 .pubKeyPrefix(key.ed25519OrThrow())
                 .ed25519(key.ed25519OrThrow())
                 .build();
-        return new ExpandedSignaturePair(key, null, sigPair);
+        return new ExpandedSignaturePair(key, key.ed25519OrThrow(), null, sigPair);
     }
 
     /** Simple utility to create an ECDSA_SECP256K1 hollow account based expanded signature */
     private ExpandedSignaturePair hollowPair(final Key key, @NonNull final Account hollowAccount) {
+        final var compressed = key.ecdsaSecp256k1OrThrow();
+        final var array = new byte[(int) compressed.length()];
+        compressed.getBytes(0, array);
+        final var decompressed = MiscCryptoUtils.decompressSecp256k1(array);
         final var sigPair = SignaturePair.newBuilder()
                 .pubKeyPrefix(key.ecdsaSecp256k1OrThrow())
                 .ecdsaSecp256k1(key.ecdsaSecp256k1OrThrow())
                 .build();
-        return new ExpandedSignaturePair(key, hollowAccount, sigPair);
+        return new ExpandedSignaturePair(key, Bytes.wrap(decompressed), hollowAccount.alias(), sigPair);
     }
 }

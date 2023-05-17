@@ -45,7 +45,6 @@ import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashSet;
-import java.util.concurrent.Future;
 import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -162,12 +161,14 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
 
         // 3. Expand the Payer signature
         final Key payerKey;
-        if (isHollow(payerAccount)) {
-            payerKey = null;
-            signatureExpander.expand(payerAccount, originals, expanded);
-        } else {
+        if (!isHollow(payerAccount)) {
+            // If the account IS a hollow account, then we will discover all such possible signatures when expanding
+            // all "full prefix" keys above, so we already have it covered. We only need to do this if the payer is
+            // NOT a hollow account (which is the common case).
             payerKey = payerAccount.keyOrThrow();
             signatureExpander.expand(payerKey, originals, expanded);
+        } else {
+            payerKey = null;
         }
 
         // 4a. Create the PreHandleContext. This will get reused across several calls to the transaction handlers
@@ -200,15 +201,11 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             return preHandleFailure(payer, payerKey, preCheck.responseCode(), txInfo, results);
         }
 
-        // 5. Expand additional SignaturePairs based on gathered keys and hollow accounts
+        // 5. Expand additional SignaturePairs based on gathered keys (we can safely ignore hollow accounts because we
+        // already grabbed them when expanding the "full prefix" keys above)
         final var nonPayerKeys = context.requiredNonPayerKeys();
         for (final var key : nonPayerKeys) {
             signatureExpander.expand(key, originals, expanded);
-        }
-
-        final var nonPayerHollowAccounts = context.requiredHollowAccounts();
-        for (final var hollowAccount : nonPayerHollowAccounts) {
-            signatureExpander.expand(hollowAccount, originals, expanded);
         }
 
         // 6. Submit the expanded SignaturePairs to the cryptography engine for verification
@@ -217,7 +214,4 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         // 7. Create and return TransactionMetadata
         return new PreHandleResult(payer, payerKey, SO_FAR_SO_GOOD, OK, txInfo, results, null);
     }
-
-    /** A platform transaction and the future that produces its {@link PreHandleResult} */
-    private record WorkItem(@NonNull Transaction platformTx, @NonNull Future<PreHandleResult> future) {}
 }

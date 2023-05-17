@@ -118,7 +118,7 @@ dependencyResolutionManagement {
       version("hapi-version", "0.38.1-allowance-SNAPSHOT")
 
       // Definition of version numbers for all libraries
-      version("pbj-version", "0.5.1")
+      version("pbj-version", "0.5.2")
       version("besu-version", "23.1.2")
       version("besu-native-version", "0.6.1")
       version("bouncycastle-version", "1.70")
