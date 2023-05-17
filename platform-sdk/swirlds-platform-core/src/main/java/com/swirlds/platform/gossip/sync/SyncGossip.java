@@ -82,7 +82,6 @@ import org.apache.commons.lang3.tuple.Pair;
  */
 public class SyncGossip extends AbstractGossip {
 
-    private final ReconnectController reconnectController;
     private final AtomicBoolean gossipHalted = new AtomicBoolean(false);
     private final SyncPermitProvider syncPermitProvider;
     protected final SyncConfig syncConfig;
@@ -166,7 +165,8 @@ public class SyncGossip extends AbstractGossip {
                         Pair.of(eventMapper, "eventMapper"),
                         Pair.of(shadowGraph, "shadowGraph")));
 
-        reconnectController = new ReconnectController(threadManager, reconnectHelper, () -> gossipHalted.set(false));
+        final ReconnectController reconnectController =
+                new ReconnectController(threadManager, reconnectHelper, () -> gossipHalted.set(false));
         thingsToStart.add(reconnectController::start);
 
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);

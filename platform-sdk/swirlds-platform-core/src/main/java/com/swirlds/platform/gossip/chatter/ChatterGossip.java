@@ -347,9 +347,9 @@ public class ChatterGossip extends AbstractGossip {
     }
 
     /**
-     * Get teh reconnect controller. This method is needed to break a circular dependency.
+     * Get the reconnect controller. This method is needed to break a circular dependency.
      */
-    public com.swirlds.platform.reconnect.ReconnectController getReconnectController() {
+    public ReconnectController getReconnectController() {
         return reconnectController;
     }
 

@@ -53,7 +53,6 @@ import com.swirlds.platform.gossip.shadowgraph.SingleNodeNetworkSync;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
 import com.swirlds.platform.observers.EventObserverDispatcher;
-import com.swirlds.platform.reconnect.ReconnectController;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -61,7 +60,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.apache.commons.lang3.tuple.Pair;
@@ -71,8 +69,6 @@ import org.apache.commons.lang3.tuple.Pair;
  */
 public class SingleNodeSyncGossip extends AbstractGossip {
 
-    private final ReconnectController reconnectController;
-    private final AtomicBoolean gossipHalted = new AtomicBoolean(false);
     protected final SyncConfig syncConfig;
     protected final ShadowGraphSynchronizer syncShadowgraphSynchronizer;
     private final InterruptableConsumer<EventIntakeTask> eventIntakeLambda;
@@ -153,8 +149,6 @@ public class SingleNodeSyncGossip extends AbstractGossip {
                         Pair.of(eventMapper, "eventMapper"),
                         Pair.of(shadowGraph, "shadowGraph")));
 
-        reconnectController = new ReconnectController(threadManager, reconnectHelper, () -> gossipHalted.set(false));
-
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
 
         final Duration hangingThreadDuration = basicConfig.hangingThreadDuration();
@@ -187,7 +181,6 @@ public class SingleNodeSyncGossip extends AbstractGossip {
     @Override
     public void stop() {
         super.stop();
-        gossipHalted.set(true);
         // wait for all existing syncs to stop. no new ones will be started, since gossip has been halted, and
         // we've fallen behind
         for (final StoppableThread thread : syncProtocolThreads) {
