@@ -18,6 +18,7 @@ package com.hedera.node.app.spi;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
@@ -27,6 +28,7 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.Set;
 
@@ -37,6 +39,10 @@ public class HapiUtils {
     private static final int EVM_ADDRESS_ALIAS_LENGTH = 20;
     private static final Key EMPTY_KEY_LIST =
             Key.newBuilder().keyList(KeyList.DEFAULT).build();
+
+    /** A simple {@link Camparator} for {@link Timestamp}s. */
+    public static final Comparator<Timestamp> TIMESTAMP_COMPARATOR =
+            Comparator.comparingLong(Timestamp::seconds).thenComparingInt(Timestamp::nanos);
 
     private HapiUtils() {}
 
@@ -55,11 +61,25 @@ public class HapiUtils {
                 && account.alias().length() == EVM_ADDRESS_ALIAS_LENGTH);
     }
 
-    public static Timestamp asTimestamp(final Instant instant) {
+    /** Converts the given {@link Instant} into a {@link Timestamp}. */
+    public static Timestamp asTimestamp(@NonNull final Instant instant) {
         return Timestamp.newBuilder()
                 .seconds(instant.getEpochSecond())
                 .nanos(instant.getNano())
                 .build();
+    }
+
+    /** Subtracts the given number of seconds from the given {@link Timestamp}, returning a new {@link Timestamp}. */
+    public static Timestamp minus(@NonNull final Timestamp ts, @NonNull final long seconds) {
+        return Timestamp.newBuilder()
+                .seconds(ts.seconds() - seconds)
+                .nanos(ts.nanos())
+                .build();
+    }
+
+    /** Determines whether the first timestamp is before the second timestamp. Think of it as, "Is t1 before t2?" */
+    public static boolean isBefore(@NonNull final Timestamp t1, @NonNull final Timestamp t2) {
+        return TIMESTAMP_COMPARATOR.compare(t1, t2) < 0;
     }
 
     public static final Set<HederaFunctionality> QUERY_FUNCTIONS = EnumSet.of(
