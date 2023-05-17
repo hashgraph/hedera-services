@@ -34,6 +34,7 @@ import javax.inject.Singleton;
 /**
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#NETWORK_GET_EXECUTION_TIME}.
  */
+//deprecated -decided on a call today 5/4/2023
 @Singleton
 public class NetworkGetExecutionTimeHandler extends PaidQueryHandler {
     @Inject
@@ -57,13 +58,13 @@ public class NetworkGetExecutionTimeHandler extends PaidQueryHandler {
     @Override
     public void validate(@NonNull final QueryContext context) throws PreCheckException {
         requireNonNull(context);
-        throw new UnsupportedOperationException("Not implemented");
+        throw new UnsupportedOperationException("Not supporting");
     }
 
     @Override
     public Response findResponse(@NonNull final QueryContext context, @NonNull final ResponseHeader header) {
         requireNonNull(context);
         requireNonNull(header);
-        throw new UnsupportedOperationException("Not implemented");
+        throw new UnsupportedOperationException("Not supporting");
     }
 }

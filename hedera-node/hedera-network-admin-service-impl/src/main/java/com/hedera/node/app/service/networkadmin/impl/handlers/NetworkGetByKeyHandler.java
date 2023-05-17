@@ -34,6 +34,7 @@ import javax.inject.Singleton;
 /**
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#GET_BY_KEY}.
  */
+//not supported
 @Singleton
 public class NetworkGetByKeyHandler extends PaidQueryHandler {
     @Inject
@@ -57,13 +58,13 @@ public class NetworkGetByKeyHandler extends PaidQueryHandler {
     @Override
     public void validate(@NonNull final QueryContext context) throws PreCheckException {
         requireNonNull(context);
-        throw new UnsupportedOperationException("Not implemented");
+        throw new UnsupportedOperationException("Not supporting");
     }
 
     @Override
     public Response findResponse(@NonNull final QueryContext context, @NonNull final ResponseHeader header) {
         requireNonNull(context);
         requireNonNull(header);
-        throw new UnsupportedOperationException("Not implemented");
+        throw new UnsupportedOperationException("Not supporting");
     }
 }
