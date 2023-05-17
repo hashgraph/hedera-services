@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.node.app.components.StoreDaggerComponent;
+import com.hedera.node.app.components.StoreInjectionComponent;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.service.mono.utils.NonAtomicReference;
@@ -57,16 +57,16 @@ class MonoHandleContextTest {
     private NonAtomicReference<HederaState> mutableState;
 
     @Mock
-    private Provider<StoreDaggerComponent.Factory> storeFactory;
+    private Provider<StoreInjectionComponent.Factory> storeFactory;
 
     @Mock
-    private StoreDaggerComponent.Factory storeComponentFactory;
+    private StoreInjectionComponent.Factory storeComponentFactory;
 
     @Mock
     private HederaState state;
 
     @Mock
-    private StoreDaggerComponent storeComponent;
+    private StoreInjectionComponent storeComponent;
 
     @Mock
     private ReadableStoreFactory readableStoreFactory;

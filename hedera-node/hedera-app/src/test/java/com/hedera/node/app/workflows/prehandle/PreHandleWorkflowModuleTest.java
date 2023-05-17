@@ -27,7 +27,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class PreHandleWorkflowModuleTest {
     @Test
     void usesComponentsToGetExecutorService() {
-        final var execService = PreHandleWorkflowDaggerModule.provideExecutorService();
+        final var execService = PreHandleWorkflowInjectionModule.provideExecutorService();
         assertInstanceOf(ForkJoinPool.class, execService);
     }
 }

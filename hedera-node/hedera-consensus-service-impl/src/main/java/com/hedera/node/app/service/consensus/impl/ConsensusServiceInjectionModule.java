@@ -28,7 +28,7 @@ import dagger.Module;
  * Dagger module for the consensus service.
  */
 @Module
-public interface ConsensusServiceDaggerModule {
+public interface ConsensusServiceInjectionModule {
 
     ConsensusCreateTopicHandler consensusCreateTopicHandler();
 

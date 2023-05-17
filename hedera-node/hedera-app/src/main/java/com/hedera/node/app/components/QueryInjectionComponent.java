@@ -23,11 +23,11 @@ import dagger.Subcomponent;
  * A Dagger subcomponent that provides the query workflow.
  */
 @Subcomponent
-public interface QueryDaggerComponent {
+public interface QueryInjectionComponent {
     QueryWorkflow queryWorkflow();
 
     @Subcomponent.Factory
     interface Factory {
-        QueryDaggerComponent create();
+        QueryInjectionComponent create();
     }
 }

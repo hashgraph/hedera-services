@@ -288,7 +288,7 @@ class HandleDaggerWorkflowModuleTest {
         given(tokenHandlers.tokenUnpauseHandler()).willReturn(tokenUnpauseHandler);
         given(utilHandlers.prngHandler()).willReturn(utilPrngHandler);
 
-        final var handlers = HandlersDaggerModule.provideTransactionHandlers(
+        final var handlers = HandlersInjectionModule.provideTransactionHandlers(
                 networkAdminHandlers,
                 consensusHandlers,
                 fileHandlers,

@@ -14,24 +14,16 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.state;
+package com.hedera.node.app.service.util.impl;
 
-import com.hedera.node.app.state.merkle.MerkleRecordCache;
+import com.hedera.node.app.service.util.impl.handlers.UtilHandlers;
+import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
 import dagger.Module;
-import dagger.Provides;
-import javax.inject.Singleton;
 
 @Module
-public interface HederaStateDaggerModule {
-    @Provides
-    @Singleton
-    static RecordCache provideRecordCache() {
-        return new MerkleRecordCache();
-    }
+public interface UtilServiceInjectionModule {
 
-    @Provides
-    @Singleton
-    static WorkingStateAccessor provideWorkingStateAccessor() {
-        return new WorkingStateAccessor();
-    }
+    UtilPrngHandler prngHandler();
+
+    UtilHandlers utilHandlers();
 }

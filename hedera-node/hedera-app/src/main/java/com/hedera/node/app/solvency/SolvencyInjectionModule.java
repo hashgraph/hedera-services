@@ -14,24 +14,15 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.components;
+package com.hedera.node.app.solvency;
 
-import com.hedera.node.app.meta.HandleScope;
-import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
-import dagger.BindsInstance;
-import dagger.Subcomponent;
+import dagger.Binds;
+import dagger.Module;
+import javax.inject.Singleton;
 
-/**
- * A Dagger subcomponent that provides the readable store factory.
- */
-@Subcomponent
-@HandleScope
-public interface StoreDaggerComponent {
-    ReadableStoreFactory storeFactory();
-
-    @Subcomponent.Factory
-    interface Factory {
-        StoreDaggerComponent create(@BindsInstance HederaState hederastate);
-    }
+@Module
+public interface SolvencyInjectionModule {
+    @Binds
+    @Singleton
+    SolvencyPreCheck bindSolvencyPreCheck(MonoSolvencyPreCheck solvencyPreCheck);
 }

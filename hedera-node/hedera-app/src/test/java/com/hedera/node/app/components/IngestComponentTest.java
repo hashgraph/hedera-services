@@ -22,8 +22,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.node.app.DaggerHederaApp;
-import com.hedera.node.app.HederaApp;
+import com.hedera.node.app.DaggerHederaInjectionComponent;
+import com.hedera.node.app.HederaInjectionComponent;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.context.PlatformContext;
@@ -49,7 +49,7 @@ class IngestComponentTest {
     @Mock
     private Cryptography cryptography;
 
-    private HederaApp app;
+    private HederaInjectionComponent app;
 
     @BeforeEach
     void setUp() {
@@ -62,7 +62,7 @@ class IngestComponentTest {
 
         final var selfNodeId = new NodeId(false, 666L);
 
-        app = DaggerHederaApp.builder()
+        app = DaggerHederaInjectionComponent.builder()
                 .initTrigger(InitTrigger.GENESIS)
                 .platform(platform)
                 .crypto(CryptographyHolder.get())
@@ -79,7 +79,8 @@ class IngestComponentTest {
     void objectGraphRootsAreAvailable() {
         given(platform.getSelfId()).willReturn(new NodeId(false, 0L));
 
-        final IngestDaggerComponent subject = app.ingestComponentFactory().get().create();
+        final IngestInjectionComponent subject =
+                app.ingestComponentFactory().get().create();
 
         assertNotNull(subject.ingestWorkflow());
     }

@@ -19,26 +19,26 @@ package com.hedera.node.app;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.annotations.MaxSignedTxnSize;
 import com.hedera.node.app.annotations.NodeSelfId;
-import com.hedera.node.app.authorization.AuthorizerDaggerModule;
-import com.hedera.node.app.components.IngestDaggerComponent;
-import com.hedera.node.app.components.QueryDaggerComponent;
-import com.hedera.node.app.fees.FeesDaggerModule;
-import com.hedera.node.app.info.InfoDaggerModule;
-import com.hedera.node.app.metrics.MetricsDaggerModule;
-import com.hedera.node.app.service.mono.LegacyMonoDaggerModule;
+import com.hedera.node.app.authorization.AuthorizerInjectionModule;
+import com.hedera.node.app.components.IngestInjectionComponent;
+import com.hedera.node.app.components.QueryInjectionComponent;
+import com.hedera.node.app.fees.FeesInjectionModule;
+import com.hedera.node.app.info.InfoInjectionModule;
+import com.hedera.node.app.metrics.MetricsInjectionModule;
+import com.hedera.node.app.service.mono.LegacyMonoInjectionModule;
 import com.hedera.node.app.service.mono.ServicesApp;
 import com.hedera.node.app.service.mono.context.annotations.BootstrapProps;
 import com.hedera.node.app.service.mono.context.annotations.StaticAccountMemo;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.state.StateModule;
 import com.hedera.node.app.service.mono.utils.NonAtomicReference;
-import com.hedera.node.app.services.ServicesDaggerModule;
-import com.hedera.node.app.solvency.SolvencyDaggerModule;
+import com.hedera.node.app.services.ServicesInjectionModule;
+import com.hedera.node.app.solvency.SolvencyInjectionModule;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.state.HederaStateDaggerModule;
+import com.hedera.node.app.state.HederaStateInjectionModule;
 import com.hedera.node.app.state.WorkingStateAccessor;
-import com.hedera.node.app.throttle.ThrottleDaggerModule;
-import com.hedera.node.app.workflows.WorkflowsDaggerModule;
+import com.hedera.node.app.throttle.ThrottleInjectionModule;
+import com.hedera.node.app.workflows.WorkflowsInjectionModule;
 import com.hedera.node.app.workflows.prehandle.AdaptedMonoEventExpansion;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Hash;
@@ -58,22 +58,22 @@ import javax.inject.Singleton;
 @Singleton
 @Component(
         modules = {
-            LegacyMonoDaggerModule.class,
-            ServicesDaggerModule.class,
-            WorkflowsDaggerModule.class,
-            HederaStateDaggerModule.class,
-            FeesDaggerModule.class,
-            MetricsDaggerModule.class,
-            AuthorizerDaggerModule.class,
-            InfoDaggerModule.class,
-            ThrottleDaggerModule.class,
-            SolvencyDaggerModule.class
+            LegacyMonoInjectionModule.class,
+            ServicesInjectionModule.class,
+            WorkflowsInjectionModule.class,
+            HederaStateInjectionModule.class,
+            FeesInjectionModule.class,
+            MetricsInjectionModule.class,
+            AuthorizerInjectionModule.class,
+            InfoInjectionModule.class,
+            ThrottleInjectionModule.class,
+            SolvencyInjectionModule.class
         })
-public interface HederaApp extends ServicesApp {
+public interface HederaInjectionComponent extends ServicesApp {
     /* Needed by ServicesState */
-    Provider<QueryDaggerComponent.Factory> queryComponentFactory();
+    Provider<QueryInjectionComponent.Factory> queryComponentFactory();
 
-    Provider<IngestDaggerComponent.Factory> ingestComponentFactory();
+    Provider<IngestInjectionComponent.Factory> ingestComponentFactory();
 
     WorkingStateAccessor workingStateAccessor();
 
@@ -110,6 +110,6 @@ public interface HederaApp extends ServicesApp {
         @BindsInstance
         Builder maxSignedTxnSize(@MaxSignedTxnSize final int maxSignedTxnSize);
 
-        HederaApp build();
+        HederaInjectionComponent build();
     }
 }
