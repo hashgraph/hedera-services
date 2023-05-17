@@ -123,8 +123,6 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
     /** the number of active connections this node has to other nodes */
     private final AtomicInteger activeConnectionNumber = new AtomicInteger(0);
 
-    // TODO don't start stuff in the constructor
-
     public AbstractGossip(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,

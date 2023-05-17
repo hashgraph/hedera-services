@@ -88,7 +88,6 @@ import com.swirlds.platform.threading.PauseAndClear;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.apache.commons.lang3.tuple.Pair;
@@ -170,13 +169,12 @@ public class ChatterGossip extends AbstractGossip {
             chatterCore.newPeerInstance(otherId.id(), eventTaskCreator::addEvent);
         }
 
-        // If we still need an emergency recovery state, we need it via emergency reconnect.
-        // Start the helper now so that it is ready to receive a connection to perform reconnect with when the
-        // protocol is initiated.
-        // This must be after all chatter peer instances are created so that the chatter comm state can be suspended
         if (emergencyRecoveryManager.isEmergencyStateRequired()) {
-            // TODO
-            reconnectController.start();
+            // If we still need an emergency recovery state, we need it via emergency reconnect.
+            // Start the helper now so that it is ready to receive a connection to perform reconnect with when the
+            // protocol is initiated.
+            // This must be after all chatter peer instances are created so that the chatter comm state can be suspended
+            thingsToStart.add(reconnectController::start);
         }
 
         intakeCycle = new SequenceCycle<>(eventIntakeLambda);

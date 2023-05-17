@@ -19,7 +19,6 @@ package com.swirlds.platform.gossip.sync;
 import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
-import com.swirlds.base.state.Startable;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.notification.NotificationEngine;
@@ -65,7 +64,6 @@ import com.swirlds.platform.reconnect.ReconnectProtocolResponder;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
@@ -133,7 +131,7 @@ public class LegacySyncGossip extends AbstractGossip {
         syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
 
         final ParallelExecutor shadowgraphExecutor = PlatformConstructor.parallelExecutor(threadManager);
-        shadowgraphExecutor.start(); // TODO don't start this here!
+        thingsToStart.add(shadowgraphExecutor);
         syncShadowgraphSynchronizer = new ShadowGraphSynchronizer(
                 shadowGraph,
                 addressBook.getSize(),

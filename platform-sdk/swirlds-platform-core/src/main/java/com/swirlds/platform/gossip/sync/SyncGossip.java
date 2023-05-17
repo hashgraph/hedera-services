@@ -145,7 +145,7 @@ public class SyncGossip extends AbstractGossip {
         syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
 
         final ParallelExecutor shadowgraphExecutor = PlatformConstructor.parallelExecutor(threadManager);
-        shadowgraphExecutor.start(); // TODO don't start this here!
+        thingsToStart.add(shadowgraphExecutor);
         syncShadowgraphSynchronizer = new ShadowGraphSynchronizer(
                 shadowGraph,
                 addressBook.getSize(),
@@ -167,6 +167,7 @@ public class SyncGossip extends AbstractGossip {
                         Pair.of(shadowGraph, "shadowGraph")));
 
         reconnectController = new ReconnectController(threadManager, reconnectHelper, () -> gossipHalted.set(false));
+        thingsToStart.add(reconnectController::start);
 
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
@@ -175,12 +176,11 @@ public class SyncGossip extends AbstractGossip {
 
         syncPermitProvider = new SyncPermitProvider(syncConfig.syncProtocolPermitCount());
 
-        // If we still need an emergency recovery state, we need it via emergency reconnect.
-        // Start the helper now so that it is ready to receive a connection to perform reconnect with when the
-        // protocol is initiated.
         if (emergencyRecoveryManager.isEmergencyStateRequired()) {
-            // TODO how to handle this?
-            reconnectController.start();
+            // If we still need an emergency recovery state, we need it via emergency reconnect.
+            // Start the helper now so that it is ready to receive a connection to perform reconnect with when the
+            // protocol is initiated.
+            thingsToStart.add(reconnectController::start);
         }
 
         final PeerAgnosticSyncChecks peerAgnosticSyncChecks = new PeerAgnosticSyncChecks(List.of(

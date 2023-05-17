@@ -132,7 +132,7 @@ public class SingleNodeSyncGossip extends AbstractGossip {
         syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
 
         final ParallelExecutor shadowgraphExecutor = PlatformConstructor.parallelExecutor(threadManager);
-        shadowgraphExecutor.start(); // TODO don't start this here!
+        thingsToStart.add(shadowgraphExecutor);
         syncShadowgraphSynchronizer = new ShadowGraphSynchronizer(
                 shadowGraph,
                 addressBook.getSize(),
