@@ -109,6 +109,9 @@ import java.time.temporal.ChronoUnit;
  * @param indexRebuildingEnforced
  * 		Configuration used to avoid reading stored indexes from a saved state and enforce rebuilding those indexes from
  * 		data files.
+ * @param leafRecordCacheSize
+ *      Cache size in bytes for reading virtual leaf records. Initialized in data source creation time from JasperDB
+ *      config. If the value is zero, leaf records cache isn't used.
  */
 @ConfigData("jasperDb")
 public record JasperDbConfig(
