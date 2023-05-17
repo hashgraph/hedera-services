@@ -17,11 +17,10 @@
 package com.swirlds.common.metrics;
 
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
+import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.EnumSet;
-import java.util.Objects;
 import java.util.function.IntBinaryOperator;
 import java.util.function.IntSupplier;
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -65,7 +64,7 @@ public interface IntegerAccumulator extends Metric {
      */
     @Override
     default Integer get(final ValueType valueType) {
-        Objects.requireNonNull(valueType);
+        throwArgNull(valueType, "valueType");
         if (valueType == VALUE) {
             return get();
         }
@@ -140,7 +139,7 @@ public interface IntegerAccumulator extends Metric {
                 final int initialValue) {
 
             super(category, name, description, unit, format);
-            this.accumulator = Objects.requireNonNull(accumulator);
+            this.accumulator = throwArgNull(accumulator, "accumulator");
             this.initializer = initializer;
             this.initialValue = initialValue;
         }
@@ -247,9 +246,7 @@ public interface IntegerAccumulator extends Metric {
          * 		the initializer
          * @return a new configuration-object with updated {@code initializer}
          */
-        public IntegerAccumulator.Config withInitializer(@NonNull final IntSupplier initializer) {
-            Objects.requireNonNull(initializer);
-
+        public IntegerAccumulator.Config withInitializer(final IntSupplier initializer) {
             return new IntegerAccumulator.Config(
                     getCategory(),
                     getName(),
@@ -257,7 +254,7 @@ public interface IntegerAccumulator extends Metric {
                     getUnit(),
                     getFormat(),
                     getAccumulator(),
-                    initializer,
+                    throwArgNull(initializer, "initializer"),
                     getInitialValue());
         }
 

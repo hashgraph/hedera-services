@@ -176,7 +176,9 @@ class DefaultIntegerAccumulatorTest {
 
         // then
         assertThrows(
-                NullPointerException.class, () -> accumulator.get(null), "Calling get() with null should throw an IAE");
+                IllegalArgumentException.class,
+                () -> accumulator.get(null),
+                "Calling get() with null should throw an IAE");
         assertThrows(
                 IllegalArgumentException.class,
                 () -> accumulator.get(Metric.ValueType.MIN),

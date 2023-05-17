@@ -17,10 +17,10 @@
 package com.swirlds.common.metrics;
 
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
+import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import java.util.EnumSet;
-import java.util.Objects;
 import java.util.function.LongBinaryOperator;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
@@ -63,7 +63,7 @@ public interface LongAccumulator extends Metric {
      */
     @Override
     default Long get(final ValueType valueType) {
-        Objects.requireNonNull(valueType);
+        throwArgNull(valueType, "valueType");
         if (valueType == VALUE) {
             return get();
         }
@@ -134,7 +134,7 @@ public interface LongAccumulator extends Metric {
                 final long initialValue) {
 
             super(category, name, description, unit, format);
-            this.accumulator = Objects.requireNonNull(accumulator);
+            this.accumulator = throwArgNull(accumulator, "accumulator");
             this.initialValue = initialValue;
         }
 

@@ -17,10 +17,10 @@
 package com.swirlds.common.metrics;
 
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
+import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import java.util.EnumSet;
-import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.IntBinaryOperator;
 import java.util.function.IntSupplier;
@@ -58,7 +58,7 @@ public interface IntegerPairAccumulator<T> extends Metric {
      */
     @Override
     default T get(final ValueType valueType) {
-        Objects.requireNonNull(valueType);
+        throwArgNull(valueType, "valueType");
         if (valueType == VALUE) {
             return get();
         }
@@ -133,8 +133,8 @@ public interface IntegerPairAccumulator<T> extends Metric {
                 final BiFunction<Integer, Integer, T> resultFunction) {
 
             super(category, name, "%s");
-            this.type = Objects.requireNonNull(type);
-            this.resultFunction = Objects.requireNonNull(resultFunction);
+            this.type = throwArgNull(type, "type");
+            this.resultFunction = throwArgNull(resultFunction, "resultFunction");
             this.leftAccumulator = Integer::sum;
             this.rightAccumulator = Integer::sum;
             this.leftInitializer = DEFAULT_INITIALIZER;
@@ -155,12 +155,12 @@ public interface IntegerPairAccumulator<T> extends Metric {
                 final IntSupplier rightInitializer) {
 
             super(category, name, description, unit, format);
-            this.type = Objects.requireNonNull(type);
-            this.resultFunction = Objects.requireNonNull(resultFunction);
-            this.leftAccumulator = Objects.requireNonNull(leftAccumulator);
-            this.rightAccumulator = Objects.requireNonNull(rightAccumulator);
-            this.leftInitializer = Objects.requireNonNull(leftInitializer);
-            this.rightInitializer = Objects.requireNonNull(rightInitializer);
+            this.type = throwArgNull(type, "type");
+            this.resultFunction = throwArgNull(resultFunction, "resultFunction");
+            this.leftAccumulator = throwArgNull(leftAccumulator, "leftAccumulator");
+            this.rightAccumulator = throwArgNull(rightAccumulator, "rightAccumulator");
+            this.leftInitializer = throwArgNull(leftInitializer, "leftInitializer");
+            this.rightInitializer = throwArgNull(rightInitializer, "rightInitializer");
         }
 
         /**
