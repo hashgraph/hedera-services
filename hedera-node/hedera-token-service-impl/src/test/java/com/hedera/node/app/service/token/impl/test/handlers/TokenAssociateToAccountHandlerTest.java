@@ -44,7 +44,7 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOU
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.BDDMockito.*;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -233,7 +233,8 @@ class TokenAssociateToAccountHandlerTest {
 
         @Test
         void exceedsTokenAssociationLimit() {
-            // There are already 3 tokens already associated with the account we're putting in the transaction, so we
+            // There are already 3 tokens already associated with the account we're putting in
+            // the transaction, so we
             // need maxTokensPerAccount to be at least 3
             final var context = mockConfigContext(1000L, 3L);
             final var txn = newAssociateTxn(toPbj(KNOWN_TOKEN_IMMUTABLE));
@@ -257,10 +258,18 @@ class TokenAssociateToAccountHandlerTest {
 
         @Test
         void tokensAssociateToAccountWithNoTokenRels() {
-            final var context = mockConfigContext();
+            // Mock config context to allow unlimited token associations
+            var context = mock(HandleContext.class);
+            final var config = mock(Configuration.class);
+            given(context.getConfiguration()).willReturn(config);
+            given(config.getValue("areTokenAssociationsLimited", Boolean.class)).willReturn(false);
+            given(config.getValue("maxNumTokenRels", Long.class)).willReturn(1000L);
+            // Set maxTokensPerAccount to a value that will fail if areTokenAssociationsLimited
+            // is incorrectly ignored
+            given(config.getValue("maxTokensPerAccount", Long.class)).willReturn(0L);
+            // Put a new account into the account store that has no tokens associated with it
             final var newAcctNum = 12345L;
             final var newAcctId = AccountID.newBuilder().accountNum(newAcctNum).build();
-            // put a new account into the account store that has no tokens associated with it
             writableAccountStore.put(Account.newBuilder()
                     .accountNumber(newAcctNum)
                     .headTokenNumber(0)
@@ -286,6 +295,8 @@ class TokenAssociateToAccountHandlerTest {
             Assertions.assertThat(headTokenRel.frozen()).isFalse();
             Assertions.assertThat(headTokenRel.kycGranted()).isFalse();
             Assertions.assertThat(headTokenRel.previousToken()).isNotPositive();
+            Assertions.assertThat(headTokenRel.tokenNumber())
+                    .isEqualTo(KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY.getTokenNum());
             Assertions.assertThat(headTokenRel.nextToken()).isEqualTo(KNOWN_TOKEN_WITH_WIPE.getTokenNum());
             final var nextToHeadTokenRel = writableTokenRelStore
                     .get(newAcctNum, headTokenRel.nextToken())
@@ -294,6 +305,7 @@ class TokenAssociateToAccountHandlerTest {
             Assertions.assertThat(nextToHeadTokenRel.kycGranted()).isFalse();
             Assertions.assertThat(nextToHeadTokenRel.previousToken())
                     .isEqualTo(KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY.getTokenNum());
+            Assertions.assertThat(nextToHeadTokenRel.tokenNumber()).isEqualTo(KNOWN_TOKEN_WITH_WIPE.getTokenNum());
             Assertions.assertThat(nextToHeadTokenRel.nextToken()).isNotPositive();
         }
 
@@ -358,7 +370,8 @@ class TokenAssociateToAccountHandlerTest {
             Assertions.assertThat(nextToHeadTokenRel.tokenNumber()).isEqualTo(KNOWN_TOKEN_WITH_KYC.getTokenNum());
             Assertions.assertThat(nextToHeadTokenRel.nextToken()).isEqualTo(KNOWN_TOKEN_WITH_WIPE.getTokenNum());
             Assertions.assertThat(nextToHeadTokenRel.frozen()).isFalse();
-            // Note: this token doesn't actually have a KYC key even though its name implies that it does
+            // Note: this token doesn't actually have a KYC key even though its name implies that
+            // it does
             Assertions.assertThat(nextToHeadTokenRel.kycGranted()).isFalse();
             Assertions.assertThat(nextToHeadTokenRel.automaticAssociation()).isFalse();
 
@@ -403,7 +416,12 @@ class TokenAssociateToAccountHandlerTest {
             var handleContext = mock(HandleContext.class);
             final var config = mock(Configuration.class);
             given(handleContext.getConfiguration()).willReturn(config);
-            given(config.getValue("maxNumTokenRels", Long.class)).willReturn(maxNumTokenRels);
+            Mockito.lenient()
+                    .when(config.getValue("areTokenAssociationsLimited", Boolean.class))
+                    .thenReturn(true);
+            Mockito.lenient()
+                    .when(config.getValue("maxNumTokenRels", Long.class))
+                    .thenReturn(maxNumTokenRels);
             Mockito.lenient()
                     .when(config.getValue("maxTokensPerAccount", Long.class))
                     .thenReturn(maxTokensPerAccount);

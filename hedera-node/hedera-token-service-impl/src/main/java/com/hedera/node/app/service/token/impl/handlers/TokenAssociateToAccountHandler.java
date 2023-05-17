@@ -80,10 +80,10 @@ public class TokenAssociateToAccountHandler implements TransactionHandler {
      * <p>
      * Associates a token with an account, making various token operations possible with the account
      *
-     * @param txn the {@link TokenAssociateTransactionBody} for the active transaction
-     * @param context the {@link HandleContext} for the active transaction
-     * @param accountStore the {@link WritableAccountStore} for the active transaction
-     * @param tokenStore the {@link ReadableTokenStore} for the active transaction
+     * @param txn           the {@link TokenAssociateTransactionBody} for the active transaction
+     * @param context       the {@link HandleContext} for the active transaction
+     * @param accountStore  the {@link WritableAccountStore} for the active transaction
+     * @param tokenStore    the {@link ReadableTokenStore} for the active transaction
      * @param tokenRelStore the {@link WritableTokenRelationStore} for the active transaction
      * @throws NullPointerException if one of the arguments is {@code null}
      */
@@ -151,16 +151,22 @@ public class TokenAssociateToAccountHandler implements TransactionHandler {
             newTokenRels.add(newTokenRel);
         }
 
-        // Now all the NEW token relations are linked together, but they are not yet linked to the account. First,
-        // compute where the account's current head token number should go in the linked list of tokens
+        // Now all the NEW token relations are linked together, but they are not yet linked to
+        // the account. First,
+        // compute where the account's current head token number should go in the linked list of
+        // tokens
         final var currentHeadTokenNum = account.headTokenNumber();
-        // NOTE: if currentHeadTokenNum is less than 1, it means the account isn't associated with any tokens yet, so
-        // we'll just set the head to the first token, i.e. the first token ID list from the transaction (since the new
-        // tokenRels are all linked, and in the order of the token IDs as they appeared in the original list)
+        // NOTE: if currentHeadTokenNum is less than 1, it means the account isn't associated
+        // with any tokens yet, so
+        // we'll just set the head to the first token, i.e. the first token ID list from the
+        // transaction (since the new
+        // tokenRels are all linked, and in the order of the token IDs as they appeared in the
+        // original list)
         if (currentHeadTokenNum >= 1) {
             // The account is already associated with some tokens, so we need to insert the new
             // tokenRels at the beginning of the list of existing token numbers first. We start by
-            // retrieving the token rel object with the currentHeadTokenNum at the head of the account
+            // retrieving the token rel object with the currentHeadTokenNum at the head of the
+            // account
             final var headTokenRel = tokenRelStore
                     .get(account.accountNumber(), currentHeadTokenNum)
                     .orElse(null);
@@ -210,8 +216,6 @@ public class TokenAssociateToAccountHandler implements TransactionHandler {
         }
     }
 
-    private record Validated(@NonNull Account account, @NonNull List<Token> tokens) {}
-
     /**
      * Performs checks that require state and context
      */
@@ -246,10 +250,9 @@ public class TokenAssociateToAccountHandler implements TransactionHandler {
         }
 
         // Check that the total number of old and new token IDs wouldn't be bigger than
-        // the max number of token associations allowed per account
-        final var numAssociations = requireNonNull(account).numberAssociations();
-        final var maxTokensPerAccount = config.getValue("maxTokensPerAccount", Long.class);
-        validateTrue(numAssociations + tokenIds.size() <= maxTokensPerAccount, TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
+        // the max number of token associations allowed per account (if the rel limit is enabled)
+        validateTrue(
+                maxAccountAssociationsAllowTokenRels(config, account, tokenIds), TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
 
         // Check that a token rel doesn't already exist for each new token ID
         for (final TokenID tokenId : tokenIds) {
@@ -266,4 +269,18 @@ public class TokenAssociateToAccountHandler implements TransactionHandler {
             final int numNewTokenRels, WritableTokenRelationStore tokenRelStore, long maxNumTokenRels) {
         return tokenRelStore.sizeOfState() + numNewTokenRels <= maxNumTokenRels;
     }
+
+    /**
+     * Method that checks if the number of token associations for the given account is within the
+     * allowable limit set by the config (if the limit is enabled)
+     */
+    private boolean maxAccountAssociationsAllowTokenRels(
+            @NonNull Configuration config, @NonNull Account account, @NonNull List<TokenID> tokenIds) {
+        final var numAssociations = requireNonNull(account).numberAssociations();
+        final var tokenAssociationsLimited = config.getValue("areTokenAssociationsLimited", Boolean.class);
+        final var maxTokensPerAccount = config.getValue("maxTokensPerAccount", Long.class);
+        return !tokenAssociationsLimited || (numAssociations + tokenIds.size() <= maxTokensPerAccount);
+    }
+
+    private record Validated(@NonNull Account account, @NonNull List<Token> tokens) {}
 }
