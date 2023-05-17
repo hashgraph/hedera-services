@@ -42,7 +42,7 @@ public class MTModifyTest {
             final TestKey virtualPutKey = new TestKey(i);
             final String rawPutValue = String.valueOf(rand.nextInt());
             final TestValue virtualPutValue = new TestValue(rawPutValue);
-            cache.putLeaf(new VirtualLeafRecord<>(i, null, virtualPutKey, virtualPutValue));
+            cache.putLeaf(new VirtualLeafRecord<>(i, virtualPutKey, virtualPutValue));
         }
         final int threads = 5;
         // Run multiple iterations, as multi-threading issues are sometimes hard to catch

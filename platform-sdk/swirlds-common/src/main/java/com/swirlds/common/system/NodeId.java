@@ -29,6 +29,9 @@ public record NodeId(long id) implements Comparable<NodeId> {
     /** The first allowed Node ID. */
     public static final long LOWEST_NODE_NUMBER = 0L;
 
+    /** The first NodeId. */
+    public static final NodeId FIRST_NODE_ID = new NodeId(LOWEST_NODE_NUMBER);
+
     /**
      * Constructs a NodeId object with the given ID number.  The ID number must be non-negative.
      *

@@ -56,12 +56,10 @@ import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.PlatformStatus;
-import com.swirlds.common.system.PlatformWithDeprecatedMethods;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.events.PlatformEvent;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.common.system.transaction.internal.SystemTransaction;
 import com.swirlds.common.threading.SyncPermitProvider;
@@ -226,12 +224,9 @@ import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -243,13 +238,11 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods, ConnectionTracker, Startable {
+public class SwirldsPlatform implements Platform, ConnectionTracker, Startable {
 
     public static final String PLATFORM_THREAD_POOL_NAME = "platform-core";
     /** use this for all logging, as controlled by the optional data/log4j2.xml file */
     private static final Logger logger = LogManager.getLogger(SwirldsPlatform.class);
-    /** alert threshold for java app pause */
-    private static final long PAUSE_ALERT_INTERVAL = 5000;
     /**
      * the ID of the member running this. Since a node can be a main node or a mirror node, the ID is not a primitive
      * value
@@ -329,8 +322,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     private SharedConnectionLocks sharedConnectionLocks;
 
     private final StateManagementComponent stateManagementComponent;
-    /** last time stamp when pause check timer is active */
-    private long pauseCheckTimeStamp;
     /** Tracks recent events created in the network */
     private final CriticalQuorum criticalQuorum;
 
@@ -1275,29 +1266,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         metrics.start();
 
-        if (settings.isRunPauseCheckTimer()) {
-            // periodically check current time stamp to detect whether the java application
-            // has been paused for a long period
-            final Timer pauseCheckTimer = new Timer("pause check", true);
-            pauseCheckTimer.schedule(
-                    new TimerTask() {
-                        @Override
-                        public void run() {
-                            final long currentTimeStamp = System.currentTimeMillis();
-                            if ((currentTimeStamp - pauseCheckTimeStamp) > PAUSE_ALERT_INTERVAL
-                                    && pauseCheckTimeStamp != 0) {
-                                logger.error(
-                                        EXCEPTION.getMarker(),
-                                        "ERROR, a pause larger than {} is detected ",
-                                        PAUSE_ALERT_INTERVAL);
-                            }
-                            pauseCheckTimeStamp = currentTimeStamp;
-                        }
-                    },
-                    0,
-                    PAUSE_ALERT_INTERVAL / 2);
-        }
-
         // FUTURE WORK: validate that status is still STARTING_UP (sanity check until we refactor platform status)
         // FUTURE WORK: set platform status REPLAYING_EVENTS
         // FUTURE WORK: replay the preconsensus event stream
@@ -1790,43 +1758,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     /**
      * {@inheritDoc}
      */
-    @Deprecated(forRemoval = true)
-    @Override
-    public PlatformEvent[] getAllEvents() {
-        // There is currently a race condition that can cause an exception if event order changes at
-        // just the right moment. Since this is just a testing utility method and not used in production
-        // environments, we can just retry until we succeed.
-        int maxRetries = 100;
-        while (maxRetries-- > 0) {
-            try {
-                final EventImpl[] allEvents = shadowGraph.getAllEvents();
-                Arrays.sort(allEvents, (o1, o2) -> {
-                    if (o1.getConsensusOrder() != -1 && o2.getConsensusOrder() != -1) {
-                        // both are consensus
-                        return Long.compare(o1.getConsensusOrder(), o2.getConsensusOrder());
-                    } else if (o1.getConsensusTimestamp() == null && o2.getConsensusTimestamp() == null) {
-                        // neither are consensus
-                        return o1.getTimeReceived().compareTo(o2.getTimeReceived());
-                    } else {
-                        // one is consensus, the other is not
-                        if (o1.getConsensusTimestamp() == null) {
-                            return 1;
-                        } else {
-                            return -1;
-                        }
-                    }
-                });
-                return allEvents;
-            } catch (final IllegalArgumentException e) {
-                logger.error(EXCEPTION.getMarker(), "Exception while sorting events", e);
-            }
-        }
-        throw new IllegalStateException("Unable to sort events after 100 retries");
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public PlatformContext getContext() {
         return platformContext;
@@ -1854,24 +1785,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     @Override
     public AddressBook getAddressBook() {
         return initialAddressBook;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Deprecated(forRemoval = true)
-    @Override
-    public <T extends SwirldState> T getState() {
-        return (T) swirldStateManager.getCurrentSwirldState();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Deprecated(forRemoval = true)
-    @Override
-    public void releaseState() {
-        swirldStateManager.releaseCurrentSwirldState();
     }
 
     /**

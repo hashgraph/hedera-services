@@ -37,7 +37,7 @@ public final class SmartContractMapKeySerializer implements KeySerializer<SmartC
      * {@inheritDoc}
      */
     @Override
-    public int getSerializedSize() {
+    public int getSerializedSize(long dataVersion) {
         return SmartContractMapKey.getSizeInBytes();
     }
 

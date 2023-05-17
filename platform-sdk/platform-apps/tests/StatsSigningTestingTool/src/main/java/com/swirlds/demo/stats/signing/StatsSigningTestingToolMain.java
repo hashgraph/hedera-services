@@ -37,7 +37,6 @@ import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.PlatformWithDeprecatedMethods;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.threading.framework.StoppableThread;
@@ -153,11 +152,6 @@ public class StatsSigningTestingToolMain implements SwirldMain {
 
     @Override
     public void init(final Platform platform, final NodeId id) {
-
-        if (!(platform instanceof PlatformWithDeprecatedMethods)) {
-            // Don't bother with setup while in recovery mode
-            return;
-        }
 
         this.platform = platform;
         selfId = id.id();

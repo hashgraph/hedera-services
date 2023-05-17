@@ -19,7 +19,6 @@ package com.swirlds.virtual.merkle.reconnect;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.crypto.DigestType;
 import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
 import com.swirlds.jasperdb.files.DataFileCommon;
@@ -43,8 +42,6 @@ public class VirtualMapJPDBReconnectTestBase extends VirtualMapReconnectTestBase
         return new JasperDbBuilder<TestKey, TestValue>()
                 .keySerializer(new TestKeySerializer())
                 .virtualLeafRecordSerializer(new VirtualLeafRecordSerializer<>(
-                        (short) 1,
-                        DigestType.SHA_384,
                         (short) 1,
                         TestKey.BYTES,
                         new TestKeySerializer(),
