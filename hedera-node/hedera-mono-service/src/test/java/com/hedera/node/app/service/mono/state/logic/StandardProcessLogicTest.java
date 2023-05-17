@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono.state.logic;
 
+import static com.hedera.node.app.service.mono.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.mockito.ArgumentMatchers.any;
@@ -43,6 +44,7 @@ import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
+import com.swirlds.common.system.SoftwareVersion;
 import java.time.Instant;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -108,6 +110,7 @@ class StandardProcessLogicTest {
 
     @LoggingSubject
     private StandardProcessLogic subject;
+    private SoftwareVersion eventVersion = SEMANTIC_VERSIONS.deployedSoftwareVersion();
 
     @BeforeEach
     void setUp() {
@@ -232,7 +235,7 @@ class StandardProcessLogicTest {
     void warnsOnNonGrpc() throws InvalidProtocolBufferException {
         given(expandHandleSpan.accessorFor(null)).willThrow(InvalidProtocolBufferException.class);
 
-        subject.incorporateConsensusTxn(null, member);
+        subject.incorporateConsensusTxn(null, member, eventVersion);
 
         assertThat(logCaptor.warnLogs(), contains(Matchers.startsWith("Consensus platform txn was not gRPC!")));
     }
@@ -241,7 +244,7 @@ class StandardProcessLogicTest {
     void logsAtErrorForUnhandledInternalProcessFailure() throws InvalidProtocolBufferException {
         given(expandHandleSpan.accessorFor(null)).willThrow(IllegalStateException.class);
 
-        subject.incorporateConsensusTxn(null, member);
+        subject.incorporateConsensusTxn(null, member, eventVersion);
 
         assertThat(logCaptor.errorLogs(), contains(Matchers.startsWith("Unhandled internal process failure")));
     }

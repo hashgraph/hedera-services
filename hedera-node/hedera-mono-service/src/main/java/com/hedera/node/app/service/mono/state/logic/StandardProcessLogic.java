@@ -16,7 +16,9 @@
 
 package com.hedera.node.app.service.mono.state.logic;
 
+import static com.hedera.node.app.service.mono.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
 import static com.hedera.node.app.service.mono.utils.Units.MIN_TRANS_TIMESTAMP_INCR_NANOS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.context.TransactionContext;
@@ -31,7 +33,10 @@ import com.hedera.node.app.service.mono.txns.schedule.ScheduleProcessing;
 import com.hedera.node.app.service.mono.txns.span.ExpandHandleSpan;
 import com.hedera.node.app.service.mono.utils.accessors.SwirldsTxnAccessor;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -84,7 +89,13 @@ public class StandardProcessLogic implements ProcessLogic {
     }
 
     @Override
-    public void incorporateConsensusTxn(ConsensusTransaction platformTxn, long submittingMember) {
+    public void incorporateConsensusTxn(@NonNull final ConsensusTransaction platformTxn, final long submittingMember,
+            @NonNull final SoftwareVersion softwareVersion) {
+        // Don't handle old events
+        if (softwareVersion.compareTo(SEMANTIC_VERSIONS.deployedSoftwareVersion()) != 0) {
+            txnCtx.setStatus(BUSY);
+            return;
+        }
         try {
             final var accessor = expandHandleSpan.accessorFor(platformTxn);
             incorporate(accessor, platformTxn.getConsensusTimestamp(), submittingMember);
