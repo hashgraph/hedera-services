@@ -86,8 +86,8 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     void handleWorksAsExpectedForFungibleToken() {
         // before fee schedule update, validate no custom fees on the token
         final var originalToken = writableTokenStore.get(fungibleTokenNum.longValue());
-        assertThat(originalToken.get().customFees()).hasSize(0);
-        assertThat(writableTokenStore.modifiedTokens()).hasSize(0);
+        assertThat(originalToken.get().customFees()).isEmpty();
+        assertThat(writableTokenStore.modifiedTokens()).isEmpty();
 
         subject.handle(context, txn, writableTokenStore);
 
@@ -115,8 +115,8 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
 
         // before fee schedule update, validate no custom fees on the token
         final var originalToken = writableTokenStore.get(nonFungibleTokenNum.longValue());
-        assertThat(originalToken.get().customFees()).hasSize(0);
-        assertThat(writableTokenStore.modifiedTokens()).hasSize(0);
+        assertThat(originalToken.get().customFees()).isEmpty();
+        assertThat(writableTokenStore.modifiedTokens()).isEmpty();
 
         subject.handle(context, txn, writableTokenStore);
 

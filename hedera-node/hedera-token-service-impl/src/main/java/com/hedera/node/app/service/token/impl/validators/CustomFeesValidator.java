@@ -43,7 +43,9 @@ import javax.inject.Inject;
  */
 public class CustomFeesValidator {
     @Inject
-    public CustomFeesValidator() {}
+    public CustomFeesValidator() {
+        // Needed for Dagger injection
+    }
 
     /**
      * Validates custom fees for {@code TokenCreate} operation.This returns list of custom
@@ -64,6 +66,7 @@ public class CustomFeesValidator {
             @NonNull final ReadableTokenRelationStore tokenRelationStore,
             @NonNull final WritableTokenStore tokenStore,
             @NonNull final List<CustomFee> customFees) {
+        // This method will be implemented in TokenCreate handler PR
         throw new UnsupportedOperationException("Not implemented yet. Will be implemented in TokenCreate PR");
     }
 
