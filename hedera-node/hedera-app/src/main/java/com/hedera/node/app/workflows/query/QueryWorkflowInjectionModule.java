@@ -18,7 +18,7 @@ package com.hedera.node.app.workflows.query;
 
 import com.hedera.hapi.node.base.ResponseType;
 import com.hedera.hapi.node.transaction.Query;
-import com.hedera.node.app.components.QueryComponent;
+import com.hedera.node.app.components.QueryInjectionComponent;
 import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.fees.MonoFeeAccumulator;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusHandlers;
@@ -41,8 +41,8 @@ import javax.inject.Singleton;
 /**
  * Module for Query processing.
  */
-@Module(subcomponents = {QueryComponent.class})
-public interface QueryWorkflowModule {
+@Module(subcomponents = {QueryInjectionComponent.class})
+public interface QueryWorkflowInjectionModule {
     @Binds
     @Singleton
     QueryWorkflow bindQueryWorkflow(QueryWorkflowImpl queryWorkflow);
@@ -58,7 +58,7 @@ public interface QueryWorkflowModule {
             @NonNull final Platform platform) {
         // Always return the latest immutable state until we support state proofs
         return responseType ->
-                (AutoCloseableWrapper) platform.getLatestImmutableState(QueryWorkflowModule.class.getName());
+                (AutoCloseableWrapper) platform.getLatestImmutableState(QueryWorkflowInjectionModule.class.getName());
     }
 
     @Provides

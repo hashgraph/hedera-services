@@ -14,20 +14,15 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.components;
+package com.hedera.node.app.throttle;
 
-import com.hedera.node.app.workflows.ingest.IngestWorkflow;
-import dagger.Subcomponent;
+import dagger.Binds;
+import dagger.Module;
+import javax.inject.Singleton;
 
-/**
- * A Dagger subcomponent that provides the Ingest workflow.
- */
-@Subcomponent
-public interface IngestComponent {
-    IngestWorkflow ingestWorkflow();
-
-    @Subcomponent.Factory
-    interface Factory {
-        IngestComponent create();
-    }
+@Module
+public interface ThrottleInjectionModule {
+    @Binds
+    @Singleton
+    ThrottleAccumulator bindThrottleAccumulator(MonoThrottleAccumulator throttleAccumulator);
 }

@@ -25,10 +25,10 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.workflows.TransactionInfo;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -152,21 +152,21 @@ public record PreHandleResult(
 
     /**
      * Look for a {@link SignatureVerification} that applies to the given hollow account.
-     * @param hollowAccount The hollow account to lookup verification for.
+     * @param evmAlias The evm alias to lookup verification for.
      * @return The {@link SignatureVerification} for the given hollow account.
      */
     @NonNull
-    public Future<SignatureVerification> verificationFor(@NonNull final Account hollowAccount) {
-        requireNonNull(hollowAccount);
-        if (verificationResults != null) {
+    public Future<SignatureVerification> verificationFor(@NonNull final Bytes evmAlias) {
+        requireNonNull(evmAlias);
+        if (verificationResults != null && evmAlias.length() == 20) {
             for (final var result : verificationResults.values()) {
-                final var account = result.hollowAccount();
-                if (account != null && account.accountNumber() == hollowAccount.accountNumber()) {
+                final var account = result.evmAlias();
+                if (account != null && evmAlias.matchesPrefix(account)) {
                     return result;
                 }
             }
         }
-        return failedVerificationFuture(hollowAccount);
+        return failedVerificationFuture(evmAlias);
     }
 
     /**
@@ -242,7 +242,7 @@ public record PreHandleResult(
 
     /** Convenience method to create a SignatureVerification for a hollow account that failed */
     @NonNull
-    private static Future<SignatureVerification> failedVerificationFuture(@NonNull final Account hollowAccount) {
+    private static Future<SignatureVerification> failedVerificationFuture(@NonNull final Bytes evmAlias) {
         return completedFuture(new SignatureVerification() {
             @Nullable
             @Override
@@ -252,8 +252,8 @@ public record PreHandleResult(
 
             @NonNull
             @Override
-            public Account hollowAccount() {
-                return hollowAccount;
+            public Bytes evmAlias() {
+                return evmAlias;
             }
 
             @Override
