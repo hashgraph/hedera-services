@@ -28,7 +28,7 @@ import java.io.IOException;
  *
  * @deprecated to be removed once we no longer have to migrate events that may contain this transaction type
  */
-@Deprecated
+@Deprecated(forRemoval = true)
 public final class SystemTransactionPing extends SystemTransaction {
     /** class identifier for the purposes of serialization */
     private static final long PING_CLASS_ID = 0xe98d3e2c500a6647L;
