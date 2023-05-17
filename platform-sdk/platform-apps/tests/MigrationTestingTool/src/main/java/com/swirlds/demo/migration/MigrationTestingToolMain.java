@@ -59,7 +59,7 @@ public class MigrationTestingToolMain implements SwirldMain {
     private double toCreate = 0;
     private long lastEventTime = System.nanoTime();
 
-    private static final BasicSoftwareVersion softwareVersion = new BasicSoftwareVersion(1);
+    public static final BasicSoftwareVersion SOFTWARE_VERSION = new BasicSoftwareVersion(1);
 
     /**
      * {@inheritDoc}
@@ -173,6 +173,6 @@ public class MigrationTestingToolMain implements SwirldMain {
      */
     @Override
     public BasicSoftwareVersion getSoftwareVersion() {
-        return softwareVersion;
+        return SOFTWARE_VERSION;
     }
 }

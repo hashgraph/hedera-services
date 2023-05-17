@@ -17,6 +17,7 @@
 package com.swirlds.demo.migration;
 
 import static com.swirlds.demo.migration.MigrationTestingToolMain.MARKER;
+import static com.swirlds.demo.migration.MigrationTestingToolMain.SOFTWARE_VERSION;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.merkle.MerkleInternal;
@@ -47,6 +48,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -245,7 +247,7 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
         }
 
         // FUTURE WORK: this needs to be updated once we create the next saved state for the MigrationTestingTool
-        if (previousSoftwareVersion != SoftwareVersion.NO_VERSION) {
+        if (!Objects.equals(previousSoftwareVersion, SOFTWARE_VERSION)) {
             logger.error(
                     MARKER,
                     "previousSoftwareVersion was {} when expecting SoftwareVersion.NO_VERSION",
