@@ -49,7 +49,7 @@ public class SwirldStateManagerImplTests {
         swirldStateManagerImpl = new SwirldStateManagerImpl(
                 TestPlatformContextBuilder.create().build(),
                 addressBook,
-                new NodeId(false, 0L),
+                new NodeId(0L),
                 mock(PreConsensusSystemTransactionManager.class),
                 mock(PostConsensusSystemTransactionManager.class),
                 mock(SwirldStateMetrics.class),

@@ -51,27 +51,27 @@ public class JasperDbStatistics {
     private SpeedometerMetric leafByKeyReadsPerSecond;
     private SpeedometerMetric leafByPathReadsPerSecond;
 
-    private IntegerGauge internalHashesStoreFileCount;
-    private DoubleGauge internalHashesStoreTotalFileSizeInMB;
+    private IntegerGauge pathToHashStoreFileCount;
+    private DoubleGauge pathToHashTotalFileSizeInMB;
 
     private IntegerGauge leafKeyToPathStoreFileCount;
 
     private DoubleGauge leafKeyToPathStoreTotalFileSizeInMB;
 
-    private IntegerGauge leafPathToHashKeyValueStoreFileCount;
+    private IntegerGauge pathToKeyValueStoreFileCount;
 
-    private DoubleGauge leafPathToHashKeyValueStoreTotalFileSizeInMB;
+    private DoubleGauge pathToKeyValueStoreTotalFileSizeInMB;
 
-    private DoubleGauge internalHashesStoreSmallMergeTime;
+    private DoubleGauge pathToHashSmallMergeTime;
 
-    private DoubleGauge internalHashesStoreMediumMergeTime;
-    private DoubleGauge internalHashesStoreLargeMergeTime;
+    private DoubleGauge pathToHashMediumMergeTime;
+    private DoubleGauge pathToHashLargeMergeTime;
     private DoubleGauge leafKeyToPathStoreSmallMergeTime;
     private DoubleGauge leafKeyToPathStoreMediumMergeTime;
     private DoubleGauge leafKeyToPathStoreLargeMergeTime;
-    private DoubleGauge leafPathToHashKeyValueStoreSmallMergeTime;
-    private DoubleGauge leafPathToHashKeyValueStoreMediumMergeTime;
-    private DoubleGauge leafPathToHashKeyValueStoreLargeMergeTime;
+    private DoubleGauge pathToKeyValueStoreSmallMergeTime;
+    private DoubleGauge pathToKeyValueStoreMediumMergeTime;
+    private DoubleGauge pathToKeyValueStoreLargeMergeTime;
 
     /**
      * Create a new statistics object for a JPDB instances.
@@ -121,10 +121,10 @@ public class JasperDbStatistics {
                 metrics, "leafByKeyReads/s_" + label, "number of leaf by key reads per second for " + label);
         leafByPathReadsPerSecond = buildSpeedometerMetric(
                 metrics, "leafByPathReads/s_" + label, "number of leaf by path reads per second for " + label);
-        internalHashesStoreFileCount =
+        pathToHashStoreFileCount =
                 metrics.getOrCreate(new IntegerGauge.Config(STAT_CATEGORY, "internalHashFileCount_" + label)
                         .withDescription(NUMBER_OF_FILES_PREFIX + INTERNAL_HASHES_STORE_MIDDLE + label + SUFFIX));
-        internalHashesStoreTotalFileSizeInMB = buildDoubleGauge(
+        pathToHashTotalFileSizeInMB = buildDoubleGauge(
                 metrics,
                 "internalHashFileSizeMb_" + label,
                 TOTAL_FILES_SIZE_PREFIX + INTERNAL_HASHES_STORE_MIDDLE + label + SUFFIX);
@@ -137,22 +137,22 @@ public class JasperDbStatistics {
                     "leafKeyToPathFileSizeMb_" + label,
                     TOTAL_FILES_SIZE_PREFIX + LEAF_KEY_TO_PATH_STORE_MIDDLE + label + SUFFIX);
         }
-        leafPathToHashKeyValueStoreFileCount =
+        pathToKeyValueStoreFileCount =
                 metrics.getOrCreate(new IntegerGauge.Config(STAT_CATEGORY, "leafHKVFileCount_" + label)
                         .withDescription(NUMBER_OF_FILES_PREFIX + LEAF_PATH_TO_HKV_STORE_MIDDLE + label + SUFFIX));
-        leafPathToHashKeyValueStoreTotalFileSizeInMB = buildDoubleGauge(
+        pathToKeyValueStoreTotalFileSizeInMB = buildDoubleGauge(
                 metrics,
                 "leafHKVFileSizeMb_" + label,
                 TOTAL_FILES_SIZE_PREFIX + LEAF_PATH_TO_HKV_STORE_MIDDLE + label + SUFFIX);
-        internalHashesStoreSmallMergeTime = buildDoubleGauge(
+        pathToHashSmallMergeTime = buildDoubleGauge(
                 metrics,
                 "internalHashSmallMergeTime_" + label,
                 SMALL_MERGE_PREFIX + INTERNAL_HASHES_STORE_MIDDLE + label + MERGE_SUFFIX);
-        internalHashesStoreMediumMergeTime = buildDoubleGauge(
+        pathToHashMediumMergeTime = buildDoubleGauge(
                 metrics,
                 "internalHashMediumMergeTime_" + label,
                 MEDIUM_MERGE_PREFIX + INTERNAL_HASHES_STORE_MIDDLE + label + MERGE_SUFFIX);
-        internalHashesStoreLargeMergeTime = buildDoubleGauge(
+        pathToHashLargeMergeTime = buildDoubleGauge(
                 metrics,
                 "internalHashLargeMergeTime_" + label,
                 LARGE_MERGE_PREFIX + INTERNAL_HASHES_STORE_MIDDLE + label + MERGE_SUFFIX);
@@ -170,15 +170,15 @@ public class JasperDbStatistics {
                     "leafKeyToPathLargeMergeTime_" + label,
                     LARGE_MERGE_PREFIX + LEAF_KEY_TO_PATH_STORE_MIDDLE + label + MERGE_SUFFIX);
         }
-        leafPathToHashKeyValueStoreSmallMergeTime = buildDoubleGauge(
+        pathToKeyValueStoreSmallMergeTime = buildDoubleGauge(
                 metrics,
                 "leafHKVSmallMergeTime_" + label,
                 SMALL_MERGE_PREFIX + LEAF_PATH_TO_HKV_STORE_MIDDLE + label + MERGE_SUFFIX);
-        leafPathToHashKeyValueStoreMediumMergeTime = buildDoubleGauge(
+        pathToKeyValueStoreMediumMergeTime = buildDoubleGauge(
                 metrics,
                 "leafHKVMediumMergeTime_" + label,
                 MEDIUM_MERGE_PREFIX + LEAF_PATH_TO_HKV_STORE_MIDDLE + label + MERGE_SUFFIX);
-        leafPathToHashKeyValueStoreLargeMergeTime = buildDoubleGauge(
+        pathToKeyValueStoreLargeMergeTime = buildDoubleGauge(
                 metrics,
                 "leafHKVLargeMergeTime_" + label,
                 LARGE_MERGE_PREFIX + LEAF_PATH_TO_HKV_STORE_MIDDLE + label + MERGE_SUFFIX);
@@ -230,26 +230,26 @@ public class JasperDbStatistics {
     }
 
     /**
-     * Set the current value for the InternalHashesStoreFileCount stat
+     * Set the current value for the HashesStoreFileCount stat
      *
      * @param value
      * 		the value to set
      */
-    public void setInternalHashesStoreFileCount(final int value) {
-        if (internalHashesStoreFileCount != null) {
-            internalHashesStoreFileCount.set(value);
+    public void setPathToHashStoreFileCount(final int value) {
+        if (pathToHashStoreFileCount != null) {
+            pathToHashStoreFileCount.set(value);
         }
     }
 
     /**
-     * Set the current value for the InternalHashesStoreTotalFileSizeInMB stat
+     * Set the current value for the HashesStoreTotalFileSizeInMB stat
      *
      * @param value
      * 		the value to set
      */
-    public void setInternalHashesStoreTotalFileSizeInMB(final double value) {
-        if (internalHashesStoreTotalFileSizeInMB != null) {
-            internalHashesStoreTotalFileSizeInMB.set(value);
+    public void setPathToHashTotalFileSizeInMB(final double value) {
+        if (pathToHashTotalFileSizeInMB != null) {
+            pathToHashTotalFileSizeInMB.set(value);
         }
     }
 
@@ -283,9 +283,9 @@ public class JasperDbStatistics {
      * @param value
      * 		the value to set
      */
-    public void setLeafPathToHashKeyValueStoreFileCount(final int value) {
-        if (leafPathToHashKeyValueStoreFileCount != null) {
-            leafPathToHashKeyValueStoreFileCount.set(value);
+    public void setPathToKeyValueStoreFileCount(final int value) {
+        if (pathToKeyValueStoreFileCount != null) {
+            pathToKeyValueStoreFileCount.set(value);
         }
     }
 
@@ -295,45 +295,45 @@ public class JasperDbStatistics {
      * @param value
      * 		the value to set
      */
-    public void setLeafPathToHashKeyValueStoreTotalFileSizeInMB(final double value) {
-        if (leafPathToHashKeyValueStoreTotalFileSizeInMB != null) {
-            leafPathToHashKeyValueStoreTotalFileSizeInMB.set(value);
+    public void setPathToKeyValueStoreTotalFileSizeInMB(final double value) {
+        if (pathToKeyValueStoreTotalFileSizeInMB != null) {
+            pathToKeyValueStoreTotalFileSizeInMB.set(value);
         }
     }
 
     /**
-     * Set the current value for the InternalHashesStoreSmallMergeTime stat
+     * Set the current value for the HashesStoreSmallMergeTime stat
      *
      * @param value
      * 		the value to set
      */
-    public void setInternalHashesStoreSmallMergeTime(final double value) {
-        if (internalHashesStoreSmallMergeTime != null) {
-            internalHashesStoreSmallMergeTime.set(value);
+    public void setPathToHashSmallMergeTime(final double value) {
+        if (pathToHashSmallMergeTime != null) {
+            pathToHashSmallMergeTime.set(value);
         }
     }
 
     /**
-     * Set the current value for the InternalHashesStoreMediumMergeTime stat
+     * Set the current value for the HashesStoreMediumMergeTime stat
      *
      * @param value
      * 		the value to set
      */
-    public void setInternalHashesStoreMediumMergeTime(final double value) {
-        if (internalHashesStoreMediumMergeTime != null) {
-            internalHashesStoreMediumMergeTime.set(value);
+    public void setPathToHashMediumMergeTime(final double value) {
+        if (pathToHashMediumMergeTime != null) {
+            pathToHashMediumMergeTime.set(value);
         }
     }
 
     /**
-     * Set the current value for the InternalHashesStoreLargeMergeTime stat
+     * Set the current value for the HashesStoreLargeMergeTime stat
      *
      * @param value
      * 		the value to set
      */
-    public void setInternalHashesStoreLargeMergeTime(final double value) {
-        if (internalHashesStoreLargeMergeTime != null) {
-            internalHashesStoreLargeMergeTime.set(value);
+    public void setPathToHashLargeMergeTime(final double value) {
+        if (pathToHashLargeMergeTime != null) {
+            pathToHashLargeMergeTime.set(value);
         }
     }
 
@@ -379,9 +379,9 @@ public class JasperDbStatistics {
      * @param value
      * 		the value to set
      */
-    public void setLeafPathToHashKeyValueStoreSmallMergeTime(final double value) {
-        if (leafPathToHashKeyValueStoreSmallMergeTime != null) {
-            leafPathToHashKeyValueStoreSmallMergeTime.set(value);
+    public void setPathToKeyValueStoreSmallMergeTime(final double value) {
+        if (pathToKeyValueStoreSmallMergeTime != null) {
+            pathToKeyValueStoreSmallMergeTime.set(value);
         }
     }
 
@@ -391,9 +391,9 @@ public class JasperDbStatistics {
      * @param value
      * 		the value to set
      */
-    public void setLeafPathToHashKeyValueStoreMediumMergeTime(final double value) {
-        if (leafPathToHashKeyValueStoreMediumMergeTime != null) {
-            leafPathToHashKeyValueStoreMediumMergeTime.set(value);
+    public void setPathToKeyValueStoreMediumMergeTime(final double value) {
+        if (pathToKeyValueStoreMediumMergeTime != null) {
+            pathToKeyValueStoreMediumMergeTime.set(value);
         }
     }
 
@@ -403,9 +403,9 @@ public class JasperDbStatistics {
      * @param value
      * 		the value to set
      */
-    public void setLeafPathToHashKeyValueStoreLargeMergeTime(final double value) {
-        if (leafPathToHashKeyValueStoreLargeMergeTime != null) {
-            leafPathToHashKeyValueStoreLargeMergeTime.set(value);
+    public void setPathToKeyValueStoreLargeMergeTime(final double value) {
+        if (pathToKeyValueStoreLargeMergeTime != null) {
+            pathToKeyValueStoreLargeMergeTime.set(value);
         }
     }
 }

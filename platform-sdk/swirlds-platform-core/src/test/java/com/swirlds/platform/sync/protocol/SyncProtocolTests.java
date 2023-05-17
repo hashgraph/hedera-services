@@ -63,7 +63,7 @@ class SyncProtocolTests {
 
     @BeforeEach
     void setup() {
-        peerId = new NodeId(false, 1);
+        peerId = new NodeId(1);
         shadowGraphSynchronizer = mock(ShadowGraphSynchronizer.class);
         fallenBehindManager = mock(FallenBehindManager.class);
         permitProvider = new SyncPermitProvider(2);
@@ -218,7 +218,7 @@ class SyncProtocolTests {
 
         // peer 6 isn't needed for fallen behind
         final SyncProtocol protocol = new SyncProtocol(
-                new NodeId(false, 6),
+                new NodeId(6),
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
@@ -261,7 +261,7 @@ class SyncProtocolTests {
     void initiateForCriticalQuorum() {
         // peer 6 isn't needed for fallen behind, but it *is* in critical quorum (by default)
         final SyncProtocol protocol = new SyncProtocol(
-                new NodeId(false, 6),
+                new NodeId(6),
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,

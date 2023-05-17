@@ -55,7 +55,7 @@ class QueryComponentTest {
 
     @BeforeEach
     void setUp() {
-        final var selfNodeId = new NodeId(false, 666L);
+        final var selfNodeId = new NodeId(666L);
         final Configuration configuration = new HederaTestConfigBuilder().getOrCreateConfig();
         final PlatformContext platformContext = mock(PlatformContext.class);
         when(platformContext.getConfiguration()).thenReturn(configuration);
@@ -68,7 +68,9 @@ class QueryComponentTest {
                 .consoleCreator(SwirldsGui::createConsole)
                 .staticAccountMemo("memo")
                 .bootstrapProps(new BootstrapProperties())
-                .selfId(AccountID.newBuilder().accountNum(selfNodeId.getId()).build())
+                .selfId(AccountID.newBuilder()
+                        .accountNum(selfNodeId.getIdAsInt())
+                        .build())
                 .initialHash(new Hash())
                 .maxSignedTxnSize(1024)
                 .build();
@@ -76,7 +78,7 @@ class QueryComponentTest {
 
     @Test
     void objectGraphRootsAreAvailable() {
-        given(platform.getSelfId()).willReturn(new NodeId(false, 0L));
+        given(platform.getSelfId()).willReturn(new NodeId(0L));
 
         final QueryComponent subject = app.queryComponentFactory().get().create();
 

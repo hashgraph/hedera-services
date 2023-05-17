@@ -501,7 +501,7 @@ public final class Hedera implements SwirldMain {
     private void onPreHandle(@NonNull final Event event, @NonNull final HederaState state) {
         // For now, we will delegate pre-handle to the mono-service. But this needs to be moved to
         // use the Pre-Handle workflow instead.
-        daggerApp.adaptedMonoEventExpansion().expand(event, state);
+        daggerApp.adaptedMonoEventExpansion().expand(event, state, daggerApp.nodeInfo());
     }
 
     /**
@@ -709,7 +709,7 @@ public final class Hedera implements SwirldMain {
 
     private void initializeDagger(@NonNull final MerkleHederaState state, @NonNull final InitTrigger trigger) {
         logger.debug("Initializing dagger");
-        final var selfId = platform.getSelfId().getId();
+        final var selfId = platform.getSelfId().getIdAsInt();
         if (daggerApp == null) {
             stateChildren = state.getStateChildrenProvider(platform);
             final var nodeAddress = stateChildren.addressBook().getAddress(selfId);

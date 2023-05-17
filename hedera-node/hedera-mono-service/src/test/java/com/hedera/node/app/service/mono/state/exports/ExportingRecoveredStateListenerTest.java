@@ -45,7 +45,7 @@ class ExportingRecoveredStateListenerTest {
     private ServicesState signedState;
 
     private final Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 890);
-    private final NodeId nodeId = new NodeId(false, 0);
+    private final NodeId nodeId = new NodeId(0);
 
     private ExportingRecoveredStateListener subject;
 
