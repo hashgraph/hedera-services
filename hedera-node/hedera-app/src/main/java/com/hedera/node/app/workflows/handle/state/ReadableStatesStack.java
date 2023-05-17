@@ -22,7 +22,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableSingletonState;
 import com.hedera.node.app.spi.state.ReadableStates;
-import com.hedera.node.app.workflows.handle.stack.TransactionStackImpl;
+import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 import java.util.Set;
@@ -30,11 +30,11 @@ import java.util.WeakHashMap;
 
 public class ReadableStatesStack implements ReadableStates {
 
-    private final TransactionStackImpl stack;
+    private final SavepointStackImpl stack;
     private final String statesName;
     private final Map<WrappedHederaState, ReadableStates> stackedReadableStates = new WeakHashMap<>();
 
-    public ReadableStatesStack(TransactionStackImpl stack, String statesName) {
+    public ReadableStatesStack(SavepointStackImpl stack, String statesName) {
         this.stack = requireNonNull(stack, "stack must not be null");
         this.statesName = requireNonNull(statesName, "statesName must not be null");
     }

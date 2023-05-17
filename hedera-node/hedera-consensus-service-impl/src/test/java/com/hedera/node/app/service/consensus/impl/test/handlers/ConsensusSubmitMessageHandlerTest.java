@@ -53,17 +53,18 @@ import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.TopicMetadata;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
+import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.spi.config.GlobalDynamicConfig;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.test.utils.TxnUtils;
+import com.swirlds.config.api.Configuration;
 import java.time.Instant;
 import java.util.Set;
 import org.assertj.core.api.Assertions;
@@ -84,7 +85,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
     private HandleContext handleContext;
 
     @Mock(strictness = LENIENT)
-    private GlobalDynamicConfig config;
+    private Configuration config;
 
     @Mock(answer = RETURNS_SELF)
     private ConsensusSubmitMessageRecordBuilder recordBuilder;
@@ -95,13 +96,16 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
     void setUp() {
         commonSetUp();
         subject = new ConsensusSubmitMessageHandler();
-        given(config.maxNumTopics()).willReturn(10L);
-        given(config.messageMaxBytesAllowed()).willReturn(100);
+
+        final var consensusServiceConfig = new ConsensusServiceConfig(10L, 100);
+        given(config.getConfigData(ConsensusServiceConfig.class)).willReturn(consensusServiceConfig);
+        given(handleContext.config()).willReturn(config);
 
         writableTopicState = writableTopicStateWithOneKey();
         given(readableStates.<EntityNum, Topic>get(TOPICS)).willReturn(readableTopicState);
         given(writableStates.<EntityNum, Topic>get(TOPICS)).willReturn(writableTopicState);
         readableStore = new ReadableTopicStoreImpl(readableStates);
+        given(handleContext.readableStore(ReadableTopicStore.class)).willReturn(readableStore);
         writableStore = new WritableTopicStore(writableStates);
         given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableStore);
 
@@ -273,8 +277,9 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         final var txn = newSubmitMessageTxn(
                 topicEntityNum, TxnUtils.randomUtf8Bytes(2000).toString());
         given(handleContext.body()).willReturn(txn);
-        given(config.maxNumTopics()).willReturn(10L);
-        given(config.messageMaxBytesAllowed()).willReturn(5);
+
+        final var consensusServiceConfig = new ConsensusServiceConfig(10L, 5);
+        given(config.getConfigData(ConsensusServiceConfig.class)).willReturn(consensusServiceConfig);
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(ResponseCodeEnum.MESSAGE_SIZE_TOO_LARGE, msg.getStatus());

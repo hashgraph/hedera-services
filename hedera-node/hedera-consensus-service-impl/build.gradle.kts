@@ -41,4 +41,5 @@ dependencies {
   testImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
   testImplementation(project(":hedera-node:hedera-token-service"))
   testImplementation(testLibs.mockito.inline)
+  testImplementation(libs.swirlds.test.framework)
 }

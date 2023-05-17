@@ -19,7 +19,6 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -81,11 +80,6 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoHandlerTestBase {
         basicMetaAssertions(context, 0);
         assertEquals(ownerKey, context.payerKey());
         assertIterableEquals(List.of(), context.requiredNonPayerKeys());
-    }
-
-    @Test
-    void handleNotImplemented() {
-        assertThrows(UnsupportedOperationException.class, () -> subject.handle());
     }
 
     private TransactionBody cryptoDeleteAllowanceTransaction(final AccountID id) {

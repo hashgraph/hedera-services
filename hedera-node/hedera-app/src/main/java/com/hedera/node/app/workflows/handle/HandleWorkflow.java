@@ -27,10 +27,11 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.clock.SystemClock;
 import com.hedera.node.app.records.RecordManager;
-import com.hedera.node.app.spi.records.SingleTransactionRecord;
 import com.hedera.node.app.records.SingleTransactionRecordBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.records.SingleTransactionRecord;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.TransactionChecker;
@@ -125,25 +126,27 @@ public class HandleWorkflow {
 
     private SingleTransactionRecord handleTransaction(@NonNull final HederaState state, @NonNull final TransactionBody txBody) {
         final var recordBuilder = new SingleTransactionRecordBuilder();
-        try {
-            final var context = prepareHandleContext(state, platformTxn, consensusTimestamp);
-            dispatcher.dispatchHandle(context);
+//        try {
+//            final var context = prepareHandleContext(state, platformTxn, consensusTimestamp);
+//            dispatcher.dispatchHandle(context);
+//
+//            // TODO: Finalize transaction
+//
+//            // TODO: Commit state
+//
+//            recordManager.recordTransaction(recordBuilder.build());
+//        } catch (HandleException e) {
+//            recordBuilder.status(e.getStatus());
+//            recordManager.recordTransaction(recordBuilder.build());
+//        } catch (Throwable e) {
+//            LOG.error("An unexpected exception was thrown during handle", e);
+//            // TODO; Updated receipt
+//        }
 
-            // TODO: Finalize transaction
-
-            // TODO: Commit state
-
-            recordManager.recordTransaction(recordBuilder.build());
-        } catch (HandleException e) {
-            recordBuilder.status(e.getStatus());
-            recordManager.recordTransaction(recordBuilder.build());
-        } catch (Throwable e) {
-            LOG.error("An unexpected exception was thrown during handle", e);
-            // TODO; Updated receipt
-        }
+        throw new UnsupportedOperationException("Not implemented yet.");
     }
 
-    private StackableHandleContext prepareHandleContext(
+    private HandleContext prepareHandleContext(
             @NonNull final HederaState state,
             @NonNull final ConsensusTransaction platformTxn,
             @NonNull final Instant consensusTimestamp)

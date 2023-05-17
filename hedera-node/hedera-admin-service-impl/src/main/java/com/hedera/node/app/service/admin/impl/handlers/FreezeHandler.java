@@ -28,6 +28,8 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.freeze.FreezeTransactionBody;
 import com.hedera.hapi.node.freeze.FreezeType;
 import com.hedera.node.app.service.admin.ReadableSpecialFileStore;
+import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -105,6 +107,11 @@ public class FreezeHandler implements TransactionHandler {
 
         // no need to add any keys to the context because this transaction does not require any signatures
         // it must be submitted by an account with superuser privileges, that is checked during ingest
+    }
+
+    @Override
+    public void handle(@NonNull final HandleContext context) throws HandleException {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     /**

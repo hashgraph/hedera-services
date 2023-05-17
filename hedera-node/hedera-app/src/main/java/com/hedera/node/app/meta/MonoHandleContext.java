@@ -16,19 +16,17 @@
 
 package com.hedera.node.app.meta;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.records.SingleTransactionRecordBuilder;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
-import com.hedera.node.app.spi.config.GlobalDynamicConfig;
-import com.hedera.node.app.spi.records.SingleTransactionRecord;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -85,7 +83,7 @@ public class MonoHandleContext implements HandleContext {
      */
     @Override
     @NonNull
-    public GlobalDynamicConfig config() {
+    public Configuration config() {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
@@ -147,19 +145,19 @@ public class MonoHandleContext implements HandleContext {
 
     @Override
     @NonNull
-    public SingleTransactionRecord dispatchPrecedingTransaction(@NonNull TransactionBody txBody, @NonNull AccountID creator) throws HandleException {
-        throw new UnsupportedOperationException("Not yet implemented!");
+    public ResponseCodeEnum dispatchPrecedingTransaction(@NonNull TransactionBody txBody) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
     @NonNull
-    public SingleTransactionRecord dispatchChildTransaction(@NonNull TransactionBody txBody, @NonNull AccountID creator) throws HandleException {
-        throw new UnsupportedOperationException("Not yet implemented!");
+    public ResponseCodeEnum dispatchChildTransaction(@NonNull TransactionBody txBody) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
     @NonNull
-    public TransactionStack transactionStack() {
+    public SavepointStack savepointStack() {
         throw new UnsupportedOperationException("Not yet implemented!");
     }
 }

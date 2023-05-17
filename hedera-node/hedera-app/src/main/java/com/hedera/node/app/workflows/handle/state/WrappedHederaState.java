@@ -22,11 +22,12 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.state.RecordCache;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.Map;
 
-public class WrappedHederaState {
+public class WrappedHederaState implements HederaState {
 
     private final HederaState delegate;
     private final Map<String, WrappedWritableStates> writableStatesMap = new HashMap<>();
@@ -50,9 +51,16 @@ public class WrappedHederaState {
     }
 
     @NonNull
-    public WritableStates getOrCreateWritableStates(@NonNull String serviceName) {
+    @Override
+    public WritableStates createWritableStates(@NonNull String serviceName) {
         return writableStatesMap
                 .computeIfAbsent(serviceName, s -> new WrappedWritableStates(delegate.createWritableStates(s)));
+    }
+
+    @NonNull
+    @Override
+    public RecordCache getRecordCache() {
+        throw new UnsupportedOperationException();
     }
 
     public void commit() {

@@ -16,12 +16,25 @@
 
 package com.hedera.node.app.spi.workflows;
 
+import com.hedera.hapi.node.transaction.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A {@code TransactionHandler} contains all methods for the different stages of a single operation.
  */
 public interface TransactionHandler {
+
+
+    /**
+     * Validates a {@link TransactionBody}
+     *
+     * @param txBody the {@link TransactionBody} to validate
+     * @throws NullPointerException if {@code txBody} is {@code null}
+     * @throws PreCheckException if the transaction is invalid
+     */
+    default void validate(TransactionBody txBody) throws PreCheckException {
+        // per default this is a no-op
+    }
 
     /**
      * Pre-handles a transaction, extracting all non-payer keys, which signatures need to be validated
@@ -39,7 +52,5 @@ public interface TransactionHandler {
      * @throws NullPointerException if {@code context} is {@code null}
      * @throws HandleException if an expected failure occurred
      */
-    default void handle(@NonNull final HandleContext context) throws HandleException {
-        // TODO: remove default implementation once all handlers were updated
-    }
+    void handle(@NonNull final HandleContext context) throws HandleException;
 }

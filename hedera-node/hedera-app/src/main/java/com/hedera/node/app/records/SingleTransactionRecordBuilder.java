@@ -287,6 +287,12 @@ public class SingleTransactionRecordBuilder
         return this;
     }
 
+    @Nullable
+    public ResponseCodeEnum status() {
+        return status;
+    }
+
+
     @NonNull
     public SingleTransactionRecordBuilder accountID(@NonNull final AccountID accountID) {
         this.accountID = accountID;

@@ -26,8 +26,8 @@ import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -52,15 +52,17 @@ public class WritableStoreFactory {
 
     private final Map<Class<?>, Function<WritableStates, ?>> storeFactories;
     private final WritableStates states;
-    private final Map<Class<?>, Object> stores = new HashMap<>();
 
     /**
      * Constructor of {@code ReadableStoreFactory}
      *
-     * @param state the {@link HederaState} to use
+     * @param stack the {@link HederaState} to use
+     * @param serviceName the name of the service to create stores for
+     * @throws NullPointerException if one of the arguments is {@code null}
+     * @throws IllegalArgumentException if the service name is unknown
      */
-    public WritableStoreFactory(@NonNull final HederaState state) {
-        requireNonNull(state, "The argument 'state' cannot be null!");
+    public WritableStoreFactory(@NonNull final SavepointStackImpl stack, @NonNull final String serviceName) {
+        requireNonNull(stack, "The argument 'stack' cannot be null!");
         requireNonNull(serviceName, "The argument 'serviceName' cannot be null!");
 
         this.storeFactories = STORE_FACTORY.get(serviceName);
@@ -68,7 +70,7 @@ public class WritableStoreFactory {
             throw new IllegalArgumentException("No store factories for the given service name are available");
         }
 
-        this.states = state.createWritableStates(serviceName);
+        this.states = stack.createWritableStates(serviceName);
     }
 
     /**
@@ -76,20 +78,13 @@ public class WritableStoreFactory {
      *
      * @param <C> Interface class for a Store
      * @param storeInterface The store interface to find and create a store for
-     * @param serviceScope
      * @return An implementation of the provided store interface
      * @throws IllegalArgumentException if the storeInterface class provided is unknown to the app
      * @throws NullPointerException if {@code storeInterface} is {@code null}
      */
     @NonNull
-    public <C> C getStore(@NonNull final Class<C> storeInterface, String serviceScope) throws IllegalArgumentException {
+    public <C> C getStore(@NonNull final Class<C> storeInterface) throws IllegalArgumentException {
         requireNonNull(storeInterface, "The supplied argument 'storeInterface' cannot be null!");
-        final var store = stores.computeIfAbsent(storeInterface, this::createStore);
-        return storeInterface.cast(store);
-    }
-
-    @NonNull
-    private <C> C createStore(@NonNull Class<C> storeInterface) {
         final var factory = storeFactories.get(storeInterface);
         if (factory != null) {
             final var store = factory.apply(states);

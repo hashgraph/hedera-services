@@ -33,9 +33,9 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionRecord.EntropyOneOfType;
 import com.hedera.hapi.node.util.UtilPrngTransactionBody;
 import com.hedera.node.app.service.network.ReadableRunningHashLeafStore;
+import com.hedera.node.app.service.util.impl.config.PrngConfig;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
 import com.hedera.node.app.service.util.impl.records.PrngRecordBuilder;
-import com.hedera.node.app.spi.config.GlobalDynamicConfig;
 import com.hedera.node.app.spi.fixtures.TestBase;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -46,6 +46,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.threading.futures.StandardFuture;
+import com.swirlds.config.api.Configuration;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.BeforeEach;
@@ -70,7 +71,7 @@ class UtilPrngHandlerTest {
     private PrngRecordBuilder recordBuilder;
 
     @Mock(strictness = LENIENT)
-    private GlobalDynamicConfig config;
+    private Configuration config;
 
     private UtilPrngHandler subject;
     private UtilPrngTransactionBody txn;
@@ -80,7 +81,8 @@ class UtilPrngHandlerTest {
 
     @BeforeEach
     void setUp() {
-        given(config.utilPrngEnabled()).willReturn(true);
+        final var prngConfig = new PrngConfig(true);
+        given(config.getConfigData(PrngConfig.class)).willReturn(prngConfig);
         given(handleContext.config()).willReturn(config);
 
         subject = new UtilPrngHandler();
@@ -133,7 +135,8 @@ class UtilPrngHandlerTest {
     @Test
     void returnsIfNotEnabled() {
         givenTxnWithoutRange();
-        given(config.utilPrngEnabled()).willReturn(false);
+        final var prngConfig = new PrngConfig(false);
+        given(config.getConfigData(PrngConfig.class)).willReturn(prngConfig);
 
         subject.handle(handleContext);
 

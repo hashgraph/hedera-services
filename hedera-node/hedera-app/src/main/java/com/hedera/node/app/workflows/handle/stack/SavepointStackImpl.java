@@ -17,10 +17,16 @@
 
 package com.hedera.node.app.workflows.handle.stack;
 
+import static java.util.Objects.requireNonNull;
+
+import com.hedera.node.app.spi.config.ConfigProvider;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
-import com.hedera.node.app.spi.workflows.HandleContext.TransactionStack;
+import com.hedera.node.app.spi.workflows.HandleContext.SavepointStack;
+import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.state.RecordCache;
 import com.hedera.node.app.workflows.handle.state.ReadableStatesStack;
+import com.hedera.node.app.workflows.handle.state.WrappedHederaState;
 import com.hedera.node.app.workflows.handle.state.WritableStatesStack;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayDeque;
@@ -28,18 +34,23 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
 
-public class TransactionStackImpl implements TransactionStack {
+public class SavepointStackImpl implements SavepointStack, HederaState {
 
-    private final Deque<TransactionStackEntry> stack = new ArrayDeque<>();
+    private final ConfigProvider configProvider;
+    private final Deque<Savepoint> stack = new ArrayDeque<>();
     private final Map<String, WritableStatesStack> writableStatesMap = new HashMap<>();
 
-    public TransactionStackImpl(@NonNull final TransactionStackEntry root) {
+    public SavepointStackImpl(@NonNull final ConfigProvider configProvider, @NonNull final Savepoint root) {
+        this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
         stack.add(root);
     }
 
     @Override
-    public void setSavepoint() {
-        // TODO: Implement TransactionStackImpl.setSavepoint()
+    public void createSavepoint() {
+        final var newState = new WrappedHederaState(peek().state());
+        final var newConfig = configProvider.getConfiguration();
+        final var savepoint = new Savepoint(newState, newConfig);
+        stack.push(savepoint);
     }
 
     @Override
@@ -58,24 +69,32 @@ public class TransactionStackImpl implements TransactionStack {
     }
 
     @NonNull
-    public TransactionStackEntry peek() {
+    public Savepoint peek() {
         assert !stack.isEmpty();
         return stack.peek();
     }
 
-    @NonNull
-    public ReadableStates createReadableStates(@NonNull String serviceName) {
-        return new ReadableStatesStack(this, serviceName);
-    }
-
-    @NonNull
-    public WritableStates getOrCreateWritableStates(@NonNull String serviceName) {
-        return new WritableStatesStack(this, serviceName);
-    }
-
-    public void commit() {
+    public void flatten() {
         while (stack.size() > 1) {
             stack.pop().state().commit();
         }
+    }
+
+    @Override
+    @NonNull
+    public ReadableStates createReadableStates(@NonNull final String serviceName) {
+        return new ReadableStatesStack(this, serviceName);
+    }
+
+    @Override
+    @NonNull
+    public WritableStates createWritableStates(@NonNull String serviceName) {
+        return writableStatesMap.computeIfAbsent(serviceName, s -> new WritableStatesStack(this, s));
+    }
+
+    @Override
+    @NonNull
+    public RecordCache getRecordCache() {
+        throw new UnsupportedOperationException();
     }
 }

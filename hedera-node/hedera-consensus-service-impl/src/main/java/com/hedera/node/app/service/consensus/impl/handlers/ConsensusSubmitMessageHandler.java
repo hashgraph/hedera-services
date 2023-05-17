@@ -97,8 +97,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         final var topic =
                 topicStore.getForModify(op.topicIDOrElse(TopicID.DEFAULT).topicNum());
         /* Validate all needed fields in the transaction */
-        final var config = new ConsensusServiceConfig(
-                handleContext.config().maxNumTopics(), handleContext.config().messageMaxBytesAllowed());
+        final var config = handleContext.config().getConfigData(ConsensusServiceConfig.class);
         validateTransaction(txn, config, topic);
 
         /* since we have validated topic exists, topic.get() is safe to be called */

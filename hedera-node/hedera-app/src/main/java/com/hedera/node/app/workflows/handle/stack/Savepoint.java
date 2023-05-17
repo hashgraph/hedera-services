@@ -24,25 +24,37 @@ import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.workflows.handle.state.WrappedHederaState;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Instant;
 
-public record TransactionStackEntry(
-    @NonNull WrappedHederaState state,
-    @NonNull Instant consensusNow,
-    @NonNull Configuration config,
-    @NonNull AttributeValidator attributeValidator,
-    @NonNull ExpiryValidator expiryValidator) {
+public class Savepoint {
 
-    public TransactionStackEntry {
-        requireNonNull(state, "state must not be null");
-        requireNonNull(consensusNow, "consensusNow must not be null");
-        requireNonNull(config, "config must not be null");
-        requireNonNull(attributeValidator, "attributeValidator must not be null");
-        requireNonNull(expiryValidator, "expiryValidator must not be null");
+    private final WrappedHederaState state;
+    private final Configuration config;
+
+    public Savepoint(@NonNull final WrappedHederaState state, @NonNull final Configuration config) {
+        this.state = requireNonNull(state, "state must not be null");
+        this.config = requireNonNull(config, "config must not be null");
+    }
+
+    public WrappedHederaState state() {
+        return state;
+    }
+
+    public Configuration config() {
+        return config;
     }
 
     public long newEntityNum() {
-        // TODO: Implement StackEntry.newEntityNum() based on state
-        return 0;
+        // TODO: Implement Savepoint.newEntityNum()
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    public AttributeValidator attributeValidator() {
+        // TODO: Implement Savepoint.attributeValidator()
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    public ExpiryValidator expiryValidator() {
+        // TODO: Implement Savepoint.expiryValidator()
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 }

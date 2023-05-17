@@ -18,72 +18,59 @@ package com.hedera.node.app.workflows.handle;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.records.SingleTransactionRecordBuilder;
-import com.hedera.node.app.spi.records.SingleTransactionRecord;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
-import com.hedera.node.app.workflows.handle.stack.TransactionStackEntry;
-import com.hedera.node.app.workflows.handle.stack.TransactionStackImpl;
+import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
-import java.util.Map;
 
 public class HandleContextImpl implements HandleContext {
 
-    private final HandleContextManager manager;
+    private final Instant consensusNow;
     private final TransactionBody txBody;
-    private final String serviceScope;
-    private final Map<Key, SignatureVerification> signatureVerifications;
-
     private final SingleTransactionRecordBuilder recordBuilder;
-    private final TransactionStackImpl stack;
+    private final SavepointStackImpl stack;
+    private final WritableStoreFactory writableStoreFactory;
+    private final HandleContextBase base;
+    private final TransactionRunner runner;
 
     private ReadableStoreFactory readableStoreFactory;
-    private WritableStoreFactory writableStoreFactory;
 
 
 
     public HandleContextImpl(
-            @NonNull final HandleContextManager manager,
-            @NonNull final TransactionBody txBody,
             @NonNull final String serviceScope,
-            @NonNull final Map<Key, SignatureVerification> signatureVerifications,
-            @NonNull final SingleTransactionRecordBuilder recordBuilder,
-            @NonNull final HederaState state,
             @NonNull final Instant consensusNow,
-            @NonNull final Configuration config,
-            @NonNull final ExpiryValidator expiryValidator,
-            @NonNull final AttributeValidator attributeValidator) {
-        this.manager = requireNonNull(manager, "manager must not be null");
+            @NonNull final TransactionBody txBody,
+            @NonNull final SingleTransactionRecordBuilder recordBuilder,
+            @NonNull final SavepointStackImpl stack,
+            @NonNull final HandleContextBase base,
+            @NonNull final TransactionRunner runner) {
+        requireNonNull(serviceScope, "serviceScope must not be null");
+        this.consensusNow = requireNonNull(consensusNow, "consensusNow must not be null");
         this.txBody = requireNonNull(txBody, "txBody must not be null");
-        this.serviceScope = requireNonNull(serviceScope, "serviceScope must not be null");
-        this.signatureVerifications = requireNonNull(signatureVerifications, "signatureVerifications must not be null");
         this.recordBuilder = requireNonNull(recordBuilder, "recordBuilder must not be null");
+        this.stack = requireNonNull(stack, "stack must not be null");
+        this.base = requireNonNull(base, "base must not be null");
+        this.runner = requireNonNull(runner, "runner must not be null");
 
-        final var stackEntry = new TransactionStackEntry(
-                requireNonNull(state, "state must not be null"),
-                requireNonNull(consensusNow, "consensusNow must not be null"),
-                requireNonNull(config, "config must not be null"),
-                requireNonNull(attributeValidator, "attributeValidator must not be null"),
-                requireNonNull(expiryValidator, "expiryValidator must not be null"));
-        this.stack = new TransactionStackImpl(stackEntry);
+        this.writableStoreFactory = new WritableStoreFactory(stack, serviceScope);
     }
 
     @Override
     @NonNull
     public Instant consensusNow() {
-        return stack.peek().consensusNow();
+        return consensusNow;
     }
 
     @Override
@@ -119,42 +106,25 @@ public class HandleContextImpl implements HandleContext {
     @Nullable
     public SignatureVerification verificationFor(@NonNull Key key) {
         requireNonNull(key, "key must not be null");
-        return signatureVerifications.get(key);
+        return base.signatureVerifications().get(key);
     }
 
     @Override
     @NonNull
     public <C> C readableStore(@NonNull Class<C> storeInterface) {
         requireNonNull(storeInterface, "storeInterface must not be null");
-        return stack.peek().readableStore(storeInterface);
+        if (readableStoreFactory == null) {
+            readableStoreFactory = new ReadableStoreFactory(stack);
+        }
+        return readableStoreFactory.getStore(storeInterface);
     }
 
     @Override
     @NonNull
     public <C> C writableStore(@NonNull Class<C> storeInterface) {
         requireNonNull(storeInterface, "storeInterface must not be null");
-        return stack.peek().writableStore(storeInterface, serviceScope);
+        return writableStoreFactory.getStore(storeInterface);
     }
-
-//    @NonNull
-//    public <C> C readableStore(@NonNull final Class<C> storeInterface) {
-//        requireNonNull(storeInterface, "storeInterface must not be null");
-//        if (readableStoreFactory == null) {
-//            readableStoreFactory = new ReadableStoreFactory(state);
-//        }
-//        return readableStoreFactory.getStore(storeInterface);
-//    }
-//
-//    @NonNull
-//    public <C> C writableStore(@NonNull final Class<C> storeInterface, @NonNull final String serviceScope) {
-//        requireNonNull(storeInterface, "storeInterface must not be null");
-//        requireNonNull(serviceScope, "serviceScope must not be null");
-//        if (writableStoreFactory == null) {
-//            writableStoreFactory = new WritableStoreFactory(state);
-//        }
-//        return writableStoreFactory.getStore(storeInterface, serviceScope);
-//    }
-
 
     @Override
     @NonNull
@@ -168,31 +138,50 @@ public class HandleContextImpl implements HandleContext {
 
     @Override
     @NonNull
-    public SingleTransactionRecord dispatchPrecedingTransaction(
-            @NonNull final TransactionBody txBody,
-            @NonNull final AccountID creator)
-            throws HandleException {
+    public ResponseCodeEnum dispatchPrecedingTransaction(@NonNull final TransactionBody txBody) {
         requireNonNull(txBody, "txBody must not be null");
-        requireNonNull(creator, "creator must not be null");
 
-        return manager.dispatchPrecedingTransaction(txBody, creator);
+        final var state = stack.peek().state();
+        if (state.isModified()) {
+            throw new IllegalStateException("Cannot dispatch a preceding transaction when the state has been modified");
+        }
+        if (stack.depth() > 1) {
+            throw new IllegalStateException(
+                    "Cannot dispatch a preceding transaction when a child transaction has been dispatched");
+        }
+
+        // Calculate next available slot for preceding transaction
+        final var timeSlot = base.timeSlotCalculator().getNextAvailablePrecedingSlot();
+
+        // run the transaction
+        return runner.run(timeSlot, txBody, stack.peek(), base);
     }
 
     @Override
     @NonNull
-    public SingleTransactionRecord dispatchChildTransaction(
-            @NonNull final TransactionBody txBody,
-            @NonNull final AccountID creator)
-            throws HandleException {
+    public ResponseCodeEnum dispatchChildTransaction(@NonNull final TransactionBody txBody) {
         requireNonNull(txBody, "txBody must not be null");
-        requireNonNull(creator, "creator must not be null");
 
-        return manager.dispatchChildTransaction(txBody, creator);
+        // Calculate next available slot for child transaction
+        final var timeSlot = base.timeSlotCalculator().getNextAvailableChildSlot();
+
+        // create a savepoint
+        stack.createSavepoint();
+
+        // run the child-transaction
+        final var result = runner.run(timeSlot, txBody, stack.peek(), base);
+
+        // rollback if the child-transaction failed
+        if (result != ResponseCodeEnum.OK) {
+            stack.rollback();
+        }
+
+        return result;
     }
 
     @NonNull
     @Override
-    public TransactionStack transactionStack() {
+    public SavepointStack savepointStack() {
         return stack;
     }
 }

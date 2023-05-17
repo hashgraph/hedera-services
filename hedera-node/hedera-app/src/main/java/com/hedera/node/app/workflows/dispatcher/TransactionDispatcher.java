@@ -56,18 +56,21 @@ public class TransactionDispatcher {
     }
 
     /**
-     * Dispatch a handle request. It is forwarded to the correct handler, which takes care of the specific
+     * Dispatch a {@code validate()} request. It is forwarded to the correct handler, which takes care of the specific
      * functionality
      *
-     * @param context the {@link HandleContext} with all the information needed to handle the transaction
-     * @throws NullPointerException if one of the arguments is {@code null}
+     * @param txBody the {@link TransactionBody} to be validated
+     * @throws NullPointerException if {@code txBody} is {@code null}
      */
-    public void dispatchHandle(@NonNull final HandleContext context) throws HandleException {
-        requireNonNull(context, "The supplied argument 'context' cannot be null!");
+    public void dispatchValidate(@NonNull final TransactionBody txBody) throws PreCheckException {
+        requireNonNull(txBody, "The supplied argument 'txBody' cannot be null!");
 
-        // At this stage, we should always find a handler, otherwise something really weird is going on
-        final var handler = getHandler(context.body());
-        handler.handle(context);
+        try {
+            final var handler = getHandler(txBody);
+            handler.validate(txBody);
+        } catch (UnsupportedOperationException ex) {
+            throw new PreCheckException(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
+        }
     }
 
     /**
@@ -75,7 +78,7 @@ public class TransactionDispatcher {
      * functionality
      *
      * @param context the context of the pre-handle workflow
-     * @throws NullPointerException if one of the arguments is {@code null}
+     * @throws NullPointerException if {@code context} is {@code null}
      */
     public void dispatchPreHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context, "The supplied argument 'context' cannot be null!");
@@ -85,6 +88,24 @@ public class TransactionDispatcher {
             handler.preHandle(context);
         } catch (UnsupportedOperationException ex) {
             throw new PreCheckException(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
+        }
+    }
+
+    /**
+     * Dispatch a handle request. It is forwarded to the correct handler, which takes care of the specific
+     * functionality
+     *
+     * @param context the {@link HandleContext} with all the information needed to handle the transaction
+     * @throws NullPointerException if {@code context} is {@code null}
+     */
+    public void dispatchHandle(@NonNull final HandleContext context) throws HandleException {
+        requireNonNull(context, "The supplied argument 'context' cannot be null!");
+
+        try {
+            final var handler = getHandler(context.body());
+            handler.handle(context);
+        } catch (UnsupportedOperationException ex) {
+            throw new HandleException(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
         }
     }
 

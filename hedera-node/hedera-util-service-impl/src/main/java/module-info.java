@@ -11,6 +11,7 @@ module com.hedera.node.app.service.util.impl {
     requires org.apache.logging.log4j;
     requires com.google.common;
     requires com.hedera.node.app.service.network;
+    requires com.swirlds.config;
 
     provides com.hedera.node.app.service.util.UtilService with
             UtilServiceImpl;

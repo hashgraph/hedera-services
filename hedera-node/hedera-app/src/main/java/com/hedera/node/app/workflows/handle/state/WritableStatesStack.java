@@ -22,23 +22,23 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableSingletonState;
 import com.hedera.node.app.spi.state.WritableStates;
-import com.hedera.node.app.workflows.handle.stack.TransactionStackImpl;
+import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
 public class WritableStatesStack implements WritableStates {
 
-    private final TransactionStackImpl stack;
+    private final SavepointStackImpl stack;
     private final String statesName;
 
-    public WritableStatesStack(TransactionStackImpl stack, String statesName) {
+    public WritableStatesStack(SavepointStackImpl stack, String statesName) {
         this.stack = requireNonNull(stack, "stack must not be null");
         this.statesName = requireNonNull(statesName, "statesName must not be null");
     }
 
     @NonNull
     WritableStates getCurrent() {
-        return stack.peek().state().getOrCreateWritableStates(statesName);
+        return stack.peek().state().createWritableStates(statesName);
     }
 
     @Override

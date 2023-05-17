@@ -35,4 +35,5 @@ dependencies {
   implementation(libs.bundles.di)
   testImplementation(testLibs.bundles.mockito)
   testImplementation(testLibs.assertj.core)
+  testImplementation(libs.swirlds.test.framework)
 }

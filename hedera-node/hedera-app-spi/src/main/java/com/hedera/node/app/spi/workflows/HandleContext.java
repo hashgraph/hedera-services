@@ -16,10 +16,9 @@
 
 package com.hedera.node.app.spi.workflows;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.spi.records.SingleTransactionRecord;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -148,13 +147,12 @@ public interface HandleContext {
      * (either by storing state or by calling a child transaction).
      *
      * @param txBody the {@link TransactionBody} of the transaction to dispatch
-     * @param creator the {@link AccountID} of the transaction creator
-     * @return the {@link SingleTransactionRecord} of the transaction, if successful
+     * @return the {@link ResponseCodeEnum} of the transaction
      * @throws NullPointerException if {@code txBody} is {@code null}
      * @throws IllegalStateException if the current transaction has already introduced state changes
      */
     @NonNull
-    SingleTransactionRecord dispatchPrecedingTransaction(@NonNull TransactionBody txBody, @NonNull AccountID creator);
+    ResponseCodeEnum dispatchPrecedingTransaction(@NonNull TransactionBody txBody);
 
     /**
      * Dispatches a child transaction.
@@ -165,65 +163,64 @@ public interface HandleContext {
      *
      * <p>A child transaction will run with the current state. It will see all state changes introduced by the current
      * transaction or preceding child transactions. If successful, a new entry will be added to the
-     * {@link TransactionStack}. This enables the current transaction to commit or roll back the state changes.
+     * {@link SavepointStack}. This enables the current transaction to commit or roll back the state changes.
      * Please be aware that any state changes introduced by storing data in one of the stores after calling a child
      * transaction will also be rolled back if the child transaction is rolled back.
      *
      * @param txBody the {@link TransactionBody} of the child transaction to dispatch
-     * @param creator the {@link AccountID} of the transaction creator
-     * @return the {@link SingleTransactionRecord} of the child transaction, if successful
+     * @return the {@link ResponseCodeEnum} of the child transaction
      * @throws NullPointerException if {@code txBody} is {@code null}
      */
     @NonNull
-    SingleTransactionRecord dispatchChildTransaction(@NonNull TransactionBody txBody, @NonNull AccountID creator);
+    ResponseCodeEnum dispatchChildTransaction(@NonNull TransactionBody txBody);
 
     /**
-     * Returns the current {@link TransactionStack}.
+     * Returns the current {@link SavepointStack}.
      *
      * @return the current {@code TransactionStack}
      */
     @NonNull
-    TransactionStack transactionStack();
+    SavepointStack savepointStack();
 
     /**
-     * A stack of transactions.
+     * A stack of savepoint.
      *
-     * <p>Every time a child transaction is dispatched and executed successfully, a new entry is added to the
-     * transaction stack. The transaction stack allows to rollback an arbitrary number of transactions. Please
-     * be aware that rolling back a child transaction will also rollbacks all state changes that were introduced
-     * afterward.
+     * <p>A new savepoint can be created manually. In addition, a new entry is added to the savepoint stack every time a
+     * child transaction is dispatched and executed successfully. The transaction stack allows to rollback an arbitrary
+     * number of transactions. Please be aware that rolling back a child transaction will also rollbacks all state
+     * changes that were introduced afterward.
      */
-    interface TransactionStack {
+    interface SavepointStack {
         /**
-         * Sets a savepoint.
+         * Create a savepoint manually.
          * <p>
-         * This method will add a new entry to the transaction stack. A subsequent rollback will roll back all
-         * state changes that were introduced after the savepoint was set.
+         * This method will add a new entry to the savepoint stack. A subsequent rollback will roll back all state
+         * changes that were introduced after the savepoint was added.
          */
-        void setSavepoint();
+        void createSavepoint();
 
         /**
-         * Rolls back the last child transaction.
+         * Rolls back the changes up until the last savepoint.
          *
-         * @throws IllegalStateException if the transaction stack is empty
+         * @throws IllegalStateException if the savepoint stack is empty
          */
         default void rollback() {
             rollback(1);
         }
 
         /**
-         * Rolls back the last {@code depth} child transactions.
+         * Rolls back the last {@code count} savepoints.
          *
-         * @param level the number of child transactions to roll back
-         * @throws IllegalArgumentException if {@code depth} is less than {@code 1}
-         * @throws IllegalStateException if the transaction stack contains fewer elements than {@code depth}
+         * @param count the number of savepoints to roll back
+         * @throws IllegalArgumentException if {@code count} is less than {@code 1}
+         * @throws IllegalStateException if the transaction stack contains fewer elements than {@code count}
          */
-        void rollback(int level);
+        void rollback(int count);
 
         /**
-         * Returns the depth of the transaction stack.
+         * Returns the depth of the savepoint stack.
          *
-         * @return the depth of the transaction stack
+         * @return the depth of the savepoint stack
          */
         int depth();
     }

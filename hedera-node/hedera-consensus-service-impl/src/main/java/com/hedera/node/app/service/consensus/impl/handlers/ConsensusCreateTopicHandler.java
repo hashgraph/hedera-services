@@ -82,8 +82,7 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
         requireNonNull(handleContext, "The argument 'context' must not be null");
 
         final var op = handleContext.body().consensusCreateTopicOrThrow();
-        final var consensusServiceConfig = new ConsensusServiceConfig(
-                handleContext.config().maxNumTopics(), handleContext.config().messageMaxBytesAllowed());
+        final var consensusServiceConfig = handleContext.config().getConfigData(ConsensusServiceConfig.class);
         final var topicStore = handleContext.writableStore(WritableTopicStore.class);
 
         final var builder = new Topic.Builder();
