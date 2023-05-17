@@ -161,12 +161,15 @@ public class NetworkMetrics {
     public void update() {
         // calculate the value for otherStatPing (the average of all, not including self)
         double sum = 0;
-        final Map<NodeId, Double> times = getPingMilliseconds(); // times are in seconds
-        for (final double time : times.values()) {
-            sum += time;
+        int count = 0;
+        for (final RunningAverageMetric metric : avgPingMilliseconds.values()) {
+            if (metric != null) {
+                sum += metric.get();
+                count++;
+            }
         }
-        // don't average in the times[selfId]==0, so subtract 1 from the length
-        final double pingValue = sum / (times.size() - 1); // pingValue is in milliseconds
+        // don't average in the times[selfId]==0, so subtract 1 from the count
+        final double pingValue = sum / (count - 1); // pingValue is in milliseconds
 
         avgPing.update(pingValue);
 
@@ -197,7 +200,7 @@ public class NetworkMetrics {
      * @return the average times, for each member, in milliseconds
      */
     @NonNull
-    public Map<NodeId, Double> getPingMilliseconds() {
+    public Map<NodeId, Double> getAvgPingMilliseconds() {
         final Map<NodeId, Double> times = new HashMap<>();
         avgPingMilliseconds.forEach((nodeId, metric) -> times.put(nodeId, metric.get()));
         times.put(selfId, 0.0);
@@ -205,22 +208,13 @@ public class NetworkMetrics {
     }
 
     /**
-     * Returns the average number of bytes sent per second to each member.
-     *
-     * @return the average number of bytes sent per second to each member
-     */
-    @NonNull
-    public Map<NodeId, RunningAverageMetric> getAvgPingMilliseconds() {
-        return new HashMap<>(avgPingMilliseconds);
-    }
-
-    /**
      * Records the occurrence of a disconnect.
      *
      * @param connection the connection that was closed.
      */
-    public void recordDisconnect(final Connection connection) {
-        NodeId otherId = connection.getOtherId();
+    public void recordDisconnect(@NonNull final Connection connection) {
+        final NodeId otherId = Objects.requireNonNull(connection, "connection must not be null.")
+                .getOtherId();
         if (disconnectFrequency.containsKey(otherId)) {
             disconnectFrequency.get(otherId).count();
         }

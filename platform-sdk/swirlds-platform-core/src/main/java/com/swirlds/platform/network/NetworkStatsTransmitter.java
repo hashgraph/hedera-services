@@ -16,14 +16,13 @@
 
 package com.swirlds.platform.network;
 
-import static com.swirlds.common.utility.Units.MILLISECONDS_TO_SECONDS;
+import static com.swirlds.common.utility.Units.MILLISECONDS_TO_MICROSECONDS;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.transaction.internal.SystemTransaction;
 import com.swirlds.common.system.transaction.internal.SystemTransactionPing;
@@ -83,11 +82,11 @@ public final class NetworkStatsTransmitter implements Startable, Stoppable {
     private void transmitStats() {
         // Send a transaction giving the average ping time from self to all others (in microseconds).
         // This data will eventually be used by chatter to optimize broadcast trees when they are implemented.
-        Map<NodeId, RunningAverageMetric> nodePingAvgs = networkMetrics.getAvgPingMilliseconds();
+        final Map<NodeId, Double> nodePingAvgs = networkMetrics.getAvgPingMilliseconds();
         // 2023-05-16: This transaction is no longer going to be used and does not support non-contiguous node IDs.
         // 2023-05-16: the order of the ping values is not being guaranteed.
         final int[] avgPingMilliseconds = nodePingAvgs.keySet().stream()
-                .mapToInt(nodeId -> (int) (nodePingAvgs.get(nodeId).get() * MILLISECONDS_TO_SECONDS))
+                .mapToInt(nodeId -> (int) (nodePingAvgs.get(nodeId) * MILLISECONDS_TO_MICROSECONDS))
                 .toArray();
         final SystemTransaction systemTransaction = new SystemTransactionPing(avgPingMilliseconds);
         final boolean good = transactionSubmitter.submit(systemTransaction);
