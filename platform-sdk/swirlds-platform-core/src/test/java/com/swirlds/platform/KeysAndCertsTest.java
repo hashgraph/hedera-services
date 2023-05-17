@@ -28,6 +28,7 @@ import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.crypto.PlatformSigner;
 import java.security.PublicKey;
+import java.util.Map;
 import java.util.Random;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -58,13 +59,13 @@ class KeysAndCertsTest {
      */
     @ParameterizedTest
     @MethodSource({"com.swirlds.platform.CryptoArgsProvider#basicTestArgs"})
-    void basicTest(final AddressBook addressBook, final KeysAndCerts[] keysAndCerts) {
+    void basicTest(final AddressBook addressBook, final Map<NodeId, KeysAndCerts> keysAndCerts) {
         // choose a random node to test
         final Random random = new Random();
         final int node = random.nextInt(addressBook.getSize());
         final NodeId nodeId = addressBook.getNodeId(node);
 
-        final PlatformSigner signer = PlatformConstructor.platformSigner(keysAndCerts[node]);
+        final PlatformSigner signer = PlatformConstructor.platformSigner(keysAndCerts.get(nodeId));
         testSignVerify(signer, addressBook.getAddress(nodeId).getSigPublicKey());
         // test it twice to verify that the signer is reusable
         testSignVerify(signer, addressBook.getAddress(nodeId).getSigPublicKey());

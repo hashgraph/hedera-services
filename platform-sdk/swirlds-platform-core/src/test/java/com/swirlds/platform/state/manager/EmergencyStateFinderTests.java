@@ -20,7 +20,6 @@ import static com.swirlds.platform.reconnect.emergency.EmergencyReconnectTeacher
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.RandomUtils;
@@ -64,9 +63,9 @@ public class EmergencyStateFinderTests extends AbstractSignedStateManagerTest {
             // Add some signatures to one of the previous states
             final long roundToSign = round - roundAgeToSign;
             if (roundToSign >= 0) {
-                addSignature(manager, roundToSign, new NodeId(1));
-                addSignature(manager, roundToSign, new NodeId(2));
-                addSignature(manager, roundToSign, new NodeId(3));
+                addSignature(manager, roundToSign, addressBook.getNodeId(1));
+                addSignature(manager, roundToSign, addressBook.getNodeId(2));
+                addSignature(manager, roundToSign, addressBook.getNodeId(3));
             }
         }
 

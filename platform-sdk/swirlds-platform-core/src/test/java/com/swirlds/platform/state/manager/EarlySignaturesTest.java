@@ -83,12 +83,12 @@ public class EarlySignaturesTest extends AbstractSignedStateManagerTest {
         // send out signatures super early. Many will be rejected.
         for (long round = 0; round < count; round++) {
             // All node 0 and 2 signatures are sent very early.
-            manager.preConsensusSignatureObserver(round, new NodeId(0L), buildReallyFakeSignature());
-            manager.preConsensusSignatureObserver(round, new NodeId(2L), buildReallyFakeSignature());
+            manager.preConsensusSignatureObserver(round, addressBook.getNodeId(0), buildReallyFakeSignature());
+            manager.preConsensusSignatureObserver(round, addressBook.getNodeId(2), buildReallyFakeSignature());
 
             // Even numbered rounds have 3 sent very early.
             if (round % 2 == 0) {
-                manager.preConsensusSignatureObserver(round, new NodeId(3L), buildReallyFakeSignature());
+                manager.preConsensusSignatureObserver(round, addressBook.getNodeId(3), buildReallyFakeSignature());
             }
         }
 

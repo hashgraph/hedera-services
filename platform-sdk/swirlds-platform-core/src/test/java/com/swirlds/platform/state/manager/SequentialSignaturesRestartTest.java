@@ -122,11 +122,11 @@ public class SequentialSignaturesRestartTest extends AbstractSignedStateManagerT
 
             // Add some signatures to one of the previous states
             final long roundToSign = round - roundAgeToSign;
-            addSignature(manager, roundToSign, new NodeId(0));
-            addSignature(manager, roundToSign, new NodeId(1));
-            addSignature(manager, roundToSign, new NodeId(2));
+            addSignature(manager, roundToSign, addressBook.getNodeId(0));
+            addSignature(manager, roundToSign, addressBook.getNodeId(1));
+            addSignature(manager, roundToSign, addressBook.getNodeId(2));
             if (random.nextBoolean()) {
-                addSignature(manager, roundToSign, new NodeId(1));
+                addSignature(manager, roundToSign, addressBook.getNodeId(1));
             }
 
             try (final ReservedSignedState lastState = manager.getLatestImmutableState("test")) {
