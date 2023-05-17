@@ -121,8 +121,8 @@ public class CustomFeesValidator {
                                 collector.accountNumber(), tokenNum, tokenRelationStore, tokenStore);
                     }
                 }
-                default -> throw new IllegalStateException(
-                        "Unexpected value: " + fee.fee().kind());
+                default -> throw new IllegalArgumentException(
+                        "Unexpected value for custom fee type: " + fee.fee().kind());
             }
         }
     }

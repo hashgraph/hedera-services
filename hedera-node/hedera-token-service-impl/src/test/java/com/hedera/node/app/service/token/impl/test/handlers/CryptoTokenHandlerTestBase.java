@@ -69,7 +69,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mock;
 
-public class HandlerTestBase {
+public class CryptoTokenHandlerTestBase {
     public static final String ACCOUNTS = "ACCOUNTS";
     protected static final String ALIASES = "ALIASES";
     protected static final String TOKENS = "TOKENS";

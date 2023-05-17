@@ -36,7 +36,7 @@ import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
-import com.hedera.node.app.service.token.impl.test.handlers.HandlerTestBase;
+import com.hedera.node.app.service.token.impl.test.handlers.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.CustomFeesValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
 import java.util.ArrayList;
@@ -48,7 +48,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class CustomFeesValidatorTest extends HandlerTestBase {
+class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
     private final CustomFeesValidator subject = new CustomFeesValidator();
 
     @BeforeEach
@@ -302,6 +302,20 @@ class CustomFeesValidatorTest extends HandlerTestBase {
         assertThatThrownBy(() -> subject.validateForFeeScheduleUpdate(
                         fungibleToken, readableAccountStore, readableTokenRelStore, writableTokenStore, null))
                 .isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void failsIfEmptyCustomFees() {
+        assertThatThrownBy(() -> subject.validateForFeeScheduleUpdate(
+                        fungibleToken,
+                        readableAccountStore,
+                        readableTokenRelStore,
+                        writableTokenStore,
+                        List.of(CustomFee.newBuilder()
+                                .feeCollectorAccountId(AccountID.newBuilder().accountNum(accountNum.longValue()))
+                                .build())))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Unexpected value for custom fee type: UNSET");
     }
 
     private List<CustomFee> setFeeCollector(List<CustomFee> original, AccountID feeCollector) {
