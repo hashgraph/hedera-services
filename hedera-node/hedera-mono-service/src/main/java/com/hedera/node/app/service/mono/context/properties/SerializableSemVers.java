@@ -27,6 +27,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.util.Comparator;
+import java.util.Objects;
 import java.util.regex.Pattern;
 
 public class SerializableSemVers implements SoftwareVersion {

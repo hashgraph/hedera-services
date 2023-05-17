@@ -33,6 +33,7 @@ import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.records.ConsensusTimeTracker;
+import com.hedera.node.app.service.mono.records.RecordCache;
 import com.hedera.node.app.service.mono.state.expiry.EntityAutoExpiry;
 import com.hedera.node.app.service.mono.state.expiry.ExpiryManager;
 import com.hedera.node.app.service.mono.stats.ExecutionTimeTracker;
@@ -104,6 +105,8 @@ class StandardProcessLogicTest {
 
     @Mock
     private StateView workingView;
+    @Mock
+    private RecordCache recordCache;
 
     @LoggingTarget
     private LogCaptor logCaptor;
@@ -114,7 +117,8 @@ class StandardProcessLogicTest {
 
     @BeforeEach
     void setUp() {
-        subject = new StandardProcessLogic(
+        subject =
+                new StandardProcessLogic(
                 expiries,
                 invariantChecks,
                 expandHandleSpan,
@@ -126,7 +130,8 @@ class StandardProcessLogicTest {
                 scheduleProcessing,
                 executionTimeTracker,
                 recordStreaming,
-                workingView);
+                workingView,
+                        recordCache);
     }
 
     @Test

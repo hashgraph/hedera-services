@@ -25,6 +25,7 @@ import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.records.ConsensusTimeTracker;
+import com.hedera.node.app.service.mono.records.RecordCache;
 import com.hedera.node.app.service.mono.state.expiry.EntityAutoExpiry;
 import com.hedera.node.app.service.mono.state.expiry.ExpiryManager;
 import com.hedera.node.app.service.mono.stats.ExecutionTimeTracker;
@@ -59,6 +60,7 @@ public class StandardProcessLogic implements ProcessLogic {
     private final StateView workingView;
     private final ScheduleProcessing scheduleProcessing;
     private final RecordStreaming recordStreaming;
+    private final RecordCache recordCache;
 
     @Inject
     public StandardProcessLogic(
@@ -73,7 +75,8 @@ public class StandardProcessLogic implements ProcessLogic {
             final ScheduleProcessing scheduleProcessing,
             final ExecutionTimeTracker executionTimeTracker,
             final RecordStreaming recordStreaming,
-            final StateView workingView) {
+            final StateView workingView,
+            final RecordCache recordCache) {
         this.expiries = expiries;
         this.invariantChecks = invariantChecks;
         this.expandHandleSpan = expandHandleSpan;
@@ -86,18 +89,22 @@ public class StandardProcessLogic implements ProcessLogic {
         this.sigImpactHistorian = sigImpactHistorian;
         this.recordStreaming = recordStreaming;
         this.workingView = workingView;
+        this.recordCache = recordCache;
     }
 
     @Override
     public void incorporateConsensusTxn(@NonNull final ConsensusTransaction platformTxn, final long submittingMember,
             @NonNull final SoftwareVersion softwareVersion) {
-        // Don't handle old events
-        if (softwareVersion.compareTo(SEMANTIC_VERSIONS.deployedSoftwareVersion()) != 0) {
-            txnCtx.setStatus(BUSY);
-            return;
-        }
+
         try {
             final var accessor = expandHandleSpan.accessorFor(platformTxn);
+            if(softwareVersion.compareTo(SEMANTIC_VERSIONS.deployedSoftwareVersion()) != 0) {
+//            if(true) {
+                log.info("Rejecting transaction with transaction id {} with timestamp {}",
+                        accessor.getTxnId(), platformTxn.getConsensusTimestamp());
+                recordCache.setFailInvalid(accessor.getPayer(), accessor, platformTxn.getConsensusTimestamp(), submittingMember);
+                return;
+            }
             incorporate(accessor, platformTxn.getConsensusTimestamp(), submittingMember);
         } catch (InvalidProtocolBufferException e) {
             log.warn("Consensus platform txn was not gRPC!", e);
