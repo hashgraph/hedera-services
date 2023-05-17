@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.gossip.sync;
 
+import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.common.config.BasicConfig;
@@ -31,16 +32,25 @@ import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.ThreadManager;
+import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.common.time.Time;
+import com.swirlds.common.utility.Clearable;
+import com.swirlds.common.utility.LoggingClearables;
 import com.swirlds.common.utility.PlatformVersion;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.Crypto;
 import com.swirlds.platform.FreezeManager;
+import com.swirlds.platform.PlatformConstructor;
 import com.swirlds.platform.StartUpEventFrozenManager;
+import com.swirlds.platform.components.CriticalQuorum;
+import com.swirlds.platform.components.CriticalQuorumImpl;
 import com.swirlds.platform.components.EventMapper;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.event.EventIntakeTask;
+import com.swirlds.platform.gossip.AbstractGossip;
+import com.swirlds.platform.gossip.FallenBehindManagerImpl;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
+import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.gossip.sync.protocol.PeerAgnosticSyncChecks;
 import com.swirlds.platform.gossip.sync.protocol.SyncProtocol;
@@ -65,17 +75,20 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * Sync gossip using the protocol negotiator.
  */
-public class SyncGossip extends AbstractSyncGossip {
+public class SyncGossip extends AbstractGossip {
 
     private final ReconnectController reconnectController;
     private final AtomicBoolean gossipHalted = new AtomicBoolean(false);
-    private final Time time;
     private final SyncPermitProvider syncPermitProvider;
-    private final EmergencyRecoveryManager emergencyRecoveryManager;
+    protected final SyncConfig syncConfig;
+    protected final ShadowGraphSynchronizer syncShadowgraphSynchronizer;
+    private final InterruptableConsumer<EventIntakeTask> eventIntakeLambda;
+    private final Clearable clearAllPipelines;
 
     /**
      * A list of threads that execute the sync protocol using bidirectional connections
@@ -121,15 +134,37 @@ public class SyncGossip extends AbstractSyncGossip {
                 startUpEventFrozenManager,
                 swirldStateManager,
                 stateManagementComponent,
-                eventIntakeLambda,
-                eventObserverDispatcher,
                 eventMapper,
                 eventIntakeMetrics,
+                eventObserverDispatcher,
                 updatePlatformStatus,
                 loadReconnectState);
 
-        this.time = Objects.requireNonNull(time);
-        this.emergencyRecoveryManager = Objects.requireNonNull(emergencyRecoveryManager);
+        this.eventIntakeLambda = Objects.requireNonNull(eventIntakeLambda);
+
+        syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
+
+        final ParallelExecutor shadowgraphExecutor = PlatformConstructor.parallelExecutor(threadManager);
+        shadowgraphExecutor.start(); // TODO don't start this here!
+        syncShadowgraphSynchronizer = new ShadowGraphSynchronizer(
+                shadowGraph,
+                addressBook.getSize(),
+                syncMetrics,
+                consensusRef::get,
+                eventTaskCreator::syncDone,
+                eventTaskCreator::addEvent,
+                syncManager,
+                shadowgraphExecutor,
+                // don't send or receive init bytes if running sync as a protocol. the negotiator handles this
+                !syncConfig.syncAsProtocolEnabled(),
+                () -> {});
+
+        clearAllPipelines = new LoggingClearables(
+                RECONNECT.getMarker(),
+                List.of(
+                        Pair.of(intakeQueue, "intakeQueue"),
+                        Pair.of(eventMapper, "eventMapper"),
+                        Pair.of(shadowGraph, "shadowGraph")));
 
         reconnectController = new ReconnectController(threadManager, reconnectHelper, () -> gossipHalted.set(false));
 
@@ -137,23 +172,6 @@ public class SyncGossip extends AbstractSyncGossip {
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
 
         final Duration hangingThreadDuration = basicConfig.hangingThreadDuration();
-
-        // TODO
-        //        // if this is a single node network, start dedicated thread to "sync" and create events
-        //        if (addressBook.getSize() == 1) {
-        //            syncProtocolThreads.add(new StoppableThreadConfiguration<>(threadManager)
-        //                    .setPriority(Thread.NORM_PRIORITY)
-        //                    .setNodeId(selfId.id())
-        //                    .setComponent(PLATFORM_THREAD_POOL_NAME)
-        //                    .setOtherNodeId(selfId.id())
-        //                    .setThreadName("SingleNodeNetworkSync")
-        //                    .setHangingThreadPeriod(hangingThreadDuration)
-        //                    .setWork(new SingleNodeNetworkSync(
-        //                            updatePlatformStatus, eventTaskCreator::createEvent, () -> 0, selfId.id()))
-        //                    .build(true));
-        //
-        //            return;
-        //        }
 
         syncPermitProvider = new SyncPermitProvider(syncConfig.syncProtocolPermitCount());
 
@@ -248,5 +266,51 @@ public class SyncGossip extends AbstractSyncGossip {
         for (final StoppableThread thread : syncProtocolThreads) {
             thread.stop();
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected CriticalQuorum buildCriticalQuorum() {
+        return new CriticalQuorumImpl(platformContext.getMetrics(), selfId.id(), addressBook);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected FallenBehindManagerImpl buildFallenBehindManager() {
+        return new FallenBehindManagerImpl(
+                selfId,
+                topology.getConnectionGraph(),
+                updatePlatformStatus,
+                () -> {},
+                platformContext.getConfiguration().getConfigData(ReconnectConfig.class));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void loadFromSignedState(@NonNull SignedState signedState) {
+        // intentional no-op
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public InterruptableConsumer<EventIntakeTask> getEventIntakeLambda() {
+        return eventIntakeLambda;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void clear() {
+        clearAllPipelines.clear();
     }
 }

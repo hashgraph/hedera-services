@@ -37,6 +37,7 @@ import com.swirlds.platform.gossip.chatter.ChatterGossip;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.sync.LegacySyncGossip;
+import com.swirlds.platform.gossip.sync.SingleNodeSyncGossip;
 import com.swirlds.platform.gossip.sync.SyncGossip;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
@@ -111,29 +112,54 @@ public final class GossipFactory {
                     updatePlatformStatus,
                     loadReconnectState);
         } else if (syncConfig.syncAsProtocolEnabled()) {
-            return new SyncGossip(
-                    platformContext,
-                    threadManager,
-                    time,
-                    crypto,
-                    notificationEngine,
-                    addressBook,
-                    selfId,
-                    appVersion,
-                    shadowGraph,
-                    emergencyRecoveryManager,
-                    consensusRef,
-                    intakeQueue,
-                    freezeManager,
-                    startUpEventFrozenManager,
-                    swirldStateManager,
-                    stateManagementComponent,
-                    eventIntakeLambda,
-                    eventObserverDispatcher,
-                    eventMapper,
-                    eventIntakeMetrics,
-                    updatePlatformStatus,
-                    loadReconnectState);
+            if (addressBook.getSize() == 1) {
+                return new SingleNodeSyncGossip(
+                        platformContext,
+                        threadManager,
+                        time,
+                        crypto,
+                        notificationEngine,
+                        addressBook,
+                        selfId,
+                        appVersion,
+                        shadowGraph,
+                        consensusRef,
+                        intakeQueue,
+                        freezeManager,
+                        startUpEventFrozenManager,
+                        swirldStateManager,
+                        stateManagementComponent,
+                        eventIntakeLambda,
+                        eventObserverDispatcher,
+                        eventMapper,
+                        eventIntakeMetrics,
+                        updatePlatformStatus,
+                        loadReconnectState);
+            } else {
+                return new SyncGossip(
+                        platformContext,
+                        threadManager,
+                        time,
+                        crypto,
+                        notificationEngine,
+                        addressBook,
+                        selfId,
+                        appVersion,
+                        shadowGraph,
+                        emergencyRecoveryManager,
+                        consensusRef,
+                        intakeQueue,
+                        freezeManager,
+                        startUpEventFrozenManager,
+                        swirldStateManager,
+                        stateManagementComponent,
+                        eventIntakeLambda,
+                        eventObserverDispatcher,
+                        eventMapper,
+                        eventIntakeMetrics,
+                        updatePlatformStatus,
+                        loadReconnectState);
+            }
         } else {
             return new LegacySyncGossip(
                     platformContext,

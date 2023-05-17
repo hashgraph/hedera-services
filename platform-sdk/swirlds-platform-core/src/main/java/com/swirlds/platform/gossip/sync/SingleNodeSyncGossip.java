@@ -17,20 +17,26 @@
 package com.swirlds.platform.gossip.sync;
 
 import static com.swirlds.logging.LogMarker.RECONNECT;
+import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
+import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.threading.SyncPermitProvider;
 import com.swirlds.common.threading.framework.QueueThread;
+import com.swirlds.common.threading.framework.StoppableThread;
+import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.LoggingClearables;
+import com.swirlds.common.utility.PlatformVersion;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.Crypto;
 import com.swirlds.platform.FreezeManager;
@@ -45,29 +51,51 @@ import com.swirlds.platform.gossip.AbstractGossip;
 import com.swirlds.platform.gossip.FallenBehindManagerImpl;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
+import com.swirlds.platform.gossip.shadowgraph.SingleNodeNetworkSync;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
+import com.swirlds.platform.gossip.sync.protocol.PeerAgnosticSyncChecks;
+import com.swirlds.platform.gossip.sync.protocol.SyncProtocol;
+import com.swirlds.platform.heartbeats.HeartbeatProtocol;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
+import com.swirlds.platform.network.communication.NegotiationProtocols;
+import com.swirlds.platform.network.communication.NegotiatorThread;
+import com.swirlds.platform.network.communication.handshake.VersionCompareHandshake;
 import com.swirlds.platform.observers.EventObserverDispatcher;
+import com.swirlds.platform.reconnect.DefaultSignedStateValidator;
+import com.swirlds.platform.reconnect.ReconnectController;
+import com.swirlds.platform.reconnect.ReconnectProtocol;
+import com.swirlds.platform.reconnect.emergency.EmergencyReconnectProtocol;
+import com.swirlds.platform.state.EmergencyRecoveryManager;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.apache.commons.lang3.tuple.Pair;
 
 /**
- * Boilerplate code for sync gossip.
+ * Sync gossip using the protocol negotiator.
  */
-public abstract class AbstractSyncGossip extends AbstractGossip { // TODO should this class even exist?
+public class SingleNodeSyncGossip extends AbstractGossip {
 
+    private final ReconnectController reconnectController;
+    private final AtomicBoolean gossipHalted = new AtomicBoolean(false);
     protected final SyncConfig syncConfig;
     protected final ShadowGraphSynchronizer syncShadowgraphSynchronizer;
     private final InterruptableConsumer<EventIntakeTask> eventIntakeLambda;
     private final Clearable clearAllPipelines;
 
-    public AbstractSyncGossip(
+    /**
+     * A list of threads that execute the sync protocol using bidirectional connections
+     */
+    private final List<StoppableThread> syncProtocolThreads = new ArrayList<>();
+
+    public SingleNodeSyncGossip(
             @NonNull PlatformContext platformContext,
             @NonNull ThreadManager threadManager,
             @NonNull final Time time,
@@ -89,7 +117,6 @@ public abstract class AbstractSyncGossip extends AbstractGossip { // TODO should
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
             @NonNull final Runnable updatePlatformStatus,
             @NonNull final Consumer<SignedState> loadReconnectState) {
-
         super(
                 platformContext,
                 threadManager,
@@ -137,6 +164,45 @@ public abstract class AbstractSyncGossip extends AbstractGossip { // TODO should
                         Pair.of(intakeQueue, "intakeQueue"),
                         Pair.of(eventMapper, "eventMapper"),
                         Pair.of(shadowGraph, "shadowGraph")));
+
+        reconnectController = new ReconnectController(threadManager, reconnectHelper, () -> gossipHalted.set(false));
+
+        final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
+
+        final Duration hangingThreadDuration = basicConfig.hangingThreadDuration();
+
+        syncProtocolThreads.add(new StoppableThreadConfiguration<>(threadManager)
+                .setPriority(Thread.NORM_PRIORITY)
+                .setNodeId(selfId.id())
+                .setComponent(PLATFORM_THREAD_POOL_NAME)
+                .setOtherNodeId(selfId.id())
+                .setThreadName("SingleNodeNetworkSync")
+                .setHangingThreadPeriod(hangingThreadDuration)
+                .setWork(new SingleNodeNetworkSync(
+                        updatePlatformStatus, eventTaskCreator::createEvent, () -> 0, selfId.id()))
+                .build(true));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected boolean unidirectionalConnectionsEnabled() {
+        return false;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void stop() {
+        super.stop();
+        gossipHalted.set(true);
+        // wait for all existing syncs to stop. no new ones will be started, since gossip has been halted, and
+        // we've fallen behind
+        for (final StoppableThread thread : syncProtocolThreads) {
+            thread.stop();
+        }
     }
 
     /**

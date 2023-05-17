@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.gossip.sync;
 
+import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.common.context.PlatformContext;
@@ -29,17 +30,26 @@ import com.swirlds.common.threading.framework.config.StoppableThreadConfiguratio
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.ThreadManager;
+import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.common.time.Time;
+import com.swirlds.common.utility.Clearable;
+import com.swirlds.common.utility.LoggingClearables;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.Crypto;
 import com.swirlds.platform.FreezeManager;
 import com.swirlds.platform.PlatformConstructor;
 import com.swirlds.platform.StartUpEventFrozenManager;
+import com.swirlds.platform.components.CriticalQuorum;
+import com.swirlds.platform.components.CriticalQuorumImpl;
 import com.swirlds.platform.components.EventMapper;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.event.EventIntakeTask;
+import com.swirlds.platform.gossip.AbstractGossip;
+import com.swirlds.platform.gossip.FallenBehindManagerImpl;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
+import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
 import com.swirlds.platform.gossip.shadowgraph.SimultaneousSyncThrottle;
+import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
 import com.swirlds.platform.network.unidirectional.HeartbeatProtocolResponder;
 import com.swirlds.platform.network.unidirectional.HeartbeatSender;
@@ -55,16 +65,22 @@ import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * Sync gossip without the protocol negotiator.
  */
-public class LegacySyncGossip extends AbstractSyncGossip {
+public class LegacySyncGossip extends AbstractGossip {
 
     private final SharedConnectionLocks sharedConnectionLocks;
     private final SimultaneousSyncThrottle simultaneousSyncThrottle;
+    protected final SyncConfig syncConfig;
+    protected final ShadowGraphSynchronizer syncShadowgraphSynchronizer;
+    private final InterruptableConsumer<EventIntakeTask> eventIntakeLambda;
+    private final Clearable clearAllPipelines;
 
     public LegacySyncGossip(
             @NonNull PlatformContext platformContext,
@@ -104,12 +120,37 @@ public class LegacySyncGossip extends AbstractSyncGossip {
                 startUpEventFrozenManager,
                 swirldStateManager,
                 stateManagementComponent,
-                eventIntakeLambda,
-                eventObserverDispatcher,
                 eventMapper,
                 eventIntakeMetrics,
+                eventObserverDispatcher,
                 updatePlatformStatus,
                 loadReconnectState);
+
+        this.eventIntakeLambda = Objects.requireNonNull(eventIntakeLambda);
+
+        syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
+
+        final ParallelExecutor shadowgraphExecutor = PlatformConstructor.parallelExecutor(threadManager);
+        shadowgraphExecutor.start(); // TODO don't start this here!
+        syncShadowgraphSynchronizer = new ShadowGraphSynchronizer(
+                shadowGraph,
+                addressBook.getSize(),
+                syncMetrics,
+                consensusRef::get,
+                eventTaskCreator::syncDone,
+                eventTaskCreator::addEvent,
+                syncManager,
+                shadowgraphExecutor,
+                // don't send or receive init bytes if running sync as a protocol. the negotiator handles this
+                !syncConfig.syncAsProtocolEnabled(),
+                () -> {});
+
+        clearAllPipelines = new LoggingClearables(
+                RECONNECT.getMarker(),
+                List.of(
+                        Pair.of(intakeQueue, "intakeQueue"),
+                        Pair.of(eventMapper, "eventMapper"),
+                        Pair.of(shadowGraph, "shadowGraph")));
 
         sharedConnectionLocks = new SharedConnectionLocks(topology, connectionManagers);
 
@@ -216,5 +257,51 @@ public class LegacySyncGossip extends AbstractSyncGossip {
         // this will ensure any ongoing sync are finished before we start reconnect
         // no new sync will start because we have a fallen behind status
         simultaneousSyncThrottle.waitForAllSyncsToFinish();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected CriticalQuorum buildCriticalQuorum() {
+        return new CriticalQuorumImpl(platformContext.getMetrics(), selfId.id(), addressBook);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected FallenBehindManagerImpl buildFallenBehindManager() {
+        return new FallenBehindManagerImpl(
+                selfId,
+                topology.getConnectionGraph(),
+                updatePlatformStatus,
+                () -> {},
+                platformContext.getConfiguration().getConfigData(ReconnectConfig.class));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void loadFromSignedState(@NonNull SignedState signedState) {
+        // intentional no-op
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public InterruptableConsumer<EventIntakeTask> getEventIntakeLambda() {
+        return eventIntakeLambda;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void clear() {
+        clearAllPipelines.clear();
     }
 }

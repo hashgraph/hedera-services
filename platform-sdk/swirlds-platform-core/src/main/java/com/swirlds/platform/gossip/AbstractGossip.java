@@ -122,10 +122,6 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
     /** the number of active connections this node has to other nodes */
     private final AtomicInteger activeConnectionNumber = new AtomicInteger(0);
 
-    // TODO: things to construct internally:
-    //  - connection tracker
-    //  - topology
-
     // TODO don't start stuff in the constructor
 
     public AbstractGossip(
@@ -184,7 +180,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
         final SocketFactory socketFactory = PlatformConstructor.socketFactory(
                 crypto.getKeysAndCerts(), platformContext.getConfiguration().getConfigData(CryptoConfig.class));
         // create an instance that can create new outbound connections
-        final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
+        final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class); // TODO: remove
         final OutboundConnectionCreator connectionCreator = new OutboundConnectionCreator(
                 selfId,
                 StaticSettingsProvider.getSingleton(),
