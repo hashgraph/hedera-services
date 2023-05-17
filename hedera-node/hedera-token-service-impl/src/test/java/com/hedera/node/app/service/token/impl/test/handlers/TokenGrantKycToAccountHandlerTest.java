@@ -50,9 +50,9 @@ import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenGrantKycToAccountHandler;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import java.util.Collections;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
@@ -198,7 +198,9 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
             given(tokenRelStore.getForModify(anyLong(), anyLong())).willReturn(Optional.empty());
 
             final var txnBody = newTxnBody(true, true);
-            assertThatThrownBy(() -> subject.handle(txnBody, tokenRelStore)).isInstanceOf(NoSuchElementException.class);
+            assertThatThrownBy(() -> subject.handle(txnBody, tokenRelStore))
+                    .isInstanceOf(HandleException.class)
+                    .has(responseCode(INVALID_TOKEN_ID));
 
             verify(tokenRelStore, never()).put(any(TokenRelation.class));
             verify(tokenRelStore, never()).commit();
