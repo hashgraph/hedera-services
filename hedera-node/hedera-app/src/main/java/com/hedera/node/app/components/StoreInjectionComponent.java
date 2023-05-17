@@ -14,15 +14,24 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.throttle;
+package com.hedera.node.app.components;
 
-import dagger.Binds;
-import dagger.Module;
-import javax.inject.Singleton;
+import com.hedera.node.app.meta.HandleScope;
+import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import dagger.BindsInstance;
+import dagger.Subcomponent;
 
-@Module
-public interface ThrottleModule {
-    @Binds
-    @Singleton
-    ThrottleAccumulator bindThrottleAccumulator(MonoThrottleAccumulator throttleAccumulator);
+/**
+ * A Dagger subcomponent that provides the readable store factory.
+ */
+@Subcomponent
+@HandleScope
+public interface StoreInjectionComponent {
+    ReadableStoreFactory storeFactory();
+
+    @Subcomponent.Factory
+    interface Factory {
+        StoreInjectionComponent create(@BindsInstance HederaState hederastate);
+    }
 }

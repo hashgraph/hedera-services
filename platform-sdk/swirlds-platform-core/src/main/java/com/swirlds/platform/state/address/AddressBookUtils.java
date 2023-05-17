@@ -55,7 +55,7 @@ public final class AddressBookUtils {
                         EXCEPTION.getMarker(),
                         "Error while checking if address {} for node {} is local",
                         address.getAddressInternalIpv4(),
-                        address.getId(),
+                        address.getNodeId(),
                         e);
                 throw new IllegalStateException("Error while checking if ip of address was local", e);
             }

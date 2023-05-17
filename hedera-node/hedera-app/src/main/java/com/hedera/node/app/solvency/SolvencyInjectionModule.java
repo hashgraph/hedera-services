@@ -21,7 +21,7 @@ import dagger.Module;
 import javax.inject.Singleton;
 
 @Module
-public interface SolvencyModule {
+public interface SolvencyInjectionModule {
     @Binds
     @Singleton
     SolvencyPreCheck bindSolvencyPreCheck(MonoSolvencyPreCheck solvencyPreCheck);

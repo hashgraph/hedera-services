@@ -28,7 +28,7 @@ import com.hedera.node.app.service.file.impl.handlers.FileUpdateHandler;
 import dagger.Module;
 
 @Module
-public interface FileServiceModule {
+public interface FileServiceInjectionModule {
 
     FileAppendHandler fileAppendHandler();
 

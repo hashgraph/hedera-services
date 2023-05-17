@@ -79,7 +79,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class HandleWorkflowModuleTest {
+class HandleDaggerWorkflowModuleTest {
     @Mock
     private NetworkAdminHandlers networkAdminHandlers;
 
@@ -288,7 +288,7 @@ class HandleWorkflowModuleTest {
         given(tokenHandlers.tokenUnpauseHandler()).willReturn(tokenUnpauseHandler);
         given(utilHandlers.prngHandler()).willReturn(utilPrngHandler);
 
-        final var handlers = HandlersModule.provideTransactionHandlers(
+        final var handlers = HandlersInjectionModule.provideTransactionHandlers(
                 networkAdminHandlers,
                 consensusHandlers,
                 fileHandlers,
