@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static java.util.Objects.requireNonNull;
 
@@ -47,11 +48,26 @@ public class TokenGrantKycToAccountHandler implements TransactionHandler {
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
         final var op = context.body().tokenGrantKycOrThrow();
+        pureChecks(op);
+
         final var tokenStore = context.createStore(ReadableTokenStore.class);
         final var tokenMeta = tokenStore.getTokenMeta(op.tokenOrElse(TokenID.DEFAULT));
         if (tokenMeta == null) throw new PreCheckException(INVALID_TOKEN_ID);
         if (tokenMeta.hasKycKey()) {
             context.requireKey(tokenMeta.kycKey());
+        }
+    }
+
+    /**
+     * Performs checks independent of state or context
+     */
+    private void pureChecks(@NonNull final TokenGrantKycTransactionBody op) throws PreCheckException {
+        if (!op.hasToken()) {
+            throw new PreCheckException(INVALID_TOKEN_ID);
+        }
+
+        if (!op.hasAccount()) {
+            throw new PreCheckException(INVALID_ACCOUNT_ID);
         }
     }
 

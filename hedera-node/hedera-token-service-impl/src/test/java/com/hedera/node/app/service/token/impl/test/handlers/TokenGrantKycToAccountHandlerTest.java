@@ -16,7 +16,10 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.node.app.service.token.impl.test.handlers.AdapterUtils.txnFrom;
+import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.test.factories.scenarios.TokenKycGrantScenarios.VALID_GRANT_WITH_EXTANT_TOKEN;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_KYC;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_KYC_KT;
@@ -31,8 +34,10 @@ import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.mock;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.base.TokenType;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenGrantKycTransactionBody;
@@ -49,6 +54,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import java.util.Collections;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -76,6 +82,39 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
 
         assertEquals(1, context.requiredNonPayerKeys().size());
         assertThat(context.requiredNonPayerKeys(), contains(TOKEN_KYC_KT.asPbjKey()));
+    }
+
+    @Test
+    void txnHasNoToken() throws PreCheckException {
+        final var payerAcct = newPayerAccount();
+        given(accountStore.getAccountById(TEST_DEFAULT_PAYER)).willReturn(payerAcct);
+        final var missingTokenTxn = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder().accountID(TEST_DEFAULT_PAYER))
+                .tokenGrantKyc(TokenGrantKycTransactionBody.newBuilder()
+                        .account(AccountID.newBuilder().accountNum(1L))
+                        .build())
+                .build();
+
+        final var context = new FakePreHandleContext(accountStore, missingTokenTxn);
+        Assertions.assertThatThrownBy(() -> subject.preHandle(context))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(INVALID_TOKEN_ID));
+    }
+
+    @Test
+    void txnHasNoAccount() throws PreCheckException {
+        final var payerAcct = newPayerAccount();
+        given(accountStore.getAccountById(TEST_DEFAULT_PAYER)).willReturn(payerAcct);
+        final var missingAcctTxn = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder().accountID(TEST_DEFAULT_PAYER))
+                .tokenGrantKyc(
+                        TokenGrantKycTransactionBody.newBuilder().token(tokenId).build())
+                .build();
+
+        final var context = new FakePreHandleContext(accountStore, missingAcctTxn);
+        Assertions.assertThatThrownBy(() -> subject.preHandle(context))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(INVALID_ACCOUNT_ID));
     }
 
     private ReadableTokenStore mockKnownKycTokenStore() {
