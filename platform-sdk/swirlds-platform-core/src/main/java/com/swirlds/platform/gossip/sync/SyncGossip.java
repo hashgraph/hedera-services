@@ -179,6 +179,7 @@ public class SyncGossip extends AbstractGossip {
         // Start the helper now so that it is ready to receive a connection to perform reconnect with when the
         // protocol is initiated.
         if (emergencyRecoveryManager.isEmergencyStateRequired()) {
+            // TODO how to handle this?
             reconnectController.start();
         }
 
@@ -241,8 +242,10 @@ public class SyncGossip extends AbstractGossip {
                                             Duration.ZERO,
                                             syncMetrics,
                                             time)))))
-                    .build(true));
+                    .build());
         }
+
+        thingsToStart.add(() -> syncProtocolThreads.forEach(StoppableThread::start));
     }
 
     /**
@@ -312,5 +315,13 @@ public class SyncGossip extends AbstractGossip {
     @Override
     public void clear() {
         clearAllPipelines.clear();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected boolean doVersionCheck() {
+        return false;
     }
 }

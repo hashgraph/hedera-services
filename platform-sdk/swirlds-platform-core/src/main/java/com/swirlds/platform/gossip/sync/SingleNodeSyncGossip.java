@@ -168,7 +168,9 @@ public class SingleNodeSyncGossip extends AbstractGossip {
                 .setHangingThreadPeriod(hangingThreadDuration)
                 .setWork(new SingleNodeNetworkSync(
                         updatePlatformStatus, eventTaskCreator::createEvent, () -> 0, selfId.id()))
-                .build(true));
+                .build());
+
+        thingsToStart.add(() -> syncProtocolThreads.forEach(StoppableThread::start));
     }
 
     /**
@@ -237,5 +239,13 @@ public class SingleNodeSyncGossip extends AbstractGossip {
     @Override
     public void clear() {
         clearAllPipelines.clear();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected boolean doVersionCheck() {
+        return false;
     }
 }

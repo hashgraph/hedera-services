@@ -20,6 +20,7 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.base.state.LifecyclePhase;
+import com.swirlds.base.state.Startable;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
@@ -45,10 +46,8 @@ import com.swirlds.platform.components.EventMapper;
 import com.swirlds.platform.components.EventTaskCreator;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.event.EventIntakeTask;
-import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.sync.SyncManagerImpl;
-import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.metrics.SyncMetrics;
@@ -70,6 +69,7 @@ import com.swirlds.platform.reconnect.ReconnectThrottle;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
@@ -118,6 +118,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
     protected final EventIntakeMetrics eventIntakeMetrics;
     protected final EventObserverDispatcher eventObserverDispatcher;
     protected final Runnable updatePlatformStatus;
+    protected final List<Startable> thingsToStart = new ArrayList<>();
 
     /** the number of active connections this node has to other nodes */
     private final AtomicInteger activeConnectionNumber = new AtomicInteger(0);
@@ -175,21 +176,16 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
                 // unidirectional connections are ONLY used for old-style syncs, that don't run as a protocol
                 unidirectionalConnectionsEnabled());
 
-        final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
-
         final SocketFactory socketFactory = PlatformConstructor.socketFactory(
                 crypto.getKeysAndCerts(), platformContext.getConfiguration().getConfigData(CryptoConfig.class));
         // create an instance that can create new outbound connections
-        final ChatterConfig chatterConfig =
-                platformContext.getConfiguration().getConfigData(ChatterConfig.class); // TODO: remove
         final OutboundConnectionCreator connectionCreator = new OutboundConnectionCreator(
                 selfId,
                 StaticSettingsProvider.getSingleton(),
                 this,
                 socketFactory,
                 addressBook,
-                // only do a version check for old-style sync
-                !chatterConfig.useChatter() && !syncConfig.syncAsProtocolEnabled(),
+                doVersionCheck(),
                 appVersion);
         connectionManagers = new StaticConnectionManagers(topology, connectionCreator);
         final InboundConnectionHandler inboundConnectionHandler = new InboundConnectionHandler(
@@ -198,8 +194,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
                 addressBook,
                 connectionManagers::newConnection,
                 StaticSettingsProvider.getSingleton(),
-                // only do a version check for old-style sync
-                !chatterConfig.useChatter() && !syncConfig.syncAsProtocolEnabled(),
+                doVersionCheck(),
                 appVersion);
         // allow other members to create connections to me
         final Address address = addressBook.getAddress(selfId.id());
@@ -209,14 +204,13 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
                 address.getListenPortIpv4(),
                 socketFactory,
                 inboundConnectionHandler::handle);
-        new StoppableThreadConfiguration<>(threadManager)
+        thingsToStart.add(new StoppableThreadConfiguration<>(threadManager)
                 .setPriority(settings.getThreadPrioritySync())
                 .setNodeId(selfId.id())
                 .setComponent(PLATFORM_THREAD_POOL_NAME)
                 .setThreadName("connectionServer")
                 .setWork(connectionServer)
-                .build()
-                .start();
+                .build());
 
         fallenBehindManager = buildFallenBehindManager();
 
@@ -298,6 +292,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
     public void start() {
         throwIfNotInPhase(LifecyclePhase.NOT_STARTED);
         lifecyclePhase = LifecyclePhase.STARTED;
+        thingsToStart.forEach(Startable::start);
     }
 
     /**
@@ -357,4 +352,11 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
     public int activeConnectionNumber() {
         return activeConnectionNumber.get();
     }
+
+    /**
+     * Should the network layer do a version check prior to initiating a connection?
+     *
+     * @return true if a version check should be done
+     */
+    protected abstract boolean doVersionCheck();
 }

@@ -19,6 +19,7 @@ package com.swirlds.platform.gossip.sync;
 import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
+import com.swirlds.base.state.Startable;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.notification.NotificationEngine;
@@ -64,6 +65,7 @@ import com.swirlds.platform.reconnect.ReconnectProtocolResponder;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
@@ -182,18 +184,17 @@ public class LegacySyncGossip extends AbstractGossip {
 
         for (final NodeId otherId : topology.getNeighbors()) {
             // create and start new threads to listen for incoming sync requests
-            new StoppableThreadConfiguration<>(threadManager)
+            thingsToStart.add(new StoppableThreadConfiguration<>(threadManager)
                     .setPriority(Thread.NORM_PRIORITY)
                     .setNodeId(selfId.id())
                     .setComponent(PLATFORM_THREAD_POOL_NAME)
                     .setOtherNodeId(otherId.id())
                     .setThreadName("listener")
                     .setWork(new Listener(protocolHandlers, connectionManagers.getManager(otherId, false)))
-                    .build()
-                    .start();
+                    .build());
 
             // create and start new thread to send heartbeats on the SyncCaller channels
-            new StoppableThreadConfiguration<>(threadManager)
+            thingsToStart.add(new StoppableThreadConfiguration<>(threadManager)
                     .setPriority(settings.getThreadPrioritySync())
                     .setNodeId(selfId.id())
                     .setComponent(PLATFORM_THREAD_POOL_NAME)
@@ -201,8 +202,7 @@ public class LegacySyncGossip extends AbstractGossip {
                     .setOtherNodeId(otherId.id())
                     .setWork(new HeartbeatSender(
                             otherId, sharedConnectionLocks, networkMetrics, PlatformConstructor.settingsProvider()))
-                    .build()
-                    .start();
+                    .build());
         }
 
         // create and start threads to call other members
@@ -239,7 +239,7 @@ public class LegacySyncGossip extends AbstractGossip {
                 .setRunnable(syncCaller)
                 .build();
 
-        syncCallerThread.start();
+        thingsToStart.add(syncCallerThread::start);
     }
 
     /**
@@ -303,5 +303,13 @@ public class LegacySyncGossip extends AbstractGossip {
     @Override
     public void clear() {
         clearAllPipelines.clear();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected boolean doVersionCheck() {
+        return true;
     }
 }

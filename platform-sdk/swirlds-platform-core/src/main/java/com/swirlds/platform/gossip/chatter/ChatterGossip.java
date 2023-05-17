@@ -100,12 +100,10 @@ public class ChatterGossip extends AbstractGossip {
 
     private final ReconnectController reconnectController;
     private final ChatterCore<GossipEvent> chatterCore;
-    private final EmergencyRecoveryManager emergencyRecoveryManager;
     private final List<StoppableThread> chatterThreads = new LinkedList<>();
     private final ChatterEventMapper chatterEventMapper = new ChatterEventMapper();
     private final SequenceCycle<EventIntakeTask> intakeCycle;
     private final Clearable clearAllPipelines;
-    private final EventCreatorThread eventCreatorThread;
 
     public ChatterGossip(
             @NonNull PlatformContext platformContext,
@@ -154,8 +152,6 @@ public class ChatterGossip extends AbstractGossip {
                 updatePlatformStatus,
                 loadReconnectState);
 
-        this.emergencyRecoveryManager = Objects.requireNonNull(emergencyRecoveryManager);
-
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
         final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
 
@@ -179,6 +175,7 @@ public class ChatterGossip extends AbstractGossip {
         // protocol is initiated.
         // This must be after all chatter peer instances are created so that the chatter comm state can be suspended
         if (emergencyRecoveryManager.isEmergencyStateRequired()) {
+            // TODO
             reconnectController.start();
         }
 
@@ -254,8 +251,11 @@ public class ChatterGossip extends AbstractGossip {
                                             chatterSynchronizer,
                                             fallenBehindManager),
                                     new ChatterProtocol(chatterPeer, parallelExecutor)))))
-                    .build(true));
+                    .build());
         }
+
+        thingsToStart.add(() -> chatterThreads.forEach(StoppableThread::start));
+
         final OtherParentTracker otherParentTracker = new OtherParentTracker();
         final EventCreationRules eventCreationRules = LoggingEventCreationRules.create(
                 List.of(
@@ -291,13 +291,14 @@ public class ChatterGossip extends AbstractGossip {
             // ever be created without an other-parent
             chatterEventCreator.createGenesisEvent();
         }
-        eventCreatorThread = new EventCreatorThread(
+        final EventCreatorThread eventCreatorThread = new EventCreatorThread(
                 threadManager,
                 selfId,
                 chatterConfig.attemptedChatterEventPerSecond(),
                 addressBook,
                 chatterEventCreator::createEvent,
                 CryptoStatic.getNonDetRandom());
+        thingsToStart.add(eventCreatorThread::start);
 
         eventObserverDispatcher.addObserver(new ChatterNotifier(selfId, chatterCore));
         eventObserverDispatcher.addObserver(chatterEventMapper);
@@ -372,11 +373,6 @@ public class ChatterGossip extends AbstractGossip {
         return intakeCycle;
     }
 
-    @Override
-    public void start() {
-        eventCreatorThread.start();
-    }
-
     /**
      * {@inheritDoc}
      */
@@ -387,6 +383,14 @@ public class ChatterGossip extends AbstractGossip {
         for (final StoppableThread thread : chatterThreads) {
             thread.stop();
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected boolean doVersionCheck() {
+        return false;
     }
 
     /**
