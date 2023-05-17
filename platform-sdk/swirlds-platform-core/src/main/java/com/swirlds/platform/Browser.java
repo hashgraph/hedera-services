@@ -681,13 +681,10 @@ public class Browser {
                 GuiPlatformAccessor.getInstance().setInstanceNumber(address.getId(), i);
 
                 final SwirldsPlatform platform = new SwirldsPlatform(
-                        // all key pairs and CSPRNG state for this member
-                        crypto[i],
-                        // address book index, which is the member ID
-                        nodeId,
-                        // copy of the address book,
-                        initialAddressBook,
                         platformContext,
+                        crypto[i],
+                        initialAddressBook,
+                        nodeId,
                         mainClassName,
                         swirldName,
                         appVersion,

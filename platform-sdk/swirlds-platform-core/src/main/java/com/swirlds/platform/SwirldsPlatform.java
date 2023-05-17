@@ -266,12 +266,12 @@ public class SwirldsPlatform implements Platform, Startable {
     /**
      * the browser gives the Platform what app to run. There can be multiple Platforms on one computer.
      *
+     * @param platformContext          the context for this platform
      * @param crypto                   an object holding all the public/private key pairs and the CSPRNG state for this
+     * @param initialAddressBook       the address book listing all members in the community
      *                                 member
      * @param id                       the ID number for this member (if this computer has multiple members in one
      *                                 swirld)
-     * @param initialAddressBook       the address book listing all members in the community
-     * @param platformContext          the context for this platform
      * @param mainClassName            the name of the app class inheriting from SwirldMain
      * @param swirldName               the name of the swirld being run
      * @param appVersion               the current version of the running application
@@ -280,10 +280,10 @@ public class SwirldsPlatform implements Platform, Startable {
      * @param emergencyRecoveryManager used in emergency recovery.
      */
     SwirldsPlatform(
-            @NonNull final Crypto crypto,
-            @NonNull final NodeId id,
-            @NonNull final AddressBook initialAddressBook,
             @NonNull final PlatformContext platformContext,
+            @NonNull final Crypto crypto,
+            @NonNull final AddressBook initialAddressBook,
+            @NonNull final NodeId id,
             @NonNull final String mainClassName,
             @NonNull final String swirldName,
             @NonNull final SoftwareVersion appVersion,
@@ -371,9 +371,6 @@ public class SwirldsPlatform implements Platform, Startable {
                 new PostConsensusSystemTransactionManagerFactory()
                         .addHandlers(stateManagementComponent.getPostConsensusHandleMethods())
                         .build();
-
-        // TODO these are suspicious!
-        final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
 
         // FUTURE WORK remove this when there are no more ShutdownRequestedTriggers being dispatched
         components.add(new Shutdown());
@@ -516,32 +513,10 @@ public class SwirldsPlatform implements Platform, Startable {
                                 "Interrupted while requesting preconsensus event flush");
                     });
 
-            final ParentFinder parentFinder = new ParentFinder(shadowGraph::hashgraphEvent);
-
             final List<Predicate<ChatterEventDescriptor>> isDuplicateChecks = new ArrayList<>();
             isDuplicateChecks.add(d -> shadowGraph.isHashInGraph(d.getHash()));
 
-            if (chatterConfig.useChatter()) {
-                final OrphanBufferingLinker orphanBuffer = new OrphanBufferingLinker(
-                        platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
-                        parentFinder,
-                        chatterConfig.futureGenerationLimit());
-                metrics.getOrCreate(
-                        new FunctionGauge.Config<>("intake", "numOrphans", Integer.class, orphanBuffer::getNumOrphans)
-                                .withDescription("the number of events without parents buffered")
-                                .withFormat("%d"));
-                eventLinker = orphanBuffer;
-                // when using chatter an event could be an orphan, in this case it will be stored in the orphan set
-                // when its parents are found, or become ancient, it will move to the shadowgraph
-                // non-orphans are also stored in the shadowgraph
-                // to dedupe, we need to check both
-                isDuplicateChecks.add(orphanBuffer::isOrphan);
-            } else {
-                eventLinker = new InOrderLinker(
-                        platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
-                        parentFinder,
-                        eventMapper::getMostRecentEvent);
-            }
+            eventLinker = buildEventLinker(isDuplicateChecks);
 
             final IntakeCycleStats intakeCycleStats = new IntakeCycleStats(time, metrics);
             final EventIntake eventIntake = new EventIntake(
@@ -553,25 +528,7 @@ public class SwirldsPlatform implements Platform, Startable {
                     intakeCycleStats,
                     shadowGraph);
 
-            final EventCreator eventCreator;
-            if (chatterConfig.useChatter()) {
-                // chatter has a separate event creator in a different thread. having 2 event creators creates the risk
-                // of forking, so a NPE is preferable to a fork
-                eventCreator = null;
-            } else {
-                eventCreator = new EventCreator(
-                        this.appVersion,
-                        selfId,
-                        PlatformConstructor.platformSigner(crypto.getKeysAndCerts()),
-                        consensusRef::get,
-                        swirldStateManager.getTransactionPool(),
-                        eventIntake::addEvent,
-                        eventMapper,
-                        eventMapper,
-                        swirldStateManager.getTransactionPool(),
-                        freezeManager::isFreezeStarted,
-                        new EventCreationRules(List.of()));
-            }
+            final EventCreator eventCreator = buildEventCreator(eventIntake);
 
             final List<GossipEventValidator> validators = new ArrayList<>();
             // it is very important to discard ancient events, otherwise the deduplication will not work, since it
@@ -609,6 +566,38 @@ public class SwirldsPlatform implements Platform, Startable {
                     .enableMaxSizeMetric(metrics)
                     .build());
 
+            transactionSubmitter = new SwirldTransactionSubmitter(
+                    currentPlatformStatus::get,
+                    PlatformConstructor.settingsProvider(),
+                    swirldStateManager::submitTransaction,
+                    new TransactionMetrics(metrics));
+
+            gossip = GossipFactory.buildGossip(
+                    platformContext,
+                    threadManager,
+                    time,
+                    crypto,
+                    notificationEngine,
+                    initialAddressBook,
+                    selfId,
+                    appVersion,
+                    shadowGraph,
+                    emergencyRecoveryManager,
+                    consensusRef,
+                    intakeQueue,
+                    freezeManager,
+                    startUpEventFrozenManager,
+                    swirldStateManager,
+                    startedFromGenesis,
+                    stateManagementComponent,
+                    taskDispatcher::dispatchTask,
+                    eventObserverDispatcher,
+                    eventMapper,
+                    eventIntakeMetrics,
+                    eventLinker,
+                    this::checkPlatformStatus,
+                    this::loadReconnectState);
+
             if (signedStateFromDisk != null) {
                 loadIntoConsensusAndEventMapper(signedStateFromDisk);
                 eventLinker.loadFromSignedState(signedStateFromDisk);
@@ -620,38 +609,6 @@ public class SwirldsPlatform implements Platform, Startable {
                         getAddressBook()));
             }
         }
-
-        transactionSubmitter = new SwirldTransactionSubmitter(
-                currentPlatformStatus::get,
-                PlatformConstructor.settingsProvider(),
-                swirldStateManager::submitTransaction,
-                new TransactionMetrics(metrics));
-
-        gossip = GossipFactory.buildGossip(
-                platformContext,
-                threadManager,
-                time,
-                crypto,
-                notificationEngine,
-                initialAddressBook,
-                selfId,
-                appVersion,
-                shadowGraph,
-                emergencyRecoveryManager,
-                consensusRef,
-                intakeQueue,
-                freezeManager,
-                startUpEventFrozenManager,
-                swirldStateManager,
-                startedFromGenesis,
-                stateManagementComponent,
-                taskDispatcher::dispatchTask,
-                eventObserverDispatcher,
-                eventMapper,
-                eventIntakeMetrics,
-                eventLinker,
-                this::checkPlatformStatus,
-                this::loadReconnectState);
 
         clearAllPipelines = new LoggingClearables(
                 RECONNECT.getMarker(),
@@ -916,8 +873,67 @@ public class SwirldsPlatform implements Platform, Startable {
     }
 
     /**
+     * Build the event creator.
+     */
+    @Nullable
+    private EventCreator buildEventCreator(@NonNull final EventIntake eventIntake) {
+        final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
+        if (chatterConfig.useChatter()) {
+            // chatter has a separate event creator in a different thread. having 2 event creators creates the risk
+            // of forking, so a NPE is preferable to a fork
+            return null;
+        } else {
+            return new EventCreator(
+                    this.appVersion,
+                    selfId,
+                    PlatformConstructor.platformSigner(crypto.getKeysAndCerts()),
+                    consensusRef::get,
+                    swirldStateManager.getTransactionPool(),
+                    eventIntake::addEvent,
+                    eventMapper,
+                    eventMapper,
+                    swirldStateManager.getTransactionPool(),
+                    freezeManager::isFreezeStarted,
+                    new EventCreationRules(List.of()));
+        }
+    }
+
+    /**
+     * Build the event linker.
+     */
+    @NonNull
+    private EventLinker buildEventLinker(@NonNull final List<Predicate<ChatterEventDescriptor>> isDuplicateChecks) {
+        final ParentFinder parentFinder = new ParentFinder(shadowGraph::hashgraphEvent);
+        final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
+        if (chatterConfig.useChatter()) {
+            final OrphanBufferingLinker orphanBuffer = new OrphanBufferingLinker(
+                    platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
+                    parentFinder,
+                    chatterConfig.futureGenerationLimit());
+            metrics.getOrCreate(
+                    new FunctionGauge.Config<>("intake", "numOrphans", Integer.class, orphanBuffer::getNumOrphans)
+                            .withDescription("the number of events without parents buffered")
+                            .withFormat("%d"));
+
+            // when using chatter an event could be an orphan, in this case it will be stored in the orphan set
+            // when its parents are found, or become ancient, it will move to the shadowgraph
+            // non-orphans are also stored in the shadowgraph
+            // to dedupe, we need to check both
+            isDuplicateChecks.add(orphanBuffer::isOrphan);
+
+            return orphanBuffer;
+        } else {
+            return new InOrderLinker(
+                    platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
+                    parentFinder,
+                    eventMapper::getMostRecentEvent);
+        }
+    }
+
+    /**
      * Build the pre-consensus event writer.
      */
+    @NonNull
     private PreConsensusEventWriter buildPreConsensusEventWriter() {
         final PreConsensusEventStreamConfig preConsensusEventStreamConfig =
                 platformContext.getConfiguration().getConfigData(PreConsensusEventStreamConfig.class);
