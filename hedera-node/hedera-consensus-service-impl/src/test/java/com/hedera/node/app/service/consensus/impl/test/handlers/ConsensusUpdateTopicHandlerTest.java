@@ -161,7 +161,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
     }
 
     @Test
-    @DisplayName("Delete admin key as expected")
+    @DisplayName("Delete admin key with Key.DEFAULT failed")
     void appliesDeleteAdminKey() {
         givenValidTopic(0, false);
         refreshStoresWithCurrentTopicInBothReadableAndWritable();
@@ -172,11 +172,11 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
         subject.handle(handleContext, op, writableStore);
 
         final var newTopic = writableTopicState.get(topicEntityNum);
-        assertNull(newTopic.adminKey());
+        assertNotNull(newTopic.adminKey());
     }
 
     @Test
-    @DisplayName("Delete admin key with empty KeyList as expected")
+    @DisplayName("Delete admin key with empty KeyList succeeded")
     void appliesDeleteEmptyKeyListAdminKey() {
         givenValidTopic(0, false);
         refreshStoresWithCurrentTopicInBothReadableAndWritable();
@@ -191,7 +191,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
     }
 
     @Test
-    @DisplayName("Delete admin key with empty KeyList as expected")
+    @DisplayName("Delete admin key with empty Threshold key failed")
     void appliesDeleteEmptyThresholdKeyListAdminKey() {
         givenValidTopic(0, false);
         refreshStoresWithCurrentTopicInBothReadableAndWritable();

@@ -19,11 +19,11 @@ package com.hedera.node.app.service.consensus.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
-import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -138,7 +138,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
             @NonNull final Topic topic) {
         if (op.hasAdminKey()) {
             var key = op.adminKey();
-            if (isEmpty(key)) {
+            if (isEmptyKeyList(key)) {
                 builder.adminKey((Key) null);
             } else {
                 builder.adminKey(key);
@@ -160,6 +160,11 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         builder.expiry(resolvedExpiryMeta.expiry());
         builder.autoRenewPeriod(resolvedExpiryMeta.autoRenewPeriod());
         builder.autoRenewAccountNumber(resolvedExpiryMeta.autoRenewNum());
+    }
+
+    private boolean isEmptyKeyList(Key key) {
+        return key.hasKeyList()
+                && requireNonNull(key.keyList()).keysOrElse(emptyList()).isEmpty();
     }
 
     private void validateMaybeNewAttributes(
