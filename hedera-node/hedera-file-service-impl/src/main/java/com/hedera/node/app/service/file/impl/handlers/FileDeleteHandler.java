@@ -19,16 +19,14 @@ package com.hedera.node.app.service.file.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
+import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.preValidate;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateAndAddRequiredKeys;
-import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.file.FileDeleteTransactionBody;
 import com.hedera.hapi.node.state.file.File;
-import com.hedera.node.app.service.file.FileMetadata;
-import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.records.DeleteFileRecordBuilder;
@@ -65,7 +63,7 @@ public class FileDeleteHandler implements TransactionHandler {
 
         final var transactionBody = context.body().fileDeleteOrThrow();
         final var fileStore = context.createStore(ReadableFileStoreImpl.class);
-        final var fileMeta = preValidate(transactionBody, fileStore);
+        final var fileMeta = preValidate(transactionBody.fileID(), fileStore);
 
         validateAndAddRequiredKeys(fileMeta.keys(), context, true);
     }
@@ -123,20 +121,5 @@ public class FileDeleteHandler implements TransactionHandler {
     @Override
     public DeleteFileRecordBuilder newRecordBuilder() {
         return new DeleteFileRecordBuilder();
-    }
-
-    private FileMetadata preValidate(
-            @NonNull final FileDeleteTransactionBody fileDeleteTransactionBody,
-            @NonNull final ReadableFileStore fileStore)
-            throws PreCheckException {
-        requireNonNull(fileDeleteTransactionBody);
-
-        if (!fileDeleteTransactionBody.hasFileID()) {
-            throw new PreCheckException(INVALID_FILE_ID);
-        }
-
-        final var fileMeta = fileStore.getFileMetadata(fileDeleteTransactionBody.fileIDOrElse(FileID.DEFAULT));
-        mustExist(fileMeta, INVALID_FILE_ID);
-        return fileMeta;
     }
 }

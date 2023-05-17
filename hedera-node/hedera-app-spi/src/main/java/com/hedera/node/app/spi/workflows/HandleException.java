@@ -17,6 +17,8 @@
 package com.hedera.node.app.spi.workflows;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * A runtime exception that wraps a {@link ResponseCodeEnum} status. Thrown by
@@ -34,9 +36,17 @@ public class HandleException extends RuntimeException {
         this.status = status;
     }
 
-    public HandleException(final ResponseCodeEnum status, Throwable originalCause) {
-        super(originalCause);
-        this.status = status;
+    /**
+     * {@inheritDoc}
+     * This implementation prevents initializing a cause.  HandleException is a result code carrier and
+     * must not have a cause.  If another {@link Throwable} caused this exception to be thrown, then that other
+     * throwable <strong>must</strong> be logged to appropriate diagnostics before the {@code HandleException}
+     * is thrown.
+     * @throws UnsupportedOperationException always.  This method must not be called.
+     */
+    @Override
+    public Throwable initCause(Throwable cause) {
+        throw new UnsupportedOperationException("HandleException must not chain a cause");
     }
 
     public ResponseCodeEnum getStatus() {
@@ -51,5 +61,20 @@ public class HandleException extends RuntimeException {
 
     public static void validateFalse(final boolean flag, final ResponseCodeEnum errorStatus) {
         validateTrue(!flag, errorStatus);
+    }
+
+    /**
+     * <strong>Disallowed</strong> constructor of {@code HandleException}.
+     * This {@link Exception} subclass is used as a form of unconditional jump, rather than a true
+     * exception.  If another {@link Throwable} caused this exception to be thrown, then that other
+     * throwable <strong>must</strong> be logged to appropriate diagnostics before the {@code HandleException}
+     * is thrown.
+     *
+     * @param responseCode the {@link ResponseCodeEnum responseCode}.  This is ignored.
+     * @param cause the {@link Throwable} that caused this exception.  This is ignored.
+     * @throws UnsupportedOperationException always.  This constructor must not be called.
+     */
+    private HandleException(@NonNull final ResponseCodeEnum responseCode, @Nullable final Throwable cause) {
+        throw new UnsupportedOperationException("HandleException must not chain a cause");
     }
 }

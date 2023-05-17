@@ -81,7 +81,7 @@ public class WritableFileStoreImpl extends ReadableFileStoreImpl {
     }
 
     /**
-     * Returns the {@link File} with the given number using {@link WritableKVState#getForModify(Comparable K)}.
+     * Returns the {@link File} with the given number using {@link WritableKVState}.
      * If no such file exists, returns {@code Optional.empty()}
      * @param fileNum - the number of the file to be retrieved.
      */

@@ -21,11 +21,10 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_FILE_SIZE_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
-import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
-import com.hedera.hapi.node.file.FileAppendTransactionBody;
 import com.hedera.node.app.service.file.FileMetadata;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -59,22 +58,19 @@ public class FileServiceUtils {
 
     /**
      * The function validation the file id and returns the file metadata.
-     * @param fileAppendTransactionBody
+     * @param fileId
      * @param fileStore
      * @return
      * @throws PreCheckException
      */
     public static @NonNull FileMetadata preValidate(
-            @NonNull final FileAppendTransactionBody fileAppendTransactionBody,
-            @NonNull final ReadableFileStore fileStore)
-            throws PreCheckException {
-        requireNonNull(fileAppendTransactionBody);
+            @Nullable final FileID fileId, @NonNull final ReadableFileStore fileStore) throws PreCheckException {
 
-        if (!fileAppendTransactionBody.hasFileID()) {
+        if (fileId == null) {
             throw new PreCheckException(INVALID_FILE_ID);
         }
 
-        final var fileMeta = fileStore.getFileMetadata(fileAppendTransactionBody.fileID());
+        final var fileMeta = fileStore.getFileMetadata(fileId);
         mustExist(fileMeta, INVALID_FILE_ID);
         return fileMeta;
     }

@@ -71,7 +71,7 @@ public class FileAppendHandler implements TransactionHandler {
 
         final var transactionBody = context.body().fileAppendOrThrow();
         final var fileStore = context.createStore(ReadableFileStoreImpl.class);
-        final var fileMeta = preValidate(transactionBody, fileStore);
+        final var fileMeta = preValidate(transactionBody.fileID(), fileStore);
 
         validateAndAddRequiredKeys(fileMeta.keys(), context, true);
     }
@@ -96,7 +96,7 @@ public class FileAppendHandler implements TransactionHandler {
         final var data = op.contents();
         final var fileServiceConfig = context.getConfiguration().getConfigData(FilesConfig.class);
         if (data == null || data.length() <= 0) {
-            logger.info("FileAppend: No data to append");
+            logger.debug("FileAppend: No data to append");
         }
 
         if (target == null) {

@@ -20,8 +20,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_FILE_SIZE_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
+import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.preValidate;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateAndAddRequiredKeys;
-import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static java.util.Objects.requireNonNull;
 
@@ -29,8 +29,6 @@ import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.file.FileUpdateTransactionBody;
 import com.hedera.hapi.node.state.file.File;
-import com.hedera.node.app.service.file.FileMetadata;
-import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.records.UpdateFileRecordBuilder;
@@ -70,7 +68,7 @@ public class FileUpdateHandler implements TransactionHandler {
         final var transactionBody = context.body().fileUpdateOrThrow();
         final var fileStore = context.createStore(ReadableFileStoreImpl.class);
 
-        preValidate(transactionBody, fileStore);
+        preValidate(transactionBody.fileID(), fileStore);
         validateAndAddRequiredKeys(transactionBody.keys(), context, true);
     }
 
@@ -164,24 +162,5 @@ public class FileUpdateHandler implements TransactionHandler {
         if (op.hasMemo()) {
             attributeValidator.validateMemo(op.memo());
         }
-    }
-
-    private FileMetadata preValidate(
-            @NonNull final FileUpdateTransactionBody fileUpdateTransactionBody,
-            @NonNull final ReadableFileStore fileStore)
-            throws PreCheckException {
-        requireNonNull(fileUpdateTransactionBody);
-
-        if (!fileUpdateTransactionBody.hasFileID()) {
-            throw new PreCheckException(INVALID_FILE_ID);
-        }
-
-        // The file ID must be present on the transaction and the file must exist.
-        final var target = fileUpdateTransactionBody.fileID();
-        mustExist(target, INVALID_FILE_ID);
-
-        final var fileMeta = fileStore.getFileMetadata(fileUpdateTransactionBody.fileID());
-        mustExist(fileMeta, INVALID_FILE_ID);
-        return fileMeta;
     }
 }

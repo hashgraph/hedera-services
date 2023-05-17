@@ -134,7 +134,7 @@ public class FileCreateHandler implements TransactionHandler {
             if (e.getStatus() == INVALID_EXPIRATION_TIME) {
                 // Since for some reason CreateTransactionBody does not have an expiration time,
                 // it makes more sense to propagate AUTORENEW_DURATION_NOT_IN_RANGE
-                throw new HandleException(AUTORENEW_DURATION_NOT_IN_RANGE, e);
+                throw new HandleException(AUTORENEW_DURATION_NOT_IN_RANGE);
             }
             throw e;
         }
