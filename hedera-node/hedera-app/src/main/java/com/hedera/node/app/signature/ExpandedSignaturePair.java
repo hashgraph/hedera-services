@@ -18,7 +18,6 @@ package com.hedera.node.app.signature;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SignaturePair;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -27,20 +26,13 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * Represents a {@link SignaturePair} where the {@link SignaturePair#pubKeyPrefix()} has been fully "expanded" to a
  * full, uncompressed, public key.
  *
- * @param key The fully expanded public key
- * @param hollowAccount If the sigPair applied to a hollow account, then that account will be provided here
+ * @param key The public key, compressed if ECDSA_SECP256K1, or the normal key for ED25519
+ * @param keyBytes The key bytes, uncompressed if ECDSA_SECP256K1, or the normal key bytes for ED25519
+ * @param evmAlias An optional computed evm alias if the key was ECDSA_SECP256K1, and we decided to compute the alias
  * @param sigPair The original signature pair
  */
-public record ExpandedSignaturePair(@NonNull Key key, @Nullable Account hollowAccount, @NonNull SignaturePair sigPair) {
-    /**
-     * Gets the {@link Bytes} representing the fully expanded public key.
-     * @return The key bytes.
-     */
-    @NonNull
-    public Bytes keyBytes() {
-        return sigPair.pubKeyPrefix();
-    }
-
+public record ExpandedSignaturePair(
+        @NonNull Key key, @NonNull Bytes keyBytes, @Nullable Bytes evmAlias, @NonNull SignaturePair sigPair) {
     /**
      * Gets the {@link Bytes} representing the signature signed by the private key matching the fully expanded public
      * key.

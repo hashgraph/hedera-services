@@ -48,7 +48,7 @@ import org.openjdk.jmh.infra.Blackhole;
  */
 @State(Scope.Benchmark)
 @Fork(value = 1)
-@Warmup(iterations = 1)
+@Warmup(iterations = 3)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 public class ExpansionBenchmark extends AppTestBase implements Scenarios {

@@ -22,8 +22,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.node.app.DaggerHederaApp;
-import com.hedera.node.app.HederaApp;
+import com.hedera.node.app.DaggerHederaInjectionComponent;
+import com.hedera.node.app.HederaInjectionComponent;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.context.PlatformContext;
@@ -49,7 +49,7 @@ class IngestComponentTest {
     @Mock
     private Cryptography cryptography;
 
-    private HederaApp app;
+    private HederaInjectionComponent app;
 
     @BeforeEach
     void setUp() {
@@ -60,16 +60,18 @@ class IngestComponentTest {
 
         given(platformContext.getCryptography()).willReturn(cryptography);
 
-        final var selfNodeId = new NodeId(false, 666L);
+        final var selfNodeId = new NodeId(666L);
 
-        app = DaggerHederaApp.builder()
+        app = DaggerHederaInjectionComponent.builder()
                 .initTrigger(InitTrigger.GENESIS)
                 .platform(platform)
                 .crypto(CryptographyHolder.get())
                 .consoleCreator(SwirldsGui::createConsole)
                 .staticAccountMemo("memo")
                 .bootstrapProps(new BootstrapProperties())
-                .selfId(AccountID.newBuilder().accountNum(selfNodeId.getId()).build())
+                .selfId(AccountID.newBuilder()
+                        .accountNum(selfNodeId.getIdAsInt())
+                        .build())
                 .initialHash(new Hash())
                 .maxSignedTxnSize(1024)
                 .build();
@@ -77,9 +79,10 @@ class IngestComponentTest {
 
     @Test
     void objectGraphRootsAreAvailable() {
-        given(platform.getSelfId()).willReturn(new NodeId(false, 0L));
+        given(platform.getSelfId()).willReturn(new NodeId(0L));
 
-        final IngestComponent subject = app.ingestComponentFactory().get().create();
+        final IngestInjectionComponent subject =
+                app.ingestComponentFactory().get().create();
 
         assertNotNull(subject.ingestWorkflow());
     }

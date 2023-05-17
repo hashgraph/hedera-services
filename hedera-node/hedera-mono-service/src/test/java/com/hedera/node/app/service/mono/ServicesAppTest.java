@@ -82,7 +82,7 @@ class ServicesAppTest {
 
     private final long selfId = 123;
     private static final String ACCOUNT_MEMO = "0.0.3";
-    private final NodeId selfNodeId = new NodeId(false, selfId);
+    private final NodeId selfNodeId = new NodeId(selfId);
 
     @Mock
     private Platform platform;

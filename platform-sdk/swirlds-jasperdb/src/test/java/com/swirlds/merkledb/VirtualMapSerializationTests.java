@@ -82,7 +82,7 @@ class VirtualMapSerializationTests {
                                 (short) ExampleFixedSizeVirtualValue.SERIALIZATION_VERSION,
                                         new ExampleFixedSizeVirtualValueSerializer())
                         .preferDiskIndices(false)
-                        .internalHashesRamToDiskThreshold(Long.MAX_VALUE)
+                        .hashesRamToDiskThreshold(Long.MAX_VALUE)
                         .maxNumberOfKeys(1234);
         return new MerkleDbDataSourceBuilder<>(tableConfig);
     }

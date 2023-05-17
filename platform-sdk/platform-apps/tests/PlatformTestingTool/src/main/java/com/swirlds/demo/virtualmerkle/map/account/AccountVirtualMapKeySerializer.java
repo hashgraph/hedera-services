@@ -33,11 +33,8 @@ public class AccountVirtualMapKeySerializer implements KeySerializer<AccountVirt
         public static final int ORIGINAL = 1;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public int getSerializedSize() {
+    public int getSerializedSize(long dataVersion) {
         return AccountVirtualMapKey.getSizeInBytes();
     }
 
