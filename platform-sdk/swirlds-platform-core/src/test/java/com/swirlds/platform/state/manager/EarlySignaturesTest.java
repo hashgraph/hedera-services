@@ -21,7 +21,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.swirlds.common.config.StateConfig;
-import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
@@ -114,13 +113,13 @@ public class EarlySignaturesTest extends AbstractSignedStateManagerTest {
 
             if (roundToSign > 0) {
                 if (roundToSign >= futureSignatures) {
-                    addSignature(manager, roundToSign, new NodeId(0));
-                    addSignature(manager, roundToSign, new NodeId(1));
-                    addSignature(manager, roundToSign, new NodeId(2));
+                    addSignature(manager, roundToSign, addressBook.getNodeId(0));
+                    addSignature(manager, roundToSign, addressBook.getNodeId(1));
+                    addSignature(manager, roundToSign, addressBook.getNodeId(2));
                     expectedCompletedStateCount++;
                 } else if (roundToSign % 2 != 0) {
-                    addSignature(manager, roundToSign, new NodeId(0));
-                    addSignature(manager, roundToSign, new NodeId(1));
+                    addSignature(manager, roundToSign, addressBook.getNodeId(0));
+                    addSignature(manager, roundToSign, addressBook.getNodeId(1));
                     expectedCompletedStateCount++;
                 }
             }
