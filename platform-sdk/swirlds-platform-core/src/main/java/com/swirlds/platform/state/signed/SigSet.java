@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.state.signed;
 
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
-
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.io.SelfSerializable;
@@ -25,6 +23,7 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.system.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -72,8 +71,9 @@ public class SigSet implements FastCopyable, Iterable<NodeId>, SelfSerializable 
      * @param nodeId    the ID of the node that provided the signature
      * @param signature the signature to add
      */
-    public void addSignature(final NodeId nodeId, final Signature signature) {
-        throwArgNull(signature, "signature");
+    public void addSignature(@NonNull final NodeId nodeId, @NonNull final Signature signature) {
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
+        Objects.requireNonNull(signature, "signature must not be null");
         signatures.put(nodeId, signature);
     }
 
@@ -82,7 +82,8 @@ public class SigSet implements FastCopyable, Iterable<NodeId>, SelfSerializable 
      *
      * @param nodeId the ID of the signature to remove
      */
-    public void removeSignature(final NodeId nodeId) {
+    public void removeSignature(@NonNull final NodeId nodeId) {
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
         signatures.remove(nodeId);
     }
 
@@ -92,6 +93,7 @@ public class SigSet implements FastCopyable, Iterable<NodeId>, SelfSerializable 
      * @param nodeId the ID of the node
      * @return a signature for the node, or null if there is no signature for the node
      */
+    @Nullable
     public Signature getSignature(@NonNull final NodeId nodeId) {
         Objects.requireNonNull(nodeId, "nodeId must not be null");
         return signatures.get(nodeId);
@@ -112,6 +114,7 @@ public class SigSet implements FastCopyable, Iterable<NodeId>, SelfSerializable 
      * Get an iterator that walks over the set of nodes that have signed the state.
      */
     @Override
+    @NonNull
     public Iterator<NodeId> iterator() {
         final Iterator<NodeId> iterator = signatures.keySet().iterator();
 
@@ -134,6 +137,7 @@ public class SigSet implements FastCopyable, Iterable<NodeId>, SelfSerializable 
      *
      * @return a list of all signing nodes
      */
+    @NonNull
     public List<NodeId> getSigningNodes() {
         return new ArrayList<>(signatures.keySet());
     }
@@ -152,6 +156,7 @@ public class SigSet implements FastCopyable, Iterable<NodeId>, SelfSerializable 
      */
     @SuppressWarnings("unchecked")
     @Override
+    @NonNull
     public SigSet copy() {
         return new SigSet(this);
     }

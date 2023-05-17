@@ -630,7 +630,7 @@ public class SignedState implements SignedStateInfo {
         // Recalculate signing weight. We should do this even if we don't remove signatures.
         signingWeight = 0;
         for (final NodeId nodeId : sigSet) {
-            Address address = trustedAddressBook.getAddress(nodeId);
+            final Address address = trustedAddressBook.getAddress(nodeId);
             if (address != null) {
                 signingWeight += address.getWeight();
             }

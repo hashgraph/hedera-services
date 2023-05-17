@@ -42,7 +42,9 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
  * A utility for generating random signed states.
@@ -378,7 +380,9 @@ public class RandomSignedStateGenerator {
      * @param signingNodeIds a list of nodes that have signed this state
      * @return this object
      */
-    public RandomSignedStateGenerator setSigningNodeIds(final List<NodeId> signingNodeIds) {
+    @NonNull
+    public RandomSignedStateGenerator setSigningNodeIds(@NonNull final List<NodeId> signingNodeIds) {
+        Objects.requireNonNull(signingNodeIds, "signingNodeIds must not be null");
         this.signingNodeIds = signingNodeIds;
         return this;
     }
@@ -388,7 +392,9 @@ public class RandomSignedStateGenerator {
      *
      * @return this object
      */
-    public RandomSignedStateGenerator setSignatures(final Map<NodeId, Signature> signatures) {
+    @NonNull
+    public RandomSignedStateGenerator setSignatures(@NonNull final Map<NodeId, Signature> signatures) {
+        Objects.requireNonNull(signatures, "signatures must not be null");
         this.signatures = signatures;
         return this;
     }
@@ -398,7 +404,9 @@ public class RandomSignedStateGenerator {
      *
      * @return this object
      */
-    public RandomSignedStateGenerator setStateHash(final Hash stateHash) {
+    @NonNull
+    public RandomSignedStateGenerator setStateHash(@NonNull final Hash stateHash) {
+        Objects.requireNonNull(stateHash, "stateHash must not be null");
         this.stateHash = stateHash;
         return this;
     }
@@ -408,6 +416,7 @@ public class RandomSignedStateGenerator {
      *
      * @return this object
      */
+    @NonNull
     public RandomSignedStateGenerator setProtectionEnabled(final boolean protectionEnabled) {
         this.protectionEnabled = protectionEnabled;
         return this;

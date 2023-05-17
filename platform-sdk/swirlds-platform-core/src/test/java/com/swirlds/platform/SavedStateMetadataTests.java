@@ -43,9 +43,11 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -71,7 +73,8 @@ class SavedStateMetadataTests {
     }
 
     /** generates a random non-negative node id. */
-    private NodeId generateRandomNodeId(final Random random) {
+    private NodeId generateRandomNodeId(@NonNull final Random random) {
+        Objects.requireNonNull(random, "random must not be null");
         return new NodeId(random.nextLong(Long.MAX_VALUE));
     }
 

@@ -336,7 +336,7 @@ public record SavedStateMetadata(
      */
     @SuppressWarnings("SameParameterValue")
     private static List<NodeId> parseNodeIdList(
-            final Map<SavedStateMetadataField, String> data, final SavedStateMetadataField field) {
+            @NonNull final Map<SavedStateMetadataField, String> data, @NonNull final SavedStateMetadataField field) {
 
         if (!data.containsKey(field)) {
             logMissingField(field);

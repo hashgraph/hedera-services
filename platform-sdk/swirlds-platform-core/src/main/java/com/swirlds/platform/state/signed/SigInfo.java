@@ -85,13 +85,6 @@ public class SigInfo implements FastCopyable, SelfSerializable {
         classVersion = 1;
     }
 
-    private SigInfo(final SigInfo sourceValue) {
-        this.round = sourceValue.getRound();
-        this.memberId = sourceValue.getMemberId();
-        this.hash = sourceValue.getHash();
-        this.signature = sourceValue.getSignature();
-    }
-
     /**
      * {@inheritDoc}
      */
@@ -148,6 +141,7 @@ public class SigInfo implements FastCopyable, SelfSerializable {
      *
      * @return member who signed the state
      */
+    @NonNull
     public NodeId getMemberId() {
         return memberId;
     }

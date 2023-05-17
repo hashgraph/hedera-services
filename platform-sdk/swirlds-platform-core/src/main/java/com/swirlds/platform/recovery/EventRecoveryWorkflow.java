@@ -98,16 +98,24 @@ public final class EventRecoveryWorkflow {
      * @param loadSigningKeys         if true then load the signing keys
      */
     public static void recoverState(
-            final Path signedStateFile,
-            final List<Path> configurationFiles,
-            final Path eventStreamDirectory,
-            final String mainClassName,
-            final Boolean allowPartialRounds,
-            final Long finalRound,
-            final Path resultingStateDirectory,
-            final NodeId selfId,
+            @NonNull final Path signedStateFile,
+            @NonNull final List<Path> configurationFiles,
+            @NonNull final Path eventStreamDirectory,
+            @NonNull final String mainClassName,
+            @NonNull final Boolean allowPartialRounds,
+            @NonNull final Long finalRound,
+            @NonNull final Path resultingStateDirectory,
+            @NonNull final NodeId selfId,
             final boolean loadSigningKeys)
             throws IOException {
+        Objects.requireNonNull(signedStateFile, "signedStateFile must not be null");
+        Objects.requireNonNull(configurationFiles, "configurationFiles must not be null");
+        Objects.requireNonNull(eventStreamDirectory, "eventStreamDirectory must not be null");
+        Objects.requireNonNull(mainClassName, "mainClassName must not be null");
+        Objects.requireNonNull(allowPartialRounds, "allowPartialRounds must not be null");
+        Objects.requireNonNull(finalRound, "finalRound must not be null");
+        Objects.requireNonNull(resultingStateDirectory, "resultingStateDirectory must not be null");
+        Objects.requireNonNull(selfId, "selfId must not be null");
 
         setupConstructableRegistry();
 

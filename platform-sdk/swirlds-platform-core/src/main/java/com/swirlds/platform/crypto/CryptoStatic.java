@@ -327,6 +327,7 @@ public final class CryptoStatic {
      * @throws KeyLoadingException
      * 		in an issue occurs while loading keys and certificates
      */
+    @NonNull
     public static Map<NodeId, KeysAndCerts> loadKeysAndCerts(
             @NonNull final AddressBook addressBook, @NonNull final Path keysDirPath, @NonNull final char[] password)
             throws KeyStoreException, KeyLoadingException, UnrecoverableKeyException, NoSuchAlgorithmException {
@@ -350,7 +351,7 @@ public final class CryptoStatic {
 
         final Map<NodeId, KeysAndCerts> keysAndCerts = new HashMap<>();
         for (int i = 0; i < n; i++) {
-            NodeId nodeId = addressBook.getNodeId(i);
+            final NodeId nodeId = addressBook.getNodeId(i);
             if (!addressBook.getAddress(nodeId).isOwnHost()) {
                 // in case we are not creating keys but loading them from disk, we do not need to create
                 // a KeysAndCerts object for every node, just the local ones
@@ -393,9 +394,12 @@ public final class CryptoStatic {
      * @throws KeyStoreException
      * 		if there is no provider that supports {@link CryptoConstants#KEYSTORE_TYPE}
      */
+    @NonNull
     public static Map<NodeId, KeysAndCerts> generateKeysAndCerts(
-            final AddressBook addressBook, final ExecutorService threadPool)
+            @NonNull final AddressBook addressBook, @NonNull final ExecutorService threadPool)
             throws ExecutionException, InterruptedException, KeyStoreException {
+        Objects.requireNonNull(addressBook, "addressBook must not be null");
+        Objects.requireNonNull(threadPool, "threadPool must not be null");
 
         final byte[] masterKey = new byte[CryptoConstants.SYM_KEY_SIZE_BYTES];
         final byte[] swirldId = new byte[CryptoConstants.HASH_SIZE_BYTES];
@@ -403,14 +407,14 @@ public final class CryptoStatic {
         final PublicStores publicStores = new PublicStores();
 
         final int n = addressBook.getSize();
-        Map<NodeId, Future<KeysAndCerts>> futures = new HashMap<>(n);
+        final Map<NodeId, Future<KeysAndCerts>> futures = new HashMap<>(n);
         for (int i = 0; i < n; i++) {
-            NodeId nodeId = addressBook.getNodeId(i);
-            Address address = addressBook.getAddress(nodeId);
+            final NodeId nodeId = addressBook.getNodeId(i);
+            final Address address = addressBook.getAddress(nodeId);
             if (address == null) {
                 throw new NoSuchElementException("Address not found for node " + nodeId);
             }
-            String name = nameToAlias(address.getSelfName());
+            final String name = nameToAlias(address.getSelfName());
             for (int j = 0; j < masterKey.length; j++) {
                 masterKey[j] = (byte) (j * MASTER_KEY_MULTIPLIER);
             }
@@ -482,9 +486,10 @@ public final class CryptoStatic {
      * @throws InterruptedException
      * 		if {@link Future#get} throws
      */
-    public static <T> Map<NodeId, T> futuresToMap(final Map<NodeId, Future<T>> futures)
+    @NonNull
+    public static <T> Map<NodeId, T> futuresToMap(@NonNull final Map<NodeId, Future<T>> futures)
             throws ExecutionException, InterruptedException {
-        Map<NodeId, T> map = new HashMap<>();
+        final Map<NodeId, T> map = new HashMap<>();
         for (Map.Entry<NodeId, Future<T>> entry : futures.entrySet()) {
             map.put(entry.getKey(), entry.getValue().get());
         }

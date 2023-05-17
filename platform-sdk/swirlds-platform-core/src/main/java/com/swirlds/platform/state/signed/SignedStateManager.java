@@ -446,6 +446,10 @@ public class SignedStateManager implements SignedStateFinder {
      */
     private void addSignature(
             @NonNull final SignedState signedState, @NonNull final NodeId nodeId, @NonNull final Signature signature) {
+        Objects.requireNonNull(signedState, "signedState must not be null");
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
+        Objects.requireNonNull(signature, "signature must not be null");
+
         if (signedState.addSignature(nodeId, signature)) {
             // at this point the signed state is complete for the first time
             signedStateNewlyComplete(signedState);
@@ -467,6 +471,7 @@ public class SignedStateManager implements SignedStateFinder {
      * @param signedState the state that was unable to be complete signed
      */
     private void notifyStateLacksSignatures(@NonNull final SignedState signedState) {
+        Objects.requireNonNull(signedState, "signedState must not be null");
         stateLacksSignaturesConsumer.stateLacksSignatures(signedState);
     }
 
@@ -476,6 +481,7 @@ public class SignedStateManager implements SignedStateFinder {
      * @param signedState the state that now has enough signatures
      */
     private void notifyStateHasEnoughSignatures(@NonNull final SignedState signedState) {
+        Objects.requireNonNull(signedState, "signedState must not be null");
         stateHasEnoughSignaturesConsumer.stateHasEnoughSignatures(signedState);
     }
 }

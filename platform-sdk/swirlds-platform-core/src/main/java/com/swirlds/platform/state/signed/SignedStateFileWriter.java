@@ -170,11 +170,14 @@ public final class SignedStateFileWriter {
      * @param taskDescription     a description of the task
      */
     public static void writeSignedStateToDisk(
-            final NodeId selfId,
-            final Path savedStateDirectory,
-            final SignedState signedState,
-            final String taskDescription)
+            @Nullable final NodeId selfId,
+            @NonNull final Path savedStateDirectory,
+            @NonNull final SignedState signedState,
+            @NonNull final String taskDescription)
             throws IOException {
+        Objects.requireNonNull(savedStateDirectory, "savedStateDirectory must not be null");
+        Objects.requireNonNull(signedState, "signedState must not be null");
+        Objects.requireNonNull(taskDescription, "taskDescription must not be null");
 
         try {
             logger.info(

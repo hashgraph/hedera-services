@@ -392,6 +392,8 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      */
     public void handleStateSignatureTransactionPreConsensus(
             @NonNull final NodeId creatorId, @NonNull final StateSignatureTransaction stateSignatureTransaction) {
+        Objects.requireNonNull(creatorId, "creatorId must not be null");
+        Objects.requireNonNull(stateSignatureTransaction, "stateSignatureTransaction must not be null");
 
         signedStateManager.preConsensusSignatureObserver(
                 stateSignatureTransaction.getRound(), creatorId, stateSignatureTransaction.getStateSignature());
@@ -422,6 +424,9 @@ public class DefaultStateManagementComponent implements StateManagementComponent
             @NonNull final State state,
             @NonNull final NodeId creatorId,
             @NonNull final StateSignatureTransaction stateSignatureTransaction) {
+        Objects.requireNonNull(state, "state must not be null");
+        Objects.requireNonNull(creatorId, "creatorId must not be null");
+        Objects.requireNonNull(stateSignatureTransaction, "stateSignatureTransaction must not be null");
 
         consensusHashManager.postConsensusSignatureObserver(
                 stateSignatureTransaction.getRound(), creatorId.id(), stateSignatureTransaction.getStateHash());

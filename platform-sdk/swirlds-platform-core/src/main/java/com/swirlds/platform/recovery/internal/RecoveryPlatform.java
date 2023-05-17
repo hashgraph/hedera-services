@@ -38,6 +38,7 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateReference;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 
 /**
  * A simplified version of the platform to be used during the recovery workflow.
@@ -65,12 +66,14 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
      *                        called
      */
     public RecoveryPlatform(
-            final Configuration configuration,
-            final SignedState initialState,
-            final NodeId selfId,
+            @NonNull final Configuration configuration,
+            @NonNull final SignedState initialState,
+            @NonNull final NodeId selfId,
             final boolean loadSigningKeys) {
-
-        this.selfId = selfId;
+        Objects.requireNonNull(configuration, "configuration must not be null");
+        Objects.requireNonNull(initialState, "initialState must not be null");
+        this.selfId = Objects.requireNonNull(selfId, "selfId must not be null");
+        ;
 
         this.addressBook = initialState.getAddressBook();
 

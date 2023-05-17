@@ -113,7 +113,7 @@ class StateManagementComponentTests {
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .setSequentialIds(false)
                 .build();
-        final DefaultStateManagementComponent component = newStateManagementComponent(random, addressBook);
+        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook);
 
         component.start();
 
@@ -161,7 +161,7 @@ class StateManagementComponentTests {
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .setSequentialIds(false)
                 .build();
-        final DefaultStateManagementComponent component = newStateManagementComponent(random, addressBook);
+        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook);
 
         component.start();
 
@@ -256,7 +256,7 @@ class StateManagementComponentTests {
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .setSequentialIds(false)
                 .build();
-        final DefaultStateManagementComponent component = newStateManagementComponent(random, addressBook);
+        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook);
 
         component.start();
 
@@ -303,7 +303,7 @@ class StateManagementComponentTests {
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .setSequentialIds(false)
                 .build();
-        final DefaultStateManagementComponent component = newStateManagementComponent(random, addressBook);
+        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook);
 
         systemTransactionConsumer.reset();
         component.start();
@@ -382,7 +382,7 @@ class StateManagementComponentTests {
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .setSequentialIds(false)
                 .build();
-        final DefaultStateManagementComponent component = newStateManagementComponent(random, addressBook);
+        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook);
 
         component.start();
 
@@ -539,13 +539,14 @@ class StateManagementComponentTests {
     }
 
     private void allNodesSign(final SignedState signedState, final DefaultStateManagementComponent component) {
-        AddressBook addressBook = signedState.getAddressBook();
+        final AddressBook addressBook = signedState.getAddressBook();
         IntStream.range(0, NUM_NODES)
                 .forEach(index -> component.handleStateSignatureTransactionPreConsensus(
                         addressBook.getNodeId(index),
                         stateSignatureTransaction(addressBook.getNodeId(index), signedState)));
     }
 
+    @NonNull
     private static StateSignatureTransaction stateSignatureTransaction(
             @NonNull final NodeId signingNodeId, @Nullable final SignedState stateToSign) {
 
@@ -600,8 +601,8 @@ class StateManagementComponentTests {
         assertEquals(hash, signatureTransaction.getStateHash(), "Incorrect hash in state signature transaction");
     }
 
-    private DefaultStateManagementComponent newStateManagementComponent(
-            final Random random, final AddressBook addressBook) {
+    @NonNull
+    private DefaultStateManagementComponent newStateManagementComponent(@NonNull final AddressBook addressBook) {
         final TestConfigBuilder configBuilder = new TestConfigBuilder()
                 .withValue("state.roundsToKeepForSigning", roundsToKeepForSigning)
                 .withValue("state.saveStatePeriod", 1)
