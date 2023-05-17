@@ -66,6 +66,7 @@ public class CryptoTransferHandler implements TransactionHandler {
      * @param txn the {@link TransactionBody} of the {@code CryptoTransfer}
      * @throws PreCheckException if validation fails
      */
+    @Override
     public void validate(@NonNull final TransactionBody txn) throws PreCheckException {
         requireNonNull(txn);
         // FUTURE: Migrate validation from CryptoTransferTransitionLogic.validateSemantics()
