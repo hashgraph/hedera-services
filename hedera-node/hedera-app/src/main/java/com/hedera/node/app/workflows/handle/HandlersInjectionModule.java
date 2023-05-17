@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.workflows.handle;
 
-import com.hedera.node.app.components.StoreComponent;
+import com.hedera.node.app.components.StoreInjectionComponent;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusHandlers;
 import com.hedera.node.app.service.contract.impl.handlers.ContractHandlers;
 import com.hedera.node.app.service.file.impl.handlers.FileHandlers;
@@ -30,8 +30,8 @@ import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Singleton;
 
-@Module(subcomponents = {StoreComponent.class})
-public interface HandlersModule {
+@Module(subcomponents = {StoreInjectionComponent.class})
+public interface HandlersInjectionModule {
     @Provides
     @Singleton
     static TransactionHandlers provideTransactionHandlers(

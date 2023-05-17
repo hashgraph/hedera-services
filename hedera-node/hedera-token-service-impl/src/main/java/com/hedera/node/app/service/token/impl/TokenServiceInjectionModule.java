@@ -57,7 +57,7 @@ import dagger.Module;
  * Dagger module of the token service
  */
 @Module
-public interface TokenServiceModule {
+public interface TokenServiceInjectionModule {
 
     @Binds
     CryptoSignatureWaivers cryptoSignatureWaivers(CryptoSignatureWaiversImpl impl);

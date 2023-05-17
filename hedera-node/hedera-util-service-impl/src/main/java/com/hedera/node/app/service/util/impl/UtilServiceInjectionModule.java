@@ -14,20 +14,16 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.fees;
+package com.hedera.node.app.service.util.impl;
 
-import com.hedera.node.app.service.mono.fees.FeeCalculator;
-import dagger.Binds;
+import com.hedera.node.app.service.util.impl.handlers.UtilHandlers;
+import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
 import dagger.Module;
-import javax.inject.Singleton;
 
 @Module
-public interface FeesModule {
-    @Binds
-    @Singleton
-    FeeCalculator bindFeeCalculator(AdaptedMonoFeeCalculator adaptedMonoFeeCalculator);
+public interface UtilServiceInjectionModule {
 
-    @Binds
-    @Singleton
-    QueryFeeCheck bindQueryFeeCheck(MonoQueryFeeCheck monoQueryFeeCheck);
+    UtilPrngHandler prngHandler();
+
+    UtilHandlers utilHandlers();
 }

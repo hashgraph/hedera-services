@@ -14,24 +14,20 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.state;
+package com.hedera.node.app.components;
 
-import com.hedera.node.app.state.merkle.MerkleRecordCache;
-import dagger.Module;
-import dagger.Provides;
-import javax.inject.Singleton;
+import com.hedera.node.app.workflows.query.QueryWorkflow;
+import dagger.Subcomponent;
 
-@Module
-public interface HederaStateModule {
-    @Provides
-    @Singleton
-    static RecordCache provideRecordCache() {
-        return new MerkleRecordCache();
-    }
+/**
+ * A Dagger subcomponent that provides the query workflow.
+ */
+@Subcomponent
+public interface QueryInjectionComponent {
+    QueryWorkflow queryWorkflow();
 
-    @Provides
-    @Singleton
-    static WorkingStateAccessor provideWorkingStateAccessor() {
-        return new WorkingStateAccessor();
+    @Subcomponent.Factory
+    interface Factory {
+        QueryInjectionComponent create();
     }
 }
