@@ -1,4 +1,4 @@
-package com.swirlds.platform.modules;
+package com.swirlds.platform.poc;
 
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 

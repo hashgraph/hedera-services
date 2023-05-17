@@ -1,6 +1,9 @@
-package com.swirlds.platform.modules;
+package com.swirlds.platform.poc;
 
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
+import com.swirlds.platform.poc.impl.TP2;
+import com.swirlds.platform.poc.impl.Nexus1;
+import com.swirlds.platform.poc.moduledefs.Nexus2;
 
 import java.util.List;
 import java.util.Random;
@@ -32,15 +35,18 @@ public class Poc {
 		InterruptableConsumer<String> ts2 = wiring.getTaskSubmitter(TP2);
 
 		// step 4: construct task processors
-		InterruptableConsumer<String> tp1 = s->{
-			System.out.printf("I am TP1, I received '%s'%n", s);
-			System.out.printf("I am TP1, Nexus 1 has value '%d'%n", nx1.get());
-			System.out.printf("I am TP1, Nexus 2 says '%s'%n", nx2.get());
-			nx1.set(new Random().nextInt());
-			Thread.sleep(1000);
-			ts2.accept(String.format("%X", new Random().nextInt()));
+		InterruptableConsumer<String> tp1 = new InterruptableConsumer<String>() {
+			@Override
+			public void accept(final String s) throws InterruptedException {
+				System.out.printf("I am TP1, I received '%s'%n", s);
+				System.out.printf("I am TP1, Nexus 1 has value '%d'%n", nx1.get());
+				System.out.printf("I am TP1, Nexus 2 says '%s'%n", nx2.get());
+				nx1.set(new Random().nextInt());
+				Thread.sleep(1000);
+				ts2.accept(String.format("%X", new Random().nextInt()));
+			}
 		};
-		final Module2 module2 = new Module2(tp1);
+		final com.swirlds.platform.poc.impl.TP2 module2 = new TP2(tp1);
 
 		// step 5: add task processors
 		wiring.addTaskProcessor(TP1, tp1);

@@ -1,8 +1,10 @@
-package com.swirlds.platform.modules;
+package com.swirlds.platform.poc.impl;
+
+import com.swirlds.platform.poc.infrastructure.Nexus;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class Nexus1 {
+public class Nexus1 implements Nexus {
 	private final AtomicInteger i = new AtomicInteger(0);
 	public int get(){
 		return i.get();
