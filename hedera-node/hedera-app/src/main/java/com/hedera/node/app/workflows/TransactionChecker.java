@@ -24,12 +24,14 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_DUR
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_START;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_PREFIX_MISMATCH;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_EXPIRED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_HAS_UNKNOWN_FIELDS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_ID_FIELD_NOT_ALLOWED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_OVERSIZE;
+import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -37,6 +39,7 @@ import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.base.SignaturePair;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
@@ -61,6 +64,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
@@ -134,6 +139,19 @@ public class TransactionChecker {
     }
 
     /**
+     * Parses and checks the transaction encoded as protobuf in the given buffer.
+     *
+     * @param buffer The buffer containing the protobuf bytes of the transaction
+     * @return The parsed {@link TransactionInfo}
+     * @throws PreCheckException If parsing fails or any of the checks fail.
+     */
+    @NonNull
+    public TransactionInfo parseAndCheck(@NonNull final Bytes buffer) throws PreCheckException {
+        final var tx = parse(buffer);
+        return check(tx);
+    }
+
+    /**
      * Parse the given {@link Bytes} into a transaction.
      *
      * <p>After verifying that the number of bytes comprising the transaction does not exceed the maximum allowed, the
@@ -144,6 +162,7 @@ public class TransactionChecker {
      * @throws PreCheckException if the data is not valid
      * @throws NullPointerException if one of the arguments is {@code null}
      */
+    @NonNull
     public Transaction parse(@NonNull final Bytes buffer) throws PreCheckException {
         // Fail fast if there are too many transaction bytes
         if (buffer.length() > maxSignedTxnSize) {
@@ -187,6 +206,7 @@ public class TransactionChecker {
      * @throws PreCheckException if the data is not valid
      * @throws NullPointerException if one of the arguments is {@code null}
      */
+    @NonNull
     public TransactionInfo check(@NonNull final Transaction tx) throws PreCheckException {
 
         // NOTE: Since we've already parsed the transaction, we assume that the transaction was not too many
@@ -218,6 +238,9 @@ public class TransactionChecker {
             throw new PreCheckException(INVALID_TRANSACTION_BODY);
         }
 
+        // 2c. Check that the signature map does not have any entries that could apply to the same key
+        checkPrefixMismatch(signatureMap.sigPairOrElse(emptyList()));
+
         // 3. Parse and validate TransactionBody
         final var txBody =
                 parseStrict(bodyBytes.toReadableSequentialData(), TransactionBody.PROTOBUF, INVALID_TRANSACTION_BODY);
@@ -226,7 +249,7 @@ public class TransactionChecker {
         // 4. Return TransactionInfo
         try {
             final var functionality = HapiUtils.functionOf(txBody);
-            return new TransactionInfo(tx, txBody, signatureMap, functionality);
+            return new TransactionInfo(tx, txBody, signatureMap, bodyBytes, functionality);
         } catch (UnknownHederaFunctionality e) {
             throw new PreCheckException(INVALID_TRANSACTION_BODY);
         }
@@ -349,7 +372,7 @@ public class TransactionChecker {
         if (buffer.length > props.maxMemoUtf8Bytes()) {
             throw new PreCheckException(MEMO_TOO_LONG);
         }
-        // FIXME: This check should be removed after mirror node supports 0x00 in memo fields
+        // FUTURE: This check should be removed after mirror node supports 0x00 in memo fields
         for (final byte b : buffer) {
             if (b == 0) {
                 throw new PreCheckException(INVALID_ZERO_BYTE_IN_STRING);
@@ -395,6 +418,7 @@ public class TransactionChecker {
      * @param timestamp the {@code Timestamp} that should be converted
      * @return the resulting {@code Instant}
      */
+    @NonNull
     private Instant toInstant(final Timestamp timestamp) {
         return Instant.ofEpochSecond(
                 clamp(timestamp.seconds(), Instant.MIN.getEpochSecond(), Instant.MAX.getEpochSecond()),
@@ -431,6 +455,7 @@ public class TransactionChecker {
      * @return The parsed message.
      * @throws PreCheckException if the data is malformed or contains unknown fields.
      */
+    @NonNull
     private <T extends Record> T parseStrict(
             @NonNull ReadableSequentialData data, Codec<T> codec, ResponseCodeEnum parseErrorCode)
             throws PreCheckException {
@@ -451,5 +476,64 @@ public class TransactionChecker {
             logger.warn("Unexpected IO exception while parsing protobuf", e);
             throw new PreCheckException(parseErrorCode);
         }
+    }
+
+    /**
+     *  We must throw KEY_PREFIX_MISMATCH if the same prefix shows up more than once in the signature map. We
+     *  could check for that if we sort the keys by prefix first. Then we can march through them and if we find any
+     *  duplicates then we throw KEY_PREFIX_MISMATCH. We must also throw KEY_PREFIX_MISMATCH if the prefix of one
+     *  entry is the prefix of another entry (i.e. during key matching, if it would be possible for a single key to
+     *  match multiple entries, then we throw).
+     *
+     * @param sigPairs The list of signature pairs to check. Cannot be null.
+     * @throws PreCheckException if the list contains duplicate prefixes or prefixes that could apply to the same key
+     */
+    private void checkPrefixMismatch(@NonNull final List<SignaturePair> sigPairs) throws PreCheckException {
+        final var sortedList = sort(sigPairs);
+        if (sortedList.size() > 1) {
+            var prev = sortedList.get(0);
+            var size = sortedList.size();
+            for (int i = 1; i < size; i++) {
+                final var curr = sortedList.get(i);
+                final var p1 = prev.pubKeyPrefix();
+                final var p2 = curr.pubKeyPrefix();
+                // NOTE: Length equality check is a workaround for a bug in Bytes in PBJ
+                if ((p1.length() == 0 && p2.length() == 0) || p2.matchesPrefix(p1)) {
+                    throw new PreCheckException(KEY_PREFIX_MISMATCH);
+                }
+                prev = curr;
+            }
+        }
+    }
+
+    /**
+     * Sorts the list of signature pairs by the prefix of the public key. Sort them such that shorter prefixes come
+     * before longer prefixes, and if two prefixes are the same length then sort them lexicographically (lower bytes
+     * before higher bytes).
+     *
+     * @param sigPairs The list of signature pairs to sort. Cannot be null.
+     * @return the sorted list of signature pairs
+     */
+    @NonNull
+    private List<SignaturePair> sort(@NonNull final List<SignaturePair> sigPairs) {
+        final var sortedList = new ArrayList<>(sigPairs);
+        sortedList.sort((s1, s2) -> {
+            final var p1 = s1.pubKeyPrefix();
+            final var p2 = s2.pubKeyPrefix();
+            if (p1.length() != p2.length()) {
+                return (int) (p1.length() - p2.length());
+            }
+
+            for (int i = 0; i < p1.length(); i++) {
+                final var b1 = p1.getByte(i);
+                final var b2 = p2.getByte(i);
+                if (b1 != b2) {
+                    return b1 - b2;
+                }
+            }
+
+            return 0;
+        });
+        return sortedList;
     }
 }

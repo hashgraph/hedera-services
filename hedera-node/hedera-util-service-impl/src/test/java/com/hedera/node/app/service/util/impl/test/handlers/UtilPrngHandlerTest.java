@@ -32,7 +32,7 @@ import static org.mockito.Mockito.verify;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionRecord.EntropyOneOfType;
 import com.hedera.hapi.node.util.UtilPrngTransactionBody;
-import com.hedera.node.app.service.network.ReadableRunningHashLeafStore;
+import com.hedera.node.app.service.networkadmin.ReadableRunningHashLeafStore;
 import com.hedera.node.app.service.util.impl.config.PrngConfig;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
 import com.hedera.node.app.service.util.impl.records.PrngRecordBuilder;

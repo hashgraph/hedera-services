@@ -31,6 +31,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.context.StateChildrenProvider;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
+import com.hedera.node.app.service.mono.context.properties.PropertyNames;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
@@ -68,7 +69,6 @@ import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
-import com.hedera.node.app.spi.config.PropertyNames;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -249,7 +249,7 @@ public class ServicesState extends PartialNaryMerkleInternal
             // Note this returns the app in case we need to do something with it after making
             // final changes to state (e.g. after migrating something from memory to disk)
             deserializedInit(platform, dualState, trigger, deserializedVersion);
-            final var isUpgrade = SEMANTIC_VERSIONS.deployedSoftwareVersion().isAfter(deserializedVersion);
+            final var isUpgrade = SEMANTIC_VERSIONS.deployedSoftwareVersion().isNonConfigUpgrade(deserializedVersion);
             if (isUpgrade) {
                 migrateFrom(deserializedVersion);
             }
@@ -333,7 +333,7 @@ public class ServicesState extends PartialNaryMerkleInternal
             final InitTrigger trigger,
             @Nullable final SoftwareVersion deserializedVersion) {
         this.platform = platform;
-        final var selfId = platform.getSelfId().getId();
+        final var selfId = platform.getSelfId().getIdAsInt();
 
         final ServicesApp app;
         if (APPS.includes(selfId)) {
@@ -374,7 +374,7 @@ public class ServicesState extends PartialNaryMerkleInternal
                     deployedVersion);
             app.systemExits().fail(1);
         } else {
-            final var isUpgrade = deployedVersion.isAfter(deserializedVersion);
+            final var isUpgrade = deployedVersion.isNonConfigUpgrade(deserializedVersion);
             if (trigger == RESTART) {
                 // We may still want to change the address book without an upgrade. But note
                 // that without a dynamic address book, this MUST be a no-op during reconnect.
@@ -396,6 +396,16 @@ public class ServicesState extends PartialNaryMerkleInternal
             app.initializationFlow().runWith(this, bootstrapProps);
             if (trigger == RESTART && isUpgrade) {
                 app.stakeStartupHelper().doUpgradeHousekeeping(networkCtx(), accounts(), stakingInfo());
+                // FIXME: uncomment after the merge of https://github.com/hashgraph/hedera-services/pull/5825
+                // (see https://github.com/hashgraph/hedera-services/issues/6037)
+                /*
+                if(getChild(StateChildIndices.ACCOUNTS) instanceof VirtualMap accounts) {
+                   accounts.fullRehash();
+                }
+                if(getChild(StateChildIndices.TOKEN_ASSOCIATIONS) instanceof VirtualMap tokenAssociations) {
+                    tokenAssociations.fullRehash();
+                }
+                */
             }
 
             // Ensure the prefetch queue is created and thread pool is active instead of waiting
@@ -443,7 +453,7 @@ public class ServicesState extends PartialNaryMerkleInternal
 
     /* -- Getters and helpers -- */
     public AccountID getAccountFromNodeId(final NodeId nodeId) {
-        final var address = addressBook().getAddress(nodeId.getId());
+        final var address = addressBook().getAddress(nodeId.getIdAsInt());
         final var memo = address.getMemo();
         return parseAccount(memo);
     }

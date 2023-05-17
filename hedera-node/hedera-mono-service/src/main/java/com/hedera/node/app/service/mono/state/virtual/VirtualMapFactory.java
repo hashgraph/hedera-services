@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.mono.state.virtual;
 
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
+import com.hedera.node.app.service.mono.context.properties.PropertyNames;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccountSupplier;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
@@ -33,7 +34,6 @@ import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualVa
 import com.hedera.node.app.service.mono.state.virtual.temporal.SecondSinceEpocVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.temporal.SecondSinceEpocVirtualKeySerializer;
 import com.hedera.node.app.service.mono.state.virtual.temporal.SecondSinceEpocVirtualKeySupplier;
-import com.hedera.node.app.spi.config.PropertyNames;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.jasperdb.JasperDbBuilder;
@@ -58,7 +58,7 @@ public class VirtualMapFactory {
     private static final long MAX_ACCOUNTS = 100_000_000L;
     private static final long MAX_TOKEN_RELS = 100_000_000L;
     private static final long MAX_SCHEDULE_SECONDS = 500_000_000;
-    private static final long MAX_IN_MEMORY_INTERNAL_HASHES = 0;
+    private static final long MAX_IN_MEMORY_HASHES = 0;
     private static final long MAX_MINTABLE_NFTS = 500_000_000L;
     private static final boolean PREFER_DISK_BASED_INDICIES = false;
 
@@ -97,8 +97,15 @@ public class VirtualMapFactory {
     }
 
     public VirtualMap<VirtualBlobKey, VirtualBlobValue> newVirtualizedBlobs() {
+        return newVirtualizedBlobs(USE_MERKLE_DB);
+    }
+
+    /**
+     * This method should not be invoked directly, it's for test purposes only.
+     */
+    VirtualMap<VirtualBlobKey, VirtualBlobValue> newVirtualizedBlobs(boolean useMerkleDb) {
         final VirtualDataSourceBuilder<VirtualBlobKey, VirtualBlobValue> dsBuilder;
-        if (USE_MERKLE_DB) {
+        if (useMerkleDb) {
             final MerkleDbTableConfig<VirtualBlobKey, VirtualBlobValue> tableConfig = new MerkleDbTableConfig<>(
                     CURRENT_SERIALIZATION_VERSION,
                     DigestType.SHA_384,
@@ -108,7 +115,10 @@ public class VirtualMapFactory {
                     new VirtualBlobMerkleDbValueSerializer());
             tableConfig.maxNumberOfKeys(MAX_BLOBS);
             tableConfig.preferDiskIndices(PREFER_DISK_BASED_INDICIES);
-            tableConfig.internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES);
+            // FIXME: use hashesRamToDiskThreshold after the merge of
+            //  https://github.com/hashgraph/hedera-services/pull/5825
+            // (see https://github.com/hashgraph/hedera-services/issues/6037)
+            tableConfig.internalHashesRamToDiskThreshold(MAX_IN_MEMORY_HASHES);
             dsBuilder = new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
         } else {
             final var blobKeySerializer = new VirtualBlobKeySerializer();
@@ -130,14 +140,21 @@ public class VirtualMapFactory {
                     .keySerializer(blobKeySerializer)
                     .maxNumOfKeys(MAX_BLOBS)
                     .preferDiskBasedIndexes(PREFER_DISK_BASED_INDICIES)
-                    .internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES);
+                    .internalHashesRamToDiskThreshold(MAX_IN_MEMORY_HASHES);
         }
         return new VirtualMap<>(BLOBS_VM_NAME, dsBuilder);
     }
 
     public VirtualMap<ContractKey, IterableContractValue> newVirtualizedIterableStorage() {
+        return newVirtualizedIterableStorage(USE_MERKLE_DB);
+    }
+
+    /**
+     * This method should not be invoked directly, it's for test purposes only.
+     */
+    VirtualMap<ContractKey, IterableContractValue> newVirtualizedIterableStorage(boolean useMerkleDb) {
         final VirtualDataSourceBuilder<ContractKey, IterableContractValue> dsBuilder;
-        if (USE_MERKLE_DB) {
+        if (useMerkleDb) {
             final MerkleDbTableConfig<ContractKey, IterableContractValue> tableConfig = new MerkleDbTableConfig<>(
                     CURRENT_SERIALIZATION_VERSION,
                     DigestType.SHA_384,
@@ -147,7 +164,7 @@ public class VirtualMapFactory {
                     new IterableContractMerkleDbValueSerializer());
             tableConfig.maxNumberOfKeys(MAX_STORAGE_ENTRIES);
             tableConfig.preferDiskIndices(PREFER_DISK_BASED_INDICIES);
-            tableConfig.internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES);
+            tableConfig.internalHashesRamToDiskThreshold(MAX_IN_MEMORY_HASHES);
             dsBuilder = new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
         } else {
             final var storageKeySerializer = new ContractKeySerializer();
@@ -169,7 +186,7 @@ public class VirtualMapFactory {
                     .keySerializer(storageKeySerializer)
                     .maxNumOfKeys(MAX_STORAGE_ENTRIES)
                     .preferDiskBasedIndexes(PREFER_DISK_BASED_INDICIES)
-                    .internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES);
+                    .internalHashesRamToDiskThreshold(MAX_IN_MEMORY_HASHES);
         }
         return new VirtualMap<>(ITERABLE_STORAGE_VM_NAME, dsBuilder);
     }
@@ -196,7 +213,7 @@ public class VirtualMapFactory {
                 .keySerializer(keySerializer)
                 .maxNumOfKeys(MAX_SCHEDULES)
                 .preferDiskBasedIndexes(PREFER_DISK_BASED_INDICIES)
-                .internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES);
+                .internalHashesRamToDiskThreshold(MAX_IN_MEMORY_HASHES);
         return new VirtualMap<>(SCHEDULE_LIST_STORAGE_VM_NAME, dsBuilder);
     }
 
@@ -223,7 +240,7 @@ public class VirtualMapFactory {
                 .keySerializer(keySerializer)
                 .maxNumOfKeys(MAX_SCHEDULE_SECONDS)
                 .preferDiskBasedIndexes(PREFER_DISK_BASED_INDICIES)
-                .internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES);
+                .internalHashesRamToDiskThreshold(MAX_IN_MEMORY_HASHES);
         return new VirtualMap<>(SCHEDULE_TEMPORAL_STORAGE_VM_NAME, dsBuilder);
     }
 
@@ -250,13 +267,20 @@ public class VirtualMapFactory {
                 .keySerializer(keySerializer)
                 .maxNumOfKeys(MAX_SCHEDULES)
                 .preferDiskBasedIndexes(PREFER_DISK_BASED_INDICIES)
-                .internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES);
+                .internalHashesRamToDiskThreshold(MAX_IN_MEMORY_HASHES);
         return new VirtualMap<>(SCHEDULE_EQUALITY_STORAGE_VM_NAME, dsBuilder);
     }
 
     public VirtualMap<EntityNumVirtualKey, OnDiskAccount> newOnDiskAccountStorage() {
+        return newOnDiskAccountStorage(USE_MERKLE_DB);
+    }
+
+    /**
+     * This method should not be invoked directly, it's for test purposes only.
+     */
+    public VirtualMap<EntityNumVirtualKey, OnDiskAccount> newOnDiskAccountStorage(boolean useMerkleDb) {
         final VirtualDataSourceBuilder<EntityNumVirtualKey, OnDiskAccount> dsBuilder;
-        if (USE_MERKLE_DB) {
+        if (useMerkleDb) {
             final MerkleDbTableConfig<EntityNumVirtualKey, OnDiskAccount> tableConfig = new MerkleDbTableConfig<>(
                     CURRENT_SERIALIZATION_VERSION,
                     DigestType.SHA_384,
@@ -266,7 +290,7 @@ public class VirtualMapFactory {
                     new OnDiskAccountMerkleDbValueSerializer());
             tableConfig.maxNumberOfKeys(MAX_ACCOUNTS);
             tableConfig.preferDiskIndices(PREFER_DISK_BASED_INDICIES);
-            tableConfig.internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES);
+            tableConfig.internalHashesRamToDiskThreshold(MAX_IN_MEMORY_HASHES);
             dsBuilder = new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
         } else {
             final var keySerializer = new EntityNumVirtualKeySerializer();
@@ -289,14 +313,21 @@ public class VirtualMapFactory {
                     .keySerializer(keySerializer)
                     .maxNumOfKeys(MAX_ACCOUNTS)
                     .preferDiskBasedIndexes(PREFER_DISK_BASED_INDICIES)
-                    .internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES);
+                    .internalHashesRamToDiskThreshold(MAX_IN_MEMORY_HASHES);
         }
         return new VirtualMap<>(ON_DISK_ACCOUNT_STORAGE_VM_NAME, dsBuilder);
     }
 
     public VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> newOnDiskTokenRels() {
+        return newOnDiskTokenRels(USE_MERKLE_DB);
+    }
+
+    /**
+     * This method should not be invoked directly, it's for test purposes only.
+     */
+    public VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> newOnDiskTokenRels(boolean useMerkleDb) {
         final VirtualDataSourceBuilder<EntityNumVirtualKey, OnDiskTokenRel> dsBuilder;
-        if (USE_MERKLE_DB) {
+        if (useMerkleDb) {
             final MerkleDbTableConfig<EntityNumVirtualKey, OnDiskTokenRel> tableConfig = new MerkleDbTableConfig<>(
                     CURRENT_SERIALIZATION_VERSION,
                     DigestType.SHA_384,
@@ -306,7 +337,7 @@ public class VirtualMapFactory {
                     new OnDiskTokenRelMerkleDbValueSerializer());
             tableConfig.maxNumberOfKeys(MAX_TOKEN_RELS);
             tableConfig.preferDiskIndices(PREFER_DISK_BASED_INDICIES);
-            tableConfig.internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES);
+            tableConfig.internalHashesRamToDiskThreshold(MAX_IN_MEMORY_HASHES);
             dsBuilder = new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
         } else {
             final var keySerializer = new EntityNumVirtualKeySerializer();
@@ -330,14 +361,21 @@ public class VirtualMapFactory {
                     .keySerializer(keySerializer)
                     .maxNumOfKeys(MAX_TOKEN_RELS)
                     .preferDiskBasedIndexes(PREFER_DISK_BASED_INDICIES)
-                    .internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES);
+                    .internalHashesRamToDiskThreshold(MAX_IN_MEMORY_HASHES);
         }
         return new VirtualMap<>(ON_DISK_TOKEN_RELS_STORAGE_VM_NAME, dsBuilder);
     }
 
     public VirtualMap<UniqueTokenKey, UniqueTokenValue> newVirtualizedUniqueTokenStorage() {
+        return newVirtualizedUniqueTokenStorage(USE_MERKLE_DB);
+    }
+
+    /**
+     * This method should not be invoked directly, it's for test purposes only.
+     */
+    VirtualMap<UniqueTokenKey, UniqueTokenValue> newVirtualizedUniqueTokenStorage(boolean useMerkleDb) {
         final VirtualDataSourceBuilder<UniqueTokenKey, UniqueTokenValue> dsBuilder;
-        if (USE_MERKLE_DB) {
+        if (useMerkleDb) {
             final MerkleDbTableConfig<UniqueTokenKey, UniqueTokenValue> tableConfig = new MerkleDbTableConfig<>(
                     CURRENT_SERIALIZATION_VERSION,
                     DigestType.SHA_384,
@@ -347,7 +385,7 @@ public class VirtualMapFactory {
                     new UniqueTokenMerkleDbValueSerializer());
             tableConfig.maxNumberOfKeys(MAX_MINTABLE_NFTS);
             tableConfig.preferDiskIndices(false);
-            tableConfig.internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES);
+            tableConfig.internalHashesRamToDiskThreshold(MAX_IN_MEMORY_HASHES);
             dsBuilder = new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
         } else {
             final var storageKeySerializer = new UniqueTokenKeySerializer();
@@ -371,7 +409,7 @@ public class VirtualMapFactory {
                     .keySerializer(storageKeySerializer)
                     .maxNumOfKeys(MAX_MINTABLE_NFTS)
                     .preferDiskBasedIndexes(false)
-                    .internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES);
+                    .internalHashesRamToDiskThreshold(MAX_IN_MEMORY_HASHES);
         }
         return new VirtualMap<>(UNIQUE_TOKENS_VM_NAME, dsBuilder);
     }

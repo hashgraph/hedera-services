@@ -55,8 +55,8 @@ import org.mockito.stubbing.Answer;
 @ExtendWith(MockitoExtension.class)
 class SnapshotServiceTest {
 
-    private static final NodeId NODE_ID_1 = NodeId.createMain(1L);
-    private static final NodeId NODE_ID_2 = NodeId.createMain(2L);
+    private static final NodeId NODE_ID_1 = new NodeId(1L);
+    private static final NodeId NODE_ID_2 = new NodeId(2L);
 
     @Mock
     private DefaultMetric globalMetric;

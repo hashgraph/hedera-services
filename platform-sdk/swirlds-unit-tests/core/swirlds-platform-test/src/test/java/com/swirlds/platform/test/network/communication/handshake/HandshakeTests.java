@@ -44,7 +44,7 @@ class HandshakeTests {
         final ProtocolRunnable handshakeThrows = new VersionCompareHandshake(ourVersion);
         final ProtocolRunnable handshakeLogs = new VersionCompareHandshake(ourVersion, false);
         final Pair<Connection, Connection> connections =
-                ConnectionFactory.createLocalConnections(NodeId.createMain(0), NodeId.createMain(1));
+                ConnectionFactory.createLocalConnections(new NodeId(0L), new NodeId(1));
         final Connection myConnection = connections.getLeft();
         final Connection theirConnection = connections.getRight();
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();

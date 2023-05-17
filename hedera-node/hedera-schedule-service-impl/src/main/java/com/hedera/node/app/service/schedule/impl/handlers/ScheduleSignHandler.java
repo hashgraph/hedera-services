@@ -39,12 +39,8 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class ScheduleSignHandler extends AbstractScheduleHandler implements TransactionHandler {
-    @Inject
-    public ScheduleSignHandler() {
-        // Exists for injection
-        super(null);
-    }
 
+    @Inject
     public ScheduleSignHandler(@NonNull final PreHandleDispatcher dispatcher) {
         super(dispatcher);
     }

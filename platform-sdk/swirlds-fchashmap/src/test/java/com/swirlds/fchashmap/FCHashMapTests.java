@@ -448,7 +448,7 @@ public class FCHashMapTests {
     @DisplayName("Null Value Test")
     void nullValueTest() {
         final FCHashMap<Integer, Integer> map = new FCHashMap<>();
-        assertThrows(IllegalArgumentException.class, () -> map.put(0, null), "map should not accept null values");
+        assertThrows(NullPointerException.class, () -> map.put(0, null), "map should not accept null values");
         map.release();
     }
 

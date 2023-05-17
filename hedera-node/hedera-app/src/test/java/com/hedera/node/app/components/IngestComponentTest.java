@@ -25,6 +25,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.DaggerHederaApp;
 import com.hedera.node.app.HederaApp;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -34,7 +35,6 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.gui.SwirldsGui;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -53,14 +53,14 @@ class IngestComponentTest {
 
     @BeforeEach
     void setUp() {
-        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
+        final Configuration configuration = new HederaTestConfigBuilder().getOrCreateConfig();
         final PlatformContext platformContext = mock(PlatformContext.class);
         when(platformContext.getConfiguration()).thenReturn(configuration);
         when(platform.getContext()).thenReturn(platformContext);
 
         given(platformContext.getCryptography()).willReturn(cryptography);
 
-        final var selfNodeId = new NodeId(false, 666L);
+        final var selfNodeId = new NodeId(666L);
 
         app = DaggerHederaApp.builder()
                 .initTrigger(InitTrigger.GENESIS)
@@ -69,7 +69,9 @@ class IngestComponentTest {
                 .consoleCreator(SwirldsGui::createConsole)
                 .staticAccountMemo("memo")
                 .bootstrapProps(new BootstrapProperties())
-                .selfId(AccountID.newBuilder().accountNum(selfNodeId.getId()).build())
+                .selfId(AccountID.newBuilder()
+                        .accountNum(selfNodeId.getIdAsInt())
+                        .build())
                 .initialHash(new Hash())
                 .maxSignedTxnSize(1024)
                 .build();
@@ -77,7 +79,7 @@ class IngestComponentTest {
 
     @Test
     void objectGraphRootsAreAvailable() {
-        given(platform.getSelfId()).willReturn(new NodeId(false, 0L));
+        given(platform.getSelfId()).willReturn(new NodeId(0L));
 
         final IngestComponent subject = app.ingestComponentFactory().get().create();
 

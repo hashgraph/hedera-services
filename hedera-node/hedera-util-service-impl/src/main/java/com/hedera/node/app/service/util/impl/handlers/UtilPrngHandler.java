@@ -21,7 +21,7 @@ import static java.util.Objects.requireNonNull;
 import com.google.common.math.IntMath;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.node.app.service.network.ReadableRunningHashLeafStore;
+import com.hedera.node.app.service.networkadmin.ReadableRunningHashLeafStore;
 import com.hedera.node.app.service.util.impl.config.PrngConfig;
 import com.hedera.node.app.service.util.impl.records.PrngRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;

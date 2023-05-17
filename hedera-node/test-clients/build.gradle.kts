@@ -72,14 +72,12 @@ dependencies {
   itestImplementation(project(":hedera-node:hedera-evm"))
   itestImplementation(project(":hedera-node:hedera-evm-impl"))
   itestImplementation(project(":hedera-node:hedera-mono-service"))
-  itestImplementation(project(":hedera-node:hedera-admin-service"))
-  itestImplementation(project(":hedera-node:hedera-admin-service-impl"))
+  itestImplementation(project(":hedera-node:hedera-networkadmin-service"))
+  itestImplementation(project(":hedera-node:hedera-networkadmin-service-impl"))
   itestImplementation(project(":hedera-node:hedera-consensus-service"))
   itestImplementation(project(":hedera-node:hedera-consensus-service-impl"))
   itestImplementation(project(":hedera-node:hedera-file-service"))
   itestImplementation(project(":hedera-node:hedera-file-service-impl"))
-  itestImplementation(project(":hedera-node:hedera-network-service"))
-  itestImplementation(project(":hedera-node:hedera-network-service-impl"))
   itestImplementation(project(":hedera-node:hedera-schedule-service"))
   itestImplementation(project(":hedera-node:hedera-schedule-service-impl"))
   itestImplementation(project(":hedera-node:hedera-smart-contract-service"))
@@ -94,14 +92,12 @@ dependencies {
   eetImplementation(project(":hedera-node:hedera-evm"))
   eetImplementation(project(":hedera-node:hedera-evm-impl"))
   eetImplementation(project(":hedera-node:hedera-mono-service"))
-  eetImplementation(project(":hedera-node:hedera-admin-service"))
-  eetImplementation(project(":hedera-node:hedera-admin-service-impl"))
+  eetImplementation(project(":hedera-node:hedera-networkadmin-service"))
+  eetImplementation(project(":hedera-node:hedera-networkadmin-service-impl"))
   eetImplementation(project(":hedera-node:hedera-consensus-service"))
   eetImplementation(project(":hedera-node:hedera-consensus-service-impl"))
   eetImplementation(project(":hedera-node:hedera-file-service"))
   eetImplementation(project(":hedera-node:hedera-file-service-impl"))
-  eetImplementation(project(":hedera-node:hedera-network-service"))
-  eetImplementation(project(":hedera-node:hedera-network-service-impl"))
   eetImplementation(project(":hedera-node:hedera-schedule-service"))
   eetImplementation(project(":hedera-node:hedera-schedule-service-impl"))
   eetImplementation(project(":hedera-node:hedera-smart-contract-service"))
@@ -186,6 +182,19 @@ val validationJar =
       }
     }
 
+val copyValidation =
+    tasks.register<Copy>("copyValidation") {
+      group = "copy"
+      from(validationJar)
+      into(project.file("validation-scenarios"))
+    }
+
+val cleanValidation =
+    tasks.register<Delete>("cleanValidation") {
+      group = "build"
+      delete(File(project.file("validation-scenarios"), "ValidationScenarios.jar"))
+    }
+
 val copyYahCli =
     tasks.register<Copy>("copyYahCli") {
       group = "copy"
@@ -205,4 +214,7 @@ tasks.assemble {
   dependsOn(copyYahCli)
 }
 
-tasks.clean { dependsOn(cleanYahCli) }
+tasks.clean {
+  dependsOn(cleanYahCli)
+  dependsOn(cleanValidation)
+}

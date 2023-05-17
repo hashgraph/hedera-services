@@ -29,8 +29,8 @@ import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.UncheckedSubmitBody;
 import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
+import com.hedera.node.app.service.mono.context.properties.Profile;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
-import com.hedera.node.app.spi.config.Profile;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.RecordCache;
 import com.hedera.node.app.workflows.ingest.SubmissionManager;
@@ -62,13 +62,17 @@ class SubmissionManagerTest extends AppTestBase {
     @DisplayName("Null cannot be provided as any of the constructor args")
     @SuppressWarnings("ConstantConditions")
     void testConstructorWithIllegalParameters() {
-        assertThatThrownBy(() -> new SubmissionManager(null, recordCache, nodeLocalProperties, metrics))
+        assertThatThrownBy(() -> new SubmissionManager(null, platform, recordCache, nodeLocalProperties, metrics))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new SubmissionManager(platform, null, nodeLocalProperties, metrics))
+        assertThatThrownBy(
+                        () -> new SubmissionManager(nodeSelfAccountId, null, recordCache, nodeLocalProperties, metrics))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new SubmissionManager(platform, recordCache, null, metrics))
+        assertThatThrownBy(() -> new SubmissionManager(nodeSelfAccountId, platform, null, nodeLocalProperties, metrics))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new SubmissionManager(platform, recordCache, nodeLocalProperties, null))
+        assertThatThrownBy(() -> new SubmissionManager(nodeSelfAccountId, platform, recordCache, null, metrics))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() ->
+                        new SubmissionManager(nodeSelfAccountId, platform, recordCache, nodeLocalProperties, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -92,7 +96,8 @@ class SubmissionManagerTest extends AppTestBase {
         void setup() {
             bytes = randomBytes(25);
             when(mockedMetrics.getOrCreate(any())).thenReturn(platformTxnRejections);
-            submissionManager = new SubmissionManager(platform, recordCache, nodeLocalProperties, mockedMetrics);
+            submissionManager =
+                    new SubmissionManager(nodeSelfAccountId, platform, recordCache, nodeLocalProperties, mockedMetrics);
             txBody = TransactionBody.newBuilder()
                     .transactionID(TransactionID.newBuilder().build())
                     .build();
@@ -118,7 +123,7 @@ class SubmissionManagerTest extends AppTestBase {
             // Then the platform actually receives the bytes
             verify(platform).createTransaction(PbjConverter.asBytes(bytes));
             // And the record cache is updated with this transaction
-            verify(recordCache).addPreConsensus(txBody.transactionID(), TransactionReceipt.DEFAULT);
+            verify(recordCache).put(txBody.transactionIDOrThrow(), nodeSelfAccountId);
             // And the metrics keeping track of errors submitting are NOT touched
             verify(platformTxnRejections, never()).cycle();
         }
@@ -134,7 +139,7 @@ class SubmissionManagerTest extends AppTestBase {
                     .isInstanceOf(PreCheckException.class)
                     .hasFieldOrPropertyWithValue("responseCode", PLATFORM_TRANSACTION_NOT_CREATED);
             // And the transaction is NOT added to the record cache
-            verify(recordCache, never()).addPreConsensus(any(), any());
+            verify(recordCache, never()).update(any(), any());
             // And the error metrics HAVE been updated
             verify(platformTxnRejections).cycle();
         }
@@ -162,7 +167,8 @@ class SubmissionManagerTest extends AppTestBase {
         void setup() {
             when(nodeLocalProperties.activeProfile()).thenReturn(Profile.TEST);
             when(mockedMetrics.getOrCreate(any())).thenReturn(platformTxnRejections);
-            submissionManager = new SubmissionManager(platform, recordCache, nodeLocalProperties, mockedMetrics);
+            submissionManager =
+                    new SubmissionManager(nodeSelfAccountId, platform, recordCache, nodeLocalProperties, mockedMetrics);
 
             bytes = randomBytes(25);
 
@@ -188,7 +194,7 @@ class SubmissionManagerTest extends AppTestBase {
             // Then the platform actually sees the unchecked bytes
             verify(platform).createTransaction(uncheckedBytes);
             // And the record cache is updated with this transaction
-            verify(recordCache).addPreConsensus(txBody.transactionID(), TransactionReceipt.DEFAULT);
+            verify(recordCache).put(txBody.transactionIDOrThrow(), nodeSelfAccountId);
             // And the metrics keeping track of errors submitting are NOT touched
             verify(platformTxnRejections, never()).cycle();
         }
@@ -198,7 +204,8 @@ class SubmissionManagerTest extends AppTestBase {
         void testUncheckedSubmitInProdFails() {
             // Given we are in PROD mode
             when(nodeLocalProperties.activeProfile()).thenReturn(Profile.PROD);
-            submissionManager = new SubmissionManager(platform, recordCache, nodeLocalProperties, mockedMetrics);
+            submissionManager =
+                    new SubmissionManager(nodeSelfAccountId, platform, recordCache, nodeLocalProperties, mockedMetrics);
 
             // When we submit an unchecked transaction, and separate bytes, then the
             // submission FAILS because we are in PROD mode
@@ -209,7 +216,7 @@ class SubmissionManagerTest extends AppTestBase {
             // Then the platform NEVER sees the unchecked bytes
             verify(platform, never()).createTransaction(uncheckedBytes);
             // And the record cache is NOT updated with this transaction
-            verify(recordCache, never()).addPreConsensus(txBody.transactionID(), TransactionReceipt.DEFAULT);
+            verify(recordCache, never()).update(txBody.transactionIDOrThrow(), TransactionReceipt.DEFAULT);
             // We never attempted to submit this tx to the platform, so we don't increase the metric
             verify(platformTxnRejections, never()).cycle();
         }
@@ -221,7 +228,8 @@ class SubmissionManagerTest extends AppTestBase {
         void testBogusBytes() {
             // Given we are in TEST mode and have a transaction with bogus bytes
             when(nodeLocalProperties.activeProfile()).thenReturn(Profile.TEST);
-            submissionManager = new SubmissionManager(platform, recordCache, nodeLocalProperties, mockedMetrics);
+            submissionManager =
+                    new SubmissionManager(nodeSelfAccountId, platform, recordCache, nodeLocalProperties, mockedMetrics);
             txBody = TransactionBody.newBuilder()
                     .transactionID(TransactionID.newBuilder().build())
                     .uncheckedSubmit(UncheckedSubmitBody.newBuilder()
@@ -238,7 +246,7 @@ class SubmissionManagerTest extends AppTestBase {
             // Then the platform NEVER sees the unchecked bytes
             verify(platform, never()).createTransaction(uncheckedBytes);
             // And the record cache is NOT updated with this transaction
-            verify(recordCache, never()).addPreConsensus(txBody.transactionID(), TransactionReceipt.DEFAULT);
+            verify(recordCache, never()).update(txBody.transactionIDOrThrow(), TransactionReceipt.DEFAULT);
         }
     }
 }

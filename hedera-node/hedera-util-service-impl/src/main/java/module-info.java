@@ -10,7 +10,7 @@ module com.hedera.node.app.service.util.impl {
     requires com.swirlds.common;
     requires org.apache.logging.log4j;
     requires com.google.common;
-    requires com.hedera.node.app.service.network;
+    requires com.hedera.node.app.service.networkadmin;
     requires com.swirlds.config;
 
     provides com.hedera.node.app.service.util.UtilService with

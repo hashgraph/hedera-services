@@ -180,10 +180,12 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
         if (dataItemSerializer.isVariableSize()) {
             // read header to get size
             final ByteBuffer serializedHeader = read(byteOffset, dataItemSerializer.getHeaderSize());
-            final DataItemHeader header = dataItemSerializer.deserializeHeader(serializedHeader);
+            final DataItemHeader header =
+                    dataItemSerializer.deserializeHeader(serializedHeader, metadata.getSerializationVersion());
             bytesToRead = header.getSizeBytes();
         } else {
-            bytesToRead = dataItemSerializer.getSerializedSize();
+            // serialization version may be different from the one specified in the serializer.
+            bytesToRead = dataItemSerializer.getSerializedSize(metadata.getSerializationVersion());
         }
 
         final ByteBuffer data = read(byteOffset, bytesToRead);

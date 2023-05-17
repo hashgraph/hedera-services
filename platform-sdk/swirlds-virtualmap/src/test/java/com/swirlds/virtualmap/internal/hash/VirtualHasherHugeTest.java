@@ -23,7 +23,7 @@ import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
 import com.swirlds.virtualmap.TestKey;
 import com.swirlds.virtualmap.TestValue;
-import com.swirlds.virtualmap.datasource.VirtualInternalRecord;
+import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import java.util.function.LongFunction;
 import java.util.stream.LongStream;
@@ -54,19 +54,18 @@ class VirtualHasherHugeTest extends VirtualHasherTestBase {
         // Every leaf has a null hash for this test, and we never ask for the same leaf twice, so we
         // can have a simple function for creating virtual leaf records.
         final LongFunction<VirtualLeafRecord<TestKey, TestValue>> leafGetter =
-                (path) -> new VirtualLeafRecord<>(path, null, new TestKey(path), new TestValue("" + path));
+                (path) -> new VirtualLeafRecord<>(path, new TestKey(path), new TestValue("" + path));
 
         // Since we're hashing every internal node, we can generate new ones with null hashes. None are ever
         // asked for twice.
-        final LongFunction<VirtualInternalRecord> internalGetter = VirtualInternalRecord::new;
+        final LongFunction<VirtualHashRecord> internalGetter = VirtualHashRecord::new;
 
         // Go ahead and hash. I'm just going to check that the root hash produces *something*. I'm not worried
         // in this test as to the validity of this root hash since correctness is validated heavily in other
         // tests. In this test, I just want to be sure that we complete, and that we don't run out of memory.
         final VirtualHasher<TestKey, TestValue> hasher = new VirtualHasher<>();
         final Hash rootHash = hasher.hash(
-                leafGetter,
-                internalGetter,
+                path -> null,
                 LongStream.range(firstLeafPath, lastLeafPath + 1)
                         .mapToObj(leafGetter)
                         .iterator(),

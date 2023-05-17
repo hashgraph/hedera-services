@@ -22,10 +22,10 @@ import com.hedera.node.app.components.QueryComponent;
 import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.fees.MonoFeeAccumulator;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusHandlers;
-import com.hedera.node.app.service.contract.impl.components.ContractComponent;
-import com.hedera.node.app.service.file.impl.components.FileComponent;
-import com.hedera.node.app.service.network.impl.components.NetworkComponent;
-import com.hedera.node.app.service.schedule.impl.components.ScheduleComponent;
+import com.hedera.node.app.service.contract.impl.handlers.ContractHandlers;
+import com.hedera.node.app.service.file.impl.handlers.FileHandlers;
+import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkAdminHandlers;
+import com.hedera.node.app.service.schedule.impl.handlers.ScheduleHandlers;
 import com.hedera.node.app.service.token.impl.handlers.TokenHandlers;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.pbj.runtime.Codec;
@@ -64,32 +64,32 @@ public interface QueryWorkflowModule {
     @Provides
     static QueryHandlers provideQueryHandlers(
             @NonNull final ConsensusHandlers consensusHandlers,
-            @NonNull final FileComponent fileComponent,
-            @NonNull final NetworkComponent networkComponent,
-            @NonNull final ContractComponent contractComponent,
-            @NonNull final ScheduleComponent scheduleComponent,
+            @NonNull final FileHandlers fileHandlers,
+            @NonNull final NetworkAdminHandlers networkHandlers,
+            @NonNull final ContractHandlers contractHandlers,
+            @NonNull final ScheduleHandlers scheduleHandlers,
             @NonNull final TokenHandlers tokenHandlers) {
         return new QueryHandlers(
                 consensusHandlers.consensusGetTopicInfoHandler(),
-                contractComponent.contractGetBySolidityIDHandler(),
-                contractComponent.contractCallLocalHandler(),
-                contractComponent.contractGetInfoHandler(),
-                contractComponent.contractGetBytecodeHandler(),
-                contractComponent.contractGetRecordsHandler(),
+                contractHandlers.contractGetBySolidityIDHandler(),
+                contractHandlers.contractCallLocalHandler(),
+                contractHandlers.contractGetInfoHandler(),
+                contractHandlers.contractGetBytecodeHandler(),
+                contractHandlers.contractGetRecordsHandler(),
                 tokenHandlers.cryptoGetAccountBalanceHandler(),
                 tokenHandlers.cryptoGetAccountInfoHandler(),
                 tokenHandlers.cryptoGetAccountRecordsHandler(),
                 tokenHandlers.cryptoGetLiveHashHandler(),
                 tokenHandlers.cryptoGetStakersHandler(),
-                fileComponent.fileGetContentsHandler(),
-                fileComponent.fileGetInfoHandler(),
-                networkComponent.networkGetAccountDetailsHandler(),
-                networkComponent.networkGetByKeyHandler(),
-                networkComponent.networkGetExecutionTimeHandler(),
-                networkComponent.networkGetVersionInfoHandler(),
-                networkComponent.networkTransactionGetReceiptHandler(),
-                networkComponent.networkTransactionGetRecordHandler(),
-                scheduleComponent.scheduleGetInfoHandler(),
+                fileHandlers.fileGetContentsHandler(),
+                fileHandlers.fileGetInfoHandler(),
+                networkHandlers.networkGetAccountDetailsHandler(),
+                networkHandlers.networkGetByKeyHandler(),
+                networkHandlers.networkGetExecutionTimeHandler(),
+                networkHandlers.networkGetVersionInfoHandler(),
+                networkHandlers.networkTransactionGetReceiptHandler(),
+                networkHandlers.networkTransactionGetRecordHandler(),
+                scheduleHandlers.scheduleGetInfoHandler(),
                 tokenHandlers.tokenGetInfoHandler(),
                 tokenHandlers.tokenGetAccountNftInfosHandler(),
                 tokenHandlers.tokenGetNftInfoHandler(),

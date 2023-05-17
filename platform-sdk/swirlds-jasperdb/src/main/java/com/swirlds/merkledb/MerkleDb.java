@@ -221,7 +221,7 @@ public final class MerkleDb {
      *
      * @return The next available table ID
      */
-    private int getNextTableId() {
+    int getNextTableId() {
         for (int tablesCount = 0; tablesCount < MAX_TABLES; tablesCount++) {
             final int id = Math.abs(nextTableId.getAndIncrement() % MAX_TABLES);
             if (tableConfigs.get(id) == null) {
