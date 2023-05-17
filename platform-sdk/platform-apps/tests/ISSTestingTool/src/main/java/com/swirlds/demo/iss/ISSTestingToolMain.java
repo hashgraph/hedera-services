@@ -19,11 +19,11 @@ package com.swirlds.demo.iss;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.PlatformWithDeprecatedMethods;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.state.notifications.IssListener;
 import com.swirlds.common.system.state.notifications.IssNotification;
+import com.swirlds.platform.ParameterProvider;
 import java.util.Random;
 
 /**
@@ -108,7 +108,7 @@ public class ISSTestingToolMain implements SwirldMain {
 
         platform.getNotificationEngine().register(IssListener.class, this::issListener);
 
-        parseArguments(((PlatformWithDeprecatedMethods) platform).getParameters());
+        parseArguments(ParameterProvider.getInstance().getParameters());
     }
 
     private void parseArguments(final String[] args) {

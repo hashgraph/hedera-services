@@ -128,7 +128,7 @@ public final class SignedStateFileUtils {
      */
     public static Path getSignedStatesDirectoryForNode(final String mainClassName, final NodeId selfId) {
 
-        return getSignedStatesDirectoryForApp(mainClassName).resolve(Long.toString(selfId.getId()));
+        return getSignedStatesDirectoryForApp(mainClassName).resolve(Long.toString(selfId.id()));
     }
 
     /**

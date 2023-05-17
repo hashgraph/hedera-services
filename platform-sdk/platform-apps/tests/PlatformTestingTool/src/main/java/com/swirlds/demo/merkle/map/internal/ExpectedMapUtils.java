@@ -18,16 +18,18 @@ package com.swirlds.demo.merkle.map.internal;
 
 import com.swirlds.common.notification.listeners.ReconnectCompleteNotification;
 import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.PlatformWithDeprecatedMethods;
+import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.demo.platform.PAYLOAD_CATEGORY;
 import com.swirlds.demo.platform.PAYLOAD_TYPE;
 import com.swirlds.demo.platform.PayloadConfig;
 import com.swirlds.demo.platform.PlatformTestingToolState;
 import com.swirlds.demo.platform.SuperConfig;
+import com.swirlds.demo.platform.UnsafeMutablePTTStateAccessor;
 import com.swirlds.merkle.map.test.lifecycle.ExpectedValue;
 import com.swirlds.merkle.map.test.lifecycle.LifecycleStatus;
 import com.swirlds.merkle.map.test.lifecycle.TransactionState;
 import com.swirlds.merkle.map.test.pta.MapKey;
+import java.time.Instant;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -50,13 +52,11 @@ public class ExpectedMapUtils {
             return;
         }
 
-        try {
-            final PlatformTestingToolState state = ((PlatformWithDeprecatedMethods) platform).getState();
+        try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper = UnsafeMutablePTTStateAccessor.getInstance()
+                .getUnsafeMutableState(platform.getSelfId().id())) {
+            final PlatformTestingToolState state = wrapper.get();
             // rebuild ExpectedMap
-            state.rebuildExpectedMapFromState(
-                    ((PlatformWithDeprecatedMethods) platform).getLastSignedStateTimestamp(), true);
-        } finally {
-            ((PlatformWithDeprecatedMethods) platform).releaseState();
+            state.rebuildExpectedMapFromState(Instant.EPOCH, true);
         }
     }
 
@@ -76,11 +76,10 @@ public class ExpectedMapUtils {
             return;
         }
 
-        try {
-            final PlatformTestingToolState state = ((PlatformWithDeprecatedMethods) platform).getState();
+        try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper = UnsafeMutablePTTStateAccessor.getInstance()
+                .getUnsafeMutableState(platform.getSelfId().id())) {
+            final PlatformTestingToolState state = wrapper.get();
             state.rebuildExpectedMapFromState(notification.getConsensusTimestamp(), false);
-        } finally {
-            ((PlatformWithDeprecatedMethods) platform).releaseState();
         }
     }
 

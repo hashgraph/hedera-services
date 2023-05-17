@@ -93,7 +93,7 @@ public class ChatterSyncProtocol implements Protocol {
      */
     private boolean fallenBehindSync() {
         final List<Long> notReportedFallenBehind = fallenBehindManager.getNeededForFallenBehind();
-        return notReportedFallenBehind == null || notReportedFallenBehind.contains(peerId.getId());
+        return notReportedFallenBehind == null || notReportedFallenBehind.contains(peerId.id());
     }
 
     @Override

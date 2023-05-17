@@ -16,11 +16,14 @@
 
 package com.hedera.node.app.meta;
 
-import com.hedera.node.app.components.StoreComponent;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.state.token.Account;
+import com.hedera.node.app.components.StoreInjectionComponent;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.service.mono.utils.NonAtomicReference;
 import com.hedera.node.app.spi.meta.HandleContext;
+import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.state.HederaState;
@@ -33,9 +36,9 @@ import javax.inject.Provider;
 import javax.inject.Singleton;
 
 /**
- * A {@link HandleContext} implementation that primarily uses adapters of {@code mono-service}
- * utilities. These adapters will either be replaced with new implementations; or refactored
- * and ported from {@code mono-service} into {@code hedera-app} at a later time.
+ * A {@link HandleContext} implementation that primarily uses adapters of {@code mono-service} utilities. These adapters
+ * will either be replaced with new implementations; or refactored and ported from {@code mono-service} into
+ * {@code hedera-app} at a later time.
  */
 @Singleton
 public class MonoHandleContext implements HandleContext {
@@ -44,7 +47,7 @@ public class MonoHandleContext implements HandleContext {
     private final TransactionContext txnCtx;
     private final AttributeValidator attributeValidator;
     private final NonAtomicReference<HederaState> mutableState;
-    private final Provider<StoreComponent.Factory> storeFactory;
+    private final Provider<StoreInjectionComponent.Factory> storeFactory;
 
     @Inject
     public MonoHandleContext(
@@ -53,7 +56,7 @@ public class MonoHandleContext implements HandleContext {
             @NonNull final AttributeValidator attributeValidator,
             @NonNull final TransactionContext txnCtx,
             @NonNull final NonAtomicReference<HederaState> mutableState,
-            @NonNull final Provider<StoreComponent.Factory> storeFactory) {
+            @NonNull final Provider<StoreInjectionComponent.Factory> storeFactory) {
         this.nums = Objects.requireNonNull(ids)::newAccountNumber;
         this.txnCtx = Objects.requireNonNull(txnCtx);
         this.expiryValidator = Objects.requireNonNull(expiryValidator);
@@ -108,5 +111,17 @@ public class MonoHandleContext implements HandleContext {
         final var readableStoreFactory =
                 storeFactory.get().create(mutableState.get()).storeFactory();
         return readableStoreFactory.createStore(storeInterface);
+    }
+
+    @NonNull
+    @Override
+    public SignatureVerification verificationFor(@NonNull Key key) {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @NonNull
+    @Override
+    public SignatureVerification verificationFor(@NonNull Account hollowAccount) {
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 }

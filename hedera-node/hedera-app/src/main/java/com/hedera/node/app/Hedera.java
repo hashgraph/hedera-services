@@ -160,7 +160,7 @@ public final class Hedera implements SwirldMain {
      * of the rest of the system (and particularly the modular implementation) uses it directly. Rather, it is created
      * and used to initialize the system, and more concrete dependencies are used from there.
      */
-    private HederaApp daggerApp;
+    private HederaInjectionComponent daggerApp;
 
     /*==================================================================================================================
     *
@@ -208,8 +208,9 @@ public final class Hedera implements SwirldMain {
     }
 
     /**
-     * Create all service implementations and register their schemas. Return these as a map of service name to {@link
-     * ServiceRegistration}. Later, when we migrate, we will use this map to migrate each service to its latest schema.
+     * Create all service implementations and register their schemas. Return these as a map of service name to
+     * {@link ServiceRegistration}. Later, when we migrate, we will use this map to migrate each service to its latest
+     * schema.
      */
     private Map<String, ServiceRegistration> createServicesRegistry(
             @NonNull final ConstructableRegistry constructableRegistry, @Nullable final Path storageDir) {
@@ -278,8 +279,8 @@ public final class Hedera implements SwirldMain {
     =================================================================================================================*/
 
     /**
-     * Invoked by the platform when the state should be initialized. This happens <b>BEFORE</b> {@link #init(Platform,
-     * NodeId)} and after {@link #newState()}.
+     * Invoked by the platform when the state should be initialized. This happens <b>BEFORE</b>
+     * {@link #init(Platform, NodeId)} and after {@link #newState()}.
      */
     private void onStateInitialized(
             @NonNull final MerkleHederaState state,
@@ -343,8 +344,8 @@ public final class Hedera implements SwirldMain {
     /**
      * {@inheritDoc}
      * <p>
-     * Called <b>AFTER</b> init and migrate have been called on the state (either the new state created from {@link
-     * #newState()} or an instance of {@link MerkleHederaState} created by the platform and loaded from the saved
+     * Called <b>AFTER</b> init and migrate have been called on the state (either the new state created from
+     * {@link #newState()} or an instance of {@link MerkleHederaState} created by the platform and loaded from the saved
      * state).
      */
     @Override
@@ -501,7 +502,7 @@ public final class Hedera implements SwirldMain {
     private void onPreHandle(@NonNull final Event event, @NonNull final HederaState state) {
         // For now, we will delegate pre-handle to the mono-service. But this needs to be moved to
         // use the Pre-Handle workflow instead.
-        daggerApp.adaptedMonoEventExpansion().expand(event, state);
+        daggerApp.adaptedMonoEventExpansion().expand(event, state, daggerApp.nodeInfo());
     }
 
     /**
@@ -709,7 +710,7 @@ public final class Hedera implements SwirldMain {
 
     private void initializeDagger(@NonNull final MerkleHederaState state, @NonNull final InitTrigger trigger) {
         logger.debug("Initializing dagger");
-        final var selfId = platform.getSelfId().getId();
+        final var selfId = platform.getSelfId().getIdAsInt();
         if (daggerApp == null) {
             stateChildren = state.getStateChildrenProvider(platform);
             final var nodeAddress = stateChildren.addressBook().getAddress(selfId);
@@ -717,7 +718,7 @@ public final class Hedera implements SwirldMain {
             final var initialHash =
                     stateChildren.runningHashLeaf().getRunningHash().getHash();
             // Fully qualified so as to not confuse javadoc
-            daggerApp = com.hedera.node.app.DaggerHederaApp.builder()
+            daggerApp = com.hedera.node.app.DaggerHederaInjectionComponent.builder()
                     .initTrigger(trigger)
                     .staticAccountMemo(nodeAddress.getMemo())
                     .bootstrapProps(bootstrapProps)

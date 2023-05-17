@@ -16,16 +16,12 @@
 
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
-import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.INT;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.WIPE_FUNGIBLE;
 
-import com.esaulpaugh.headlong.abi.ABIType;
-import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
-import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
@@ -37,20 +33,13 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.codec.WipeWra
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
 public class WipeFungiblePrecompile extends AbstractWipePrecompile {
     private final int functionId;
-    private static final Function WIPE_TOKEN_ACCOUNT_FUNCTION =
-            new Function("wipeTokenAccount(address,address,uint32)", INT);
-    private static final Function WIPE_TOKEN_ACCOUNT_FUNCTION_V2 =
-            new Function("wipeTokenAccount(address,address,int64)", INT);
-    private static final Bytes WIPE_TOKEN_ACCOUNT_SELECTOR = Bytes.wrap(WIPE_TOKEN_ACCOUNT_FUNCTION.selector());
-    private static final Bytes WIPE_TOKEN_ACCOUNT_SELECTOR_V2 = Bytes.wrap(WIPE_TOKEN_ACCOUNT_FUNCTION_V2.selector());
-    private static final ABIType<Tuple> WIPE_TOKEN_ACCOUNT_DECODER = TypeFactory.create("(bytes32,bytes32,uint32)");
-    private static final ABIType<Tuple> WIPE_TOKEN_ACCOUNT_DECODER_V2 = TypeFactory.create("(bytes32,bytes32,int64)");
 
     public WipeFungiblePrecompile(
             final WorldLedgers ledgers,
@@ -67,10 +56,13 @@ public class WipeFungiblePrecompile extends AbstractWipePrecompile {
 
     @Override
     public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        wipeOp = switch (functionId) {
-            case AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE -> decodeWipe(input, aliasResolver);
-            case AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE_V2 -> decodeWipeV2(input, aliasResolver);
-            default -> null;};
+        final var wipeAbi =
+                switch (functionId) {
+                    case AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE -> SystemContractAbis.WIPE_TOKEN_ACCOUNT_V1;
+                    case AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE_V2 -> SystemContractAbis.WIPE_TOKEN_ACCOUNT_V2;
+                    default -> throw new IllegalArgumentException("invalid selector to wipe precompile");
+                };
+        wipeOp = getWipeWrapper(input, aliasResolver, wipeAbi);
         transactionBody = syntheticTxnFactory.createWipe(wipeOp);
         return transactionBody;
     }
@@ -81,20 +73,9 @@ public class WipeFungiblePrecompile extends AbstractWipePrecompile {
         return pricingUtils.getMinimumPriceInTinybars(WIPE_FUNGIBLE, consensusTime);
     }
 
-    public static WipeWrapper decodeWipe(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        return getWipeWrapper(input, aliasResolver, WIPE_TOKEN_ACCOUNT_SELECTOR, WIPE_TOKEN_ACCOUNT_DECODER);
-    }
-
-    public static WipeWrapper decodeWipeV2(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        return getWipeWrapper(input, aliasResolver, WIPE_TOKEN_ACCOUNT_SELECTOR_V2, WIPE_TOKEN_ACCOUNT_DECODER_V2);
-    }
-
-    private static WipeWrapper getWipeWrapper(
-            final Bytes input,
-            final UnaryOperator<byte[]> aliasResolver,
-            final Bytes wipeTokenAccountSelector,
-            final ABIType<Tuple> wipeTokenAccountDecoder) {
-        final Tuple decodedArguments = decodeFunctionCall(input, wipeTokenAccountSelector, wipeTokenAccountDecoder);
+    public static WipeWrapper getWipeWrapper(
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver, @NonNull final SystemContractAbis abi) {
+        final Tuple decodedArguments = decodeFunctionCall(input, abi.selector, abi.decoder);
 
         final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
         final var accountID = convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
