@@ -17,7 +17,6 @@
 package com.swirlds.platform.reconnect;
 
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.merkle.synchronization.settings.ReconnectSettings;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.metrics.ReconnectMetrics;
@@ -31,28 +30,28 @@ import java.util.Objects;
  */
 public class ReconnectLearnerFactory {
     private final AddressBook addressBook;
-    private final ReconnectSettings settings;
+    private final int reconnectSocketTimeout;
     private final ReconnectMetrics statistics;
     private final ThreadManager threadManager;
     private final PlatformContext platformContext;
 
     /**
      * @param platformContext the platform context
-     * @param threadManager   responsible for managing thread lifecycles
-     * @param addressBook     the current address book
-     * @param settings        reconnect settings
-     * @param statistics      reconnect metrics
+     * @param threadManager          responsible for managing thread lifecycles
+     * @param addressBook            the current address book
+     * @param reconnectSocketTimeout the socket timeout to use during the reconnect in milliseconds
+     * @param statistics             reconnect metrics
      */
     public ReconnectLearnerFactory(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
             @NonNull final AddressBook addressBook,
-            @NonNull final ReconnectSettings settings,
+            final int reconnectSocketTimeout,
             @NonNull final ReconnectMetrics statistics) {
         this.platformContext = Objects.requireNonNull(platformContext);
         this.threadManager = Objects.requireNonNull(threadManager);
         this.addressBook = Objects.requireNonNull(addressBook);
-        this.settings = Objects.requireNonNull(settings);
+        this.reconnectSocketTimeout = reconnectSocketTimeout;
         this.statistics = Objects.requireNonNull(statistics);
     }
 
@@ -65,12 +64,6 @@ public class ReconnectLearnerFactory {
      */
     public ReconnectLearner create(final Connection conn, final State workingState) {
         return new ReconnectLearner(
-                platformContext,
-                threadManager,
-                conn,
-                addressBook,
-                workingState,
-                settings.getAsyncStreamTimeoutMilliseconds(),
-                statistics);
+                platformContext, threadManager, conn, addressBook, workingState, reconnectSocketTimeout, statistics);
     }
 }

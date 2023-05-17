@@ -33,6 +33,7 @@ import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import java.io.ByteArrayInputStream;
@@ -45,6 +46,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -61,23 +63,28 @@ class AddressBookTests {
 
         long totalWeight = 0;
         int numberWithWeight = 0;
-        final Set<Long> nodeIds = new HashSet<>();
+        final Set<NodeId> nodeIds = new HashSet<>();
 
-        long previousId = -1;
+        NodeId previousId = null;
         int expectedIndex = 0;
         for (final Address address : addressBook) {
-            assertTrue(address.getId() > previousId, "iteration is not in proper order");
-            previousId = address.getId();
+            if (previousId != null) {
+                assertTrue(address.getNodeId().compareTo(previousId) > 0, "iteration is not in proper order");
+            }
+            previousId = address.getNodeId();
 
-            assertEquals(expectedIndex, addressBook.getIndex(address.getId()), "invalid index");
-            assertEquals(address.getId(), addressBook.getId(expectedIndex), "wrong ID returned for index");
+            assertEquals(expectedIndex, addressBook.getIndexOfNodeId(address.getNodeId()), "invalid index");
+            assertEquals(address.getNodeId(), addressBook.getNodeId(expectedIndex), "wrong ID returned for index");
             expectedIndex++;
 
-            assertEquals(address.getId(), addressBook.getId(address.getNickname()), "wrong ID returned for public key");
+            assertEquals(
+                    address.getNodeId(),
+                    addressBook.getNodeId(address.getNickname()),
+                    "wrong ID returned for public key");
 
-            assertSame(address, addressBook.getAddress(address.getId()), "invalid address returned");
+            assertSame(address, addressBook.getAddress(address.getNodeId()), "invalid address returned");
 
-            nodeIds.add(address.getId());
+            nodeIds.add(address.getNodeId());
             totalWeight += address.getWeight();
             if (address.getWeight() != 0) {
                 numberWithWeight++;
@@ -89,31 +96,30 @@ class AddressBookTests {
         assertEquals(numberWithWeight, addressBook.getNumberWithWeight(), "incorrect number with weight");
 
         if (!addressBook.isEmpty()) {
-            final Address lastAddress = addressBook.getAddress(addressBook.getId(addressBook.getSize() - 1));
-            assertTrue(lastAddress.getId() < addressBook.getNextNodeId(), "incorrect next node ID");
+            final Address lastAddress = addressBook.getAddress(addressBook.getNodeId(addressBook.getSize() - 1));
+            assertTrue(lastAddress.getNodeId().compareTo(addressBook.getNextNodeId()) < 0, "incorrect next node ID");
         } else {
             assertEquals(0, size, "address book expected to be empty");
         }
 
         // Check size using an alternate strategy
-        int alternateSize = 0;
-        for (int i = 0; i < addressBook.getNextNodeId(); i++) {
-            if (addressBook.contains(i)) {
-                alternateSize++;
-            }
-        }
-        assertEquals(size, alternateSize, "size is incorrect");
+        final AtomicInteger alternateSize = new AtomicInteger(0);
+        addressBook.getNodeIdSet().forEach(nodeId -> {
+            assertTrue(addressBook.contains(nodeId), "node ID not found");
+            alternateSize.incrementAndGet();
+        });
+        assertEquals(size, alternateSize.get(), "size is incorrect");
     }
 
     /**
      * Validate that the address book contains the expected values.
      */
     private void validateAddressBookContents(
-            final AddressBook addressBook, final Map<Long, Address> expectedAddresses) {
+            final AddressBook addressBook, final Map<NodeId, Address> expectedAddresses) {
 
         assertEquals(expectedAddresses.size(), addressBook.getSize(), "unexpected number of addresses");
 
-        for (final Long nodeId : expectedAddresses.keySet()) {
+        for (final NodeId nodeId : expectedAddresses.keySet()) {
             assertTrue(addressBook.contains(nodeId), "address book does not have address for node");
             assertEquals(expectedAddresses.get(nodeId), addressBook.getAddress(nodeId), "address should match");
         }
@@ -124,20 +130,20 @@ class AddressBookTests {
     void validateAddressBookUpdateWeightTest() {
         final RandomAddressBookGenerator generator = new RandomAddressBookGenerator(getRandomPrintSeed()).setSize(10);
         final AddressBook addressBook = generator.build();
-        final Address address = addressBook.getAddress(addressBook.getId(0));
+        final Address address = addressBook.getAddress(addressBook.getNodeId(0));
         final long totalWeight = addressBook.getTotalWeight();
         final long newWeight = address.getWeight() + 1;
 
-        addressBook.updateWeight(address.getId(), newWeight);
+        addressBook.updateWeight(address.getNodeId(), newWeight);
 
-        final Address updatedAddress = addressBook.getAddress(addressBook.getId(0));
+        final Address updatedAddress = addressBook.getAddress(addressBook.getNodeId(0));
         assertEquals(newWeight, updatedAddress.getWeight(), "weight should be updated");
         assertEquals(totalWeight + 1, addressBook.getTotalWeight(), "total weight should be updated by 1");
         final Address reverted = updatedAddress.copySetWeight(newWeight - 1);
         assertEquals(address, reverted, "reverted address should be equal to original");
         assertThrows(
                 IllegalArgumentException.class,
-                () -> addressBook.updateWeight(address.getId(), -1),
+                () -> addressBook.updateWeight(address.getNodeId(), -1),
                 "should not be able to set negative weight");
         assertThrows(
                 NoSuchElementException.class,
@@ -169,9 +175,9 @@ class AddressBookTests {
         // Make sure that basic operations on the copy have no effect on the original
 
         // remove
-        copy.remove(copy.getId(0));
+        copy.remove(copy.getNodeId(0));
         // update
-        copy.add(copy.getAddress(copy.getId(50)).copySetNickname("foobar"));
+        copy.add(copy.getAddress(copy.getNodeId(50)).copySetNickname("foobar"));
         // insert
         copy.add(generator.buildNextAddress());
 
@@ -217,7 +223,7 @@ class AddressBookTests {
                 "address book should be immutable");
         assertThrows(
                 MutabilityException.class,
-                () -> addressBook.remove(addressBook.getId(0)),
+                () -> addressBook.remove(addressBook.getNodeId(0)),
                 "address book should be immutable");
         assertThrows(MutabilityException.class, addressBook::clear, "address book should be immutable");
     }
@@ -234,19 +240,19 @@ class AddressBookTests {
                 .setSize(100);
 
         final AddressBook addressBook = generator.build();
-        final Map<Long, Address> expectedAddresses = new HashMap<>();
-        addressBook.iterator().forEachRemaining(address -> expectedAddresses.put(address.getId(), address));
+        final Map<NodeId, Address> expectedAddresses = new HashMap<>();
+        addressBook.iterator().forEachRemaining(address -> expectedAddresses.put(address.getNodeId(), address));
 
         final int operationCount = 1_000;
         for (int i = 0; i < operationCount; i++) {
             if (random.nextBoolean() && addressBook.getSize() > 0) {
                 final int indexToRemove = random.nextInt(addressBook.getSize());
-                final long nodeIdToRemove = addressBook.getId(indexToRemove);
+                final NodeId nodeIdToRemove = addressBook.getNodeId(indexToRemove);
                 assertNotNull(expectedAddresses.remove(nodeIdToRemove), "item to be removed should be present");
                 addressBook.remove(nodeIdToRemove);
             } else {
                 final Address newAddress = generator.buildNextAddress();
-                expectedAddresses.put(newAddress.getId(), newAddress);
+                expectedAddresses.put(newAddress.getNodeId(), newAddress);
                 addressBook.add(newAddress);
             }
 
@@ -263,15 +269,15 @@ class AddressBookTests {
         final RandomAddressBookGenerator generator = new RandomAddressBookGenerator(random).setSize(100);
 
         final AddressBook addressBook = generator.build();
-        final Map<Long, Address> expectedAddresses = new HashMap<>();
-        addressBook.iterator().forEachRemaining(address -> expectedAddresses.put(address.getId(), address));
+        final Map<NodeId, Address> expectedAddresses = new HashMap<>();
+        addressBook.iterator().forEachRemaining(address -> expectedAddresses.put(address.getNodeId(), address));
 
         final int operationCount = 1_000;
         for (int i = 0; i < operationCount; i++) {
             final int indexToUpdate = random.nextInt(addressBook.getSize());
-            final long nodeIdToUpdate = addressBook.getId(indexToUpdate);
+            final NodeId nodeIdToUpdate = addressBook.getNodeId(indexToUpdate);
 
-            final Address updatedAddress = generator.buildNextAddress().copySetId(nodeIdToUpdate);
+            final Address updatedAddress = generator.buildNextAddress().copySetNodeId(nodeIdToUpdate);
 
             expectedAddresses.put(nodeIdToUpdate, updatedAddress);
             addressBook.add(updatedAddress);
@@ -304,8 +310,9 @@ class AddressBookTests {
         assertEquals(addressBook1, addressBook2, "address books should be the same");
         assertEquals(addressBook1.hashCode(), addressBook2.hashCode(), "address books should have the same hash code");
 
-        final Address updatedAddress =
-                addressBook1.getAddress(addressBook1.getId(random.nextInt(100))).copySetNickname("foobar");
+        final Address updatedAddress = addressBook1
+                .getAddress(addressBook1.getNodeId(random.nextInt(100)))
+                .copySetNickname("foobar");
         addressBook1.add(updatedAddress);
 
         assertNotEquals(addressBook1, addressBook2, "address books should not be the same");
@@ -380,10 +387,10 @@ class AddressBookTests {
 
         validateAddressBookConsistency(addressBook);
 
-        final Address addressToRemove = addressBook.getAddress(addressBook.getId(50));
-        addressBook.remove(addressBook.getId(50));
+        final Address addressToRemove = addressBook.getAddress(addressBook.getNodeId(50));
+        addressBook.remove(addressBook.getNodeId(50));
         assertThrows(
-                IllegalStateException.class,
+                IllegalArgumentException.class,
                 () -> addressBook.add(addressToRemove),
                 "should not be able to insert an address once it has been removed");
     }
@@ -395,11 +402,11 @@ class AddressBookTests {
         final AddressBook addressBook = new AddressBook();
 
         // The address book has gaps. Make sure we can't insert anything into those gaps.
-        for (int i = 0; i < addressBook.getNextNodeId(); i++) {
+        for (int i = 0; i < addressBook.getNextNodeId().id(); i++) {
 
-            final Address address = generator.buildNextAddress().copySetId(i);
+            final Address address = generator.buildNextAddress().copySetNodeId(new NodeId(i));
 
-            if (addressBook.contains(i)) {
+            if (addressBook.contains(new NodeId(i))) {
                 // It's ok to update an existing address
                 addressBook.add(address);
             } else {
@@ -438,10 +445,10 @@ class AddressBookTests {
         final RandomAddressBookGenerator generator = new RandomAddressBookGenerator(getRandomPrintSeed());
         final AddressBook addressBook = generator.build();
 
-        final long nextId = addressBook.getNextNodeId();
-        addressBook.setNextNodeId(nextId + 10);
+        final NodeId nextId = addressBook.getNextNodeId();
+        addressBook.setNextNodeId(nextId.id() + 10);
 
-        assertEquals(nextId + 10, addressBook.getNextNodeId(), "node ID should have been updated");
+        assertEquals(nextId.id() + 10, addressBook.getNextNodeId().id(), "node ID should have been updated");
 
         assertThrows(
                 IllegalArgumentException.class,
@@ -455,10 +462,10 @@ class AddressBookTests {
         final RandomAddressBookGenerator generator = new RandomAddressBookGenerator(getRandomPrintSeed());
         final AddressBook addressBook = generator.build();
         final String addressBookText = addressBook.toConfigText();
-        final Map<Long, Long> posToId = new HashMap<>();
+        final Map<Long, NodeId> posToId = new HashMap<>();
         long pos = 0;
         for (final Address address : addressBook) {
-            posToId.put(pos, address.getId());
+            posToId.put(pos, address.getNodeId());
             pos++;
         }
         final AddressBook parsedAddressBook =
@@ -491,9 +498,10 @@ class AddressBookTests {
 
     private void validateParseException(final String addressBook, final int part) {
         assertThrows(
-                ParseException.class, () -> parseAddressBookConfigText(addressBook, pos -> pos, ip -> false, id -> ""));
+                ParseException.class,
+                () -> parseAddressBookConfigText(addressBook, NodeId::new, ip -> false, id -> ""));
         try {
-            parseAddressBookConfigText(addressBook, pos -> pos, ip -> false, id -> "");
+            parseAddressBookConfigText(addressBook, NodeId::new, ip -> false, id -> "");
         } catch (final ParseException e) {
             assertEquals(part, e.getErrorOffset(), "The part number is wrong in the exception: " + e.getMessage());
         }

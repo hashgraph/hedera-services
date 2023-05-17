@@ -65,7 +65,7 @@ class StateModuleTest {
     @Mock
     private BalancesExporter balancesExporter;
 
-    private final NodeId nodeId = new NodeId(false, 0);
+    private final NodeId nodeId = new NodeId(0);
 
     @Test
     void providesDefaultCharset() {

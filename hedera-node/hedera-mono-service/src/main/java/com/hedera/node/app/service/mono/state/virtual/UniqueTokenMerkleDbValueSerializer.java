@@ -56,6 +56,11 @@ public class UniqueTokenMerkleDbValueSerializer implements ValueSerializer<Uniqu
         return VARIABLE_DATA_SIZE;
     }
 
+    // FUTURE WORK: mark it as @Override after migration to platform 0.39
+    public int getTypicalSerializedSize() {
+        return UniqueTokenValue.getTypicalSerializedSize();
+    }
+
     // Value serialization
 
     @Override

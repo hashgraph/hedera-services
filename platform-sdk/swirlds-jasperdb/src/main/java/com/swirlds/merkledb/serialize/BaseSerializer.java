@@ -43,6 +43,10 @@ public interface BaseSerializer<T> {
      */
     int getSerializedSize();
 
+    default int getSerializedSizeForVersion(long version) {
+        return getSerializedSize();
+    }
+
     /**
      * For variable sized data items get the typical number of bytes an item takes when serialized.
      *

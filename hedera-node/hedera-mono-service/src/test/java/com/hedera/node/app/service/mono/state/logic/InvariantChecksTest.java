@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
@@ -56,9 +55,6 @@ class InvariantChecksTest {
     private PlatformTxnAccessor accessor;
 
     @Mock
-    private NodeInfo nodeInfo;
-
-    @Mock
     private MerkleNetworkContext networkCtx;
 
     @LoggingTarget
@@ -70,7 +66,7 @@ class InvariantChecksTest {
     @BeforeEach
     void setUp() throws InvalidProtocolBufferException {
         accessor = PlatformTxnAccessor.from(mockTxn.toByteArray());
-        subject = new InvariantChecks(nodeInfo, () -> networkCtx);
+        subject = new InvariantChecks(() -> networkCtx);
     }
 
     @Test
@@ -105,17 +101,5 @@ class InvariantChecksTest {
 
         // then:
         assertTrue(result);
-    }
-
-    @Test
-    void rejectsZeroStake() {
-        given(nodeInfo.isZeroStake(submittingMember)).willReturn(true);
-
-        // when:
-        final var result = subject.holdFor(accessor, lastConsensusTime.plusNanos(1_000L), submittingMember);
-
-        // then:
-        assertFalse(result);
-        assertThat(logCaptor.warnLogs(), contains(Matchers.startsWith("Invariant failure!")));
     }
 }

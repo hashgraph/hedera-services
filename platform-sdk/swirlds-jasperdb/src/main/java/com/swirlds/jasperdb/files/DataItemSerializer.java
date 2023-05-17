@@ -40,5 +40,5 @@ public interface DataItemSerializer<T> extends BaseSerializer<T> {
      * 		Buffer to read from
      * @return The read header
      */
-    DataItemHeader deserializeHeader(ByteBuffer buffer);
+    DataItemHeader deserializeHeader(ByteBuffer buffer, long dataVersion);
 }
