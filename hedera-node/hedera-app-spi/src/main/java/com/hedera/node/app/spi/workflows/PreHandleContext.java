@@ -65,6 +65,14 @@ public interface PreHandleContext {
     AccountID payer();
 
     /**
+     * Returns the current {@link Configuration}.
+     *
+     * @return the {@link Configuration}
+     */
+    @NonNull
+    Configuration configuration();
+
+    /**
      * Returns an immutable copy of the list of required non-payer keys.
      *
      * @return the {@link Set} with the required non-payer keys
@@ -221,14 +229,4 @@ public interface PreHandleContext {
      */
     @Nullable
     PreHandleContext innerContext();
-
-    /**
-     * Returns the current {@link Configuration}.
-     *
-     * @return the {@link Configuration}
-     */
-    @NonNull
-    default Configuration getConfiguration() {
-        throw new UnsupportedOperationException("getConfiguration() not implemented, will be done by next PR");
-    }
 }

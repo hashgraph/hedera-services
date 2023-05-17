@@ -28,7 +28,6 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenFreezeAccountTransactionBody;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
@@ -70,44 +69,12 @@ public class TokenFreezeAccountHandler implements TransactionHandler {
 
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
-        throw new UnsupportedOperationException("Not implemented");
-    }
+        requireNonNull(context);
 
-
-
-    /**
-     * This method is called during the handle workflow. It executes the actual transaction.
-     *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
-     *
-     * @throws NullPointerException if one of the arguments is {@code null}
-     */
-    public void handle() {
-        throw new UnsupportedOperationException("Not implemented");
-    }
-
-    /**
-     * This method is called during the handle workflow. It executes the actual transaction.
-     *
-     * @param txn the {@link TokenFreezeAccountTransactionBody} of the active transaction
-     * @param accountStore the {@link ReadableAccountStore} for the active transaction
-     * @param tokenStore the {@link ReadableTokenStore} for the active transaction
-     * @param tokenRelStore the {@link WritableTokenRelationStore} for the active transaction
-     * @throws NullPointerException if one of the arguments is {@code null}
-     */
-    public void handle(
-            @NonNull final TransactionBody txn,
-            @NonNull final ReadableAccountStore accountStore,
-            @NonNull final ReadableTokenStore tokenStore,
-            @NonNull final WritableTokenRelationStore tokenRelStore)
-            throws HandleException {
-        requireNonNull(txn);
-        requireNonNull(accountStore);
-        requireNonNull(tokenStore);
-        requireNonNull(tokenRelStore);
-
-        final var op = txn.tokenFreezeOrThrow();
+        final var op = context.body().tokenFreezeOrThrow();
+        final var accountStore = context.readableStore(ReadableAccountStore.class);
+        final var tokenStore = context.readableStore(ReadableTokenStore.class);
+        final var tokenRelStore = context.writableStore(WritableTokenRelationStore.class);
         final var tokenRel = validateSemantics(op, accountStore, tokenStore, tokenRelStore);
 
         final var copyBuilder = tokenRel.copyBuilder();

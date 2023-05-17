@@ -19,7 +19,6 @@ package com.hedera.node.app.workflows.handle.stack;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.spi.config.ConfigProvider;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.spi.workflows.HandleContext.SavepointStack;
@@ -28,6 +27,7 @@ import com.hedera.node.app.state.RecordCache;
 import com.hedera.node.app.workflows.handle.state.ReadableStatesStack;
 import com.hedera.node.app.workflows.handle.state.WrappedHederaState;
 import com.hedera.node.app.workflows.handle.state.WritableStatesStack;
+import com.hedera.node.config.ConfigProvider;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayDeque;
 import java.util.Deque;

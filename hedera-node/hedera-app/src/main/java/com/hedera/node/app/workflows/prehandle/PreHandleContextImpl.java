@@ -33,6 +33,7 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
@@ -112,6 +113,12 @@ public class PreHandleContextImpl implements PreHandleContext {
     @NonNull
     public AccountID payer() {
         return payer;
+    }
+
+    @NonNull
+    @Override
+    public Configuration configuration() {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @NonNull
