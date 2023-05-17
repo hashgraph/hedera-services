@@ -18,7 +18,6 @@ package com.hedera.node.app.spi;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
