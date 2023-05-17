@@ -17,8 +17,8 @@
 package com.hedera.node.app.signature;
 
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.TransactionSignature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -31,11 +31,13 @@ import java.util.concurrent.Future;
  */
 public interface SignatureVerificationFuture extends Future<SignatureVerification> {
     /**
-     * Gets the hollow account, if any, that will be present on the resulting {@link SignatureVerification}.
-     * @return The hollow account, if any.
+     * Gets the EVM Alias for the key. If the key is an ECDSA (secp256k1) key, then this may be set. Otherwise, it
+     * will be null.
+     *
+     * @return The evm alias, if any.
      */
     @Nullable
-    Account hollowAccount();
+    Bytes evmAlias();
 
     /**
      * Gets the key that will be present on the resulting {@link SignatureVerification}.

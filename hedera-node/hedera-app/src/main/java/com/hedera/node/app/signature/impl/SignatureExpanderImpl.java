@@ -26,7 +26,6 @@ import com.hedera.hapi.node.base.Key.KeyOneOfType;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.SignaturePair;
 import com.hedera.hapi.node.base.ThresholdKey;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.mono.sigs.utils.MiscCryptoUtils;
 import com.hedera.node.app.signature.ExpandedSignaturePair;
 import com.hedera.node.app.signature.SignatureExpander;
@@ -58,14 +57,6 @@ public final class SignatureExpanderImpl implements SignatureExpander {
      * <p>This implementation <b>assumes</b> that all duplicate {@link SignaturePair}s have been removed from the
      * {@code sigPairs} list prior to calling this method. In addition, all {@link SignaturePair}s that are a strict
      * subset of other pairs in the list have also been removed.
-     *
-     * <p>It is absolutely essential in the implementation that there are NO DUPLICATE ENTRIES in the {@code sigPairs},
-     * and that this implementation ALWAYS VISITS EVERY ENTRY in the {@code sigPairs} list looking for the MOST
-     * SPECIFIC match. It is essential that every node deterministically expand the same set of {@link SignaturePair}s
-     * into the same set of {@link ExpandedSignaturePair}s. Our API uses a Set in a few places (such as the set of
-     * required keys), and if we were to iterate out of order, or if the sigPairs were out of order, or if we removed
-     * elements from the sig pair as we found them, then we might have subtle cases where we expand the same set of
-     * sigPairs into different sets of ExpandedSignaturePairs.
      */
     @Override
     public void expand(
@@ -76,10 +67,26 @@ public final class SignatureExpanderImpl implements SignatureExpander {
         // in the prefix, and include every single one of them in the expanded signature pair set.
         for (final var pair : sigPairs) {
             final var prefixLength = pair.pubKeyPrefix().length();
-            if (prefixLength == ED25519_KEY_LENGTH && pair.signature().kind() == ED25519
-                    || prefixLength == ECDSA_COMPRESSED_KEY_LENGTH
-                            && pair.signature().kind() == ECDSA_SECP256K1) {
-                expanded.add(new ExpandedSignaturePair(asKey(pair), null, pair));
+            if (prefixLength == ED25519_KEY_LENGTH && pair.signature().kind() == ED25519) {
+                // Public Key Prefix in this case has the full key bytes, so we can just reuse it.
+                expanded.add(new ExpandedSignaturePair(asKey(pair), pair.pubKeyPrefix(), null, pair));
+            } else if (prefixLength == ECDSA_COMPRESSED_KEY_LENGTH
+                    && pair.signature().kind() == ECDSA_SECP256K1) {
+                // The prefix will be the key but in compressed form. We also need the decompressed form because that
+                // is required by the cryptographic engine. We will also compute the evm address, in case this is
+                // associated with a hollow account. It should be that the prefix will only be full if needed, and for
+                // hollow accounts it is needed, but otherwise it can typically not be the full prefix. In that case,
+                // we won't waste much work. And the payer pays for the whole thing anyway, so we're compensated for the
+                // CPU cycles in any event. Doing it in the background threads seems to be a better tradeoff.
+                final var decompressed = decompressKey(pair.pubKeyPrefix());
+                if (decompressed != null) {
+                    final var decompressedByteArray = new byte[(int) decompressed.length()];
+                    decompressed.getBytes(0, decompressedByteArray);
+                    final var hashedPrefixByteArray =
+                            MiscCryptoUtils.extractEvmAddressFromDecompressedECDSAKey(decompressedByteArray);
+                    final var emvAlias = Bytes.wrap(hashedPrefixByteArray);
+                    expanded.add(new ExpandedSignaturePair(asKey(pair), decompressed, emvAlias, pair));
+                }
             }
         }
     }
@@ -90,6 +97,14 @@ public final class SignatureExpanderImpl implements SignatureExpander {
      * <p>This implementation <b>assumes</b> that all duplicate {@link SignaturePair}s have been removed from the
      * {@code sigPairs} list prior to calling this method. In addition, all {@link SignaturePair}s that are a strict
      * subset of other pairs in the list have also been removed.
+     *
+     * <p>It is absolutely essential in the implementation that there are NO DUPLICATE ENTRIES in the {@code sigPairs},
+     * and that this implementation therefore will only ever match at most a single item. It is essential that every
+     * node deterministically expand the same set of {@link SignaturePair}s into the same set of
+     * {@link ExpandedSignaturePair}s. Our API uses a Set in a few places (such as the set of required keys), and if we
+     * were to iterate out of order, or if the sigPairs were out of order, or if we removed elements from the sig pair
+     * as we found them, then we might have subtle cases where we expand the same set of sigPairs into different sets of
+     * ExpandedSignaturePairs.
      */
     @Override
     public void expand(
@@ -107,7 +122,7 @@ public final class SignatureExpanderImpl implements SignatureExpander {
             case ED25519 -> {
                 final var match = findMatch(key, originals);
                 if (match != null) {
-                    expanded.add(new ExpandedSignaturePair(key, null, match));
+                    expanded.add(new ExpandedSignaturePair(key, key.ed25519OrThrow(), null, match));
                 }
             }
                 // If the key is an ECDSA_SECP256K1 cryptographic key, then we simply iterate through the list of
@@ -117,9 +132,7 @@ public final class SignatureExpanderImpl implements SignatureExpander {
                 if (match != null) {
                     final var decompressed = decompressKey(key.ecdsaSecp256k1OrThrow());
                     if (decompressed != null) {
-                        final var decompressedKey =
-                                Key.newBuilder().ecdsaSecp256k1(decompressed).build();
-                        expanded.add(new ExpandedSignaturePair(decompressedKey, null, match));
+                        expanded.add(new ExpandedSignaturePair(key, decompressed, null, match));
                     }
                 }
             }
@@ -138,84 +151,6 @@ public final class SignatureExpanderImpl implements SignatureExpander {
                 // We don't support these, so we won't expand them
             }
         }
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>This implementation <b>assumes</b> that all duplicate {@link SignaturePair}s have been removed from the
-     * {@code sigPairs} list prior to calling this method. In addition, all {@link SignaturePair}s that are a strict
-     * subset of other pairs in the list have also been removed.
-     */
-    @Override
-    public void expand(
-            @NonNull final Account hollowAccount,
-            @NonNull final List<SignaturePair> originalPairs,
-            @NonNull final Set<ExpandedSignaturePair> expandedPairs) {
-        requireNonNull(hollowAccount);
-        requireNonNull(originalPairs);
-        requireNonNull(expandedPairs);
-        // Find a signature pair where the pair is of ECDSA_SECP256K1 type, and the prefix is a "full key" prefix, and
-        // the prefix when decompressed, hashed, and truncated to 20 bytes matches the account alias.
-        final var match = findMatch(hollowAccount.alias(), originalPairs);
-        if (match != null) {
-            expandedPairs.add(new ExpandedSignaturePair(asKey(match), hollowAccount, match));
-        }
-    }
-
-    /**
-     * Looks for a signature pair such that the key is an ECDSA_SECP256K1 key and the prefix is a "full key" prefix,
-     * and the prefix when decompressed, hashed, and truncated to 20 bytes matches the account alias. If no such
-     * signature pair is found, then {@code null} is returned.
-     *
-     * @param alias The alias to match against
-     * @param pairs The list of signature pairs to search
-     * @return The matching signature pair, or {@code null} if no match is found
-     */
-    @Nullable
-    private SignaturePair findMatch(@NonNull final Bytes alias, @NonNull final List<SignaturePair> pairs) {
-        // We were give a bogus alias. It cannot possibly be a valid alias if it is not exactly 20 bytes long.
-        if (alias.length() != 20) {
-            return null;
-        }
-
-        // FUTURE: We could implement support to extract the public key from the signature and signed bytes as well.
-        for (final var sigPair : pairs) {
-            // Only compressed ECDSA(secp256k1) keys can be used for hollow accounts, and the only valid prefix is
-            // exactly 33 bytes long (32 bytes plus a 1 byte header to indicate positive or negative number space)
-            final var prefix = sigPair.pubKeyPrefix();
-            if (sigPair.signature().kind() == ECDSA_SECP256K1 && prefix.length() == ECDSA_COMPRESSED_KEY_LENGTH) {
-                final var hashedPrefix = convertKeyToEvmAddress(prefix);
-                if (alias.equals(hashedPrefix)) {
-                    // We have found it!
-                    return sigPair;
-                }
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Converts a compressed ECDSA_SECP256K1 key prefix to an EVM address.
-     *
-     * @param keyBytes The compressed key prefix
-     * @return The EVM address, or null if the prefix was not a valid compressed ECDSA_SECP256K1 key
-     */
-    @Nullable
-    private Bytes convertKeyToEvmAddress(@NonNull final Bytes keyBytes) {
-        // Keccak hash the prefix and compare to the alias. Note that this prefix WILL BE COMPRESSED. We need
-        // to uncompress it first.
-        final var decompressedKeyBytes = decompressKey(keyBytes);
-        if (decompressedKeyBytes != null) {
-            final var decompressedByteArray = new byte[(int) decompressedKeyBytes.length()];
-            decompressedKeyBytes.getBytes(0, decompressedByteArray);
-            final var hashedPrefixByteArray =
-                    MiscCryptoUtils.extractEvmAddressFromDecompressedECDSAKey(decompressedByteArray);
-            return Bytes.wrap(hashedPrefixByteArray);
-        }
-
-        return null;
     }
 
     /**

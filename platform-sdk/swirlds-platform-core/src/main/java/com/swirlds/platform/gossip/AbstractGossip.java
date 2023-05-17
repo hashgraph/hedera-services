@@ -180,7 +180,8 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
         final SocketFactory socketFactory = PlatformConstructor.socketFactory(
                 crypto.getKeysAndCerts(), platformContext.getConfiguration().getConfigData(CryptoConfig.class));
         // create an instance that can create new outbound connections
-        final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class); // TODO: remove
+        final ChatterConfig chatterConfig =
+                platformContext.getConfiguration().getConfigData(ChatterConfig.class); // TODO: remove
         final OutboundConnectionCreator connectionCreator = new OutboundConnectionCreator(
                 selfId,
                 StaticSettingsProvider.getSingleton(),
@@ -245,7 +246,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
                 platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
         reconnectThrottle = new ReconnectThrottle(reconnectConfig);
 
-        networkMetrics = new NetworkMetrics(platformContext.getMetrics(), selfId, addressBook.getSize());
+        networkMetrics = new NetworkMetrics(platformContext.getMetrics(), selfId, addressBook);
         platformContext.getMetrics().addUpdater(networkMetrics::update);
         syncMetrics = new SyncMetrics(platformContext.getMetrics());
 

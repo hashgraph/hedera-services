@@ -52,7 +52,7 @@ class WinTabAddresses extends PrePaintableJPanel {
         synchronized (getPlatforms()) {
             for (Platform p : getPlatforms()) {
                 final Address address = p.getSelfAddress();
-                s += "\n" + address.getId() + "   " + address.getNickname()
+                s += "\n" + address.getNodeId().id() + "   " + address.getNickname()
                         + "   " + address.getSelfName()
                         + "   " + Arrays.toString(address.getAddressInternalIpv4())
                         + "   " + address.getPortInternalIpv4()

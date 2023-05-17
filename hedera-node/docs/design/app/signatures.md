@@ -25,7 +25,7 @@ In the case of an ED25519, a full key is 32 bytes long. For ECDSA(secp256k1) a f
 canonical "compressed" form for that key.
 
 The sender *must not* send a signature map with multiple `SignaturePair`s with identical prefixes, nor with any two
-pairs where the prefix of one is the prefix of another. This rule is asserted while syntatically checking the
+pairs where the prefix of one is the prefix of another. This rule is asserted while syntactically checking the
 transaction.
 
 Signature verification is broken down in the following steps:

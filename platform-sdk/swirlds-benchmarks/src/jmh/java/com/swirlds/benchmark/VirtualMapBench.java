@@ -100,6 +100,7 @@ public abstract class VirtualMapBench extends BaseBench {
         VirtualMap<BenchmarkKey, BenchmarkValue> virtualMap = restoreMap();
         if (virtualMap != null) {
             if (verify && map != null) {
+                virtualMap.fullLeafRehash();
                 final int parallelism = ForkJoinPool.getCommonPoolParallelism();
                 final AtomicLong numKeys = new AtomicLong();
                 final VirtualMap<BenchmarkKey, BenchmarkValue> srcMap = virtualMap;
