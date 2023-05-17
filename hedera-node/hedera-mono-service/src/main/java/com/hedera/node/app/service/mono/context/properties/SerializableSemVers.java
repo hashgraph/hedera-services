@@ -19,6 +19,7 @@ package com.hedera.node.app.service.mono.context.properties;
 import static com.hedera.node.app.service.mono.context.properties.SemanticVersions.asSemVer;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.node.app.service.mono.store.models.OwnershipTracker.Change;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -27,7 +28,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.util.Comparator;
-import java.util.Objects;
 import java.util.regex.Pattern;
 
 public class SerializableSemVers implements SoftwareVersion {
@@ -160,6 +160,30 @@ public class SerializableSemVers implements SoftwareVersion {
         } else {
             throw new IllegalArgumentException("Version " + this + IS_INCOMPARABLE_MSG + other);
         }
+    }
+
+    @Override
+    public boolean equals(@Nullable final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || Change.class != o.getClass()) {
+            return false;
+        }
+        final var that = (SerializableSemVers) o;
+        if (proto == null || services == null) {
+            throw new IllegalStateException("Uninitialized version " + this + IS_INCOMPARABLE_MSG + that);
+        }
+        return this.services.getMinor() == that.services.getMinor()
+                && this.services.getMajor() == that.services.getMajor()
+                && this.services.getPatch() == that.services.getPatch()
+                && this.services.getPre().equals(that.services.getPre())
+                && this.services.getBuild().equals(that.services.getBuild())
+                && this.proto.getMinor() == that.proto.getMinor()
+                && this.proto.getMajor() == that.proto.getMajor()
+                && this.proto.getPatch() == that.proto.getPatch()
+                && this.proto.getPre().equals(that.proto.getPre())
+                && this.proto.getBuild().equals(that.proto.getBuild());
     }
 
     @Override

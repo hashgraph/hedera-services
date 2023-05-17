@@ -105,6 +105,7 @@ class StandardProcessLogicTest {
 
     @Mock
     private StateView workingView;
+
     @Mock
     private RecordCache recordCache;
 
@@ -113,12 +114,12 @@ class StandardProcessLogicTest {
 
     @LoggingSubject
     private StandardProcessLogic subject;
+
     private SoftwareVersion eventVersion = SEMANTIC_VERSIONS.deployedSoftwareVersion();
 
     @BeforeEach
     void setUp() {
-        subject =
-                new StandardProcessLogic(
+        subject = new StandardProcessLogic(
                 expiries,
                 invariantChecks,
                 expandHandleSpan,
@@ -131,7 +132,7 @@ class StandardProcessLogicTest {
                 executionTimeTracker,
                 recordStreaming,
                 workingView,
-                        recordCache);
+                recordCache);
     }
 
     @Test

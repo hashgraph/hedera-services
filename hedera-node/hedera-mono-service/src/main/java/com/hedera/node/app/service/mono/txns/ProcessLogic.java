@@ -47,5 +47,6 @@ public interface ProcessLogic {
      * @param submittingMember the id of the member that submitted the txn
      * @param softwareVersion
      */
-    void incorporateConsensusTxn(ConsensusTransaction platformTxn, long submittingMember, SoftwareVersion softwareVersion);
+    void incorporateConsensusTxn(
+            ConsensusTransaction platformTxn, long submittingMember, SoftwareVersion softwareVersion);
 }

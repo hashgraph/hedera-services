@@ -190,8 +190,7 @@ class AdaptedMonoProcessLogicTest extends AppTestBase implements Scenarios {
         given(platformTxn.getMetadata()).willReturn(meta);
         given(platformTxn.getContents()).willReturn(asByteArray(nonsenseTxn));
 
-        assertThrows(IllegalStateException.class, () -> subject.incorporateConsensusTxn(platformTxn, 1L,
-                eventVersion));
+        assertThrows(IllegalStateException.class, () -> subject.incorporateConsensusTxn(platformTxn, 1L, eventVersion));
     }
 
     private static final JKey PAYER_KEY = new JEd25519Key("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes());

@@ -17,11 +17,9 @@
 package com.hedera.services.bdd.suites.perf.crypto;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -61,8 +59,8 @@ public class CryptoTransferLoadTest extends LoadTest {
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
                 runCryptoTransfers()
-//                justFreeze()
-        );
+                //                justFreeze()
+                );
     }
 
     protected HapiSpec runCryptoTransfers() {
@@ -121,8 +119,7 @@ public class CryptoTransferLoadTest extends LoadTest {
                                 .hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
                                 .key(GENESIS)
                                 .logging())
-                .then(
-                        defaultLoadTest(transferBurst, settings));
+                .then(defaultLoadTest(transferBurst, settings));
     }
 
     private HapiSpec justFreeze() {
@@ -131,7 +128,6 @@ public class CryptoTransferLoadTest extends LoadTest {
                 .when()
                 .then(freezeOnly().startingIn(10).seconds());
     }
-
 
     @Override
     protected Logger getResultsLogger() {

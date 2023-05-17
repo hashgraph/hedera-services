@@ -56,7 +56,9 @@ public class AdaptedMonoProcessLogic implements ProcessLogic {
     }
 
     @Override
-    public void incorporateConsensusTxn(@NonNull final ConsensusTransaction platformTxn, final long submittingMember,
+    public void incorporateConsensusTxn(
+            @NonNull final ConsensusTransaction platformTxn,
+            final long submittingMember,
             @NonNull final SoftwareVersion softwareVersion) {
         if (platformTxn.getMetadata() instanceof PreHandleResult metadata) {
             final var accessor = adaptForMono(platformTxn, metadata);

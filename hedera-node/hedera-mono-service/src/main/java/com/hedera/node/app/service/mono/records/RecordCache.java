@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono.records;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 
@@ -76,12 +77,29 @@ public class RecordCache {
             final TxnAccessor accessor,
             final Instant consensusTimestamp,
             final long submittingMember) {
+        setRecordWithStatus(effectivePayer, accessor, consensusTimestamp, submittingMember, FAIL_INVALID);
+    }
+
+    public void setStaleTransaction(
+            final AccountID effectivePayer,
+            final TxnAccessor accessor,
+            final Instant consensusTimestamp,
+            final long submittingMember) {
+        setRecordWithStatus(effectivePayer, accessor, consensusTimestamp, submittingMember, BUSY);
+    }
+
+    private void setRecordWithStatus(
+            final AccountID effectivePayer,
+            final TxnAccessor accessor,
+            final Instant consensusTimestamp,
+            final long submittingMember,
+            final ResponseCodeEnum status) {
         final var recordBuilder = creator.createInvalidFailureRecord(accessor, consensusTimestamp);
         final var expiringRecord = creator.saveExpiringRecord(
                 effectivePayer, recordBuilder.build(), consensusTimestamp.getEpochSecond(), submittingMember);
 
         final var recentHistory = histories.computeIfAbsent(accessor.getTxnId(), ignore -> new TxnIdRecentHistory());
-        recentHistory.observe(expiringRecord, FAIL_INVALID);
+        recentHistory.observe(expiringRecord, status);
     }
 
     public boolean isReceiptPresent(final TransactionID txnId) {
