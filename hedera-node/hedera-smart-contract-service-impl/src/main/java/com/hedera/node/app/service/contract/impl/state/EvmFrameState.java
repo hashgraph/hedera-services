@@ -35,6 +35,9 @@ import org.hyperledger.besu.evm.account.EvmAccount;
  * <p>Of course, implementations must still reflect the state changes made by any calls to
  * the {@code 0x167} system contract from within the EVM frame. But those changes are, in a
  * sense, the result of "escaping" the EVM; so they are not part of this API.
+ *
+ * <p>Since almost all return values require translating from Hedera data types to Besu data
+ * types, implementations might need to do internal caching to avoid excessive conversions.
  */
 public interface EvmFrameState {
     /**
@@ -80,13 +83,71 @@ public interface EvmFrameState {
     @NonNull
     UInt256 getOriginalStorageValue(long number, @NonNull UInt256 key);
 
+    /**
+     * Returns the code for the account with the given number, or empty code if no such code exists.
+     *
+     * @param number the account number
+     * @return the code for the account
+     */
+    @NonNull
     Bytes getCode(long number);
 
+    /**
+     * Sets the code for the contract with the given number. Only used during contract creation.
+     *
+     * @param number the contract number
+     * @param code the new code
+     */
+    void setCode(long number, @NonNull Bytes code);
+
+    /**
+     * Returns the redirect bytecode for the token with the given address, which must be a long-zero address.
+     *
+     * <p>Since a {@link TokenEvmAccount} never needs its Hedera entity number, we may as well use
+     * the long-zero address there, and here.
+     *
+     * @param address the token long-zero address
+     * @return the redirect code for the token
+     */
+    @NonNull
+    Bytes getTokenRedirectCode(@NonNull Address address);
+
+    @NonNull
     Hash getCodeHash(long number);
+
+    /**
+     * Returns the hash of the redirect bytecode for the token with the given address, which must be a
+     * long-zero address.
+     *
+     * <p>Since a {@link TokenEvmAccount} never needs its Hedera entity number, we may as well use
+     * the long-zero address there, and here.
+     *
+     * @param address the token long-zero address
+     * @return the redirect code for the token
+     */
+    @NonNull
+    Hash getTokenRedirectCodeHash(@NonNull Address address);
 
     long getNonce(long number);
 
+    /**
+     * Sets the nonce for the account with the given number.
+     *
+     * @param number the account number
+     * @param nonce the new nonce
+     */
+    void setNonce(long number, long nonce);
+
     Wei getBalance(long number);
 
+    /**
+     * Returns the "priority" EVM address of the account with the given number. This is its
+     * 20-byte address if it has one; or the "long-zero" address with the account number
+     * as the last 8 bytes of the zero address.
+     *
+     * @param number the account number
+     * @return the priority EVM address of the account
+     * @throws IllegalArgumentException if the account does not exist
+     */
     Address getAddress(long number);
 }

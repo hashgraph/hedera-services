@@ -20,9 +20,11 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pb
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.contract.impl.state.EvmFrameState;
-import com.hedera.node.app.service.contract.impl.state.ProxyAccount;
+import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
+import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -35,7 +37,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class ProxyAccountTest {
+class ProxyEvmAccountTest {
     private static final long ACCOUNT_NUM = 0x9abcdefabcdefbbbL;
     private static final Address EVM_ADDRESS = Address.fromHexString("abcabcabcabcabcabeeeeeee9abcdefabcdefbbb");
     private static final Bytes SOME_PRETEND_CODE = Bytes.wrap("<NOT-REALLY-CODE>");
@@ -48,11 +50,11 @@ class ProxyAccountTest {
     @Mock
     private EvmFrameState hederaState;
 
-    private ProxyAccount subject;
+    private ProxyEvmAccount subject;
 
     @BeforeEach
     void setUp() {
-        subject = new ProxyAccount(ACCOUNT_NUM, hederaState);
+        subject = new ProxyEvmAccount(ACCOUNT_NUM, hederaState);
     }
 
     @Test
@@ -108,5 +110,38 @@ class ProxyAccountTest {
     void getsOriginalStorageValue() {
         given(hederaState.getOriginalStorageValue(ACCOUNT_NUM, SOME_KEY)).willReturn(SOME_VALUE);
         assertEquals(SOME_VALUE, subject.getOriginalStorageValue(SOME_KEY));
+    }
+
+    @Test
+    void delegatesSettingNonce() {
+        subject.setNonce(123);
+
+        verify(hederaState).setNonce(ACCOUNT_NUM, 123);
+    }
+
+    @Test
+    void delegatesSettingCode() {
+        final var code = ConversionUtils.pbjToTuweniBytes(SOME_PRETEND_CODE);
+
+        subject.setCode(code);
+
+        verify(hederaState).setCode(ACCOUNT_NUM, code);
+    }
+
+    @Test
+    void delegatesSettingStorage() {
+        subject.setStorageValue(SOME_KEY, SOME_VALUE);
+
+        verify(hederaState).setStorageValue(ACCOUNT_NUM, SOME_KEY, SOME_VALUE);
+    }
+
+    @Test
+    void doesNotSupportDirectBalanceMutation() {
+        assertThrows(UnsupportedOperationException.class, () -> subject.setBalance(Wei.of(123)));
+    }
+
+    @Test
+    void isItselfMutable() {
+        assertSame(subject, subject.getMutable());
     }
 }

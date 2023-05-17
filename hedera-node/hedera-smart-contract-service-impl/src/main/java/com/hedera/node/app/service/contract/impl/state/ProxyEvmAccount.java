@@ -17,33 +17,35 @@
 package com.hedera.node.app.service.contract.impl.state;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.NavigableMap;
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.ModificationNotAllowedException;
 import org.hyperledger.besu.evm.account.Account;
-import org.hyperledger.besu.evm.account.AccountStorageEntry;
+import org.hyperledger.besu.evm.account.EvmAccount;
+import org.hyperledger.besu.evm.account.MutableAccount;
+import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
 /**
- * An {@link Account} implementation that gives access to the contract or account with the
- * given entity number relative to the given {@link EvmFrameState}.
+ * An {@link Account} implementation that reads and writes data for the given entity number
+ * by proxying calls to the given {@link EvmFrameState}.
  *
  * <p>The {@link EvmFrameState} reflects all changes to the state of the world that have been
  * made up to and including the current {@link org.hyperledger.besu.evm.frame.MessageFrame}.
  *
- * <p>Since property access always delegates to the {@link EvmFrameState}, client code may
- * interleave usage of a {@link ProxyAccount} instance in the same dynamic context that it
- * uses a {@link MutableProxyAccount} instance for the same account; although it would be rare
- * for this to make sense.
+ * <p>There is no implementation difference between mutable and immutable proxy accounts,
+ * since all changes are made to the {@link EvmFrameState} and not to the proxy account.
+ * So we just need one implementation, which the EVM will request from {@link WorldUpdater}s
+ * as an immutable {@link Account} in read-only contexts; and as a mutable {@link EvmAccount}
+ * in a context where writes are allowed.
  */
-public class ProxyAccount implements Account {
+public class ProxyEvmAccount extends AbstractMutableEvmAccount {
     protected final long number;
     protected final EvmFrameState state;
 
-    public ProxyAccount(final long number, @NonNull final EvmFrameState state) {
+    public ProxyEvmAccount(final long number, @NonNull final EvmFrameState state) {
         this.state = state;
         this.number = number;
     }
@@ -51,18 +53,6 @@ public class ProxyAccount implements Account {
     @Override
     public Address getAddress() {
         return state.getAddress(number);
-    }
-
-    /**
-     * Unlike in Besu, we don't store the address hash in state trie (c.f. {@link Account#getAddressHash()} javadoc);
-     * and also don't support {@link org.hyperledger.besu.evm.worldstate.WorldState#streamAccounts(Bytes32, int)}. So
-     * there is actually no reason to implement this method in Hedera.
-     *
-     * @throws UnsupportedOperationException always
-     */
-    @Override
-    public Hash getAddressHash() {
-        throw new UnsupportedOperationException("getAddressHash");
     }
 
     @Override
@@ -95,14 +85,23 @@ public class ProxyAccount implements Account {
         return state.getOriginalStorageValue(number, key);
     }
 
-    /**
-     * Besu uses this method for storage validation in test, but we don't have a practical way to implement it
-     * at the moment, since this would require iterating through the storage linked list.
-     *
-     * @throws UnsupportedOperationException always
-     */
     @Override
-    public NavigableMap<Bytes32, AccountStorageEntry> storageEntriesFrom(Bytes32 startKeyHash, int limit) {
-        throw new UnsupportedOperationException("storageEntriesFrom");
+    public @NonNull MutableAccount getMutable() throws ModificationNotAllowedException {
+        return this;
+    }
+
+    @Override
+    public void setNonce(final long value) {
+        state.setNonce(number, value);
+    }
+
+    @Override
+    public void setCode(@NonNull final Bytes code) {
+        state.setCode(number, code);
+    }
+
+    @Override
+    public void setStorageValue(@NonNull final UInt256 key, @NonNull final UInt256 value) {
+        state.setStorageValue(number, key, value);
     }
 }

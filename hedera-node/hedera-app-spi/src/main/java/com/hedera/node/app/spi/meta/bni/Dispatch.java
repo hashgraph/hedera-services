@@ -156,6 +156,15 @@ public interface Dispatch {
     void setAlias(@NonNull Bytes evmAddress, long entityNumber);
 
     /**
+     * Assigns the given {@code nonce} to the given {@code contractNumber}.
+     *
+     * @param contractNumber the contract number
+     * @param nonce the new nonce
+     * @throws IllegalArgumentException if there is no valid contract with the given {@code contractNumber}
+     */
+    void setNonce(long contractNumber, long nonce);
+
+    /**
      * Reserves a new entity number for a contract that is about to be created.
      *
      * @return the reserved entity number

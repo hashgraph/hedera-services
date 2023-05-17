@@ -25,6 +25,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.state.common.EntityNumber;
@@ -32,8 +34,10 @@ import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.state.DispatchingEvmFrameState;
-import com.hedera.node.app.service.contract.impl.state.ProxyAccount;
+import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
+import com.hedera.node.app.service.contract.impl.state.TokenEvmAccount;
 import com.hedera.node.app.spi.meta.bni.Dispatch;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -50,11 +54,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class DispatchingEvmFrameStateTest {
-    private static final long TOKEN_NUM = 0xffffffffffffL;
+    private static final int REDIRECT_CODE_FIXED_PREFIX_LEN =
+            "6080604052348015600f57600080fd5b506000610167905077618dc65e".length();
     private static final long ACCOUNT_NUM = 0x9abcdefabcdefbbbL;
+    private static final long TOKEN_NUM = 0xffffffffffffL;
     private static final Bytes SOME_OTHER_ALIAS = Bytes.wrap("<PRETEND>");
     private static final Address EVM_ADDRESS = Address.fromHexString("abcabcabcabcabcabeeeeeee9abcdefabcdefbbb");
     private static final Address LONG_ZERO_ADDRESS = Address.fromHexString("0000000000000000000000009abcdefabcdefbbb");
+    private static final Address TOKEN_ADDRESS = Address.fromHexString("0000000000000000000000000000ffffffffffff");
     private static final Bytes SOME_PRETEND_CODE = Bytes.wrap("<NOT-REALLY-CODE>");
     private static final Bytes SOME_PRETEND_CODE_HASH = Bytes.wrap("<NOT-REALLY-BYTECODE-HASH-12345>");
     private static final Bytecode SOME_PRETEND_BYTECODE = Bytecode.newBuilder()
@@ -90,12 +97,19 @@ class DispatchingEvmFrameStateTest {
     }
 
     @Test
-    void checksTokenExistence() {
-        //        assertFalse(subject.isToken(TOKEN_NUM));
-        //
-        //        given(dispatch.getToken(TOKEN_NUM)).willReturn(Token.DEFAULT);
-        //
-        //        assertTrue(subject.isToken(TOKEN_NUM));
+    void dispatchesToSetNonce() {
+        subject.setNonce(ACCOUNT_NUM, 1234);
+
+        verify(dispatch).setNonce(ACCOUNT_NUM, 1234);
+    }
+
+    @Test
+    void dispatchesToSetCode() {
+        final var expectedCode = Bytecode.newBuilder().code(SOME_PRETEND_CODE).build();
+
+        subject.setCode(ACCOUNT_NUM, pbjToTuweniBytes(SOME_PRETEND_CODE));
+
+        verify(bytecode).put(new EntityNumber(ACCOUNT_NUM), expectedCode);
     }
 
     @Test
@@ -144,6 +158,26 @@ class DispatchingEvmFrameStateTest {
         final var actualCode = subject.getCode(ACCOUNT_NUM);
 
         assertEquals(pbjToTuweniBytes(SOME_PRETEND_CODE), actualCode);
+    }
+
+    @Test
+    void interpolatesTokenCodeByAddress() {
+        final var actualCode = subject.getTokenRedirectCode(TOKEN_ADDRESS);
+
+        assertEquals(
+                TOKEN_ADDRESS.toUnprefixedHexString(),
+                actualCode
+                        .toUnprefixedHexString()
+                        // EVM 20-byte address is 40 hex chars
+                        .substring(REDIRECT_CODE_FIXED_PREFIX_LEN, REDIRECT_CODE_FIXED_PREFIX_LEN + 40));
+    }
+
+    @Test
+    void hashesInterpolatesTokenCode() {
+        final var code = subject.getTokenRedirectCode(TOKEN_ADDRESS);
+        final var expectedHash = Hash.hash(code);
+
+        assertEquals(expectedHash, subject.getTokenRedirectCodeHash(TOKEN_ADDRESS));
     }
 
     @Test
@@ -243,7 +277,7 @@ class DispatchingEvmFrameStateTest {
     @Test
     void returnsProxyAccountForNormal() {
         givenWellKnownAccount(accountWith(ACCOUNT_NUM));
-        assertInstanceOf(ProxyAccount.class, subject.getAccount(LONG_ZERO_ADDRESS));
+        assertInstanceOf(ProxyEvmAccount.class, subject.getAccount(LONG_ZERO_ADDRESS));
     }
 
     @Test
@@ -255,7 +289,7 @@ class DispatchingEvmFrameStateTest {
     void usesResolvedNumberFromDispatch() {
         given(dispatch.resolveAlias(Bytes.wrap(EVM_ADDRESS.toArrayUnsafe()))).willReturn(new EntityNumber(ACCOUNT_NUM));
         givenWellKnownAccount(accountWith(ACCOUNT_NUM));
-        assertInstanceOf(ProxyAccount.class, subject.getAccount(EVM_ADDRESS));
+        assertInstanceOf(ProxyEvmAccount.class, subject.getAccount(EVM_ADDRESS));
     }
 
     @Test
@@ -265,12 +299,36 @@ class DispatchingEvmFrameStateTest {
         assertNull(subject.getAccount(LONG_ZERO_ADDRESS));
     }
 
+    @Test
+    void choosesTokenAccountIfApplicable() {
+        givenWellKnownToken();
+        final var account = subject.getAccount(TOKEN_ADDRESS);
+        assertInstanceOf(TokenEvmAccount.class, account);
+    }
+
+    @Test
+    void getAccountDelegatesToGetMutableAccount() {
+        final var mockSubject = mock(DispatchingEvmFrameState.class);
+        final var mockAccount = mock(TokenEvmAccount.class);
+
+        given(mockSubject.getMutableAccount(TOKEN_ADDRESS)).willReturn(mockAccount);
+        doCallRealMethod().when(mockSubject).getAccount(TOKEN_ADDRESS);
+
+        final var account = mockSubject.getAccount(TOKEN_ADDRESS);
+
+        assertSame(mockAccount, account);
+    }
+
     private void givenWellKnownBytecode() {
         given(bytecode.get(new EntityNumber(ACCOUNT_NUM))).willReturn(SOME_PRETEND_BYTECODE);
     }
 
     private void givenWellKnownAccount(final Account.Builder builder) {
         given(dispatch.getAccount(ACCOUNT_NUM)).willReturn(builder.build());
+    }
+
+    private void givenWellKnownToken() {
+        given(dispatch.getToken(TOKEN_NUM)).willReturn(Token.newBuilder().build());
     }
 
     private Account.Builder accountWith(final long num, final Bytes alias) {

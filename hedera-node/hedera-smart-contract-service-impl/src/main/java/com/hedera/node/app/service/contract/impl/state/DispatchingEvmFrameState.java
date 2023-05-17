@@ -41,6 +41,7 @@ import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.EvmAccount;
+import org.hyperledger.besu.evm.code.CodeFactory;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -51,10 +52,17 @@ import org.jetbrains.annotations.NotNull;
  * <p>Almost every access requires a conversion from a PBJ type to a Besu type. At some
  * point it might be necessary to cache the converted values and invalidate them when
  * the state changes.
+ *
+ * TODO - get a little further to clarify DI strategy, then bring back a code cache.
  */
 public class DispatchingEvmFrameState implements EvmFrameState {
     private static final int NUM_LONG_ZEROS = 12;
     private static final long MISSING_ENTITY_NUMBER = -1;
+    private static final String TOKEN_BYTECODE_PATTERN = "fefefefefefefefefefefefefefefefefefefefe";
+
+    @SuppressWarnings("java:S6418")
+    private static final String TOKEN_CALL_REDIRECT_CONTRACT_BINARY =
+            "6080604052348015600f57600080fd5b506000610167905077618dc65efefefefefefefefefefefefefefefefefefefefe600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033";
 
     private final Dispatch dispatch;
     private final WritableKVState<SlotKey, SlotValue> storage;
@@ -95,7 +103,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
     }
 
     @Override
-    public Bytes getCode(final long number) {
+    public @NonNull Bytes getCode(final long number) {
         final var numberedBytecode = bytecode.get(new EntityNumber(number));
         if (numberedBytecode == null) {
             return Bytes.EMPTY;
@@ -106,7 +114,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
     }
 
     @Override
-    public Hash getCodeHash(final long number) {
+    public @NonNull Hash getCodeHash(final long number) {
         final var numberedBytecode = bytecode.get(new EntityNumber(number));
         if (numberedBytecode == null) {
             return Hash.EMPTY;
@@ -117,8 +125,30 @@ public class DispatchingEvmFrameState implements EvmFrameState {
     }
 
     @Override
+    public @NonNull Bytes getTokenRedirectCode(@NonNull final Address address) {
+        return proxyBytecodeFor(address);
+    }
+
+    @Override
+    public @NonNull Hash getTokenRedirectCodeHash(@NonNull final Address address) {
+        return CodeFactory.createCode(proxyBytecodeFor(address), 0, false).getCodeHash();
+    }
+
+    @Override
     public long getNonce(final long number) {
         return validatedAccount(number).ethereumNonce();
+    }
+
+    @Override
+    public void setCode(final long number, @NonNull final Bytes code) {
+        bytecode.put(
+                new EntityNumber(number),
+                new Bytecode(tuweniToPbjBytes(requireNonNull(code)), com.hedera.pbj.runtime.io.buffer.Bytes.EMPTY));
+    }
+
+    @Override
+    public void setNonce(final long number, final long nonce) {
+        dispatch.setNonce(number, nonce);
     }
 
     @Override
@@ -127,13 +157,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
     }
 
     /**
-     * Returns the "priority" EVM address of the account with the given number. This is its
-     * 20-byte address if it has one; or the "long-zero" address with the account number
-     * as the last 8 bytes of the zero address.
-     *
-     * @param number the account number
-     * @return the priority EVM address of the account
-     * @throws IllegalArgumentException if the account does not exist
+     * {@inheritDoc}
      */
     @Override
     public Address getAddress(final long number) {
@@ -146,27 +170,42 @@ public class DispatchingEvmFrameState implements EvmFrameState {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    @Nullable
-    public Account getAccount(final Address address) {
-        final var number = maybeMissingNumberOf(address);
+    public @Nullable Account getAccount(@NonNull final Address address) {
+        return getMutableAccount(address);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public @Nullable EvmAccount getMutableAccount(@NonNull final Address address) {
+        final var number = maybeMissingNumberOf(requireNonNull(address));
         if (number == MISSING_ENTITY_NUMBER) {
             return null;
         }
         final var account = dispatch.getAccount(number);
         if (account == null) {
+            final var token = dispatch.getToken(number);
+            if (token != null) {
+                // If the token is deleted or expired, the system contract executed by the redirect
+                // bytecode will fail with a more meaningful error message, so don't check that here
+                return new TokenEvmAccount(address, this);
+            }
             return null;
         }
         if (account.deleted() || account.expiredAndPendingRemoval() || isNotPriority(address, account)) {
             return null;
         }
-        return new ProxyAccount(number, this);
+        return new ProxyEvmAccount(number, this);
     }
 
-    @Nullable
-    @Override
-    public EvmAccount getMutableAccount(Address address) {
-        throw new AssertionError("Not implemented");
+    private Bytes proxyBytecodeFor(final Address address) {
+        return Bytes.fromHexString(
+                TOKEN_CALL_REDIRECT_CONTRACT_BINARY.replace(TOKEN_BYTECODE_PATTERN, address.toUnprefixedHexString()));
     }
 
     private boolean isNotPriority(
@@ -220,12 +259,6 @@ public class DispatchingEvmFrameState implements EvmFrameState {
                 | (b6 & 0xFFL) << 16
                 | (b7 & 0xFFL) << 8
                 | (b8 & 0xFFL);
-    }
-
-    private boolean isToken(final long number) {
-        // If the token is deleted or expired, the system contract executed by the redirect
-        // bytecode will fail with a more meaningful error message, so don't check that here
-        return dispatch.getToken(number) != null;
     }
 
     private com.hedera.hapi.node.state.token.Account validatedAccount(final long number) {
