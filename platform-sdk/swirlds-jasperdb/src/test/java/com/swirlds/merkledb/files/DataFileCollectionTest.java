@@ -113,14 +113,6 @@ class DataFileCollectionTest {
             final long[] dataItem2 = assertDoesNotThrow(
                     () -> fileCollection.readDataItemUsingIndex(storedOffsets, fi), "Read should not a exception.");
             checkDataItem(testType, valueAddition, dataItem2, i);
-            try {
-                assertNull(
-                        fileCollection.readDataItemUsingIndex(storedOffsets, fi, false),
-                        "A null should be returned with deserialize=false");
-            } catch (IOException e) {
-                e.printStackTrace();
-                fail("No exceptional conditions expected here");
-            }
         }
     }
 
@@ -276,7 +268,7 @@ class DataFileCollectionTest {
         assertEquals(
                 1000,
                 loadedDataCallbackImpl.dataLocationMap.size(),
-                "Size of data location map in collection loaded from store should reflect known" + " size");
+                "Size of data location map in collection loaded from store should reflect known size");
         assertEquals(
                 1000,
                 loadedDataCallbackImpl.dataValueMap.size(),

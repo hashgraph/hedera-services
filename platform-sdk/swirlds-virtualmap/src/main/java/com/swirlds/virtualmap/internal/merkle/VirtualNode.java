@@ -17,15 +17,14 @@
 package com.swirlds.virtualmap.internal.merkle;
 
 import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.virtualmap.datasource.VirtualRecord;
 
 /**
  * A base interface for both {@link VirtualInternalNode} and {@link VirtualLeafNode}.
  */
-public interface VirtualNode<R extends VirtualRecord> extends MerkleNode {
+public sealed interface VirtualNode extends MerkleNode permits VirtualInternalNode, VirtualLeafNode {
 
     /**
-     * Get the virtual record for this node.
+     * Get the path for this node.
      */
-    R getVirtualRecord();
+    long getPath();
 }

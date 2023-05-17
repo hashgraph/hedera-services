@@ -92,7 +92,7 @@ abstract class GrpcTestBase extends TestBase {
     /**
      * Represents "this node" in our tests.
      */
-    private final NodeId nodeSelfId = new NodeId(false, 7);
+    private final NodeId nodeSelfId = new NodeId(7);
 
     /**
      * The gRPC system has extensive metrics. This object allows us to inspect them and make sure they are being set

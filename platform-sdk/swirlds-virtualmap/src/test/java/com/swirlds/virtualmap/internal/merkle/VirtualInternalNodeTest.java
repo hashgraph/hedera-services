@@ -21,16 +21,19 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
+import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.route.MerkleRoute;
 import com.swirlds.common.test.merkle.dummy.DummyBinaryMerkleInternal;
 import com.swirlds.virtualmap.TestKey;
 import com.swirlds.virtualmap.TestValue;
 import com.swirlds.virtualmap.VirtualTestBase;
-import com.swirlds.virtualmap.datasource.VirtualInternalRecord;
+import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import java.io.IOException;
+import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -46,9 +49,9 @@ class VirtualInternalNodeTest extends VirtualTestBase {
     @Tags({@Tag("VirtualMerkle")})
     @DisplayName("setChild is not a supported method")
     void setChildNotSupported() {
-        final VirtualInternalRecord internalRecord = new VirtualInternalRecord(1, null);
+        final VirtualHashRecord virtualHashRecord = new VirtualHashRecord(1, null);
         final VirtualRootNode<TestKey, TestValue> root = createRoot();
-        final VirtualInternalNode<TestKey, TestValue> internalNode = new VirtualInternalNode<>(root, internalRecord);
+        final VirtualInternalNode<TestKey, TestValue> internalNode = new VirtualInternalNode<>(root, virtualHashRecord);
 
         final DummyBinaryMerkleInternal child = new DummyBinaryMerkleInternal();
         assertThrows(
@@ -69,9 +72,9 @@ class VirtualInternalNodeTest extends VirtualTestBase {
     @Tags({@Tag("VirtualMerkle")})
     @DisplayName("copy method is not supported")
     void copyNotSupported() {
-        final VirtualInternalRecord internalRecord = new VirtualInternalRecord(0, null);
+        final VirtualHashRecord virtualHashRecord = new VirtualHashRecord(0, null);
         final VirtualRootNode<TestKey, TestValue> root = createRoot();
-        final VirtualInternalNode<TestKey, TestValue> internalNode = new VirtualInternalNode<>(root, internalRecord);
+        final VirtualInternalNode<TestKey, TestValue> internalNode = new VirtualInternalNode<>(root, virtualHashRecord);
 
         assertThrows(UnsupportedOperationException.class, internalNode::copy, "Copy is not supported");
     }
@@ -86,9 +89,9 @@ class VirtualInternalNodeTest extends VirtualTestBase {
         // This root node has no children -- no left, and no right. This is a valid use case
         // (and in fact, any internal node other than the root node will ALWAYS have both a
         // left and right child).
-        final VirtualInternalRecord internalRecord = new VirtualInternalRecord(0, null);
+        final VirtualHashRecord virtualHashRecord = new VirtualHashRecord(0, null);
         final VirtualRootNode<TestKey, TestValue> root = createRoot();
-        final VirtualInternalNode<TestKey, TestValue> internalNode = new VirtualInternalNode<>(root, internalRecord);
+        final VirtualInternalNode<TestKey, TestValue> internalNode = new VirtualInternalNode<>(root, virtualHashRecord);
         assertNull(internalNode.getChild(0), "No left child");
         assertNull(internalNode.getChild(1), "No right child");
     }
@@ -99,12 +102,11 @@ class VirtualInternalNodeTest extends VirtualTestBase {
     @Test
     @Tags({@Tag("VirtualMerkle")})
     @DisplayName("Getting a child that isn't 0 or 1")
-    @SuppressWarnings("unchecked")
     void getInvalidChild() {
-        // Standard test scenario. There are valid children of this internalRecord. I want this so
+        // Standard test scenario. There are valid children of this pathHashRecord. I want this so
         // that I know that under normal circumstances the call would succeed, and is only *not*
         // returning a valid because it shouldn't.
-        final VirtualInternalRecord internalRecord = new VirtualInternalRecord(3, null);
+        final VirtualHashRecord virtualHashRecord = new VirtualHashRecord(3, null);
         final VirtualRootNode<TestKey, TestValue> root = createRoot();
         root.put(A_KEY, APPLE);
         root.put(B_KEY, BANANA);
@@ -113,20 +115,37 @@ class VirtualInternalNodeTest extends VirtualTestBase {
         root.put(E_KEY, EGGPLANT);
         root.put(F_KEY, FIG);
         root.put(G_KEY, GRAPE);
-        final VirtualInternalNode<TestKey, TestValue> internalNode = new VirtualInternalNode<>(root, internalRecord);
+        final VirtualInternalNode<TestKey, TestValue> internalNode = new VirtualInternalNode<>(root, virtualHashRecord);
         final VirtualLeafNode<TestKey, TestValue> leftChild = internalNode.getChild(0);
         final VirtualLeafNode<TestKey, TestValue> rightChild = internalNode.getChild(1);
         assertNotNull(leftChild, "child should not be null");
         assertNotNull(rightChild, "child should not be null");
-        assertEquals(
-                A_KEY,
-                ((VirtualLeafRecord<TestKey, TestValue>) leftChild.getVirtualRecord()).getKey(),
-                "key should match original");
-        assertEquals(
-                E_KEY,
-                ((VirtualLeafRecord<TestKey, TestValue>) rightChild.getVirtualRecord()).getKey(),
-                "key should match original");
+        assertEquals(A_KEY, leftChild.getKey(), "key should match original");
+        assertEquals(E_KEY, rightChild.getKey(), "key should match original");
         assertNull(internalNode.getChild(2), "value should be null");
+    }
+
+    @SuppressWarnings("rawtypes")
+    @Test
+    @Tags({@Tag("VirtualMerkle")})
+    @DisplayName("Getting a child that isn't 0 or 1")
+    void getInternalNodeFromCacheAndFromDisk() {
+        final VirtualRootNode<TestKey, TestValue> root = createRoot();
+        root.put(A_KEY, APPLE);
+        root.put(B_KEY, BANANA);
+        root.put(C_KEY, CHERRY);
+        root.put(D_KEY, DATE);
+        root.put(E_KEY, EGGPLANT);
+        root.put(F_KEY, FIG);
+        root.put(G_KEY, GRAPE);
+
+        MerkleNode child = root.getChild(1);
+        assertTrue(child instanceof VirtualInternalNode, "child should be an internal node");
+        VirtualInternalNode internalNode = (VirtualInternalNode) child;
+
+        assertEquals(5, ((VirtualInternalNode) internalNode.getChild(0)).getPath());
+        root.getCache().release();
+        assertEquals(5, ((VirtualInternalNode) internalNode.getChild(0)).getPath());
     }
 
     /**
@@ -136,89 +155,61 @@ class VirtualInternalNodeTest extends VirtualTestBase {
     @Test
     @Tags({@Tag("VirtualMerkle")})
     @DisplayName("Getting a child that is on disk")
-    @SuppressWarnings("unchecked")
     void getValidChildOnDisk() throws IOException {
         final VirtualRootNode<TestKey, TestValue> root = createRoot();
         root.getState().setFirstLeafPath(6);
         root.getState().setLastLeafPath(12);
-        root.getDataSource()
-                .saveRecords(
-                        6,
-                        12,
-                        Stream.empty(),
-                        Stream.of(
-                                        new VirtualLeafRecord<>(6, null, D_KEY, DATE),
-                                        new VirtualLeafRecord<>(7, null, A_KEY, APPLE),
-                                        new VirtualLeafRecord<>(8, null, E_KEY, EGGPLANT),
-                                        new VirtualLeafRecord<>(9, null, C_KEY, CHERRY),
-                                        new VirtualLeafRecord<>(10, null, F_KEY, FIG),
-                                        new VirtualLeafRecord<>(11, null, G_KEY, GRAPE),
-                                        new VirtualLeafRecord<>(12, null, B_KEY, BANANA))
-                                .map(this::hash),
-                        Stream.empty());
+        final List<VirtualLeafRecord<TestKey, TestValue>> leaves = List.of(
+                new VirtualLeafRecord<>(6, D_KEY, DATE),
+                new VirtualLeafRecord<>(7, A_KEY, APPLE),
+                new VirtualLeafRecord<>(8, E_KEY, EGGPLANT),
+                new VirtualLeafRecord<>(9, C_KEY, CHERRY),
+                new VirtualLeafRecord<>(10, F_KEY, FIG),
+                new VirtualLeafRecord<>(11, G_KEY, GRAPE),
+                new VirtualLeafRecord<>(12, B_KEY, BANANA));
+        root.getDataSource().saveRecords(6, 12, leaves.stream().map(this::hash), leaves.stream(), Stream.empty());
 
-        VirtualInternalRecord internalRecord = new VirtualInternalRecord(2, null);
-        VirtualInternalNode<TestKey, TestValue> internalNode = new VirtualInternalNode<>(root, internalRecord);
+        VirtualHashRecord virtualHashRecord = new VirtualHashRecord(2, null);
+        VirtualInternalNode<TestKey, TestValue> internalNode = new VirtualInternalNode<>(root, virtualHashRecord);
         VirtualLeafNode<TestKey, TestValue> rightChildLeaf = internalNode.getChild(1);
         assertNotNull(rightChildLeaf, "value should not be null");
-        assertEquals(
-                D_KEY,
-                ((VirtualLeafRecord<TestKey, TestValue>) rightChildLeaf.getVirtualRecord()).getKey(),
-                "key should match original");
+        assertEquals(D_KEY, rightChildLeaf.getKey(), "key should match original");
 
-        internalRecord = new VirtualInternalRecord(3, null);
-        internalNode = new VirtualInternalNode<>(root, internalRecord);
+        virtualHashRecord = new VirtualHashRecord(3, null);
+        internalNode = new VirtualInternalNode<>(root, virtualHashRecord);
         VirtualLeafNode<TestKey, TestValue> leftChildLeaf = internalNode.getChild(0);
         rightChildLeaf = internalNode.getChild(1);
         assertNotNull(leftChildLeaf, "value should not be null");
         assertNotNull(rightChildLeaf, "value should not be null");
-        assertEquals(
-                A_KEY,
-                ((VirtualLeafRecord<TestKey, TestValue>) leftChildLeaf.getVirtualRecord()).getKey(),
-                "key should match original");
-        assertEquals(
-                E_KEY,
-                ((VirtualLeafRecord<TestKey, TestValue>) rightChildLeaf.getVirtualRecord()).getKey(),
-                "key should match original");
+        assertEquals(A_KEY, leftChildLeaf.getKey(), "key should match original");
+        assertEquals(E_KEY, rightChildLeaf.getKey(), "key should match original");
 
-        internalRecord = new VirtualInternalRecord(4, null);
-        internalNode = new VirtualInternalNode<>(root, internalRecord);
+        virtualHashRecord = new VirtualHashRecord(4, null);
+        internalNode = new VirtualInternalNode<>(root, virtualHashRecord);
         leftChildLeaf = internalNode.getChild(0);
         rightChildLeaf = internalNode.getChild(1);
         assertNotNull(leftChildLeaf, "value should not be null");
         assertNotNull(rightChildLeaf, "value should not be null");
-        assertEquals(
-                C_KEY,
-                ((VirtualLeafRecord<TestKey, TestValue>) leftChildLeaf.getVirtualRecord()).getKey(),
-                "key should match original");
-        assertEquals(
-                F_KEY,
-                ((VirtualLeafRecord<TestKey, TestValue>) rightChildLeaf.getVirtualRecord()).getKey(),
-                "key should match original");
+        assertEquals(C_KEY, leftChildLeaf.getKey(), "key should match original");
+        assertEquals(F_KEY, rightChildLeaf.getKey(), "key should match original");
 
-        internalRecord = new VirtualInternalRecord(5, null);
-        internalNode = new VirtualInternalNode<>(root, internalRecord);
+        virtualHashRecord = new VirtualHashRecord(5, null);
+        internalNode = new VirtualInternalNode<>(root, virtualHashRecord);
         leftChildLeaf = internalNode.getChild(0);
         rightChildLeaf = internalNode.getChild(1);
         assertNotNull(leftChildLeaf, "value should not be null");
         assertNotNull(rightChildLeaf, "value should not be null");
-        assertEquals(
-                G_KEY,
-                ((VirtualLeafRecord<TestKey, TestValue>) leftChildLeaf.getVirtualRecord()).getKey(),
-                "key should match original");
-        assertEquals(
-                B_KEY,
-                ((VirtualLeafRecord<TestKey, TestValue>) rightChildLeaf.getVirtualRecord()).getKey(),
-                "key should match original");
+        assertEquals(G_KEY, leftChildLeaf.getKey(), "key should match original");
+        assertEquals(B_KEY, rightChildLeaf.getKey(), "key should match original");
     }
 
     @Test
     @Tags({@Tag("VirtualMerkle")})
     @DisplayName("Check version and class are valid")
     void getVersionAndClassId() {
-        final VirtualInternalRecord internalRecord = new VirtualInternalRecord(0, null);
+        final VirtualHashRecord virtualHashRecord = new VirtualHashRecord(0, null);
         final VirtualRootNode<TestKey, TestValue> root = createRoot();
-        final VirtualInternalNode<TestKey, TestValue> internalNode = new VirtualInternalNode<>(root, internalRecord);
+        final VirtualInternalNode<TestKey, TestValue> internalNode = new VirtualInternalNode<>(root, virtualHashRecord);
         assertEquals(0xaf2482557cfdb6bfL, internalNode.getClassId(), "Increases code coverage for getClassId");
         assertEquals(1, internalNode.getVersion(), "Increases code coverage for getVersion");
     }
@@ -228,9 +219,9 @@ class VirtualInternalNodeTest extends VirtualTestBase {
     @DisplayName("toString doesn't throw")
     void toStringTest() {
         // Honestly, I'm just juicing the code coverage
-        final VirtualInternalRecord internalRecord = new VirtualInternalRecord(0, null);
+        final VirtualHashRecord virtualHashRecord = new VirtualHashRecord(0, null);
         final VirtualRootNode<TestKey, TestValue> root = createRoot();
-        final VirtualInternalNode<TestKey, TestValue> internalNode = new VirtualInternalNode<>(root, internalRecord);
+        final VirtualInternalNode<TestKey, TestValue> internalNode = new VirtualInternalNode<>(root, virtualHashRecord);
         assertNotNull(internalNode.toString(), "value should not be null");
     }
 }

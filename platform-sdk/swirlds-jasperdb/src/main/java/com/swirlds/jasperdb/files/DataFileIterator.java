@@ -143,7 +143,7 @@ public final class DataFileIterator implements AutoCloseable {
 
         // Read data item header to determine the variable length size of the data
         final ByteBuffer dataBuffer = fillBuffer(headerSize);
-        currentDataItemHeader = dataItemSerializer.deserializeHeader(dataBuffer);
+        currentDataItemHeader = dataItemSerializer.deserializeHeader(dataBuffer, metadata.getSerializationVersion());
         dataItemSize = currentDataItemHeader.getSizeBytes();
 
         currentDataItem++;

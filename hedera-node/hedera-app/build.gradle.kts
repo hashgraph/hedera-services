@@ -69,6 +69,7 @@ dependencies {
   itestImplementation(libs.bundles.swirlds)
   itestImplementation(testLibs.helidon.grpc.client)
   itestImplementation(testLibs.bundles.mockito)
+  itestImplementation(testLibs.assertj.core)
   itestCompileOnly(libs.spotbugs.annotations)
 
   testImplementation(testFixtures(project(":hedera-node:hedera-config")))

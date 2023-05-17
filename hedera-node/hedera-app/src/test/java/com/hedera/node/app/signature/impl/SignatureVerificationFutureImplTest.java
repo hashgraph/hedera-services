@@ -24,9 +24,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.lenient;
 
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.spi.fixtures.Scenarios;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;
 import java.util.concurrent.CompletableFuture;
@@ -86,11 +86,11 @@ final class SignatureVerificationFutureImplTest implements Scenarios {
         void nullArgsThrows(@Mock final TransactionSignature sig) {
             // Given a null key, when we pass that null list to the constructor, then it throws an NPE
             //noinspection DataFlowIssue
-            assertThatThrownBy(() -> new SignatureVerificationFutureImpl(null, Account.DEFAULT, sig))
+            assertThatThrownBy(() -> new SignatureVerificationFutureImpl(null, Bytes.EMPTY, sig))
                     .isInstanceOf(NullPointerException.class);
             // Given a null map, when we pass that null list to the constructor, then it throws an NPE
             //noinspection DataFlowIssue
-            assertThatThrownBy(() -> new SignatureVerificationFutureImpl(Key.DEFAULT, Account.DEFAULT, null))
+            assertThatThrownBy(() -> new SignatureVerificationFutureImpl(Key.DEFAULT, Bytes.EMPTY, null))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -101,13 +101,14 @@ final class SignatureVerificationFutureImplTest implements Scenarios {
         }
 
         @Test
-        @DisplayName("Account matches that provided to the constructor")
-        void accountIsSet(@Mock final TransactionSignature sig) {
+        @DisplayName("Hollow alias matches that provided to the constructor")
+        void aliasIsSet(@Mock final TransactionSignature sig) {
             var sut = new SignatureVerificationFutureImpl(Key.DEFAULT, null, sig);
-            assertThat(sut.hollowAccount()).isNull();
+            assertThat(sut.evmAlias()).isNull();
 
-            sut = new SignatureVerificationFutureImpl(Key.DEFAULT, ERIN.account(), sig);
-            assertThat(sut.hollowAccount()).isSameAs(ERIN.account());
+            sut = new SignatureVerificationFutureImpl(
+                    Key.DEFAULT, ERIN.account().alias(), sig);
+            assertThat(sut.evmAlias()).isSameAs(ERIN.account().alias());
         }
 
         @Test

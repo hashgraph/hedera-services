@@ -21,10 +21,10 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ThresholdKey;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.TransactionSignature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -55,12 +55,8 @@ final class CompoundSignatureVerificationFuture implements SignatureVerification
      * provided here.
      */
     private final Key key;
-    /**
-     * Optional: used only with hollow accounts, the EVM address associated with the hollow account. The corresponding
-     * {@link #key} was extracted from the transaction (either because it was a "full" prefix on the signature map,
-     * or because we used an "ecrecover" like process to extract the key from the signature and signed bytes).
-     */
-    private final Account hollowAccount;
+    /** Optional: used only with some ECDSA_SECP256K1 keys, evm alias associated with the key. */
+    private final Bytes evmAlias;
     /**
      * The list of {@link Future<TransactionSignature>}s. This list cannot be empty or contain null.
      */
@@ -79,17 +75,17 @@ final class CompoundSignatureVerificationFuture implements SignatureVerification
      * Create a new instance.
      *
      * @param key The key associated with this sig check. Cannot be null.
-     * @param hollowAccount The hollow account, if any
+     * @param evmAlias The evm alias, if any (only if the key is an ECDSA_SECP256K1 key)
      * @param futures The {@link TransactionSignature}s, from which the pass/fail status of the
      * {@link SignatureVerification} is derived. This list must contain at least one element.
      */
     CompoundSignatureVerificationFuture(
             @NonNull final Key key,
-            @Nullable final Account hollowAccount,
+            @Nullable final Bytes evmAlias,
             @NonNull final List<Future<SignatureVerification>> futures,
             final int numCanFail) {
         this.key = requireNonNull(key);
-        this.hollowAccount = hollowAccount;
+        this.evmAlias = evmAlias;
         this.futures = requireNonNull(futures);
         this.numCanFail = Math.max(0, numCanFail);
 
@@ -100,8 +96,8 @@ final class CompoundSignatureVerificationFuture implements SignatureVerification
 
     /** {@inheritDoc} */
     @Nullable
-    public Account hollowAccount() {
-        return hollowAccount;
+    public Bytes evmAlias() {
+        return evmAlias;
     }
 
     /** {@inheritDoc} */
@@ -185,11 +181,11 @@ final class CompoundSignatureVerificationFuture implements SignatureVerification
         for (final var future : futures) {
             final var verification = future.get();
             if (!verification.passed() && (failCount++ >= numCanFail)) {
-                return new SignatureVerificationImpl(key, hollowAccount, false);
+                return new SignatureVerificationImpl(key, evmAlias, false);
             }
         }
 
-        return new SignatureVerificationImpl(key, hollowAccount, true);
+        return new SignatureVerificationImpl(key, evmAlias, true);
     }
 
     /**
@@ -211,10 +207,10 @@ final class CompoundSignatureVerificationFuture implements SignatureVerification
             final var now = System.currentTimeMillis();
             final var verification = future.get(deadline - now, TimeUnit.MILLISECONDS);
             if (!verification.passed() && (failCount++ >= numCanFail)) {
-                return new SignatureVerificationImpl(key, hollowAccount, false);
+                return new SignatureVerificationImpl(key, evmAlias, false);
             }
         }
 
-        return new SignatureVerificationImpl(key, hollowAccount, true);
+        return new SignatureVerificationImpl(key, evmAlias, true);
     }
 }
