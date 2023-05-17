@@ -115,6 +115,11 @@ import java.time.temporal.ChronoUnit;
  * @param numHalfDiskHashMapFlushThreads
  *      Number of threads to use for half disk hash map background flushing. If set to a negative value, the number of
  *      threads to use is calculated based on {@link #percentHalfDiskHashMapFlushThreads}
+ * @param reservedBufferLengthForLeafList
+ *      Length of a reserved buffer in a LongList used to store leafs. Value in bytes.
+ * @param leafRecordCacheSize
+ *      Cache size in bytes for reading virtual leaf records. Initialized in data source creation time from JasperDB config.
+ *      If the value is zero, leaf records cache isn't used.
  */
 @ConfigData("merkleDb")
 public record MerkleDbConfig(
