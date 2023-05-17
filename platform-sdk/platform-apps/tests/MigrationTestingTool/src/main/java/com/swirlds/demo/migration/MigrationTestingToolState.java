@@ -250,8 +250,9 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
         if (!Objects.equals(previousSoftwareVersion, SOFTWARE_VERSION)) {
             logger.error(
                     MARKER,
-                    "previousSoftwareVersion was {} when expecting SoftwareVersion.NO_VERSION",
-                    previousSoftwareVersion);
+                    "previousSoftwareVersion was {} when expecting it to be {}",
+                    previousSoftwareVersion,
+                    SOFTWARE_VERSION);
         }
 
         if (trigger == InitTrigger.GENESIS) {
