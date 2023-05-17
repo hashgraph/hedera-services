@@ -52,6 +52,7 @@ class TokenFeeScheduleUpdateHandlerParityTest extends ParityTestBase {
 
     @BeforeEach
     void setUp() {
+        super.setUp();
         customFeeValidator = new CustomFeesValidator();
         subject = new TokenFeeScheduleUpdateHandler(customFeeValidator);
     }
