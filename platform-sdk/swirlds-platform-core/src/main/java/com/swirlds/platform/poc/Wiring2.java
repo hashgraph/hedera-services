@@ -1,11 +1,14 @@
 package com.swirlds.platform.poc;
 
+import com.swirlds.common.threading.framework.config.MultiQueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.platform.poc.infrastructure.Component;
+import com.swirlds.platform.poc.infrastructure.MultiTaskProcessor;
 import com.swirlds.platform.poc.infrastructure.QueueSubmitter;
 import com.swirlds.platform.poc.infrastructure.TaskProcessor;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.lang.reflect.Proxy;
 import java.util.HashMap;
@@ -18,7 +21,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class Wiring2 {
 	private final List<Class<? extends Component>> componentsDefs;
 	private final Map<Class<? extends Component>, BlockingQueue<Object>> queues;
-	private final Map<Class<? extends Component>, TaskProcessor> processors;
+	private final Map<Class<? extends Component>, Component> processors;
 	private final Map<Class<? extends Component>, Object> facades;
 
 	public Wiring2(final List<Class<? extends Component>> componentsDefs) {
@@ -69,11 +72,24 @@ public class Wiring2 {
 	public void start(){
 		for (Class<? extends Component> componentsDef : componentsDefs) {
 			if (TaskProcessor.class.isAssignableFrom(componentsDef)) {
-				TaskProcessor tp = processors.get(componentsDef);
+				TaskProcessor tp = (TaskProcessor) processors.get(componentsDef);
 				new QueueThreadConfiguration<>(AdHocThreadManager.getStaticThreadManager())
 						.setQueue(Objects.requireNonNull(queues.get(componentsDef)))
 						.setHandler((InterruptableConsumer<Object>) tp.getProcessingMethod())
 						.build(true);
+			}
+
+			if (MultiTaskProcessor.class.isAssignableFrom(componentsDef)) {
+				MultiTaskProcessor tp = (MultiTaskProcessor) processors.get(componentsDef);
+				final MultiQueueThreadConfiguration conf = new MultiQueueThreadConfiguration(
+						AdHocThreadManager.getStaticThreadManager())
+						.setQueue(Objects.requireNonNull(queues.get(componentsDef)));
+//				for (Pair<Class<?>, InterruptableConsumer<?>> processingMethod : tp.getProcessingMethods()) {
+//					conf.addHandler(
+//							processingMethod.getLeft(),
+//							(InterruptableConsumer<Object>) processingMethod.getRight()
+//					);
+//				}
 			}
 		}
 	}

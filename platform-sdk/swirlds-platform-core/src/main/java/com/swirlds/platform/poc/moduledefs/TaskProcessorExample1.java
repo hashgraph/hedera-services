@@ -9,6 +9,6 @@ public interface TaskProcessorExample1 extends TaskProcessor {
 
 	@Override
 	default InterruptableConsumer<?> getProcessingMethod() {
-		return erase(this::process);
+		return (InterruptableConsumer<String>)this::process;
 	}
 }
