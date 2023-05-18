@@ -16,18 +16,35 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.IS_DELETED;
+import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.token.CryptoDeleteTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.mono.exceptions.DeletedAccountException;
+import com.hedera.node.app.service.mono.exceptions.DetachedAccountException;
+import com.hedera.node.app.service.mono.exceptions.InsufficientFundsException;
+import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
@@ -40,9 +57,22 @@ public class CryptoDeleteHandler implements TransactionHandler {
         // Exists for injection
     }
 
+    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
+        final var  op = txn.cryptoDeleteOrThrow();
+
+        if (!op.hasDeleteAccountID() || !op.hasTransferAccountID()) {
+            throw new PreCheckException(ACCOUNT_ID_DOES_NOT_EXIST);
+        }
+
+        if (op.deleteAccountIDOrThrow().equals(op.transferAccountIDOrThrow())) {
+            throw new PreCheckException(TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT);
+        }
+    }
+
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
+        pureChecks(context.body());
         final var op = context.body().cryptoDeleteOrThrow();
         final var deleteAccountId = op.deleteAccountIDOrElse(AccountID.DEFAULT);
         final var transferAccountId = op.transferAccountIDOrElse(AccountID.DEFAULT);
@@ -58,7 +88,65 @@ public class CryptoDeleteHandler implements TransactionHandler {
      *
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void handle() {
-        throw new UnsupportedOperationException("Not implemented");
+    public void handle(@NonNull final HandleContext handleContext,
+            @NonNull final TransactionBody txn,
+            @NonNull final WritableAccountStore accountStore) {
+        requireNonNull(handleContext);
+        requireNonNull(txn);
+        requireNonNull(accountStore);
+
+        final var op = txn.cryptoDelete();
+        final var deleteAndTransferAccounts = validateSemantics(op, accountStore);
+
+        transferToBeneficiary(deleteAndTransferAccounts, accountStore);
+
+        accountStore.remove(op.deleteAccountID());
+    }
+
+    private void transferToBeneficiary(Pair<Account, Account> deleteAndTransferAccounts,
+            WritableAccountStore accountStore) {
+        final var fromAccount = deleteAndTransferAccounts.getLeft();
+        final var toAccount = deleteAndTransferAccounts.getRight();
+        final var adjustment = fromAccount.tinybarBalance();
+
+        final long newFromBalance = computeNewBalance(fromAccount, -1 * adjustment);
+        final long newToBalance = computeNewBalance(toAccount, adjustment);
+
+        accountStore.put(fromAccount.copyBuilder().tinybarBalance(newFromBalance).build());
+        accountStore.put(toAccount.copyBuilder().tinybarBalance(newToBalance).build());
+    }
+
+    final long computeNewBalance(final Account account, final long adjustment){
+        validateTrue(!account.deleted(), ACCOUNT_DELETED);
+        validateTrue(!account.detached(), ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+        final long balance = account.tinybarBalance();
+        validateTrue(balance + adjustment >= 0, INSUFFICIENT_ACCOUNT_BALANCE);
+        return balance + adjustment;
+    }
+
+    private Pair<Account, Account> validateSemantics(CryptoDeleteTransactionBody op,
+            WritableAccountStore accountStore) {
+        final var deleteAccountId = op.deleteAccountID();
+        final var transferAccountId = op.transferAccountID();
+
+        final var optDeleteAccount = accountStore.get(deleteAccountId);
+        validateTrue(optDeleteAccount.isPresent(), INVALID_ACCOUNT_ID);
+
+        final var optTransferAccount = accountStore.get(transferAccountId);
+        validateTrue(optTransferAccount.isPresent(), INVALID_TRANSFER_ACCOUNT_ID);
+
+        final var deletedAccount = optDeleteAccount.get();
+        final var transferAccount = optTransferAccount.get();
+        validateFalse(deletedAccount.numberTreasuryTitles() > 0, INVALID_ACCOUNT_ID);
+
+        if (ledger.isDetached(id) || ledger.isDetached(beneficiary)) {
+            txnCtx.setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+            return null;
+        }
+
+        if (!ledger.allTokenBalancesVanish(id)) {
+            txnCtx.setStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
+        }
+        return Pair.of(deletedAccount, transferAccount);
     }
 }

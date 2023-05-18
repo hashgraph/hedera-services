@@ -95,6 +95,11 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
     }
 
     @Override
+    protected void finishCryptoDelete(@NonNull final WritableAccountStore accountStore) {
+        accountStore.commit();
+    }
+
+    @Override
     protected void finishConsensusUpdateTopic(@NonNull WritableTopicStore topicStore) {
         topicStore.commit();
     }

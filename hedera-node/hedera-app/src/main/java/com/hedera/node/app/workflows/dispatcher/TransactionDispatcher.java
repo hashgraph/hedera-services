@@ -430,6 +430,18 @@ public class TransactionDispatcher {
     }
 
     /**
+     * Dispatches the crypto create transaction to the appropriate handler.
+     * @param cryptoCreate the crypto create transaction body
+     * @param accountStore the writable account store
+     */
+    private void dispatchCryptoDelete(
+            @NonNull final TransactionBody cryptoDelete, @NonNull final WritableAccountStore accountStore) {
+        final var handler = handlers.cryptoDeleteHandler();
+        handler.handle(handleContext, cryptoDelete, accountStore);
+        finishCryptoDelete(accountStore);
+    }
+
+    /**
      * A temporary hook to isolate logic that we expect to move to a workflow, but
      * is currently needed when running with facility implementations that are adapters
      * for either {@code mono-service} logic or integration tests.
@@ -439,6 +451,10 @@ public class TransactionDispatcher {
      */
     protected void finishCryptoCreate(
             @NonNull final CryptoCreateRecordBuilder recordBuilder, @NonNull final WritableAccountStore accountStore) {
+        // No-op by default
+    }
+
+    protected void finishCryptoDelete(@NonNull final WritableAccountStore accountStore) {
         // No-op by default
     }
 }

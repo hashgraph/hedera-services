@@ -45,4 +45,10 @@ public interface ExpiryValidator {
      * @throws HandleException if the metadata is invalid
      */
     ExpiryMeta resolveUpdateAttempt(ExpiryMeta currentMetadata, ExpiryMeta updateMetadata);
+
+    /**
+     *
+     * @return
+     */
+    boolean isDetached();
 }
