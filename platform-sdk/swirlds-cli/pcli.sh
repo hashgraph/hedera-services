@@ -140,10 +140,12 @@ if [[ "$LOG4J_SET" = false ]]; then
   fi
 fi
 
+COLOR_LOGS_PATH="${SCRIPT_PATH}/color-logs.py"
+
 if [[ "$JVM_CLASSPATH" = '' ]]; then
   echo 'ERROR: the JVM classpath is empty!'
   echo 'Try adding jar or directories containing jarfiles to the classpath via the "--load /path/to/my/jars" argument.'
   exit 1
 fi
 
-java "${JVM_ARGS[@]}" -cp "${JVM_CLASSPATH}" $MAIN_CLASS_NAME "${PROGRAM_ARGS[@]}"
+java "${JVM_ARGS[@]}" -cp "${JVM_CLASSPATH}" $MAIN_CLASS_NAME "${PROGRAM_ARGS[@]}" | $COLOR_LOGS_PATH
