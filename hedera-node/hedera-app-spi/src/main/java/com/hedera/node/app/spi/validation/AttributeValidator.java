@@ -56,4 +56,12 @@ public interface AttributeValidator {
      * @throws HandleException if the auto-renew period is invalid
      */
     void validateAutoRenewPeriod(long autoRenewPeriod);
+
+    /**
+     * Validates if immutable entity with the key
+     *
+     * @param key the key to validate
+     * @return true if immutable entity with the key
+     */
+    boolean isImmutableKey(Key key);
 }

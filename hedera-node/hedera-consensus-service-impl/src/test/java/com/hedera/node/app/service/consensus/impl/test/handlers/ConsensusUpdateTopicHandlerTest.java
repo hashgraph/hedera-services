@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.A_NONNULL_KEY;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.EMPTY_KEYLIST;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.EMPTY_THRESHOLD_KEY;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ENTITIES_MAX_LIFETIME;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -47,6 +48,8 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusUpdateTopicHandler;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusUpdateTopicRecordBuilder;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.meta.HandleContext;
@@ -55,6 +58,9 @@ import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.workflows.handle.validation.StandardizedAttributeValidator;
+import java.util.function.LongSupplier;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -63,6 +69,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
+    private static final long maxLifetime = 3_000_000L;
 
     private final ConsensusUpdateTopicTransactionBody.Builder OP_BUILDER =
             ConsensusUpdateTopicTransactionBody.newBuilder();
@@ -88,7 +95,29 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
     @Mock
     private AttributeValidator attributeValidator;
 
-    private final ConsensusUpdateTopicHandler subject = new ConsensusUpdateTopicHandler();
+    @Mock
+    private LongSupplier consensusSecondNow;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
+
+    @Mock
+    private PropertySource compositeProps;
+
+    private StandardizedAttributeValidator standardizedAttributeValidator;
+
+    private ConsensusUpdateTopicHandler subject;
+
+    //
+
+    @BeforeEach
+    void setUp() {
+        given(compositeProps.getLongProperty(ENTITIES_MAX_LIFETIME)).willReturn(maxLifetime);
+
+        standardizedAttributeValidator =
+                new StandardizedAttributeValidator(consensusSecondNow, compositeProps, dynamicProperties);
+        subject = new ConsensusUpdateTopicHandler();
+    }
 
     @Test
     @DisplayName("Correct RecordBuilder type returned")
@@ -162,14 +191,14 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
 
     @Test
     @DisplayName("Delete admin key with Key.DEFAULT failed")
-    void appliesDeleteAdminKey() {
+    void appliesDeleteAdminKeyWithDEFAULTKey() {
         givenValidTopic(0, false);
         refreshStoresWithCurrentTopicInBothReadableAndWritable();
 
         final var op = OP_BUILDER.topicID(topicId).adminKey(A_NONNULL_KEY).build();
-        given(handleContext.attributeValidator()).willReturn(attributeValidator);
+        given(handleContext.attributeValidator()).willReturn(standardizedAttributeValidator);
 
-        subject.handle(handleContext, op, writableStore);
+        assertFailsWith(ResponseCodeEnum.BAD_ENCODING, () -> subject.handle(handleContext, op, writableStore));
 
         final var newTopic = writableTopicState.get(topicEntityNum);
         assertNotNull(newTopic.adminKey());
@@ -177,12 +206,12 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
 
     @Test
     @DisplayName("Delete admin key with empty KeyList succeeded")
-    void appliesDeleteEmptyKeyListAdminKey() {
+    void appliesDeleteAdminKeyWithEmptyKeyList() {
         givenValidTopic(0, false);
         refreshStoresWithCurrentTopicInBothReadableAndWritable();
 
         final var op = OP_BUILDER.topicID(topicId).adminKey(EMPTY_KEYLIST).build();
-        given(handleContext.attributeValidator()).willReturn(attributeValidator);
+        given(handleContext.attributeValidator()).willReturn(standardizedAttributeValidator);
 
         subject.handle(handleContext, op, writableStore);
 
@@ -192,14 +221,14 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
 
     @Test
     @DisplayName("Delete admin key with empty Threshold key failed")
-    void appliesDeleteEmptyThresholdKeyListAdminKey() {
+    void appliesDeleteEmptyAdminKeyWithThresholdKeyList() {
         givenValidTopic(0, false);
         refreshStoresWithCurrentTopicInBothReadableAndWritable();
 
         final var op = OP_BUILDER.topicID(topicId).adminKey(EMPTY_THRESHOLD_KEY).build();
-        given(handleContext.attributeValidator()).willReturn(attributeValidator);
+        given(handleContext.attributeValidator()).willReturn(standardizedAttributeValidator);
 
-        subject.handle(handleContext, op, writableStore);
+        assertFailsWith(ResponseCodeEnum.BAD_ENCODING, () -> subject.handle(handleContext, op, writableStore));
 
         final var newTopic = writableTopicState.get(topicEntityNum);
         assertNotNull(newTopic.adminKey());

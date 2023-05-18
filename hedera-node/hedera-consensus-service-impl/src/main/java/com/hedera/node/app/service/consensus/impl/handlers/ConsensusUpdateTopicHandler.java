@@ -23,7 +23,6 @@ import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
-import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -127,18 +126,18 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         builder.runningHash(topic.runningHash());
         builder.deleted(topic.deleted());
         // And then resolve mutable attributes, and put the new topic back
-        resolveMutableBuilderAttributes(handleContext.expiryValidator(), topicUpdate, builder, topic);
+        resolveMutableBuilderAttributes(handleContext, topicUpdate, builder, topic);
         topicStore.put(builder.build());
     }
 
     private void resolveMutableBuilderAttributes(
-            @NonNull final ExpiryValidator expiryValidator,
+            @NonNull final HandleContext handleContext,
             @NonNull final ConsensusUpdateTopicTransactionBody op,
             @NonNull final Topic.Builder builder,
             @NonNull final Topic topic) {
         if (op.hasAdminKey()) {
             var key = op.adminKey();
-            if (isEmptyKeyList(key)) {
+            if (handleContext.attributeValidator().isImmutableKey(key)) {
                 builder.adminKey((Key) null);
             } else {
                 builder.adminKey(key);
@@ -156,15 +155,10 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         } else {
             builder.memo(topic.memo());
         }
-        final var resolvedExpiryMeta = resolvedUpdateMetaFrom(expiryValidator, op, topic);
+        final var resolvedExpiryMeta = resolvedUpdateMetaFrom(handleContext.expiryValidator(), op, topic);
         builder.expiry(resolvedExpiryMeta.expiry());
         builder.autoRenewPeriod(resolvedExpiryMeta.autoRenewPeriod());
         builder.autoRenewAccountNumber(resolvedExpiryMeta.autoRenewNum());
-    }
-
-    private boolean isEmptyKeyList(Key key) {
-        return key.hasKeyList()
-                && requireNonNull(key.keyList()).keysOrElse(emptyList()).isEmpty();
     }
 
     private void validateMaybeNewAttributes(

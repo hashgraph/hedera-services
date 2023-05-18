@@ -1,3 +1,5 @@
+import org.gradle.internal.impldep.org.bouncycastle.its.asn1.EndEntityType.app
+
 /*
  * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
@@ -41,5 +43,6 @@ dependencies {
   testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
   testImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
   testImplementation(project(":hedera-node:hedera-token-service"))
+  testImplementation(project(":hedera-node:hedera-app"))
   testImplementation(testLibs.mockito.inline)
 }
