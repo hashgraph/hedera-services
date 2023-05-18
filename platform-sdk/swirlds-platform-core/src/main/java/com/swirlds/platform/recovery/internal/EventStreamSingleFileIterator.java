@@ -20,10 +20,8 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.system.events.DetailedConsensusEvent;
-import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.NoSuchElementException;
 
@@ -40,48 +38,44 @@ public class EventStreamSingleFileIterator implements IOIterator<DetailedConsens
     private final boolean toleratePartialFile;
 
     /**
+     * The path to the file being iterated over
+     */
+    private final Path filePath;
+
+    /**
      * Create an iterator that walks over an event stream file.
      *
      * @param objectStreamFile    the file
      * @param toleratePartialFile if true then allow the event stream file to end abruptly (possibly mid-event), and
      *                            return all events that are complete within the stream. If false then throw if the file
      *                            is incomplete.
-     * @throws IOException
+     * @throws IOException if there is an error reading the file
      */
     public EventStreamSingleFileIterator(final Path objectStreamFile, final boolean toleratePartialFile)
             throws IOException {
-        this(new BufferedInputStream(new FileInputStream(objectStreamFile.toFile())), toleratePartialFile);
-    }
 
-    /**
-     * Create an iterator that walks over an event stream file.
-     *
-     * @param in                  the input stream
-     * @param toleratePartialFile if true then allow the event stream file to end abruptly (possibly mid-event), and
-     *                            return all events that are complete within the stream. If false then throw if the file
-     *                            is incomplete.
-     * @throws IOException
-     */
-    public EventStreamSingleFileIterator(final InputStream in, final boolean toleratePartialFile) throws IOException {
-
-        iterator = new ObjectStreamIterator<>(in, toleratePartialFile);
         this.toleratePartialFile = toleratePartialFile;
+        this.filePath = objectStreamFile;
+
+        this.iterator = new ObjectStreamIterator<>(new FileInputStream(objectStreamFile.toFile()), toleratePartialFile);
 
         // First thing in the stream is a hash
         if (!iterator.hasNext()) {
-            startHash = null;
-            throw new IOException("event stream file has no objects");
+            this.startHash = null;
+            throw new IOException("event stream file `%s` has no objects".formatted(filePath));
         }
+
         final SelfSerializable firstObject = iterator.next();
         if (firstObject != null && firstObject.getClassId() != Hash.CLASS_ID) {
             throw new IOException(
-                    "Illegal object in event stream file at position 0, expected a Hash: " + firstObject.getClass());
+                    "Illegal object in event stream file `%s` at position 0, expected a Hash: ".formatted(filePath)
+                            + firstObject.getClass());
         }
-        startHash = (Hash) firstObject;
+        this.startHash = (Hash) firstObject;
 
         // An event stream is required to have at least 1 event to be considered valid
         if (!hasNext()) {
-            throw new IOException("event stream does not contain any events");
+            throw new IOException("event stream file `%s` does not contain any events".formatted(filePath));
         }
     }
 
@@ -101,7 +95,7 @@ public class EventStreamSingleFileIterator implements IOIterator<DetailedConsens
         if (!iterator.hasNext()) {
             finished = true;
             if (endHash == null && !toleratePartialFile) {
-                throw new IOException("file terminates early");
+                throw new IOException("file `%s` terminates early".formatted(filePath));
             }
             return false;
         }
@@ -114,7 +108,7 @@ public class EventStreamSingleFileIterator implements IOIterator<DetailedConsens
         final SelfSerializable next = iterator.peek();
         if (next == null) {
             finished = true;
-            throw new IOException("null object in the event stream");
+            throw new IOException("null object in the event stream file `%s`".formatted(filePath));
         }
 
         if (next.getClassId() == Hash.CLASS_ID) {
@@ -124,7 +118,8 @@ public class EventStreamSingleFileIterator implements IOIterator<DetailedConsens
         }
 
         if (next.getClassId() != DetailedConsensusEvent.CLASS_ID) {
-            throw new IOException("Invalid object type found in event stream: " + next.getClass());
+            throw new IOException(
+                    "Invalid object type found in event stream file `%s`: ".formatted(filePath) + next.getClass());
         }
 
         return true;
