@@ -40,7 +40,7 @@ public class AppTestBase extends TestBase implements TransactionFactory {
     private static final ScheduledExecutorService METRIC_EXECUTOR = Executors.newSingleThreadScheduledExecutor();
 
     /** Represents "this node" in our tests. */
-    private final NodeId nodeSelfId = new NodeId(false, 7);
+    private final NodeId nodeSelfId = new NodeId(7);
     /** The AccountID of "this node" in our tests. */
     protected final AccountID nodeSelfAccountId =
             AccountID.newBuilder().shardNum(0).realmNum(0).accountNum(8).build();

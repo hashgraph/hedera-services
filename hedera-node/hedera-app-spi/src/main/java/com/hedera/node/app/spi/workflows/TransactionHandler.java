@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.spi.workflows;
 
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.records.RecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -23,6 +24,14 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * A {@code TransactionHandler} contains all methods for the different stages of a single operation.
  */
 public interface TransactionHandler {
+    /**
+     * Validates fields on the transaction body that don't need to involve looking up state or the Configurations.
+     * This check will be done only in pre-handle and will NOT be repeated in handle.
+     *
+     * @param txn the transaction body to validate
+     * @throws PreCheckException if any check failed
+     */
+    void pureChecks(TransactionBody txn);
 
     /**
      * Pre-handles a transaction, extracting all non-payer keys, which signatures need to be validated

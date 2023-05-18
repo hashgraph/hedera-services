@@ -23,6 +23,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -37,14 +38,15 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class ScheduleSignHandler extends AbstractScheduleHandler implements TransactionHandler {
-    @Inject
-    public ScheduleSignHandler() {
-        // Exists for injection
-        super(null);
-    }
 
+    @Inject
     public ScheduleSignHandler(@NonNull final PreHandleDispatcher dispatcher) {
         super(dispatcher);
+    }
+
+    @Override
+    public void pureChecks(@NonNull final TransactionBody txn) {
+        throw new UnsupportedOperationException(" Not implemented yet");
     }
 
     @Override

@@ -23,6 +23,7 @@ import static com.swirlds.common.units.TimeUnit.UNIT_NANOSECONDS;
 import static com.swirlds.common.units.TimeUnit.UNIT_SECONDS;
 
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
@@ -118,17 +119,17 @@ public class UptimeTracker {
      */
     private void addAndRemoveNodes(
             @NonNull final MutableUptimeData uptimeData, @NonNull final AddressBook addressBook) {
-        final Set<Long> addressBookNodes = addressBook.getNodeIdSet();
+        final Set<NodeId> addressBookNodes = addressBook.getNodeIdSet();
         final Set<Long> trackedNodes = uptimeData.getTrackedNodes();
-        for (final long nodeId : addressBookNodes) {
-            if (!trackedNodes.contains(nodeId)) {
+        for (final NodeId nodeId : addressBookNodes) {
+            if (!trackedNodes.contains(nodeId.id())) {
                 // node was added
-                uptimeMetrics.addMetricsForNode(nodeId);
-                uptimeData.addNode(nodeId);
+                uptimeMetrics.addMetricsForNode(nodeId.id());
+                uptimeData.addNode(nodeId.id());
             }
         }
         for (final long nodeId : trackedNodes) {
-            if (!addressBookNodes.contains(nodeId)) {
+            if (!addressBookNodes.contains(new NodeId(nodeId))) {
                 // node was removed
                 uptimeMetrics.removeMetricsForNode(nodeId);
                 uptimeData.removeNode(nodeId);

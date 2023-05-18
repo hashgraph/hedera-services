@@ -418,11 +418,7 @@ public class FCQueue<E extends FastCopyable & SerializableHashable> extends Part
 
     @Override
     protected synchronized void destroyNode() {
-        clearInternal();
-    }
-
-    private void clearInternal() {
-        head = tail;
+        head = tail = null;
         size = 0;
         hash = null;
     }
@@ -716,7 +712,9 @@ public class FCQueue<E extends FastCopyable & SerializableHashable> extends Part
     public synchronized void clear() {
         throwIfImmutable();
 
-        clearInternal();
+        head = tail;
+        size = 0;
+        hash = null;
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////

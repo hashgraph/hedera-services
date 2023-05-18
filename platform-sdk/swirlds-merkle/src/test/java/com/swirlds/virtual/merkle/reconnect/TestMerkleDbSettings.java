@@ -42,8 +42,8 @@ public class TestMerkleDbSettings implements MerkleDbSettings {
 
     /** {@inheritDoc} */
     @Override
-    public long getInternalHashesRamToDiskThreshold() {
-        return defaultSettings.getInternalHashesRamToDiskThreshold();
+    public long getHashesRamToDiskThreshold() {
+        return defaultSettings.getHashesRamToDiskThreshold();
     }
 
     /** {@inheritDoc} */

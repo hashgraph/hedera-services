@@ -69,26 +69,55 @@ import javax.inject.Singleton;
  * HederaFunctionality#TOKEN_CREATE}.
  */
 @Singleton
-public class TokenCreateHandler implements TransactionHandler {
-    private final ConfigProvider configProvider;
+public class TokenCreateHandler extends AbstractTokenHandler implements TransactionHandler {
     private final CustomFeesValidator customFeesValidator;
     private final TokenTypeValidator tokenTypeValidator;
 
     @Inject
     public TokenCreateHandler(
-            ConfigProvider configProvider,
-            CustomFeesValidator customFeesValidator,
-            TokenTypeValidator tokenTypeValidator) {
-        this.configProvider = configProvider;
+            @NonNull final CustomFeesValidator customFeesValidator,
+            @NonNull final TokenTypeValidator tokenTypeValidator) {
         this.customFeesValidator = customFeesValidator;
         this.tokenTypeValidator = tokenTypeValidator;
     }
 
     @Override
+    public void pureChecks(@NonNull final TransactionBody txn) {
+        final var op = txn.tokenCreation();
+        final var initialSupply = op.initialSupply();
+        final var maxSupply = op.maxSupply();
+        final var decimals = op.decimals();
+        final var supplyType = op.supplyType();
+        final var tokenType = op.tokenType();
+
+        var validity = tokenTypeValidator.typeCheck(tokenType, initialSupply, decimals);
+        validateTrue(validity == OK, validity);
+
+        validity = tokenTypeValidator.supplyTypeCheck(supplyType, maxSupply);
+        validateTrue(validity == OK, validity);
+
+        if (maxSupply > 0 && initialSupply > maxSupply) {
+            throw new HandleException(INVALID_TOKEN_INITIAL_SUPPLY);
+        }
+
+        if (tokenType == NON_FUNGIBLE_UNIQUE && !op.hasSupplyKey()) {
+            throw new HandleException(TOKEN_HAS_NO_SUPPLY_KEY);
+        }
+
+        if (!op.hasTreasury()) {
+            throw new HandleException(INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+        }
+
+        if (op.freezeDefault() && !op.hasFreezeKey()) {
+            throw new HandleException(TOKEN_HAS_NO_FREEZE_KEY);
+        }
+    }
+
+    @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
+        pureChecks(context.body());
         final var op = context.body().tokenCreationOrThrow();
-        pureChecks(op);
 
         if (op.hasTreasury()) {
             final var treasuryId = op.treasuryOrThrow();
@@ -119,7 +148,7 @@ public class TokenCreateHandler implements TransactionHandler {
             @NonNull final WritableTokenStore tokenStore,
             @NonNull final WritableTokenRelationStore tokenRelationStore) {
         final var op = txn.tokenCreationOrThrow();
-        final var config = configProvider.getConfiguration().getConfigData(TokenServiceConfig.class);
+        final var config = context.getConfiguration().getConfigData(TokenServiceConfig.class);
         final var readableAccountStore = context.createReadableStore(ReadableAccountStore.class);
 
         // validate fields in the transaction body that involves checking with
@@ -152,10 +181,9 @@ public class TokenCreateHandler implements TransactionHandler {
                 newToken, readableAccountStore, tokenRelationStore, requireCollectorAutoAssociation);
         if(op.initialSupply() > 0){
             final var treasuryRel = newRels.get(0);
-            validateTrue(op.initialSupply() >= 0, INVALID_TOKEN_MINT_AMOUNT);
-            validateTrue(newToken.tokenType().equals(FUNGIBLE_COMMON), FAIL_INVALID); // fail invalid ???
-            changeSupply(treasuryRel, op.initialSupply());
+            mint(treasuryRel, op.initialSupply(), newToken.tokenType());
         }
+
 
         // Keep token into modifications in token store
         tokenStore.put(newToken);
@@ -222,36 +250,6 @@ public class TokenCreateHandler implements TransactionHandler {
                 op.hasAutoRenewAccount() ? op.autoRenewAccount().accountNumOrElse(NA) : NA);
     }
 
-    private void pureChecks(@NonNull final TokenCreateTransactionBody op) {
-        final var initialSupply = op.initialSupply();
-        final var maxSupply = op.maxSupply();
-        final var decimals = op.decimals();
-        final var supplyType = op.supplyType();
-        final var tokenType = op.tokenType();
-
-        var validity = tokenTypeValidator.typeCheck(tokenType, initialSupply, decimals);
-        validateTrue(validity == OK, validity);
-
-        validity = tokenTypeValidator.supplyTypeCheck(supplyType, maxSupply);
-        validateTrue(validity == OK, validity);
-
-        if (maxSupply > 0 && initialSupply > maxSupply) {
-            throw new HandleException(INVALID_TOKEN_INITIAL_SUPPLY);
-        }
-
-        if (tokenType == NON_FUNGIBLE_UNIQUE && !op.hasSupplyKey()) {
-            throw new HandleException(TOKEN_HAS_NO_SUPPLY_KEY);
-        }
-
-        if (!op.hasTreasury()) {
-            throw new HandleException(INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
-        }
-
-        if (op.freezeDefault() && !op.hasFreezeKey()) {
-            throw new HandleException(TOKEN_HAS_NO_FREEZE_KEY);
-        }
-    }
-
     private void validateSemantics(
             final ReadableAccountStore accountStore,
             final WritableTokenStore tokenStore,
@@ -264,7 +262,7 @@ public class TokenCreateHandler implements TransactionHandler {
         // FUTURE : Need to do areNftsEnabled, memoCheck, tokenSymbolCheck, tokenNameCheck, checkKeys,
         // validateAutoRenewAccount
         validateTrue(op.customFees().size() <= config.maxCustomFeesAllowed(), CUSTOM_FEES_LIST_TOO_LONG);
-        customFeesValidator.validate(op.customFees(), accountStore, tokenStore, true);
+        customFeesValidator.validateCreation(op.customFees(), accountStore, tokenStore, true);
     }
 
     @Override

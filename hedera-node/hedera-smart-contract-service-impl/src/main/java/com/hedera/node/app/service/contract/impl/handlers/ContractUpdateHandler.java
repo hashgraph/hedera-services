@@ -24,6 +24,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.contract.ContractUpdateTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -39,6 +40,11 @@ public class ContractUpdateHandler implements TransactionHandler {
     @Inject
     public ContractUpdateHandler() {
         // Exists for injection
+    }
+
+    @Override
+    public void pureChecks(@NonNull final TransactionBody txn) {
+        throw new UnsupportedOperationException(" Not implemented yet");
     }
 
     @Override

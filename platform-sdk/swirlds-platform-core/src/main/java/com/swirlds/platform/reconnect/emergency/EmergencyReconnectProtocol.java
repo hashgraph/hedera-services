@@ -113,7 +113,7 @@ public class EmergencyReconnectProtocol implements Protocol {
     @Override
     public boolean shouldAccept() {
         // if the throttle is initiated, we should call markReconnectFinished in teacher()
-        final boolean shouldAccept = teacherThrottle.initiateReconnect(peerId.getId());
+        final boolean shouldAccept = teacherThrottle.initiateReconnect(peerId.id());
         if (shouldAccept) {
             initiatedBy = InitiatedBy.PEER;
         }
@@ -136,7 +136,7 @@ public class EmergencyReconnectProtocol implements Protocol {
                 default -> throw new NetworkProtocolException(String.format(
                         "runProtocol() called for emergency reconnect with peer %d "
                                 + "but it is unclear who the teacher and who the learner is",
-                        peerId.getId()));
+                        peerId.id()));
             }
         } finally {
             initiatedBy = InitiatedBy.NO_ONE;
@@ -178,7 +178,7 @@ public class EmergencyReconnectProtocol implements Protocol {
                     RECONNECT.getMarker(),
                     "Emergency Reconnect Complete, round {} received from peer {}",
                     notification.getRoundNumber(),
-                    peerId.getId());
+                    peerId.id());
             emergencyRecoveryManager.emergencyStateLoaded();
         }
     }

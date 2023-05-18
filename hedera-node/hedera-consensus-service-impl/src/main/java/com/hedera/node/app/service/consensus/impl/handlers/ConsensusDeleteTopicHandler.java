@@ -25,6 +25,7 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.consensus.ConsensusDeleteTopicTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusDeleteTopicRecordBuilder;
@@ -45,6 +46,11 @@ public class ConsensusDeleteTopicHandler implements TransactionHandler {
     @Inject
     public ConsensusDeleteTopicHandler() {
         // Exists for injection
+    }
+
+    @Override
+    public void pureChecks(@NonNull final TransactionBody txn) {
+        throw new UnsupportedOperationException(" Not implemented yet");
     }
 
     @Override

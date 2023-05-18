@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -40,6 +41,11 @@ public class CryptoUpdateHandler implements TransactionHandler {
     @Inject
     public CryptoUpdateHandler(@NonNull final CryptoSignatureWaivers waivers) {
         this.waivers = requireNonNull(waivers, "The supplied argument 'waivers' must not be null");
+    }
+
+    @Override
+    public void pureChecks(@NonNull final TransactionBody txn) {
+        throw new UnsupportedOperationException(" Not implemented yet");
     }
 
     @Override

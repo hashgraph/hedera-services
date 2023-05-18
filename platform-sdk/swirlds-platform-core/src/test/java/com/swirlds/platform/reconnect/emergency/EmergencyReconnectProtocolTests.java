@@ -25,20 +25,21 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.test.RandomUtils;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.reconnect.ReconnectController;
 import com.swirlds.platform.reconnect.ReconnectHelper;
-import com.swirlds.platform.reconnect.ReconnectSettingsImpl;
 import com.swirlds.platform.reconnect.ReconnectThrottle;
 import com.swirlds.platform.state.EmergencyRecoveryFile;
 import com.swirlds.platform.state.EmergencyRecoveryManager;
 import com.swirlds.platform.state.signed.SignedStateFinder;
 import com.swirlds.platform.state.signed.SignedStateManager;
-import java.time.Duration;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.time.Instant;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
@@ -53,7 +54,7 @@ import org.junit.jupiter.params.provider.ValueSource;
  */
 public class EmergencyReconnectProtocolTests {
 
-    private static final NodeId PEER_ID = new NodeId(false, 1L);
+    private static final NodeId PEER_ID = new NodeId(1L);
 
     private static Stream<Arguments> initiateParams() {
         return Stream.of(
@@ -182,10 +183,11 @@ public class EmergencyReconnectProtocolTests {
     @DisplayName("Tests if teacher throttle gets released")
     @Test
     void testTeacherThrottleReleased() {
-        final ReconnectSettingsImpl reconnectSettings = new ReconnectSettingsImpl();
-        // we don't want the time based throttle to interfere
-        reconnectSettings.minimumTimeBetweenReconnects = Duration.ZERO;
-        final ReconnectThrottle teacherThrottle = new ReconnectThrottle(reconnectSettings);
+        final Configuration config = new TestConfigBuilder()
+                // we don't want the time based throttle to interfere
+                .withValue("reconnect.minimumTimeBetweenReconnects", "0s")
+                .getOrCreateConfig();
+        final ReconnectThrottle teacherThrottle = new ReconnectThrottle(config.getConfigData(ReconnectConfig.class));
 
         final EmergencyReconnectProtocol protocol = new EmergencyReconnectProtocol(
                 getStaticThreadManager(),
@@ -208,6 +210,6 @@ public class EmergencyReconnectProtocolTests {
                 () -> protocol.runProtocol(throwingConnection),
                 "expected an exception to be thrown");
 
-        assertTrue(teacherThrottle.initiateReconnect(PEER_ID.getId()), "Teacher throttle should be released");
+        assertTrue(teacherThrottle.initiateReconnect(PEER_ID.id()), "Teacher throttle should be released");
     }
 }

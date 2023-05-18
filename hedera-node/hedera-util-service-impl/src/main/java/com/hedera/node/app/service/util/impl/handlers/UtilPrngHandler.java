@@ -21,8 +21,9 @@ import static java.util.Objects.requireNonNull;
 import com.google.common.math.IntMath;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.util.UtilPrngTransactionBody;
-import com.hedera.node.app.service.network.ReadableRunningHashLeafStore;
+import com.hedera.node.app.service.networkadmin.ReadableRunningHashLeafStore;
 import com.hedera.node.app.service.util.impl.config.PrngConfig;
 import com.hedera.node.app.service.util.impl.records.UtilPrngRecordBuilder;
 import com.hedera.node.app.service.util.records.PrngRecordBuilder;
@@ -55,6 +56,11 @@ public class UtilPrngHandler implements TransactionHandler {
     @Inject
     public UtilPrngHandler() {
         // Dagger2
+    }
+
+    @Override
+    public void pureChecks(@NonNull final TransactionBody txn) {
+        throw new UnsupportedOperationException(" Not implemented yet");
     }
 
     /**

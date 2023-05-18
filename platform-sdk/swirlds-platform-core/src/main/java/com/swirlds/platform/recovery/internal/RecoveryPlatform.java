@@ -70,7 +70,7 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
             final long selfId,
             final boolean loadSigningKeys) {
 
-        this.selfId = new NodeId(false, selfId);
+        this.selfId = new NodeId(selfId);
 
         this.addressBook = initialState.getAddressBook();
 
@@ -140,15 +140,6 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
     @Override
     public NodeId getSelfId() {
         return selfId;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int getInstanceNumber() {
-        // This never runs in the same JVM with other platform instances, so it's always instance 0.
-        return 0;
     }
 
     /**

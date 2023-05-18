@@ -46,6 +46,11 @@ public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
         // Exists for injection
     }
 
+    @Override
+    public void pureChecks(@NonNull final TransactionBody txn) {
+        throw new UnsupportedOperationException(" Not implemented yet");
+    }
+
     /**
      * This method is called during the pre-handle workflow.
      *

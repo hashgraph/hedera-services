@@ -46,6 +46,11 @@ public class TokenPauseHandler implements TransactionHandler {
     }
 
     @Override
+    public void pureChecks(@NonNull final TransactionBody txn) {
+        throw new UnsupportedOperationException(" Not implemented yet");
+    }
+
+    @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
         preCheck(context);

@@ -84,6 +84,21 @@ public class TestBase {
     }
 
     /**
+     * Generates some random bytes
+     *
+     * @param length The number of bytes to generate.
+     * @return Some random bytes.
+     */
+    @NonNull
+    public final byte[] randomByteArray(int length) {
+        final byte[] data = new byte[length];
+        for (int i = 0; i < length; i++) {
+            data[i] = (byte) rand.nextInt();
+        }
+        return data;
+    }
+
+    /**
      * Gets the word list.
      *
      * @return An unmodifiable set of words

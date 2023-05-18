@@ -29,6 +29,7 @@ configurations.all {
 
 dependencies {
   implementation(project(":hedera-node:hapi"))
+  implementation(project(":hedera-node:hedera-config"))
   testImplementation(project(mapOf("path" to ":hedera-node:hedera-app")))
   annotationProcessor(libs.dagger.compiler)
   api(project(":hedera-node:hedera-token-service"))

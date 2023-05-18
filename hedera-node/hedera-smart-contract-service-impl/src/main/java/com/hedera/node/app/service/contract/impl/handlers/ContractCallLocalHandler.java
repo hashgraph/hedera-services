@@ -41,6 +41,7 @@ public class ContractCallLocalHandler extends PaidQueryHandler {
         // Exists for injection
     }
 
+
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {
         requireNonNull(query);

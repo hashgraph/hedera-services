@@ -24,6 +24,7 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
@@ -33,21 +34,20 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * HederaFunctionality#SCHEDULE_CREATE}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#SCHEDULE_CREATE}.
  */
 @Singleton
 public class ScheduleCreateHandler extends AbstractScheduleHandler implements TransactionHandler {
 
     // @todo('6249') This constructor should be removed and the @Inject annotation added to the remaining constructor
     @Inject
-    public ScheduleCreateHandler() {
-        // Exists for injection
-        super(null);
-    }
-
     public ScheduleCreateHandler(@NonNull final PreHandleDispatcher dispatcher) {
         super(dispatcher);
+    }
+
+    @Override
+    public void pureChecks(@NonNull final TransactionBody txn) {
+        throw new UnsupportedOperationException(" Not implemented yet");
     }
 
     @Override

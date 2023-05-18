@@ -144,6 +144,11 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
         }
     }
 
+    @Override
+    protected void finishTokenFeeScheduleUpdate(@NonNull final WritableTokenStore tokenStore) {
+        tokenStore.commit();
+    }
+
     protected void finishTokenCreate(
             @NonNull final TokenCreateRecordBuilder recordBuilder, @NonNull final WritableTokenStore tokenStore) {
         // If token can't be created, due to the usage of a price regime, throw an exception
