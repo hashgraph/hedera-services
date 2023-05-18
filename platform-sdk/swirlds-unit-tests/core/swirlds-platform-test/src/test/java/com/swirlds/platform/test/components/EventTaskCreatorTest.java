@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -139,7 +139,7 @@ class EventTaskCreatorTest {
         assertEquals(
                 eventToRescue.getCreatorId(),
                 captor.getValue().getOtherId(),
-                "otherId should match the creatorId of the rescued event");
+                "otherId should match the senderId of the rescued event");
 
         reset(eventQueueThread);
 

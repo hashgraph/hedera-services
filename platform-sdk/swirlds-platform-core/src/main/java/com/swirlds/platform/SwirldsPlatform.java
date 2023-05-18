@@ -144,7 +144,7 @@ import com.swirlds.platform.gossip.chatter.PrepareChatterEvent;
 import com.swirlds.platform.gossip.chatter.communication.ChatterProtocol;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
-import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEventDescriptor;
+import com.swirlds.platform.gossip.chatter.protocol.messages.EventDescriptor;
 import com.swirlds.platform.gossip.chatter.protocol.peer.PeerInstance;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphEventObserver;
@@ -481,8 +481,7 @@ public class SwirldsPlatform implements Platform, ConnectionTracker, Startable {
         this.consensusMetrics = new ConsensusMetricsImpl(this.selfId, metrics);
         this.eventIntakeMetrics = new EventIntakeMetrics(metrics, time);
         this.syncMetrics = new SyncMetrics(metrics);
-        this.networkMetrics =
-                new NetworkMetrics(metrics, selfId, getAddressBook().getSize());
+        this.networkMetrics = new NetworkMetrics(metrics, selfId, getAddressBook());
         metrics.addUpdater(networkMetrics::update);
         this.reconnectMetrics = new ReconnectMetrics(metrics);
         RuntimeMetrics.setup(metrics);
@@ -710,7 +709,7 @@ public class SwirldsPlatform implements Platform, ConnectionTracker, Startable {
 
             final ParentFinder parentFinder = new ParentFinder(shadowGraph::hashgraphEvent);
 
-            final List<Predicate<ChatterEventDescriptor>> isDuplicateChecks = new ArrayList<>();
+            final List<Predicate<EventDescriptor>> isDuplicateChecks = new ArrayList<>();
             isDuplicateChecks.add(d -> shadowGraph.isHashInGraph(d.getHash()));
             if (chatterConfig.useChatter()) {
                 final OrphanBufferingLinker orphanBuffer = new OrphanBufferingLinker(
