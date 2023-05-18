@@ -577,7 +577,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                         .maxPriorityGas(2L)
                         .gasLimit(1_000_000L)
                         .sending(depositAmount)
-                        .hasKnownStatus(INVALID_SOLIDITY_ADDRESS));
+                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED));
     }
 
     @Override
