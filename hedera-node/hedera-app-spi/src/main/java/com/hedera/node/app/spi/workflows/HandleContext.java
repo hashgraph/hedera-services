@@ -18,6 +18,7 @@ package com.hedera.node.app.spi.workflows;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.validation.AttributeValidator;
@@ -99,6 +100,19 @@ public interface HandleContext {
     SignatureVerification verificationFor(@NonNull Key key);
 
     /**
+     * Gets the {@link SignatureVerification} for the given hollow account. If the alias for the hollow account was
+     * not provided during pre-handle, then the returned {@link SignatureVerification} will be failed. If the alias
+     * was provided during pre-handle, then the corresponding {@link SignatureVerification} will be returned with the
+     * result of that verification operation. If during signature verification a key was extracted then it will be made
+     * available in the {@link SignatureVerification}.
+     *
+     * @param hollowAccount the hollow account to get the verification for
+     * @return the verification for the given hollow account.
+     */
+    @NonNull
+    SignatureVerification verificationFor(@NonNull final Account hollowAccount);
+
+    /**
      * Get a readable store given the store's interface. This gives read-only access to the store.
      *
      * @param storeInterface The store interface to find and create a store for
@@ -128,14 +142,14 @@ public interface HandleContext {
     /**
      * Returns a record builder for the given record builder subtype.
      *
-     * @param singleTransactionRecordBuilderClass the record type
+     * @param recordBuilderClass the record type
      * @param <T> the record type
      * @return a builder for the given record type
      * @throws NullPointerException if {@code singleTransactionRecordBuilderClass} is {@code null}
      * @throws IllegalArgumentException if the record builder type is unknown to the app
      */
     @NonNull
-    <T> T recordBuilder(@NonNull Class<T> singleTransactionRecordBuilderClass);
+    <T> T recordBuilder(@NonNull Class<T> recordBuilderClass);
 
     /**
      * Dispatches an independent (top-level) transaction, that precedes the current transaction.

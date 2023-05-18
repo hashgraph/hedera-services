@@ -20,23 +20,20 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.components.StoreInjectionComponent;
+import com.hedera.node.app.records.SingleTransactionRecordBuilder;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
-import com.hedera.node.app.service.mono.utils.NonAtomicReference;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.function.LongSupplier;
-import javax.inject.Inject;
-import javax.inject.Provider;
 import javax.inject.Singleton;
 
 /**
@@ -46,27 +43,30 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class MonoHandleContext implements HandleContext {
+
+    private final TransactionBody txBody;
     private final LongSupplier nums;
     private final ExpiryValidator expiryValidator;
     private final TransactionContext txnCtx;
     private final AttributeValidator attributeValidator;
-    private final NonAtomicReference<HederaState> mutableState;
-    private final Provider<StoreInjectionComponent.Factory> storeFactory;
+    private final ReadableStoreFactory readableStoreFactory;
+    private final SingleTransactionRecordBuilder recordBuilder;
 
-    @Inject
     public MonoHandleContext(
+            @NonNull final TransactionBody txBody,
             @NonNull final EntityIdSource ids,
             @NonNull final ExpiryValidator expiryValidator,
             @NonNull final AttributeValidator attributeValidator,
             @NonNull final TransactionContext txnCtx,
-            @NonNull final NonAtomicReference<HederaState> mutableState,
-            @NonNull final Provider<StoreInjectionComponent.Factory> storeFactory) {
+            @NonNull final ReadableStoreFactory readableStoreFactory,
+            @NonNull final SingleTransactionRecordBuilder recordBuilder) {
+        this.txBody = Objects.requireNonNull(txBody);
         this.nums = Objects.requireNonNull(ids)::newAccountNumber;
         this.txnCtx = Objects.requireNonNull(txnCtx);
         this.expiryValidator = Objects.requireNonNull(expiryValidator);
         this.attributeValidator = Objects.requireNonNull(attributeValidator);
-        this.mutableState = Objects.requireNonNull(mutableState);
-        this.storeFactory = Objects.requireNonNull(storeFactory);
+        this.readableStoreFactory = Objects.requireNonNull(readableStoreFactory);
+        this.recordBuilder = Objects.requireNonNull(recordBuilder);
     }
 
     /**
@@ -84,7 +84,7 @@ public class MonoHandleContext implements HandleContext {
     @Override
     @NonNull
     public TransactionBody body() {
-        throw new UnsupportedOperationException("Not implemented yet");
+        return txBody;
     }
 
     /**
@@ -131,8 +131,8 @@ public class MonoHandleContext implements HandleContext {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    @NonNull
     @Override
+    @NonNull
     public SignatureVerification verificationFor(@NonNull Account hollowAccount) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
@@ -140,13 +140,7 @@ public class MonoHandleContext implements HandleContext {
     @Override
     @NonNull
     public <C> C readableStore(@NonNull final Class<C> storeInterface) {
-        // FUTURE: This is a temporary solution to the problem of creating a readable store factory.
-        // Once HandleContext is created which is not Singleton and is created per request, we can
-        // inject the store factory directly into the HandleContext constructor.
-        // Currently, this ReadableStoreFactory is created per each handle as defined by the
-        // custom scope @HandleScope
-        final var readableStoreFactory =
-                storeFactory.get().create(mutableState.get()).storeFactory();
+        Objects.requireNonNull(storeInterface, "storeInterface must not be null");
         return readableStoreFactory.getStore(storeInterface);
     }
 
@@ -158,8 +152,12 @@ public class MonoHandleContext implements HandleContext {
 
     @Override
     @NonNull
-    public <T> T recordBuilder(@NonNull final Class<T> singleTransactionRecordBuilderClass) {
-        throw new UnsupportedOperationException("Not implemented yet");
+    public <T> T recordBuilder(@NonNull final Class<T> recordBuilderClass) {
+        Objects.requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
+        if (!recordBuilderClass.isInstance(recordBuilder)) {
+            throw new IllegalArgumentException("Not a valid record builder class");
+        }
+        return recordBuilderClass.cast(recordBuilder);
     }
 
     @Override

@@ -32,10 +32,12 @@ import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalStaticProperties;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.service.mono.txns.TransitionLogicLookup;
+import com.hedera.node.app.service.mono.utils.NonAtomicReference;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.AdaptedMonoTransitionRunner;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
@@ -79,13 +81,17 @@ class AdaptedMonoTransitionRunnerTest {
     @Mock
     private AttributeValidator attributeValidator;
 
+    @Mock
+    private HederaState state;
+
     private AdaptedMonoTransitionRunner subject;
 
     @BeforeEach
     void setUp() {
         given(staticProperties.workflowsEnabled()).willReturn(Set.of(ConsensusCreateTopic));
+        final var stateRef = new NonAtomicReference<>(state);
         subject = new AdaptedMonoTransitionRunner(
-                ids, txnCtx, dispatcher, lookup, staticProperties, expiryValidator, attributeValidator);
+                ids, txnCtx, dispatcher, lookup, staticProperties, expiryValidator, attributeValidator, stateRef);
     }
 
     @Test

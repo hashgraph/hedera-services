@@ -27,10 +27,13 @@ import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.txns.TransitionLogicLookup;
 import com.hedera.node.app.service.mono.txns.TransitionRunner;
+import com.hedera.node.app.service.mono.utils.NonAtomicReference;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
@@ -49,6 +52,7 @@ public class AdaptedMonoTransitionRunner extends TransitionRunner {
     private final Set<HederaFunctionality> functionsToDispatch;
     private final ExpiryValidator expiryValidator;
     private final AttributeValidator attributeValidator;
+    private final NonAtomicReference<HederaState> mutableState;
 
     @Inject
     public AdaptedMonoTransitionRunner(
@@ -58,7 +62,8 @@ public class AdaptedMonoTransitionRunner extends TransitionRunner {
             @NonNull final TransitionLogicLookup lookup,
             @NonNull final GlobalStaticProperties staticProperties,
             @NonNull final ExpiryValidator expiryValidator,
-            @NonNull final AttributeValidator attributeValidator) {
+            @NonNull final AttributeValidator attributeValidator,
+            @NonNull final NonAtomicReference<HederaState> mutableState) {
         super(ids, txnCtx, lookup);
         this.dispatcher = Objects.requireNonNull(dispatcher);
         this.functionsToDispatch = Objects.requireNonNull(staticProperties).workflowsEnabled().stream()
@@ -66,6 +71,7 @@ public class AdaptedMonoTransitionRunner extends TransitionRunner {
                 .collect(Collectors.toSet());
         this.expiryValidator = Objects.requireNonNull(expiryValidator);
         this.attributeValidator = Objects.requireNonNull(attributeValidator);
+        this.mutableState = Objects.requireNonNull(mutableState);
     }
 
     /**
@@ -76,9 +82,10 @@ public class AdaptedMonoTransitionRunner extends TransitionRunner {
         final var function = PbjConverter.toPbj(accessor.getFunction());
         if (functionsToDispatch.contains(function)) {
             final var txBody = PbjConverter.toPbj(accessor.getTxn());
+            final var readableStoreFactory = new ReadableStoreFactory(mutableState.get());
             final var recordBuilder = new SingleTransactionRecordBuilder();
-            final var context =
-                    new MonoHandleContext(txBody, ids, expiryValidator, attributeValidator, txnCtx, recordBuilder);
+            final var context = new MonoHandleContext(
+                    txBody, ids, expiryValidator, attributeValidator, txnCtx, readableStoreFactory, recordBuilder);
             try {
                 dispatcher.dispatchHandle(context);
                 txnCtx.setStatus(SUCCESS);

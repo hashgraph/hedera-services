@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.records.SingleTransactionRecordBuilder;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
@@ -102,9 +103,16 @@ public class HandleContextImpl implements HandleContext {
 
     @Override
     @Nullable
-    public SignatureVerification verificationFor(@NonNull Key key) {
+    public SignatureVerification verificationFor(@NonNull final Key key) {
         requireNonNull(key, "key must not be null");
-        return base.signatureVerifications().get(key);
+        return base.keyVerifications().get(key);
+    }
+
+    @Override
+    @NonNull
+    public SignatureVerification verificationFor(@NonNull final Account hollowAccount) {
+        requireNonNull(hollowAccount, "hollowAccount must not be null");
+        return base.hollowAccountVerifications().get(hollowAccount);
     }
 
     @Override
