@@ -38,7 +38,7 @@ public class UniqueTokenKeySerializer implements KeySerializer<UniqueTokenKey> {
     }
 
     @Override
-    public int getSerializedSize(long var1) {
+    public int getSerializedSize(long dataVersion) {
         return DataFileCommon.VARIABLE_DATA_SIZE;
     }
 

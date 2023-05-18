@@ -35,7 +35,7 @@ public class ScheduleEqualityVirtualKeySerializer implements KeySerializer<Sched
     }
 
     @Override
-    public int getSerializedSize(long var1) {
+    public int getSerializedSize(long dataVersion) {
         return ScheduleEqualityVirtualKey.sizeInBytes();
     }
 

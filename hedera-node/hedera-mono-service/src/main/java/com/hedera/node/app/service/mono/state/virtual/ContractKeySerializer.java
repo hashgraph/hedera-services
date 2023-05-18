@@ -53,7 +53,7 @@ public class ContractKeySerializer implements KeySerializer<ContractKey> {
      * @return Either a number of bytes or DataFileCommon.VARIABLE_DATA_SIZE if size is variable
      */
     @Override
-    public int getSerializedSize(long var1) {
+    public int getSerializedSize(long dataVersion) {
         return DataFileCommon.VARIABLE_DATA_SIZE;
     }
 

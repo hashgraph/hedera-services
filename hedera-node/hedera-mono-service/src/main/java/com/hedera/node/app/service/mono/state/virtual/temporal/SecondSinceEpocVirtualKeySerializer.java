@@ -35,7 +35,7 @@ public class SecondSinceEpocVirtualKeySerializer implements KeySerializer<Second
     }
 
     @Override
-    public int getSerializedSize(long var1) {
+    public int getSerializedSize(long dataVersion) {
         return SecondSinceEpocVirtualKey.sizeInBytes();
     }
 
