@@ -28,7 +28,7 @@ import com.hedera.services.bdd.spec.HapiPropertySource;
 public class PerfTestLoadSettings {
     public static final int DEFAULT_TPS = 500;
     public static final int DEFAULT_TOLERANCE_PERCENTAGE = 5;
-    public static final int DEFAULT_MINS = 3;
+    public static final int DEFAULT_MINS = 1;
     public static final int DEFAULT_ALLOWED_SECS_BELOW = 60;
     public static final int DEFAULT_BURST_SIZE = 5;
     public static final int DEFAULT_THREADS = 50;
