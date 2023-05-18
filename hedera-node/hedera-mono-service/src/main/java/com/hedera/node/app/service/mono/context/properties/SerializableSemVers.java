@@ -27,6 +27,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.util.Comparator;
+import java.util.Objects;
 import java.util.regex.Pattern;
 
 public class SerializableSemVers implements SoftwareVersion {
@@ -183,6 +184,11 @@ public class SerializableSemVers implements SoftwareVersion {
                 && this.proto.getPatch() == that.proto.getPatch()
                 && this.proto.getPre().equals(that.proto.getPre())
                 && this.proto.getBuild().equals(that.proto.getBuild());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(proto, services);
     }
 
     @Override

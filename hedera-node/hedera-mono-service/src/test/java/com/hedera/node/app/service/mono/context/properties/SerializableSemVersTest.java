@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.mono.context.properties.SerializableSe
 import static com.hedera.node.app.service.mono.context.properties.SerializableSemVersSerdeTest.assertEqualVersions;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -69,17 +70,17 @@ class SerializableSemVersTest {
         final var servicesPatchDiff = SerializableSemVers.forHapiAndHedera("1.2.3", "3.2.3-pre+build");
         final var servicesBuildDiff = SerializableSemVers.forHapiAndHedera("1.2.3", "3.2.1-pre+1");
 
-        assertTrue(actual.equals(alpha2SameAsAlpha1));
+        assertEquals(actual, alpha2SameAsAlpha1);
 
-        assertFalse(actual.equals(protoMajorDiff));
-        assertFalse(actual.equals(protoMinorDiff));
-        assertFalse(actual.equals(protoPatchDiff));
-        assertFalse(actual.equals(protoBuildDiff));
+        assertNotEquals(actual, protoMajorDiff);
+        assertNotEquals(actual, protoMinorDiff);
+        assertNotEquals(actual, protoPatchDiff);
+        assertNotEquals(actual, protoBuildDiff);
 
-        assertFalse(actual.equals(servicesMajorDiff));
-        assertFalse(actual.equals(servicesMinorDiff));
-        assertFalse(actual.equals(servicesPatchDiff));
-        assertFalse(actual.equals(servicesBuildDiff));
+        assertNotEquals(actual, servicesMajorDiff);
+        assertNotEquals(actual, servicesMinorDiff);
+        assertNotEquals(actual, servicesPatchDiff);
+        assertNotEquals(actual, servicesBuildDiff);
     }
 
     @Test
