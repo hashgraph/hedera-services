@@ -37,7 +37,7 @@ public class AccountVirtualMapKeySerializer implements KeySerializer<AccountVirt
      * {@inheritDoc}
      */
     @Override
-    public int getSerializedSize() {
+    public int getSerializedSize(long dataVersion) {
         return AccountVirtualMapKey.getSizeInBytes();
     }
 

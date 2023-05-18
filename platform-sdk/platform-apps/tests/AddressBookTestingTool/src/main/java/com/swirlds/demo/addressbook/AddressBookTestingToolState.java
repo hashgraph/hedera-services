@@ -42,11 +42,13 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.system.InitTrigger;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState;
+import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.address.AddressBookUtils;
 import com.swirlds.common.system.events.ConsensusEvent;
@@ -263,8 +265,8 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         if (logWeightingBehavior.get()) {
             logger.info(STARTUP.getMarker(), "Weighting Behavior 1: updating all nodes to have 10 weight.");
         }
-        for (int i = 0; i < addressBook.getSize(); i++) {
-            addressBook.updateWeight(i, 10);
+        for (final Address address : addressBook) {
+            addressBook.updateWeight(address.getNodeId(), 10);
         }
         return addressBook;
     }
@@ -282,8 +284,8 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
                     STARTUP.getMarker(),
                     "Weighting Behavior 2: updating all nodes to have weight equal to their nodeId.");
         }
-        for (int i = 0; i < addressBook.getSize(); i++) {
-            addressBook.updateWeight(i, i);
+        for (final Address address : addressBook) {
+            addressBook.updateWeight(address.getNodeId(), address.getNodeId().id());
         }
         return addressBook;
     }
@@ -640,7 +642,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         Objects.requireNonNull(addressBookString, "addressBookString must not be null");
         return AddressBookUtils.parseAddressBookConfigText(
                 addressBookString,
-                id -> id,
+                NodeId::new,
                 ip -> {
                     try {
                         return Network.isOwn(ip);

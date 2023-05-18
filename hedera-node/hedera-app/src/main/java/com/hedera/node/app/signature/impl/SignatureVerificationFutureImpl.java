@@ -20,9 +20,9 @@ import static com.swirlds.common.crypto.VerificationStatus.VALID;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.TransactionSignature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -43,10 +43,9 @@ public final class SignatureVerificationFutureImpl implements SignatureVerificat
      */
     private final Key key;
     /**
-     * Optional: used only with hollow accounts, the EVM address associated with the hollow account. The corresponding
-     * {@link #key} was extracted from the transaction.
+     * Optional: used only with ECDSA_SECP256K1 keys, the EVM address associated with the key.
      */
-    private final Account hollowAccount;
+    private final Bytes evmAlias;
     /**
      * The {@link TransactionSignature} that holds the {@link Future} used to determine when the cryptographic
      * signature check is complete,
@@ -61,22 +60,22 @@ public final class SignatureVerificationFutureImpl implements SignatureVerificat
      * Create a new instance.
      *
      * @param key The key associated with this sig check. Cannot be null.
-     * @param hollowAccount The hollow account, if any
+     * @param evmAlias The evm address alias, if any (always set if the key is an ECDSA_SECP256K1 key)
      * @param txSig The {@link TransactionSignature}s, from which the pass/fail status of the
      * {@link SignatureVerification} is derived. This list must contain at least one element.
      */
     public SignatureVerificationFutureImpl(
-            @NonNull final Key key, @Nullable final Account hollowAccount, @NonNull final TransactionSignature txSig) {
+            @NonNull final Key key, @Nullable final Bytes evmAlias, @NonNull final TransactionSignature txSig) {
         this.key = requireNonNull(key);
-        this.hollowAccount = hollowAccount;
+        this.evmAlias = evmAlias;
         this.txSig = requireNonNull(txSig);
     }
 
     /** {@inheritDoc} */
     @Nullable
     @Override
-    public Account hollowAccount() {
-        return hollowAccount;
+    public Bytes evmAlias() {
+        return evmAlias;
     }
 
     /** {@inheritDoc} */
@@ -156,7 +155,7 @@ public final class SignatureVerificationFutureImpl implements SignatureVerificat
     @Override
     public SignatureVerification get() throws InterruptedException, ExecutionException {
         txSig.waitForFuture().get(); // Wait for the future to be assigned and completed
-        return new SignatureVerificationImpl(key, hollowAccount, txSig.getSignatureStatus() == VALID);
+        return new SignatureVerificationImpl(key, evmAlias, txSig.getSignatureStatus() == VALID);
     }
 
     /**
@@ -186,6 +185,6 @@ public final class SignatureVerificationFutureImpl implements SignatureVerificat
 
         // Wait for the future to complete
         txSig.getFuture().get(deadline - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
-        return new SignatureVerificationImpl(key, hollowAccount, txSig.getSignatureStatus() == VALID);
+        return new SignatureVerificationImpl(key, evmAlias, txSig.getSignatureStatus() == VALID);
     }
 }

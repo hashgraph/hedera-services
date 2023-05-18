@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.uptime;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.UptimeData;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -44,12 +45,12 @@ public interface MutableUptimeData extends UptimeData {
      *
      * @param node the node ID
      */
-    void addNode(final long node);
+    void addNode(@NonNull final NodeId node);
 
     /**
      * Stop tracking data for a node.
      *
      * @param node the node ID
      */
-    void removeNode(final long node);
+    void removeNode(@NonNull final NodeId node);
 }
