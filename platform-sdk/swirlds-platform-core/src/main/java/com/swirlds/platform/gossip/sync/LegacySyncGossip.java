@@ -19,6 +19,7 @@ package com.swirlds.platform.gossip.sync;
 import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
+import com.swirlds.base.state.LifecyclePhase;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.notification.NotificationEngine;
@@ -335,5 +336,23 @@ public class LegacySyncGossip extends AbstractGossip {
     @Override
     protected boolean doVersionCheck() {
         return true;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void pause() {
+        throwIfNotInPhase(LifecyclePhase.STARTED);
+        simultaneousSyncThrottle.waitForAllSyncsToFinish();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void resume() {
+        throwIfNotInPhase(LifecyclePhase.STARTED);
+        // TODO what needs to be done here?
     }
 }

@@ -20,6 +20,7 @@ import static com.swirlds.common.utility.CommonUtils.combineConsumers;
 import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
+import com.swirlds.base.state.LifecyclePhase;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -191,7 +192,7 @@ public class ChatterGossip extends AbstractGossip {
                 networkMetrics::recordPingTime,
                 platformContext.getMetrics());
 
-        reconnectController = new ReconnectController(threadManager, reconnectHelper, chatterCore::startChatter);
+        reconnectController = new ReconnectController(threadManager, reconnectHelper, this::resume);
 
         // first create all instances because of thread safety
         for (final NodeId otherId : topology.getNeighbors()) {
@@ -425,5 +426,23 @@ public class ChatterGossip extends AbstractGossip {
     @Override
     public void clear() {
         clearAllPipelines.clear();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void pause() {
+        throwIfNotInPhase(LifecyclePhase.STARTED);
+        chatterCore.stopChatter();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void resume() {
+        throwIfNotInPhase(LifecyclePhase.STARTED);
+        chatterCore.startChatter();
     }
 }

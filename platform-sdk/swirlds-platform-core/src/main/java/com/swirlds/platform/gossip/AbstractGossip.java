@@ -270,7 +270,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
         reconnectMetrics = new ReconnectMetrics(platformContext.getMetrics());
 
         reconnectHelper = new ReconnectHelper(
-                this::stop,
+                this::pause,
                 this::clear,
                 swirldStateManager::getConsensusState,
                 stateManagementComponent::getLastCompleteRound,

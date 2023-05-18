@@ -66,4 +66,14 @@ public interface Gossip extends Clearable, ConnectionTracker, Lifecycle {
      * @return the number of active connections
      */
     int activeConnectionNumber();
+
+    /**
+     * Stop gossiping until {@link #resume()} is called. If called when already paused then this has no effect.
+     */
+    void pause();
+
+    /**
+     * Resume gossiping. If called when already running then this has no effect.
+     */
+    void resume();
 }

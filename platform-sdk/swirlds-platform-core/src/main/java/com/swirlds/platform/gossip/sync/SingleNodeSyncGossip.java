@@ -63,11 +63,15 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Sync gossip using the protocol negotiator.
  */
 public class SingleNodeSyncGossip extends AbstractGossip {
+
+    private static final Logger logger = LogManager.getLogger(SingleNodeSyncGossip.class);
 
     protected final SyncConfig syncConfig;
     protected final ShadowGraphSynchronizer syncShadowgraphSynchronizer;
@@ -266,5 +270,18 @@ public class SingleNodeSyncGossip extends AbstractGossip {
     @Override
     protected boolean doVersionCheck() {
         return false;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void pause() {
+        logger.info(RECONNECT.getMarker(), "pause() requested for SingleNodeSyncGossip, this should not be possible");
+    }
+
+    @Override
+    public void resume() {
+        logger.info(RECONNECT.getMarker(), "resume() requested for SingleNodeSyncGossip, this should not be possible");
     }
 }

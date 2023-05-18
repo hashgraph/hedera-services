@@ -19,6 +19,7 @@ package com.swirlds.platform.gossip.sync;
 import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
+import com.swirlds.base.state.LifecyclePhase;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
@@ -193,7 +194,7 @@ public class SyncGossip extends AbstractGossip {
                         Pair.of(shadowGraph, "shadowGraph")));
 
         final ReconnectController reconnectController =
-                new ReconnectController(threadManager, reconnectHelper, () -> gossipHalted.set(false));
+                new ReconnectController(threadManager, reconnectHelper, this::resume);
 
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
 
@@ -348,5 +349,24 @@ public class SyncGossip extends AbstractGossip {
     @Override
     protected boolean doVersionCheck() {
         return false;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void pause() {
+        throwIfNotInPhase(LifecyclePhase.STARTED);
+        gossipHalted.set(true);
+        syncPermitProvider.waitForAllSyncsToFinish();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void resume() {
+        throwIfNotInPhase(LifecyclePhase.STARTED);
+        gossipHalted.set(false);
     }
 }
