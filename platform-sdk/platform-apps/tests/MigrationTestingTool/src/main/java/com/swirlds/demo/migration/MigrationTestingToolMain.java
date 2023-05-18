@@ -36,7 +36,7 @@ import org.apache.logging.log4j.MarkerManager;
 
 /**
  * An application designed for testing migration from version to version.
- *
+ * <p>
  * Command line arguments: Seed(long), TransactionsPerNode(int)
  */
 public class MigrationTestingToolMain implements SwirldMain {
@@ -59,7 +59,9 @@ public class MigrationTestingToolMain implements SwirldMain {
     private double toCreate = 0;
     private long lastEventTime = System.nanoTime();
 
-    public static final BasicSoftwareVersion SOFTWARE_VERSION = new BasicSoftwareVersion(1);
+    public static final int SOFTWARE_VERSION = 2;
+    public static final BasicSoftwareVersion PREVIOUS_SOFTWARE_VERSION = new BasicSoftwareVersion(SOFTWARE_VERSION - 1);
+    private final BasicSoftwareVersion softwareVersion = new BasicSoftwareVersion(SOFTWARE_VERSION);
 
     /**
      * {@inheritDoc}
@@ -173,6 +175,6 @@ public class MigrationTestingToolMain implements SwirldMain {
      */
     @Override
     public BasicSoftwareVersion getSoftwareVersion() {
-        return SOFTWARE_VERSION;
+        return softwareVersion;
     }
 }

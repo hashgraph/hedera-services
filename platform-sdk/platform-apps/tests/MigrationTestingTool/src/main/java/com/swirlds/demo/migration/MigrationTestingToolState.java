@@ -17,7 +17,7 @@
 package com.swirlds.demo.migration;
 
 import static com.swirlds.demo.migration.MigrationTestingToolMain.MARKER;
-import static com.swirlds.demo.migration.MigrationTestingToolMain.SOFTWARE_VERSION;
+import static com.swirlds.demo.migration.MigrationTestingToolMain.PREVIOUS_SOFTWARE_VERSION;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.merkle.MerkleInternal;
@@ -247,12 +247,12 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
         }
 
         // FUTURE WORK: this needs to be updated once we create the next saved state for the MigrationTestingTool
-        if (!Objects.equals(previousSoftwareVersion, SOFTWARE_VERSION)) {
+        if (!Objects.equals(previousSoftwareVersion, PREVIOUS_SOFTWARE_VERSION)) {
             logger.error(
                     MARKER,
                     "previousSoftwareVersion was {} when expecting it to be {}",
                     previousSoftwareVersion,
-                    SOFTWARE_VERSION);
+                    PREVIOUS_SOFTWARE_VERSION);
         }
 
         if (trigger == InitTrigger.GENESIS) {
