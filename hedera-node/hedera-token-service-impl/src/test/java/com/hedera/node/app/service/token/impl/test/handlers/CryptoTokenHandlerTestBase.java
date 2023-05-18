@@ -142,9 +142,9 @@ public class CryptoTokenHandlerTestBase {
     protected final EntityNum fungibleTokenNum = EntityNum.fromLong(1L);
     protected final EntityNum nonFungibleTokenNum = EntityNum.fromLong(2L);
     protected final EntityNumPair fungiblePair =
-            EntityNumPair.fromLongs(fungibleTokenNum.longValue(), accountNum.longValue());
+            EntityNumPair.fromLongs(accountNum.longValue(), fungibleTokenNum.longValue());
     protected final EntityNumPair nonFungiblePair =
-            EntityNumPair.fromLongs(nonFungibleTokenNum.longValue(), accountNum.longValue());
+            EntityNumPair.fromLongs(accountNum.longValue(), nonFungibleTokenNum.longValue());
     protected final TokenID tokenId =
             TokenID.newBuilder().tokenNum(fungibleTokenNum.longValue()).build();
     protected final String tokenName = "test token";

@@ -68,7 +68,7 @@ class ReadableTokenRelationStoreImplTest {
                 .build();
         given(tokenRelState.get(notNull())).willReturn(tokenRelation);
 
-        final var result = subject.get(TOKEN_10, ACCOUNT_20);
+        final var result = subject.get(ACCOUNT_20, TOKEN_10);
         Assertions.assertThat(result.orElseThrow()).isEqualTo(tokenRelation);
     }
 
@@ -76,7 +76,7 @@ class ReadableTokenRelationStoreImplTest {
     void testGetEmpty() {
         given(tokenRelState.get(notNull())).willReturn(null);
 
-        final var result = subject.get(-1L, ACCOUNT_20);
+        final var result = subject.get(ACCOUNT_20, -1L);
         Assertions.assertThat(result).isEmpty();
     }
 

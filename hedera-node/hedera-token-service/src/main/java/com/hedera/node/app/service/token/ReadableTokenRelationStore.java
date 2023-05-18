@@ -31,7 +31,7 @@ public interface ReadableTokenRelationStore {
      * @param tokenNum - the number of the token relation to be retrieved
      * @param accountNum - the number of the account relation to be retrieved
      */
-    Optional<TokenRelation> get(final long tokenNum, final long accountNum);
+    Optional<TokenRelation> get(final long accountNum, final long tokenNum);
 
     /**
      * Returns the number of tokens in the state.

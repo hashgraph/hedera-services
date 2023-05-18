@@ -49,9 +49,9 @@ public class ReadableTokenRelationStoreImpl implements ReadableTokenRelationStor
      * {@inheritDoc}
      */
     @Override
-    public Optional<TokenRelation> get(final long tokenNum, final long accountNum) {
+    public Optional<TokenRelation> get(final long accountNum, final long tokenNum) {
         final var tokenRelation =
-                Objects.requireNonNull(readableTokenRelState).get(EntityNumPair.fromLongs(tokenNum, accountNum));
+                Objects.requireNonNull(readableTokenRelState).get(EntityNumPair.fromLongs(accountNum, tokenNum));
         return Optional.ofNullable(tokenRelation);
     }
 

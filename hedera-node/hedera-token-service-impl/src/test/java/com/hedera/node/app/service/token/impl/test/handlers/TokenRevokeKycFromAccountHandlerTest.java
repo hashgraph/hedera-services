@@ -204,7 +204,7 @@ class TokenRevokeKycFromAccountHandlerTest {
                     .accountNumber(ACCOUNT_100.accountNumOrThrow())
                     .kycGranted(true)
                     .build();
-            given(tokenRelStore.getForModify(TOKEN_10.tokenNum(), ACCOUNT_100.accountNumOrThrow()))
+            given(tokenRelStore.getForModify(ACCOUNT_100.accountNumOrThrow(), TOKEN_10.tokenNum()))
                     .willReturn(Optional.of(stateTokenRel));
 
             final var txnBody = newTxnBody();

@@ -71,7 +71,7 @@ public class TokenGrantKycToAccountHandler implements TransactionHandler {
         final var targetTokenId = op.tokenOrThrow();
         final var targetAccountId = op.accountOrThrow();
         final var tokenRelation =
-                tokenRelStore.getForModify(targetTokenId.tokenNum(), targetAccountId.accountNumOrThrow());
+                tokenRelStore.getForModify(targetAccountId.accountNumOrThrow(), targetTokenId.tokenNum());
 
         final var tokenRelBuilder = tokenRelation.orElseThrow().copyBuilder();
         tokenRelBuilder.kycGranted(true);

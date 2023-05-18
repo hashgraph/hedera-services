@@ -57,7 +57,7 @@ public class WritableTokenRelationStore extends ReadableTokenRelationStoreImpl {
     public void put(@NonNull final TokenRelation tokenRelation) {
         requireNonNull(tokenRelState)
                 .put(
-                        EntityNumPair.fromLongs(tokenRelation.tokenNumber(), tokenRelation.accountNumber()),
+                        EntityNumPair.fromLongs(tokenRelation.accountNumber(), tokenRelation.tokenNumber()),
                         Objects.requireNonNull(tokenRelation));
     }
 
@@ -76,9 +76,9 @@ public class WritableTokenRelationStore extends ReadableTokenRelationStoreImpl {
      * @param tokenNum - the number of the token to be retrieved
      * @param accountNum - the number of the account to be retrieved
      */
-    public Optional<TokenRelation> getForModify(final long tokenNum, final long accountNum) {
+    public Optional<TokenRelation> getForModify(final long accountNum, final long tokenNum) {
         final var token =
-                Objects.requireNonNull(tokenRelState).getForModify(EntityNumPair.fromLongs(tokenNum, accountNum));
+                Objects.requireNonNull(tokenRelState).getForModify(EntityNumPair.fromLongs(accountNum, tokenNum));
         return Optional.ofNullable(token);
     }
 

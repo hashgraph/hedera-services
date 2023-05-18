@@ -54,6 +54,7 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
 
     @Inject
     public TokenFeeScheduleUpdateHandler(@NonNull final CustomFeesValidator customFeesValidator) {
+        requireNonNull(customFeesValidator);
         this.customFeesValidator = customFeesValidator;
     }
 
@@ -96,7 +97,7 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
 
         // get the latest configuration
         final var config = context.getConfiguration().getConfigData(TokenServiceConfig.class);
-        var op = txn.tokenFeeScheduleUpdateOrThrow();
+        final var op = txn.tokenFeeScheduleUpdateOrThrow();
 
         // validate checks in handle
         final var token = validateSemantics(op, tokenStore, config);

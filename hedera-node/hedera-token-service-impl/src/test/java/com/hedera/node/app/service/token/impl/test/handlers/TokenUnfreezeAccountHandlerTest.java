@@ -212,7 +212,7 @@ class TokenUnfreezeAccountHandlerTest {
             given(accountStore.getAccountById(ACCOUNT_13257))
                     .willReturn(
                             Account.newBuilder().accountNumber(accountNumber).build());
-            given(tokenRelStore.getForModify(token.tokenNum(), accountNumber)).willReturn(Optional.empty());
+            given(tokenRelStore.getForModify(accountNumber, token.tokenNum())).willReturn(Optional.empty());
             final var txn = newUnfreezeTxn(token);
 
             assertThatThrownBy(() -> subject.handle(txn, accountStore, tokenStore, tokenRelStore))

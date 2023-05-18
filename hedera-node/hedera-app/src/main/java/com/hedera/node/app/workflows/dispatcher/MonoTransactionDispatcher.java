@@ -144,6 +144,6 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
 
     @Override
     protected void finishTokenFeeScheduleUpdate(@NonNull final WritableTokenStore tokenStore) {
-        tokenStore.commit();
+        requireNonNull(tokenStore).commit();
     }
 }

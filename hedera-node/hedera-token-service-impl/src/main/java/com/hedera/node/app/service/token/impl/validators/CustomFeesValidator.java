@@ -117,7 +117,7 @@ public class CustomFeesValidator {
                 case FRACTIONAL_FEE -> {
                     // fractional fee can be only applied to fungible common tokens
                     validateTrue(isFungibleCommon(tokenType), CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON);
-                    final var relation = tokenRelationStore.get(token.tokenNumber(), collector.accountNumber());
+                    final var relation = tokenRelationStore.get(collector.accountNumber(), token.tokenNumber());
                     validateTrue(relation.isPresent(), TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
                 }
                 case ROYALTY_FEE -> {
@@ -156,7 +156,7 @@ public class CustomFeesValidator {
         validateTrue(denomToken.isPresent(), INVALID_TOKEN_ID_IN_CUSTOM_FEES);
         validateTrue(isFungibleCommon(denomToken.get().tokenType()), CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON);
         validateTrue(
-                tokenRelationStore.get(tokenNum, feeCollectorNum).isPresent(), TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
+                tokenRelationStore.get(feeCollectorNum, tokenNum).isPresent(), TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
     }
 
     /**
