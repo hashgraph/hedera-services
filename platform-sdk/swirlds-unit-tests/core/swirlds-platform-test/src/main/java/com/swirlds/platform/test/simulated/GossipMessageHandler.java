@@ -16,21 +16,28 @@
 
 package com.swirlds.platform.test.simulated;
 
+import com.swirlds.common.io.SelfSerializable;
+import com.swirlds.common.system.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Duration;
 
 /**
- * Latency for a single node in a hub-and-spoke model
- *
- * @param delay the delay of this node. The time for a message to reach a peer is the sum of this delay and the peer's
- *              delay
+ * An interface for test classes that handle gossiped messages
  */
-public record Latency(@NonNull Duration delay) {
+public interface GossipMessageHandler {
 
     /**
-     * Returns {@code true} if this latency is equal to {@link Duration#ZERO};
+     * Handle a message received from a peer over the network. This is the entry point to the gossip code.
+     *
+     * @param msg      the message received
+     * @param fromPeer the peer who sent the message
      */
-    public boolean isZero() {
-        return delay.isZero();
-    }
+    void handleMessageFromWire(@NonNull final SelfSerializable msg, @NonNull final NodeId fromPeer);
+
+    /**
+     * Get the node id of this handler
+     *
+     * @return the node id
+     */
+    @NonNull
+    NodeId getNodeId();
 }

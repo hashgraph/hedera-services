@@ -14,23 +14,34 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.test.simulated;
+package com.swirlds.platform.gossip.chatter.protocol.messages;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Duration;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.SelfSerializable;
 
 /**
- * Latency for a single node in a hub-and-spoke model
- *
- * @param delay the delay of this node. The time for a message to reach a peer is the sum of this delay and the peer's
- *              delay
+ * A stripped down description of an event.
  */
-public record Latency(@NonNull Duration delay) {
+public interface EventDescriptor extends SelfSerializable {
 
     /**
-     * Returns {@code true} if this latency is equal to {@link Duration#ZERO};
+     * Get the hash of the event.
+     *
+     * @return the event's hash
      */
-    public boolean isZero() {
-        return delay.isZero();
-    }
+    Hash getHash();
+
+    /**
+     * Get the node ID of the event's creator.
+     *
+     * @return a node ID
+     */
+    long getCreator();
+
+    /**
+     * Get the generation of the event described
+     *
+     * @return the generation of the event described
+     */
+    long getGeneration();
 }
