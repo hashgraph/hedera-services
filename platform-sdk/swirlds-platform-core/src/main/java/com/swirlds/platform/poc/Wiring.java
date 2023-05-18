@@ -5,6 +5,7 @@ import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.platform.poc.framework.Component;
+import com.swirlds.platform.poc.framework.MultiHandler;
 import com.swirlds.platform.poc.framework.MultiTaskProcessor;
 import com.swirlds.platform.poc.framework.QueueSubmitter;
 import com.swirlds.platform.poc.framework.TaskProcessor;
@@ -30,7 +31,8 @@ public class Wiring {
 		facades = new HashMap<>();
 
 		for (Class<? extends Component> component : componentsDefs) {
-			if (TaskProcessor.class.isAssignableFrom(component)) {
+			if (TaskProcessor.class.isAssignableFrom(component)
+			|| MultiTaskProcessor.class.isAssignableFrom(component)) {
 				BlockingQueue<Object> queue = new LinkedBlockingQueue<>();
 				Object proxy = Proxy.newProxyInstance(
 						Wiring.class.getClassLoader(),
@@ -55,8 +57,8 @@ public class Wiring {
 	}
 
 	public <T extends Component> void addImplementation(T component, Class<T> componentClass){
-		if (component instanceof TaskProcessor tp) {
-			processors.put(componentClass, tp);
+		if (component instanceof TaskProcessor || component instanceof MultiTaskProcessor) {
+			processors.put(componentClass, component);
 		} else {
 			facades.put(componentClass, component);
 		}
@@ -80,15 +82,11 @@ public class Wiring {
 
 			if (MultiTaskProcessor.class.isAssignableFrom(componentsDef)) {
 				MultiTaskProcessor tp = (MultiTaskProcessor) processors.get(componentsDef);
-				final MultiQueueThreadConfiguration conf = new MultiQueueThreadConfiguration(
-						AdHocThreadManager.getStaticThreadManager())
-						.setQueue(Objects.requireNonNull(queues.get(componentsDef)));
-//				for (Pair<Class<?>, InterruptableConsumer<?>> processingMethod : tp.getProcessingMethods()) {
-//					conf.addHandler(
-//							processingMethod.getLeft(),
-//							(InterruptableConsumer<Object>) processingMethod.getRight()
-//					);
-//				}
+				MultiHandler mh = new MultiHandler(tp.getProcessingMethods());
+				new QueueThreadConfiguration<>(AdHocThreadManager.getStaticThreadManager())
+						.setQueue(Objects.requireNonNull(queues.get(componentsDef)))
+						.setHandler(mh::handle)
+						.build(true);
 			}
 		}
 	}
