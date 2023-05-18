@@ -963,7 +963,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         assertEquals(0, stakingMap.get(EntityNum.fromLong(0L)).getWeight());
 
         subject.updateWeight(addressBook, platform.getContext());
-        verify(addressBook).updateWeight(0, 0);
+        verify(addressBook).updateWeight(new NodeId(0), 0);
     }
 
     @Test
@@ -980,7 +980,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         subject.setChild(StateChildIndices.STAKING_INFO, stakingMap);
 
         subject.updateWeight(addressBook, platform.getContext());
-        verify(addressBook).updateWeight(0, 500);
+        verify(addressBook).updateWeight(new NodeId(0), 500);
     }
 
     private static ServicesApp createApp(final Platform platform) {
