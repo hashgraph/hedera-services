@@ -65,6 +65,10 @@ SCRIPT_PATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 || exit ; pwd -P )"
 # The entrypoint into the platform CLI (i.e. where the main() method is)
 MAIN_CLASS_NAME='com.swirlds.cli.PlatformCli'
 
+COLOR=true
+# If python is not installed then we can't colorize the output.
+python3 --version >/dev/null 2>&1 || COLOR=false
+
 # Iterate over arguments and strip out the classpath arguments and JVM arguments.
 # This needs to be handled by this bash script and not by the java program,
 # since we need to pass this data directly to the JVM.
@@ -115,6 +119,9 @@ for ((CURRENT_INDEX=1; CURRENT_INDEX<=$#; CURRENT_INDEX++)); do
     if [[ "$ARG" = '--log4j' ]]; then
         # If the user has specified a log4j path then we don't want to attempt to override it with the default.
         LOG4J_SET=true
+    elif [[ "$ARG" = '--no-color' ]]; then
+        # A boring person doesn't want log coloration.
+        COLOR=false
     fi;
 
     PROGRAM_ARGS+=("${ARG}")
@@ -148,4 +155,8 @@ if [[ "$JVM_CLASSPATH" = '' ]]; then
   exit 1
 fi
 
-java "${JVM_ARGS[@]}" -cp "${JVM_CLASSPATH}" $MAIN_CLASS_NAME "${PROGRAM_ARGS[@]}" | $COLOR_LOGS_PATH
+if [[ "$COLOR" = true ]]; then
+  java "${JVM_ARGS[@]}" -cp "${JVM_CLASSPATH}" $MAIN_CLASS_NAME "${PROGRAM_ARGS[@]}" | $COLOR_LOGS_PATH
+else
+  java "${JVM_ARGS[@]}" -cp "${JVM_CLASSPATH}" $MAIN_CLASS_NAME "${PROGRAM_ARGS[@]}"
+fi

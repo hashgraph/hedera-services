@@ -49,6 +49,8 @@ full_regex = timestamp_regex + whitespace_regex + \
              thread_name_regex + whitespace_regex + \
              class_thread_name_regex + remainder_of_line_regex
 
+regex = re.compile(full_regex)
+
 RED = '\033[91m'
 TEAL = '\033[96m'
 YELLOW = '\033[93m'
@@ -120,15 +122,6 @@ def format(line):
   remainder = match.group(index)
   index += 1
 
-#   print("   " + str(match))
-#   print("   timestamp: " + str(timestamp))
-#   print("   log number: " + str(log_number))
-#   print("   log level: " + str(log_level))
-#   print("   marker: " + str(marker))
-#   print("   thread name: " + str(thread_name))
-#   print("   class name: " + str(class_name))
-#   print("   remainder: " + str(remainder))
-
   return format_timestamp(timestamp) + ' ' + \
           format_log_number(log_number) + log_number_whitespace + \
           format_log_level(log_level) + log_level_whitespace + \
@@ -136,8 +129,6 @@ def format(line):
           format_thread_name(thread_name) + ' ' + \
           format_class_name(class_name) + \
           remainder + "\n"
-
-regex = re.compile(full_regex)
 
 for line in stdin:
   print(format(line), end='')
