@@ -80,6 +80,15 @@ public class RecordCache {
         setRecordWithStatus(effectivePayer, accessor, consensusTimestamp, submittingMember, FAIL_INVALID);
     }
 
+    /**
+     * Set the record for a transaction that was submitted with an older event version. We set the status of the
+     * transaction as {@code ResponseCodeEnum.BUSY} on the receipt. This transaction needs to be re-submitted for
+     * it to succeed.
+     * @param effectivePayer payer for the transaction
+     * @param accessor transaction accessor
+     * @param consensusTimestamp consensus timestamp
+     * @param submittingMember submitting member
+     */
     public void setStaleTransaction(
             final AccountID effectivePayer,
             final TxnAccessor accessor,
@@ -88,6 +97,14 @@ public class RecordCache {
         setRecordWithStatus(effectivePayer, accessor, consensusTimestamp, submittingMember, BUSY);
     }
 
+    /**
+     * Create a failure record with the given status in the receipt and store it in cache.
+     * @param effectivePayer payer for the transaction
+     * @param accessor transaction accessor
+     * @param consensusTimestamp consensus timestamp
+     * @param submittingMember submitting member
+     * @param status status of the transaction
+     */
     private void setRecordWithStatus(
             final AccountID effectivePayer,
             final TxnAccessor accessor,

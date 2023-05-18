@@ -98,8 +98,8 @@ public class StandardProcessLogic implements ProcessLogic {
 
         try {
             final var accessor = expandHandleSpan.accessorFor(platformTxn);
-            // Check if the transaction is from an older event version. If so, reject it and set the status on the
-            // receipt to BUSY
+            // Check if the transaction is from an older event version.
+            // If so, return and set the status on the receipt to BUSY
             if (!SEMANTIC_VERSIONS.deployedSoftwareVersion().equals(softwareVersion)) {
                 log.info(
                         "Rejecting transaction with transaction id {} with timestamp {}",

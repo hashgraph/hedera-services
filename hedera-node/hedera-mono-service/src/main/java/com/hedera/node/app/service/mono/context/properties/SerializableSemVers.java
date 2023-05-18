@@ -19,7 +19,6 @@ package com.hedera.node.app.service.mono.context.properties;
 import static com.hedera.node.app.service.mono.context.properties.SemanticVersions.asSemVer;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.node.app.service.mono.store.models.OwnershipTracker.Change;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -167,7 +166,7 @@ public class SerializableSemVers implements SoftwareVersion {
         if (this == o) {
             return true;
         }
-        if (o == null || Change.class != o.getClass()) {
+        if (o == null || SerializableSemVers.class != o.getClass()) {
             return false;
         }
         final var that = (SerializableSemVers) o;

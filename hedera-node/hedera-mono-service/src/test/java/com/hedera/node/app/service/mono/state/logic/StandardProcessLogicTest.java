@@ -31,6 +31,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.properties.SerializableSemVers;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.records.ConsensusTimeTracker;
 import com.hedera.node.app.service.mono.records.RecordCache;
@@ -45,7 +46,9 @@ import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.system.SoftwareVersion;
+import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import java.time.Instant;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -108,6 +111,9 @@ class StandardProcessLogicTest {
 
     @Mock
     private RecordCache recordCache;
+
+    @Mock
+    private ConsensusTransactionImpl platformTxn;
 
     @LoggingTarget
     private LogCaptor logCaptor;
@@ -244,6 +250,22 @@ class StandardProcessLogicTest {
         subject.incorporateConsensusTxn(null, member, eventVersion);
 
         assertThat(logCaptor.warnLogs(), contains(Matchers.startsWith("Consensus platform txn was not gRPC!")));
+    }
+
+    @Test
+    void discardsOlderVersionEvents() throws InvalidProtocolBufferException {
+        final var payer = AccountID.newBuilder().setAccountNum(3).build();
+        final var timeStamp = Instant.ofEpochSecond(2000L);
+
+        given(expandHandleSpan.accessorFor(platformTxn)).willReturn(accessor);
+        given(accessor.getPayer()).willReturn(payer);
+        given(platformTxn.getConsensusTimestamp()).willReturn(timeStamp);
+
+        subject.incorporateConsensusTxn(
+                platformTxn, member, SerializableSemVers.forHapiAndHedera("1.2.3", "3.2.1-pre+1"));
+
+        assertThat(logCaptor.infoLogs(), contains(Matchers.startsWith("Rejecting transaction with transaction id")));
+        verify(recordCache).setStaleTransaction(payer, accessor, timeStamp, member);
     }
 
     @Test

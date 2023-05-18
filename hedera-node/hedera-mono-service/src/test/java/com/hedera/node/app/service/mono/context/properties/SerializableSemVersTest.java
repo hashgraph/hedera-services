@@ -55,6 +55,34 @@ class SerializableSemVersTest {
     }
 
     @Test
+    void equalsWorks() {
+        final var actual = SerializableSemVers.forHapiAndHedera("1.2.3", "3.2.1-pre+build");
+
+        final var alpha2SameAsAlpha1 = SerializableSemVers.forHapiAndHedera("1.2.3", "3.2.1-pre+build");
+        final var protoMajorDiff = SerializableSemVers.forHapiAndHedera("2.2.3", "3.2.1-pre+build");
+        final var protoMinorDiff = SerializableSemVers.forHapiAndHedera("1.3.3", "3.2.1-pre+build");
+        final var protoPatchDiff = SerializableSemVers.forHapiAndHedera("1.2.4", "3.2.1-pre+build");
+        final var protoBuildDiff = SerializableSemVers.forHapiAndHedera("1.2.3+1", "3.2.1-pre+build");
+
+        final var servicesMajorDiff = SerializableSemVers.forHapiAndHedera("1.2.3", "4.2.1-pre+build");
+        final var servicesMinorDiff = SerializableSemVers.forHapiAndHedera("1.2.3", "3.3.1-pre+build");
+        final var servicesPatchDiff = SerializableSemVers.forHapiAndHedera("1.2.3", "3.2.3-pre+build");
+        final var servicesBuildDiff = SerializableSemVers.forHapiAndHedera("1.2.3", "3.2.1-pre+1");
+
+        assertTrue(actual.equals(alpha2SameAsAlpha1));
+
+        assertFalse(actual.equals(protoMajorDiff));
+        assertFalse(actual.equals(protoMinorDiff));
+        assertFalse(actual.equals(protoPatchDiff));
+        assertFalse(actual.equals(protoBuildDiff));
+
+        assertFalse(actual.equals(servicesMajorDiff));
+        assertFalse(actual.equals(servicesMinorDiff));
+        assertFalse(actual.equals(servicesPatchDiff));
+        assertFalse(actual.equals(servicesBuildDiff));
+    }
+
+    @Test
     void ordersWithRespectToBuild() {
         final var alpha2 = semVerWith(1, 9, 9, "alpha.1", "2");
         final var alpha10 = semVerWith(1, 9, 9, "alpha.0", "10");
