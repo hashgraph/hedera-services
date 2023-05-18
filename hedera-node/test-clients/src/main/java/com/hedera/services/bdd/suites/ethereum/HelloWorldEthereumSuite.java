@@ -59,7 +59,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVER
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 
@@ -577,7 +576,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                         .maxPriorityGas(2L)
                         .gasLimit(1_000_000L)
                         .sending(depositAmount)
-                        .hasKnownStatus(INVALID_SOLIDITY_ADDRESS));
+                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED));
     }
 
     @Override
