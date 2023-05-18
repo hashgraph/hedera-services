@@ -46,6 +46,7 @@ import com.swirlds.platform.state.EmergencyRecoveryManager;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
@@ -56,6 +57,36 @@ public final class GossipFactory {
 
     private GossipFactory() {}
 
+    /**
+     * Builds the gossip engine, depending on which flavor is requested in the configuration.
+     *
+     * @param platformContext           the platform context
+     * @param threadManager             the thread manager
+     * @param time                      the wall clock time
+     * @param crypto                    can be used to sign things
+     * @param notificationEngine        used to send notifications to the app
+     * @param addressBook               the current address book
+     * @param selfId                    this node's ID
+     * @param appVersion                the version of the app
+     * @param shadowGraph               contains non-ancient events
+     * @param emergencyRecoveryManager  handles emergency recovery
+     * @param consensusRef              a pointer to consensus
+     * @param intakeQueue               the event intake queue
+     * @param freezeManager             handles freezes
+     * @param startUpEventFrozenManager prevents event creation during startup
+     * @param swirldStateManager        manages the mutable state
+     * @param startedFromGenesis        true if this node started from a genesis state
+     * @param stateManagementComponent  manages the lifecycle of the state
+     * @param eventIntakeLambda         a method that is called when something needs to be added to the event intake
+     *                                  queue
+     * @param eventObserverDispatcher   the object used to wire event intake
+     * @param eventMapper               a data structure used to track the most recent event from each node
+     * @param eventIntakeMetrics        metrics for event intake
+     * @param eventLinker               links together events, if chatter is enabled will also buffer orphans
+     * @param updatePlatformStatus      a method that updates the platform status, when called
+     * @param loadReconnectState        a method that should be called when a state from reconnect is obtained
+     * @return the gossip engine
+     */
     public static Gossip buildGossip(
             @NonNull PlatformContext platformContext,
             @NonNull ThreadManager threadManager,
@@ -81,6 +112,30 @@ public final class GossipFactory {
             @NonNull final EventLinker eventLinker,
             @NonNull final Runnable updatePlatformStatus,
             @NonNull final Consumer<SignedState> loadReconnectState) {
+
+        Objects.requireNonNull(platformContext);
+        Objects.requireNonNull(threadManager);
+        Objects.requireNonNull(time);
+        Objects.requireNonNull(crypto);
+        Objects.requireNonNull(notificationEngine);
+        Objects.requireNonNull(addressBook);
+        Objects.requireNonNull(selfId);
+        Objects.requireNonNull(appVersion);
+        Objects.requireNonNull(shadowGraph);
+        Objects.requireNonNull(emergencyRecoveryManager);
+        Objects.requireNonNull(consensusRef);
+        Objects.requireNonNull(intakeQueue);
+        Objects.requireNonNull(freezeManager);
+        Objects.requireNonNull(startUpEventFrozenManager);
+        Objects.requireNonNull(swirldStateManager);
+        Objects.requireNonNull(stateManagementComponent);
+        Objects.requireNonNull(eventIntakeLambda);
+        Objects.requireNonNull(eventObserverDispatcher);
+        Objects.requireNonNull(eventMapper);
+        Objects.requireNonNull(eventIntakeMetrics);
+        Objects.requireNonNull(eventLinker);
+        Objects.requireNonNull(updatePlatformStatus);
+        Objects.requireNonNull(loadReconnectState);
 
         final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);

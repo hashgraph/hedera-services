@@ -79,6 +79,32 @@ public class SingleNodeSyncGossip extends AbstractGossip {
      */
     private final List<StoppableThread> syncProtocolThreads = new ArrayList<>();
 
+    /**
+     * Builds the gossip engine, depending on which flavor is requested in the configuration.
+     *
+     * @param platformContext           the platform context
+     * @param threadManager             the thread manager
+     * @param time                      the wall clock time
+     * @param crypto                    can be used to sign things
+     * @param notificationEngine        used to send notifications to the app
+     * @param addressBook               the current address book
+     * @param selfId                    this node's ID
+     * @param appVersion                the version of the app
+     * @param shadowGraph               contains non-ancient events
+     * @param consensusRef              a pointer to consensus
+     * @param intakeQueue               the event intake queue
+     * @param freezeManager             handles freezes
+     * @param startUpEventFrozenManager prevents event creation during startup
+     * @param swirldStateManager        manages the mutable state
+     * @param stateManagementComponent  manages the lifecycle of the state
+     * @param eventIntakeLambda         a method that is called when something needs to be added to the event intake
+     *                                  queue
+     * @param eventObserverDispatcher   the object used to wire event intake
+     * @param eventMapper               a data structure used to track the most recent event from each node
+     * @param eventIntakeMetrics        metrics for event intake
+     * @param updatePlatformStatus      a method that updates the platform status, when called
+     * @param loadReconnectState        a method that should be called when a state from reconnect is obtained
+     */
     public SingleNodeSyncGossip(
             @NonNull PlatformContext platformContext,
             @NonNull ThreadManager threadManager,

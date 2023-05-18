@@ -94,6 +94,33 @@ public class SyncGossip extends AbstractGossip {
      */
     private final List<StoppableThread> syncProtocolThreads = new ArrayList<>();
 
+    /**
+     * Builds the gossip engine, depending on which flavor is requested in the configuration.
+     *
+     * @param platformContext           the platform context
+     * @param threadManager             the thread manager
+     * @param time                      the wall clock time
+     * @param crypto                    can be used to sign things
+     * @param notificationEngine        used to send notifications to the app
+     * @param addressBook               the current address book
+     * @param selfId                    this node's ID
+     * @param appVersion                the version of the app
+     * @param shadowGraph               contains non-ancient events
+     * @param emergencyRecoveryManager  handles emergency recovery
+     * @param consensusRef              a pointer to consensus
+     * @param intakeQueue               the event intake queue
+     * @param freezeManager             handles freezes
+     * @param startUpEventFrozenManager prevents event creation during startup
+     * @param swirldStateManager        manages the mutable state
+     * @param stateManagementComponent  manages the lifecycle of the state
+     * @param eventIntakeLambda         a method that is called when something needs to be added to the event intake
+     *                                  queue
+     * @param eventObserverDispatcher   the object used to wire event intake
+     * @param eventMapper               a data structure used to track the most recent event from each node
+     * @param eventIntakeMetrics        metrics for event intake
+     * @param updatePlatformStatus      a method that updates the platform status, when called
+     * @param loadReconnectState        a method that should be called when a state from reconnect is obtained
+     */
     public SyncGossip(
             @NonNull PlatformContext platformContext,
             @NonNull ThreadManager threadManager,
@@ -170,7 +197,6 @@ public class SyncGossip extends AbstractGossip {
         thingsToStart.add(reconnectController::start);
 
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
-        final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
 
         final Duration hangingThreadDuration = basicConfig.hangingThreadDuration();
 
@@ -178,9 +204,9 @@ public class SyncGossip extends AbstractGossip {
 
         if (emergencyRecoveryManager.isEmergencyStateRequired()) {
             // If we still need an emergency recovery state, we need it via emergency reconnect.
-            // Start the helper now so that it is ready to receive a connection to perform reconnect with when the
+            // Start the helper first so that it is ready to receive a connection to perform reconnect with when the
             // protocol is initiated.
-            thingsToStart.add(reconnectController::start);
+            thingsToStart.add(0, reconnectController::start);
         }
 
         final PeerAgnosticSyncChecks peerAgnosticSyncChecks = new PeerAgnosticSyncChecks(List.of(

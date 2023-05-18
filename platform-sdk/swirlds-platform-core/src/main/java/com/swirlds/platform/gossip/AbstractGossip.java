@@ -123,7 +123,32 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
     /** the number of active connections this node has to other nodes */
     private final AtomicInteger activeConnectionNumber = new AtomicInteger(0);
 
-    public AbstractGossip(
+    /**
+     * Builds the gossip engine, depending on which flavor is requested in the configuration.
+     *
+     * @param platformContext           the platform context
+     * @param threadManager             the thread manager
+     * @param time                      the wall clock time
+     * @param crypto                    can be used to sign things
+     * @param notificationEngine        used to send notifications to the app
+     * @param addressBook               the current address book
+     * @param selfId                    this node's ID
+     * @param appVersion                the version of the app
+     * @param shadowGraph               contains non-ancient events
+     * @param consensusRef              a pointer to consensus
+     * @param intakeQueue               the event intake queue
+     * @param freezeManager             handles freezes
+     * @param startUpEventFrozenManager prevents event creation during startup
+     * @param swirldStateManager        manages the mutable state
+     * @param stateManagementComponent  manages the lifecycle of the state
+     *                                  queue
+     * @param eventObserverDispatcher   the object used to wire event intake
+     * @param eventMapper               a data structure used to track the most recent event from each node
+     * @param eventIntakeMetrics        metrics for event intake
+     * @param updatePlatformStatus      a method that updates the platform status, when called
+     * @param loadReconnectState        a method that should be called when a state from reconnect is obtained
+     */
+    protected AbstractGossip(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
             @NonNull final Time time,
