@@ -14,23 +14,18 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.test.simulated;
+package com.swirlds.platform.test.simulated.config;
 
+import com.swirlds.platform.test.simulated.Latency;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 
 /**
- * Latency for a single node in a hub-and-spoke model
+ * Configuration for a node in a network simulation.
  *
- * @param delay the delay of this node. The time for a message to reach a peer is the sum of this delay and the peer's
- *              delay
+ * @param createEventEvery create an event at this interval
+ * @param customLatency    set the network latency for this node to this value
+ * @param intakeQueueDelay the amount of time an event sits in the intake queue before being processed.
  */
-public record Latency(@NonNull Duration delay) {
-
-    /**
-     * Returns {@code true} if this latency is equal to {@link Duration#ZERO};
-     */
-    public boolean isZero() {
-        return delay.isZero();
-    }
-}
+public record NodeConfig(
+        @NonNull Duration createEventEvery, @NonNull Latency customLatency, @NonNull Duration intakeQueueDelay) {}
