@@ -16,13 +16,13 @@
 
 package com.swirlds.platform.state.signed;
 
-import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.sequence.set.SequenceSet;
 import com.swirlds.common.sequence.set.StandardSequenceSet;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
@@ -78,7 +78,7 @@ public class SignedStateManager implements SignedStateFinder {
     /**
      * A signature that was received when there was no state with a matching round.
      */
-    private record SavedSignature(long round, long memberId, @NonNull Signature signature) {}
+    private record SavedSignature(long round, @NonNull NodeId memberId, @NonNull Signature signature) {}
 
     /**
      * Signatures for rounds in the future.
@@ -115,13 +115,14 @@ public class SignedStateManager implements SignedStateFinder {
             @NonNull final StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer,
             @NonNull final StateLacksSignaturesConsumer stateLacksSignaturesConsumer) {
 
-        this.stateConfig = throwArgNull(stateConfig, "stateConfig");
-        this.signedStateMetrics = throwArgNull(signedStateMetrics, "signedStateMetrics");
+        this.stateConfig = Objects.requireNonNull(stateConfig, "stateConfig");
+        this.signedStateMetrics = Objects.requireNonNull(signedStateMetrics, "signedStateMetrics");
         this.newLatestCompleteStateConsumer =
-                throwArgNull(newLatestCompleteStateConsumer, "newLatestCompleteStateConsumer");
+                Objects.requireNonNull(newLatestCompleteStateConsumer, "newLatestCompleteStateConsumer");
         this.stateHasEnoughSignaturesConsumer =
-                throwArgNull(stateHasEnoughSignaturesConsumer, "stateHasEnoughSignaturesConsumer");
-        this.stateLacksSignaturesConsumer = throwArgNull(stateLacksSignaturesConsumer, "stateLacksSignaturesConsumer");
+                Objects.requireNonNull(stateHasEnoughSignaturesConsumer, "stateHasEnoughSignaturesConsumer");
+        this.stateLacksSignaturesConsumer =
+                Objects.requireNonNull(stateLacksSignaturesConsumer, "stateLacksSignaturesConsumer");
 
         this.savedSignatures =
                 new StandardSequenceSet<>(0, stateConfig.maxAgeOfFutureStateSignatures(), SavedSignature::round);
@@ -209,7 +210,7 @@ public class SignedStateManager implements SignedStateFinder {
      * @param signedState the signed state to add
      */
     public synchronized void addState(@NonNull final SignedState signedState) {
-        throwArgNull(signedState, "reservedSignedState");
+        Objects.requireNonNull(signedState, "reservedSignedState");
 
         if (signedState.getState().getHash() == null) {
             throw new IllegalArgumentException(
@@ -254,11 +255,11 @@ public class SignedStateManager implements SignedStateFinder {
      * @param signature the signature on the hash
      */
     public synchronized void preConsensusSignatureObserver(
-            @NonNull final Long round, @NonNull final Long signerId, @NonNull final Signature signature) {
+            @NonNull final Long round, @NonNull final NodeId signerId, @NonNull final Signature signature) {
 
-        throwArgNull(round, "round");
-        throwArgNull(signerId, "signerId");
-        throwArgNull(signature, "signature");
+        Objects.requireNonNull(round, "round must not be null");
+        Objects.requireNonNull(signerId, "signerId must not be null");
+        Objects.requireNonNull(signature, "signature must not be null");
 
         signedStateMetrics.getStateSignaturesGatheredPerSecondMetric().cycle();
 
@@ -444,7 +445,11 @@ public class SignedStateManager implements SignedStateFinder {
      * @param signature   the signature on the state
      */
     private void addSignature(
-            @NonNull final SignedState signedState, final long nodeId, @NonNull final Signature signature) {
+            @NonNull final SignedState signedState, @NonNull final NodeId nodeId, @NonNull final Signature signature) {
+        Objects.requireNonNull(signedState, "signedState must not be null");
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
+        Objects.requireNonNull(signature, "signature must not be null");
+
         if (signedState.addSignature(nodeId, signature)) {
             // at this point the signed state is complete for the first time
             signedStateNewlyComplete(signedState);
@@ -466,6 +471,7 @@ public class SignedStateManager implements SignedStateFinder {
      * @param signedState the state that was unable to be complete signed
      */
     private void notifyStateLacksSignatures(@NonNull final SignedState signedState) {
+        Objects.requireNonNull(signedState, "signedState must not be null");
         stateLacksSignaturesConsumer.stateLacksSignatures(signedState);
     }
 
@@ -475,6 +481,7 @@ public class SignedStateManager implements SignedStateFinder {
      * @param signedState the state that now has enough signatures
      */
     private void notifyStateHasEnoughSignatures(@NonNull final SignedState signedState) {
+        Objects.requireNonNull(signedState, "signedState must not be null");
         stateHasEnoughSignaturesConsumer.stateHasEnoughSignatures(signedState);
     }
 }

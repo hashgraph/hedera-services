@@ -44,8 +44,7 @@ public final class HeartbeatMessage implements SelfSerializable {
     /**
      * Create a new heartbeat request
      *
-     * @param heartbeatId
-     * 		the ID of the request
+     * @param heartbeatId the ID of the request
      * @return the request message
      */
     public static HeartbeatMessage request(final long heartbeatId) {
@@ -55,8 +54,7 @@ public final class HeartbeatMessage implements SelfSerializable {
     /**
      * Create a new heartbeat response
      *
-     * @param heartbeatId
-     * 		the ID of the response
+     * @param heartbeatId the ID of the response
      * @return the response message
      */
     public static HeartbeatMessage response(final long heartbeatId) {
@@ -97,5 +95,10 @@ public final class HeartbeatMessage implements SelfSerializable {
     @Override
     public int getVersion() {
         return ClassVersion.ORIGINAL;
+    }
+
+    @Override
+    public String toString() {
+        return "HeartbeatMsg(" + heartbeatId + ")";
     }
 }
