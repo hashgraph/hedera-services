@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
@@ -72,9 +73,9 @@ class OldCompleteStateEventuallyReleasedTest extends AbstractSignedStateManagerT
                 .build();
 
         final Hash stateHash = randomHash(random);
-        final Map<Long, Signature> signatures = new HashMap<>();
+        final Map<NodeId, Signature> signatures = new HashMap<>();
         for (final Address address : addressBook) {
-            signatures.put(address.getId(), buildFakeSignature(address.getSigPublicKey(), stateHash));
+            signatures.put(address.getNodeId(), buildFakeSignature(address.getSigPublicKey(), stateHash));
         }
 
         // Add a complete signed state. Eventually this will get released.
