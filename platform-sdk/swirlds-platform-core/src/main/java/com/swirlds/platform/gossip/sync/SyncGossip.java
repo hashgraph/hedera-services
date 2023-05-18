@@ -83,6 +83,7 @@ import org.apache.commons.lang3.tuple.Pair;
  */
 public class SyncGossip extends AbstractGossip {
 
+    private final ReconnectController reconnectController;
     private final AtomicBoolean gossipHalted = new AtomicBoolean(false);
     private final SyncPermitProvider syncPermitProvider;
     protected final SyncConfig syncConfig;
@@ -193,8 +194,7 @@ public class SyncGossip extends AbstractGossip {
                         Pair.of(eventMapper, "eventMapper"),
                         Pair.of(shadowGraph, "shadowGraph")));
 
-        final ReconnectController reconnectController =
-                new ReconnectController(threadManager, reconnectHelper, this::resume);
+        reconnectController = new ReconnectController(threadManager, reconnectHelper, this::resume);
 
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
 
@@ -306,6 +306,13 @@ public class SyncGossip extends AbstractGossip {
     }
 
     /**
+     * Get the reconnect controller. This method is needed to break a circular dependency.
+     */
+    public ReconnectController getReconnectController() {
+        return reconnectController;
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override
@@ -314,7 +321,7 @@ public class SyncGossip extends AbstractGossip {
                 selfId,
                 topology.getConnectionGraph(),
                 updatePlatformStatus,
-                () -> {},
+                () -> getReconnectController().start(),
                 platformContext.getConfiguration().getConfigData(ReconnectConfig.class));
     }
 
