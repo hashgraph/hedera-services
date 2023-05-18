@@ -18,16 +18,19 @@ package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenRevokeKycTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -81,11 +84,11 @@ public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
         requireNonNull(tokenRelStore);
 
         final var op = txn.tokenRevokeKycOrThrow();
-        final var tokenId = op.tokenOrThrow().tokenNum();
-        final var accountId = op.accountOrElse(AccountID.DEFAULT).accountNumOrThrow();
-        final var tokenRel = tokenRelStore.getForModify(tokenId, accountId);
+        final var tokenId = op.tokenOrThrow();
+        final var accountId = op.accountOrElse(AccountID.DEFAULT);
+        final var tokenRel = validateSemantics(accountId, tokenId, tokenRelStore);
 
-        final var tokenRelBuilder = tokenRel.orElseThrow().copyBuilder();
+        final var tokenRelBuilder = tokenRel.copyBuilder();
         tokenRelBuilder.kycGranted(false);
         tokenRelStore.put(tokenRelBuilder.build());
     }
@@ -101,5 +104,22 @@ public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
         if (!op.hasAccount()) {
             throw new PreCheckException(ResponseCodeEnum.INVALID_ACCOUNT_ID);
         }
+    }
+
+    /**
+     * Performs checks that the entities related to this transaction exist and are valid
+     *
+     * @return the token relation for the given token and account
+     */
+    @NonNull
+    private TokenRelation validateSemantics(
+            @NonNull final AccountID accountId,
+            @NonNull final TokenID tokenId,
+            @NonNull final WritableTokenRelationStore tokenRelStore)
+            throws HandleException {
+        final var tokenRel = tokenRelStore.getForModify(tokenId.tokenNum(), accountId.accountNumOrThrow());
+        validateTrue(tokenRel.isPresent(), INVALID_TOKEN_ID);
+
+        return tokenRel.get();
     }
 }

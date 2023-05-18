@@ -111,7 +111,7 @@ import com.swirlds.platform.eventhandling.PreConsensusEventHandler;
 import com.swirlds.platform.gossip.Gossip;
 import com.swirlds.platform.gossip.GossipFactory;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
-import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEventDescriptor;
+import com.swirlds.platform.gossip.chatter.protocol.messages.EventDescriptor;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphEventObserver;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
@@ -513,7 +513,7 @@ public class SwirldsPlatform implements Platform, Startable {
                                 "Interrupted while requesting preconsensus event flush");
                     });
 
-            final List<Predicate<ChatterEventDescriptor>> isDuplicateChecks = new ArrayList<>();
+            final List<Predicate<EventDescriptor>> isDuplicateChecks = new ArrayList<>();
             isDuplicateChecks.add(d -> shadowGraph.isHashInGraph(d.getHash()));
 
             eventLinker = buildEventLinker(isDuplicateChecks);
@@ -902,7 +902,7 @@ public class SwirldsPlatform implements Platform, Startable {
      * Build the event linker.
      */
     @NonNull
-    private EventLinker buildEventLinker(@NonNull final List<Predicate<ChatterEventDescriptor>> isDuplicateChecks) {
+    private EventLinker buildEventLinker(@NonNull final List<Predicate<EventDescriptor>> isDuplicateChecks) {
         final ParentFinder parentFinder = new ParentFinder(shadowGraph::hashgraphEvent);
         final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
         if (chatterConfig.useChatter()) {

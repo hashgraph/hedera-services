@@ -608,7 +608,7 @@ public class Browser {
 
     private Collection<SwirldsPlatform> createLocalPlatforms(
             @NonNull final ApplicationDefinition appDefinition,
-            @NonNull final Crypto[] crypto,
+            @NonNull final Map<NodeId, Crypto> crypto,
             @NonNull final InfoSwirld infoSwirld,
             @NonNull final Map<Long, SwirldMain> appMains,
             @NonNull final Configuration configuration,
@@ -682,7 +682,7 @@ public class Browser {
 
                 final SwirldsPlatform platform = new SwirldsPlatform(
                         platformContext,
-                        crypto[i],
+                        crypto.get(address.getNodeId()),
                         initialAddressBook,
                         nodeId,
                         mainClassName,
@@ -810,7 +810,7 @@ public class Browser {
         // Save the trust stores in the address book.
 
         logger.debug(STARTUP.getMarker(), "About do crypto instantiation");
-        final Crypto[] crypto = initNodeSecurity(appDefinition.getAddressBook(), configuration);
+        final Map<NodeId, Crypto> crypto = initNodeSecurity(appDefinition.getAddressBook(), configuration);
         logger.debug(STARTUP.getMarker(), "Done with crypto instantiation");
 
         // the AddressBook is not changed after this point, so we calculate the hash now
