@@ -27,7 +27,6 @@ import com.hedera.node.app.state.merkle.StateUtils;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
-import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
@@ -82,14 +81,12 @@ class OnDiskTest extends MerkleTestBase {
                 // FIXME: use hashesRamToDiskThreshold after the merge of
                 // https://github.com/hashgraph/hedera-services/pull/5825
                 // (see https://github.com/hashgraph/hedera-services/issues/6037)
-                .internalHashesRamToDiskThreshold(0)
+                .hashesRamToDiskThreshold(0)
                 .storageDir(storageDir)
                 .maxNumOfKeys(100)
                 .preferDiskBasedIndexes(true)
                 .keySerializer(new OnDiskKeySerializer<>(md))
                 .virtualLeafRecordSerializer(new VirtualLeafRecordSerializer<>(
-                        (short) 1,
-                        DigestType.SHA_384,
                         (short) 1,
                         DataFileCommon.VARIABLE_DATA_SIZE,
                         new OnDiskKeySerializer<>(md),
