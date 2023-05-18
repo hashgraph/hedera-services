@@ -194,7 +194,6 @@ public class SyncGossip extends AbstractGossip {
 
         final ReconnectController reconnectController =
                 new ReconnectController(threadManager, reconnectHelper, () -> gossipHalted.set(false));
-        thingsToStart.add(reconnectController::start);
 
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
 

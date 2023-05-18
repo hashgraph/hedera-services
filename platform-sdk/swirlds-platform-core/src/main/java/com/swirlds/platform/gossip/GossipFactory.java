@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.gossip;
 
+import static com.swirlds.logging.LogMarker.STARTUP;
+
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
@@ -49,11 +51,15 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Builds the gossip engine, depending on which flavor is requested in the configuration.
  */
 public final class GossipFactory {
+
+    private static final Logger logger = LogManager.getLogger(GossipFactory.class);
 
     private GossipFactory() {}
 
@@ -141,6 +147,7 @@ public final class GossipFactory {
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
 
         if (chatterConfig.useChatter()) {
+            logger.info(STARTUP.getMarker(), "Using ChatterGossip");
             return new ChatterGossip(
                     platformContext,
                     threadManager,
@@ -168,6 +175,7 @@ public final class GossipFactory {
                     loadReconnectState);
         } else if (syncConfig.syncAsProtocolEnabled()) {
             if (addressBook.getSize() == 1) {
+                logger.info(STARTUP.getMarker(), "Using SingleNodeSyncGossip");
                 return new SingleNodeSyncGossip(
                         platformContext,
                         threadManager,
@@ -191,6 +199,7 @@ public final class GossipFactory {
                         updatePlatformStatus,
                         loadReconnectState);
             } else {
+                logger.info(STARTUP.getMarker(), "Using SyncGossip");
                 return new SyncGossip(
                         platformContext,
                         threadManager,
@@ -216,6 +225,7 @@ public final class GossipFactory {
                         loadReconnectState);
             }
         } else {
+            logger.info(STARTUP.getMarker(), "Using LegacySyncGossip");
             return new LegacySyncGossip(
                     platformContext,
                     threadManager,
