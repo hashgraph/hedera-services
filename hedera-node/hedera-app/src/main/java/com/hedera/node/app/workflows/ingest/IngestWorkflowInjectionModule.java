@@ -14,24 +14,17 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.components;
+package com.hedera.node.app.workflows.ingest;
 
-import com.hedera.node.app.meta.HandleScope;
-import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
-import dagger.BindsInstance;
-import dagger.Subcomponent;
+import com.hedera.node.app.components.IngestInjectionComponent;
+import dagger.Binds;
+import dagger.Module;
 
 /**
- * A Dagger subcomponent that provides the readable store factory.
+ * Module for Ingest processing.
  */
-@Subcomponent
-@HandleScope
-public interface StoreComponent {
-    ReadableStoreFactory storeFactory();
-
-    @Subcomponent.Factory
-    interface Factory {
-        StoreComponent create(@BindsInstance HederaState hederastate);
-    }
+@Module(subcomponents = {IngestInjectionComponent.class})
+public interface IngestWorkflowInjectionModule {
+    @Binds
+    IngestWorkflow bindIngestWorkflow(IngestWorkflowImpl ingestWorkflow);
 }

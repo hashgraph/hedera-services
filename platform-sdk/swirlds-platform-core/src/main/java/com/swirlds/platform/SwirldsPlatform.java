@@ -481,8 +481,7 @@ public class SwirldsPlatform implements Platform, ConnectionTracker, Startable {
         this.consensusMetrics = new ConsensusMetricsImpl(this.selfId, metrics);
         this.eventIntakeMetrics = new EventIntakeMetrics(metrics, time);
         this.syncMetrics = new SyncMetrics(metrics);
-        this.networkMetrics =
-                new NetworkMetrics(metrics, selfId, getAddressBook().getSize());
+        this.networkMetrics = new NetworkMetrics(metrics, selfId, getAddressBook());
         metrics.addUpdater(networkMetrics::update);
         this.reconnectMetrics = new ReconnectMetrics(metrics);
         RuntimeMetrics.setup(metrics);
