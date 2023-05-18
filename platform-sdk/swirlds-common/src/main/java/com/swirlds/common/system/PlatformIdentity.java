@@ -44,6 +44,6 @@ public interface PlatformIdentity {
      * @return this node's address
      */
     default Address getSelfAddress() {
-        return getAddressBook().getAddress(getSelfId().id());
+        return getAddressBook().getAddress(getSelfId());
     }
 }
