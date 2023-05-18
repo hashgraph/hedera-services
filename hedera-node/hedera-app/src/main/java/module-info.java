@@ -67,4 +67,5 @@ module com.hedera.node.app {
     exports com.hedera.node.app.workflows.dispatcher;
     exports com.hedera.node.app.workflows.handle.validation;
     exports com.hedera.node.app.config;
+    exports com.hedera.node.app.workflows.handle.validation;
 }
