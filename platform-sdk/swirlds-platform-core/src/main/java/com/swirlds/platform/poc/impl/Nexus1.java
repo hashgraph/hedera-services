@@ -1,6 +1,6 @@
 package com.swirlds.platform.poc.impl;
 
-import com.swirlds.platform.poc.infrastructure.Nexus;
+import com.swirlds.platform.poc.framework.Nexus;
 
 import java.util.concurrent.atomic.AtomicInteger;
 

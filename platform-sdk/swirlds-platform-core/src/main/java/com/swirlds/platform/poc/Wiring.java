@@ -4,11 +4,10 @@ import com.swirlds.common.threading.framework.config.MultiQueueThreadConfigurati
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
-import com.swirlds.platform.poc.infrastructure.Component;
-import com.swirlds.platform.poc.infrastructure.MultiTaskProcessor;
-import com.swirlds.platform.poc.infrastructure.QueueSubmitter;
-import com.swirlds.platform.poc.infrastructure.TaskProcessor;
-import org.apache.commons.lang3.tuple.Pair;
+import com.swirlds.platform.poc.framework.Component;
+import com.swirlds.platform.poc.framework.MultiTaskProcessor;
+import com.swirlds.platform.poc.framework.QueueSubmitter;
+import com.swirlds.platform.poc.framework.TaskProcessor;
 
 import java.lang.reflect.Proxy;
 import java.util.HashMap;
@@ -18,13 +17,13 @@ import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-public class Wiring2 {
+public class Wiring {
 	private final List<Class<? extends Component>> componentsDefs;
 	private final Map<Class<? extends Component>, BlockingQueue<Object>> queues;
 	private final Map<Class<? extends Component>, Component> processors;
 	private final Map<Class<? extends Component>, Object> facades;
 
-	public Wiring2(final List<Class<? extends Component>> componentsDefs) {
+	public Wiring(final List<Class<? extends Component>> componentsDefs) {
 		this.componentsDefs = componentsDefs;
 		queues = new HashMap<>();
 		processors = new HashMap<>();
@@ -34,7 +33,7 @@ public class Wiring2 {
 			if (TaskProcessor.class.isAssignableFrom(component)) {
 				BlockingQueue<Object> queue = new LinkedBlockingQueue<>();
 				Object proxy = Proxy.newProxyInstance(
-						Wiring2.class.getClassLoader(),
+						Wiring.class.getClassLoader(),
 						new Class[] { component },
 						new QueueSubmitter(queue));
 				facades.put(component, proxy);

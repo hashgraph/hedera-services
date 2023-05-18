@@ -1,12 +1,11 @@
 package com.swirlds.platform.poc.impl;
 
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
-import com.swirlds.platform.poc.Module2;
 import com.swirlds.platform.poc.moduledefs.TaskProcessorExample2;
 
 import java.util.Random;
 
-public class TP2 implements Module2, TaskProcessorExample2 {
+public class TP2 implements TaskProcessorExample2 {
 	private final InterruptableConsumer<String> ts1;
 
 	public TP2(final InterruptableConsumer<String> ts1) {

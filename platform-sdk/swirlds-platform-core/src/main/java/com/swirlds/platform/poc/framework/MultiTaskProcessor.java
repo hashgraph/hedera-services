@@ -1,4 +1,4 @@
-package com.swirlds.platform.poc.infrastructure;
+package com.swirlds.platform.poc.framework;
 
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import org.apache.commons.lang3.tuple.Pair;

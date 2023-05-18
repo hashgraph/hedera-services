@@ -1,4 +1,4 @@
-package com.swirlds.platform.poc.infrastructure;
+package com.swirlds.platform.poc.framework;
 
 public interface Nexus extends Component{
 	@Override

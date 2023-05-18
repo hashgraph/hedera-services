@@ -1,4 +1,4 @@
-package com.swirlds.platform.poc.infrastructure;
+package com.swirlds.platform.poc.framework;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;

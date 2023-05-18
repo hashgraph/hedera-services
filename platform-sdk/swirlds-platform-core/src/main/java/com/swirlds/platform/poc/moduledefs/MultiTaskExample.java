@@ -1,7 +1,7 @@
 package com.swirlds.platform.poc.moduledefs;
 
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
-import com.swirlds.platform.poc.infrastructure.MultiTaskProcessor;
+import com.swirlds.platform.poc.framework.MultiTaskProcessor;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.List;

@@ -1,20 +1,18 @@
 package com.swirlds.platform.poc;
 
-import com.swirlds.common.threading.interrupt.InterruptableConsumer;
+import com.swirlds.platform.poc.impl.Nexus1;
 import com.swirlds.platform.poc.impl.TP1;
 import com.swirlds.platform.poc.impl.TP2;
-import com.swirlds.platform.poc.impl.Nexus1;
 import com.swirlds.platform.poc.moduledefs.Nexus2;
 import com.swirlds.platform.poc.moduledefs.TaskProcessorExample1;
 import com.swirlds.platform.poc.moduledefs.TaskProcessorExample2;
 
 import java.util.List;
-import java.util.Random;
 
-public class Poc2 {
+public class Poc {
 	public static void main(String[] args) throws InterruptedException {
 		// step 1: construct wiring
-		Wiring2 wiring = new Wiring2(List.of(
+		Wiring wiring = new Wiring(List.of(
 				TaskProcessorExample1.class,
 				TaskProcessorExample2.class,
 				Nexus1.class,
