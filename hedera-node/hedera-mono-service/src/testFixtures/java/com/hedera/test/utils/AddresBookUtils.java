@@ -22,6 +22,7 @@ import static org.mockito.Mockito.mock;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.swirlds.common.crypto.SerializablePublicKey;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
@@ -41,7 +42,7 @@ public class AddresBookUtils {
         }
         final var nodeId = platform.getSelfId().getIdAsInt();
         final var address = new Address(
-                nodeId,
+                new NodeId(nodeId),
                 "",
                 "",
                 1L,

@@ -129,7 +129,7 @@ class StateLifecyclesTest extends ResponsibleVMapUser {
         }
         final var nodeId = platform.getSelfId().getIdAsInt();
         final var address = new Address(
-                nodeId,
+                new NodeId(nodeId),
                 "",
                 "",
                 1L,

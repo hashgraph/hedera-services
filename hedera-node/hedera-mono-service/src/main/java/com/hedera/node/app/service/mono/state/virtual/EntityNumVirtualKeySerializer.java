@@ -35,7 +35,7 @@ public class EntityNumVirtualKeySerializer implements KeySerializer<EntityNumVir
     }
 
     @Override
-    public int getSerializedSize() {
+    public int getSerializedSize(long var1) {
         return EntityNumVirtualKey.sizeInBytes();
     }
 
