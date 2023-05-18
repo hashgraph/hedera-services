@@ -14,23 +14,20 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.test.simulated;
+package com.swirlds.platform.test.simulated.config;
 
+import com.swirlds.common.system.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
+import java.util.Map;
 
 /**
- * Latency for a single node in a hub-and-spoke model
+ * Configuration for a simulated network of nodes.
  *
- * @param delay the delay of this node. The time for a message to reach a peer is the sum of this delay and the peer's
- *              delay
+ * @param name        a short description of this configuration
+ * @param duration    the amount of time this list of configs will be in effect
+ * @param nodeConfigs configurations for each node in the network
  */
-public record Latency(@NonNull Duration delay) {
-
-    /**
-     * Returns {@code true} if this latency is equal to {@link Duration#ZERO};
-     */
-    public boolean isZero() {
-        return delay.isZero();
-    }
-}
+public record NetworkConfig(
+        @Nullable String name, @NonNull Duration duration, @NonNull Map<NodeId, NodeConfig> nodeConfigs) {}

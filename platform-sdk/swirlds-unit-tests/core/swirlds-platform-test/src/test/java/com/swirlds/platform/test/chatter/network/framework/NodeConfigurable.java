@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,23 +14,19 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.test.simulated;
+package com.swirlds.platform.test.chatter.network.framework;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Duration;
+import com.swirlds.platform.test.simulated.config.NodeConfig;
 
 /**
- * Latency for a single node in a hub-and-spoke model
- *
- * @param delay the delay of this node. The time for a message to reach a peer is the sum of this delay and the peer's
- *              delay
+ * A class that can be configured by {@link NodeConfig}
  */
-public record Latency(@NonNull Duration delay) {
+public interface NodeConfigurable {
 
     /**
-     * Returns {@code true} if this latency is equal to {@link Duration#ZERO};
+     * Apply the supplied node configuration.
+     *
+     * @param nodeConfig the node configuration to apply
      */
-    public boolean isZero() {
-        return delay.isZero();
-    }
+    default void applyNodeConfig(final NodeConfig nodeConfig) {}
 }
