@@ -43,7 +43,8 @@ public class ReadableTokenStoreImpl implements ReadableTokenStore {
      * @param states The state to use.
      */
     public ReadableTokenStoreImpl(@NonNull final ReadableStates states) {
-        this.tokenState = states.get("TOKENS");
+        requireNonNull(states);
+        this.tokenState = states.get(TokenServiceImpl.TOKENS_KEY);
     }
 
     // FUTURE: remove this method and the TokenMetadata object entirely

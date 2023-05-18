@@ -29,6 +29,7 @@ import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
@@ -106,7 +107,17 @@ public class TransactionDispatcher {
                     txn,
                     handleContext,
                     writableStoreFactory.createAccountStore(),
-                    (ReadableTokenStore) writableStoreFactory.createTokenStore(),
+                    writableStoreFactory.createTokenStore(),
+                    writableStoreFactory.createTokenRelStore());
+            case TOKEN_FREEZE_ACCOUNT -> dispatchTokenFreezeAccount(
+                    txn,
+                    writableStoreFactory.createAccountStore(),
+                    writableStoreFactory.createTokenStore(),
+                    writableStoreFactory.createTokenRelStore());
+            case TOKEN_UNFREEZE_ACCOUNT -> dispatchTokenUnfreezeAccount(
+                    txn,
+                    writableStoreFactory.createAccountStore(),
+                    writableStoreFactory.createTokenStore(),
                     writableStoreFactory.createTokenRelStore());
             case TOKEN_GRANT_KYC_TO_ACCOUNT -> dispatchTokenGrantKycToAccount(
                     txn, writableStoreFactory.createTokenRelStore());
@@ -301,6 +312,55 @@ public class TransactionDispatcher {
         // No-op by default
     }
 
+    private void dispatchTokenAssociateToAccount(
+            @NonNull final TransactionBody tokenAssociate,
+            @NonNull final HandleContext handleContext,
+            @NonNull final WritableAccountStore accountStore,
+            @NonNull final ReadableTokenStore tokenStore,
+            @NonNull final WritableTokenRelationStore tokenRelStore) {
+        requireNonNull(accountStore);
+        requireNonNull(tokenStore);
+        requireNonNull(tokenRelStore);
+
+        final var handler = handlers.tokenAssociateToAccountHandler();
+        handler.handle(tokenAssociate, handleContext, accountStore, tokenStore, tokenRelStore);
+        finishTokenAssociateToAccount(accountStore, tokenRelStore);
+    }
+
+    /**
+     * Dispatches the token freeze transaction to the appropriate handler.
+     */
+    private void dispatchTokenFreezeAccount(
+            @NonNull TransactionBody tokenFreeze,
+            @NonNull final ReadableAccountStore accountStore,
+            @NonNull final ReadableTokenStore tokenStore,
+            @NonNull final WritableTokenRelationStore tokenRelStore) {
+        requireNonNull(accountStore);
+        requireNonNull(tokenStore);
+        requireNonNull(tokenRelStore);
+
+        final var handler = handlers.tokenFreezeAccountHandler();
+        handler.handle(tokenFreeze, accountStore, tokenStore, tokenRelStore);
+        finishTokenFreeze(tokenRelStore);
+    }
+
+    /**
+     * Dispatches the token unfreeze transaction to the appropriate handler.
+     */
+    private void dispatchTokenUnfreezeAccount(
+            @NonNull TransactionBody tokenFreeze,
+            @NonNull final ReadableAccountStore accountStore,
+            @NonNull final ReadableTokenStore tokenStore,
+            @NonNull final WritableTokenRelationStore tokenRelStore) {
+        requireNonNull(accountStore);
+        requireNonNull(tokenStore);
+        requireNonNull(tokenRelStore);
+
+        final var handler = handlers.tokenUnfreezeAccountHandler();
+        handler.handle(tokenFreeze, accountStore, tokenStore, tokenRelStore);
+        finishTokenUnfreeze(tokenRelStore);
+    }
+
     /**
      * Dispatches the token grant KYC transaction to the appropriate handler.
      *
@@ -312,17 +372,6 @@ public class TransactionDispatcher {
         final var handler = handlers.tokenGrantKycToAccountHandler();
         handler.handle(tokenGrantKyc, tokenRelStore);
         finishTokenGrantKycToAccount(tokenRelStore);
-    }
-
-    private void dispatchTokenAssociateToAccount(
-            @NonNull final TransactionBody tokenAssociate,
-            @NonNull final HandleContext handleContext,
-            @NonNull final WritableAccountStore accountStore,
-            @NonNull final ReadableTokenStore tokenStore,
-            @NonNull final WritableTokenRelationStore tokenRelStore) {
-        final var handler = handlers.tokenAssociateToAccountHandler();
-        handler.handle(tokenAssociate, handleContext, accountStore, tokenStore, tokenRelStore);
-        finishTokenAssociateToAccount(accountStore, tokenRelStore);
     }
 
     /**
@@ -344,6 +393,8 @@ public class TransactionDispatcher {
      */
     private void dispatchTokenRevokeKycFromAccount(
             @NonNull TransactionBody tokenRevokeKyc, @NonNull WritableTokenRelationStore tokenRelStore) {
+        requireNonNull(tokenRelStore);
+
         final var handler = handlers.tokenRevokeKycFromAccountHandler();
         handler.handle(tokenRevokeKyc, tokenRelStore);
         finishTokenRevokeKycFromAccount(tokenRelStore);
@@ -418,6 +469,28 @@ public class TransactionDispatcher {
      * @param tokenStore the token store
      */
     protected void finishTokenUnPause(@NonNull final WritableTokenStore tokenStore) {
+        // No-op by default
+    }
+
+    /**
+     * A temporary hook to isolate logic that we expect to move to a workflow, but
+     * is currently needed when running with facility implementations that are adapters
+     * for either {@code mono-service} logic or integration tests.
+     *
+     * @param tokenStore the token store
+     */
+    protected void finishTokenFreeze(@NonNull final WritableTokenRelationStore tokenStore) {
+        // No-op by default
+    }
+
+    /**
+     * A temporary hook to isolate logic that we expect to move to a workflow, but
+     * is currently needed when running with facility implementations that are adapters
+     * for either {@code mono-service} logic or integration tests.
+     *
+     * @param tokenStore the token store
+     */
+    protected void finishTokenUnfreeze(@NonNull final WritableTokenRelationStore tokenStore) {
         // No-op by default
     }
 
