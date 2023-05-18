@@ -80,23 +80,23 @@ import org.apache.logging.log4j.Logger;
  *                                    {@link SavedStateMetadataField#NODE_ID}
  * @param signingNodes                a comma separated list of node IDs that signed this state, corresponds to
  *                                    {@link SavedStateMetadataField#SIGNING_NODES}
- * @param signingWeightSum             the sum of all signing nodes' weights, corresponds to
+ * @param signingWeightSum            the sum of all signing nodes' weights, corresponds to
  *                                    {@link SavedStateMetadataField#SIGNING_WEIGHT_SUM}
- * @param totalWeight                  the total weight of all nodes in the network, corresponds to
+ * @param totalWeight                 the total weight of all nodes in the network, corresponds to
  *                                    {@link SavedStateMetadataField#TOTAL_WEIGHT}
  */
 public record SavedStateMetadata(
-        Long round,
-        Long numberOfConsensusEvents,
-        Instant consensusTimestamp,
-        Hash runningEventHash,
-        Long minimumGenerationNonAncient,
-        String softwareVersion,
-        Instant wallClockTime,
-        NodeId nodeId,
-        List<NodeId> signingNodes,
-        Long signingWeightSum,
-        Long totalWeight) {
+        @Nullable Long round,
+        @Nullable Long numberOfConsensusEvents,
+        @Nullable Instant consensusTimestamp,
+        @Nullable Hash runningEventHash,
+        @Nullable Long minimumGenerationNonAncient,
+        @Nullable String softwareVersion,
+        @Nullable Instant wallClockTime,
+        @Nullable NodeId nodeId,
+        @Nullable List<NodeId> signingNodes,
+        @Nullable Long signingWeightSum,
+        @Nullable Long totalWeight) {
 
     /**
      * The standard file name for the saved state metadata file.
@@ -183,6 +183,7 @@ public record SavedStateMetadata(
     /**
      * Parse the key/value pairs written to disk. The inverse of {@link #buildStringMap()}.
      */
+    @NonNull
     private static Map<SavedStateMetadataField, String> parseStringMap(final Path metadataFile) {
 
         if (!Files.exists(metadataFile)) {
@@ -319,8 +320,9 @@ public record SavedStateMetadata(
      * @return the parsed NodeId, or null if the field is not present or the value is not a valid Long
      */
     @Nullable
-    private static NodeId parseNodeId(final Map<SavedStateMetadataField, String> data) {
-        Long longValue = parseLong(data, SavedStateMetadataField.NODE_ID);
+    private static NodeId parseNodeId(@NonNull final Map<SavedStateMetadataField, String> data) {
+        Objects.requireNonNull(data, "data must not be null");
+        final Long longValue = parseLong(data, SavedStateMetadataField.NODE_ID);
         if (longValue == null) {
             return null;
         }
@@ -335,6 +337,7 @@ public record SavedStateMetadata(
      * @return the parsed list of longs, or null if the field is not present or the value is not a valid list of longs
      */
     @SuppressWarnings("SameParameterValue")
+    @Nullable
     private static List<NodeId> parseNodeIdList(
             @NonNull final Map<SavedStateMetadataField, String> data, @NonNull final SavedStateMetadataField field) {
 
