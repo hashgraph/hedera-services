@@ -57,7 +57,7 @@ public class QueueThreadMetricsConfiguration {
      * 		The category to use for metrics
      * @return this object
      */
-    public QueueThreadMetricsConfiguration setCategory(@NonNull final String category) {
+    public @NonNull QueueThreadMetricsConfiguration setCategory(@NonNull final String category) {
         this.category = category;
         return this;
     }
@@ -69,7 +69,7 @@ public class QueueThreadMetricsConfiguration {
      * 		The time object to use for metrics
      * @return this object
      */
-    public QueueThreadMetricsConfiguration setTime(@NonNull final Time time) {
+    public @NonNull QueueThreadMetricsConfiguration setTime(@NonNull final Time time) {
         this.time = time;
         return this;
     }
@@ -79,7 +79,7 @@ public class QueueThreadMetricsConfiguration {
      *
      * @return this object
      */
-    public QueueThreadMetricsConfiguration enableMaxSizeMetric() {
+    public @NonNull QueueThreadMetricsConfiguration enableMaxSizeMetric() {
         this.maxSizeMetricEnabled = true;
         return this;
     }
@@ -89,7 +89,7 @@ public class QueueThreadMetricsConfiguration {
      *
      * @return this object
      */
-    public QueueThreadMetricsConfiguration enableMinSizeMetric() {
+    public @NonNull QueueThreadMetricsConfiguration enableMinSizeMetric() {
         this.minSizeMetricEnabled = true;
         return this;
     }
@@ -98,7 +98,7 @@ public class QueueThreadMetricsConfiguration {
      * Enables the metric that tracks the busy time of the queue thread
      * @return this object
      */
-    public QueueThreadMetricsConfiguration enableBusyTimeMetric() {
+    public @NonNull QueueThreadMetricsConfiguration enableBusyTimeMetric() {
         this.busyTimeMetricEnabled = true;
         return this;
     }
@@ -106,21 +106,21 @@ public class QueueThreadMetricsConfiguration {
     /**
      * @return The metrics system that will hold metrics
      */
-    public Metrics getMetrics() {
+    public @NonNull Metrics getMetrics() {
         return metrics;
     }
 
     /**
      * @return The category to use for metrics
      */
-    public String getCategory() {
+    public @NonNull String getCategory() {
         return category;
     }
 
     /**
      * @return The time object to use for metrics
      */
-    public Time getTime() {
+    public @NonNull Time getTime() {
         return time;
     }
 
