@@ -1,5 +1,3 @@
-import org.gradle.internal.impldep.org.bouncycastle.its.asn1.EndEntityType.app
-
 /*
  * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
