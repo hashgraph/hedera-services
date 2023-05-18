@@ -273,6 +273,9 @@ public class TokenAssociateToAccountHandler implements TransactionHandler {
     /**
      * Method that checks if the number of token associations for the given account is within the
      * allowable limit set by the config (if the limit is enabled)
+     *
+     * @return true if tokenAssociationsLimited is false or if the number of token associations is
+     * within the allowed maxTokensPerAccount
      */
     private boolean maxAccountAssociationsAllowTokenRels(
             @NonNull Configuration config, @NonNull Account account, @NonNull List<TokenID> tokenIds) {
