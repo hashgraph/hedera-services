@@ -127,9 +127,9 @@ class StateLifecyclesTest extends ResponsibleVMapUser {
         if (withKeyDetails) {
             given(pubKey.getEncoded()).willReturn(Longs.toByteArray(Long.MAX_VALUE));
         }
-        final var nodeId = platform.getSelfId().getIdAsInt();
+        final var node = platform.getSelfId();
         final var address = new Address(
-                new NodeId(nodeId),
+                node,
                 "",
                 "",
                 1L,
