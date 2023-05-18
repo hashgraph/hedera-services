@@ -30,8 +30,8 @@ public class TimeSlotCalculator {
 
     private final Instant baseConsensusTime;
 
-    private long precedings;
-    private long children;
+    private int precedings;
+    private int children;
 
     public TimeSlotCalculator(Instant baseConsensusTime) {
         this.baseConsensusTime = requireNonNull(baseConsensusTime, "baseConsensusTime");

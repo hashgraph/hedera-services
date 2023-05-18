@@ -18,6 +18,8 @@ package com.hedera.node.app.info;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -41,5 +43,10 @@ public class MonoNodeInfo implements NodeInfo {
     @Override
     public boolean isSelfZeroStake() {
         return delegate.isSelfZeroStake();
+    }
+
+    @Override
+    public AccountID accountOf(long nodeId) {
+        return PbjConverter.toPbj(delegate.accountOf(nodeId));
     }
 }

@@ -18,7 +18,6 @@ package com.hedera.node.app.meta;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.records.SingleTransactionRecordBuilder;
 import com.hedera.node.app.service.mono.context.TransactionContext;
@@ -28,6 +27,7 @@ import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -87,6 +87,12 @@ public class MonoHandleContext implements HandleContext {
         return txBody;
     }
 
+    @NonNull
+    @Override
+    public TransactionCategory category() {
+        return TransactionCategory.USER;
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -132,8 +138,8 @@ public class MonoHandleContext implements HandleContext {
     }
 
     @Override
-    @NonNull
-    public SignatureVerification verificationFor(@NonNull Account hollowAccount) {
+    @Nullable
+    public SignatureVerification verificationFor(@NonNull Bytes evmAlias) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 

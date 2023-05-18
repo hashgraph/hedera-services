@@ -18,11 +18,11 @@ package com.hedera.node.app.spi.workflows;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -35,6 +35,21 @@ import java.time.Instant;
  * limited form described by https://github.com/hashgraph/hedera-services/issues/4945.
  */
 public interface HandleContext {
+
+    /**
+     * Category of the current transaction.
+     */
+    enum TransactionCategory {
+        /** The original transaction submitted by a user. */
+        USER,
+
+        /** An independent, top-level transaction that is executed before the user transaction. */
+        PRECEDING,
+
+        /** A child transaction that is executed as part of a user transaction. */
+        CHILD
+    }
+
     /**
      * Returns the current consensus time.
      *
@@ -50,6 +65,12 @@ public interface HandleContext {
      */
     @NonNull
     TransactionBody body();
+
+    /**
+     * Returns the category of the current transaction.
+     */
+    @NonNull
+    TransactionCategory category();
 
     /**
      * Returns the current {@link Configuration} for the node.
@@ -100,17 +121,13 @@ public interface HandleContext {
     SignatureVerification verificationFor(@NonNull Key key);
 
     /**
-     * Gets the {@link SignatureVerification} for the given hollow account. If the alias for the hollow account was
-     * not provided during pre-handle, then the returned {@link SignatureVerification} will be failed. If the alias
-     * was provided during pre-handle, then the corresponding {@link SignatureVerification} will be returned with the
-     * result of that verification operation. If during signature verification a key was extracted then it will be made
-     * available in the {@link SignatureVerification}.
+     * Gets the {@link SignatureVerification} for the given hollow account.
      *
-     * @param hollowAccount the hollow account to get the verification for
+     * @param evmAlias The evm alias to lookup verification for.
      * @return the verification for the given hollow account.
      */
-    @NonNull
-    SignatureVerification verificationFor(@NonNull final Account hollowAccount);
+    @Nullable
+    SignatureVerification verificationFor(@NonNull final Bytes evmAlias);
 
     /**
      * Get a readable store given the store's interface. This gives read-only access to the store.
@@ -157,12 +174,13 @@ public interface HandleContext {
      * <p>A top-level transaction is independent of any other transaction. If it is successful, the state changes are
      * automatically committed. If it fails, any eventual state changes are automatically rolled back.
      *
-     * <p>This method can only be called as long as no state changes have been introduced by the current transaction
-     * (either by storing state or by calling a child transaction).
+     * <p>This method can only be called my a {@link TransactionCategory#USER}-transaction and only as long as no state
+     * changes have been introduced by the user transaction (either by storing state or by calling a child transaction).
      *
      * @param txBody the {@link TransactionBody} of the transaction to dispatch
      * @return the {@link ResponseCodeEnum} of the transaction
      * @throws NullPointerException if {@code txBody} is {@code null}
+     * @throws IllegalArgumentException if the transaction is not a {@link TransactionCategory#USER}-transaction
      * @throws IllegalStateException if the current transaction has already introduced state changes
      */
     @NonNull
@@ -181,9 +199,12 @@ public interface HandleContext {
      * Please be aware that any state changes introduced by storing data in one of the stores after calling a child
      * transaction will also be rolled back if the child transaction is rolled back.
      *
+     * <p>A {@link TransactionCategory#PRECEDING}-transaction must not dispatch a child transaction.
+     *
      * @param txBody the {@link TransactionBody} of the child transaction to dispatch
      * @return the {@link ResponseCodeEnum} of the child transaction
      * @throws NullPointerException if {@code txBody} is {@code null}
+     * @throws IllegalArgumentException if the current transaction is a {@link TransactionCategory#PRECEDING}-transaction
      */
     @NonNull
     ResponseCodeEnum dispatchChildTransaction(@NonNull TransactionBody txBody);

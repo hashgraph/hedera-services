@@ -20,7 +20,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.records.SingleTransactionRecordBuilder;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
@@ -30,6 +29,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -39,6 +39,7 @@ public class HandleContextImpl implements HandleContext {
 
     private final Instant consensusNow;
     private final TransactionBody txBody;
+    private final TransactionCategory transactionCategory;
     private final SingleTransactionRecordBuilder recordBuilder;
     private final SavepointStackImpl stack;
     private final WritableStoreFactory writableStoreFactory;
@@ -51,6 +52,7 @@ public class HandleContextImpl implements HandleContext {
             @NonNull final String serviceScope,
             @NonNull final Instant consensusNow,
             @NonNull final TransactionBody txBody,
+            @NonNull final TransactionCategory transactionCategory,
             @NonNull final SingleTransactionRecordBuilder recordBuilder,
             @NonNull final SavepointStackImpl stack,
             @NonNull final HandleContextBase base,
@@ -58,6 +60,7 @@ public class HandleContextImpl implements HandleContext {
         requireNonNull(serviceScope, "serviceScope must not be null");
         this.consensusNow = requireNonNull(consensusNow, "consensusNow must not be null");
         this.txBody = requireNonNull(txBody, "txBody must not be null");
+        this.transactionCategory = requireNonNull(transactionCategory, "transactionCategory must not be null");
         this.recordBuilder = requireNonNull(recordBuilder, "recordBuilder must not be null");
         this.stack = requireNonNull(stack, "stack must not be null");
         this.base = requireNonNull(base, "base must not be null");
@@ -76,6 +79,12 @@ public class HandleContextImpl implements HandleContext {
     @NonNull
     public TransactionBody body() {
         return txBody;
+    }
+
+    @Override
+    @NonNull
+    public TransactionCategory category() {
+        return transactionCategory;
     }
 
     @Override
@@ -109,10 +118,18 @@ public class HandleContextImpl implements HandleContext {
     }
 
     @Override
-    @NonNull
-    public SignatureVerification verificationFor(@NonNull final Account hollowAccount) {
-        requireNonNull(hollowAccount, "hollowAccount must not be null");
-        return base.hollowAccountVerifications().get(hollowAccount);
+    @Nullable
+    public SignatureVerification verificationFor(@NonNull final Bytes evmAlias) {
+        requireNonNull(evmAlias, "evmAlias must not be null");
+        if (evmAlias.length() == 20) {
+            for (final var result : base.keyVerifications().values()) {
+                final var account = result.evmAlias();
+                if (account != null && evmAlias.matchesPrefix(account)) {
+                    return result;
+                }
+            }
+        }
+        return null;
     }
 
     @Override
@@ -146,27 +163,37 @@ public class HandleContextImpl implements HandleContext {
     @NonNull
     public ResponseCodeEnum dispatchPrecedingTransaction(@NonNull final TransactionBody txBody) {
         requireNonNull(txBody, "txBody must not be null");
-
+        if (transactionCategory != TransactionCategory.USER) {
+            throw new IllegalArgumentException("Only user-transactions can dispatch preceding transactions");
+        }
         final var state = stack.peek().state();
         if (state.isModified()) {
             throw new IllegalStateException("Cannot dispatch a preceding transaction when the state has been modified");
         }
         if (stack.depth() > 1) {
             throw new IllegalStateException(
-                    "Cannot dispatch a preceding transaction when a child transaction has been dispatched");
+                    "Cannot dispatch a preceding transaction when child transactions have been dispatched");
         }
 
         // Calculate next available slot for preceding transaction
         final var timeSlot = base.timeSlotCalculator().getNextAvailablePrecedingSlot();
 
         // run the transaction
-        return runner.run(timeSlot, txBody, stack.peek(), base);
+        final var currentRecordBuilder =
+                base.recordBuilderList().remove(base.recordBuilderList().size() - 1);
+        final var result = runner.run(timeSlot, txBody, TransactionCategory.PRECEDING, stack.peek(), base);
+        base.recordBuilderList().add(currentRecordBuilder);
+
+        return result;
     }
 
     @Override
     @NonNull
     public ResponseCodeEnum dispatchChildTransaction(@NonNull final TransactionBody txBody) {
         requireNonNull(txBody, "txBody must not be null");
+        if (transactionCategory == TransactionCategory.PRECEDING) {
+            throw new IllegalArgumentException("A preceding transaction cannot have child transactions");
+        }
 
         // Calculate next available slot for child transaction
         final var timeSlot = base.timeSlotCalculator().getNextAvailableChildSlot();
@@ -175,7 +202,7 @@ public class HandleContextImpl implements HandleContext {
         stack.createSavepoint();
 
         // run the child-transaction
-        final var result = runner.run(timeSlot, txBody, stack.peek(), base);
+        final var result = runner.run(timeSlot, txBody, TransactionCategory.CHILD, stack.peek(), base);
 
         // rollback if the child-transaction failed
         if (result != ResponseCodeEnum.OK) {
@@ -189,5 +216,93 @@ public class HandleContextImpl implements HandleContext {
     @Override
     public SavepointStack savepointStack() {
         return stack;
+    }
+
+    public static class Builder {
+        private String serviceScope;
+        private Instant consensusNow;
+        private TransactionBody txBody;
+        private TransactionCategory transactionCategory;
+        private SingleTransactionRecordBuilder recordBuilder;
+        private SavepointStackImpl stack;
+        private HandleContextBase base;
+        private TransactionRunner runner;
+
+        public HandleContext build() {
+            return new HandleContextImpl(
+                    serviceScope, consensusNow, txBody, transactionCategory, recordBuilder, stack, base, runner);
+        }
+
+        public String serviceScope() {
+            return serviceScope;
+        }
+
+        public Builder serviceScope(String serviceScope) {
+            this.serviceScope = serviceScope;
+            return this;
+        }
+
+        public Instant consensusNow() {
+            return consensusNow;
+        }
+
+        public Builder consensusNow(Instant consensusNow) {
+            this.consensusNow = consensusNow;
+            return this;
+        }
+
+        public TransactionBody txBody() {
+            return txBody;
+        }
+
+        public Builder txBody(TransactionBody txBody) {
+            this.txBody = txBody;
+            return this;
+        }
+
+        public TransactionCategory transactionCategory() {
+            return transactionCategory;
+        }
+
+        public Builder transactionCategory(TransactionCategory transactionCategory) {
+            this.transactionCategory = transactionCategory;
+            return this;
+        }
+
+        public SingleTransactionRecordBuilder recordBuilder() {
+            return recordBuilder;
+        }
+
+        public Builder recordBuilder(SingleTransactionRecordBuilder recordBuilder) {
+            this.recordBuilder = recordBuilder;
+            return this;
+        }
+
+        public SavepointStackImpl stack() {
+            return stack;
+        }
+
+        public Builder stack(SavepointStackImpl stack) {
+            this.stack = stack;
+            return this;
+        }
+
+        public HandleContextBase base() {
+            return base;
+        }
+
+        public Builder base(HandleContextBase base) {
+            this.base = base;
+            return this;
+        }
+
+        public TransactionRunner runner() {
+            return runner;
+        }
+
+        public Builder runner(TransactionRunner runner) {
+            this.runner = runner;
+            return this;
+        }
     }
 }

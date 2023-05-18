@@ -16,34 +16,50 @@
 
 package com.hedera.node.app.workflows.handle;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_EXPIRED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.REVERTED_SUCCESS;
+import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.clock.SystemClock;
+import com.hedera.node.app.clock.TimeSlotCalculator;
 import com.hedera.node.app.records.RecordManager;
 import com.hedera.node.app.records.SingleTransactionRecordBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.spi.records.SingleTransactionRecord;
+import com.hedera.node.app.services.ServiceScopeLookup;
+import com.hedera.node.app.signature.ExpandedSignaturePair;
+import com.hedera.node.app.signature.SignatureExpander;
+import com.hedera.node.app.signature.SignatureVerificationFuture;
+import com.hedera.node.app.signature.SignatureVerifier;
+import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
-import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.app.workflows.handle.stack.Savepoint;
+import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
+import com.hedera.node.app.workflows.handle.state.WrappedHederaState;
+import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
+import com.hedera.node.app.workflows.prehandle.PreHandleResult.Status;
+import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
+import com.hedera.node.config.ConfigProvider;
 import com.swirlds.common.system.Round;
+import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.util.Set;
-import java.util.concurrent.Future;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -52,31 +68,39 @@ public class HandleWorkflow {
 
     private static final Logger LOG = LogManager.getLogger(HandleWorkflow.class);
 
-    // TODO: Get full list of unrecoverable errors
-    private static final Set<ResponseCodeEnum> UNRECOVERABLE_ERRORS =
-            Set.of(INVALID_TRANSACTION, INVALID_TRANSACTION_BODY, TRANSACTION_EXPIRED);
-    private static final long SIGNATURE_VERIFICATION_TIMEOUT_MS = 3000L;
-
     private final SystemClock systemClock;
-    private final TemporaryPreHandleWorkflow preHandleWorkflow;
-    private final TransactionChecker transactionChecker;
+    private final NodeInfo nodeInfo;
+    private final PreHandleWorkflow preHandleWorkflow;
     private final TransactionDispatcher dispatcher;
+    private final TransactionRunner runner;
     private final RecordManager recordManager;
+    private final SignatureExpander signatureExpander;
+    private final SignatureVerifier signatureVerifier;
+    private final ServiceScopeLookup serviceScopeLookup;
+    private final ConfigProvider configProvider;
 
     @Inject
     public HandleWorkflow(
             @NonNull final SystemClock systemClock,
-            @NonNull final TemporaryPreHandleWorkflow preHandleWorkflow,
-            @NonNull final TransactionChecker transactionChecker,
+            @NonNull final NodeInfo nodeInfo,
+            @NonNull final PreHandleWorkflow preHandleWorkflow,
             @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final RecordManager recordManager) {
-        this.systemClock = requireNonNull(systemClock, "The supplied argument 'systemClock' cannot be null");
-        this.preHandleWorkflow =
-                requireNonNull(preHandleWorkflow, "The supplied argument 'preHandleWorkflow' cannot be null");
-        this.transactionChecker =
-                requireNonNull(transactionChecker, "The supplied argument 'transactionChecker' cannot be null");
-        this.dispatcher = requireNonNull(dispatcher, "The supplied argument 'dispatcher' cannot be null");
-        this.recordManager = requireNonNull(recordManager, "The supplied argument 'recordManager' cannot be null");
+            @NonNull final TransactionRunner runner,
+            @NonNull final RecordManager recordManager,
+            @NonNull final SignatureExpander signatureExpander,
+            @NonNull final SignatureVerifier signatureVerifier,
+            @NonNull final ServiceScopeLookup serviceScopeLookup,
+            @NonNull final ConfigProvider configProvider) {
+        this.systemClock = requireNonNull(systemClock, "systemClock must not be null");
+        this.nodeInfo = requireNonNull(nodeInfo, "nodeInfo must not be null");
+        this.preHandleWorkflow = requireNonNull(preHandleWorkflow, "preHandleWorkflow must not be null");
+        this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
+        this.runner = requireNonNull(runner, "runner must not be null");
+        this.recordManager = requireNonNull(recordManager, "recordManager must not be null");
+        this.signatureExpander = requireNonNull(signatureExpander, "signatureExpander must not be null");
+        this.signatureVerifier = requireNonNull(signatureVerifier, "signatureVerifier must not be null");
+        this.serviceScopeLookup = requireNonNull(serviceScopeLookup, "serviceScopeLookup must not be null");
+        this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
     }
 
     /**
@@ -87,103 +111,137 @@ public class HandleWorkflow {
      */
     public void handleRound(@NonNull final HederaState state, @NonNull final Round round) {
         // handle each transaction in the round
-        round.forEachTransaction(txn -> handlePlatformTransaction(state, txn));
+        round.forEachEventTransaction((event, txn) -> handlePlatformTransaction(state, event, txn));
     }
 
     private void handlePlatformTransaction(
-            @NonNull final HederaState state, @NonNull final ConsensusTransaction platformTxn) {
+            @NonNull final HederaState state,
+            @NonNull final ConsensusEvent platformEvent,
+            @NonNull final ConsensusTransaction platformTxn) {
         // skip system transactions
         if (platformTxn.isSystem()) {
             return;
         }
 
         // Advance system clock
-        final Instant consensusTimestamp = platformTxn.getConsensusTimestamp();
-        systemClock.advance(consensusTimestamp);
+        final Instant consensusNow = platformTxn.getConsensusTimestamp();
+        systemClock.advance(consensusNow);
 
+        // Setup record builder list
+        recordManager.startUserTransaction(consensusNow);
         final var recordBuilder = new SingleTransactionRecordBuilder();
+        final var recordBuilderList = new ArrayList<SingleTransactionRecordBuilder>();
+        recordBuilderList.add(recordBuilder);
+
         try {
-            final var context = prepareHandleContext(state, platformTxn, consensusTimestamp);
+            final var config = configProvider.getConfiguration();
+            final var verifications = getUpdatedVerifications(state, platformEvent, platformTxn);
+
+            // Read all signature verifications. This will also wait, if validation is still ongoing.
+            final var keyVerifications = new HashMap<Key, SignatureVerification>();
+            for (final var entry : verifications.keyVerifications().entrySet()) {
+                // TODO: Implement timeout
+                final var verification = entry.getValue().get();
+                if (verification.failed()) {
+                    throw new HandleException(ResponseCodeEnum.INVALID_SIGNATURE);
+                }
+                keyVerifications.put(entry.getKey(), verification);
+            }
+
+            // Initialize the savepoint stack
+            final var wrappedState = new WrappedHederaState(state);
+            final var rootSavepoint = new Savepoint(wrappedState, config);
+            final var stack = new SavepointStackImpl(configProvider, rootSavepoint);
+
+            // Setup context
+            final var txBody = verifications.txBody();
+            final var base =
+                    new HandleContextBase(new TimeSlotCalculator(consensusNow), keyVerifications, recordBuilderList);
+            final var context = new HandleContextImpl(
+                    serviceScopeLookup.getServiceName(txBody),
+                    consensusNow,
+                    txBody,
+                    TransactionCategory.USER,
+                    recordBuilder,
+                    stack,
+                    base,
+                    runner);
+
             dispatcher.dispatchHandle(context);
 
             // TODO: Finalize transaction
 
-            // TODO: Commit state
-
-            recordManager.recordTransaction(recordBuilder.build());
+            // commit state and records
+            wrappedState.commit();
         } catch (HandleException e) {
-            recordBuilder.status(e.getStatus());
-            recordManager.recordTransaction(recordBuilder.build());
+            revertChildTransactions(e.getStatus(), recordBuilder, recordBuilderList);
+            // TODO: Finalize failed transaction and commit changes
         } catch (Throwable e) {
             LOG.error("An unexpected exception was thrown during handle", e);
-            // TODO; Updated receipt
         }
+
+        // TODO update receipt
 
         // TODO: handle long scheduled transactions
 
         // TODO: handle system tasks
+
+        // store all records at once
+        recordManager.endUserTransaction(recordBuilderList.stream().map(SingleTransactionRecordBuilder::build));
     }
 
-    private SingleTransactionRecord handleTransaction(
-            @NonNull final HederaState state, @NonNull final TransactionBody txBody) {
-        final var recordBuilder = new SingleTransactionRecordBuilder();
-        //        try {
-        //            final var context = prepareHandleContext(state, platformTxn, consensusTimestamp);
-        //            dispatcher.dispatchHandle(context);
-        //
-        //            // TODO: Finalize transaction
-        //
-        //            // TODO: Commit state
-        //
-        //            recordManager.recordTransaction(recordBuilder.build());
-        //        } catch (HandleException e) {
-        //            recordBuilder.status(e.getStatus());
-        //            recordManager.recordTransaction(recordBuilder.build());
-        //        } catch (Throwable e) {
-        //            LOG.error("An unexpected exception was thrown during handle", e);
-        //            // TODO; Updated receipt
-        //        }
-
-        throw new UnsupportedOperationException("Not implemented yet.");
+    private void revertChildTransactions(
+            @NonNull ResponseCodeEnum status,
+            @NonNull SingleTransactionRecordBuilder recordBuilder,
+            @NonNull final List<SingleTransactionRecordBuilder> recordBuilderList) {
+        recordBuilder.status(status);
+        boolean found = false;
+        for (final var builder : recordBuilderList) {
+            if (found) {
+                if (builder.status() == OK) {
+                    builder.status(REVERTED_SUCCESS);
+                    break;
+                }
+            } else if (builder == recordBuilder) {
+                found = true;
+            }
+        }
     }
 
-    private HandleContext prepareHandleContext(
+    private VerificationResult getUpdatedVerifications(
             @NonNull final HederaState state,
-            @NonNull final ConsensusTransaction platformTxn,
-            @NonNull final Instant consensusTimestamp)
-            throws HandleException {
+            @NonNull final ConsensusEvent platformEvent,
+            @NonNull final ConsensusTransaction platformTxn)
+            throws PreCheckException {
         final var metadata = platformTxn.getMetadata();
         // We do not know how long transactions are kept in memory. Clearing metadata to avoid keeping it for too long.
         platformTxn.setMetadata(null);
 
-        //        PreHandleResult preHandleResult;
-        //        if (preHandleStillValid(metadata)) {
-        //            final var previousResult = (PreHandleResult) metadata;
-        //            if (previousResult.isDueDiligenceFailure()) {
-        //                final var fee = calculateNetworkFee();
-        //                final var cryptoTransfer = createPenaltyPayment(fee);
-        //                return new HandleContextImpl();
-        //            }
-        //
-        //            if (previousResult.status() == OK) {
-        //                preHandleResult = addMissingSignatures(previousResult);
-        //            } else {
-        //                preHandleResult = preHandleWorkflow.preHandleTransaction(creator, storeFactory, platformTxn);
-        //            }
-        //        } else {
-        //            preHandleResult = preHandleWorkflow.preHandleTransaction(creator, storeFactory, platformTxn);
-        //        }
-        //
-        //        if (preHandleResult.status() != OK) {
-        //            throw new PreCheckException(preHandleResult.status());
-        //        }
-        //
-        //
-        //
-        //        if (! checkSignature(preHandleResult.payerVerification())) {
-        //            return new HandleContextImpl();
-        //        }
+        if (preHandleStillValid(metadata)) {
+            final var previousResult = (PreHandleResult) metadata;
+            if (previousResult.status() == Status.NODE_DUE_DILIGENCE_FAILURE) {
+                return createPenaltyPayment();
+            }
 
+            if (previousResult.status() == Status.SO_FAR_SO_GOOD) {
+                return addMissingSignatures(state, previousResult);
+            }
+        }
+
+        final var storeFactory = new ReadableStoreFactory(state);
+        final var accountStore = storeFactory.getStore(ReadableAccountStore.class);
+        final var creator = nodeInfo.accountOf(platformEvent.getCreatorId());
+        final var result = preHandleWorkflow.preHandleTransaction(creator, storeFactory, accountStore, platformTxn);
+
+        return switch (result.status()) {
+            case SO_FAR_SO_GOOD -> new VerificationResult(result);
+            case NODE_DUE_DILIGENCE_FAILURE -> createPenaltyPayment();
+            default -> throw new PreCheckException(result.responseCode());
+        };
+    }
+
+    private VerificationResult createPenaltyPayment() {
+        // TODO: Implement HandleWorkflow.createPnealtyPayment()
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
@@ -192,61 +250,44 @@ public class HandleWorkflow {
         return metadata instanceof PreHandleResult;
     }
 
-    private void verifyMissingSignatures() {
-        throw new UnsupportedOperationException("Not implemented yet");
+    private VerificationResult addMissingSignatures(
+            @NonNull final HederaState state, @NonNull final PreHandleResult previousResult) throws PreCheckException {
+        final var txBody = previousResult.txInfo().txBody();
 
-        //        final var txBody = requireNonNull(preHandleResult.txnBody());
-        //
-        //        // extract keys and hollow accounts again
-        //        final var storeFactory = new ReadableStoreFactory(state);
-        //        final var context = new PreHandleContextImpl(storeFactory, txBody);
-        //        dispatcher.dispatchPreHandle(context);
-        //
-        //        // compare keys and hollow accounts
-        //        final var signatureData = new ArrayList<>();
-        //        signatureData.add(preHandleResult.payerSignature());
-        //        context.requiredNonPayerKeys().
-        //        for (final var key : context.requiredNonPayerKeys()) {
-        //            final var signatureData = preHandleResult.cryptoSignatures().get(key);
-        //            if (signatureData == null) {
-        //                signaturePreparer. ()
-        //                throw new PreCheckException(INVALID_TRANSACTION);
-        //            }
-        //            signatureData.add(preHandleResult.signatureMap().get(key));
-        //        }
-        //        Map<Key, TransactionSignature> signatureMap;
-        //        signatureMap.g
-        //        final var keys = context.requiredNonPayerKeys();
-        //
-        //        // initiate signature verification for delta
-    }
+        // extract keys and hollow accounts again
+        final var storeFactory = new ReadableStoreFactory(state);
+        final var context = new PreHandleContextImpl(storeFactory, txBody);
+        dispatcher.dispatchPreHandle(context);
 
-    private void checkSignature(@NonNull final Future<SignatureVerification> signatureVerification) {
-        throw new UnsupportedOperationException("Not implemented yet");
-
-        //        try {
-        //            signatureVerification.get(SIGNATURE_VERIFICATION_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-        //        } catch (TimeoutException ex) {
-        //
-        //        }
-
-    }
-
-    public class TemporaryPreHandleWorkflow {
-        private PreHandleResult preHandleTransaction(
-                @NonNull final AccountID creator,
-                @NonNull final ReadableStoreFactory storeFactory,
-                @NonNull final ReadableAccountStore accountStore,
-                @NonNull final Transaction platformTx) {
-            throw new UnsupportedOperationException("Not implemented yet");
+        // sort keys
+        final var newVerifications = new HashMap<Key, SignatureVerificationFuture>();
+        final var previousVerifications = previousResult.verificationResults();
+        final var originals = previousResult.txInfo().signatureMap().sigPairOrElse(emptyList());
+        final var expanded = new HashSet<ExpandedSignaturePair>();
+        final var nonPayerKeys = context.requiredNonPayerKeys();
+        for (final var key : nonPayerKeys) {
+            final var found = previousVerifications.get(key);
+            if (found != null) {
+                newVerifications.put(key, found);
+            } else {
+                signatureExpander.expand(key, originals, expanded);
+            }
         }
 
-        private PreHandleResult preHandleTransaction(
-                @NonNull final AccountID creator,
-                @NonNull final ReadableStoreFactory storeFactory,
-                @NonNull final ReadableAccountStore accountStore,
-                @NonNull final com.swirlds.common.system.transaction.Transaction platformTx) {
-            throw new UnsupportedOperationException("Not implemented yet");
+        // start verification of any key that was not found in the previous result
+        if (!expanded.isEmpty()) {
+            newVerifications.putAll(
+                    signatureVerifier.verify(previousResult.txInfo().signedBytes(), expanded));
+        }
+
+        return new VerificationResult(txBody, newVerifications);
+    }
+
+    private record VerificationResult(
+            @NonNull TransactionBody txBody, @NonNull Map<Key, SignatureVerificationFuture> keyVerifications) {
+        @SuppressWarnings("DataFlowIssue")
+        public VerificationResult(PreHandleResult result) {
+            this(result.txInfo().txBody(), result.verificationResults());
         }
     }
 }

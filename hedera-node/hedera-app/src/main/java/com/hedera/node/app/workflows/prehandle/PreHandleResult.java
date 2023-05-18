@@ -89,11 +89,6 @@ public record PreHandleResult(
         requireNonNull(responseCode);
     }
 
-    public boolean isDueDiligenceFailure() {
-        // TODO: Needs to be implemented in pre-handle workflow
-        return false;
-    }
-
     /**
      * Get a {@link Future<SignatureVerification>} for the given key.
      *

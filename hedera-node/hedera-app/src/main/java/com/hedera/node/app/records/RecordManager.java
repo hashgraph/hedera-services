@@ -16,15 +16,11 @@
 
 package com.hedera.node.app.records;
 
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-
 import com.hedera.node.app.spi.records.SingleTransactionRecord;
-import com.swirlds.common.threading.framework.QueueThread;
-import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
-import javax.inject.Inject;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
+import java.util.stream.Stream;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * RecordManager is a singleton facility that records transaction records into the record stream. It is responsible for:
@@ -38,37 +34,25 @@ import org.apache.logging.log4j.Logger;
  */
 @Singleton
 public class RecordManager {
-    private static final Logger log = LogManager.getLogger(RecordManager.class);
-    private final QueueThread<SingleTransactionRecord> queueThread;
-
     /**
-     * Construct RecordManager and start background thread
-     */
-    @Inject
-    public RecordManager() {
-        queueThread = new QueueThreadConfiguration<SingleTransactionRecord>(getStaticThreadManager())
-                .setThreadName("RecordManager")
-                .setExceptionHandler((t, e) -> log.error("Exception in RecordManager", e))
-                .setHandler(this::handleTransactionRecord)
-                .setCapacity(10)
-                .build(true);
-    }
-
-    /**
-     * Add a single transaction record to queue for recording into the record stream.
+     * Inform BlockRecordManager of the new consensus time at the beginning of new transaction. This should only be called for before user
+     * transactions where the workflow knows 100% that any there will be no new transaction records for any consensus time prior to this one.
+     * <p>
+     * This allows BlockRecordManager to set up the correct block information for the user transaction that is about to be executed. So block
+     * questions are answered correctly.
+     * <p>
+     * The BlockRecordManager may choose to close one or more files if consensus time threshold has passed.
      *
-     * @param singleTransactionRecord The record to record.
+     * @param consensusTime The consensus time of the user transaction we are about to start executing. It must be the adjusted consensus time
+     *                      not the platform assigned consensus time. Assuming the two are different.
      */
-    public void recordTransaction(SingleTransactionRecord singleTransactionRecord) {
-        queueThread.add(singleTransactionRecord);
-    }
+    public void startUserTransaction(Instant consensusTime) {}
 
     /**
-     * Called on background thread to handle a single transaction record.
+     * Add a user transactions records to the record stream. They must be in exact consensus time order! This must only be called
+     * after the user transaction has been committed to state and is 100% done.
      *
-     * @param singleTransactionRecord The record to handle.
+     * @param recordStreamItems Stream of records produced while handling the user transaction
      */
-    private void handleTransactionRecord(SingleTransactionRecord singleTransactionRecord) {
-        log.info("RecordManager received transaction record: {}", singleTransactionRecord);
-    }
+    public void endUserTransaction(@NonNull final Stream<SingleTransactionRecord> recordStreamItems) {}
 }

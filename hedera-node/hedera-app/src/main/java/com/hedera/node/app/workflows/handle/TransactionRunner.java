@@ -22,6 +22,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.records.SingleTransactionRecordBuilder;
 import com.hedera.node.app.services.ServiceScopeLookup;
+import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.workflows.TransactionChecker;
@@ -55,12 +56,17 @@ public class TransactionRunner {
     public ResponseCodeEnum run(
             @NonNull final Instant consensusNow,
             @NonNull final TransactionBody txBody,
+            @NonNull final TransactionCategory transactionCategory,
             @NonNull final Savepoint rootSavepoint,
             @NonNull final HandleContextBase base) {
         requireNonNull(consensusNow, "consensusNow must not be null");
         requireNonNull(txBody, "txBody must not be null");
+        requireNonNull(transactionCategory, "transactionCategory must not be null");
         requireNonNull(rootSavepoint, "rootSavepoint must not be null");
         requireNonNull(base, "base must not be null");
+        if (transactionCategory == TransactionCategory.USER) {
+            throw new IllegalArgumentException("Cannot dispatch user transaction with this method");
+        }
 
         final var recordBuilderList = base.recordBuilderList();
 
@@ -79,8 +85,8 @@ public class TransactionRunner {
         try {
             final var serviceScope = serviceScopeLookup.getServiceName(txBody);
             final var stack = new SavepointStackImpl(configProvider, rootSavepoint);
-            final var context =
-                    new HandleContextImpl(serviceScope, consensusNow, txBody, recordBuilder, stack, base, this);
+            final var context = new HandleContextImpl(
+                    serviceScope, consensusNow, txBody, transactionCategory, recordBuilder, stack, base, this);
             dispatcher.dispatchHandle(context);
 
             stack.flatten();
