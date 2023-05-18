@@ -1,7 +1,7 @@
 package com.swirlds.platform.poc.moduledefs;
 
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
-import com.swirlds.platform.poc.infrastructure.TaskProcessor;
+import com.swirlds.platform.poc.framework.TaskProcessor;
 
 @FunctionalInterface
 public interface TaskProcessorExample1 extends TaskProcessor {

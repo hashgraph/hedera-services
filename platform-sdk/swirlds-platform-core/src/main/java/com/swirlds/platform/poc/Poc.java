@@ -1,61 +1,47 @@
 package com.swirlds.platform.poc;
 
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
+import com.swirlds.platform.poc.impl.TP1;
 import com.swirlds.platform.poc.impl.TP2;
 import com.swirlds.platform.poc.impl.Nexus1;
 import com.swirlds.platform.poc.moduledefs.Nexus2;
+import com.swirlds.platform.poc.moduledefs.TaskProcessorExample1;
+import com.swirlds.platform.poc.moduledefs.TaskProcessorExample2;
 
 import java.util.List;
 import java.util.Random;
 
-public class Poc {
-	public static final TaskProcessorDef<String> TP1 = new TaskProcessorDef<>("tp1", String.class);
-	public static final TaskProcessorDef<String> TP2 = new TaskProcessorDef<>("tp2", String.class);
-	public static final NexusDef<Nexus1> NX1 = new NexusDef<>("nexus1", Nexus1.class);
-	public static final NexusDef<Nexus2> NX2 = new NexusDef<>("nexus2", Nexus2.class);
-
+public class Poc2 {
 	public static void main(String[] args) throws InterruptedException {
 		// step 1: construct wiring
-		Wiring wiring = new Wiring(
-				List.of(TP1, TP2)
-		);
+		Wiring2 wiring = new Wiring2(List.of(
+				TaskProcessorExample1.class,
+				TaskProcessorExample2.class,
+				Nexus1.class,
+				Nexus2.class
+		));
 
 		// step 2: add nexuses
-		wiring.addNexus(
-				NX1, new Nexus1()
-		);
-		wiring.addNexus(
-				NX2, () -> "I am nexus 2"
-		);
+		wiring.addImplementation(new Nexus1());
+		wiring.addImplementation(() -> "I am nexus 2", Nexus2.class);
 
-		// step 3: get dependencies from wiring
-		Nexus1 nx1 = wiring.getNexus(NX1);
-		Nexus2 nx2 = wiring.getNexus(NX2);
-		InterruptableConsumer<String> ts1 = wiring.getTaskSubmitter(TP1);
-		InterruptableConsumer<String> ts2 = wiring.getTaskSubmitter(TP2);
+		// step 3: add task processors
+		wiring.addImplementation(new TP1(
+				wiring.getComponent(Nexus1.class),
+				wiring.getComponent(Nexus2.class),
+				wiring.getComponent(TaskProcessorExample2.class)
+		));
+		wiring.addImplementation(new TP2(
+				wiring.getComponent(TaskProcessorExample1.class)::process
+		));
 
-		// step 4: construct task processors
-		InterruptableConsumer<String> tp1 = s -> {
-			System.out.printf("I am TP1, I received '%s'%n", s);
-			System.out.printf("I am TP1, Nexus 1 has value '%d'%n", nx1.get());
-			System.out.printf("I am TP1, Nexus 2 says '%s'%n", nx2.get());
-			nx1.set(new Random().nextInt());
-			Thread.sleep(1000);
-			ts2.accept(String.format("%X", new Random().nextInt()));
-		};
-		final com.swirlds.platform.poc.impl.TP2 module2 = new TP2(tp1);
-
-		// step 5: add task processors
-		wiring.addTaskProcessor(TP1, tp1);
-		wiring.addModule(TP2, module2);
-
-		// step 6: start
+		// step 4: start
 		wiring.start();
 
-		// step 7: submit initial task
-		ts1.accept("start");
+		// step 5: submit initial task
+		wiring.getComponent(TaskProcessorExample1.class).process("start");
 
-		// step 8: wait a bit
+		// step 6: wait a bit
 		Thread.sleep(10000);
 	}
 }
