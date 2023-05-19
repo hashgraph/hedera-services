@@ -72,7 +72,8 @@ public class LogCaptureExtension implements TestInstancePostProcessor, AfterEach
     }
 
     @Override
-    public void postProcessTestInstance(@NonNull final Object o, ExtensionContext extensionContext) throws IllegalAccessException {
+    public void postProcessTestInstance(@NonNull final Object o, ExtensionContext extensionContext)
+            throws IllegalAccessException {
         requireNonNull(o);
         Class<?> testCls = o.getClass();
 
@@ -97,7 +98,8 @@ public class LogCaptureExtension implements TestInstancePostProcessor, AfterEach
         injectCaptor(o, subject, logCaptor);
     }
 
-    private void injectCaptor(@NonNull final Object test, @NonNull final Field subject, @NonNull final Field logCaptor) throws IllegalAccessException {
+    private void injectCaptor(@NonNull final Object test, @NonNull final Field subject, @NonNull final Field logCaptor)
+            throws IllegalAccessException {
         requireNonNull(test);
         requireNonNull(subject);
         requireNonNull(logCaptor);

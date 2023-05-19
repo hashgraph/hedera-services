@@ -25,4 +25,5 @@ import com.swirlds.config.api.ConfigProperty;
  */
 @ConfigData("freezeUpgrade")
 public record FreezeUpgradeConfig(
-        @ConfigProperty(defaultValue = "/opt/hgcapp/services-hedera/HapiApp2.0/data/upgrade/current") String upgradeArtifactsPath) {}
+        @ConfigProperty(defaultValue = "/opt/hgcapp/services-hedera/HapiApp2.0/data/upgrade/current")
+                String upgradeArtifactsPath) {}
