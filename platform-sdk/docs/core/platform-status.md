@@ -14,6 +14,45 @@ The following statuses, along with their respective triggers, are listed in orde
 - `FREEZE_COMPLETE`: The freeze manager has reported that a freeze has completed
 - `ACTIVE`: None of the previously defined statuses apply
 
+## Detailed Trigger Explanations
+
+### `DISCONNECTED`
+
+- `SwirldsPlatform::checkPlatformStatus` is called in `SwirldsPlatform::newConnectionOpened` and
+`SwirldsPlatform::connectionClosed`, which are called each time a new connection is opened or closed, respectively
+- If the number of active connections becomes zero, or ceases to be zero, the status is updated to `DISCONNECTED`, or
+falls through to the status with next highest precedent
+
+### `BEHIND`
+
+- Each time the `ShadowGraphSynchronizer` syncs with another node, it checks whether it has fallen behind that other node
+- If it has fallen behind, then `FallenBehindManagerImpl::reportFallenBehind` is called
+- If this call causes the total number of fallen behind reports to exceed the threshold, then
+  `SwirldsPlatform::checkPlatformStatus` is called, which results in the status transitioning to `PlatformStatus::BEHIND`
+  - This only occurs when the threshold is first crossed, and not on subsequent reports
+
+### `MAINTENANCE`
+- Each time a round is handled with `ConsensusRoundHandler::consensusRound`,`SwirldStateManager::isInFreezePeriod`
+is queried to determine whether a freeze period has started
+- If `isInFreezePeriod` returns `true`, then `FreezeManager::freezeStarted` is called, which in turn calls
+`SwirldsPlatform::checkPlatformStatus`, which triggers a state change to `MAINTENANCE`
+  - NOTE: this will only execute a single time, since the call to `FreezeManager::freezeStarted` is guarded by a boolean
+  that flips true after the first call, and is never set back to false
+
+### `FREEZE_COMPLETE`
+
+- When `FreezeManager::stateToDisk` is finished executing, `SwirldsPlatform::checkPlatformStatus` is called, which
+results in the status transitioning to `FREEZE_COMPLETE`
+
+### `ACTIVE`
+
+- `SwirldsPlatform::checkPlatformStatus` is called at the end of `SwirldsPlatform::start`, which should result in the
+status transitioning to `ACTIVE`
+
+### Special Case: Single Node Network
+
+- `SwirldsPlatform::checkPlatformStatus` is called in a loop on the worker thread that is creating events
+
 ## Unused Statuses
 
 The following statuses exist in the `PlatformStatus` enum, but are not currently used:
