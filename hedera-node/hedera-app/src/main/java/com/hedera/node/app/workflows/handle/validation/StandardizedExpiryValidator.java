@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOU
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.spi.validation.AttributeValidator;
@@ -116,6 +117,30 @@ public class StandardizedExpiryValidator implements ExpiryValidator {
     }
 
     /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isDetached(
+            @NonNull final Account account,
+            final boolean isAutoRenewEnabled,
+            final boolean expireAccounts,
+            final boolean expireContracts) {
+        if (!isAutoRenewEnabled) {
+            return false;
+        }
+        if (account.tinybarBalance() > 0) {
+            return false;
+        }
+        if (!account.expiredAndPendingRemoval()) {
+            return false;
+        }
+        if (isExpiryDisabled(account.smartContract(), expireAccounts, expireContracts)) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
      * Helper to check if an entity with the given metadata has a completely specified
      * auto-renew configuration. This is true if either the {@link ExpiryMeta} includes
      * both an auto-renew period and an auto-renew account; or if the {@link ExpiryMeta}
@@ -147,5 +172,9 @@ public class StandardizedExpiryValidator implements ExpiryValidator {
         }
         final var autoRenewId = new Id(numbers.shard(), numbers.realm(), num);
         idValidator.accept(autoRenewId);
+    }
+
+    private boolean isExpiryDisabled(boolean smartContract, boolean expireAccounts, boolean expireContracts) {
+        return (smartContract && !expireContracts) || (!smartContract && !expireAccounts);
     }
 }

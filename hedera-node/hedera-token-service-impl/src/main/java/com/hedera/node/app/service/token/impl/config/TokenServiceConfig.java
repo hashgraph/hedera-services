@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.config;
 
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
+import java.util.Set;
 
 /**
  * Provides configuration for the token service. Currently, it just has the maximum number of custom fees allowed.
@@ -25,4 +26,18 @@ import com.swirlds.config.api.ConfigProperty;
  * @param maxCustomFeesAllowed the maximum number of custom fees allowed
  */
 @ConfigData("token")
-public record TokenServiceConfig(@ConfigProperty(defaultValue = "10") long maxCustomFeesAllowed) {}
+public record TokenServiceConfig(
+        @ConfigProperty(defaultValue = "10") long maxCustomFeesAllowed,
+        @ConfigProperty(defaultValue = "CONTRACT") Set<String> autoRenewTargetTypes) {
+    public boolean expireContracts() {
+        return autoRenewTargetTypes.contains("CONTRACT");
+    }
+
+    public boolean expireAccounts() {
+        return autoRenewTargetTypes.contains("ACCOUNT");
+    }
+
+    public boolean isAutoRenewEnabled() {
+        return !autoRenewTargetTypes.isEmpty();
+    }
+}

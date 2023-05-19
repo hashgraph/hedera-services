@@ -17,15 +17,15 @@
 package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT;
-import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -33,11 +33,10 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoDeleteTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.exceptions.DeletedAccountException;
-import com.hedera.node.app.service.mono.exceptions.DetachedAccountException;
-import com.hedera.node.app.service.mono.exceptions.InsufficientFundsException;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.impl.config.TokenServiceConfig;
 import com.hedera.node.app.spi.meta.HandleContext;
+import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -58,7 +57,7 @@ public class CryptoDeleteHandler implements TransactionHandler {
     }
 
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
-        final var  op = txn.cryptoDeleteOrThrow();
+        final var op = txn.cryptoDeleteOrThrow();
 
         if (!op.hasDeleteAccountID() || !op.hasTransferAccountID()) {
             throw new PreCheckException(ACCOUNT_ID_DOES_NOT_EXIST);
@@ -88,44 +87,62 @@ public class CryptoDeleteHandler implements TransactionHandler {
      *
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void handle(@NonNull final HandleContext handleContext,
+    public void handle(
+            @NonNull final HandleContext context,
             @NonNull final TransactionBody txn,
             @NonNull final WritableAccountStore accountStore) {
-        requireNonNull(handleContext);
+        requireNonNull(context);
         requireNonNull(txn);
         requireNonNull(accountStore);
 
         final var op = txn.cryptoDelete();
-        final var deleteAndTransferAccounts = validateSemantics(op, accountStore);
+        // get the configuration for the token service
+        final var config = context.getConfiguration().getConfigData(TokenServiceConfig.class);
 
-        transferToBeneficiary(deleteAndTransferAccounts, accountStore);
+        // validate the semantics involving dynamic properties and state. Get delete and transfer accounts
+        final var deleteAndTransferAccounts = validateSemantics(op, accountStore, context.expiryValidator(), config);
+        transferToBeneficiary(context.expiryValidator(), config, deleteAndTransferAccounts, accountStore);
 
         accountStore.remove(op.deleteAccountID());
     }
 
-    private void transferToBeneficiary(Pair<Account, Account> deleteAndTransferAccounts,
-            WritableAccountStore accountStore) {
+    private void transferToBeneficiary(
+            @NonNull final ExpiryValidator expiryValidator,
+            @NonNull final TokenServiceConfig config,
+            @NonNull final Pair<Account, Account> deleteAndTransferAccounts,
+            @NonNull final WritableAccountStore accountStore) {
         final var fromAccount = deleteAndTransferAccounts.getLeft();
         final var toAccount = deleteAndTransferAccounts.getRight();
         final var adjustment = fromAccount.tinybarBalance();
 
-        final long newFromBalance = computeNewBalance(fromAccount, -1 * adjustment);
-        final long newToBalance = computeNewBalance(toAccount, adjustment);
+        final long newFromBalance = computeNewBalance(expiryValidator, config, fromAccount, -1 * adjustment);
+        final long newToBalance = computeNewBalance(expiryValidator, config, toAccount, adjustment);
 
-        accountStore.put(fromAccount.copyBuilder().tinybarBalance(newFromBalance).build());
+        accountStore.put(
+                fromAccount.copyBuilder().tinybarBalance(newFromBalance).build());
         accountStore.put(toAccount.copyBuilder().tinybarBalance(newToBalance).build());
     }
 
-    final long computeNewBalance(final Account account, final long adjustment){
+    private long computeNewBalance(
+            final ExpiryValidator expiryValidator,
+            final TokenServiceConfig config,
+            final Account account,
+            final long adjustment) {
         validateTrue(!account.deleted(), ACCOUNT_DELETED);
-        validateTrue(!account.detached(), ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+        validateTrue(
+                !expiryValidator.isDetached(
+                        account, config.isAutoRenewEnabled(), config.expireContracts(), config.expireAccounts()),
+                ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
         final long balance = account.tinybarBalance();
         validateTrue(balance + adjustment >= 0, INSUFFICIENT_ACCOUNT_BALANCE);
         return balance + adjustment;
     }
 
-    private Pair<Account, Account> validateSemantics(CryptoDeleteTransactionBody op,
-            WritableAccountStore accountStore) {
+    private Pair<Account, Account> validateSemantics(
+            @NonNull final CryptoDeleteTransactionBody op,
+            @NonNull final WritableAccountStore accountStore,
+            @NonNull final ExpiryValidator expiryValidator,
+            @NonNull final TokenServiceConfig config) {
         final var deleteAccountId = op.deleteAccountID();
         final var transferAccountId = op.transferAccountID();
 
@@ -139,14 +156,17 @@ public class CryptoDeleteHandler implements TransactionHandler {
         final var transferAccount = optTransferAccount.get();
         validateFalse(deletedAccount.numberTreasuryTitles() > 0, INVALID_ACCOUNT_ID);
 
-        if (ledger.isDetached(id) || ledger.isDetached(beneficiary)) {
-            txnCtx.setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
-            return null;
-        }
+        final var autoRenewEnabled = config.isAutoRenewEnabled();
+        final var expireContracts = config.expireContracts();
+        final var expireAccounts = config.expireAccounts();
 
-        if (!ledger.allTokenBalancesVanish(id)) {
-            txnCtx.setStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
-        }
+        final var isExpired = expiryValidator.isDetached(
+                        deletedAccount, autoRenewEnabled, expireContracts, expireAccounts)
+                || expiryValidator.isDetached(transferAccount, autoRenewEnabled, expireContracts, expireAccounts);
+        validateFalse(isExpired, ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+
+        validateTrue(deletedAccount.numberPositiveBalances() == 0, TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
+
         return Pair.of(deletedAccount, transferAccount);
     }
 }

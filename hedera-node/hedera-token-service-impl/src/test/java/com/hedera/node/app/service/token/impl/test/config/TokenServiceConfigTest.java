@@ -19,12 +19,13 @@ package com.hedera.node.app.service.token.impl.test.config;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.node.app.service.token.impl.config.TokenServiceConfig;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class TokenServiceConfigTest {
     @Test
     void testGetter() {
-        final var subject = new TokenServiceConfig(100);
+        final var subject = new TokenServiceConfig(100, Set.of("CONTRACT"));
         assertEquals(100, subject.maxCustomFeesAllowed());
     }
 }

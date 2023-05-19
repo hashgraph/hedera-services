@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.spi.validation;
 
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 
@@ -47,8 +48,8 @@ public interface ExpiryValidator {
     ExpiryMeta resolveUpdateAttempt(ExpiryMeta currentMetadata, ExpiryMeta updateMetadata);
 
     /**
-     *
-     * @return
+     * Validates if an account is detached.
+     * @return true if the account is detached, false otherwise
      */
-    boolean isDetached();
+    boolean isDetached(Account account, boolean isAutoRenewEnabled, boolean expireContracts, boolean expireAccounts);
 }
