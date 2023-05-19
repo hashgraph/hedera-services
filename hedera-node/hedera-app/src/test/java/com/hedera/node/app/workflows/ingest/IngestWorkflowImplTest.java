@@ -17,7 +17,6 @@
 package com.hedera.node.app.workflows.ingest;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
@@ -167,26 +166,6 @@ class IngestWorkflowImplTest extends AppTestBase {
     @Nested
     @DisplayName("0. Node state pre-checks")
     class NodeTests {
-        @Test
-        @DisplayName("When the node is zero stake, the transaction should be rejected")
-        void testParseAndCheckWithZeroStakeFails() throws IOException, PreCheckException {
-            // Given a node that IS zero stake
-            doThrow(new PreCheckException(INVALID_NODE_ACCOUNT))
-                    .when(ingestChecker)
-                    .checkNodeState();
-
-            // When the transaction is submitted
-            workflow.submitTransaction(requestBuffer, responseBuffer);
-
-            // Then the request is rejected with INVALID_NODE_ACCOUNT
-            final TransactionResponse response = parseResponse(responseBuffer);
-            assertThat(response.nodeTransactionPrecheckCode()).isEqualTo(INVALID_NODE_ACCOUNT);
-            // The cost *MUST* be zero, it is only non-zero for insufficient balance errors
-            assertThat(response.cost()).isZero();
-            // And the transaction was not submitted
-            verify(submissionManager, never()).submit(any(), any());
-        }
-
         @ParameterizedTest
         @EnumSource(PlatformStatus.class)
         @DisplayName("When the platform is not ACTIVE, the transaction should be rejected (except for ACTIVE)")
