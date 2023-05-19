@@ -68,8 +68,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 final class ServicesMainTest {
     private final long selfId = 123L;
     private final long unselfId = 666L;
-    private final NodeId nodeId = new NodeId(false, selfId);
-    private final NodeId edonId = new NodeId(false, unselfId);
+    private final NodeId nodeId = new NodeId(selfId);
+    private final NodeId edonId = new NodeId(unselfId);
 
     @Mock
     private Platform platform;

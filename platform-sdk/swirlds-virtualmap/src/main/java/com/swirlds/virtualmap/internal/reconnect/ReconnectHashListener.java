@@ -19,15 +19,9 @@ package com.swirlds.virtualmap.internal.reconnect;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
-import com.swirlds.virtualmap.datasource.VirtualInternalRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
-import com.swirlds.virtualmap.internal.Path;
 import com.swirlds.virtualmap.internal.hash.VirtualHashListener;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import com.swirlds.virtualmap.internal.merkle.AbstractHashListener;
 import java.util.stream.Stream;
 
 /**
@@ -57,18 +51,8 @@ import java.util.stream.Stream;
  * @param <V>
  * 		The value
  */
-public class ReconnectHashListener<K extends VirtualKey, V extends VirtualValue> implements VirtualHashListener<K, V> {
-    private static final int INITIAL_BATCH_ARRAY_SIZE = 10_000;
-    // Maybe it would be better to have the whole state instead of just first/last leaf path so we can use stats
-    // while flushing and reconnecting...
-    private final VirtualDataSource<K, V> dataSource;
+public class ReconnectHashListener<K extends VirtualKey, V extends VirtualValue> extends AbstractHashListener<K, V> {
     private final ReconnectNodeRemover<K, V> nodeRemover;
-    private final long firstLeafPath;
-    private final long lastLeafPath;
-    private final List<List<VirtualLeafRecord<K, V>>> batchLeaves = new ArrayList<>();
-    private final List<List<VirtualInternalRecord>> batchInternals = new ArrayList<>();
-    private List<VirtualLeafRecord<K, V>> rankLeaves;
-    private List<VirtualInternalRecord> rankInternals;
 
     /**
      * Create a new {@link ReconnectHashListener}.
@@ -85,20 +69,7 @@ public class ReconnectHashListener<K extends VirtualKey, V extends VirtualValue>
             final long lastLeafPath,
             final VirtualDataSource<K, V> dataSource,
             final ReconnectNodeRemover<K, V> nodeRemover) {
-
-        if (firstLeafPath != Path.INVALID_PATH && !(firstLeafPath > 0 && firstLeafPath <= lastLeafPath)) {
-            throw new IllegalArgumentException("The first leaf path is invalid. firstLeafPath=" + firstLeafPath
-                    + ", lastLeafPath=" + lastLeafPath);
-        }
-
-        if (lastLeafPath != Path.INVALID_PATH && !(lastLeafPath > 0)) {
-            throw new IllegalArgumentException(
-                    "The last leaf path is invalid. firstLeafPath=" + firstLeafPath + ", lastLeafPath=" + lastLeafPath);
-        }
-
-        this.firstLeafPath = firstLeafPath;
-        this.lastLeafPath = lastLeafPath;
-        this.dataSource = Objects.requireNonNull(dataSource);
+        super(firstLeafPath, lastLeafPath, dataSource);
         this.nodeRemover = nodeRemover;
     }
 
@@ -106,78 +77,7 @@ public class ReconnectHashListener<K extends VirtualKey, V extends VirtualValue>
      * {@inheritDoc}
      */
     @Override
-    public void onBatchStarted() {
-        batchLeaves.clear();
-        batchInternals.clear();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void onRankStarted() {
-        rankLeaves = new ArrayList<>(INITIAL_BATCH_ARRAY_SIZE);
-        rankInternals = new ArrayList<>(INITIAL_BATCH_ARRAY_SIZE);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void onInternalHashed(VirtualInternalRecord internal) {
-        rankInternals.add(internal);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void onLeafHashed(final VirtualLeafRecord<K, V> leaf) {
-        rankLeaves.add(leaf);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void onRankCompleted() {
-        batchLeaves.add(rankLeaves);
-        batchInternals.add(rankInternals);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void onBatchCompleted() {
-        long maxPath = -1;
-
-        Stream<VirtualInternalRecord> sortedDirtyInternals = Stream.of();
-        for (int i = batchInternals.size() - 1; i >= 0; i--) {
-            final List<VirtualInternalRecord> batch = batchInternals.get(i);
-            if (!batch.isEmpty()) {
-                sortedDirtyInternals = Stream.concat(sortedDirtyInternals, batch.stream());
-                maxPath = Math.max(maxPath, batch.get(batch.size() - 1).getPath());
-            }
-        }
-
-        Stream<VirtualLeafRecord<K, V>> sortedDirtyLeaves = Stream.of();
-        for (int i = batchLeaves.size() - 1; i >= 0; i--) {
-            final List<VirtualLeafRecord<K, V>> batch = batchLeaves.get(i);
-            if (!batch.isEmpty()) {
-                sortedDirtyLeaves = Stream.concat(sortedDirtyLeaves, batch.stream());
-                maxPath = Math.max(maxPath, batch.get(batch.size() - 1).getPath());
-            }
-        }
-
-        final Stream<VirtualLeafRecord<K, V>> leavesToRemove = nodeRemover.getRecordsToDelete(maxPath);
-
-        // flush it down
-        try {
-            dataSource.saveRecords(
-                    firstLeafPath, lastLeafPath, sortedDirtyInternals, sortedDirtyLeaves, leavesToRemove);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+    protected Stream<VirtualLeafRecord<K, V>> findLeavesToRemove(long maxPath) {
+        return nodeRemover.getRecordsToDelete(maxPath);
     }
 }

@@ -26,18 +26,16 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
-import com.swirlds.common.merkle.synchronization.settings.ReconnectSettings;
-import com.swirlds.common.merkle.synchronization.settings.ReconnectSettingsFactory;
 import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
 import com.swirlds.common.test.merkle.dummy.DummyMerkleInternal;
 import com.swirlds.common.test.merkle.util.MerkleTestUtils;
 import com.swirlds.merkledb.settings.MerkleDbSettings;
 import com.swirlds.merkledb.settings.MerkleDbSettingsFactory;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.virtual.merkle.TestKey;
 import com.swirlds.virtual.merkle.TestValue;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -290,13 +288,13 @@ class VirtualMapMerkleDbReconnectTest extends VirtualMapMerkleDbReconnectTestBas
     }
 
     /**
-     * This test simulates some divergence from the teacher and the learner. At the time both the teacher and
-     * learner had diverged, both had simple integer values for the key and value. At the time of divergence,
-     * the teacher had some percentage of keys with an updated value (1 million + the old value). After reconnect,
-     * the learner should get those new values.
+     * This test simulates some divergence from the teacher and the learner. At the time both the teacher and learner
+     * had diverged, both had simple integer values for the key and value. At the time of divergence, the teacher had
+     * some percentage of keys with an updated value (1 million + the old value). After reconnect, the learner should
+     * get those new values.
      * <p>
-     * The added wrinkle here is that we want some changes to be in the cache on the learner's side. We don't
-     * want everything in the database. So we will add things in batches to different learner copies over time.
+     * The added wrinkle here is that we want some changes to be in the cache on the learner's side. We don't want
+     * everything in the database. So we will add things in batches to different learner copies over time.
      */
     @ParameterizedTest
     @CsvSource({
@@ -333,59 +331,17 @@ class VirtualMapMerkleDbReconnectTest extends VirtualMapMerkleDbReconnectTestBas
      * Configure reconnect so that failed reconnect attempts abort very quickly.
      */
     private void configureReconnectToFailQuickly() {
-        ReconnectSettingsFactory.configure(new ReconnectSettings() {
-            @Override
-            public boolean isActive() {
-                return true;
-            }
-
-            @Override
-            public int getReconnectWindowSeconds() {
-                return 0;
-            }
-
-            @Override
-            public double getFallenBehindThreshold() {
-                return 0;
-            }
-
-            @Override
-            public int getAsyncStreamTimeoutMilliseconds() {
-                return 500; // This is important! A low value will cause a failed reconnect to finish more quicly.
-            }
-
-            @Override
-            public int getAsyncOutputStreamFlushMilliseconds() {
-                return 10;
-            }
-
-            @Override
-            public int getAsyncStreamBufferSize() {
-                return 1000;
-            }
-
-            @Override
-            public int getMaxAckDelayMilliseconds() {
-                return 10;
-            }
-
-            @Override
-            public int getMaximumReconnectFailuresBeforeShutdown() {
-                return 0;
-            }
-
-            @Override
-            public Duration getMinimumTimeBetweenReconnects() {
-                return null;
-            }
-        });
-    }
-
-    /**
-     * Reset reconnect settings to their default values.
-     */
-    private void resetReconnectSettings() {
-        ReconnectSettingsFactory.configure(null); // Will cause next call to the settings factory to generate defaults
+        new TestConfigBuilder()
+                .withValue("reconnect.active", "true")
+                .withValue("reconnect.reconnectWindowSeconds", "0")
+                .withValue("reconnect.fallenBehindThreshold", "0")
+                // This is important! A low value will cause a failed reconnect to finish more quicly.
+                .withValue("reconnect.asyncStreamTimeoutMilliseconds", "500")
+                .withValue("reconnect.asyncOutputStreamFlushMilliseconds", "10")
+                .withValue("reconnect.asyncStreamBufferSize", "1000")
+                .withValue("reconnect.maximumReconnectFailuresBeforeShutdown", "0")
+                .withValue("reconnect.minimumTimeBetweenReconnects", "0s")
+                .getOrCreateConfig();
     }
 
     private void buildReconnectMaps(final TreePermutation treePermutation) {
@@ -411,8 +367,6 @@ class VirtualMapMerkleDbReconnectTest extends VirtualMapMerkleDbReconnectTestBas
         learnerBuilder.setNumTimesToBreak(4);
 
         reconnectMultipleTimes(5);
-
-        resetReconnectSettings();
     }
 
     @ParameterizedTest
@@ -427,8 +381,6 @@ class VirtualMapMerkleDbReconnectTest extends VirtualMapMerkleDbReconnectTestBas
         learnerBuilder.setNumTimesToBreak(4);
 
         reconnectMultipleTimes(5);
-
-        resetReconnectSettings();
     }
 
     @ParameterizedTest
@@ -444,8 +396,6 @@ class VirtualMapMerkleDbReconnectTest extends VirtualMapMerkleDbReconnectTestBas
         learnerBuilder.setNumTimesToBreak(4);
 
         reconnectMultipleTimes(5);
-
-        resetReconnectSettings();
     }
 
     private Function<VirtualMap<TestKey, TestValue>, MerkleNode> buildBadTeacherTreeBuilder(
@@ -483,8 +433,6 @@ class VirtualMapMerkleDbReconnectTest extends VirtualMapMerkleDbReconnectTestBas
         final int permittedInternals = 0;
 
         reconnectMultipleTimes(5, buildBadTeacherTreeBuilder(permittedLeaves, permittedInternals));
-
-        resetReconnectSettings();
     }
 
     @ParameterizedTest
@@ -502,8 +450,6 @@ class VirtualMapMerkleDbReconnectTest extends VirtualMapMerkleDbReconnectTestBas
         final int permittedInternals = (treePermutation.teacherEnd - treePermutation.teacherStart) - 2;
 
         reconnectMultipleTimes(5, buildBadTeacherTreeBuilder(permittedLeaves, permittedInternals));
-
-        resetReconnectSettings();
     }
 
     @ParameterizedTest
@@ -521,8 +467,6 @@ class VirtualMapMerkleDbReconnectTest extends VirtualMapMerkleDbReconnectTestBas
         final int permittedInternals = Integer.MAX_VALUE;
 
         reconnectMultipleTimes(5, buildBadTeacherTreeBuilder(permittedLeaves, permittedInternals));
-
-        resetReconnectSettings();
     }
 
     @ParameterizedTest
@@ -540,21 +484,15 @@ class VirtualMapMerkleDbReconnectTest extends VirtualMapMerkleDbReconnectTestBas
         final int permittedInternals = (treePermutation.teacherEnd - treePermutation.teacherStart) - 1;
 
         reconnectMultipleTimes(5, buildBadTeacherTreeBuilder(permittedLeaves, permittedInternals));
-
-        resetReconnectSettings();
     }
 
     /**
      * Describes a permutation of two virtual maps to be used during a reconnect test.
      *
-     * @param teacherStart
-     * 		the id of the teacher's first leaf
-     * @param teacherEnd
-     * 		the id of the teacher's last leaf
-     * @param learnerStart
-     * 		the ID of the learner's first leaf
-     * @param learnerEnd
-     * 		the ID of the learner's last leaf
+     * @param teacherStart the id of the teacher's first leaf
+     * @param teacherEnd   the id of the teacher's last leaf
+     * @param learnerStart the ID of the learner's first leaf
+     * @param learnerEnd   the ID of the learner's last leaf
      */
     private record TreePermutation(
             String description, int teacherStart, int teacherEnd, int learnerStart, int learnerEnd) {

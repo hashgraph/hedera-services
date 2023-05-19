@@ -106,7 +106,7 @@ public class BucketSerializer<K extends VirtualKey> implements DataItemSerialize
      * @return The read header
      */
     @Override
-    public DataItemHeader deserializeHeader(final ByteBuffer buffer) {
+    public DataItemHeader deserializeHeader(final ByteBuffer buffer, final long dataVersion) {
         int bucketIndex = buffer.getInt();
         int size = buffer.getInt();
         return new DataItemHeader(size, bucketIndex);
@@ -118,7 +118,7 @@ public class BucketSerializer<K extends VirtualKey> implements DataItemSerialize
      * @return Either a number of bytes or DataFileCommon.VARIABLE_DATA_SIZE if size is variable
      */
     @Override
-    public int getSerializedSize() {
+    public int getSerializedSize(final long dataVersion) {
         return DataFileCommon.VARIABLE_DATA_SIZE;
     }
 

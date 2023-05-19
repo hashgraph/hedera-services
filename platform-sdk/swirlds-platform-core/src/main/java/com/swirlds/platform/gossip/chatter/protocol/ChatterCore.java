@@ -29,7 +29,7 @@ import com.swirlds.platform.gossip.chatter.protocol.input.InputDelegate;
 import com.swirlds.platform.gossip.chatter.protocol.input.InputDelegateBuilder;
 import com.swirlds.platform.gossip.chatter.protocol.input.MessageTypeHandlerBuilder;
 import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
-import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEventDescriptor;
+import com.swirlds.platform.gossip.chatter.protocol.messages.EventDescriptor;
 import com.swirlds.platform.gossip.chatter.protocol.output.MessageOutput;
 import com.swirlds.platform.gossip.chatter.protocol.output.OtherEventDelay;
 import com.swirlds.platform.gossip.chatter.protocol.output.PriorityOutputAggregator;
@@ -45,7 +45,6 @@ import com.swirlds.platform.state.signed.LoadableFromSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
-import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.HashMap;
@@ -71,7 +70,7 @@ public class ChatterCore<E extends ChatterEvent> implements Shiftable, LoadableF
     private final BiConsumer<NodeId, Long> pingConsumer;
     private final MessageOutput<E> selfEventOutput;
     private final MessageOutput<E> otherEventOutput;
-    private final MessageOutput<ChatterEventDescriptor> hashOutput;
+    private final MessageOutput<EventDescriptor> hashOutput;
     private final Map<Long, PeerInstance> peerInstances;
 
     private final CountPerSecond msgsPerSecRead;
@@ -128,6 +127,7 @@ public class ChatterCore<E extends ChatterEvent> implements Shiftable, LoadableF
 
     /**
      * Creates an instance that will handle all communication with a peer
+     * <p>
      *
      * @param peerId       the peer's ID
      * @param eventHandler a handler that will send the event outside of chatter
@@ -156,7 +156,7 @@ public class ChatterCore<E extends ChatterEvent> implements Shiftable, LoadableF
                                 processingTimeSendReceive::getPeerProcessingTime,
                                 config.otherEventDelay())::getOtherEventDelay,
                         state,
-                        Instant::now));
+                        time::now));
         final PriorityOutputAggregator outputAggregator = new PriorityOutputAggregator(
                 List.of(
                         // heartbeat is first so that responses are not delayed
@@ -172,7 +172,7 @@ public class ChatterCore<E extends ChatterEvent> implements Shiftable, LoadableF
                         .addHandler(state::handleEvent)
                         .addHandler(eventHandler)
                         .build())
-                .addHandler(MessageTypeHandlerBuilder.builder(ChatterEventDescriptor.class)
+                .addHandler(MessageTypeHandlerBuilder.builder(EventDescriptor.class)
                         .addHandler(state::handleDescriptor)
                         .build())
                 .addHandler(MessageTypeHandlerBuilder.builder(HeartbeatMessage.class)
@@ -204,6 +204,7 @@ public class ChatterCore<E extends ChatterEvent> implements Shiftable, LoadableF
 
     /**
      * Notify chatter that a new event has been created
+     * <p>
      *
      * @param event the new event
      */
@@ -214,6 +215,7 @@ public class ChatterCore<E extends ChatterEvent> implements Shiftable, LoadableF
 
     /**
      * Notify chatter that an event has been received and validated
+     * <p>
      *
      * @param event the event received
      */
@@ -224,7 +226,7 @@ public class ChatterCore<E extends ChatterEvent> implements Shiftable, LoadableF
     }
 
     private void recordProcessingTime(final E event) {
-        selfProcessingTime.set(Duration.between(event.getTimeReceived(), Instant.now()));
+        selfProcessingTime.set(Duration.between(event.getTimeReceived(), time.now()));
     }
 
     /**

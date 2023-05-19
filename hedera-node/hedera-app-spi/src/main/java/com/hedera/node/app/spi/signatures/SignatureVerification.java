@@ -18,6 +18,7 @@ package com.hedera.node.app.spi.signatures;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
@@ -43,13 +44,12 @@ public interface SignatureVerification {
     Key key();
 
     /**
-     * Gets the hollow {@link Account} used during signature verification. This is only used by hollow accounts, where
-     * they do not have a key on the account, but one can be provided by the signed transaction itself.
+     * Gets the EVM alias for the {@link #key()}, if, and only if, the key is an ECDSA_SECP256K1 key.
      *
-     * @return The hollow {@link Account} used during signature verification, or null if a key was provided instead.
+     * @return The evm alias, or null the key is not of the correct type.
      */
     @Nullable
-    default Account hollowAccount() {
+    default Bytes evmAlias() {
         return null;
     }
 

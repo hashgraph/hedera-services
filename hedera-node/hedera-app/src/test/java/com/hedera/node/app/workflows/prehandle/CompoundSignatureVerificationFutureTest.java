@@ -44,7 +44,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 final class CompoundSignatureVerificationFutureTest implements Scenarios {
 
-    private Key key;
     private CompletableFuture<SignatureVerification> aliceFuture;
     private CompletableFuture<SignatureVerification> bobFuture;
     private CompletableFuture<SignatureVerification> erinFuture;
@@ -52,7 +51,7 @@ final class CompoundSignatureVerificationFutureTest implements Scenarios {
 
     @BeforeEach
     void setUp() {
-        key = Key.newBuilder()
+        Key key = Key.newBuilder()
                 .keyList(KeyList.newBuilder()
                         .keys(
                                 ALICE.keyInfo().publicKey(),
@@ -84,11 +83,11 @@ final class CompoundSignatureVerificationFutureTest implements Scenarios {
     @SuppressWarnings("DataFlowIssue")
     void keyAndFuturesAreRequired() {
         final var key = Key.DEFAULT;
-        final var account = ERIN.account();
+        final var evmAlias = ERIN.account().alias();
         final List<Future<SignatureVerification>> futures = emptyList();
-        assertThatThrownBy(() -> new CompoundSignatureVerificationFuture(null, account, futures, 0))
+        assertThatThrownBy(() -> new CompoundSignatureVerificationFuture(null, evmAlias, futures, 0))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new CompoundSignatureVerificationFuture(key, account, null, 0))
+        assertThatThrownBy(() -> new CompoundSignatureVerificationFuture(key, evmAlias, null, 0))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -96,9 +95,9 @@ final class CompoundSignatureVerificationFutureTest implements Scenarios {
     @DisplayName("Futures cannot be empty")
     void futuresCannotBeEmpty() {
         final var key = Key.DEFAULT;
-        final var account = ERIN.account();
+        final var evmAlias = ERIN.account().alias();
         final List<Future<SignatureVerification>> futures = emptyList();
-        assertThatThrownBy(() -> new CompoundSignatureVerificationFuture(key, account, futures, 0))
+        assertThatThrownBy(() -> new CompoundSignatureVerificationFuture(key, evmAlias, futures, 0))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -109,13 +108,14 @@ final class CompoundSignatureVerificationFutureTest implements Scenarios {
         List<Future<SignatureVerification>> futures =
                 List.of(completedFuture(new SignatureVerificationImpl(key, null, true)));
         var subject = new CompoundSignatureVerificationFuture(key, null, futures, 0);
-        assertThat(subject.hollowAccount()).isNull();
+        assertThat(subject.evmAlias()).isNull();
         assertThat(subject.key()).isSameAs(key);
 
+        final var alias = ERIN.account().alias();
         key = ERIN.keyInfo().publicKey();
-        futures = List.of(completedFuture(new SignatureVerificationImpl(key, ERIN.account(), true)));
-        subject = new CompoundSignatureVerificationFuture(key, ERIN.account(), futures, 0);
-        assertThat(subject.hollowAccount()).isSameAs(ERIN.account());
+        futures = List.of(completedFuture(new SignatureVerificationImpl(key, alias, true)));
+        subject = new CompoundSignatureVerificationFuture(key, alias, futures, 0);
+        assertThat(subject.evmAlias()).isSameAs(alias);
         assertThat(subject.key()).isSameAs(key);
     }
 

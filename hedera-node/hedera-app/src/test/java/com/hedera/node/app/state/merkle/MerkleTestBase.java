@@ -32,7 +32,6 @@ import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
@@ -215,13 +214,14 @@ public class MerkleTestBase extends StateTestBase {
         final var builder = new JasperDbBuilder<OnDiskKey<String>, OnDiskValue<String>>()
                 // Force all hashes to disk, to make sure we're going through all the
                 // serialization paths we can
-                .internalHashesRamToDiskThreshold(0)
+                // FIXME: use hashesRamToDiskThreshold after the merge of
+                //  https://github.com/hashgraph/hedera-services/pull/5825
+                // (see https://github.com/hashgraph/hedera-services/issues/6037 )
+                .hashesRamToDiskThreshold(0)
                 .maxNumOfKeys(100)
                 .preferDiskBasedIndexes(true)
                 .keySerializer(keySerializer)
                 .virtualLeafRecordSerializer(new VirtualLeafRecordSerializer<>(
-                        (short) 1,
-                        DigestType.SHA_384,
                         (short) 1,
                         DataFileCommon.VARIABLE_DATA_SIZE,
                         keySerializer,

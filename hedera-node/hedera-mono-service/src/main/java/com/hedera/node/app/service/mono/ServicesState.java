@@ -293,7 +293,7 @@ public class ServicesState extends PartialNaryMerkleInternal
         throwIfImmutable();
         stakingInfo()
                 .forEach((nodeNum, stakingInfo) ->
-                        configAddressBook.updateWeight(nodeNum.longValue(), stakingInfo.getWeight()));
+                        configAddressBook.updateWeight(new NodeId(nodeNum.longValue()), stakingInfo.getWeight()));
         return configAddressBook;
     }
 
@@ -333,7 +333,7 @@ public class ServicesState extends PartialNaryMerkleInternal
             final InitTrigger trigger,
             @Nullable final SoftwareVersion deserializedVersion) {
         this.platform = platform;
-        final var selfId = platform.getSelfId().getId();
+        final var selfId = platform.getSelfId().getIdAsInt();
 
         final ServicesApp app;
         if (APPS.includes(selfId)) {
@@ -396,6 +396,16 @@ public class ServicesState extends PartialNaryMerkleInternal
             app.initializationFlow().runWith(this, bootstrapProps);
             if (trigger == RESTART && isUpgrade) {
                 app.stakeStartupHelper().doUpgradeHousekeeping(networkCtx(), accounts(), stakingInfo());
+                // FIXME: uncomment after the merge of https://github.com/hashgraph/hedera-services/pull/5825
+                // (see https://github.com/hashgraph/hedera-services/issues/6037)
+                /*
+                if(getChild(StateChildIndices.ACCOUNTS) instanceof VirtualMap accounts) {
+                   accounts.fullRehash();
+                }
+                if(getChild(StateChildIndices.TOKEN_ASSOCIATIONS) instanceof VirtualMap tokenAssociations) {
+                    tokenAssociations.fullRehash();
+                }
+                */
             }
 
             // Ensure the prefetch queue is created and thread pool is active instead of waiting
@@ -443,7 +453,7 @@ public class ServicesState extends PartialNaryMerkleInternal
 
     /* -- Getters and helpers -- */
     public AccountID getAccountFromNodeId(final NodeId nodeId) {
-        final var address = addressBook().getAddress(nodeId.getId());
+        final var address = addressBook().getAddress(nodeId.getIdAsInt());
         final var memo = address.getMemo();
         return parseAccount(memo);
     }

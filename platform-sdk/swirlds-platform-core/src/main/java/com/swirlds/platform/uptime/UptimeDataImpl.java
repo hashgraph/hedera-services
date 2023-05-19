@@ -22,6 +22,7 @@ import com.swirlds.common.FastCopyable;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -29,6 +30,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -50,7 +52,7 @@ public class UptimeDataImpl implements FastCopyable, SelfSerializable, MutableUp
         public static final int ORIGINAL = 1;
     }
 
-    private final SortedMap<Long, NodeUptimeData> data = new TreeMap<>();
+    private final SortedMap<NodeId, NodeUptimeData> data = new TreeMap<>();
 
     /**
      * Zero arg constructor required by serialization engine.
@@ -61,7 +63,7 @@ public class UptimeDataImpl implements FastCopyable, SelfSerializable, MutableUp
      * Copy constructor.
      */
     private UptimeDataImpl(@NonNull final UptimeDataImpl other) {
-        for (final Entry<Long, NodeUptimeData> entry : other.data.entrySet()) {
+        for (final Entry<NodeId, NodeUptimeData> entry : other.data.entrySet()) {
             data.put(entry.getKey(), entry.getValue().copy());
         }
     }
@@ -87,7 +89,8 @@ public class UptimeDataImpl implements FastCopyable, SelfSerializable, MutableUp
      */
     @Override
     @Nullable
-    public Instant getLastEventTime(final long id) {
+    public Instant getLastEventTime(@NonNull final NodeId id) {
+        Objects.requireNonNull(id, "id must not be null");
         final NodeUptimeData nodeData = data.get(id);
         if (nodeData == null) {
             return null;
@@ -99,7 +102,8 @@ public class UptimeDataImpl implements FastCopyable, SelfSerializable, MutableUp
      * {@inheritDoc}
      */
     @Override
-    public long getLastEventRound(final long id) {
+    public long getLastEventRound(@NonNull final NodeId id) {
+        Objects.requireNonNull(id, "id must not be null");
         final NodeUptimeData nodeData = data.get(id);
         if (nodeData == null) {
             return NO_ROUND;
@@ -112,7 +116,8 @@ public class UptimeDataImpl implements FastCopyable, SelfSerializable, MutableUp
      */
     @Override
     @Nullable
-    public Instant getLastJudgeTime(final long id) {
+    public Instant getLastJudgeTime(@NonNull final NodeId id) {
+        Objects.requireNonNull(id, "id must not be null");
         final NodeUptimeData nodeData = data.get(id);
         if (nodeData == null) {
             return null;
@@ -124,7 +129,8 @@ public class UptimeDataImpl implements FastCopyable, SelfSerializable, MutableUp
      * {@inheritDoc}
      */
     @Override
-    public long getLastJudgeRound(final long id) {
+    public long getLastJudgeRound(@NonNull final NodeId id) {
+        Objects.requireNonNull(id, "id must not be null");
         final NodeUptimeData nodeData = data.get(id);
         if (nodeData == null) {
             return NO_ROUND;
@@ -137,7 +143,7 @@ public class UptimeDataImpl implements FastCopyable, SelfSerializable, MutableUp
      */
     @NonNull
     @Override
-    public Set<Long> getTrackedNodes() {
+    public Set<NodeId> getTrackedNodes() {
         return new HashSet<>(data.keySet());
     }
 
@@ -146,7 +152,7 @@ public class UptimeDataImpl implements FastCopyable, SelfSerializable, MutableUp
      */
     @Override
     public void recordLastEvent(@NonNull final EventImpl event) {
-        final NodeUptimeData nodeData = data.get(event.getCreatorId());
+        final NodeUptimeData nodeData = data.get(new NodeId(event.getCreatorId()));
         if (nodeData == null) {
             logger.warn(
                     EXCEPTION.getMarker(), "Node {} is not being tracked by the uptime tracker.", event.getCreatorId());
@@ -161,7 +167,7 @@ public class UptimeDataImpl implements FastCopyable, SelfSerializable, MutableUp
      */
     @Override
     public void recordLastJudge(@NonNull final EventImpl event) {
-        final NodeUptimeData nodeData = data.get(event.getCreatorId());
+        final NodeUptimeData nodeData = data.get(new NodeId(event.getCreatorId()));
         if (nodeData == null) {
             logger.warn(
                     EXCEPTION.getMarker(), "Node {} is not being tracked by the uptime tracker.", event.getCreatorId());
@@ -174,12 +180,14 @@ public class UptimeDataImpl implements FastCopyable, SelfSerializable, MutableUp
      * {@inheritDoc}
      */
     @Override
-    public void addNode(final long node) {
+    public void addNode(@NonNull final NodeId node) {
+        Objects.requireNonNull(node, "node must not be null");
         data.put(node, new NodeUptimeData());
     }
 
     @Override
-    public void removeNode(final long node) {
+    public void removeNode(@NonNull final NodeId node) {
+        Objects.requireNonNull(node, "node must not be null");
         data.remove(node);
     }
 
@@ -189,8 +197,8 @@ public class UptimeDataImpl implements FastCopyable, SelfSerializable, MutableUp
     @Override
     public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
         out.writeInt(data.size());
-        for (final Entry<Long, NodeUptimeData> entry : data.entrySet()) {
-            out.writeLong(entry.getKey());
+        for (final Entry<NodeId, NodeUptimeData> entry : data.entrySet()) {
+            out.writeLong(entry.getKey().id());
             out.writeSerializable(entry.getValue(), false);
         }
     }
@@ -207,7 +215,7 @@ public class UptimeDataImpl implements FastCopyable, SelfSerializable, MutableUp
         }
         for (int i = 0; i < lastConsensusEventTimesSize; i++) {
             final long nodeId = in.readLong();
-            data.put(nodeId, in.readSerializable(false, NodeUptimeData::new));
+            data.put(new NodeId(nodeId), in.readSerializable(false, NodeUptimeData::new));
         }
     }
 

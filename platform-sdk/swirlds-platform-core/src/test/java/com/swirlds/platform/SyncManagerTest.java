@@ -30,6 +30,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.NodeId;
@@ -42,6 +43,7 @@ import com.swirlds.platform.gossip.sync.SyncManagerImpl;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.network.RandomGraph;
 import com.swirlds.platform.state.SwirldStateManager;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.List;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -111,6 +113,10 @@ public class SyncManagerTest {
                     return null;
                 }
             };
+            final ReconnectConfig config = new TestConfigBuilder()
+                    .withValue("reconnect.fallenBehindThreshold", "0.25")
+                    .getOrCreateConfig()
+                    .getConfigData(ReconnectConfig.class);
 
             eventQueue = new DummyEventQueue(hashgraph);
             syncManager = new SyncManagerImpl(
@@ -121,17 +127,11 @@ public class SyncManagerTest {
                     new EventCreationRules(List.of(startUpEventFrozenManager, freezeManager)),
                     criticalQuorum,
                     hashgraph.getAddressBook(),
-                    new FallenBehindManagerImpl(
-                            nodeId,
-                            connectionGraph,
-                            () -> {},
-                            () -> {},
-                            Settings.getInstance().getReconnect()));
+                    new FallenBehindManagerImpl(nodeId, connectionGraph, () -> {}, () -> {}, config));
         }
     }
 
     protected void resetTestSettings() {
-        Settings.getInstance().getReconnect().fallenBehindThreshold = 0.25;
         Settings.getInstance().setEventIntakeQueueThrottleSize(100);
         Settings.getInstance().setMaxIncomingSyncsInc(10);
         Settings.getInstance().setMaxOutgoingSyncs(10);

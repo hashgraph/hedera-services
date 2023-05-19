@@ -40,7 +40,7 @@ import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.SwirldsPlatform;
-import com.swirlds.platform.gui.SwirldsGui;
+import com.swirlds.platform.gui.GuiPlatformAccessor;
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -80,8 +80,7 @@ public class HelloSwirldDemoMain implements SwirldMain {
         this.platform = (SwirldsPlatform) platform;
         this.selfId = id.id();
         this.console = createConsole(platform, true); // create the window, make it visible
-        SwirldsGui.setAbout(platform.getSelfId().id(), "Hello Swirld v. 1.0\n");
-        this.platform.setSleepAfterSync(sleepPeriod);
+        GuiPlatformAccessor.getInstance().setAbout(platform.getSelfId().id(), "Hello Swirld v. 1.0\n");
     }
 
     @Override

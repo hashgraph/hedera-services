@@ -16,15 +16,20 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.node.app.spi.workflows.HandleException.*;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenGrantKycTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -47,11 +52,26 @@ public class TokenGrantKycToAccountHandler implements TransactionHandler {
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
         final var op = context.body().tokenGrantKycOrThrow();
+        pureChecks(op);
+
         final var tokenStore = context.createStore(ReadableTokenStore.class);
         final var tokenMeta = tokenStore.getTokenMeta(op.tokenOrElse(TokenID.DEFAULT));
         if (tokenMeta == null) throw new PreCheckException(INVALID_TOKEN_ID);
         if (tokenMeta.hasKycKey()) {
             context.requireKey(tokenMeta.kycKey());
+        }
+    }
+
+    /**
+     * Performs checks independent of state or context
+     */
+    private void pureChecks(@NonNull final TokenGrantKycTransactionBody op) throws PreCheckException {
+        if (!op.hasToken()) {
+            throw new PreCheckException(INVALID_TOKEN_ID);
+        }
+
+        if (!op.hasAccount()) {
+            throw new PreCheckException(INVALID_ACCOUNT_ID);
         }
     }
 
@@ -70,11 +90,27 @@ public class TokenGrantKycToAccountHandler implements TransactionHandler {
 
         final var targetTokenId = op.tokenOrThrow();
         final var targetAccountId = op.accountOrThrow();
-        final var tokenRelation =
-                tokenRelStore.getForModify(targetTokenId.tokenNum(), targetAccountId.accountNumOrThrow());
+        final var tokenRelation = validateSemantics(targetAccountId, targetTokenId, tokenRelStore);
 
-        final var tokenRelBuilder = tokenRelation.orElseThrow().copyBuilder();
+        final var tokenRelBuilder = tokenRelation.copyBuilder();
         tokenRelBuilder.kycGranted(true);
         tokenRelStore.put(tokenRelBuilder.build());
+    }
+
+    /**
+     * Performs checks that the entities related to this transaction exist and are valid
+     *
+     * @return the token relation for the given token and account
+     */
+    @NonNull
+    private TokenRelation validateSemantics(
+            @NonNull final AccountID accountId,
+            @NonNull final TokenID tokenId,
+            @NonNull final WritableTokenRelationStore tokenRelStore)
+            throws HandleException {
+        final var tokenRel = tokenRelStore.getForModify(accountId.accountNumOrThrow(), tokenId.tokenNum());
+        validateTrue(tokenRel.isPresent(), INVALID_TOKEN_ID);
+
+        return tokenRel.get();
     }
 }

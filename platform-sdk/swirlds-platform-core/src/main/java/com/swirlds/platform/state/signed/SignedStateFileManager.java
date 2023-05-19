@@ -221,7 +221,7 @@ public class SignedStateFileManager implements Startable {
             final long round = reservedSignedState.get().getRound();
             try (reservedSignedState) {
                 try {
-                    writeSignedStateToDisk(selfId.id(), directory, reservedSignedState.get(), taskDescription);
+                    writeSignedStateToDisk(selfId, directory, reservedSignedState.get(), taskDescription);
                     metrics.getWriteStateToDiskTimeMetric()
                             .update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
 
