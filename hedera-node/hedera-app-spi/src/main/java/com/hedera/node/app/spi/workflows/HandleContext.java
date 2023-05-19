@@ -17,7 +17,6 @@
 package com.hedera.node.app.spi.workflows;
 
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.validation.AttributeValidator;
@@ -181,14 +180,15 @@ public interface HandleContext {
      * changes have been introduced by the user transaction (either by storing state or by calling a child transaction).
      *
      * @param txBody the {@link TransactionBody} of the transaction to dispatch
-     * @return the {@link ResponseCodeEnum} of the transaction
+     * @param recordBuilderClass the record builder class of the transaction
+     * @return the record builder of the transaction
      * @throws NullPointerException if {@code txBody} is {@code null}
-     * @throws IllegalArgumentException if the transaction is not a {@link TransactionCategory#USER}-transaction
+     * @throws IllegalArgumentException if the transaction is not a {@link TransactionCategory#USER}-transaction or
+     * if the record builder type is unknown to the app
      * @throws IllegalStateException if the current transaction has already introduced state changes
      */
     @NonNull
-    ResponseCodeEnum dispatchPrecedingTransaction(@NonNull TransactionBody txBody);
-
+    <T> T dispatchPrecedingTransaction(@NonNull TransactionBody txBody, @NonNull Class<T> recordBuilderClass);
     /**
      * Dispatches a child transaction.
      *
@@ -205,12 +205,14 @@ public interface HandleContext {
      * <p>A {@link TransactionCategory#PRECEDING}-transaction must not dispatch a child transaction.
      *
      * @param txBody the {@link TransactionBody} of the child transaction to dispatch
-     * @return the {@link ResponseCodeEnum} of the child transaction
+     * @param recordBuilderClass the record builder class of the child transaction
+     * @return the record builder of the child transaction
      * @throws NullPointerException if {@code txBody} is {@code null}
      * @throws IllegalArgumentException if the current transaction is a {@link TransactionCategory#PRECEDING}-transaction
+     * or if the record builder type is unknown to the app
      */
     @NonNull
-    ResponseCodeEnum dispatchChildTransaction(@NonNull TransactionBody txBody);
+    <T> T dispatchChildTransaction(@NonNull TransactionBody txBody, @NonNull Class<T> recordBuilderClass);
 
     /**
      * Returns the current {@link SavepointStack}.

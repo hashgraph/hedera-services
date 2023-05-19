@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.state;
+package com.hedera.node.app.state.stack;
 
 import static java.util.Objects.requireNonNull;
 

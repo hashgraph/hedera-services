@@ -18,16 +18,15 @@ package com.hedera.node.app.workflows.handle;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.records.SingleTransactionRecordBuilder;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.node.app.workflows.handle.stack.Savepoint;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.ConsensusConfig;
@@ -35,7 +34,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import javax.inject.Inject;
 
-public class TransactionRunner {
+public class HandleContextService {
 
     private final TransactionChecker checker;
     private final TransactionDispatcher dispatcher;
@@ -43,7 +42,7 @@ public class TransactionRunner {
     private final ConfigProvider configProvider;
 
     @Inject
-    public TransactionRunner(
+    public HandleContextService(
             @NonNull final TransactionChecker checker,
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final ServiceScopeLookup serviceScopeLookup,
@@ -54,55 +53,64 @@ public class TransactionRunner {
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
     }
 
-    public ResponseCodeEnum run(
-            @NonNull final Instant consensusNow,
+    public SingleTransactionRecordBuilder dispatchPrecedingTransaction(
+            @NonNull final TransactionBody txBody,
+            @NonNull final HederaState root,
+            @NonNull final HandleContextBase base) {
+        requireNonNull(txBody, "txBody must not be null");
+        requireNonNull(root, "root must not be null");
+        requireNonNull(base, "base must not be null");
+
+        final var config = configProvider.getConfiguration().getConfigData(ConsensusConfig.class);
+        final var recordBuilder = base.recordListBuilder().addPreceding(config);
+        final var consensusNow = base.timeSlotCalculator().getNextAvailablePrecedingSlot();
+
+        return dispatch(txBody, TransactionCategory.PRECEDING, root, base, recordBuilder, consensusNow);
+    }
+
+    public SingleTransactionRecordBuilder dispatchChildTransaction(
+            @NonNull final TransactionBody txBody,
+            @NonNull final HederaState root,
+            @NonNull final HandleContextBase base) {
+        requireNonNull(txBody, "txBody must not be null");
+        requireNonNull(root, "root must not be null");
+        requireNonNull(base, "base must not be null");
+
+        final var config = configProvider.getConfiguration().getConfigData(ConsensusConfig.class);
+        final var recordBuilder = base.recordListBuilder().addChild(config);
+        final var consensusNow = base.timeSlotCalculator().getNextAvailableChildSlot();
+
+        return dispatch(txBody, TransactionCategory.CHILD, root, base, recordBuilder, consensusNow);
+    }
+
+    private SingleTransactionRecordBuilder dispatch(
             @NonNull final TransactionBody txBody,
             @NonNull final TransactionCategory category,
-            @NonNull final Savepoint rootSavepoint,
-            @NonNull final HandleContextBase base) {
-        requireNonNull(consensusNow, "consensusNow must not be null");
-        requireNonNull(txBody, "txBody must not be null");
-        requireNonNull(category, "category must not be null");
-        requireNonNull(rootSavepoint, "rootSavepoint must not be null");
-        requireNonNull(base, "base must not be null");
-        if (category == TransactionCategory.USER) {
-            throw new IllegalArgumentException("Cannot dispatch user transaction with this method");
-        }
-
-        final var recordBuilder = new SingleTransactionRecordBuilder();
-        final var consensusConfig = rootSavepoint.config().getConfigData(ConsensusConfig.class);
-        try {
-            if (category == TransactionCategory.PRECEDING) {
-                base.recordListBuilder().addPrecedingRecordBuilder(recordBuilder, consensusConfig);
-            } else {
-                base.recordListBuilder().addChildRecordBuilder(recordBuilder, consensusConfig);
-            }
-        } catch (final IndexOutOfBoundsException e) {
-            return ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
-        }
+            @NonNull final HederaState root,
+            @NonNull final HandleContextBase base,
+            @NonNull final SingleTransactionRecordBuilder recordBuilder,
+            @NonNull final Instant consensusNow) {
 
         try {
             checker.checkTransactionBody(txBody);
             dispatcher.dispatchValidate(txBody);
         } catch (PreCheckException e) {
             recordBuilder.status(e.responseCode());
-            return e.responseCode();
+            return recordBuilder;
         }
 
-        try {
-            final var serviceScope = serviceScopeLookup.getServiceName(txBody);
-            final var stack = new SavepointStackImpl(configProvider, rootSavepoint);
-            final var context = new HandleContextImpl(
-                    serviceScope, consensusNow, txBody, category, recordBuilder, stack, base, this);
-            dispatcher.dispatchHandle(context);
+        final var serviceScope = serviceScopeLookup.getServiceName(txBody);
+        final var stack = new SavepointStackImpl(configProvider, root);
+        final var context =
+                new HandleContextImpl(serviceScope, consensusNow, txBody, category, recordBuilder, stack, base, this);
 
-            stack.flatten();
+        try {
+            dispatcher.dispatchHandle(context);
+            stack.commit();
         } catch (HandleException e) {
             recordBuilder.status(e.getStatus());
             base.recordListBuilder().revertChildRecordBuilders(recordBuilder);
-            return e.getStatus();
         }
-
-        return ResponseCodeEnum.OK;
+        return recordBuilder;
     }
 }

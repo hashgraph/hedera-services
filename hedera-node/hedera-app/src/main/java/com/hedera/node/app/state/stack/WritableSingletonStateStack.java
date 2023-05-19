@@ -14,28 +14,28 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.state;
+package com.hedera.node.app.state.stack;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.spi.state.ReadableSingletonState;
+import com.hedera.node.app.spi.state.WritableSingletonState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
-public class ReadableSingletonStateStack<T> implements ReadableSingletonState<T> {
+public class WritableSingletonStateStack<T> implements WritableSingletonState<T> {
 
-    private final ReadableStatesStack readableStatesStack;
+    private final WritableStatesStack writableStatesStack;
     private final String stateKey;
 
-    public ReadableSingletonStateStack(
-            @NonNull final ReadableStatesStack readableStatesStack, @NonNull final String stateKey) {
-        this.readableStatesStack = requireNonNull(readableStatesStack, "readableStates must not be null");
+    public WritableSingletonStateStack(
+            @NonNull final WritableStatesStack writableStatesStack, @NonNull final String stateKey) {
+        this.writableStatesStack = requireNonNull(writableStatesStack, "writableStatesStack must not be null");
         this.stateKey = requireNonNull(stateKey, "stateKey must not be null");
     }
 
     @NonNull
-    private ReadableSingletonState<T> getCurrent() {
-        return readableStatesStack.getCurrent().getSingleton(stateKey);
+    private WritableSingletonState<T> getCurrent() {
+        return writableStatesStack.getCurrent().getSingleton(stateKey);
     }
 
     @NonNull
@@ -53,5 +53,15 @@ public class ReadableSingletonStateStack<T> implements ReadableSingletonState<T>
     @Override
     public boolean isRead() {
         return getCurrent().isRead();
+    }
+
+    @Override
+    public void put(@Nullable T value) {
+        getCurrent().put(value);
+    }
+
+    @Override
+    public boolean isModified() {
+        return getCurrent().isModified();
     }
 }

@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.workflows.handle;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.REVERTED_SUCCESS;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
@@ -43,9 +41,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.node.app.workflows.handle.stack.Savepoint;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
-import com.hedera.node.app.workflows.handle.state.WrappedHederaState;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult.Status;
@@ -56,10 +52,8 @@ import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
@@ -73,7 +67,7 @@ public class HandleWorkflow {
     private final NodeInfo nodeInfo;
     private final PreHandleWorkflow preHandleWorkflow;
     private final TransactionDispatcher dispatcher;
-    private final TransactionRunner runner;
+    private final HandleContextService runner;
     private final RecordManager recordManager;
     private final SignatureExpander signatureExpander;
     private final SignatureVerifier signatureVerifier;
@@ -86,7 +80,7 @@ public class HandleWorkflow {
             @NonNull final NodeInfo nodeInfo,
             @NonNull final PreHandleWorkflow preHandleWorkflow,
             @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final TransactionRunner runner,
+            @NonNull final HandleContextService runner,
             @NonNull final RecordManager recordManager,
             @NonNull final SignatureExpander signatureExpander,
             @NonNull final SignatureVerifier signatureVerifier,
@@ -134,7 +128,6 @@ public class HandleWorkflow {
         final var recordListBuilder = new RecordListBuilder(recordBuilder);
 
         try {
-            final var config = configProvider.getConfiguration();
             final var verifications = getUpdatedVerifications(state, platformEvent, platformTxn);
 
             // Read all signature verifications. This will also wait, if validation is still ongoing.
@@ -149,9 +142,7 @@ public class HandleWorkflow {
             }
 
             // Initialize the savepoint stack
-            final var wrappedState = new WrappedHederaState(state);
-            final var rootSavepoint = new Savepoint(wrappedState, config);
-            final var stack = new SavepointStackImpl(configProvider, rootSavepoint);
+            final var stack = new SavepointStackImpl(configProvider, state);
 
             // Setup context
             final var txBody = verifications.txBody();
@@ -167,12 +158,13 @@ public class HandleWorkflow {
                     base,
                     runner);
 
+            // Dispatch the transaction to the handler
             dispatcher.dispatchHandle(context);
 
             // TODO: Finalize transaction
 
             // commit state and records
-            wrappedState.commit();
+            stack.commit();
         } catch (HandleException e) {
             recordBuilder.status(e.getStatus());
             recordListBuilder.revertChildRecordBuilders(recordBuilder);

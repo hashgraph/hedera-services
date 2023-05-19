@@ -17,7 +17,6 @@
 package com.hedera.node.app.meta;
 
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.records.SingleTransactionRecordBuilder;
 import com.hedera.node.app.service.mono.context.TransactionContext;
@@ -168,13 +167,13 @@ public class MonoHandleContext implements HandleContext {
 
     @Override
     @NonNull
-    public ResponseCodeEnum dispatchPrecedingTransaction(@NonNull TransactionBody txBody) {
+    public <T> T dispatchPrecedingTransaction(@NonNull TransactionBody txBody, @NonNull Class<T> recordBuilderClass) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
     @NonNull
-    public ResponseCodeEnum dispatchChildTransaction(@NonNull TransactionBody txBody) {
+    public <T> T dispatchChildTransaction(@NonNull TransactionBody txBody, @NonNull Class<T> recordBuilderClass) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 

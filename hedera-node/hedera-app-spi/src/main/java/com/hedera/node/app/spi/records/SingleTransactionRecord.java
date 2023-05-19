@@ -27,8 +27,7 @@ import java.util.List;
  * A record of a single transaction, including the record stream item and the sidecar records.
  */
 public record SingleTransactionRecord(
-        @NonNull RecordStreamItem recordStreamItem,
-        @NonNull List<TransactionSidecarRecord> transactionSidecarRecords) {
+        @NonNull RecordStreamItem recordStreamItem, @NonNull List<TransactionSidecarRecord> transactionSidecarRecords) {
     public SingleTransactionRecord {
         requireNonNull(recordStreamItem, "recordStreamItem must not be null");
         requireNonNull(transactionSidecarRecords, "transactionSidecarRecords must not be null");

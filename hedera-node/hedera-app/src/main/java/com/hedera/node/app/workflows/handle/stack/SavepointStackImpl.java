@@ -23,9 +23,9 @@ import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.spi.workflows.HandleContext.SavepointStack;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.RecordCache;
-import com.hedera.node.app.workflows.handle.state.ReadableStatesStack;
-import com.hedera.node.app.workflows.handle.state.WrappedHederaState;
-import com.hedera.node.app.workflows.handle.state.WritableStatesStack;
+import com.hedera.node.app.state.stack.ReadableStatesStack;
+import com.hedera.node.app.state.stack.WrappedHederaState;
+import com.hedera.node.app.state.stack.WritableStatesStack;
 import com.hedera.node.config.ConfigProvider;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayDeque;
@@ -39,17 +39,21 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
     private final Deque<Savepoint> stack = new ArrayDeque<>();
     private final Map<String, WritableStatesStack> writableStatesMap = new HashMap<>();
 
-    public SavepointStackImpl(@NonNull final ConfigProvider configProvider, @NonNull final Savepoint root) {
+    public SavepointStackImpl(@NonNull final ConfigProvider configProvider, @NonNull final HederaState root) {
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
-        stack.add(root);
+        setupSavepoint(root);
+    }
+
+    private void setupSavepoint(@NonNull HederaState state) {
+        final var newState = new WrappedHederaState(state);
+        final var newConfig = configProvider.getConfiguration();
+        final var savepoint = new Savepoint(newState, newConfig);
+        stack.push(savepoint);
     }
 
     @Override
     public void createSavepoint() {
-        final var newState = new WrappedHederaState(peek().state());
-        final var newConfig = configProvider.getConfiguration();
-        final var savepoint = new Savepoint(newState, newConfig);
-        stack.push(savepoint);
+        setupSavepoint(peek().state());
     }
 
     @Override
@@ -69,12 +73,14 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
 
     @NonNull
     public Savepoint peek() {
-        assert !stack.isEmpty();
+        if (stack.isEmpty()) {
+            throw new IllegalStateException("The stack has already been committed");
+        }
         return stack.peek();
     }
 
-    public void flatten() {
-        while (stack.size() > 1) {
+    public void commit() {
+        while (!stack.isEmpty()) {
             stack.pop().state().commit();
         }
     }

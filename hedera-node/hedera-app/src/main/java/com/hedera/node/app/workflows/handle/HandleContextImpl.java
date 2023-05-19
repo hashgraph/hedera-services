@@ -44,7 +44,7 @@ public class HandleContextImpl implements HandleContext {
     private final SavepointStackImpl stack;
     private final WritableStoreFactory writableStoreFactory;
     private final HandleContextBase base;
-    private final TransactionRunner runner;
+    private final HandleContextService service;
 
     private ReadableStoreFactory readableStoreFactory;
 
@@ -56,7 +56,7 @@ public class HandleContextImpl implements HandleContext {
             @NonNull final SingleTransactionRecordBuilder recordBuilder,
             @NonNull final SavepointStackImpl stack,
             @NonNull final HandleContextBase base,
-            @NonNull final TransactionRunner runner) {
+            @NonNull final HandleContextService service) {
         requireNonNull(serviceScope, "serviceScope must not be null");
         this.consensusNow = requireNonNull(consensusNow, "consensusNow must not be null");
         this.txBody = requireNonNull(txBody, "txBody must not be null");
@@ -64,7 +64,7 @@ public class HandleContextImpl implements HandleContext {
         this.recordBuilder = requireNonNull(recordBuilder, "recordBuilder must not be null");
         this.stack = requireNonNull(stack, "stack must not be null");
         this.base = requireNonNull(base, "base must not be null");
-        this.runner = requireNonNull(runner, "runner must not be null");
+        this.service = requireNonNull(service, "service must not be null");
 
         this.writableStoreFactory = new WritableStoreFactory(stack, serviceScope);
     }
@@ -152,8 +152,13 @@ public class HandleContextImpl implements HandleContext {
 
     @Override
     @NonNull
-    public <T> T recordBuilder(@NonNull Class<T> recordBuilderClass) {
+    public <T> T recordBuilder(@NonNull final Class<T> recordBuilderClass) {
         requireNonNull(recordBuilderClass, "singleTransactionRecordBuilderClass must not be null");
+        return castRecordBuilder(recordBuilder, recordBuilderClass);
+    }
+
+    private static <T> T castRecordBuilder(
+            @NonNull final SingleTransactionRecordBuilder recordBuilder, @NonNull final Class<T> recordBuilderClass) {
         if (!recordBuilderClass.isInstance(recordBuilder)) {
             throw new IllegalArgumentException("Not a valid record builder class");
         }
@@ -162,8 +167,11 @@ public class HandleContextImpl implements HandleContext {
 
     @Override
     @NonNull
-    public ResponseCodeEnum dispatchPrecedingTransaction(@NonNull final TransactionBody txBody) {
+    public <T> T dispatchPrecedingTransaction(
+            @NonNull final TransactionBody txBody, @NonNull final Class<T> recordBuilderClass) {
         requireNonNull(txBody, "txBody must not be null");
+        requireNonNull(recordBuilderClass, "singleTransactionRecordBuilderClass must not be null");
+
         if (category != TransactionCategory.USER) {
             throw new IllegalArgumentException("Only user-transactions can dispatch preceding transactions");
         }
@@ -175,129 +183,40 @@ public class HandleContextImpl implements HandleContext {
             throw new IllegalStateException("Cannot dispatch a preceding transaction when the state has been modified");
         }
 
-        // Calculate next available slot for preceding transaction
-        final var timeSlot = base.timeSlotCalculator().getNextAvailablePrecedingSlot();
-
         // run the transaction
-        return runner.run(timeSlot, txBody, TransactionCategory.PRECEDING, stack.peek(), base);
+        final var result =
+                service.dispatchPrecedingTransaction(txBody, stack.peek().state(), base);
+        return castRecordBuilder(result, recordBuilderClass);
     }
 
     @Override
     @NonNull
-    public ResponseCodeEnum dispatchChildTransaction(@NonNull final TransactionBody txBody) {
+    public <T> T dispatchChildTransaction(
+            @NonNull final TransactionBody txBody, @NonNull final Class<T> recordBuilderClass) {
         requireNonNull(txBody, "txBody must not be null");
+        requireNonNull(recordBuilderClass, "singleTransactionRecordBuilderClass must not be null");
+
         if (category == TransactionCategory.PRECEDING) {
             throw new IllegalArgumentException("A preceding transaction cannot have child transactions");
         }
-
-        // Calculate next available slot for child transaction
-        final var timeSlot = base.timeSlotCalculator().getNextAvailableChildSlot();
 
         // create a savepoint
         stack.createSavepoint();
 
         // run the child-transaction
-        final var result = runner.run(timeSlot, txBody, TransactionCategory.CHILD, stack.peek(), base);
+        final var result = service.dispatchChildTransaction(txBody, stack.peek().state(), base);
 
         // rollback if the child-transaction failed
-        if (result != ResponseCodeEnum.OK) {
+        if (result.status() != ResponseCodeEnum.OK) {
             stack.rollback();
         }
 
-        return result;
+        return castRecordBuilder(result, recordBuilderClass);
     }
 
     @NonNull
     @Override
     public SavepointStack savepointStack() {
         return stack;
-    }
-
-    public static class Builder {
-        private String serviceScope;
-        private Instant consensusNow;
-        private TransactionBody txBody;
-        private TransactionCategory transactionCategory;
-        private SingleTransactionRecordBuilder recordBuilder;
-        private SavepointStackImpl stack;
-        private HandleContextBase base;
-        private TransactionRunner runner;
-
-        public HandleContext build() {
-            return new HandleContextImpl(
-                    serviceScope, consensusNow, txBody, transactionCategory, recordBuilder, stack, base, runner);
-        }
-
-        public String serviceScope() {
-            return serviceScope;
-        }
-
-        public Builder serviceScope(String serviceScope) {
-            this.serviceScope = serviceScope;
-            return this;
-        }
-
-        public Instant consensusNow() {
-            return consensusNow;
-        }
-
-        public Builder consensusNow(Instant consensusNow) {
-            this.consensusNow = consensusNow;
-            return this;
-        }
-
-        public TransactionBody txBody() {
-            return txBody;
-        }
-
-        public Builder txBody(TransactionBody txBody) {
-            this.txBody = txBody;
-            return this;
-        }
-
-        public TransactionCategory transactionCategory() {
-            return transactionCategory;
-        }
-
-        public Builder transactionCategory(TransactionCategory transactionCategory) {
-            this.transactionCategory = transactionCategory;
-            return this;
-        }
-
-        public SingleTransactionRecordBuilder recordBuilder() {
-            return recordBuilder;
-        }
-
-        public Builder recordBuilder(SingleTransactionRecordBuilder recordBuilder) {
-            this.recordBuilder = recordBuilder;
-            return this;
-        }
-
-        public SavepointStackImpl stack() {
-            return stack;
-        }
-
-        public Builder stack(SavepointStackImpl stack) {
-            this.stack = stack;
-            return this;
-        }
-
-        public HandleContextBase base() {
-            return base;
-        }
-
-        public Builder base(HandleContextBase base) {
-            this.base = base;
-            return this;
-        }
-
-        public TransactionRunner runner() {
-            return runner;
-        }
-
-        public Builder runner(TransactionRunner runner) {
-            this.runner = runner;
-            return this;
-        }
     }
 }

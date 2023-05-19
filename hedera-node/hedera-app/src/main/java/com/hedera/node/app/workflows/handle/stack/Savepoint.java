@@ -20,7 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
-import com.hedera.node.app.workflows.handle.state.WrappedHederaState;
+import com.hedera.node.app.state.stack.WrappedHederaState;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
