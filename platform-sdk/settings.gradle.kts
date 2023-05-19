@@ -224,7 +224,7 @@ dependencyResolutionManagement {
       version("junit-version", "5.9.0")
 
       // Mocking Frameworks
-      version("mockito-version", "4.7.0")
+      version("mockito-version", "4.11.0")
 
       // Test Utils
       version("awaitility-version", "4.2.0")
