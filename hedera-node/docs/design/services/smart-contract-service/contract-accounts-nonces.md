@@ -33,8 +33,6 @@ The following is a table with general use cases and behavior for Ethereum and He
 | Contract transaction resulting in `CREATE/CREATE2` (`EthereumTransaction`)              | initial contract nonce value is 1; nonce is incremented for each contract creation initiated by an account | initial contract nonce value is 1; nonce is incremented for each contract creation initiated by an account, updates are not externalized to Mirror Node                          | initial contract nonce value is 1; nonce is incremented for each contract creation initiated by an account, updates are externalized to Mirror Node                              |
 | Contract transaction resulting in `CREATE/CREATE2` (`ContractCall` or `ContractCreate`) | -                                                                                                          | initial contract nonce value is 1; nonce is incremented for each contract creation initiated by an account, updates are not externalized to Mirror Node                          | initial contract nonce value is 1; nonce is incremented for each contract creation initiated by an account, updates are externalized to Mirror Node                              |
 
-
-
 ### Contract Nonce Externalization
 
 - We can keep a `ContractId -> nonce` map inside `TxnAwareRecordsHistorian`, it would be updated on each call to `AbstractRecordingCreateOperation` (possibly using its `createOperationExternalizer` field) even if the contract creation operation does not succeed
@@ -42,6 +40,17 @@ The following is a table with general use cases and behavior for Ethereum and He
 - This would be done via setting it inside it's `ExpirableTxnRecord` in the corresponding `EvmFnResult` field
     - `contractCreateResult` if the top level transaction was `ContractCreate`
     - `contractCallResult` if the top level transaction was `ContractCall`
+
+### Migration Of Nonces For Existing Contracts
+
+- We need perform a migration for all existing contract nonces from Consensus Node state to Mirror Node e.g. similar to traceability migration performed in the past
+- For all contracts in state we should produce synthetic transaction records that would contain the contract id and it's corresponding nonce value
+
+### Feature Flags
+
+We will need to add two feature flags:
+- one for toggling the contract nonce externalization in transaction handling
+- one for triggering the migration of contract nonces for existing contracts
 
 ### Merging of contract into hollow account
 
