@@ -94,14 +94,14 @@ public final class GossipFactory {
      * @return the gossip engine
      */
     public static Gossip buildGossip(
-            @NonNull PlatformContext platformContext,
-            @NonNull ThreadManager threadManager,
+            @NonNull final PlatformContext platformContext,
+            @NonNull final ThreadManager threadManager,
             @NonNull final Time time,
             @NonNull Crypto crypto,
             @NonNull final NotificationEngine notificationEngine,
-            @NonNull AddressBook addressBook,
-            @NonNull NodeId selfId,
-            @NonNull SoftwareVersion appVersion,
+            @NonNull final AddressBook addressBook,
+            @NonNull final NodeId selfId,
+            @NonNull final SoftwareVersion appVersion,
             @NonNull final ShadowGraph shadowGraph,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
             @NonNull final AtomicReference<Consensus> consensusRef,

@@ -37,7 +37,7 @@ public interface Gossip extends Clearable, ConnectionTracker, Lifecycle {
     void loadFromSignedState(@NonNull final SignedState signedState);
 
     /**
-     * Get the function where events needing to go to event intake should be passed. Needed because chatter wants to
+     * Get the function that submits events to the event intake queue. Needed because chatter wants to
      * wrap this function.
      */
     @NonNull
@@ -46,7 +46,7 @@ public interface Gossip extends Clearable, ConnectionTracker, Lifecycle {
     /**
      * This method is called when the node has finished a reconnect.
      */
-    void restFallenBehind();
+    void resetFallenBehind();
 
     /**
      * Check if we have fallen behind.

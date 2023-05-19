@@ -332,7 +332,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
      * {@inheritDoc}
      */
     @Override
-    public void restFallenBehind() {
+    public void resetFallenBehind() {
         syncManager.resetFallenBehind();
     }
 

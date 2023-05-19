@@ -861,7 +861,7 @@ public class SwirldsPlatform implements Platform, Startable {
             throw e;
         }
 
-        gossip.restFallenBehind();
+        gossip.resetFallenBehind();
     }
 
     /**

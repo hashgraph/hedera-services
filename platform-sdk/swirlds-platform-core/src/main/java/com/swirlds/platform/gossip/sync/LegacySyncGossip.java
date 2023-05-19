@@ -110,14 +110,14 @@ public class LegacySyncGossip extends AbstractGossip {
      * @param loadReconnectState        a method that should be called when a state from reconnect is obtained
      */
     public LegacySyncGossip(
-            @NonNull PlatformContext platformContext,
-            @NonNull ThreadManager threadManager,
+            @NonNull final PlatformContext platformContext,
+            @NonNull final ThreadManager threadManager,
             @NonNull final Time time,
-            @NonNull Crypto crypto,
+            @NonNull final Crypto crypto,
             @NonNull final NotificationEngine notificationEngine,
-            @NonNull AddressBook addressBook,
-            @NonNull NodeId selfId,
-            @NonNull SoftwareVersion appVersion,
+            @NonNull final AddressBook addressBook,
+            @NonNull final NodeId selfId,
+            @NonNull final SoftwareVersion appVersion,
             @NonNull final ShadowGraph shadowGraph,
             @NonNull final AtomicReference<Consensus> consensusRef,
             @NonNull final QueueThread<EventIntakeTask> intakeQueue,
