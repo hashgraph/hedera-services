@@ -21,10 +21,12 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.consensus.ConsensusService;
+import com.hedera.node.app.service.mono.state.DualStateAccessor;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.WorkingStateAccessor;
+import com.swirlds.common.system.SwirldDualState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,7 +40,11 @@ class WorkingStateWritableStoreFactoryTest {
     @Mock
     private HederaState state;
 
+    @Mock
+    private SwirldDualState dualState;
+
     private WorkingStateAccessor workingStateAccessor;
+    private DualStateAccessor dualStateAccessor;
 
     @Mock
     WritableStates writableStates;
@@ -47,19 +53,25 @@ class WorkingStateWritableStoreFactoryTest {
     void setUp() {
         workingStateAccessor = new WorkingStateAccessor();
         workingStateAccessor.setHederaState(state);
-        subject = new WorkingStateWritableStoreFactory(workingStateAccessor);
+
+        dualStateAccessor = new DualStateAccessor();
+        dualStateAccessor.setDualState(dualState);
+
+        subject = new WorkingStateWritableStoreFactory(workingStateAccessor, dualStateAccessor);
     }
 
     @Test
     void emptyConstructor() {
-        assertDoesNotThrow(() -> new WorkingStateWritableStoreFactory(workingStateAccessor));
+        assertDoesNotThrow(() -> new WorkingStateWritableStoreFactory(workingStateAccessor, dualStateAccessor));
     }
 
     @Test
     void createsWritableStore() {
         given(state.createWritableStates(ConsensusService.NAME)).willReturn(writableStates);
-        subject = new WorkingStateWritableStoreFactory(workingStateAccessor);
+
+        subject = new WorkingStateWritableStoreFactory(workingStateAccessor, dualStateAccessor);
         assertNotNull(subject.createTopicStore());
+        assertNotNull(subject.createFreezeStore());
     }
 
     @Test

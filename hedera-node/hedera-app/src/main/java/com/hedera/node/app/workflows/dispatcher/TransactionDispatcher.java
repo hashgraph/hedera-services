@@ -29,6 +29,8 @@ import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.networkadmin.ReadableSpecialFileStore;
+import com.hedera.node.app.service.networkadmin.impl.config.NetworkAdminServiceConfig;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
@@ -36,6 +38,7 @@ import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.service.util.impl.config.PrngConfig;
 import com.hedera.node.app.service.util.records.PrngRecordBuilder;
 import com.hedera.node.app.spi.meta.HandleContext;
+import com.hedera.node.app.spi.state.WritableFreezeStore;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -49,7 +52,7 @@ import javax.inject.Singleton;
  * requests to the appropriate handler
  *
  * <p>For handle, mostly just supports the limited form of the Consensus Service handlers
- * described in https://github.com/hashgraph/hedera-services/issues/4945, while still trying to make a bit of progress
+ * described in <a href="https://github.com/hashgraph/hedera-services/issues/4945">issue #4945</a>, while still trying to make a bit of progress
  * toward the general implementation.
  */
 @Singleton
@@ -107,6 +110,7 @@ public class TransactionDispatcher {
                     txn, writableStoreFactory.createTokenRelStore());
             case TOKEN_PAUSE -> dispatchTokenPause(txn, writableStoreFactory.createTokenStore());
             case TOKEN_UNPAUSE -> dispatchTokenUnpause(txn, writableStoreFactory.createTokenStore());
+            case FREEZE -> dispatchFreeze(txn, writableStoreFactory.createFreezeStore());
             case CRYPTO_CREATE -> dispatchCryptoCreate(txn, writableStoreFactory.createAccountStore());
             case UTIL_PRNG -> dispatchPrng(txn);
             default -> throw new IllegalArgumentException(TYPE_NOT_SUPPORTED);
@@ -440,5 +444,17 @@ public class TransactionDispatcher {
     protected void finishCryptoCreate(
             @NonNull final CryptoCreateRecordBuilder recordBuilder, @NonNull final WritableAccountStore accountStore) {
         // No-op by default
+    }
+
+    private void dispatchFreeze(
+            @NonNull final TransactionBody freezeTxn, @NonNull final WritableFreezeStore freezeStore) {
+        requireNonNull(freezeTxn);
+        requireNonNull(freezeStore);
+        final var handler = handlers.freezeHandler();
+        handler.handle(
+                freezeTxn,
+                new NetworkAdminServiceConfig(dynamicProperties.upgradeArtifactsLoc()),
+                handleContext.createReadableStore(ReadableSpecialFileStore.class),
+                freezeStore);
     }
 }

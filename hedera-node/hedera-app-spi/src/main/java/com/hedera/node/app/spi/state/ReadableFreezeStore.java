@@ -14,26 +14,26 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.networkadmin;
+package com.hedera.node.app.spi.state;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Optional;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Instant;
 
 /**
  * Provides read-only methods for interacting with the underlying data storage mechanisms for
- * working with special files used in freeze transactions.
- * </p>
- * This is a temporary interface. It will be replaced by a new interface in FileService.
+ * working with freeze state
  */
-public interface ReadableSpecialFileStore {
+public interface ReadableFreezeStore {
 
     /**
-     * Gets the freeze file with the given ID. If there is no file with given ID
-     * returns {@link Optional#empty()}.
-     *
-     * @param fileId given id for the file
-     * @return the file with the given id
+     * Returns the scheduled freeze time, or null if there is no freeze currently scheduled
      */
-    @NonNull
-    Optional<byte[]> get(long fileId);
+    @Nullable
+    Instant freezeTime();
+
+    /**
+     * Returns the last time a freeze was successfully completed
+     */
+    @Nullable
+    Instant lastFrozenTime();
 }

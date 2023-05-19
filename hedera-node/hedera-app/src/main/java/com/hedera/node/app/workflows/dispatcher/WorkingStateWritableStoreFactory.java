@@ -20,10 +20,12 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
+import com.hedera.node.app.service.mono.state.DualStateAccessor;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.spi.state.WritableFreezeStore;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -36,6 +38,7 @@ import javax.inject.Singleton;
 @Singleton
 public class WorkingStateWritableStoreFactory implements WritableStoreFactory {
     private final WorkingStateAccessor stateAccessor;
+    private final DualStateAccessor dualStateAccessor;
 
     /**
      * Constructor of {@link WorkingStateWritableStoreFactory}
@@ -44,8 +47,10 @@ public class WorkingStateWritableStoreFactory implements WritableStoreFactory {
      * @throws NullPointerException if one of the parameters is {@code null}
      */
     @Inject
-    public WorkingStateWritableStoreFactory(@NonNull final WorkingStateAccessor stateAccessor) {
+    public WorkingStateWritableStoreFactory(
+            @NonNull final WorkingStateAccessor stateAccessor, @NonNull final DualStateAccessor dualStateAccessor) {
         this.stateAccessor = requireNonNull(stateAccessor);
+        this.dualStateAccessor = requireNonNull(dualStateAccessor);
     }
 
     /**
@@ -80,5 +85,10 @@ public class WorkingStateWritableStoreFactory implements WritableStoreFactory {
     public WritableAccountStore createAccountStore() {
         final var tokenStates = stateAccessor.getHederaState().createWritableStates(TokenService.NAME);
         return new WritableAccountStore(tokenStates);
+    }
+
+    @Override
+    public WritableFreezeStore createFreezeStore() {
+        return new WritableFreezeStore(dualStateAccessor.getDualState());
     }
 }

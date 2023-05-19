@@ -53,4 +53,6 @@ dependencies {
 
   // Temporarily needed until FakePreHandleContext can be removed
   testFixturesCompileOnly(project(":hedera-node:hedera-token-service"))
+  testFixturesImplementation(testLibs.bundles.testing)
+  testFixturesImplementation(libs.bundles.logging)
 }

@@ -85,7 +85,10 @@ class FreezeHandlerTest {
     @Test
     void rejectIfUnknownFreezeType() {
         TransactionBody txn = TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(nonAdminAccount)
+                        .transactionValidStart(
+                                Timestamp.newBuilder().seconds(1000).build()))
                 .freeze(FreezeTransactionBody.newBuilder()
                         .freezeType(UNKNOWN_FREEZE_TYPE)
                         .build())
@@ -100,7 +103,10 @@ class FreezeHandlerTest {
         FreezeType[] freezeTypes = {FREEZE_ONLY, FREEZE_UPGRADE, TELEMETRY_UPGRADE};
         for (FreezeType freezeType : freezeTypes) {
             TransactionBody txn = TransactionBody.newBuilder()
-                    .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
+                    .transactionID(TransactionID.newBuilder()
+                            .accountID(nonAdminAccount)
+                            .transactionValidStart(
+                                    Timestamp.newBuilder().seconds(1000).build()))
                     .freeze(FreezeTransactionBody.newBuilder()
                             .freezeType(freezeType)
                             .build())
@@ -181,7 +187,10 @@ class FreezeHandlerTest {
     void happyPathFreezeAbort() {
         // freeze_abort always returns OK, to allow the node to send multiple commands to abort
         TransactionBody txn = TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(nonAdminAccount)
+                        .transactionValidStart(
+                                Timestamp.newBuilder().seconds(1000).build()))
                 .freeze(FreezeTransactionBody.newBuilder()
                         .freezeType(FREEZE_ABORT)
                         .build())
@@ -224,8 +233,10 @@ class FreezeHandlerTest {
 
         FileID fileId = FileID.newBuilder().fileNum(1234L).build();
         given(specialFileStore.get(1234L)).willReturn(Optional.of(new byte[0]));
-        TransactionID txnId =
-                TransactionID.newBuilder().accountID(nonAdminAccount).build();
+        TransactionID txnId = TransactionID.newBuilder()
+                .accountID(nonAdminAccount)
+                .transactionValidStart(Timestamp.newBuilder().seconds(1000).build())
+                .build();
         TransactionBody txn = TransactionBody.newBuilder()
                 .transactionID(txnId)
                 .freeze(FreezeTransactionBody.newBuilder()
@@ -260,7 +271,10 @@ class FreezeHandlerTest {
     @Test
     void rejectIfNoStartTimeSet() {
         TransactionBody txn = TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(nonAdminAccount)
+                        .transactionValidStart(
+                                Timestamp.newBuilder().seconds(1000).build()))
                 .freeze(FreezeTransactionBody.newBuilder().build())
                 // do not set freeze start time
                 .build();
@@ -271,7 +285,10 @@ class FreezeHandlerTest {
     @Test
     void rejectIfNoFreezeTxSet() {
         TransactionBody txn = TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(nonAdminAccount)
+                        .transactionValidStart(
+                                Timestamp.newBuilder().seconds(1000).build()))
                 .build();
         // do not set freeze transaction body
         given(context.body()).willReturn(txn);
@@ -282,7 +299,10 @@ class FreezeHandlerTest {
     void rejectIfStartHourSet() {
         // start hour is not supported
         TransactionBody txn = TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(nonAdminAccount)
+                        .transactionValidStart(
+                                Timestamp.newBuilder().seconds(1000).build()))
                 .freeze(FreezeTransactionBody.newBuilder().startHour(3).build())
                 .build();
         given(context.body()).willReturn(txn);
@@ -293,7 +313,10 @@ class FreezeHandlerTest {
     void rejectIfStartMinSet() {
         // start min is not supported
         TransactionBody txn = TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(nonAdminAccount)
+                        .transactionValidStart(
+                                Timestamp.newBuilder().seconds(1000).build()))
                 .freeze(FreezeTransactionBody.newBuilder().startMin(31).build())
                 .build();
         given(context.body()).willReturn(txn);
@@ -304,7 +327,10 @@ class FreezeHandlerTest {
     void rejectIfEndHourSet() {
         // end hour is not supported
         TransactionBody txn = TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(nonAdminAccount)
+                        .transactionValidStart(
+                                Timestamp.newBuilder().seconds(1000).build()))
                 .freeze(FreezeTransactionBody.newBuilder().endHour(3).build())
                 .build();
         given(context.body()).willReturn(txn);
@@ -315,7 +341,10 @@ class FreezeHandlerTest {
     void rejectIfEndMinSet() {
         // end min is not supported
         TransactionBody txn = TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(nonAdminAccount)
+                        .transactionValidStart(
+                                Timestamp.newBuilder().seconds(1000).build()))
                 .freeze(FreezeTransactionBody.newBuilder().endMin(16).build())
                 .build();
         given(context.body()).willReturn(txn);

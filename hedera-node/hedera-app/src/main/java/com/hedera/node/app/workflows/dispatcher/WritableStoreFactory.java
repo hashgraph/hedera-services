@@ -20,6 +20,7 @@ import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.spi.state.WritableFreezeStore;
 
 /**
  * Factory for all writable stores.
@@ -52,4 +53,10 @@ public interface WritableStoreFactory {
      * @return a new {@link WritableAccountStore}
      */
     WritableAccountStore createAccountStore();
+
+    /**
+     * Get a {@link WritableFreezeStore}.
+     * @return a new {@link WritableFreezeStore}
+     */
+    WritableFreezeStore createFreezeStore();
 }

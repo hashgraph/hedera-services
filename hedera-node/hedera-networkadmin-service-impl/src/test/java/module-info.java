@@ -12,11 +12,13 @@ module com.hedera.node.app.service.networkadmin.impl.test {
     requires com.hedera.node.app.spi.fixtures;
     requires com.hedera.node.app.service.token;
     requires org.assertj.core;
+    requires static com.github.spotbugs.annotations;
 
     opens com.hedera.node.app.service.networkadmin.impl.test to
             org.junit.platform.commons,
             org.mockito;
     opens com.hedera.node.app.service.networkadmin.impl.test.handlers to
+            com.hedera.node.app.spi.fixtures,
             org.junit.platform.commons,
             org.mockito;
     opens com.hedera.node.app.service.networkadmin.impl.test.codec to

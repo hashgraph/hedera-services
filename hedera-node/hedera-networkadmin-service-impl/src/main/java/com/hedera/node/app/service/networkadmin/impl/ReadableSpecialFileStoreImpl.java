@@ -25,6 +25,8 @@ import java.util.Optional;
 
 /**
  * Implementation of {@link ReadableSpecialFileStore}
+ *
+ * This is a temporary class. It will be replaced by a new class in FileService.
  */
 public class ReadableSpecialFileStoreImpl implements ReadableSpecialFileStore {
 
