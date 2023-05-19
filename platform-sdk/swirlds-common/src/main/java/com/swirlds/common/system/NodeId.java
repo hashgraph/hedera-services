@@ -147,10 +147,10 @@ public class NodeId implements Comparable<NodeId>, SelfSerializable {
         if (this == o) {
             return true;
         }
-        if (o == null || getClass() != o.getClass()) {
+        if (o == null || NodeId.class != o.getClass()) {
             return false;
         }
-        NodeId nodeId = (NodeId) o;
+        final NodeId nodeId = (NodeId) o;
         return id == nodeId.id;
     }
 
