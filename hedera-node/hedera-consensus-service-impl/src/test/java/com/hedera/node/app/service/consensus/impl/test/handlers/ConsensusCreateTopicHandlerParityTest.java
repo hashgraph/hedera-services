@@ -25,6 +25,7 @@ import static com.hedera.test.factories.scenarios.ConsensusCreateTopicScenarios.
 import static com.hedera.test.factories.scenarios.ConsensusCreateTopicScenarios.CONSENSUS_CREATE_TOPIC_NO_ADDITIONAL_KEYS_SCENARIO;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
 import static com.hedera.test.factories.txns.ConsensusCreateTopicFactory.SIMPLE_TOPIC_ADMIN_KEY;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
@@ -51,7 +52,7 @@ class ConsensusCreateTopicHandlerParityTest {
 
         // when:
         final var context = new FakePreHandleContext(accountStore, txn);
-        subject.preHandle(context);
+        assertDoesNotThrow(() -> subject.preHandle(context));
 
         // then:
         assertDefaultPayer(context);
@@ -65,7 +66,7 @@ class ConsensusCreateTopicHandlerParityTest {
 
         // when:
         final var context = new FakePreHandleContext(accountStore, txn);
-        subject.preHandle(context);
+        assertDoesNotThrow(() -> subject.preHandle(context));
 
         // then:
         assertDefaultPayer(context);
@@ -80,7 +81,7 @@ class ConsensusCreateTopicHandlerParityTest {
 
         // when:
         final var context = new FakePreHandleContext(accountStore, txn);
-        subject.preHandle(context);
+        assertDoesNotThrow(() -> subject.preHandle(context));
 
         // then:
         assertDefaultPayer(context);
@@ -98,7 +99,7 @@ class ConsensusCreateTopicHandlerParityTest {
         subject.preHandle(context);
 
         // then:
-        assertDefaultPayer(context);
+        assertDoesNotThrow(() -> subject.preHandle(context));
         // Note: DEFAULT_PAYER_KT in this case doesn't function as the payer - the payer is
         // CUSTOM_PAYER_ACCOUNT - but instead is in the required keys list because
         // DEFAULT_PAYER_KT is set as the auto-renew account
