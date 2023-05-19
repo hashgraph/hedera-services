@@ -139,7 +139,8 @@ public class StandardizedAttributeValidator implements AttributeValidator {
     }
 
     @Override
-    public boolean isImmutableKey(Key key) {
+    public boolean isImmutableKey(@NonNull Key key) {
+        requireNonNull(key);
         return key.hasKeyList()
                 && requireNonNull(key.keyList()).keysOrElse(emptyList()).isEmpty();
     }
