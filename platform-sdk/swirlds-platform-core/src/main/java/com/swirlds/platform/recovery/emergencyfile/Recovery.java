@@ -11,5 +11,5 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * 		information about the state used to bootstrap event recovery. Not written during normal
  * 		operation. Only written during event recovery.
  */
-public record Recovery(State state, Boostrap boostrap, @JsonProperty("package") Package pkg) {
+public record Recovery(State state, Boostrap boostrap, @JsonProperty("package") Package pkg, Stream stream) {
 }

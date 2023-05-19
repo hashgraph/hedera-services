@@ -42,7 +42,7 @@ public record EmergencyRecoveryFile(Recovery recovery) {
      * @param timestamp the consensus timestamp of the state this file is for
      */
     public EmergencyRecoveryFile(final long round, final Hash hash, final Instant timestamp) {
-        this(new Recovery(new State(round, hash, timestamp), null, null));
+        this(new Recovery(new State(round, hash, timestamp), null, null, null));
     }
 
     /**
@@ -53,7 +53,7 @@ public record EmergencyRecoveryFile(Recovery recovery) {
      * @param bootstrapTime the consensus timestamp of the bootstrap state used to start the event recovery process
      */
     public EmergencyRecoveryFile(final State state, final Instant bootstrapTime) {
-        this(new Recovery(state, new Boostrap(bootstrapTime), null));
+        this(new Recovery(state, new Boostrap(bootstrapTime), null, null));
     }
 
     /**

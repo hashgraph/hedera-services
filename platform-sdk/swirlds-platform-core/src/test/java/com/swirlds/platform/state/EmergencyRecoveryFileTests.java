@@ -38,10 +38,12 @@ import java.util.Random;
 import java.util.stream.Collectors;
 
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
+import com.swirlds.platform.recovery.emergencyfile.Intervals;
 import com.swirlds.platform.recovery.emergencyfile.Location;
 import com.swirlds.platform.recovery.emergencyfile.Package;
 import com.swirlds.platform.recovery.emergencyfile.Recovery;
 import com.swirlds.platform.recovery.emergencyfile.State;
+import com.swirlds.platform.recovery.emergencyfile.Stream;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
@@ -191,7 +193,8 @@ public class EmergencyRecoveryFileTests {
                                         randomLocation(r),
                                         randomLocation(r)
                                 )
-                        )
+                        ),
+                        null
                 )
         );
         file.write(tmpDir);
@@ -217,7 +220,8 @@ public class EmergencyRecoveryFileTests {
                                                 randomHash(r)
                                         )
                                 )
-                        )
+                        ),
+                        null
                 )
         );
         file.write(tmpDir);
@@ -225,6 +229,21 @@ public class EmergencyRecoveryFileTests {
                 Exception.class,
                 () -> EmergencyRecoveryFile.read(tmpDir),
                 "Reading a file with a bad url should throw");
+    }
+
+    @Test
+    void testReadWriteStream() throws IOException {
+        final Random r = RandomUtils.getRandomPrintSeed();
+        final EmergencyRecoveryFile file = new EmergencyRecoveryFile(
+                new Recovery(
+                        new State(r.nextLong(), randomHash(r), Instant.now()),
+                        null,
+                        null,
+                        new Stream(new Intervals(2000, 5000, 900000))
+                )
+        );
+        file.write(tmpDir);
+        assertDoesNotThrow(() -> EmergencyRecoveryFile.read(tmpDir), "Reading a valid file should not throw");
     }
 
     private EmergencyRecoveryFile createRecoveryFile(final Random r) {
