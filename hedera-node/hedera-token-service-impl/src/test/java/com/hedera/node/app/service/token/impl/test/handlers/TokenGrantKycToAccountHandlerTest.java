@@ -211,7 +211,7 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
         void kycGrantedAndPersisted() {
             final var stateTokenRel =
                     newTokenRelationBuilder().kycGranted(false).build();
-            given(tokenRelStore.getForModify(tokenId.tokenNum(), payerId.accountNumOrThrow()))
+            given(tokenRelStore.getForModify(payerId.accountNumOrThrow(), tokenId.tokenNum()))
                     .willReturn(Optional.of(stateTokenRel));
 
             final var txnBody = newTxnBody(true, true);

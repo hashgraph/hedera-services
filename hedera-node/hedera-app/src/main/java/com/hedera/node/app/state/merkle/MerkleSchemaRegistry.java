@@ -33,7 +33,6 @@ import com.hedera.node.app.state.merkle.singleton.ValueLeaf;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.crypto.DigestType;
 import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
 import com.swirlds.jasperdb.files.DataFileCommon;
@@ -183,8 +182,6 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                             .maxNumOfKeys(def.maxKeysHint())
                             .keySerializer(ks)
                             .virtualLeafRecordSerializer(new VirtualLeafRecordSerializer(
-                                    (short) 1,
-                                    DigestType.SHA_384,
                                     (short) 1,
                                     DataFileCommon.VARIABLE_DATA_SIZE,
                                     ks,

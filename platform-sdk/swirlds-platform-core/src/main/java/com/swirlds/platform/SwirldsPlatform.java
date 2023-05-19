@@ -58,6 +58,7 @@ import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.common.system.transaction.internal.SystemTransaction;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
+import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.time.OSTime;
 import com.swirlds.common.time.Time;
@@ -426,7 +427,7 @@ public class SwirldsPlatform implements Platform, Startable {
 
             // Queue thread that stores and handles signed states that need to be hashed and have signatures collected.
             final QueueThread<ReservedSignedState> stateHashSignQueueThread = PlatformConstructor.stateHashSignQueue(
-                    threadManager, selfId.id(), stateManagementComponent::newSignedStateFromTransactions);
+                    threadManager, selfId.id(), stateManagementComponent::newSignedStateFromTransactions, metrics);
             stateHashSignQueueThread.start();
 
             final State stateToLoad;
@@ -465,8 +466,8 @@ public class SwirldsPlatform implements Platform, Startable {
             // SwirldStateManager will get a copy of the state loaded, that copy will become stateCons.
             // The original state will be saved in the SignedStateMgr and will be deleted when it becomes old
 
-            preConsensusEventHandler = components.add(PlatformConstructor.preConsensusEventHandler(
-                    platformContext.getMetrics(), threadManager, selfId, swirldStateManager, consensusMetrics));
+            preConsensusEventHandler = components.add(
+                    new PreConsensusEventHandler(metrics, threadManager, selfId, swirldStateManager, consensusMetrics));
             consensusRoundHandler = components.add(PlatformConstructor.consensusHandler(
                     platformContext,
                     threadManager,
@@ -563,7 +564,9 @@ public class SwirldsPlatform implements Platform, Startable {
                             .getConfiguration()
                             .getConfigData(ThreadConfig.class)
                             .logStackTracePauseDuration())
-                    .enableMaxSizeMetric(metrics)
+                    .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics)
+                            .enableMaxSizeMetric()
+                            .enableBusyTimeMetric())
                     .build());
 
             transactionSubmitter = new SwirldTransactionSubmitter(
