@@ -293,7 +293,7 @@ public class ServicesState extends PartialNaryMerkleInternal
         throwIfImmutable();
         stakingInfo()
                 .forEach((nodeNum, stakingInfo) ->
-                        configAddressBook.updateWeight(nodeNum.longValue(), stakingInfo.getWeight()));
+                        configAddressBook.updateWeight(new NodeId(nodeNum.longValue()), stakingInfo.getWeight()));
         return configAddressBook;
     }
 

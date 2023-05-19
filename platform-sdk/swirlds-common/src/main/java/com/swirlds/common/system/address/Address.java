@@ -498,24 +498,12 @@ public class Address implements SelfSerializable {
      * @param id new NodeId for the created Address.
      * @return the new Address.
      */
+    @NonNull
     public Address copySetNodeId(@NonNull final NodeId id) {
         Objects.requireNonNull(id, "id must not be null");
         final Address a = copy();
         a.id = id;
         return a;
-    }
-
-    /**
-     * Create a new Address object based this one with different Id.
-     *
-     * @param id New Id for the created Address.
-     * @return The new Address.
-     * @deprecated Use {@link #copySetNodeId(NodeId)} instead.
-     */
-    @Deprecated(since = "0.39.0", forRemoval = true)
-    @NonNull
-    public Address copySetId(long id) {
-        return copySetNodeId(new NodeId(id));
     }
 
     /**
