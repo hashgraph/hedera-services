@@ -61,13 +61,13 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
 
         // The transaction cannot set the admin key unless the transaction was signed by that key
         if (op.hasAdminKey()) {
-            context.requireKeyOrThrow(op.adminKeyOrThrow(), INVALID_ADMIN_KEY);
+            context.requireKeyOrThrow(op.adminKey(), INVALID_ADMIN_KEY);
         }
 
         // If an account is to be used for auto-renewal, then the account must exist and the transaction
         // must be signed with that account's key.
         if (op.hasAutoRenewAccount()) {
-            final var autoRenewAccountID = op.autoRenewAccountOrThrow();
+            final var autoRenewAccountID = op.autoRenewAccount();
             context.requireKeyOrThrow(autoRenewAccountID, INVALID_AUTORENEW_ACCOUNT);
         }
     }
@@ -94,6 +94,8 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
             handleContext.attributeValidator().validateKey(op.adminKey());
             builder.adminKey(op.adminKey());
         }
+
+        // submitKey() is not checked in preCheck()
         if (op.hasSubmitKey()) {
             handleContext.attributeValidator().validateKey(op.submitKey());
             builder.submitKey(op.submitKey());

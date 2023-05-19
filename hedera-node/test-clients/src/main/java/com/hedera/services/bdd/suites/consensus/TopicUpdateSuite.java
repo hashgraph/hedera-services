@@ -116,7 +116,7 @@ public class TopicUpdateSuite extends HapiSuite {
                 .adminKey("newAdminKey")
                 .autoRenewAccountId("newAutoRenewAccount")
                 .signedBy(signers);
-        ;
+
         return defaultHapiSpec("topicUpdateSigReqsEnforcedAtConsensus")
                 .given(
                         newKeyNamed("oldAdminKey"),
