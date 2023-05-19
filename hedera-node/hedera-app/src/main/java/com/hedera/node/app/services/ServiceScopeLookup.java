@@ -29,6 +29,12 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * Provides a mapping from a transaction to the service it belongs to.
+ *
+ * <p>The initial implementation contains all known mappings hard-coded. In a future version, this will be replaced by a
+ * dynamic approach.
+ */
 @Singleton
 public class ServiceScopeLookup {
 
@@ -39,6 +45,14 @@ public class ServiceScopeLookup {
         // dagger
     }
 
+    /**
+     * Returns the name of the service a given transaction belongs to. A transaction can only modify state of the
+     * service it belongs to.
+     *
+     * @param txBody the transaction for which the service name should be returned
+     * @return the name of the service that the transaction belongs to or an empty string if no service was found
+     * @throws NullPointerException if the {@code txBody} is {@code null}
+     */
     @NonNull
     public String getServiceName(@NonNull final TransactionBody txBody) {
         return switch (txBody.data().kind()) {

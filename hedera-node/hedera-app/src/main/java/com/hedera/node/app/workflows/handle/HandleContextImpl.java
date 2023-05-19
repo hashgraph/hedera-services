@@ -35,6 +35,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 
+/**
+ * The default implementation of {@link HandleContext}.
+ */
 public class HandleContextImpl implements HandleContext {
 
     private final Instant consensusNow;
@@ -48,6 +51,17 @@ public class HandleContextImpl implements HandleContext {
 
     private ReadableStoreFactory readableStoreFactory;
 
+    /**
+     * Constructs a {@link HandleContextImpl}.
+     *
+     * @param serviceScope The service-scope of the transaction, which limits write access
+     * @param txBody The {@link TransactionBody} of the transaction
+     * @param category The {@link TransactionCategory} of the transaction (either user, preceding, or child)
+     * @param recordBuilder The main {@link SingleTransactionRecordBuilder}
+     * @param stack A fresh {@link SavepointStackImpl} used to keep track of revertible state changes
+     * @param base The {@link HandleContextBase} with data shared from the original user transaction
+     * @param service A reference to {@link HandleContextService} for more complex operations
+     */
     public HandleContextImpl(
             @NonNull final String serviceScope,
             @NonNull final TransactionBody txBody,

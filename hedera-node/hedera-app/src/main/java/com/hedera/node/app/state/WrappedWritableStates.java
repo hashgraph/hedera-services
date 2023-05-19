@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.state.stack;
+package com.hedera.node.app.state;
 
 import static java.util.Objects.requireNonNull;
 
@@ -28,12 +28,22 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * A wrapper around a {@link WritableStates} that provides a wrapped instances of {@link WritableKVState} and
+ * {@link WritableSingletonState} of a given {@link WritableStates} delegate.
+ */
 public class WrappedWritableStates implements WritableStates {
 
     private final WritableStates delegate;
     private final Map<String, WrappedWritableKVState<?, ?>> writableKVStateMap = new HashMap<>();
     private final Map<String, WrappedWritableSingletonState<?>> writableSingletonStateMap = new HashMap<>();
 
+    /**
+     * Constructs a {@link WrappedWritableStates} that wraps the given {@link WritableStates}.
+     *
+     * @param delegate the {@link WritableStates} to wrap
+     * @throws NullPointerException if {@code delegate} is {@code null}
+     */
     public WrappedWritableStates(@NonNull final WritableStates delegate) {
         this.delegate = requireNonNull(delegate, "delegate must not be null");
     }
@@ -43,28 +53,33 @@ public class WrappedWritableStates implements WritableStates {
         return delegate.contains(stateKey);
     }
 
-    @NonNull
     @Override
+    @NonNull
     public Set<String> stateKeys() {
         return delegate.stateKeys();
     }
 
     @SuppressWarnings("unchecked")
-    @NonNull
     @Override
+    @NonNull
     public <K, V> WritableKVState<K, V> get(@NonNull String stateKey) {
         return (WritableKVState<K, V>)
                 writableKVStateMap.computeIfAbsent(stateKey, s -> new WrappedWritableKVState<>(delegate.get(stateKey)));
     }
 
     @SuppressWarnings("unchecked")
-    @NonNull
     @Override
+    @NonNull
     public <T> WritableSingletonState<T> getSingleton(@NonNull String stateKey) {
         return (WritableSingletonState<T>) writableSingletonStateMap.computeIfAbsent(
                 stateKey, s -> new WrappedWritableSingletonState<>(delegate.getSingleton(stateKey)));
     }
 
+    /**
+     * Returns {@code true} if the state of this {@link WrappedWritableStates} has been modified.
+     *
+     * @return {@code true}, if the state has been modified; otherwise {@code false}
+     */
     public boolean isModified() {
         for (WrappedWritableKVState<?, ?> kvState : writableKVStateMap.values()) {
             if (kvState.isModified()) {
@@ -79,6 +94,9 @@ public class WrappedWritableStates implements WritableStates {
         return false;
     }
 
+    /**
+     * Writes all modifications to the underlying {@link WritableStates}.
+     */
     public void commit() {
         for (WrappedWritableKVState<?, ?> kvState : writableKVStateMap.values()) {
             kvState.commit();

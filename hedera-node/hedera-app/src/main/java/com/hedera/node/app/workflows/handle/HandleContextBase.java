@@ -24,6 +24,13 @@ import com.hedera.node.app.spi.signatures.SignatureVerification;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 
+/**
+ * A container of all data that is going to be shared between all transactions associated with a single user
+ * transaction.
+ *
+ * @param keyVerifications a map of key to signature verification that was collected during pre-handle
+ * @param recordListBuilder a facility to maintain the list of record builders
+ */
 public record HandleContextBase(
         @NonNull Map<Key, SignatureVerification> keyVerifications, @NonNull RecordListBuilder recordListBuilder) {
 

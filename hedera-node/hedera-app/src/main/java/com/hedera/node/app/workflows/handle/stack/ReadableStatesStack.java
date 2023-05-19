@@ -14,30 +14,51 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.state.stack;
+package com.hedera.node.app.workflows.handle.stack;
 
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableSingletonState;
 import com.hedera.node.app.spi.state.ReadableStates;
-import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
+import com.hedera.node.app.state.WrappedHederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
 
+/**
+ * A {@link ReadableStates} implementation that delegates to the current {@link ReadableStates} in a
+ * {@link com.hedera.node.app.spi.workflows.HandleContext.SavepointStack}.
+ *
+ * <p>A {@link com.hedera.node.app.spi.workflows.HandleContext.SavepointStack} consists of a stack of frames, each of
+ * which contains a set of modifications in regard to the underlying state. On the top of the stack is the most recent
+ * state. This class delegates to the current {@link ReadableStates} on top of such a stack.
+ */
 public class ReadableStatesStack implements ReadableStates {
 
     private final SavepointStackImpl stack;
     private final String statesName;
     private final Map<WrappedHederaState, ReadableStates> stackedReadableStates = new WeakHashMap<>();
 
-    public ReadableStatesStack(SavepointStackImpl stack, String statesName) {
+    /**
+     * Constructs a {@link ReadableStatesStack} that delegates to the current {@link ReadableStates} in the given
+     * {@link com.hedera.node.app.spi.workflows.HandleContext.SavepointStack}.
+     *
+     * @param stack the {@link SavepointStackImpl} that contains the stack of states
+     * @param serviceName the name of the service that owns the state
+     */
+    public ReadableStatesStack(SavepointStackImpl stack, String serviceName) {
         this.stack = requireNonNull(stack, "stack must not be null");
-        this.statesName = requireNonNull(statesName, "statesName must not be null");
+        this.statesName = requireNonNull(serviceName, "serviceName must not be null");
     }
 
+    /**
+     * Returns the current {@link ReadableStates} in the stack. Package-private, because it should only be called by
+     * {@link ReadableKVStateStack} and {@link ReadableSingletonStateStack}.
+     *
+     * @return the current {@link ReadableStates} in the stack
+     */
     @NonNull
     ReadableStates getCurrent() {
         return stackedReadableStates.computeIfAbsent(
