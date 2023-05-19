@@ -147,6 +147,10 @@ public class PreConsensusEventFileManager {
                     .set(files.getLast().maximumGeneration());
             final Duration age = Duration.between(files.getFirst().timestamp(), time.now());
             metrics.getPreconsensusEventFileOldestSeconds().set(age.toSeconds());
+        } else {
+            metrics.getPreconsensusEventFileOldestGeneration().set(NO_MINIMUM_GENERATION);
+            metrics.getPreconsensusEventFileYoungestGeneration().set(NO_MINIMUM_GENERATION);
+            metrics.getPreconsensusEventFileOldestSeconds().set(0);
         }
         updateFileSizeMetrics();
     }
@@ -389,10 +393,20 @@ public class PreConsensusEventFileManager {
         // the file does not have gaps in sequence numbers.
         for (int index = files.size() - 1; index >= indexOfDiscontinuity; index--) {
             try {
+                // TODO perhaps instead move this file
                 files.removeLast().deleteFile(databaseDirectory);
             } catch (final IOException e) {
                 throw new UncheckedIOException("unable to delete file after discontinuity", e);
             }
+        }
+
+        if (files.size() > 0) {
+            metrics.getPreconsensusEventFileOldestGeneration()
+                    .set(files.getFirst().minimumGeneration());
+        } else {
+            metrics.getPreconsensusEventFileOldestGeneration().set(NO_MINIMUM_GENERATION);
+            metrics.getPreconsensusEventFileYoungestGeneration().set(NO_MINIMUM_GENERATION);
+            metrics.getPreconsensusEventFileOldestSeconds().set(0);
         }
     }
 
@@ -491,7 +505,6 @@ public class PreConsensusEventFileManager {
      * @param file the file that has been completely written
      */
     public void finishedWritingFile(@NonNull final PreConsensusEventMutableFile file) {
-
         final long previousFileHighestGeneration;
         if (files.size() == 1) {
             previousFileHighestGeneration = 0;

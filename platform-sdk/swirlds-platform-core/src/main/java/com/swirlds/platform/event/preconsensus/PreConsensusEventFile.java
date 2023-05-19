@@ -138,7 +138,8 @@ public record PreConsensusEventFile(
             final boolean discontinuity) {
 
         final Path parentDirectory = buildParentDirectory(rootDirectory, timestamp);
-        final String fileName = buildFileName(sequenceNumber, minimumGeneration, maximumGeneration, timestamp);
+        final String fileName =
+                buildFileName(sequenceNumber, minimumGeneration, maximumGeneration, timestamp, discontinuity);
         final Path path = parentDirectory.resolve(fileName);
 
         return new PreConsensusEventFile(
@@ -167,7 +168,8 @@ public record PreConsensusEventFile(
         }
 
         final Path parentDirectory = path.getParent();
-        final String fileName = buildFileName(sequenceNumber(), minimumGeneration, maximumGenerationInFile, timestamp);
+        final String fileName =
+                buildFileName(sequenceNumber(), minimumGeneration, maximumGenerationInFile, timestamp, discontinuity);
         final Path newPath = parentDirectory.resolve(fileName);
 
         return new PreConsensusEventFile(
@@ -185,7 +187,7 @@ public record PreConsensusEventFile(
         Objects.requireNonNull(filePath, "filePath");
 
         final boolean discontinuity;
-        if (!filePath.toString().endsWith(EVENT_FILE_DISCONTINUITY_EXTENSION)) {
+        if (filePath.toString().endsWith(EVENT_FILE_DISCONTINUITY_EXTENSION)) {
             discontinuity = true;
         } else if (filePath.toString().endsWith(EVENT_FILE_EXTENSION)) {
             discontinuity = false;
@@ -296,7 +298,8 @@ public record PreConsensusEventFile(
             final long sequenceNumber,
             final long minimumGeneration,
             final long maximumGeneration,
-            final Instant timestamp) {
+            final Instant timestamp,
+            final boolean discontinuity) {
 
         return sanitizeTimestamp(timestamp)
                 + EVENT_FILE_SEPARATOR
@@ -308,7 +311,7 @@ public record PreConsensusEventFile(
                 + EVENT_FILE_SEPARATOR
                 + MAXIMUM_GENERATION_PREFIX
                 + maximumGeneration
-                + EVENT_FILE_EXTENSION;
+                + (discontinuity ? EVENT_FILE_DISCONTINUITY_EXTENSION : EVENT_FILE_EXTENSION);
     }
 
     /**
