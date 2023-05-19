@@ -224,4 +224,9 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
             sideEffectsTracker.trackRandomBytes(PbjConverter.asBytes((Bytes) entropy.value()));
         }
     }
+
+    @Override
+    protected void finishTokenFeeScheduleUpdate(@NonNull final WritableTokenStore tokenStore) {
+        requireNonNull(tokenStore).commit();
+    }
 }

@@ -71,7 +71,7 @@ class ReadableTokenStoreImplTest extends TokenHandlerTestBase {
     }
 
     @Test
-    void getsMerkleTokenIfTokenIdPresent() throws PreCheckException {
+    void getsMerkleTokenIfTokenIdPresent() {
         given(tokens.get(tokenEntityNum)).willReturn(token);
 
         final var meta = subject.getTokenMeta(tokenId);
@@ -82,7 +82,7 @@ class ReadableTokenStoreImplTest extends TokenHandlerTestBase {
         assertEquals(supplyKey, meta.supplyKey());
         assertEquals(feeScheduleKey, meta.feeScheduleKey());
         assertEquals(pauseKey, meta.pauseKey());
-        assertFalse(meta.hasRoyaltyWithFallback());
+        assertTrue(meta.hasRoyaltyWithFallback());
         assertEquals(treasury.accountNum(), meta.treasuryNum());
     }
 

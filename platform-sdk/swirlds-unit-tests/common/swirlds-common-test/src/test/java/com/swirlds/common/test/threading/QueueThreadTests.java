@@ -33,6 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.swirlds.base.state.MutabilityException;
+import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.MetricsFactory;
 import com.swirlds.common.metrics.config.MetricsConfig;
@@ -40,11 +41,14 @@ import com.swirlds.common.metrics.platform.DefaultIntegerAccumulator;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
+import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.Stoppable;
 import com.swirlds.common.threading.framework.ThreadSeed;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
+import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
+import com.swirlds.common.threading.framework.internal.QueueThreadMetrics;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.test.framework.TestComponentTags;
@@ -87,6 +91,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 class QueueThreadTests {
 
     static final String THREAD_NAME = "myThread";
+    static final String METRIC_CATEGORY = "myCategory";
     static final String MAX_SIZE_METRIC_NAME = THREAD_NAME + "-queueMaxSize";
     static final String MIN_SIZE_METRIC_NAME = THREAD_NAME + "-queueMinSize";
 
@@ -699,8 +704,9 @@ class QueueThreadTests {
                 .setThreadName(THREAD_NAME)
                 .setQueue(queue)
                 .setHandler(handler::add)
-                .enableMaxSizeMetric(metrics)
-                .enableMinSizeMetric(metrics)
+                .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics)
+                        .enableMaxSizeMetric()
+                        .enableMinSizeMetric())
                 .build();
 
         final DefaultIntegerAccumulator maxSizeMetric =
@@ -748,8 +754,9 @@ class QueueThreadTests {
                 .setThreadName(THREAD_NAME)
                 .setQueue(queue)
                 .setHandler(handler::add)
-                .enableMaxSizeMetric(metrics)
-                .enableMinSizeMetric(metrics)
+                .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics)
+                        .enableMaxSizeMetric()
+                        .enableMinSizeMetric())
                 .build();
 
         final DefaultIntegerAccumulator maxSizeMetric =
@@ -875,6 +882,49 @@ class QueueThreadTests {
         assertThat(queueThread).isEmpty();
         assertThat(maxSizeMetric.get()).isEqualTo(70);
         assertThat(minSizeMetric.get()).isZero();
+    }
+
+    @Test
+    @DisplayName("busyTimeMetricTest() Test")
+    @SuppressWarnings("unchecked")
+    void busyTimeMetricTest() throws InterruptedException {
+        // given
+        final Semaphore handling1 = new Semaphore(0);
+        final Semaphore handling2 = new Semaphore(0);
+        final InterruptableConsumer<Integer> handler = i -> {
+            handling1.release();
+            handling2.acquire();
+        };
+        final FakeTime time = new FakeTime();
+
+        final QueueThread<Integer> queueThread = new QueueThreadConfiguration<Integer>(getStaticThreadManager())
+                .setThreadName(THREAD_NAME)
+                .setHandler(handler)
+                .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics)
+                        .setCategory(METRIC_CATEGORY)
+                        .setTime(time)
+                        .enableBusyTimeMetric())
+                .build();
+        final FunctionGauge<Double> busyTimeMetric = (FunctionGauge<Double>)
+                metrics.getMetric(METRIC_CATEGORY, QueueThreadMetrics.buildBusyTimeMetricName(THREAD_NAME));
+
+        queueThread.add(123);
+        queueThread.start();
+
+        // when
+        // wait for handling to start
+        handling1.acquire();
+        // advance time
+        time.tick(Duration.ofSeconds(1));
+        // release handling thread
+        handling2.release();
+        // wait for handling to finish
+        queueThread.waitUntilNotBusy();
+        // advance time again
+        time.tick(Duration.ofSeconds(1));
+
+        // then
+        assertThat(busyTimeMetric.get()).isEqualTo(0.5);
     }
 
     @Test

@@ -130,8 +130,8 @@ public class EmergencyReconnectTests {
         final Random random = RandomUtils.initRandom(null);
         final NotificationEngine notificationEngine = NotificationEngine.buildEngine(getStaticThreadManager());
         final int numNodes = 4;
-        final List<Long> nodeIds =
-                IntStream.range(0, numNodes).mapToLong(i -> (long) i).boxed().toList();
+        final List<NodeId> nodeIds =
+                IntStream.range(0, numNodes).mapToObj(NodeId::new).toList();
         final long emergencyRound = 1L;
 
         final AddressBook addressBook = newAddressBook(random, numNodes);

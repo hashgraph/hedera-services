@@ -16,15 +16,26 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.token.TokenFeeScheduleUpdateTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
+import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.service.token.impl.config.TokenServiceConfig;
+import com.hedera.node.app.service.token.impl.validators.CustomFeesValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -40,16 +51,23 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
+    private final CustomFeesValidator customFeesValidator;
+
     @Inject
-    public TokenFeeScheduleUpdateHandler() {
-        // Exists for injection
+    public TokenFeeScheduleUpdateHandler(@NonNull final CustomFeesValidator customFeesValidator) {
+        requireNonNull(customFeesValidator);
+        this.customFeesValidator = customFeesValidator;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
         final var op = context.body().tokenFeeScheduleUpdateOrThrow();
         final var tokenId = op.tokenIdOrElse(TokenID.DEFAULT);
+        pureChecks(op);
         final var tokenStore = context.createStore(ReadableTokenStore.class);
         final var tokenMetadata = tokenStore.getTokenMeta(tokenId);
         if (tokenMetadata == null) throw new PreCheckException(INVALID_TOKEN_ID);
@@ -64,8 +82,65 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
         // we choose to fail with TOKEN_HAS_NO_FEE_SCHEDULE_KEY in the handle() method
     }
 
+    /**
+     * Handles a transaction with {@link HederaFunctionality#TOKEN_FEE_SCHEDULE_UPDATE}
+     * @param context the context of the transaction
+     */
     @Override
-    public void handle(@NonNull final HandleContext context) throws HandleException {
-        throw new UnsupportedOperationException("Not implemented");
+    public void handle(@NonNull final HandleContext context) {
+        requireNonNull(context);
+
+        final var txn = context.body();
+
+        // get the latest configuration
+        final var config = context.config().getConfigData(TokenServiceConfig.class);
+        final var op = txn.tokenFeeScheduleUpdateOrThrow();
+
+        // validate checks in handle
+        final var tokenStore = context.writableStore(WritableTokenStore.class);
+        final var token = validateSemantics(op, tokenStore, config);
+
+        // create readable stores from the context
+        final var readableAccountStore = context.readableStore(ReadableAccountStore.class);
+        final var readableTokenRelsStore = context.readableStore(ReadableTokenRelationStore.class);
+
+        // validate custom fees before committing
+        customFeesValidator.validateForFeeScheduleUpdate(
+                token, readableAccountStore, readableTokenRelsStore, tokenStore, op.customFees());
+        // set the custom fees on token
+        final var copy = token.copyBuilder().customFees(op.customFees());
+        // add token to the modifications map
+        tokenStore.put(copy.build());
+    }
+
+    /**
+     * Validate semantics of the transaction in handle call. This method is called before the
+     * transaction is handled.
+     * @param op the transaction body
+     * @param tokenStore the token store
+     * @param config the token service config
+     * @return the token
+     */
+    private Token validateSemantics(
+            @NonNull final TokenFeeScheduleUpdateTransactionBody op,
+            @NonNull final WritableTokenStore tokenStore,
+            @NonNull final TokenServiceConfig config) {
+        var token = tokenStore.get(op.tokenIdOrElse(TokenID.DEFAULT).tokenNum());
+        validateTrue(token.isPresent(), INVALID_TOKEN_ID);
+        validateTrue(token.get().hasFeeScheduleKey(), TOKEN_HAS_NO_FEE_SCHEDULE_KEY);
+        validateTrue(op.customFees().size() <= config.maxCustomFeesAllowed(), CUSTOM_FEES_LIST_TOO_LONG);
+        return token.get();
+    }
+
+    /**
+     * Perform pure semantic checks on the transaction body, that doesn't involve any state lookups or dynamic property
+     * checks.
+     * @param op the transaction body
+     * @throws PreCheckException if any of the checks fail
+     */
+    private void pureChecks(@NonNull final TokenFeeScheduleUpdateTransactionBody op) throws PreCheckException {
+        if (!op.hasTokenId()) {
+            throw new PreCheckException(INVALID_TOKEN_ID);
+        }
     }
 }
