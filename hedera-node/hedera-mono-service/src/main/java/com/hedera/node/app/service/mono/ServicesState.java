@@ -412,6 +412,9 @@ public class ServicesState extends PartialNaryMerkleInternal
                 if (getChild(StateChildIndices.STORAGE) instanceof VirtualMap<?, ?> storage) {
                     storage.fullLeafRehash();
                 }
+                if (getChild(StateChildIndices.UNIQUE_TOKENS) instanceof VirtualMap<?, ?> storage) {
+                    storage.fullLeafRehash();
+                }
                 log.info(LogMarker.STARTUP.getMarker(), "The leaf rehashing for VirtualMap-s is completed");
             }
 
