@@ -16,35 +16,33 @@
 
 package com.swirlds.platform.test.event.creation;
 
+import com.swirlds.common.system.NodeId;
+import com.swirlds.platform.test.simulated.config.NodeConfig;
 import java.time.Duration;
-import java.util.function.Consumer;
+import java.util.Map;
 
 /**
  * Parameters for an event creation simulation
  *
  * @param seed
  * 		the seed to use for randomness
- * @param numNodes
- * 		number of nodes in the network
- * @param createEventEvery
- * 		attempt event creation at this interval
+ * @param nodeConfigs
+ * 		configuration for each node, the number of nodes is determined by the list size
  * @param maxDelay
  * 		the maximum delay between 2 nodes
  * @param simulatedTime
  * 		the amount of time to simulate
  * @param simulationStep
  * 		the step size of the fake clock
- * @param superMajority
- * 		should the supermajority of nodes create events
- * @param validator
- * 		validator of results
  */
 public record EventCreationSimulationParams(
         long seed,
-        int numNodes,
-        Duration createEventEvery,
+        Map<NodeId, NodeConfig> nodeConfigs,
         Duration maxDelay,
         Duration simulatedTime,
         Duration simulationStep,
-        boolean superMajority,
-        Consumer<EventCreationSimulationResults> validator) {}
+        EventCreationExpectedResults expectedResults) {
+    public int numNodes() {
+        return nodeConfigs.size();
+    }
+}

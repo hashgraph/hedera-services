@@ -26,6 +26,7 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.system.BasicSoftwareVersion;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomUtils;
@@ -426,7 +427,7 @@ public class SavedStateLoaderTests {
         }
         states.forEach(ss -> {
             try {
-                SignedStateFileWriter.writeSignedStateToDisk(0, getStateDir(ss.getRound()), ss, "test");
+                SignedStateFileWriter.writeSignedStateToDisk(new NodeId(0), getStateDir(ss.getRound()), ss, "test");
             } catch (final IOException e) {
                 throw new RuntimeException(e);
             }

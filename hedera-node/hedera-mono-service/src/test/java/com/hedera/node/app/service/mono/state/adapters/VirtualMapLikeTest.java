@@ -26,7 +26,6 @@ import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKeySeriali
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKeySupplier;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValueSupplier;
-import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
@@ -96,8 +95,6 @@ class VirtualMapLikeTest {
                 .storageDir(TemporaryFileBuilder.buildTemporaryDirectory("jasperdb"))
                 .keySerializer(keySerializer)
                 .virtualLeafRecordSerializer(new VirtualLeafRecordSerializer<>(
-                        (short) 1,
-                        DigestType.SHA_384,
                         (short) 1,
                         DataFileCommon.VARIABLE_DATA_SIZE,
                         new EntityNumVirtualKeySupplier(),

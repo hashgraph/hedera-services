@@ -787,7 +787,7 @@ public class PlatformTestingToolMain implements SwirldMain {
                     // for example, node 0 starts after 10 seconds, node 1 starts after 20 seconds
                     // node 2 starts after 30 seconds
                     try {
-                        Thread.sleep(submitConfig.getInTurnIntervalSecond() * MILLIS_TO_SEC * selfId.getIdAsInt());
+                        Thread.sleep(submitConfig.getInTurnIntervalSecond() * MILLIS_TO_SEC * selfId.id());
                     } catch (InterruptedException e) {
                         // Suppress
                     }

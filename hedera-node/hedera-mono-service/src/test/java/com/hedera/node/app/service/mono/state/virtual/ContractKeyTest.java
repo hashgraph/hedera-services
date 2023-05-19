@@ -55,6 +55,10 @@ class ContractKeyTest {
 
     // The first two columns form a ContractKey(id, 32-byte word) and the third column is the
     // result of running ContractKey.hashCode() on that key using the v0.35.3 tag.
+    //
+    // Important! 🛑 ⛔ 🚫 ⚠ ✸ ☞  These values should never be changed! If this test fails in
+    // the future, it means the hashCode implementation was changed and these
+    // values should not be changed to make the test pass.
     @CsvSource({
         "5347959350198992124,cd53935a7e183dac3557134dfc73766479c520c7ffeace8723488bffa2da3fa2,-672529924",
         "4793581390134811504,4a164095f80400a99cc906b97cda21a0ccbdcc68c30f25acfb3be365188ffa92,-117896145",

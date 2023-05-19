@@ -46,6 +46,7 @@ public class ReadableTokenStoreImpl implements ReadableTokenStore {
         this.tokenState = states.get("TOKENS");
     }
 
+    // FUTURE : Use Token instead
     @Override
     @Nullable
     public TokenMetadata getTokenMeta(@NonNull final TokenID id) {
