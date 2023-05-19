@@ -20,6 +20,7 @@ import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.common.units.DataUnit.UNIT_BYTES;
 import static com.swirlds.common.units.DataUnit.UNIT_MEGABYTES;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.LogMarker.STARTUP;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
@@ -30,6 +31,7 @@ import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.time.Duration;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -189,6 +191,31 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
             lastWrittenEvent = event.getStreamSequenceNumber();
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void registerDiscontinuity() {
+        logger.warn(
+                STARTUP.getMarker(),
+                "The preconsensus event stream has experienced a discontinuity. "
+                        + "All events written to the preconsensus event stream after this discontinuity "
+                        + "will be unrecoverable until a state snapshot that provides a valid starting "
+                        + "point is written to disk.");
+
+        if (currentMutableFile != null) {
+            closeFile();
+        }
+
+        final PreConsensusEventFile file = fileManager.getNextFileDescriptor(0, 0, true);
+
+        try {
+            Files.createFile(file.path());
+        } catch (final IOException e) {
+            throw new UncheckedIOException("unable create file to mark discontinuity", e);
         }
     }
 

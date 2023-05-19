@@ -97,8 +97,8 @@ public class PreConsensusEventFileManager {
      * Instantiate an event file collection. Loads all event files in the specified directory.
      *
      * @param platformContext the platform context for this node
-     * @param time          provides wall clock time
-     * @param selfId        the ID of this node
+     * @param time            provides wall clock time
+     * @param selfId          the ID of this node
      */
     public PreConsensusEventFileManager(
             @NonNull final PlatformContext platformContext, @NonNull final Time time, final long selfId)
@@ -382,10 +382,26 @@ public class PreConsensusEventFileManager {
      * Create a new event file descriptor for the next event file, and start tracking it. (Note, this method doesn't
      * actually open the file, it just permits the file to be opened by the caller.)
      *
+     * @param minimumGeneration the minimum generation that can be stored in the file
+     * @param maximumGeneration the maximum generation that can be stored in the file
      * @return a new event file descriptor
      */
     public @NonNull PreConsensusEventFile getNextFileDescriptor(
             final long minimumGeneration, final long maximumGeneration) {
+        return getNextFileDescriptor(minimumGeneration, maximumGeneration, false);
+    }
+
+    /**
+     * Create a new event file descriptor for the next event file, and start tracking it. (Note, this method doesn't
+     * actually open the file, it just permits the file to be opened by the caller.)
+     *
+     * @param minimumGeneration the minimum generation that can be stored in the file
+     * @param maximumGeneration the maximum generation that can be stored in the file
+     * @param discontinuity     true if the file is being created due to a discontinuity in the event stream
+     * @return a new event file descriptor
+     */
+    public @NonNull PreConsensusEventFile getNextFileDescriptor(
+            final long minimumGeneration, final long maximumGeneration, final boolean discontinuity) {
 
         if (minimumGeneration > maximumGeneration) {
             throw new IllegalArgumentException("minimum generation must be less than or equal to maximum generation");
@@ -421,7 +437,8 @@ public class PreConsensusEventFileManager {
                 minimumGenerationForFile,
                 maximumGenerationForFile,
                 time.now(),
-                databaseDirectory);
+                databaseDirectory,
+                discontinuity);
 
         files.addLast(descriptor);
 

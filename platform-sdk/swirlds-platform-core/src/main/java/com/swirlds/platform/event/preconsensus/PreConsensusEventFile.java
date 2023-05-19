@@ -60,19 +60,23 @@ import java.util.stream.Stream;
  * @param path              the location where this file can be found
  */
 public record PreConsensusEventFile(
-        long sequenceNumber, long minimumGeneration, long maximumGeneration, Instant timestamp, Path path,
+        long sequenceNumber,
+        long minimumGeneration,
+        long maximumGeneration,
+        Instant timestamp,
+        Path path,
         boolean discontinuity)
         implements Comparable<PreConsensusEventFile> {
 
     /**
-     * The file extension for standard files. Stands for "Pre-Consensus EventS".
+     * The file extension for standard files. Stands for "Pre-Consensus Event Stream".
      */
     public static final String EVENT_FILE_EXTENSION = ".pces";
 
     /**
-     * The file extension used for a placeholder file marking a discontinuity.
+     * The file extension used to signal stream discontinuities.
      */
-    public static final String EVENT_FILE_DISCONTINUITY_EXTENSION = ".dpces";
+    public static final String EVENT_FILE_DISCONTINUITY_EXTENSION = ".pcesD";
 
     /**
      * The character used to separate fields in the file name.
