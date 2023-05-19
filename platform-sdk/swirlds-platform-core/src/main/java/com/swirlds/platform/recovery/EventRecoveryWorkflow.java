@@ -35,6 +35,7 @@ import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.stream.RunningHashCalculatorForStream;
 import com.swirlds.common.system.InitTrigger;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldMain;
@@ -97,16 +98,24 @@ public final class EventRecoveryWorkflow {
      * @param loadSigningKeys         if true then load the signing keys
      */
     public static void recoverState(
-            final Path signedStateFile,
-            final List<Path> configurationFiles,
-            final Path eventStreamDirectory,
-            final String mainClassName,
-            final Boolean allowPartialRounds,
-            final Long finalRound,
-            final Path resultingStateDirectory,
-            final Long selfId,
+            @NonNull final Path signedStateFile,
+            @NonNull final List<Path> configurationFiles,
+            @NonNull final Path eventStreamDirectory,
+            @NonNull final String mainClassName,
+            @NonNull final Boolean allowPartialRounds,
+            @NonNull final Long finalRound,
+            @NonNull final Path resultingStateDirectory,
+            @NonNull final NodeId selfId,
             final boolean loadSigningKeys)
             throws IOException {
+        Objects.requireNonNull(signedStateFile, "signedStateFile must not be null");
+        Objects.requireNonNull(configurationFiles, "configurationFiles must not be null");
+        Objects.requireNonNull(eventStreamDirectory, "eventStreamDirectory must not be null");
+        Objects.requireNonNull(mainClassName, "mainClassName must not be null");
+        Objects.requireNonNull(allowPartialRounds, "allowPartialRounds must not be null");
+        Objects.requireNonNull(finalRound, "finalRound must not be null");
+        Objects.requireNonNull(resultingStateDirectory, "resultingStateDirectory must not be null");
+        Objects.requireNonNull(selfId, "selfId must not be null");
 
         setupConstructableRegistry();
 
@@ -241,15 +250,16 @@ public final class EventRecoveryWorkflow {
             @NonNull final SwirldMain appMain,
             @NonNull final IOIterator<Round> roundIterator,
             final long finalRound,
-            final long selfId,
+            @NonNull final NodeId selfId,
             final boolean loadSigningKeys)
             throws IOException {
 
-        Objects.requireNonNull(platformContext);
-        Objects.requireNonNull(configuration);
-        Objects.requireNonNull(initialState);
-        Objects.requireNonNull(appMain);
-        Objects.requireNonNull(roundIterator);
+        Objects.requireNonNull(platformContext, "platformContext must not be null");
+        Objects.requireNonNull(configuration, "configuration must not be null");
+        Objects.requireNonNull(initialState, "initialState must not be null");
+        Objects.requireNonNull(appMain, "appMain must not be null");
+        Objects.requireNonNull(roundIterator, "roundIterator must not be null");
+        Objects.requireNonNull(selfId, "selfId must not be null");
 
         final long roundsNonAncient =
                 configuration.getConfigData(ConsensusConfig.class).roundsNonAncient();

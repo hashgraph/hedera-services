@@ -28,6 +28,7 @@ import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
+import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
@@ -38,10 +39,8 @@ import com.swirlds.platform.components.transaction.system.PreConsensusSystemTran
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
-import com.swirlds.platform.eventhandling.PreConsensusEventHandler;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusHandlingMetrics;
-import com.swirlds.platform.metrics.ConsensusMetrics;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.network.connectivity.SocketFactory;
 import com.swirlds.platform.network.connectivity.TcpFactory;
@@ -121,11 +120,13 @@ final class PlatformConstructor {
      * @param threadManager       responsible for managing thread lifecycles
      * @param selfId              this node's id
      * @param signedStateConsumer consumer of signed states that hashes the state and collects signatures
+     * @param metrics             the metrics object
      */
     static QueueThread<ReservedSignedState> stateHashSignQueue(
             final ThreadManager threadManager,
             final long selfId,
-            final InterruptableConsumer<ReservedSignedState> signedStateConsumer) {
+            final InterruptableConsumer<ReservedSignedState> signedStateConsumer,
+            final Metrics metrics) {
 
         return new QueueThreadConfiguration<ReservedSignedState>(threadManager)
                 .setNodeId(selfId)
@@ -133,6 +134,7 @@ final class PlatformConstructor {
                 .setThreadName("state-hash-sign")
                 .setHandler(signedStateConsumer)
                 .setCapacity(STATE_HASH_QUEUE_MAX)
+                .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics).enableBusyTimeMetric())
                 .build();
     }
 
@@ -180,26 +182,6 @@ final class PlatformConstructor {
                 settings,
                 inFreezeChecker,
                 initialState);
-    }
-
-    /**
-     * Constructs a new {@link PreConsensusEventHandler}.
-     *
-     * @param metrics            the metrics engine
-     * @param threadManager      responsible for creating and managing threads
-     * @param selfId             this node's id
-     * @param swirldStateManager the instance of {@link SwirldStateManager}
-     * @param consensusMetrics   the class that records stats relating to {@link SwirldStateManager}
-     * @return the newly constructed instance of {@link PreConsensusEventHandler}
-     */
-    static PreConsensusEventHandler preConsensusEventHandler(
-            @NonNull final Metrics metrics,
-            final ThreadManager threadManager,
-            final NodeId selfId,
-            final SwirldStateManager swirldStateManager,
-            final ConsensusMetrics consensusMetrics) {
-
-        return new PreConsensusEventHandler(metrics, threadManager, selfId, swirldStateManager, consensusMetrics);
     }
 
     /**
