@@ -56,16 +56,23 @@ import java.util.stream.Stream;
  * @param minimumGeneration the minimum generation of events that are permitted to be in this file
  * @param maximumGeneration the maximum generation of events that are permitted to be in this file
  * @param timestamp         the timestamp of when the writing of this file began
+ * @param discontinuity     if true then this file is a placeholder signaling a discontinuity
  * @param path              the location where this file can be found
  */
 public record PreConsensusEventFile(
-        long sequenceNumber, long minimumGeneration, long maximumGeneration, Instant timestamp, Path path)
+        long sequenceNumber, long minimumGeneration, long maximumGeneration, Instant timestamp, Path path,
+        boolean discontinuity)
         implements Comparable<PreConsensusEventFile> {
 
     /**
-     * The file extension. Stands for "Pre-Consensus EventS".
+     * The file extension for standard files. Stands for "Pre-Consensus EventS".
      */
     public static final String EVENT_FILE_EXTENSION = ".pces";
+
+    /**
+     * The file extension used for a placeholder file marking a discontinuity.
+     */
+    public static final String EVENT_FILE_DISCONTINUITY_EXTENSION = ".dpces";
 
     /**
      * The character used to separate fields in the file name.
@@ -104,6 +111,28 @@ public record PreConsensusEventFile(
             final Instant timestamp,
             final Path rootDirectory) {
 
+        return of(sequenceNumber, minimumGeneration, maximumGeneration, timestamp, rootDirectory, false);
+    }
+
+    /**
+     * Create a new event file descriptor.
+     *
+     * @param sequenceNumber    the sequence number of the descriptor
+     * @param minimumGeneration the minimum event generation permitted to be in this file (inclusive)
+     * @param maximumGeneration the maximum event generation permitted to be in this file (inclusive)
+     * @param timestamp         the timestamp when this file was created (wall clock time)
+     * @param rootDirectory     the directory where event stream files are stored
+     * @param discontinuity     if true then this file is a placeholder signaling a discontinuity
+     * @return a description of the file
+     */
+    public static PreConsensusEventFile of(
+            final long sequenceNumber,
+            final long minimumGeneration,
+            final long maximumGeneration,
+            final Instant timestamp,
+            final Path rootDirectory,
+            final boolean discontinuity) {
+
         final Path parentDirectory = buildParentDirectory(rootDirectory, timestamp);
         final String fileName = buildFileName(sequenceNumber, minimumGeneration, maximumGeneration, timestamp);
         final Path path = parentDirectory.resolve(fileName);
@@ -113,7 +142,8 @@ public record PreConsensusEventFile(
                 minimumGeneration,
                 maximumGeneration,
                 Instant.ofEpochMilli(timestamp.toEpochMilli()),
-                path);
+                path,
+                discontinuity);
     }
 
     /**
@@ -137,7 +167,7 @@ public record PreConsensusEventFile(
         final Path newPath = parentDirectory.resolve(fileName);
 
         return new PreConsensusEventFile(
-                sequenceNumber(), minimumGeneration, maximumGenerationInFile, timestamp, newPath);
+                sequenceNumber(), minimumGeneration, maximumGenerationInFile, timestamp, newPath, discontinuity);
     }
 
     /**
@@ -150,7 +180,12 @@ public record PreConsensusEventFile(
     public static PreConsensusEventFile of(final Path filePath) throws IOException {
         Objects.requireNonNull(filePath, "filePath");
 
-        if (!filePath.toString().endsWith(EVENT_FILE_EXTENSION)) {
+        final boolean discontinuity;
+        if (!filePath.toString().endsWith(EVENT_FILE_DISCONTINUITY_EXTENSION)) {
+            discontinuity = true;
+        } else if (filePath.toString().endsWith(EVENT_FILE_EXTENSION)) {
+            discontinuity = false;
+        } else {
             throw new IOException("File " + filePath + " has the wrong type");
         }
 
@@ -169,7 +204,8 @@ public record PreConsensusEventFile(
                     Long.parseLong(elements[2].replace(MINIMUM_GENERATION_PREFIX, "")),
                     Long.parseLong(elements[3].replace(MAXIMUM_GENERATION_PREFIX, "")),
                     parseSanitizedTimestamp(elements[0]),
-                    filePath);
+                    filePath,
+                    discontinuity);
         } catch (final NumberFormatException | DateTimeParseException ex) {
             throw new IOException("unable to parse " + filePath, ex);
         }
