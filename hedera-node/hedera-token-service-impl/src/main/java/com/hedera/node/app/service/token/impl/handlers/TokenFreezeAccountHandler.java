@@ -32,6 +32,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
+import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -71,21 +72,19 @@ public class TokenFreezeAccountHandler implements TransactionHandler {
      * This method is called during the handle workflow. It executes the actual transaction.
      *
      * @param txn the {@link TokenFreezeAccountTransactionBody} of the active transaction
-     * @param accountStore the {@link ReadableAccountStore} for the active transaction
-     * @param tokenStore the {@link ReadableTokenStore} for the active transaction
+     * @param context the {@link HandleContext} for the active transaction
      * @param tokenRelStore the {@link WritableTokenRelationStore} for the active transaction
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void handle(
             @NonNull final TransactionBody txn,
-            @NonNull final ReadableAccountStore accountStore,
-            @NonNull final ReadableTokenStore tokenStore,
+            @NonNull final HandleContext context,
             @NonNull final WritableTokenRelationStore tokenRelStore)
             throws HandleException {
         requireNonNull(txn);
-        requireNonNull(accountStore);
-        requireNonNull(tokenStore);
         requireNonNull(tokenRelStore);
+        final var accountStore = requireNonNull(context.createReadableStore(ReadableAccountStore.class));
+        final var tokenStore = requireNonNull(context.createReadableStore(ReadableTokenStore.class));
 
         final var op = txn.tokenFreezeOrThrow();
         final var tokenRel = validateSemantics(op, accountStore, tokenStore, tokenRelStore);

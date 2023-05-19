@@ -572,7 +572,6 @@ class MonoTransactionDispatcherTest {
     @Test
     void dispatchesTokenAssociateAsExpected() {
         given(writableStoreFactory.createAccountStore()).willReturn(writableAccountStore);
-        given(writableStoreFactory.createTokenStore()).willReturn(writableTokenStore);
         given(writableStoreFactory.createTokenRelStore()).willReturn(writableTokenRelStore);
 
         dispatcher.dispatchHandle(
@@ -585,8 +584,6 @@ class MonoTransactionDispatcherTest {
 
     @Test
     void dispatchesTokenFreezeAsExpected() {
-        given(writableStoreFactory.createAccountStore()).willReturn(writableAccountStore);
-        given(writableStoreFactory.createTokenStore()).willReturn(writableTokenStore);
         given(writableStoreFactory.createTokenRelStore()).willReturn(writableTokenRelStore);
 
         dispatcher.dispatchHandle(HederaFunctionality.TOKEN_FREEZE_ACCOUNT, transactionBody, writableStoreFactory);
@@ -596,8 +593,6 @@ class MonoTransactionDispatcherTest {
 
     @Test
     void dispatchesTokenUnfreezeAsExpected() {
-        given(writableStoreFactory.createAccountStore()).willReturn(writableAccountStore);
-        given(writableStoreFactory.createTokenStore()).willReturn(writableTokenStore);
         given(writableStoreFactory.createTokenRelStore()).willReturn(writableTokenRelStore);
 
         dispatcher.dispatchHandle(HederaFunctionality.TOKEN_UNFREEZE_ACCOUNT, transactionBody, writableStoreFactory);

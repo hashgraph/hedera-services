@@ -29,8 +29,6 @@ import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
@@ -109,15 +107,9 @@ public class TransactionDispatcher {
                     writableStoreFactory.createAccountStore(),
                     writableStoreFactory.createTokenRelStore());
             case TOKEN_FREEZE_ACCOUNT -> dispatchTokenFreezeAccount(
-                    txn,
-                    writableStoreFactory.createAccountStore(),
-                    writableStoreFactory.createTokenStore(),
-                    writableStoreFactory.createTokenRelStore());
+                    txn, handleContext, writableStoreFactory.createTokenRelStore());
             case TOKEN_UNFREEZE_ACCOUNT -> dispatchTokenUnfreezeAccount(
-                    txn,
-                    writableStoreFactory.createAccountStore(),
-                    writableStoreFactory.createTokenStore(),
-                    writableStoreFactory.createTokenRelStore());
+                    txn, handleContext, writableStoreFactory.createTokenRelStore());
             case TOKEN_GRANT_KYC_TO_ACCOUNT -> dispatchTokenGrantKycToAccount(
                     txn, writableStoreFactory.createTokenRelStore());
             case TOKEN_REVOKE_KYC_FROM_ACCOUNT -> dispatchTokenRevokeKycFromAccount(
@@ -332,15 +324,12 @@ public class TransactionDispatcher {
      */
     private void dispatchTokenFreezeAccount(
             @NonNull TransactionBody tokenFreeze,
-            @NonNull final ReadableAccountStore accountStore,
-            @NonNull final ReadableTokenStore tokenStore,
+            @NonNull HandleContext context,
             @NonNull final WritableTokenRelationStore tokenRelStore) {
-        requireNonNull(accountStore);
-        requireNonNull(tokenStore);
         requireNonNull(tokenRelStore);
 
         final var handler = handlers.tokenFreezeAccountHandler();
-        handler.handle(tokenFreeze, accountStore, tokenStore, tokenRelStore);
+        handler.handle(tokenFreeze, context, tokenRelStore);
         finishTokenFreeze(tokenRelStore);
     }
 
@@ -349,15 +338,12 @@ public class TransactionDispatcher {
      */
     private void dispatchTokenUnfreezeAccount(
             @NonNull TransactionBody tokenFreeze,
-            @NonNull final ReadableAccountStore accountStore,
-            @NonNull final ReadableTokenStore tokenStore,
+            @NonNull HandleContext context,
             @NonNull final WritableTokenRelationStore tokenRelStore) {
-        requireNonNull(accountStore);
-        requireNonNull(tokenStore);
         requireNonNull(tokenRelStore);
 
         final var handler = handlers.tokenUnfreezeAccountHandler();
-        handler.handle(tokenFreeze, accountStore, tokenStore, tokenRelStore);
+        handler.handle(tokenFreeze, context, tokenRelStore);
         finishTokenUnfreeze(tokenRelStore);
     }
 

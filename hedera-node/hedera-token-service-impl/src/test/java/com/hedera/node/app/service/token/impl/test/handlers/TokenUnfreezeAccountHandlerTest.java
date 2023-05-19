@@ -58,6 +58,7 @@ import com.hedera.node.app.service.token.impl.handlers.TokenUnfreezeAccountHandl
 import com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils;
 import com.hedera.node.app.spi.fixtures.Assertions;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import java.util.Optional;
@@ -135,21 +136,21 @@ class TokenUnfreezeAccountHandlerTest {
         @SuppressWarnings("DataFlowIssue")
         @Test
         void nullArgThrowsException() {
-            assertThatThrownBy(() -> subject.handle(null, accountStore, tokenStore, tokenRelStore))
+            final var txn = mock(TransactionBody.class);
+            final var context = mock(HandleContext.class);
+
+            assertThatThrownBy(() -> subject.handle(null, context, tokenRelStore))
                     .isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> subject.handle(mock(TransactionBody.class), null, tokenStore, tokenRelStore))
-                    .isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> subject.handle(mock(TransactionBody.class), accountStore, null, tokenRelStore))
-                    .isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> subject.handle(mock(TransactionBody.class), accountStore, tokenStore, null))
-                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> subject.handle(txn, null, tokenRelStore)).isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> subject.handle(txn, context, null)).isInstanceOf(NullPointerException.class);
         }
 
         @Test
         void tokenNotPresentInTxnBody() {
             final var noTokenTxn = newUnfreezeTxn(null, ACCOUNT_13257);
+            final var context = mockContext();
 
-            assertThatThrownBy(() -> subject.handle(noTokenTxn, accountStore, tokenStore, tokenRelStore))
+            assertThatThrownBy(() -> subject.handle(noTokenTxn, context, tokenRelStore))
                     .isInstanceOf(HandleException.class)
                     .has(responseCode(INVALID_TOKEN_ID));
             verifyNoPut();
@@ -161,7 +162,7 @@ class TokenUnfreezeAccountHandlerTest {
             final var noAcctTxn = newUnfreezeTxn(pbjToken, null);
             given(tokenStore.getTokenMeta(pbjToken)).willReturn(tokenMetaWithFreezeKey());
 
-            assertThatThrownBy(() -> subject.handle(noAcctTxn, accountStore, tokenStore, tokenRelStore))
+            assertThatThrownBy(() -> subject.handle(noAcctTxn, mockContext(), tokenRelStore))
                     .isInstanceOf(HandleException.class)
                     .has(responseCode(INVALID_ACCOUNT_ID));
             verifyNoPut();
@@ -173,7 +174,7 @@ class TokenUnfreezeAccountHandlerTest {
             given(tokenStore.getTokenMeta(token)).willReturn(null);
             final var txn = newUnfreezeTxn(token);
 
-            assertThatThrownBy(() -> subject.handle(txn, accountStore, tokenStore, tokenRelStore))
+            assertThatThrownBy(() -> subject.handle(txn, mockContext(), tokenRelStore))
                     .isInstanceOf(HandleException.class)
                     .has(responseCode(INVALID_TOKEN_ID));
             verifyNoPut();
@@ -185,7 +186,7 @@ class TokenUnfreezeAccountHandlerTest {
             given(tokenStore.getTokenMeta(token)).willReturn(tokenMetaWithFreezeKey(null));
             final var txn = newUnfreezeTxn(token);
 
-            assertThatThrownBy(() -> subject.handle(txn, accountStore, tokenStore, tokenRelStore))
+            assertThatThrownBy(() -> subject.handle(txn, mockContext(), tokenRelStore))
                     .isInstanceOf(HandleException.class)
                     .has(responseCode(TOKEN_HAS_NO_FREEZE_KEY));
             verifyNoPut();
@@ -198,7 +199,7 @@ class TokenUnfreezeAccountHandlerTest {
             given(accountStore.getAccountById(ACCOUNT_13257)).willReturn(null);
             final var txn = newUnfreezeTxn(token);
 
-            assertThatThrownBy(() -> subject.handle(txn, accountStore, tokenStore, tokenRelStore))
+            assertThatThrownBy(() -> subject.handle(txn, mockContext(), tokenRelStore))
                     .isInstanceOf(HandleException.class)
                     .has(responseCode(INVALID_ACCOUNT_ID));
             verifyNoPut();
@@ -215,7 +216,7 @@ class TokenUnfreezeAccountHandlerTest {
             given(tokenRelStore.getForModify(ACCOUNT_13257, token)).willReturn(Optional.empty());
             final var txn = newUnfreezeTxn(token);
 
-            assertThatThrownBy(() -> subject.handle(txn, accountStore, tokenStore, tokenRelStore))
+            assertThatThrownBy(() -> subject.handle(txn, mockContext(), tokenRelStore))
                     .isInstanceOf(HandleException.class)
                     .has(responseCode(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
             verifyNoPut();
@@ -236,13 +237,21 @@ class TokenUnfreezeAccountHandlerTest {
                             .build()));
             final var txn = newUnfreezeTxn(token);
 
-            subject.handle(txn, accountStore, tokenStore, tokenRelStore);
+            subject.handle(txn, mockContext(), tokenRelStore);
             verify(tokenRelStore)
                     .put(TokenRelation.newBuilder()
                             .tokenNumber(token.tokenNum())
                             .accountNumber(accountNumber)
                             .frozen(false)
                             .build());
+        }
+
+        private HandleContext mockContext() {
+            final var context = mock(HandleContext.class);
+            given(context.createReadableStore(ReadableAccountStore.class)).willReturn(accountStore);
+            given(context.createReadableStore(ReadableTokenStore.class)).willReturn(tokenStore);
+
+            return context;
         }
 
         private void verifyNoPut() {
