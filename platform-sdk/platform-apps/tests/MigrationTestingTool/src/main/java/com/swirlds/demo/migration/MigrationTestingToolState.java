@@ -246,7 +246,6 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
             logger.error(MARKER, "InitTrigger was {} when expecting RESTART or RECONNECT", trigger);
         }
 
-        // FUTURE WORK: this needs to be updated once we create the next saved state for the MigrationTestingTool
         if (!Objects.equals(previousSoftwareVersion, PREVIOUS_SOFTWARE_VERSION)) {
             logger.error(
                     MARKER,
