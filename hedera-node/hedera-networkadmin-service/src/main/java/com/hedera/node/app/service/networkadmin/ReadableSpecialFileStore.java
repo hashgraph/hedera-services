@@ -22,7 +22,7 @@ import java.util.Optional;
 /**
  * Provides read-only methods for interacting with the underlying data storage mechanisms for
  * working with special files used in freeze transactions.
- * </p>
+ * <br/>
  * This is a temporary interface. It will be replaced by a new interface in FileService.
  */
 public interface ReadableSpecialFileStore {
