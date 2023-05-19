@@ -119,7 +119,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         topicStore = new WritableTopicStore(writableStates);
         final var consensusServiceConfig = new ConsensusServiceConfig(10L, 100);
         given(config.getConfigData(ConsensusServiceConfig.class)).willReturn(consensusServiceConfig);
-        given(handleContext.config()).willReturn(config);
+        given(handleContext.configuration()).willReturn(config);
         given(handleContext.writableStore(WritableTopicStore.class)).willReturn(topicStore);
         given(handleContext.recordBuilder(ConsensusCreateTopicRecordBuilder.class))
                 .willReturn(recordBuilder);

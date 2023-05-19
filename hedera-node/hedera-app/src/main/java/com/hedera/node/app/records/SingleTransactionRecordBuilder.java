@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.records;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
@@ -45,16 +47,17 @@ import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRe
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
 import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.service.util.impl.records.PrngRecordBuilder;
+import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.records.SingleTransactionRecord;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Instant;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * A custom builder for SingleTransactionRecord.
@@ -69,7 +72,7 @@ public class SingleTransactionRecordBuilder
     private Transaction transaction;
     private Bytes transactionBytes;
     // fields needed for TransactionRecord
-    private Timestamp consensusTimestamp;
+    private final Instant consensusNow;
     private long transactionFee;
     private ContractFunctionResult contractCallResult;
     private ContractFunctionResult contractCreateResult;
@@ -104,9 +107,14 @@ public class SingleTransactionRecordBuilder
     public final List<AbstractMap.SimpleEntry<ContractActions, Boolean>> contractActions = new ArrayList<>();
     public final List<AbstractMap.SimpleEntry<ContractBytecode, Boolean>> contractBytecodes = new ArrayList<>();
 
+    public SingleTransactionRecordBuilder(@NonNull final Instant consensusNow) {
+        this.consensusNow = requireNonNull(consensusNow, "consensusNow must not be null");
+    }
+
     @SuppressWarnings("DataFlowIssue")
     public SingleTransactionRecord build() {
         // compute transaction hash: TODO could pass in if we have it calculated else where
+        final Timestamp consensusTimestamp = HapiUtils.asTimestamp(consensusNow);
         final byte[] transactionBytes = new byte[(int) this.transactionBytes.length()];
         this.transactionBytes.getBytes(0, transactionBytes);
         final Bytes transactionHash = Bytes.wrap(new Hash(transactionBytes).getValue());
@@ -186,14 +194,9 @@ public class SingleTransactionRecordBuilder
     // ------------------------------------------------------------------------------------------------------------------------
     // fields needed for TransactionRecord
 
-    @Nullable
-    public Timestamp consensusTimestamp() {
-        return consensusTimestamp;
-    }
-
-    public SingleTransactionRecordBuilder consensusTimestamp(Timestamp consensusTimestamp) {
-        this.consensusTimestamp = consensusTimestamp;
-        return this;
+    @NonNull
+    public Instant consensusNow() {
+        return consensusNow;
     }
 
     public SingleTransactionRecordBuilder transactionFee(long transactionFee) {
@@ -265,7 +268,7 @@ public class SingleTransactionRecordBuilder
 
     @NonNull
     public SingleTransactionRecordBuilder entropyBytes(@NonNull final Bytes prngBytes) {
-        Objects.requireNonNull(prngBytes, "The argument 'entropyBytes' must not be null");
+        requireNonNull(prngBytes, "The argument 'entropyBytes' must not be null");
         this.entropy = new OneOf<>(EntropyOneOfType.PRNG_BYTES, prngBytes);
         return this;
     }

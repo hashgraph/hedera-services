@@ -22,8 +22,6 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.clock.SystemClock;
-import com.hedera.node.app.clock.TimeSlotCalculator;
 import com.hedera.node.app.records.RecordListBuilder;
 import com.hedera.node.app.records.RecordManager;
 import com.hedera.node.app.records.SingleTransactionRecordBuilder;
@@ -63,7 +61,6 @@ public class HandleWorkflow {
 
     private static final Logger LOG = LogManager.getLogger(HandleWorkflow.class);
 
-    private final SystemClock systemClock;
     private final NodeInfo nodeInfo;
     private final PreHandleWorkflow preHandleWorkflow;
     private final TransactionDispatcher dispatcher;
@@ -76,7 +73,6 @@ public class HandleWorkflow {
 
     @Inject
     public HandleWorkflow(
-            @NonNull final SystemClock systemClock,
             @NonNull final NodeInfo nodeInfo,
             @NonNull final PreHandleWorkflow preHandleWorkflow,
             @NonNull final TransactionDispatcher dispatcher,
@@ -86,7 +82,6 @@ public class HandleWorkflow {
             @NonNull final SignatureVerifier signatureVerifier,
             @NonNull final ServiceScopeLookup serviceScopeLookup,
             @NonNull final ConfigProvider configProvider) {
-        this.systemClock = requireNonNull(systemClock, "systemClock must not be null");
         this.nodeInfo = requireNonNull(nodeInfo, "nodeInfo must not be null");
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow, "preHandleWorkflow must not be null");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
@@ -118,14 +113,13 @@ public class HandleWorkflow {
             return;
         }
 
-        // Advance system clock
+        // Get the consensus timestamp
         final Instant consensusNow = platformTxn.getConsensusTimestamp();
-        systemClock.advance(consensusNow);
 
         // Setup record builder list
         recordManager.startUserTransaction(consensusNow);
-        final var recordBuilder = new SingleTransactionRecordBuilder();
-        final var recordListBuilder = new RecordListBuilder(recordBuilder);
+        final var recordBuilder = new SingleTransactionRecordBuilder(consensusNow);
+        final var recordListBuilder = new RecordListBuilder(consensusNow, recordBuilder);
 
         try {
             final var verifications = getUpdatedVerifications(state, platformEvent, platformTxn);
@@ -146,11 +140,9 @@ public class HandleWorkflow {
 
             // Setup context
             final var txBody = verifications.txBody();
-            final var base =
-                    new HandleContextBase(new TimeSlotCalculator(consensusNow), keyVerifications, recordListBuilder);
+            final var base = new HandleContextBase(keyVerifications, recordListBuilder);
             final var context = new HandleContextImpl(
                     serviceScopeLookup.getServiceName(txBody),
-                    consensusNow,
                     txBody,
                     TransactionCategory.USER,
                     recordBuilder,

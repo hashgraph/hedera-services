@@ -91,7 +91,7 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
         final var txn = context.body();
 
         // get the latest configuration
-        final var config = context.config().getConfigData(TokenServiceConfig.class);
+        final var config = context.configuration().getConfigData(TokenServiceConfig.class);
         final var op = txn.tokenFeeScheduleUpdateOrThrow();
 
         // validate checks in handle

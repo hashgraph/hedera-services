@@ -83,7 +83,7 @@ class UtilPrngHandlerTest {
     void setUp() {
         final var prngConfig = new PrngConfig(true);
         given(config.getConfigData(PrngConfig.class)).willReturn(prngConfig);
-        given(handleContext.config()).willReturn(config);
+        given(handleContext.configuration()).willReturn(config);
 
         subject = new UtilPrngHandler();
         given(handleContext.recordBuilder(PrngRecordBuilder.class)).willReturn(recordBuilder);

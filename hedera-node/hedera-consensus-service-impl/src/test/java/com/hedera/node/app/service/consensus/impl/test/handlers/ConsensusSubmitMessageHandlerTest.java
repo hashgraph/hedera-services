@@ -99,7 +99,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
 
         final var consensusServiceConfig = new ConsensusServiceConfig(10L, 100);
         given(config.getConfigData(ConsensusServiceConfig.class)).willReturn(consensusServiceConfig);
-        given(handleContext.config()).willReturn(config);
+        given(handleContext.configuration()).willReturn(config);
 
         writableTopicState = writableTopicStateWithOneKey();
         given(readableStates.<EntityNum, Topic>get(TOPICS)).willReturn(readableTopicState);
@@ -109,7 +109,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         writableStore = new WritableTopicStore(writableStates);
         given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableStore);
 
-        given(handleContext.config()).willReturn(config);
+        given(handleContext.configuration()).willReturn(config);
         given(handleContext.recordBuilder(ConsensusSubmitMessageRecordBuilder.class))
                 .willReturn(recordBuilder);
     }

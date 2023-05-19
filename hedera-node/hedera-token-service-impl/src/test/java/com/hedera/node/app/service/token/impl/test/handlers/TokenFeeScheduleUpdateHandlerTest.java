@@ -75,7 +75,7 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         validator = new CustomFeesValidator();
         subject = new TokenFeeScheduleUpdateHandler(validator);
         givenTxn();
-        given(context.config()).willReturn(tokenServiceConfig);
+        given(context.configuration()).willReturn(tokenServiceConfig);
         given(tokenServiceConfig.getConfigData(TokenServiceConfig.class)).willReturn(config);
         given(context.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
         given(context.readableStore(ReadableTokenRelationStore.class)).willReturn(readableTokenRelStore);

@@ -31,7 +31,6 @@ import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.ConsensusConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Instant;
 import javax.inject.Inject;
 
 public class HandleContextService {
@@ -63,9 +62,8 @@ public class HandleContextService {
 
         final var config = configProvider.getConfiguration().getConfigData(ConsensusConfig.class);
         final var recordBuilder = base.recordListBuilder().addPreceding(config);
-        final var consensusNow = base.timeSlotCalculator().getNextAvailablePrecedingSlot();
 
-        return dispatch(txBody, TransactionCategory.PRECEDING, root, base, recordBuilder, consensusNow);
+        return dispatch(txBody, TransactionCategory.PRECEDING, root, base, recordBuilder);
     }
 
     public SingleTransactionRecordBuilder dispatchChildTransaction(
@@ -78,9 +76,8 @@ public class HandleContextService {
 
         final var config = configProvider.getConfiguration().getConfigData(ConsensusConfig.class);
         final var recordBuilder = base.recordListBuilder().addChild(config);
-        final var consensusNow = base.timeSlotCalculator().getNextAvailableChildSlot();
 
-        return dispatch(txBody, TransactionCategory.CHILD, root, base, recordBuilder, consensusNow);
+        return dispatch(txBody, TransactionCategory.CHILD, root, base, recordBuilder);
     }
 
     private SingleTransactionRecordBuilder dispatch(
@@ -88,8 +85,7 @@ public class HandleContextService {
             @NonNull final TransactionCategory category,
             @NonNull final HederaState root,
             @NonNull final HandleContextBase base,
-            @NonNull final SingleTransactionRecordBuilder recordBuilder,
-            @NonNull final Instant consensusNow) {
+            @NonNull final SingleTransactionRecordBuilder recordBuilder) {
 
         try {
             checker.checkTransactionBody(txBody);
@@ -101,8 +97,7 @@ public class HandleContextService {
 
         final var serviceScope = serviceScopeLookup.getServiceName(txBody);
         final var stack = new SavepointStackImpl(configProvider, root);
-        final var context =
-                new HandleContextImpl(serviceScope, consensusNow, txBody, category, recordBuilder, stack, base, this);
+        final var context = new HandleContextImpl(serviceScope, txBody, category, recordBuilder, stack, base, this);
 
         try {
             dispatcher.dispatchHandle(context);

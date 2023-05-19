@@ -22,6 +22,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.spi.records.SingleTransactionRecord;
 import com.hedera.node.config.data.ConsensusConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -39,17 +40,22 @@ import java.util.stream.Stream;
  */
 public class RecordListBuilder {
 
+    private final Instant baseConsensusTime;
     private final List<SingleTransactionRecordBuilder> recordBuilders = new ArrayList<>();
+
     private List<SingleTransactionRecordBuilder> precedingRecordBuilders;
     private Set<SingleTransactionRecordBuilder> removableChildRecordBuilders;
 
     /**
      * Creates a new instance with a single record builder for the user transaction.
      *
+     * @param baseConsensusTime the consensus time of the user transaction
      * @param recordBuilder the record builder for the user transaction
      * @throws NullPointerException if {@code recordBuilder} is {@code null}
      */
-    public RecordListBuilder(@NonNull final SingleTransactionRecordBuilder recordBuilder) {
+    public RecordListBuilder(
+            @NonNull final Instant baseConsensusTime, @NonNull final SingleTransactionRecordBuilder recordBuilder) {
+        this.baseConsensusTime = requireNonNull(baseConsensusTime, "baseConsensusTime must not be null");
         requireNonNull(recordBuilder, "recordBuilder must not be null");
         recordBuilders.add(recordBuilder);
     }
@@ -67,10 +73,14 @@ public class RecordListBuilder {
         if (precedingRecordBuilders == null) {
             precedingRecordBuilders = new ArrayList<>();
         }
-        if (precedingRecordBuilders.size() >= consensusConfig.handleMaxPrecedingRecords()) {
+        final int precedingCount = precedingRecordBuilders.size();
+        if (precedingCount >= consensusConfig.handleMaxPrecedingRecords()) {
             throw new IndexOutOfBoundsException("No more preceding slots available");
         }
-        final var recordBuilder = new SingleTransactionRecordBuilder();
+
+        final var consensusNow = baseConsensusTime.minusNanos(3L - precedingCount);
+        final var recordBuilder = new SingleTransactionRecordBuilder(consensusNow);
+
         precedingRecordBuilders.add(recordBuilder);
         return recordBuilder;
     }
@@ -88,12 +98,8 @@ public class RecordListBuilder {
      */
     public SingleTransactionRecordBuilder addChild(@NonNull final ConsensusConfig consensusConfig) {
         requireNonNull(consensusConfig, "consensusConfig must not be null");
-        if (recordBuilders.size() > consensusConfig.handleMaxFollowingRecords()) {
-            throw new IndexOutOfBoundsException("No more child slots available");
-        }
-        final var recordBuilder = new SingleTransactionRecordBuilder();
-        recordBuilders.add(recordBuilder);
-        return recordBuilder;
+
+        return doAddChild(consensusConfig);
     }
 
     /**
@@ -110,15 +116,26 @@ public class RecordListBuilder {
      */
     public SingleTransactionRecordBuilder addRemovableChild(@NonNull final ConsensusConfig consensusConfig) {
         requireNonNull(consensusConfig, "consensusConfig must not be null");
-        if (recordBuilders.size() > consensusConfig.handleMaxFollowingRecords()) {
-            throw new IndexOutOfBoundsException("No more child slots available");
-        }
-        final var recordBuilder = new SingleTransactionRecordBuilder();
-        recordBuilders.add(recordBuilder);
+
+        final var recordBuilder = doAddChild(consensusConfig);
+
         if (removableChildRecordBuilders == null) {
             removableChildRecordBuilders = new HashSet<>();
         }
         removableChildRecordBuilders.add(recordBuilder);
+        return recordBuilder;
+    }
+
+    private SingleTransactionRecordBuilder doAddChild(@NonNull final ConsensusConfig consensusConfig) {
+        final int childCount = recordBuilders.size();
+        if (childCount > consensusConfig.handleMaxFollowingRecords()) {
+            throw new IndexOutOfBoundsException("No more child slots available");
+        }
+
+        final var consensusNow = baseConsensusTime.plusNanos(childCount);
+        final var recordBuilder = new SingleTransactionRecordBuilder(consensusNow);
+
+        recordBuilders.add(recordBuilder);
         return recordBuilder;
     }
 

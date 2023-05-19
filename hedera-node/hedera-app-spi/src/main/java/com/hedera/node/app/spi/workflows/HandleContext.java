@@ -29,12 +29,17 @@ import java.time.Instant;
 
 /**
  * Represents the context of a single {@code handle()}-call.
- *
- * The information provided by a {@code HandleContext} is valid only for the duration of the call. It can be grouped
- * into five categories:
+ * <p>
+ * The information and functionality provided by a {@code HandleContext} is valid only for the duration of the call. It
+ * can be grouped into five categories:
  * <ul>
  *     <li>Information about the transaction being handled, such as its consensus time, its body, and its category</li>
- *     <li>Information about the node, such as its configuration</li>
+ *     <li>Configuration data and objects that depend on the current configuration</li>
+ *     <li>Verification data, that has been assembled during pre-handle</li>
+ *     <li>State related data and the possibility to rollback changes</li>
+ *     <li>Data related to the record stream</li>
+ *     <li>Functionality to dispatch preceding and child transactions</li>
+ * </ul>
  */
 public interface HandleContext {
 
@@ -80,7 +85,7 @@ public interface HandleContext {
      * @return the {@code Configuration}
      */
     @NonNull
-    Configuration config();
+    Configuration configuration();
 
     /**
      * Returns the next entity number, for use by handlers that create entities.
@@ -102,8 +107,8 @@ public interface HandleContext {
     AttributeValidator attributeValidator();
 
     /**
-     * Returns the validator for expiry metadata (both explicit expiration times and
-     * auto-renew configuration) of entities created or updated by handlers.
+     * Returns the validator for expiry metadata (both explicit expiration times and auto-renew configuration) of
+     * entities created or updated by handlers.
      *
      * @return the validator for expiry metadata
      */
@@ -135,8 +140,8 @@ public interface HandleContext {
      * Get a readable store given the store's interface. This gives read-only access to the store.
      *
      * @param storeInterface The store interface to find and create a store for
-     * @return An implementation of the provided store interface
      * @param <T> Interface class for a Store
+     * @return An implementation of the provided store interface
      * @throws IllegalArgumentException if the storeInterface class provided is unknown to the app
      * @throws NullPointerException if {@code storeInterface} is {@code null}
      */
@@ -177,30 +182,32 @@ public interface HandleContext {
      * automatically committed. If it fails, any eventual state changes are automatically rolled back.
      *
      * <p>This method can only be called my a {@link TransactionCategory#USER}-transaction and only as long as no state
-     * changes have been introduced by the user transaction (either by storing state or by calling a child transaction).
+     * changes have been introduced by the user transaction (either by storing state or by calling a child
+     * transaction).
      *
      * @param txBody the {@link TransactionBody} of the transaction to dispatch
      * @param recordBuilderClass the record builder class of the transaction
      * @return the record builder of the transaction
      * @throws NullPointerException if {@code txBody} is {@code null}
-     * @throws IllegalArgumentException if the transaction is not a {@link TransactionCategory#USER}-transaction or
-     * if the record builder type is unknown to the app
+     * @throws IllegalArgumentException if the transaction is not a {@link TransactionCategory#USER}-transaction or if
+     * the record builder type is unknown to the app
      * @throws IllegalStateException if the current transaction has already introduced state changes
      */
     @NonNull
     <T> T dispatchPrecedingTransaction(@NonNull TransactionBody txBody, @NonNull Class<T> recordBuilderClass);
+
     /**
      * Dispatches a child transaction.
      *
      * <p>A child transaction depends on the current transaction. That means if the current transaction fails,
-     * a child transaction is automatically rolled back. The state changes introduced by a child transaction
-     * are automatically committed together with the parent transaction.
+     * a child transaction is automatically rolled back. The state changes introduced by a child transaction are
+     * automatically committed together with the parent transaction.
      *
      * <p>A child transaction will run with the current state. It will see all state changes introduced by the current
      * transaction or preceding child transactions. If successful, a new entry will be added to the
-     * {@link SavepointStack}. This enables the current transaction to commit or roll back the state changes.
-     * Please be aware that any state changes introduced by storing data in one of the stores after calling a child
-     * transaction will also be rolled back if the child transaction is rolled back.
+     * {@link SavepointStack}. This enables the current transaction to commit or roll back the state changes. Please be
+     * aware that any state changes introduced by storing data in one of the stores after calling a child transaction
+     * will also be rolled back if the child transaction is rolled back.
      *
      * <p>A {@link TransactionCategory#PRECEDING}-transaction must not dispatch a child transaction.
      *
@@ -208,8 +215,8 @@ public interface HandleContext {
      * @param recordBuilderClass the record builder class of the child transaction
      * @return the record builder of the child transaction
      * @throws NullPointerException if {@code txBody} is {@code null}
-     * @throws IllegalArgumentException if the current transaction is a {@link TransactionCategory#PRECEDING}-transaction
-     * or if the record builder type is unknown to the app
+     * @throws IllegalArgumentException if the current transaction is a
+     * {@link TransactionCategory#PRECEDING}-transaction or if the record builder type is unknown to the app
      */
     @NonNull
     <T> T dispatchChildTransaction(@NonNull TransactionBody txBody, @NonNull Class<T> recordBuilderClass);
@@ -225,10 +232,10 @@ public interface HandleContext {
     /**
      * A stack of savepoints.
      *
-     * <p>A new savepoint can be created manually. In addition, a new entry is added to the savepoint stack every time a
-     * child transaction is dispatched and executed successfully. The transaction stack allows to rollback an arbitrary
-     * number of transactions. Please be aware that rolling back a child transaction will also rollbacks all state
-     * changes that were introduced afterward.
+     * <p>A new savepoint can be created manually. In addition, a new entry is added to the savepoint stack every time
+     * a child transaction is dispatched and executed successfully. The transaction stack allows to rollback an
+     * arbitrary number of transactions. Please be aware that rolling back a child transaction will also rollbacks all
+     * state changes that were introduced afterward.
      */
     interface SavepointStack {
         /**

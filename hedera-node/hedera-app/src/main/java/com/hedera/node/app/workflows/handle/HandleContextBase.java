@@ -19,19 +19,15 @@ package com.hedera.node.app.workflows.handle;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Key;
-import com.hedera.node.app.clock.TimeSlotCalculator;
 import com.hedera.node.app.records.RecordListBuilder;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 
 public record HandleContextBase(
-        @NonNull TimeSlotCalculator timeSlotCalculator,
-        @NonNull Map<Key, SignatureVerification> keyVerifications,
-        @NonNull RecordListBuilder recordListBuilder) {
+        @NonNull Map<Key, SignatureVerification> keyVerifications, @NonNull RecordListBuilder recordListBuilder) {
 
     public HandleContextBase {
-        requireNonNull(timeSlotCalculator, "timeSlotCalculator must not be null");
         requireNonNull(keyVerifications, "keyVerifications must not be null");
         requireNonNull(recordListBuilder, "recordListBuilder must not be null");
     }

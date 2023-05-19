@@ -83,7 +83,7 @@ public class AdaptedMonoTransitionRunner extends TransitionRunner {
         if (functionsToDispatch.contains(function)) {
             final var txBody = PbjConverter.toPbj(accessor.getTxn());
             final var readableStoreFactory = new ReadableStoreFactory(mutableState.get());
-            final var recordBuilder = new SingleTransactionRecordBuilder();
+            final var recordBuilder = new SingleTransactionRecordBuilder(txnCtx.consensusTime());
             final var context = new MonoHandleContext(
                     txBody, ids, expiryValidator, attributeValidator, txnCtx, readableStoreFactory, recordBuilder);
             try {

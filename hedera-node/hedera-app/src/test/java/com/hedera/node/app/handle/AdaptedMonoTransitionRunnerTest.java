@@ -43,12 +43,14 @@ import com.hedera.node.app.workflows.handle.AdaptedMonoTransitionRunner;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mock.Strictness;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -60,7 +62,7 @@ class AdaptedMonoTransitionRunnerTest {
     @Mock
     private EntityIdSource ids;
 
-    @Mock
+    @Mock(strictness = Strictness.LENIENT)
     private TransactionContext txnCtx;
 
     @Mock
@@ -89,6 +91,7 @@ class AdaptedMonoTransitionRunnerTest {
     @BeforeEach
     void setUp() {
         given(staticProperties.workflowsEnabled()).willReturn(Set.of(ConsensusCreateTopic));
+        given(txnCtx.consensusTime()).willReturn(Instant.now());
         final var stateRef = new NonAtomicReference<>(state);
         subject = new AdaptedMonoTransitionRunner(
                 ids, txnCtx, dispatcher, lookup, staticProperties, expiryValidator, attributeValidator, stateRef);

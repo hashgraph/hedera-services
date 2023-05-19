@@ -97,7 +97,7 @@ public class MonoHandleContext implements HandleContext {
      */
     @Override
     @NonNull
-    public Configuration config() {
+    public Configuration configuration() {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 

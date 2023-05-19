@@ -78,7 +78,7 @@ public class UtilPrngHandler implements TransactionHandler {
         final var range = op.range();
 
         // TODO: This check should probably be moved into app
-        final var config = context.config().getConfigData(PrngConfig.class);
+        final var config = context.configuration().getConfigData(PrngConfig.class);
         if (!config.prngEnabled()) {
             return;
         }

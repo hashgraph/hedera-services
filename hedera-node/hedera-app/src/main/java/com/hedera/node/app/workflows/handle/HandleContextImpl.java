@@ -50,7 +50,6 @@ public class HandleContextImpl implements HandleContext {
 
     public HandleContextImpl(
             @NonNull final String serviceScope,
-            @NonNull final Instant consensusNow,
             @NonNull final TransactionBody txBody,
             @NonNull final TransactionCategory category,
             @NonNull final SingleTransactionRecordBuilder recordBuilder,
@@ -58,7 +57,6 @@ public class HandleContextImpl implements HandleContext {
             @NonNull final HandleContextBase base,
             @NonNull final HandleContextService service) {
         requireNonNull(serviceScope, "serviceScope must not be null");
-        this.consensusNow = requireNonNull(consensusNow, "consensusNow must not be null");
         this.txBody = requireNonNull(txBody, "txBody must not be null");
         this.category = requireNonNull(category, "category must not be null");
         this.recordBuilder = requireNonNull(recordBuilder, "recordBuilder must not be null");
@@ -66,6 +64,7 @@ public class HandleContextImpl implements HandleContext {
         this.base = requireNonNull(base, "base must not be null");
         this.service = requireNonNull(service, "service must not be null");
 
+        this.consensusNow = recordBuilder.consensusNow();
         this.writableStoreFactory = new WritableStoreFactory(stack, serviceScope);
     }
 
@@ -89,7 +88,7 @@ public class HandleContextImpl implements HandleContext {
 
     @Override
     @NonNull
-    public Configuration config() {
+    public Configuration configuration() {
         return stack.peek().config();
     }
 
