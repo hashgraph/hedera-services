@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.spi.validation;
 
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -48,8 +49,26 @@ public interface ExpiryValidator {
     ExpiryMeta resolveUpdateAttempt(ExpiryMeta currentMetadata, ExpiryMeta updateMetadata);
 
     /**
-     * Validates if an account is detached.
-     * @return true if the account is detached, false otherwise
+     * Gets the expiration status of an account
+     * @param account the account to check
+     * @param isAutoRenewEnabled whether auto-renew is enabled for the account
+     * @param expireContracts whether to expire contracts
+     * @param expireAccounts whether to expire accounts
+     * @return OK if the account is not expired, otherwise the appropriate error code
      */
-    boolean isDetached(Account account, boolean isAutoRenewEnabled, boolean expireContracts, boolean expireAccounts);
+    ResponseCodeEnum expirationStatus(
+            Account account, boolean isAutoRenewEnabled, boolean expireContracts, boolean expireAccounts);
+
+    /**
+     * Gets the expiration status of an account and returns if the account is detached
+     * @param account the account to check
+     * @param isAutoRenewEnabled whether auto-renew is enabled for the account
+     * @param expireContracts whether to expire contracts
+     * @param expireAccounts whether to expire accounts
+     * @return true if the account is detached, otherwise false
+     */
+    default boolean isDetached(
+            Account account, boolean isAutoRenewEnabled, boolean expireContracts, boolean expireAccounts) {
+        return expirationStatus(account, isAutoRenewEnabled, expireContracts, expireAccounts) != ResponseCodeEnum.OK;
+    }
 }

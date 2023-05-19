@@ -22,6 +22,7 @@ import static com.hedera.test.utils.KeyUtils.B_COMPLEX_KEY;
 import static com.hedera.test.utils.KeyUtils.C_COMPLEX_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mock.Strictness.LENIENT;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
@@ -37,6 +38,7 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.impl.config.TokenServiceConfig;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.key.HederaKey;
@@ -48,6 +50,7 @@ import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -103,6 +106,7 @@ public class CryptoHandlerTestBase {
             .build();
     protected static final long defaultAutoRenewPeriod = 720000L;
     protected static final long payerBalance = 10_000L;
+    protected TokenServiceConfig config = new TokenServiceConfig(100, Set.of("CONTRACT"));
     protected MapReadableKVState<String, EntityNumValue> readableAliases;
     protected MapReadableKVState<EntityNumVirtualKey, Account> readableAccounts;
     protected MapWritableKVState<String, EntityNumValue> writableAliases;
@@ -111,16 +115,14 @@ public class CryptoHandlerTestBase {
     protected ReadableAccountStore readableStore;
     protected WritableAccountStore writableStore;
 
-    @Mock
     protected Account deleteAccount;
 
-    @Mock
     protected Account transferAccount;
 
     @Mock
     protected ReadableStates readableStates;
 
-    @Mock
+    @Mock(strictness = LENIENT)
     protected WritableStates writableStates;
 
     @Mock
@@ -128,7 +130,19 @@ public class CryptoHandlerTestBase {
 
     @BeforeEach
     public void setUp() {
-        givenValidAccount();
+        account = givenValidAccount();
+        deleteAccount = givenValidAccount()
+                .copyBuilder()
+                .accountNumber(deleteAccountNum)
+                .key(accountKey)
+                .numberPositiveBalances(0)
+                .numberTreasuryTitles(0)
+                .build();
+        transferAccount = givenValidAccount()
+                .copyBuilder()
+                .accountNumber(transferAccountNum)
+                .key(key)
+                .build();
         refreshStoresWithCurrentTokenOnlyInReadable();
     }
 
@@ -227,8 +241,8 @@ public class CryptoHandlerTestBase {
         return MapReadableKVState.builder(ALIASES);
     }
 
-    protected void givenValidAccount() {
-        account = new Account(
+    protected Account givenValidAccount() {
+        return new Account(
                 accountNum,
                 alias.alias(),
                 key,

@@ -19,6 +19,7 @@ package com.hedera.node.app.service.token.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
@@ -154,19 +155,26 @@ public class CryptoDeleteHandler implements TransactionHandler {
 
         final var deletedAccount = optDeleteAccount.get();
         final var transferAccount = optTransferAccount.get();
-        validateFalse(deletedAccount.numberTreasuryTitles() > 0, INVALID_ACCOUNT_ID);
+        validateFalse(deletedAccount.numberTreasuryTitles() > 0, ACCOUNT_IS_TREASURY);
 
-        final var autoRenewEnabled = config.isAutoRenewEnabled();
-        final var expireContracts = config.expireContracts();
-        final var expireAccounts = config.expireAccounts();
-
-        final var isExpired = expiryValidator.isDetached(
-                        deletedAccount, autoRenewEnabled, expireContracts, expireAccounts)
-                || expiryValidator.isDetached(transferAccount, autoRenewEnabled, expireContracts, expireAccounts);
+        final var isExpired = areAccountsDetached(deletedAccount, transferAccount, config, expiryValidator);
         validateFalse(isExpired, ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 
         validateTrue(deletedAccount.numberPositiveBalances() == 0, TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
 
         return Pair.of(deletedAccount, transferAccount);
+    }
+
+    private boolean areAccountsDetached(
+            @NonNull Account deleteAccount,
+            @NonNull Account transferAccount,
+            @NonNull final TokenServiceConfig config,
+            @NonNull final ExpiryValidator expiryValidator) {
+        final var autoRenewEnabled = config.isAutoRenewEnabled();
+        final var expireContracts = config.expireContracts();
+        final var expireAccounts = config.expireAccounts();
+
+        return expiryValidator.isDetached(deleteAccount, autoRenewEnabled, expireContracts, expireAccounts)
+                || expiryValidator.isDetached(transferAccount, autoRenewEnabled, expireContracts, expireAccounts);
     }
 }

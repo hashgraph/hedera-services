@@ -16,11 +16,15 @@
 
 package com.hedera.node.app.workflows.handle.validation;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.store.models.Id;
@@ -120,24 +124,24 @@ public class StandardizedExpiryValidator implements ExpiryValidator {
      * {@inheritDoc}
      */
     @Override
-    public boolean isDetached(
+    public ResponseCodeEnum expirationStatus(
             @NonNull final Account account,
             final boolean isAutoRenewEnabled,
             final boolean expireAccounts,
             final boolean expireContracts) {
         if (!isAutoRenewEnabled) {
-            return false;
+            return OK;
         }
         if (account.tinybarBalance() > 0) {
-            return false;
+            return OK;
         }
         if (!account.expiredAndPendingRemoval()) {
-            return false;
+            return OK;
         }
         if (isExpiryDisabled(account.smartContract(), expireAccounts, expireContracts)) {
-            return false;
+            return account.smartContract() ? CONTRACT_EXPIRED_AND_PENDING_REMOVAL : ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
         }
-        return true;
+        return OK;
     }
 
     /**
