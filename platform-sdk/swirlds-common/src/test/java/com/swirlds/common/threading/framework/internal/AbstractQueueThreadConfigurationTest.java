@@ -32,6 +32,7 @@ import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.StoppableThread;
+import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.common.threading.manager.ThreadManager;
@@ -255,8 +256,9 @@ class AbstractQueueThreadConfigurationTest {
                 .setCapacity(CAPACITY)
                 .setHandler(handler)
                 .setQueue(queue)
-                .enableMaxSizeMetric(metrics)
-                .enableMinSizeMetric(metrics);
+                .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics)
+                        .enableMaxSizeMetric()
+                        .enableMinSizeMetric());
         final QueueThread<String> queueThread = configuration.buildQueueThread(false);
 
         // then
@@ -303,9 +305,9 @@ class AbstractQueueThreadConfigurationTest {
                         .setMaxBufferSize(MAX_BUFFER_SIZE)
                         .setCapacity(CAPACITY)
                         .setHandler(handler)
-                        .enableMaxSizeMetric(null)
+                        .setMetricsConfiguration(new QueueThreadMetricsConfiguration(null))
                         .buildQueueThread(false))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(NullPointerException.class);
 
         assertThatThrownBy(() -> new DummyQueueThreadConfiguration<String>(threadManager)
                         .setNodeId(NODE_ID)
@@ -314,8 +316,8 @@ class AbstractQueueThreadConfigurationTest {
                         .setMaxBufferSize(MAX_BUFFER_SIZE)
                         .setCapacity(CAPACITY)
                         .setHandler(handler)
-                        .enableMinSizeMetric(null)
+                        .setMetricsConfiguration(new QueueThreadMetricsConfiguration(null))
                         .buildQueueThread(false))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(NullPointerException.class);
     }
 }

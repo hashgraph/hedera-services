@@ -23,6 +23,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.threading.framework.BlockingQueueInserter;
 import com.swirlds.common.threading.framework.MultiQueueThread;
 import com.swirlds.common.threading.framework.config.MultiQueueThreadConfiguration;
+import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -109,6 +110,8 @@ public class AsyncPreConsensusEventWriter implements PreConsensusEventWriter {
                 .addHandler(EventImpl.class, this::addEventHandler)
                 .addHandler(BeginStreamingNewEvents.class, this::beginStreamingNewEventsHandler)
                 .addHandler(FlushRequested.class, this::flushRequestedHandler)
+                .setMetricsConfiguration(
+                        new QueueThreadMetricsConfiguration(platformContext.getMetrics()).enableBusyTimeMetric())
                 .build();
 
         minimumGenerationNonAncientInserter = handleThread.getInserter(Long.class);
