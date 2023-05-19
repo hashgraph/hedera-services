@@ -243,8 +243,6 @@ class ContractCallTransitionLogicTest {
 
     @Test
     void failsOnMissingReceiverSigReq() {
-        InOrder inOrder = Mockito.inOrder(worldState);
-        // setup:
         givenValidTxnCtx();
         // and:
         given(accessor.getTxn()).willReturn(contractCallTxn);
@@ -259,6 +257,37 @@ class ContractCallTransitionLogicTest {
         // when:
         assertFailsWith(
                 () -> subject.doStateTransitionOperation(txn, id, null, maxGas, biOfferedGasPrice), INVALID_SIGNATURE);
+    }
+
+    @Test
+    void executesAsExpectedWithReceiverSigReqPresent() {
+        givenValidTxnCtx();
+        // and:
+        given(accessor.getTxn()).willReturn(contractCallTxn);
+        // and:
+        senderAccount.initBalance(1234L);
+        given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+        given(accountStore.loadContract(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
+                .willReturn(contractAccount);
+        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+                        false, asTypedEvmAddress(target), Address.ZERO, worldLedgers, HederaFunctionality.ContractCall))
+                .willReturn(true);
+        var results = TransactionProcessingResult.successful(
+                null, 1234L, 0L, 124L, Bytes.EMPTY, Address.wrap(Bytes.wrap(alias.toByteArray())), Map.of(), List.of());
+        given(evmTxProcessor.executeEth(
+                        senderAccount,
+                        contractAccount.getId().asEvmAddress(),
+                        gas,
+                        sent,
+                        Bytes.EMPTY,
+                        txnCtx.consensusTime(),
+                        biOfferedGasPrice,
+                        null,
+                        maxGas))
+                .willReturn(results);
+
+        assertDoesNotThrow(() -> subject.doStateTransitionOperation(
+                accessor.getTxn(), senderAccount.getId(), relayerAccount.getId(), maxGas, biOfferedGasPrice));
     }
 
     @Test

@@ -64,6 +64,8 @@ import org.hyperledger.besu.datatypes.Address;
 public class ContractCallTransitionLogic implements PreFetchableTransition {
     private static final Logger log = LogManager.getLogger(ContractCallTransitionLogic.class);
 
+    private static final Address NEVER_ACTIVE_CONTRACT_ADDRESS = Address.ZERO;
+
     private final AccountStore accountStore;
     private final TransactionContext txnCtx;
     private final HederaMutableWorldState worldState;
@@ -129,8 +131,8 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
         final var target = targetOf(op);
         final var targetId = target.toId();
         Account receiver;
-        final var isMissing = target.equals(EntityNum.MISSING_NUM);
-        if (isMissing
+        final var targetAddressIsMissing = target.equals(EntityNum.MISSING_NUM);
+        if (targetAddressIsMissing
                 && relayerId != null
                 && !properties.evmVersion().equals(EVM_VERSION_0_30)
                 && properties.isAutoCreationEnabled()
@@ -146,11 +148,11 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
                     ? new Account(targetId)
                     : accountStore.loadContract(targetId);
         }
-        // Since contracts cannot have receiverSigRequired=true, this can only restrict us from sending value to an EOA
-        if (!isMissing && op.getAmount() > 0) {
-            // Use Address.ZERO as "active contract"; will never activate a valid Key{contractID} in the receiver key
+        if (!targetAddressIsMissing && op.getAmount() > 0) {
+            // Since contracts cannot have receiverSigRequired=true, this can only
+            // restrict us from sending value to an EOA
             final var sigReqIsMet = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
-                    false, target.toEvmAddress(), Address.ZERO, worldLedgers, ContractCall);
+                    false, target.toEvmAddress(), NEVER_ACTIVE_CONTRACT_ADDRESS, worldLedgers, ContractCall);
             validateTrue(sigReqIsMet, INVALID_SIGNATURE);
         }
 
