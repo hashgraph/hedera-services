@@ -32,7 +32,9 @@ import com.swirlds.platform.reconnect.ReconnectController;
 import com.swirlds.platform.reconnect.ReconnectThrottle;
 import com.swirlds.platform.state.EmergencyRecoveryManager;
 import com.swirlds.platform.state.signed.SignedStateFinder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -51,6 +53,8 @@ public class EmergencyReconnectProtocol implements Protocol {
     private InitiatedBy initiatedBy = InitiatedBy.NO_ONE;
     private final ThreadManager threadManager;
     private final NotificationEngine notificationEngine;
+
+    @NonNull
     private final FallenBehindManager fallenBehindManager;
 
     /**
@@ -83,7 +87,7 @@ public class EmergencyReconnectProtocol implements Protocol {
             final int reconnectSocketTimeout,
             final ReconnectMetrics reconnectMetrics,
             final ReconnectController reconnectController,
-            final FallenBehindManager fallenBehindManager) {
+            @NonNull final FallenBehindManager fallenBehindManager) {
         this.threadManager = threadManager;
         this.notificationEngine = notificationEngine;
         this.peerId = peerId;
@@ -93,7 +97,7 @@ public class EmergencyReconnectProtocol implements Protocol {
         this.reconnectSocketTimeout = reconnectSocketTimeout;
         this.reconnectMetrics = reconnectMetrics;
         this.reconnectController = reconnectController;
-        this.fallenBehindManager = fallenBehindManager;
+        this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager);
     }
 
     @Override

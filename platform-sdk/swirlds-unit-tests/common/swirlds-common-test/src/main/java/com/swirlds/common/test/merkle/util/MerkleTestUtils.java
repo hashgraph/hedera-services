@@ -40,6 +40,7 @@ import com.swirlds.common.test.merkle.dummy.DummyMerkleLeaf;
 import com.swirlds.common.test.merkle.dummy.DummyMerkleLeaf2;
 import com.swirlds.common.test.merkle.dummy.DummyMerkleNode;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -982,7 +983,7 @@ public final class MerkleTestUtils {
             final MerkleNode startingTree,
             final MerkleNode desiredTree,
             final int latencyMilliseconds,
-            final BooleanSupplier requestToStopTeaching)
+            @Nullable final BooleanSupplier requestToStopTeaching)
             throws Exception {
         try (PairedStreams streams = new PairedStreams()) {
 

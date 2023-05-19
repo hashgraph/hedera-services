@@ -26,7 +26,9 @@ import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.unidirectional.NetworkProtocolResponder;
 import com.swirlds.platform.state.signed.ReservedSignedState;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -47,6 +49,7 @@ public class ReconnectProtocolResponder implements NetworkProtocolResponder {
     private final ReconnectMetrics stats;
     private final ThreadManager threadManager;
 
+    @NonNull
     private final FallenBehindManager fallenBehindManager;
 
     /**
@@ -63,13 +66,13 @@ public class ReconnectProtocolResponder implements NetworkProtocolResponder {
             final LatestSignedStateProvider latestSignedStateProvider,
             final ReconnectSettings settings,
             final ReconnectThrottle reconnectThrottle,
-            final FallenBehindManager fallenBehindManager,
+            @NonNull final FallenBehindManager fallenBehindManager,
             final ReconnectMetrics stats) {
         this.threadManager = threadManager;
         this.latestSignedStateProvider = latestSignedStateProvider;
         this.settings = settings;
         this.reconnectThrottle = reconnectThrottle;
-        this.fallenBehindManager = fallenBehindManager;
+        this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager);
         this.stats = stats;
     }
 

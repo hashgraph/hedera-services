@@ -31,6 +31,7 @@ import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.state.StateSettings;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.net.SocketException;
 import java.util.Objects;
@@ -67,6 +68,7 @@ public class ReconnectTeacher {
      * A function to check periodically if teaching should be stopped, e.g. when the
      * teacher has fallen behind.
      */
+    @Nullable
     private final BooleanSupplier requestToStopTeaching;
 
     /**
@@ -85,7 +87,7 @@ public class ReconnectTeacher {
             final long selfId,
             final long otherId,
             final long lastRoundReceived,
-            final BooleanSupplier requestToStopTeaching,
+            @Nullable final BooleanSupplier requestToStopTeaching,
             @NonNull final ReconnectMetrics statistics) {
 
         this.threadManager = Objects.requireNonNull(threadManager);

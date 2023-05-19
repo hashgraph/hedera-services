@@ -33,6 +33,7 @@ import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationEx
 import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -83,6 +84,7 @@ public class TeachingSynchronizer {
      * A mechanism to check if teaching should be stopped, e.g. when the teacher itself has
      * fallen behind network.
      */
+    @Nullable
     private final BooleanSupplier requestToStopTeaching;
 
     /**
@@ -111,7 +113,7 @@ public class TeachingSynchronizer {
             final MerkleDataOutputStream out,
             final MerkleNode root,
             final Runnable breakConnection,
-            final BooleanSupplier requestToStopTeaching) {
+            @Nullable final BooleanSupplier requestToStopTeaching) {
 
         this.threadManager = threadManager;
         inputStream = in;

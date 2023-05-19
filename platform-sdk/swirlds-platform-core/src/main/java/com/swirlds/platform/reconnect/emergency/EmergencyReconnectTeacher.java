@@ -28,6 +28,7 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateFinder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
@@ -43,6 +44,8 @@ public class EmergencyReconnectTeacher {
     private final int reconnectSocketTimeout;
     private final ReconnectMetrics reconnectMetrics;
     private final ThreadManager threadManager;
+
+    @Nullable
     private final BooleanSupplier requestToStopTeaching;
 
     /**
@@ -56,7 +59,7 @@ public class EmergencyReconnectTeacher {
             final ThreadManager threadManager,
             final SignedStateFinder stateFinder,
             final int reconnectSocketTimeout,
-            final BooleanSupplier requestToStopTeaching,
+            @Nullable final BooleanSupplier requestToStopTeaching,
             final ReconnectMetrics reconnectMetrics) {
         this.threadManager = threadManager;
         this.stateFinder = stateFinder;
