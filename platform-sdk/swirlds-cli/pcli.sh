@@ -65,9 +65,15 @@ SCRIPT_PATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 || exit ; pwd -P )"
 # The entrypoint into the platform CLI (i.e. where the main() method is)
 MAIN_CLASS_NAME='com.swirlds.cli.PlatformCli'
 
-COLOR=true
-# If python is not installed then we can't colorize the output.
-python3 --version >/dev/null 2>&1 || COLOR=false
+COLOR=false
+COLOR_LOGS_PATH="${SCRIPT_PATH}/color-logs.py"
+if [[ -e "$COLOR_LOGS_PATH" ]]; then
+  # The color-logs.py script exists, enable color.
+  COLOR=true
+
+  # If python is not installed then we can't use the script.
+  python3 --version >/dev/null 2>&1 || COLOR=false
+fi
 
 # Iterate over arguments and strip out the classpath arguments and JVM arguments.
 # This needs to be handled by this bash script and not by the java program,
@@ -146,8 +152,6 @@ if [[ "$LOG4J_SET" = false ]]; then
     PROGRAM_ARGS+=("${DEFAULT_LOG4J_PATH}")
   fi
 fi
-
-COLOR_LOGS_PATH="${SCRIPT_PATH}/color-logs.py"
 
 if [[ "$JVM_CLASSPATH" = '' ]]; then
   echo 'ERROR: the JVM classpath is empty!'
