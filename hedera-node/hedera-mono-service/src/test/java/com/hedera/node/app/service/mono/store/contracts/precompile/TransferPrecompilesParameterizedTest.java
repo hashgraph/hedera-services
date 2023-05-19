@@ -94,7 +94,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class TransferPrecompilesStubTest {
+class TransferPrecompilesParameterizedTest {
     @Mock
     private HederaTokenStore hederaTokenStore;
 
