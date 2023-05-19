@@ -790,7 +790,7 @@ public class Address implements SelfSerializable {
      */
     @Override
     public void deserialize(SerializableDataInputStream inStream, int version) throws IOException {
-        if(version < ClassVersion.SELF_SERIALIZABLE_NODE_ID) {
+        if (version < ClassVersion.SELF_SERIALIZABLE_NODE_ID) {
             id = new NodeId(inStream.readLong());
         } else {
             id = inStream.readSerializable(false, NodeId::new);

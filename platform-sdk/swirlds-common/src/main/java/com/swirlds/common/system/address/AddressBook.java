@@ -579,7 +579,7 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
         }
 
         round = in.readLong();
-        if(version < ClassVersion.SELF_SERIALIZABLE_NODE_ID) {
+        if (version < ClassVersion.SELF_SERIALIZABLE_NODE_ID) {
             nextNodeId = new NodeId(in.readLong());
         } else {
             nextNodeId = in.readSerializable(false, NodeId::new);
