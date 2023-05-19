@@ -4,6 +4,9 @@ The platform status is represented as an enum value from `PlatformStatus.java`. 
 `SwirldsPlatform::checkPlatformStatus`, which is passed around as a callback to any object that has the ability to
 effect a change in platform status.
 
+A diagram of expected state transitions is available [here](./platform-status-transitions.svg). Note that there are
+currently no hard restrictions on state transitions: this diagram is merely a representation of the expected behavior.
+
 ## Used Statuses
 
 The following statuses, along with their respective triggers, are listed in order of precedence (from highest to lowest):
