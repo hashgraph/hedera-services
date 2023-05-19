@@ -46,6 +46,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Random;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -228,7 +229,7 @@ class PreConsensusEventFileManagerTests {
         // attempt to start a non-existent generation
         assertIteratorEquality(files.iterator(), manager.getFileIterator(nonExistentGeneration, false));
 
-        assertThrows(IllegalStateException.class, () -> manager.getFileIterator(nonExistentGeneration, true));
+        assertThrows(NoSuchElementException.class, () -> manager.getFileIterator(nonExistentGeneration, true));
     }
 
     @ParameterizedTest

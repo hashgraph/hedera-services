@@ -22,13 +22,13 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.time.Time;
-import com.swirlds.common.utility.BinarySearch;
 import com.swirlds.common.utility.RandomAccessDeque;
 import com.swirlds.common.utility.Units;
 import com.swirlds.common.utility.ValueReference;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -38,7 +38,6 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.function.Consumer;
-import java.util.function.LongToIntFunction;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -269,6 +268,8 @@ public class PreConsensusEventFileManager {
         return getFileIterator(minimumGeneration, false);
     }
 
+    // TODO ensure there are unit tests for all of these branches
+
     /**
      * <p>
      * Get an iterator that walks over all event files currently being tracked, in order.
@@ -292,44 +293,105 @@ public class PreConsensusEventFileManager {
     public @NonNull Iterator<PreConsensusEventFile> getFileIterator(
             final long minimumGeneration, final boolean requireMinimumGeneration) {
 
+        // Edge case: we want all events regardless of generation
+        if (minimumGeneration == NO_MINIMUM_GENERATION) {
+            scanForDiscontinuities(0);
+            return files.iterator();
+        }
+
+        // Edge case: there are no files
         if (files.size() == 0) {
             if (requireMinimumGeneration) {
-                throw new IllegalStateException("No event files are available, cannot iterate over events");
+                throw new NoSuchElementException("No event files are available, cannot iterate over events");
             } else {
                 return Collections.emptyIterator();
             }
         }
 
-        try {
-            // Returns the index of the last file with a maximum generation that is
-            // less than or equal to the minimum requested generation.
-            int index =
-                    (int) BinarySearch.search(0, files.size(), buildBinarySearchComparisonLambda(minimumGeneration));
-
-            // If there are multiple files in a row with the same maximum generation then the binary search
-            // may not land on the first file in the sequence. Shift to the left until the first file
-            // with the desired maximum generation is discovered.
-            while (index > 0 && files.get(index - 1).maximumGeneration() == minimumGeneration) {
-                index--;
-            }
-
-            // If there is no file with a maximum generation exactly matching the target generation
-            // then the file at the index may not have any relevant events. In that scenario, shifting
-            // to the right will guarantee that the first file returned by the iterator is a file that
-            // may contain events we are targeting.
-            if (files.get(index).maximumGeneration() < minimumGeneration) {
-                index++;
-            }
-
-            return files.iterator(index);
-        } catch (final NoSuchElementException e) {
-            if (requireMinimumGeneration && minimumGeneration != NO_MINIMUM_GENERATION) {
-                throw new IllegalStateException(
-                        "No event file contains data for the requested minimum generation: " + minimumGeneration, e);
+        // Edge case: our first file comes after the requested starting generation
+        if (files.getFirst().minimumGeneration() >= minimumGeneration) {
+            if (requireMinimumGeneration) {
+                // Unless we observe at least one file with a minimum generation less than the requested minimum,
+                // then we can't know for certain that we have all data for the requested minimum generation.
+                throw new NoSuchElementException("The preconscious event stream has insufficient data to satisfy the "
+                        + "requested minimum generation of " + minimumGeneration + ", the first file has a minimum "
+                        + "generation of " + files.getFirst().minimumGeneration());
             } else {
-                // This exception will be thrown if the requested minimum generation is strictly less than the maximum
-                // generation in the oldest file. No big deal, just start iterating at the oldest file.
+                // All files match.
+                scanForDiscontinuities(0);
                 return files.iterator();
+            }
+        }
+
+        // Edge case: all of our data comes before the requested starting generation
+        if (files.getLast().maximumGeneration() < minimumGeneration) {
+            if (requireMinimumGeneration) {
+                throw new NoSuchElementException("The preconscious event stream has insufficient data to satisfy the "
+                        + "requested minimum generation of " + minimumGeneration + ", the last file has a maximum "
+                        + "generation of " + files.getLast().maximumGeneration());
+            } else {
+                return Collections.emptyIterator();
+            }
+        }
+
+        // Standard case: we need to stream data starting from a file somewhere in the middle of stream
+        final int fileCount = files.size();
+        for (int index = 0; index < fileCount; index++) {
+            final PreConsensusEventFile file = files.get(index);
+            if (file.maximumGeneration() >= minimumGeneration) {
+                // We have found the first file that may contain events at the requested generation.
+                scanForDiscontinuities(0);
+                return files.iterator(index);
+            }
+        }
+
+        // It should not be possible to reach this point.
+        throw new IllegalStateException("Failed to find a file that may contain events at the requested generation");
+    }
+
+    /**
+     * Scan the event files starting at a specified index. If discontinuities are found at or after this index, perform
+     * necessary cleanup on the event stream.
+     *
+     * @param startingIndex the file index to start scanning at
+     */
+    private void scanForDiscontinuities(final int startingIndex) {
+        final int fileCount = files.size();
+        for (int index = startingIndex; index < fileCount; index++) {
+            final PreConsensusEventFile file = files.get(index);
+            if (file.discontinuity()) {
+                // We have found a discontinuity, remove this and all following files.
+                resolveDiscontinuity(index);
+                return;
+            }
+        }
+    }
+
+    /**
+     * Resolve a discontinuity at a specified index by deleting all files written after the discontinuity.
+     *
+     * @param indexOfDiscontinuity the file index of the discontinuity
+     */
+    private void resolveDiscontinuity(final int indexOfDiscontinuity) {
+        final PreConsensusEventFile lastUndeletedFile = files.size() == 0 ? null : files.get(indexOfDiscontinuity - 1);
+
+        logger.error(
+                EXCEPTION.getMarker(),
+                "Discontinuity detected in preconscious event stream, "
+                        + "unable to replay all events in the stream. "
+                        + "Events written to the stream after the discontinuity will be deleted. "
+                        + "Last undeleted file: {}, first deleted file: {}, last file in stream: {}",
+                lastUndeletedFile,
+                files.get(indexOfDiscontinuity),
+                files.getLast());
+
+        // Delete files in reverse order, so that if we crash prior to finishing at least
+        // the file does not have gaps in sequence numbers.
+        for (int index = files.size() - 1; index >= indexOfDiscontinuity; index--) {
+            try {
+                files.removeLast().deleteFile(databaseDirectory);
+            } catch (final IOException e) {
+                throw new UncheckedIOException("unable to delete file after discontinuity", e);
             }
         }
     }
@@ -350,20 +412,6 @@ public class PreConsensusEventFileManager {
      */
     public @NonNull PreConsensusEventMultiFileIterator getEventIterator(final long minimumGeneration) {
         return new PreConsensusEventMultiFileIterator(minimumGeneration, getFileIterator(minimumGeneration));
-    }
-
-    /**
-     * Build a function used to do a binary file search.
-     *
-     * @param minimumGeneration the minimum generation desired by the caller
-     * @return a function for finding a starting file guaranteed for the generation requested by the user
-     */
-    private @NonNull LongToIntFunction buildBinarySearchComparisonLambda(final long minimumGeneration) {
-        return (final long index) -> {
-            final PreConsensusEventFile file = files.get((int) index);
-            final long maxGenerationInFile = file.maximumGeneration();
-            return Long.compare(maxGenerationInFile, minimumGeneration);
-        };
     }
 
     /**
@@ -412,24 +460,14 @@ public class PreConsensusEventFileManager {
 
         if (files.size() == 0) {
             // This is the first file
-
             minimumGenerationForFile = minimumGeneration;
             maximumGenerationForFile = maximumGeneration;
-
         } else {
             // This is not the first file, min/max values are constrained to only increase
-
-            if (minimumGeneration < files.getLast().minimumGeneration()) {
-                minimumGenerationForFile = files.getLast().minimumGeneration();
-            } else {
-                minimumGenerationForFile = minimumGeneration;
-            }
-
-            if (maximumGeneration < files.getLast().maximumGeneration()) {
-                maximumGenerationForFile = files.getLast().maximumGeneration();
-            } else {
-                maximumGenerationForFile = maximumGeneration;
-            }
+            minimumGenerationForFile =
+                    Math.max(minimumGeneration, files.getLast().minimumGeneration());
+            maximumGenerationForFile =
+                    Math.max(maximumGeneration, files.getLast().maximumGeneration());
         }
 
         final PreConsensusEventFile descriptor = PreConsensusEventFile.of(
