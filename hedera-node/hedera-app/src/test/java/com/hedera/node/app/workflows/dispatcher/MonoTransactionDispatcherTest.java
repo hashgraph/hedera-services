@@ -561,9 +561,13 @@ class MonoTransactionDispatcherTest {
 
     @Test
     void dispatchesTokenFeeScheduleUpdateAsExpected() {
-        given(writableStoreFactory.createTokenStore()).willReturn(writableTokenStore);
+        final var txnBody = TransactionBody.newBuilder()
+                .tokenFeeScheduleUpdate(TokenFeeScheduleUpdateTransactionBody.DEFAULT)
+                .build();
+        given(handleContext.body()).willReturn(txnBody);
+        given(handleContext.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
 
-        dispatcher.dispatchHandle(HederaFunctionality.TOKEN_FEE_SCHEDULE_UPDATE, transactionBody, writableStoreFactory);
+        dispatcher.dispatchHandle(handleContext);
 
         verify(writableTokenStore).commit();
     }

@@ -89,6 +89,7 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
             case TOKEN_REVOKE_KYC -> dispatchTokenRevokeKycFromAccount(context);
             case TOKEN_PAUSE -> dispatchTokenPause(context);
             case TOKEN_UNPAUSE -> dispatchTokenUnpause(context);
+            case TOKEN_FEE_SCHEDULE_UPDATE -> dispatchTokenFeeScheduleUpdate(context);
             case UTIL_PRNG -> dispatchPrng(context);
             default -> throw new IllegalArgumentException(TYPE_NOT_SUPPORTED);
         }
@@ -225,8 +226,15 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
         }
     }
 
-    @Override
-    protected void finishTokenFeeScheduleUpdate(@NonNull final WritableTokenStore tokenStore) {
+    private void dispatchTokenFeeScheduleUpdate(@NonNull final HandleContext handleContext) {
+        requireNonNull(handleContext);
+        final var handler = handlers.tokenFeeScheduleUpdateHandler();
+        handler.handle(handleContext);
+        finishTokenFeeScheduleUpdate(handleContext);
+    }
+
+    private void finishTokenFeeScheduleUpdate(@NonNull final HandleContext handleContext) {
+        final var tokenStore = handleContext.writableStore(WritableTokenStore.class);
         requireNonNull(tokenStore).commit();
     }
 }
