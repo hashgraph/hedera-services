@@ -30,6 +30,7 @@ import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.stack.Savepoint;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.data.ConsensusConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -56,23 +57,29 @@ public class TransactionRunner {
     public ResponseCodeEnum run(
             @NonNull final Instant consensusNow,
             @NonNull final TransactionBody txBody,
-            @NonNull final TransactionCategory transactionCategory,
+            @NonNull final TransactionCategory category,
             @NonNull final Savepoint rootSavepoint,
             @NonNull final HandleContextBase base) {
         requireNonNull(consensusNow, "consensusNow must not be null");
         requireNonNull(txBody, "txBody must not be null");
-        requireNonNull(transactionCategory, "transactionCategory must not be null");
+        requireNonNull(category, "category must not be null");
         requireNonNull(rootSavepoint, "rootSavepoint must not be null");
         requireNonNull(base, "base must not be null");
-        if (transactionCategory == TransactionCategory.USER) {
+        if (category == TransactionCategory.USER) {
             throw new IllegalArgumentException("Cannot dispatch user transaction with this method");
         }
 
-        final var recordBuilderList = base.recordBuilderList();
-
         final var recordBuilder = new SingleTransactionRecordBuilder();
-        recordBuilderList.add(recordBuilder);
-        final int childRecordPos = recordBuilderList.size();
+        final var consensusConfig = rootSavepoint.config().getConfigData(ConsensusConfig.class);
+        try {
+            if (category == TransactionCategory.PRECEDING) {
+                base.recordListBuilder().addPrecedingRecordBuilder(recordBuilder, consensusConfig);
+            } else {
+                base.recordListBuilder().addChildRecordBuilder(recordBuilder, consensusConfig);
+            }
+        } catch (final IndexOutOfBoundsException e) {
+            return ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
+        }
 
         try {
             checker.checkTransactionBody(txBody);
@@ -86,18 +93,13 @@ public class TransactionRunner {
             final var serviceScope = serviceScopeLookup.getServiceName(txBody);
             final var stack = new SavepointStackImpl(configProvider, rootSavepoint);
             final var context = new HandleContextImpl(
-                    serviceScope, consensusNow, txBody, transactionCategory, recordBuilder, stack, base, this);
+                    serviceScope, consensusNow, txBody, category, recordBuilder, stack, base, this);
             dispatcher.dispatchHandle(context);
 
             stack.flatten();
         } catch (HandleException e) {
             recordBuilder.status(e.getStatus());
-            for (int i = childRecordPos, n = recordBuilderList.size(); i < n; i++) {
-                final var currentBuilder = recordBuilderList.get(i);
-                if (currentBuilder.status() == ResponseCodeEnum.OK) {
-                    currentBuilder.status(ResponseCodeEnum.REVERTED_SUCCESS);
-                }
-            }
+            base.recordListBuilder().revertChildRecordBuilders(recordBuilder);
             return e.getStatus();
         }
 

@@ -186,6 +186,11 @@ public class SingleTransactionRecordBuilder
     // ------------------------------------------------------------------------------------------------------------------------
     // fields needed for TransactionRecord
 
+    @Nullable
+    public Timestamp consensusTimestamp() {
+        return consensusTimestamp;
+    }
+
     public SingleTransactionRecordBuilder consensusTimestamp(Timestamp consensusTimestamp) {
         this.consensusTimestamp = consensusTimestamp;
         return this;

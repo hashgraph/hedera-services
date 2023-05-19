@@ -26,6 +26,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.clock.SystemClock;
 import com.hedera.node.app.clock.TimeSlotCalculator;
+import com.hedera.node.app.records.RecordListBuilder;
 import com.hedera.node.app.records.RecordManager;
 import com.hedera.node.app.records.SingleTransactionRecordBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -130,8 +131,7 @@ public class HandleWorkflow {
         // Setup record builder list
         recordManager.startUserTransaction(consensusNow);
         final var recordBuilder = new SingleTransactionRecordBuilder();
-        final var recordBuilderList = new ArrayList<SingleTransactionRecordBuilder>();
-        recordBuilderList.add(recordBuilder);
+        final var recordListBuilder = new RecordListBuilder(recordBuilder);
 
         try {
             final var config = configProvider.getConfiguration();
@@ -156,7 +156,7 @@ public class HandleWorkflow {
             // Setup context
             final var txBody = verifications.txBody();
             final var base =
-                    new HandleContextBase(new TimeSlotCalculator(consensusNow), keyVerifications, recordBuilderList);
+                    new HandleContextBase(new TimeSlotCalculator(consensusNow), keyVerifications, recordListBuilder);
             final var context = new HandleContextImpl(
                     serviceScopeLookup.getServiceName(txBody),
                     consensusNow,
@@ -174,7 +174,8 @@ public class HandleWorkflow {
             // commit state and records
             wrappedState.commit();
         } catch (HandleException e) {
-            revertChildTransactions(e.getStatus(), recordBuilder, recordBuilderList);
+            recordBuilder.status(e.getStatus());
+            recordListBuilder.revertChildRecordBuilders(recordBuilder);
             // TODO: Finalize failed transaction and commit changes
         } catch (Throwable e) {
             LOG.error("An unexpected exception was thrown during handle", e);
@@ -187,25 +188,7 @@ public class HandleWorkflow {
         // TODO: handle system tasks
 
         // store all records at once
-        recordManager.endUserTransaction(recordBuilderList.stream().map(SingleTransactionRecordBuilder::build));
-    }
-
-    private void revertChildTransactions(
-            @NonNull ResponseCodeEnum status,
-            @NonNull SingleTransactionRecordBuilder recordBuilder,
-            @NonNull final List<SingleTransactionRecordBuilder> recordBuilderList) {
-        recordBuilder.status(status);
-        boolean found = false;
-        for (final var builder : recordBuilderList) {
-            if (found) {
-                if (builder.status() == OK) {
-                    builder.status(REVERTED_SUCCESS);
-                    break;
-                }
-            } else if (builder == recordBuilder) {
-                found = true;
-            }
-        }
+        recordManager.endUserTransaction(recordListBuilder.build());
     }
 
     private VerificationResult getUpdatedVerifications(

@@ -39,7 +39,7 @@ public class HandleContextImpl implements HandleContext {
 
     private final Instant consensusNow;
     private final TransactionBody txBody;
-    private final TransactionCategory transactionCategory;
+    private final TransactionCategory category;
     private final SingleTransactionRecordBuilder recordBuilder;
     private final SavepointStackImpl stack;
     private final WritableStoreFactory writableStoreFactory;
@@ -52,7 +52,7 @@ public class HandleContextImpl implements HandleContext {
             @NonNull final String serviceScope,
             @NonNull final Instant consensusNow,
             @NonNull final TransactionBody txBody,
-            @NonNull final TransactionCategory transactionCategory,
+            @NonNull final TransactionCategory category,
             @NonNull final SingleTransactionRecordBuilder recordBuilder,
             @NonNull final SavepointStackImpl stack,
             @NonNull final HandleContextBase base,
@@ -60,7 +60,7 @@ public class HandleContextImpl implements HandleContext {
         requireNonNull(serviceScope, "serviceScope must not be null");
         this.consensusNow = requireNonNull(consensusNow, "consensusNow must not be null");
         this.txBody = requireNonNull(txBody, "txBody must not be null");
-        this.transactionCategory = requireNonNull(transactionCategory, "transactionCategory must not be null");
+        this.category = requireNonNull(category, "category must not be null");
         this.recordBuilder = requireNonNull(recordBuilder, "recordBuilder must not be null");
         this.stack = requireNonNull(stack, "stack must not be null");
         this.base = requireNonNull(base, "base must not be null");
@@ -84,7 +84,7 @@ public class HandleContextImpl implements HandleContext {
     @Override
     @NonNull
     public TransactionCategory category() {
-        return transactionCategory;
+        return category;
     }
 
     @Override
@@ -121,6 +121,7 @@ public class HandleContextImpl implements HandleContext {
     @Nullable
     public SignatureVerification verificationFor(@NonNull final Bytes evmAlias) {
         requireNonNull(evmAlias, "evmAlias must not be null");
+        // TODO: This code is shared with PreHandleResult and should probably be moved to a shared place
         if (evmAlias.length() == 20) {
             for (final var result : base.keyVerifications().values()) {
                 final var account = result.evmAlias();
@@ -163,35 +164,29 @@ public class HandleContextImpl implements HandleContext {
     @NonNull
     public ResponseCodeEnum dispatchPrecedingTransaction(@NonNull final TransactionBody txBody) {
         requireNonNull(txBody, "txBody must not be null");
-        if (transactionCategory != TransactionCategory.USER) {
+        if (category != TransactionCategory.USER) {
             throw new IllegalArgumentException("Only user-transactions can dispatch preceding transactions");
-        }
-        final var state = stack.peek().state();
-        if (state.isModified()) {
-            throw new IllegalStateException("Cannot dispatch a preceding transaction when the state has been modified");
         }
         if (stack.depth() > 1) {
             throw new IllegalStateException(
                     "Cannot dispatch a preceding transaction when child transactions have been dispatched");
+        }
+        if (stack.peek().state().isModified()) {
+            throw new IllegalStateException("Cannot dispatch a preceding transaction when the state has been modified");
         }
 
         // Calculate next available slot for preceding transaction
         final var timeSlot = base.timeSlotCalculator().getNextAvailablePrecedingSlot();
 
         // run the transaction
-        final var currentRecordBuilder =
-                base.recordBuilderList().remove(base.recordBuilderList().size() - 1);
-        final var result = runner.run(timeSlot, txBody, TransactionCategory.PRECEDING, stack.peek(), base);
-        base.recordBuilderList().add(currentRecordBuilder);
-
-        return result;
+        return runner.run(timeSlot, txBody, TransactionCategory.PRECEDING, stack.peek(), base);
     }
 
     @Override
     @NonNull
     public ResponseCodeEnum dispatchChildTransaction(@NonNull final TransactionBody txBody) {
         requireNonNull(txBody, "txBody must not be null");
-        if (transactionCategory == TransactionCategory.PRECEDING) {
+        if (category == TransactionCategory.PRECEDING) {
             throw new IllegalArgumentException("A preceding transaction cannot have child transactions");
         }
 

@@ -16,12 +16,21 @@
 
 package com.hedera.node.app.spi.records;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.streams.RecordStreamItem;
 import com.hedera.hapi.streams.TransactionSidecarRecord;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
 /**
  * A record of a single transaction, including the record stream item and the sidecar records.
  */
 public record SingleTransactionRecord(
-        RecordStreamItem recordStreamItem, List<TransactionSidecarRecord> transactionSidecarRecords) {}
+        @NonNull RecordStreamItem recordStreamItem,
+        @NonNull List<TransactionSidecarRecord> transactionSidecarRecords) {
+    public SingleTransactionRecord {
+        requireNonNull(recordStreamItem, "recordStreamItem must not be null");
+        requireNonNull(transactionSidecarRecords, "transactionSidecarRecords must not be null");
+    }
+}

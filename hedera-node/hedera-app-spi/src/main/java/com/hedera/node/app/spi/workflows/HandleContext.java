@@ -29,10 +29,13 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 
 /**
- * Bundles up the in-handle application context required by {@link TransactionHandler} implementations.
+ * Represents the context of a single {@code handle()}-call.
  *
- * <p>At present, only supplies the context needed for Consensus Service handlers in the
- * limited form described by https://github.com/hashgraph/hedera-services/issues/4945.
+ * The information provided by a {@code HandleContext} is valid only for the duration of the call. It can be grouped
+ * into five categories:
+ * <ul>
+ *     <li>Information about the transaction being handled, such as its consensus time, its body, and its category</li>
+ *     <li>Information about the node, such as its configuration</li>
  */
 public interface HandleContext {
 
@@ -218,7 +221,7 @@ public interface HandleContext {
     SavepointStack savepointStack();
 
     /**
-     * A stack of savepoint.
+     * A stack of savepoints.
      *
      * <p>A new savepoint can be created manually. In addition, a new entry is added to the savepoint stack every time a
      * child transaction is dispatched and executed successfully. The transaction stack allows to rollback an arbitrary
