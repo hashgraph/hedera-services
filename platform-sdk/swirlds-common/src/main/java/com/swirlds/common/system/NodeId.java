@@ -16,15 +16,29 @@
 
 package com.swirlds.common.system;
 
+import com.swirlds.common.io.SelfSerializable;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.IOException;
 import java.util.Objects;
 
 /**
  * A class that is used to uniquely identify a Swirlds Node.
- *
- * @param id ID number unique within the network
  */
-public record NodeId(long id) implements Comparable<NodeId> {
+public class NodeId implements Comparable<NodeId>, SelfSerializable {
+
+    /** The class identifier for this class. */
+    private static final long CLASS_ID = 0xea520dcf050bcaadL;
+
+    /** The class version for this class. */
+    private static final class ClassVersion {
+        /**
+         * The original version of the class.
+         * @since 0.39.0
+         */
+        public static final int ORIGINAL = 1;
+    }
 
     /** The first allowed Node ID. */
     public static final long LOWEST_NODE_NUMBER = 0L;
@@ -32,16 +46,58 @@ public record NodeId(long id) implements Comparable<NodeId> {
     /** The first NodeId. */
     public static final NodeId FIRST_NODE_ID = new NodeId(LOWEST_NODE_NUMBER);
 
+    /** The ID number. */
+    private long id;
+
+    /**
+     * Constructs an empty NodeId objects, used in deserialization only.
+     */
+    public NodeId() {}
+
     /**
      * Constructs a NodeId object with the given ID number.  The ID number must be non-negative.
      *
      * @param id the ID number
      * @throws IllegalArgumentException if the ID number is negative
      */
-    public NodeId {
+    public NodeId(final long id) {
         if (id < LOWEST_NODE_NUMBER) {
             throw new IllegalArgumentException("id must be non-negative");
         }
+        this.id = id;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public long getClassId() {
+        return CLASS_ID;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int getVersion() {
+        return ClassVersion.ORIGINAL;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int getMinimumSupportedVersion() {
+        return ClassVersion.ORIGINAL;
+    }
+
+    /**
+     * Gets the long value of the NodeId
+     *
+     * @return the long value of the NodeId
+     */
+    public long id() {
+        return id;
     }
 
     /**
@@ -71,5 +127,38 @@ public record NodeId(long id) implements Comparable<NodeId> {
     @Override
     public String toString() {
         return Long.toString(id);
+    }
+
+    @Override
+    public void serialize(SerializableDataOutputStream out) throws IOException {
+        out.writeLong(id);
+    }
+
+    @Override
+    public void deserialize(SerializableDataInputStream in, int version) throws IOException {
+        id = in.readLong();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        NodeId nodeId = (NodeId) o;
+        return id == nodeId.id;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int hashCode() {
+        return Long.hashCode(id);
     }
 }
