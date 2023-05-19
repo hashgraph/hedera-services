@@ -73,18 +73,18 @@ class TokenUnpauseHandlerTest extends TokenHandlerTestBase {
     @Test
     void unPausesToken() {
         pauseKnownToken();
-        assertTrue(writableStore.get(tokenId.tokenNum()).get().paused());
+        assertTrue(writableStore.get(tokenId).paused());
 
         subject.handle(tokenUnpauseTxn, writableStore);
 
-        final var unpausedToken = writableStore.get(tokenId.tokenNum()).get();
+        final var unpausedToken = writableStore.get(tokenId);
         assertFalse(unpausedToken.paused());
     }
 
     @Test
     void unPausesTokenFailsIfInvalidToken() {
         pauseKnownToken();
-        assertTrue(writableStore.get(tokenId.tokenNum()).get().paused());
+        assertTrue(writableStore.get(tokenId).paused());
         givenInvalidTokenInTxn();
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(tokenUnpauseTxn, writableStore));
@@ -168,12 +168,7 @@ class TokenUnpauseHandlerTest extends TokenHandlerTestBase {
     }
 
     private void pauseKnownToken() {
-        final var token = writableStore
-                .get(tokenId.tokenNum())
-                .get()
-                .copyBuilder()
-                .paused(true)
-                .build();
+        final var token = writableStore.get(tokenId).copyBuilder().paused(true).build();
         writableStore.put(token);
     }
 }

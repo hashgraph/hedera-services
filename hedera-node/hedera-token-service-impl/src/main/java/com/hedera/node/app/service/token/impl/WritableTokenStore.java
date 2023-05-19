@@ -69,17 +69,6 @@ public class WritableTokenStore extends ReadableTokenStoreImpl {
     }
 
     /**
-     * Returns the {@link Token} with the given number. If no such Token exists, returns {@code Optional.empty()}
-     * @param tokenNum - the number of the Token to be retrieved.
-     */
-    @NonNull
-    public Optional<Token> get(final long tokenNum) {
-        requireNonNull(tokenNum);
-        final var token = tokenState.get(EntityNum.fromLong(tokenNum));
-        return Optional.ofNullable(token);
-    }
-
-    /**
      * Returns the {@link Token} with the given number using {@link WritableKVState#getForModify}.
      * If no such token exists, returns {@code Optional.empty()}
      * @param tokenNum - the number of the token to be retrieved.

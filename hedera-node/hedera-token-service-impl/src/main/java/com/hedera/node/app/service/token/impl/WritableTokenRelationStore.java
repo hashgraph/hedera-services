@@ -18,6 +18,8 @@ package com.hedera.node.app.service.token.impl;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.spi.state.WritableKVState;
@@ -69,15 +71,18 @@ public class WritableTokenRelationStore {
     }
 
     /**
-     * Returns the {@link TokenRelation} with the given entity numbers. If no such token relation exists, returns {@code Optional.empty()}
+     * Returns the {@link TokenRelation} with the given IDs. If no such token relation exists, returns {@code Optional.empty()}
      *
-     * @param accountNum - the number of the account relation to be retrieved
-     * @param tokenNum   - the number of the token relation to be retrieved
+     * @param accountId - the id of the account in the token-relation to be retrieved
+     * @param tokenId   - the id of the token in the token-relation to be retrieved
      */
     @NonNull
-    public Optional<TokenRelation> get(final long accountNum, final long tokenNum) {
-        final var tokenRelation =
-                Objects.requireNonNull(tokenRelState).get(EntityNumPair.fromLongs(accountNum, tokenNum));
+    public Optional<TokenRelation> get(@NonNull final AccountID accountId, @NonNull final TokenID tokenId) {
+        requireNonNull(accountId);
+        requireNonNull(tokenId);
+
+        final var tokenRelation = Objects.requireNonNull(tokenRelState)
+                .get(EntityNumPair.fromLongs(accountId.accountNumOrThrow(), tokenId.tokenNum()));
         return Optional.ofNullable(tokenRelation);
     }
 
@@ -85,13 +90,16 @@ public class WritableTokenRelationStore {
      * Returns the {@link TokenRelation} with the given token number and account number.
      * If no such token relation exists, returns {@code Optional.empty()}
      *
-     * @param accountNum - the number of the account to be retrieved
-     * @param tokenNum   - the number of the token to be retrieved
+     * @param accountId - the number of the account to be retrieved
+     * @param tokenId   - the number of the token to be retrieved
      */
     @NonNull
-    public Optional<TokenRelation> getForModify(final long accountNum, final long tokenNum) {
-        final var token =
-                Objects.requireNonNull(tokenRelState).getForModify(EntityNumPair.fromLongs(accountNum, tokenNum));
+    public Optional<TokenRelation> getForModify(@NonNull final AccountID accountId, @NonNull final TokenID tokenId) {
+        requireNonNull(accountId);
+        requireNonNull(tokenId);
+
+        final var token = Objects.requireNonNull(tokenRelState)
+                .getForModify(EntityNumPair.fromLongs(accountId.accountNumOrThrow(), tokenId.tokenNum()));
         return Optional.ofNullable(token);
     }
 

@@ -78,11 +78,10 @@ public interface ReadableTokenStore {
     }
 
     /**
-     * Returns all the token data
+     * Returns all the data for a token
      *
-     * @param id token id being looked up
-     * @return all the token's data
+     * @param id the token id to look up
      */
     @Nullable
-    Token getToken(@NonNull TokenID id);
+    Token get(@NonNull TokenID id);
 }

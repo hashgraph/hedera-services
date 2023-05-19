@@ -312,6 +312,9 @@ public class TransactionDispatcher {
         // No-op by default
     }
 
+    /**
+     * Dispatches the token associate (to account) transaction to the appropriate handler
+     */
     private void dispatchTokenAssociateToAccount(
             @NonNull final TransactionBody tokenAssociate,
             @NonNull final HandleContext handleContext,

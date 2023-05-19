@@ -53,10 +53,8 @@ class WritableTokenStoreTest extends TokenHandlerTestBase {
         token = createToken();
         writableStore.put(token);
 
-        final var maybeReadToken = writableStore.get(tokenEntityNum.longValue());
+        final var readToken = writableStore.get(tokenId);
 
-        assertTrue(maybeReadToken.isPresent());
-        final var readToken = maybeReadToken.get();
         assertEquals(token, readToken);
     }
 

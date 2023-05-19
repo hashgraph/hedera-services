@@ -48,6 +48,7 @@ import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import javax.inject.Inject;
@@ -99,7 +100,7 @@ public class TokenAssociateToAccountHandler implements TransactionHandler {
         requireNonNull(tokenStore);
         requireNonNull(tokenRelStore);
         final var op = txn.tokenAssociateOrThrow();
-        final var tokenIds = op.tokensOrThrow();
+        final var tokenIds = op.tokensOrElse(Collections.emptyList());
         final var validated = validateSemantics(
                 tokenIds, op.accountOrThrow(), context.getConfiguration(), accountStore, tokenStore, tokenRelStore);
 
@@ -151,24 +152,23 @@ public class TokenAssociateToAccountHandler implements TransactionHandler {
             newTokenRels.add(newTokenRel);
         }
 
-        // Now all the NEW token relations are linked together, but they are not yet linked to
-        // the account. First,
-        // compute where the account's current head token number should go in the linked list of
-        // tokens
+        // Now all the NEW token relations are linked together, but they are not yet linked to the account. First,
+        // compute where the account's current head token number should go in the linked list of tokens
         final var currentHeadTokenNum = account.headTokenNumber();
-        // NOTE: if currentHeadTokenNum is less than 1, it means the account isn't associated
-        // with any tokens yet, so
-        // we'll just set the head to the first token, i.e. the first token ID list from the
-        // transaction (since the new
-        // tokenRels are all linked, and in the order of the token IDs as they appeared in the
-        // original list)
-        if (currentHeadTokenNum >= 1) {
+        // NOTE: if currentHeadTokenNum is less than 1, it means the account isn't associated with any tokens yet, so
+        // we'll just set the head to the first token, i.e. the first token ID list from the transaction (since the new
+        // tokenRels are all linked, and in the order of the token IDs as they appeared in the original list)
+        if (isValidTokenNum(currentHeadTokenNum)) {
             // The account is already associated with some tokens, so we need to insert the new
             // tokenRels at the beginning of the list of existing token numbers first. We start by
             // retrieving the token rel object with the currentHeadTokenNum at the head of the
             // account
             final var headTokenRel = tokenRelStore
-                    .get(account.accountNumber(), currentHeadTokenNum)
+                    .get(
+                            AccountID.newBuilder()
+                                    .accountNum(account.accountNumber())
+                                    .build(),
+                            TokenID.newBuilder().tokenNum(currentHeadTokenNum).build())
                     .orElse(null);
             validateTrue(headTokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
 
@@ -180,6 +180,7 @@ public class TokenAssociateToAccountHandler implements TransactionHandler {
                     .copyBuilder()
                     .previousToken(lastOfNewTokenRels.tokenNumber())
                     .build(); // the old head token rel is no longer the head
+
             // Also connect the last of the new tokenRels to the old head token rel
             newTokenRels.add(lastOfNewTokenRels
                     .copyBuilder()
@@ -242,7 +243,7 @@ public class TokenAssociateToAccountHandler implements TransactionHandler {
         // Check that the given tokens exist and are usable
         final var tokens = new ArrayList<Token>();
         for (final TokenID tokenId : tokenIds) {
-            final var token = tokenStore.getToken(tokenId);
+            final var token = tokenStore.get(tokenId);
             validateTrue(token != null, INVALID_TOKEN_ID);
             validateFalse(token.deleted(), TOKEN_WAS_DELETED);
             validateFalse(token.paused(), TOKEN_IS_PAUSED);
@@ -256,9 +257,7 @@ public class TokenAssociateToAccountHandler implements TransactionHandler {
 
         // Check that a token rel doesn't already exist for each new token ID
         for (final TokenID tokenId : tokenIds) {
-            final var existingTokenRel = tokenRelStore
-                    .get(tokenId.tokenNum(), accountId.accountNumOrThrow())
-                    .orElse(null);
+            final var existingTokenRel = tokenRelStore.get(accountId, tokenId).orElse(null);
             validateTrue(existingTokenRel == null, TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
         }
 
@@ -286,4 +285,8 @@ public class TokenAssociateToAccountHandler implements TransactionHandler {
     }
 
     private record Validated(@NonNull Account account, @NonNull List<Token> tokens) {}
+
+    private static boolean isValidTokenNum(final long tokenNum) {
+        return tokenNum > 0;
+    }
 }

@@ -61,7 +61,7 @@ public class ReadableTokenStoreImpl implements ReadableTokenStore {
 
     @Override
     @Nullable
-    public Token getToken(@NonNull final TokenID id) {
+    public Token get(@NonNull final TokenID id) {
         requireNonNull(id);
         return getTokenLeaf(id.tokenNum()).orElse(null);
     }

@@ -288,10 +288,11 @@ class TokenAssociateToAccountHandlerTest {
                     .contains(
                             EntityNumPair.fromAccountTokenRel(fromPbj(newAcctId), KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY),
                             EntityNumPair.fromAccountTokenRel(fromPbj(newAcctId), KNOWN_TOKEN_WITH_WIPE));
-            final var headTokenNum =
-                    writableAccountStore.getAccountById(newAcctId).headTokenNumber();
+            final var headToken = TokenID.newBuilder()
+                    .tokenNum(writableAccountStore.getAccountById(newAcctId).headTokenNumber())
+                    .build();
             final var headTokenRel =
-                    writableTokenRelStore.get(newAcctNum, headTokenNum).get();
+                    writableTokenRelStore.get(newAcctId, headToken).get();
             Assertions.assertThat(headTokenRel.frozen()).isFalse();
             Assertions.assertThat(headTokenRel.kycGranted()).isFalse();
             Assertions.assertThat(headTokenRel.previousToken()).isNotPositive();
@@ -299,7 +300,11 @@ class TokenAssociateToAccountHandlerTest {
                     .isEqualTo(KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY.getTokenNum());
             Assertions.assertThat(headTokenRel.nextToken()).isEqualTo(KNOWN_TOKEN_WITH_WIPE.getTokenNum());
             final var nextToHeadTokenRel = writableTokenRelStore
-                    .get(newAcctNum, headTokenRel.nextToken())
+                    .get(
+                            newAcctId,
+                            TokenID.newBuilder()
+                                    .tokenNum(headTokenRel.nextToken())
+                                    .build())
                     .get();
             Assertions.assertThat(nextToHeadTokenRel.frozen()).isFalse();
             Assertions.assertThat(nextToHeadTokenRel.kycGranted()).isFalse();
@@ -319,6 +324,7 @@ class TokenAssociateToAccountHandlerTest {
                     .accountNumber(newAcctNum)
                     .headTokenNumber(KNOWN_TOKEN_WITH_WIPE.getTokenNum())
                     .build());
+
             writableAccountStore.commit();
             // put the pre-existing token rels into the rel store
             writableTokenRelStore.put(TokenRelation.newBuilder()
@@ -352,10 +358,11 @@ class TokenAssociateToAccountHandlerTest {
                     .contains(
                             EntityNumPair.fromAccountTokenRel(fromPbj(newAcctId), KNOWN_TOKEN_WITH_FREEZE),
                             EntityNumPair.fromAccountTokenRel(fromPbj(newAcctId), KNOWN_TOKEN_WITH_KYC));
-            final var headTokenNum =
-                    writableAccountStore.getAccountById(newAcctId).headTokenNumber();
+            final var headTokenId = TokenID.newBuilder()
+                    .tokenNum(writableAccountStore.getAccountById(newAcctId).headTokenNumber())
+                    .build();
             final var headTokenRel =
-                    writableTokenRelStore.get(newAcctNum, headTokenNum).get();
+                    writableTokenRelStore.get(newAcctId, headTokenId).get();
             Assertions.assertThat(headTokenRel.previousToken()).isNotPositive();
             Assertions.assertThat(headTokenRel.tokenNumber()).isEqualTo(KNOWN_TOKEN_WITH_FREEZE.getTokenNum());
             Assertions.assertThat(headTokenRel.nextToken()).isEqualTo(KNOWN_TOKEN_WITH_KYC.getTokenNum());
@@ -364,7 +371,11 @@ class TokenAssociateToAccountHandlerTest {
             Assertions.assertThat(headTokenRel.automaticAssociation()).isFalse();
 
             final var nextToHeadTokenRel = writableTokenRelStore
-                    .get(newAcctNum, headTokenRel.nextToken())
+                    .get(
+                            newAcctId,
+                            TokenID.newBuilder()
+                                    .tokenNum(headTokenRel.nextToken())
+                                    .build())
                     .get();
             Assertions.assertThat(nextToHeadTokenRel.previousToken()).isEqualTo(KNOWN_TOKEN_WITH_FREEZE.getTokenNum());
             Assertions.assertThat(nextToHeadTokenRel.tokenNumber()).isEqualTo(KNOWN_TOKEN_WITH_KYC.getTokenNum());
@@ -376,7 +387,11 @@ class TokenAssociateToAccountHandlerTest {
             Assertions.assertThat(nextToHeadTokenRel.automaticAssociation()).isFalse();
 
             final var thirdTokenRel = writableTokenRelStore
-                    .get(newAcctNum, nextToHeadTokenRel.nextToken())
+                    .get(
+                            newAcctId,
+                            TokenID.newBuilder()
+                                    .tokenNum(nextToHeadTokenRel.nextToken())
+                                    .build())
                     .get();
             Assertions.assertThat(thirdTokenRel.previousToken()).isEqualTo(KNOWN_TOKEN_WITH_KYC.getTokenNum());
             Assertions.assertThat(thirdTokenRel.tokenNumber()).isEqualTo(KNOWN_TOKEN_WITH_WIPE.getTokenNum());
@@ -386,7 +401,11 @@ class TokenAssociateToAccountHandlerTest {
             Assertions.assertThat(thirdTokenRel.automaticAssociation()).isFalse();
 
             final var fourthTokenRel = writableTokenRelStore
-                    .get(newAcctNum, thirdTokenRel.nextToken())
+                    .get(
+                            newAcctId,
+                            TokenID.newBuilder()
+                                    .tokenNum(thirdTokenRel.nextToken())
+                                    .build())
                     .get();
             Assertions.assertThat(fourthTokenRel.previousToken()).isEqualTo(KNOWN_TOKEN_WITH_WIPE.getTokenNum());
             Assertions.assertThat(fourthTokenRel.tokenNumber())

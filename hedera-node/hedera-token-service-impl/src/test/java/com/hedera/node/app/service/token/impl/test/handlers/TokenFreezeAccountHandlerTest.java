@@ -221,7 +221,7 @@ class TokenFreezeAccountHandlerTest {
             given(readableAccountStore.getAccountById(ACCOUNT_13257))
                     .willReturn(
                             Account.newBuilder().accountNumber(accountNumber).build());
-            given(tokenRelStore.getForModify(accountNumber, token.tokenNum())).willReturn(Optional.empty());
+            given(tokenRelStore.getForModify(ACCOUNT_13257, token)).willReturn(Optional.empty());
             final var txn = newFreezeTxn(token);
 
             assertThatThrownBy(() -> subject.handle(txn, readableAccountStore, readableTokenStore, tokenRelStore))
@@ -238,7 +238,7 @@ class TokenFreezeAccountHandlerTest {
             given(readableAccountStore.getAccountById(ACCOUNT_13257))
                     .willReturn(
                             Account.newBuilder().accountNumber(accountNumber).build());
-            given(tokenRelStore.getForModify(accountNumber, token.tokenNum()))
+            given(tokenRelStore.getForModify(ACCOUNT_13257, token))
                     .willReturn(Optional.of(TokenRelation.newBuilder()
                             .tokenNumber(token.tokenNum())
                             .accountNumber(accountNumber)
