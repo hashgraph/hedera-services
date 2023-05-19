@@ -66,5 +66,4 @@ module com.hedera.node.app {
             com.swirlds.platform;
     exports com.hedera.node.app.workflows.dispatcher;
     exports com.hedera.node.app.config;
-    exports com.hedera.node.app.workflows.handle.validation;
 }
