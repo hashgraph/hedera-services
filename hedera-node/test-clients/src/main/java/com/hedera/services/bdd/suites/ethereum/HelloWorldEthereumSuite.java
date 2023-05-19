@@ -508,12 +508,9 @@ public class HelloWorldEthereumSuite extends HapiSuite {
         return defaultHapiSpec("TopLevelBurnToZeroAddressReverts")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(RELAYER).balance(123 * ONE_HUNDRED_HBARS),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-                                .via("autoAccount"),
-                        uploadInitCode(JUST_SEND_CONTRACT),
-                        contractCreate(JUST_SEND_CONTRACT))
-                .when(ethereumCryptoTransferToExplicit(nonExistentMirrorAddress, 123)
+                        cryptoCreate(RELAYER).balance(123 * ONE_HUNDRED_HBARS))
+                .when(cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)))
+                .then(ethereumCryptoTransferToExplicit(nonExistentMirrorAddress, 123)
                         .type(EthTxData.EthTransactionType.EIP1559)
                         .signingWith(SECP_256K1_SOURCE_KEY)
                         .payingWith(RELAYER)
@@ -521,8 +518,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                         .maxFeePerGas(50L)
                         .maxPriorityGas(2L)
                         .gasLimit(1_000_000L)
-                        .hasKnownStatus(INVALID_CONTRACT_ID))
-                .then();
+                        .hasKnownStatus(INVALID_CONTRACT_ID));
     }
 
     HapiSpec topLevelSendToReceiverSigRequiredAccountReverts() {
@@ -558,11 +554,8 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(123 * ONE_HUNDRED_HBARS),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-                                .via("autoAccount"),
-                        uploadInitCode(JUST_SEND_CONTRACT),
-                        contractCreate(JUST_SEND_CONTRACT))
-                .when()
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)))
+                .when(uploadInitCode(JUST_SEND_CONTRACT), contractCreate(JUST_SEND_CONTRACT))
                 .then(ethereumCall(JUST_SEND_CONTRACT, SEND_TO, BigInteger.ZERO, BigInteger.valueOf(123))
                         .type(EthTxData.EthTransactionType.EIP1559)
                         .signingWith(SECP_256K1_SOURCE_KEY)
