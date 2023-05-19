@@ -19,16 +19,13 @@ package com.hedera.node.app.service.token.impl.test;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.verify;
-import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
+import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
-import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
-import com.hedera.node.app.spi.state.WritableKVStateBase;
-import com.hedera.node.app.spi.state.WritableStates;
-import java.util.Set;
+import com.hedera.node.app.spi.state.ReadableKVState;
+import com.hedera.node.app.spi.state.ReadableStates;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,54 +34,30 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class WritableTokenRelationStoreTest {
+class ReadableTokenRelationStoreImplTest {
     private static final long TOKEN_10 = 10L;
     private static final long ACCOUNT_20 = 20L;
 
     @Mock
-    private WritableStates states;
+    private ReadableStates states;
 
     @Mock
-    private WritableKVStateBase<EntityNumPair, TokenRelation> tokenRelState;
+    private ReadableKVState<EntityNumPair, TokenRelation> tokenRelState;
 
-    private WritableTokenRelationStore subject;
+    private ReadableTokenRelationStoreImpl subject;
 
     @BeforeEach
     void setUp() {
         given(states.<EntityNumPair, TokenRelation>get(TokenServiceImpl.TOKEN_RELS_KEY))
                 .willReturn(tokenRelState);
 
-        subject = new WritableTokenRelationStore(states);
+        subject = new ReadableTokenRelationStoreImpl(states);
     }
 
     @Test
     void testNullConstructorArgs() {
         //noinspection DataFlowIssue
-        assertThrows(NullPointerException.class, () -> new WritableTokenRelationStore(null));
-    }
-
-    @Test
-    void testPut() {
-        final var expectedTokenRel = TokenRelation.newBuilder()
-                .tokenNumber(TOKEN_10)
-                .accountNumber(ACCOUNT_20)
-                .build();
-        final var expectedEntityNumPair = EntityNumPair.fromLongs(ACCOUNT_20, TOKEN_10);
-
-        subject.put(expectedTokenRel);
-        verify(tokenRelState).put(expectedEntityNumPair, expectedTokenRel);
-    }
-
-    @Test
-    void testPutNull() {
-        //noinspection DataFlowIssue
-        assertThrows(NullPointerException.class, () -> subject.put(null));
-    }
-
-    @Test
-    void testCommit() {
-        subject.commit();
-        verify(tokenRelState).commit();
+        assertThrows(NullPointerException.class, () -> new ReadableTokenRelationStoreImpl(null));
     }
 
     @Test
@@ -108,37 +81,11 @@ class WritableTokenRelationStoreTest {
     }
 
     @Test
-    void testGetForModify() {
-        TokenRelation tokenRelation = mock(TokenRelation.class);
-        given(tokenRelState.getForModify(notNull())).willReturn(tokenRelation);
-
-        final var result = subject.getForModify(ACCOUNT_20, TOKEN_10);
-        Assertions.assertThat(result.orElseThrow()).isEqualTo(tokenRelation);
-    }
-
-    @Test
-    void testGetForModifyEmpty() {
-        given(tokenRelState.getForModify(notNull())).willReturn(null);
-
-        final var result = subject.getForModify(-2L, TOKEN_10);
-        Assertions.assertThat(result).isEmpty();
-    }
-
-    @Test
     void testSizeOfState() {
         final var expectedSize = 3L;
         given(tokenRelState.size()).willReturn(expectedSize);
 
         final var result = subject.sizeOfState();
         Assertions.assertThat(result).isEqualTo(expectedSize);
-    }
-
-    @Test
-    void testModifiedTokens() {
-        final var modifiedKeys = Set.of(EntityNumPair.fromLongs(ACCOUNT_20, TOKEN_10), EntityNumPair.fromLongs(2L, 1L));
-        given(tokenRelState.modifiedKeys()).willReturn(modifiedKeys);
-
-        final var result = subject.modifiedTokens();
-        Assertions.assertThat(result).isEqualTo(modifiedKeys);
     }
 }
