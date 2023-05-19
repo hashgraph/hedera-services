@@ -212,11 +212,6 @@ public class MerkleTestBase extends StateTestBase {
             String label, StateMetadata<String, String> md) {
         final var keySerializer = new OnDiskKeySerializer<>(md);
         final var builder = new JasperDbBuilder<OnDiskKey<String>, OnDiskValue<String>>()
-                // Force all hashes to disk, to make sure we're going through all the
-                // serialization paths we can
-                // FIXME: use hashesRamToDiskThreshold after the merge of
-                //  https://github.com/hashgraph/hedera-services/pull/5825
-                // (see https://github.com/hashgraph/hedera-services/issues/6037 )
                 .hashesRamToDiskThreshold(0)
                 .maxNumOfKeys(100)
                 .preferDiskBasedIndexes(true)
