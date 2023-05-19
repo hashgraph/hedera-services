@@ -332,16 +332,18 @@ public class MerkleDbTest {
                 instance.copyDataSource(dataSource2, true);
 
         final Path snapshotDir = TemporaryFileBuilder.buildTemporaryFile("testSnapshotCopiedTables");
+        // Check primary tables can be snapshotted
         instance.snapshot(snapshotDir, dataSource1);
+        instance.snapshot(snapshotDir, activeCopy2);
+        // Should not be able to snapshot non-primary tables
         Assertions.assertThrows(IllegalArgumentException.class, () -> instance.snapshot(snapshotDir, dataSource2));
         Assertions.assertThrows(IllegalArgumentException.class, () -> instance.snapshot(snapshotDir, inactiveCopy1));
-        instance.snapshot(snapshotDir, activeCopy2);
 
         final MerkleDb snapshotInstance = MerkleDb.getInstance(snapshotDir);
         Assertions.assertTrue(Files.exists(snapshotInstance.getTableDir(tableName1, dataSource1.getTableId())));
+        Assertions.assertTrue(Files.exists(snapshotInstance.getTableDir(tableName2, activeCopy2.getTableId())));
         Assertions.assertFalse(Files.exists(snapshotInstance.getTableDir(tableName1, inactiveCopy1.getTableId())));
         Assertions.assertFalse(Files.exists(snapshotInstance.getTableDir(tableName2, dataSource2.getTableId())));
-        Assertions.assertTrue(Files.exists(snapshotInstance.getTableDir(tableName2, activeCopy2.getTableId())));
 
         dataSource1.close();
         dataSource2.close();
@@ -411,7 +413,9 @@ public class MerkleDbTest {
 
         final Path snapshotDir = TemporaryFileBuilder.buildTemporaryFile();
         instance.snapshot(snapshotDir, dataSource);
+        // Can't snapshot into the same target MerkleDb instance again
         Assertions.assertThrows(IllegalStateException.class, () -> instance.snapshot(snapshotDir, dataSource));
+        // dataSource2 isn't in the target dir, should be able to snapshot
         instance.snapshot(snapshotDir, dataSource2);
 
         dataSource.close();
