@@ -117,7 +117,7 @@ public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
             @NonNull final TokenID tokenId,
             @NonNull final WritableTokenRelationStore tokenRelStore)
             throws HandleException {
-        final var tokenRel = tokenRelStore.getForModify(tokenId.tokenNum(), accountId.accountNumOrThrow());
+        final var tokenRel = tokenRelStore.getForModify(accountId.accountNumOrThrow(), tokenId.tokenNum());
         validateTrue(tokenRel.isPresent(), INVALID_TOKEN_ID);
 
         return tokenRel.get();

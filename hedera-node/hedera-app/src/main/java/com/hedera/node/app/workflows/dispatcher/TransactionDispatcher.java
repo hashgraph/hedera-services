@@ -111,6 +111,8 @@ public class TransactionDispatcher {
             case TOKEN_PAUSE -> dispatchTokenPause(txn, writableStoreFactory.createTokenStore());
             case TOKEN_UNPAUSE -> dispatchTokenUnpause(txn, writableStoreFactory.createTokenStore());
             case FREEZE -> dispatchFreeze(txn, writableStoreFactory.createFreezeStore());
+            case TOKEN_FEE_SCHEDULE_UPDATE -> dispatchTokenFeeScheduleUpdate(
+                    txn, writableStoreFactory.createTokenStore());
             case CRYPTO_CREATE -> dispatchCryptoCreate(txn, writableStoreFactory.createAccountStore());
             case UTIL_PRNG -> dispatchPrng(txn);
             default -> throw new IllegalArgumentException(TYPE_NOT_SUPPORTED);
@@ -456,5 +458,32 @@ public class TransactionDispatcher {
                 new NetworkAdminServiceConfig(dynamicProperties.upgradeArtifactsLoc()),
                 handleContext.createReadableStore(ReadableSpecialFileStore.class),
                 freezeStore);
+    }
+
+    /**
+     * Dispatches the token fee schedule update transaction to the appropriate handler.
+     *
+     * @param feeScheduleUpdate the token fee schedule update transaction
+     * @param tokenStore the token store
+     */
+    private void dispatchTokenFeeScheduleUpdate(
+            @NonNull final TransactionBody feeScheduleUpdate, @NonNull final WritableTokenStore tokenStore) {
+        requireNonNull(feeScheduleUpdate);
+        requireNonNull(tokenStore);
+
+        final var handler = handlers.tokenFeeScheduleUpdateHandler();
+        handler.handle(handleContext, feeScheduleUpdate, tokenStore);
+        finishTokenFeeScheduleUpdate(tokenStore);
+    }
+
+    /**
+     * A temporary hook to isolate logic that we expect to move to a workflow, but
+     * is currently needed when running with facility implementations that are adapters
+     * for either {@code mono-service} logic or integration tests.
+     *
+     * @param tokenStore the token store used for fee schedule update
+     */
+    protected void finishTokenFeeScheduleUpdate(@NonNull final WritableTokenStore tokenStore) {
+        // No-op by default
     }
 }
