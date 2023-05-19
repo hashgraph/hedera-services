@@ -41,6 +41,7 @@ import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.state.MinGenInfo;
 import java.io.IOException;
 import java.nio.file.Path;

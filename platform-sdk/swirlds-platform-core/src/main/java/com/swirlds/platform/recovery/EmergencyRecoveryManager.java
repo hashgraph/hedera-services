@@ -22,6 +22,8 @@ import static com.swirlds.platform.system.SystemExitReason.EMERGENCY_RECOVERY_ER
 import com.swirlds.platform.dispatch.triggers.control.ShutdownRequestedTrigger;
 import java.io.IOException;
 import java.nio.file.Path;
+
+import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
