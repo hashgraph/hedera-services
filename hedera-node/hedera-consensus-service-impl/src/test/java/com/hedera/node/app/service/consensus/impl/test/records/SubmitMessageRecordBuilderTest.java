@@ -41,7 +41,7 @@ class SubmitMessageRecordBuilderTest {
     void recordsTrackedSideEffectsInMonoContext() {
         final var pretendTopicRunningHash = new byte[] {1, 2, 3};
 
-        final var returnedSubject = subject.setFinalStatus(SUCCESS).setNewTopicMetadata(pretendTopicRunningHash, 2, 3L);
+        final var returnedSubject = subject.setFinalStatus(SUCCESS).setNewTopic(pretendTopicRunningHash, 2, 3L);
         assertSame(subject, returnedSubject);
 
         assertSame(pretendTopicRunningHash, subject.getNewTopicRunningHash());
