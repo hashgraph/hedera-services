@@ -84,7 +84,6 @@ public class TokenAssociateToAccountHandler implements TransactionHandler {
      * @param txn           the {@link TokenAssociateTransactionBody} for the active transaction
      * @param context       the {@link HandleContext} for the active transaction
      * @param accountStore  the {@link WritableAccountStore} for the active transaction
-     * @param tokenStore    the {@link ReadableTokenStore} for the active transaction
      * @param tokenRelStore the {@link WritableTokenRelationStore} for the active transaction
      * @throws NullPointerException if one of the arguments is {@code null}
      */
@@ -92,13 +91,13 @@ public class TokenAssociateToAccountHandler implements TransactionHandler {
             @NonNull final TransactionBody txn,
             @NonNull final HandleContext context,
             @NonNull final WritableAccountStore accountStore,
-            @NonNull final ReadableTokenStore tokenStore,
             @NonNull final WritableTokenRelationStore tokenRelStore) {
         requireNonNull(txn);
         requireNonNull(context);
         requireNonNull(accountStore);
-        requireNonNull(tokenStore);
         requireNonNull(tokenRelStore);
+        final var tokenStore = requireNonNull(context.createReadableStore(ReadableTokenStore.class));
+
         final var op = txn.tokenAssociateOrThrow();
         final var tokenIds = op.tokensOrElse(Collections.emptyList());
         final var validated = validateSemantics(

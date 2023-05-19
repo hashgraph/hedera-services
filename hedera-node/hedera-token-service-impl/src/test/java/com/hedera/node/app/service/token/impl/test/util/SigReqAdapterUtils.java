@@ -157,21 +157,21 @@ public class SigReqAdapterUtils {
         final var miscAcctNum = MISC_ACCOUNT.getAccountNum();
         final var destination = new HashMap<EntityNumPair, TokenRelation>();
         destination.put(
-                EntityNumPair.fromLongs(KNOWN_TOKEN_IMMUTABLE.getTokenNum(), miscAcctNum),
+                EntityNumPair.fromLongs(miscAcctNum, KNOWN_TOKEN_IMMUTABLE.getTokenNum()),
                 TokenRelation.newBuilder()
                         .accountNumber(miscAcctNum)
                         .tokenNumber(KNOWN_TOKEN_IMMUTABLE.getTokenNum())
                         .balance(10)
                         .build());
         destination.put(
-                EntityNumPair.fromLongs(KNOWN_TOKEN_NO_SPECIAL_KEYS.getTokenNum(), miscAcctNum),
+                EntityNumPair.fromLongs(miscAcctNum, KNOWN_TOKEN_NO_SPECIAL_KEYS.getTokenNum()),
                 TokenRelation.newBuilder()
                         .accountNumber(miscAcctNum)
                         .tokenNumber(KNOWN_TOKEN_NO_SPECIAL_KEYS.getTokenNum())
                         .balance(20)
                         .build());
         destination.put(
-                EntityNumPair.fromLongs(KNOWN_TOKEN_WITH_KYC.getTokenNum(), miscAcctNum),
+                EntityNumPair.fromLongs(miscAcctNum, KNOWN_TOKEN_WITH_KYC.getTokenNum()),
                 TokenRelation.newBuilder()
                         .accountNumber(miscAcctNum)
                         .tokenNumber(KNOWN_TOKEN_WITH_KYC.getTokenNum())

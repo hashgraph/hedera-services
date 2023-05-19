@@ -107,7 +107,6 @@ public class TransactionDispatcher {
                     txn,
                     handleContext,
                     writableStoreFactory.createAccountStore(),
-                    writableStoreFactory.createTokenStore(),
                     writableStoreFactory.createTokenRelStore());
             case TOKEN_FREEZE_ACCOUNT -> dispatchTokenFreezeAccount(
                     txn,
@@ -319,14 +318,12 @@ public class TransactionDispatcher {
             @NonNull final TransactionBody tokenAssociate,
             @NonNull final HandleContext handleContext,
             @NonNull final WritableAccountStore accountStore,
-            @NonNull final ReadableTokenStore tokenStore,
             @NonNull final WritableTokenRelationStore tokenRelStore) {
         requireNonNull(accountStore);
-        requireNonNull(tokenStore);
         requireNonNull(tokenRelStore);
 
         final var handler = handlers.tokenAssociateToAccountHandler();
-        handler.handle(tokenAssociate, handleContext, accountStore, tokenStore, tokenRelStore);
+        handler.handle(tokenAssociate, handleContext, accountStore, tokenRelStore);
         finishTokenAssociateToAccount(accountStore, tokenRelStore);
     }
 
