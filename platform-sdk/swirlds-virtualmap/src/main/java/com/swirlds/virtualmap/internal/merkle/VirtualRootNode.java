@@ -431,7 +431,8 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         if (firstLeafPath < 0 || lastLeafPath < 0) {
             logger.info(
                     STARTUP.getMarker(),
-                    "Paths range is invalid, skipping full rehash. First path: {}, last path: {}",
+                    "Paths range is invalid, skipping full rehash in in the VirtualMap at {}. First path: {}, last path: {}",
+                    getRoute(),
                     firstLeafPath,
                     lastLeafPath);
             return;
@@ -441,15 +442,21 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             if (loadedHash != null) {
                 logger.info(
                         STARTUP.getMarker(),
-                        "Calculated hash found for the last leaf path: {}, skipping full rehash",
-                        lastLeafPath);
+                        "Calculated hash found for the last leaf path: {} in the VirtualMap at {}, skipping full rehash",
+                        lastLeafPath,
+                        getRoute());
                 return;
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
 
-        logger.info(STARTUP.getMarker(), "Doing full rehash for the path range: {} - {}", firstLeafPath, lastLeafPath);
+        logger.info(
+                STARTUP.getMarker(),
+                "Doing full rehash for the path range: {} - {}  in the VirtualMap at {}",
+                firstLeafPath,
+                lastLeafPath,
+                getRoute());
         final FullLeafRehashHashListener<K, V> hashListener =
                 new FullLeafRehashHashListener<>(firstLeafPath, lastLeafPath, dataSource);
 
