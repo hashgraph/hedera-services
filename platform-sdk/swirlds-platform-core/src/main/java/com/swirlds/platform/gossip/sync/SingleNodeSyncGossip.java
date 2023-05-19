@@ -21,8 +21,6 @@ import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
-import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
@@ -32,35 +30,29 @@ import com.swirlds.common.threading.framework.config.StoppableThreadConfiguratio
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.ParallelExecutor;
-import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.LoggingClearables;
-import com.swirlds.platform.Consensus;
 import com.swirlds.platform.Crypto;
 import com.swirlds.platform.FreezeManager;
 import com.swirlds.platform.PlatformConstructor;
 import com.swirlds.platform.StartUpEventFrozenManager;
 import com.swirlds.platform.components.CriticalQuorum;
-import com.swirlds.platform.components.CriticalQuorumImpl;
 import com.swirlds.platform.components.EventMapper;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.event.EventIntakeTask;
 import com.swirlds.platform.gossip.AbstractGossip;
 import com.swirlds.platform.gossip.FallenBehindManagerImpl;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
-import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
 import com.swirlds.platform.gossip.shadowgraph.SingleNodeNetworkSync;
-import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
@@ -73,29 +65,24 @@ public class SingleNodeSyncGossip extends AbstractGossip {
 
     private static final Logger logger = LogManager.getLogger(SingleNodeSyncGossip.class);
 
-    protected final SyncConfig syncConfig;
-    protected final ShadowGraphSynchronizer syncShadowgraphSynchronizer;
     private final InterruptableConsumer<EventIntakeTask> eventIntakeLambda;
     private final Clearable clearAllPipelines;
 
     /**
      * A list of threads that execute the sync protocol using bidirectional connections
      */
-    private final List<StoppableThread> syncProtocolThreads = new ArrayList<>();
+    private final StoppableThread syncProtocolThread;
 
     /**
      * Builds the gossip engine, depending on which flavor is requested in the configuration.
      *
      * @param platformContext           the platform context
      * @param threadManager             the thread manager
-     * @param time                      the wall clock time
      * @param crypto                    can be used to sign things
-     * @param notificationEngine        used to send notifications to the app
      * @param addressBook               the current address book
      * @param selfId                    this node's ID
      * @param appVersion                the version of the app
      * @param shadowGraph               contains non-ancient events
-     * @param consensusRef              a pointer to consensus
      * @param intakeQueue               the event intake queue
      * @param freezeManager             handles freezes
      * @param startUpEventFrozenManager prevents event creation during startup
@@ -112,14 +99,11 @@ public class SingleNodeSyncGossip extends AbstractGossip {
     public SingleNodeSyncGossip(
             @NonNull PlatformContext platformContext,
             @NonNull ThreadManager threadManager,
-            @NonNull final Time time,
             @NonNull Crypto crypto,
-            @NonNull final NotificationEngine notificationEngine,
             @NonNull AddressBook addressBook,
             @NonNull NodeId selfId,
             @NonNull SoftwareVersion appVersion,
             @NonNull final ShadowGraph shadowGraph,
-            @NonNull final AtomicReference<Consensus> consensusRef,
             @NonNull final QueueThread<EventIntakeTask> intakeQueue,
             @NonNull final FreezeManager freezeManager,
             @NonNull final StartUpEventFrozenManager startUpEventFrozenManager,
@@ -134,14 +118,10 @@ public class SingleNodeSyncGossip extends AbstractGossip {
         super(
                 platformContext,
                 threadManager,
-                time,
                 crypto,
-                notificationEngine,
                 addressBook,
                 selfId,
                 appVersion,
-                shadowGraph,
-                consensusRef,
                 intakeQueue,
                 freezeManager,
                 startUpEventFrozenManager,
@@ -155,22 +135,8 @@ public class SingleNodeSyncGossip extends AbstractGossip {
 
         this.eventIntakeLambda = Objects.requireNonNull(eventIntakeLambda);
 
-        syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
-
         final ParallelExecutor shadowgraphExecutor = PlatformConstructor.parallelExecutor(threadManager);
         thingsToStart.add(shadowgraphExecutor);
-        syncShadowgraphSynchronizer = new ShadowGraphSynchronizer(
-                shadowGraph,
-                addressBook.getSize(),
-                syncMetrics,
-                consensusRef::get,
-                eventTaskCreator::syncDone,
-                eventTaskCreator::addEvent,
-                syncManager,
-                shadowgraphExecutor,
-                // don't send or receive init bytes if running sync as a protocol. the negotiator handles this
-                !syncConfig.syncAsProtocolEnabled(),
-                () -> {});
 
         clearAllPipelines = new LoggingClearables(
                 RECONNECT.getMarker(),
@@ -183,7 +149,7 @@ public class SingleNodeSyncGossip extends AbstractGossip {
 
         final Duration hangingThreadDuration = basicConfig.hangingThreadDuration();
 
-        syncProtocolThreads.add(new StoppableThreadConfiguration<>(threadManager)
+        syncProtocolThread = new StoppableThreadConfiguration<>(threadManager)
                 .setPriority(Thread.NORM_PRIORITY)
                 .setNodeId(selfId.id())
                 .setComponent(PLATFORM_THREAD_POOL_NAME)
@@ -192,9 +158,9 @@ public class SingleNodeSyncGossip extends AbstractGossip {
                 .setHangingThreadPeriod(hangingThreadDuration)
                 .setWork(new SingleNodeNetworkSync(
                         updatePlatformStatus, eventTaskCreator::createEvent, () -> 0, selfId.id()))
-                .build());
+                .build();
 
-        thingsToStart.add(() -> syncProtocolThreads.forEach(StoppableThread::start));
+        thingsToStart.add(syncProtocolThread);
     }
 
     /**
@@ -213,37 +179,32 @@ public class SingleNodeSyncGossip extends AbstractGossip {
         super.stop();
         // wait for all existing syncs to stop. no new ones will be started, since gossip has been halted, and
         // we've fallen behind
-        for (final StoppableThread thread : syncProtocolThreads) {
-            thread.stop();
-        }
+        syncProtocolThread.stop();
     }
 
     /**
      * {@inheritDoc}
      */
+    @Nullable
     @Override
     protected CriticalQuorum buildCriticalQuorum() {
-        return new CriticalQuorumImpl(platformContext.getMetrics(), selfId.id(), addressBook);
+        return null;
     }
 
     /**
      * {@inheritDoc}
      */
+    @Nullable
     @Override
     protected FallenBehindManagerImpl buildFallenBehindManager() {
-        return new FallenBehindManagerImpl(
-                selfId,
-                topology.getConnectionGraph(),
-                updatePlatformStatus,
-                () -> {},
-                platformContext.getConfiguration().getConfigData(ReconnectConfig.class));
+        return null;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void loadFromSignedState(@NonNull SignedState signedState) {
+    public void loadFromSignedState(@NonNull final SignedState signedState) {
         // intentional no-op
     }
 
@@ -268,7 +229,7 @@ public class SingleNodeSyncGossip extends AbstractGossip {
      * {@inheritDoc}
      */
     @Override
-    protected boolean doVersionCheck() {
+    protected boolean shouldDoVersionCheck() {
         return false;
     }
 

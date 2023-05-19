@@ -22,7 +22,6 @@ import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 import com.swirlds.base.state.LifecyclePhase;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
-import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
@@ -32,7 +31,6 @@ import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.ParallelExecutor;
-import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.LoggingClearables;
 import com.swirlds.platform.Consensus;
@@ -50,7 +48,6 @@ import com.swirlds.platform.gossip.FallenBehindManagerImpl;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
 import com.swirlds.platform.gossip.shadowgraph.SimultaneousSyncThrottle;
-import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
 import com.swirlds.platform.network.unidirectional.HeartbeatProtocolResponder;
 import com.swirlds.platform.network.unidirectional.HeartbeatSender;
@@ -78,8 +75,7 @@ public class LegacySyncGossip extends AbstractGossip {
 
     private final SharedConnectionLocks sharedConnectionLocks;
     private final SimultaneousSyncThrottle simultaneousSyncThrottle;
-    protected final SyncConfig syncConfig;
-    protected final ShadowGraphSynchronizer syncShadowgraphSynchronizer;
+    private final ShadowGraphSynchronizer syncShadowgraphSynchronizer;
     private final InterruptableConsumer<EventIntakeTask> eventIntakeLambda;
     private final Clearable clearAllPipelines;
 
@@ -88,9 +84,7 @@ public class LegacySyncGossip extends AbstractGossip {
      *
      * @param platformContext           the platform context
      * @param threadManager             the thread manager
-     * @param time                      the wall clock time
      * @param crypto                    can be used to sign things
-     * @param notificationEngine        used to send notifications to the app
      * @param addressBook               the current address book
      * @param selfId                    this node's ID
      * @param appVersion                the version of the app
@@ -112,9 +106,7 @@ public class LegacySyncGossip extends AbstractGossip {
     public LegacySyncGossip(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
-            @NonNull final Time time,
             @NonNull final Crypto crypto,
-            @NonNull final NotificationEngine notificationEngine,
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
             @NonNull final SoftwareVersion appVersion,
@@ -134,14 +126,10 @@ public class LegacySyncGossip extends AbstractGossip {
         super(
                 platformContext,
                 threadManager,
-                time,
                 crypto,
-                notificationEngine,
                 addressBook,
                 selfId,
                 appVersion,
-                shadowGraph,
-                consensusRef,
                 intakeQueue,
                 freezeManager,
                 startUpEventFrozenManager,
@@ -155,8 +143,6 @@ public class LegacySyncGossip extends AbstractGossip {
 
         this.eventIntakeLambda = Objects.requireNonNull(eventIntakeLambda);
 
-        syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
-
         final ParallelExecutor shadowgraphExecutor = PlatformConstructor.parallelExecutor(threadManager);
         thingsToStart.add(shadowgraphExecutor);
         syncShadowgraphSynchronizer = new ShadowGraphSynchronizer(
@@ -169,7 +155,7 @@ public class LegacySyncGossip extends AbstractGossip {
                 syncManager,
                 shadowgraphExecutor,
                 // don't send or receive init bytes if running sync as a protocol. the negotiator handles this
-                !syncConfig.syncAsProtocolEnabled(),
+                true,
                 () -> {});
 
         clearAllPipelines = new LoggingClearables(
@@ -275,6 +261,9 @@ public class LegacySyncGossip extends AbstractGossip {
         return true;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void stop() {
         super.stop();
@@ -334,7 +323,7 @@ public class LegacySyncGossip extends AbstractGossip {
      * {@inheritDoc}
      */
     @Override
-    protected boolean doVersionCheck() {
+    protected boolean shouldDoVersionCheck() {
         return true;
     }
 
@@ -353,6 +342,5 @@ public class LegacySyncGossip extends AbstractGossip {
     @Override
     public void resume() {
         throwIfNotInPhase(LifecyclePhase.STARTED);
-        // TODO what needs to be done here?
     }
 }

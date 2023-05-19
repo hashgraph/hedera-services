@@ -200,7 +200,7 @@ class UnitTests {
     @Test
     @DisplayName("Frequency Conversion Test")
     void frequencyConversionTest() {
-        final Random random = getRandomPrintSeed(-5901537570131627428L);
+        final Random random = getRandomPrintSeed();
 
         // Test all conversion pairs.
         for (final FrequencyUnit a : FrequencyUnit.values()) {

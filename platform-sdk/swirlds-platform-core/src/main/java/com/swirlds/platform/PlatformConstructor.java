@@ -105,7 +105,8 @@ public final class PlatformConstructor {
         }
     }
 
-    public static PlatformSigner platformSigner(final KeysAndCerts keysAndCerts) {
+    public static PlatformSigner platformSigner(@NonNull final KeysAndCerts keysAndCerts) {
+        Objects.requireNonNull(keysAndCerts);
         try {
             return new PlatformSigner(keysAndCerts);
         } catch (final NoSuchAlgorithmException | NoSuchProviderException | InvalidKeyException e) {

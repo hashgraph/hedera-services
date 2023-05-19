@@ -53,14 +53,14 @@ public class ReconnectController implements Runnable {
      * 		responsible for creating and managing threads
      * @param helper
      * 		executes phases of a reconnect
-     * @param startChatter
+     * @param resumeGossip
      * 		starts gossip if previously suspended
      */
     public ReconnectController(
-            final ThreadManager threadManager, final ReconnectHelper helper, final Runnable startChatter) {
+            final ThreadManager threadManager, final ReconnectHelper helper, final Runnable resumeGossip) {
         this.threadManager = threadManager;
         this.helper = helper;
-        this.resumeGossip = startChatter;
+        this.resumeGossip = resumeGossip;
         this.threadRunning = new Semaphore(1);
         this.connectionProvider = new BlockingResourceProvider<>();
     }

@@ -18,4 +18,4 @@ event.preconsensus.enableStorage, false
 enableEventStreaming,             false
 reconnect.active,                 true
 chatter.useChatter,               false
-sync.syncAsProtocolEnabled,       true
+sync.syncAsProtocolEnabled,       false

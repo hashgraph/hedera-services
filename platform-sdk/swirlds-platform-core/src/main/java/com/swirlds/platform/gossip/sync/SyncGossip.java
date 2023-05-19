@@ -149,14 +149,10 @@ public class SyncGossip extends AbstractGossip {
         super(
                 platformContext,
                 threadManager,
-                time,
                 crypto,
-                notificationEngine,
                 addressBook,
                 selfId,
                 appVersion,
-                shadowGraph,
-                consensusRef,
                 intakeQueue,
                 freezeManager,
                 startUpEventFrozenManager,
@@ -184,7 +180,7 @@ public class SyncGossip extends AbstractGossip {
                 syncManager,
                 shadowgraphExecutor,
                 // don't send or receive init bytes if running sync as a protocol. the negotiator handles this
-                !syncConfig.syncAsProtocolEnabled(),
+                false,
                 () -> {});
 
         clearAllPipelines = new LoggingClearables(
@@ -354,7 +350,7 @@ public class SyncGossip extends AbstractGossip {
      * {@inheritDoc}
      */
     @Override
-    protected boolean doVersionCheck() {
+    protected boolean shouldDoVersionCheck() {
         return false;
     }
 

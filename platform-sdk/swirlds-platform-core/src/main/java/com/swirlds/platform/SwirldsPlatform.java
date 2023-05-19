@@ -269,8 +269,8 @@ public class SwirldsPlatform implements Platform, Startable {
      *
      * @param platformContext          the context for this platform
      * @param crypto                   an object holding all the public/private key pairs and the CSPRNG state for this
-     * @param initialAddressBook       the address book listing all members in the community
      *                                 member
+     * @param initialAddressBook       the address book listing all members in the community
      * @param id                       the ID number for this member (if this computer has multiple members in one
      *                                 swirld)
      * @param mainClassName            the name of the app class inheriting from SwirldMain
@@ -330,8 +330,8 @@ public class SwirldsPlatform implements Platform, Startable {
 
         this.consensusMetrics = new ConsensusMetricsImpl(this.selfId, metrics);
 
-        EventIntakeMetrics eventIntakeMetrics = new EventIntakeMetrics(metrics, time);
-        SyncMetrics syncMetrics = new SyncMetrics(metrics);
+        final EventIntakeMetrics eventIntakeMetrics = new EventIntakeMetrics(metrics, time);
+        final SyncMetrics syncMetrics = new SyncMetrics(metrics);
         RuntimeMetrics.setup(metrics);
 
         this.shadowGraph = new ShadowGraph(syncMetrics, initialAddressBook.getSize());
@@ -880,6 +880,7 @@ public class SwirldsPlatform implements Platform, Startable {
      */
     @Nullable
     private EventCreator buildEventCreator(@NonNull final EventIntake eventIntake) {
+        Objects.requireNonNull(eventIntake);
         final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
         if (chatterConfig.useChatter()) {
             // chatter has a separate event creator in a different thread. having 2 event creators creates the risk
@@ -906,6 +907,7 @@ public class SwirldsPlatform implements Platform, Startable {
      */
     @NonNull
     private EventLinker buildEventLinker(@NonNull final List<Predicate<EventDescriptor>> isDuplicateChecks) {
+        Objects.requireNonNull(isDuplicateChecks);
         final ParentFinder parentFinder = new ParentFinder(shadowGraph::hashgraphEvent);
         final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
         if (chatterConfig.useChatter()) {

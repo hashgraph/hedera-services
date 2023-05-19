@@ -24,7 +24,6 @@ import com.swirlds.base.state.Startable;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
-import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.Address;
@@ -32,8 +31,6 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.common.time.Time;
-import com.swirlds.platform.Consensus;
 import com.swirlds.platform.Crypto;
 import com.swirlds.platform.FreezeManager;
 import com.swirlds.platform.PlatformConstructor;
@@ -46,7 +43,6 @@ import com.swirlds.platform.components.EventMapper;
 import com.swirlds.platform.components.EventTaskCreator;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.event.EventIntakeTask;
-import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.sync.SyncManagerImpl;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
 import com.swirlds.platform.metrics.ReconnectMetrics;
@@ -69,12 +65,12 @@ import com.swirlds.platform.reconnect.ReconnectThrottle;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -90,9 +86,6 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
 
     protected final PlatformContext platformContext;
     protected final ThreadManager threadManager;
-    protected final Time time;
-    protected final Crypto crypto;
-    protected final NotificationEngine notificationEngine;
     protected final AddressBook addressBook;
     protected final NodeId selfId;
     protected final NetworkTopology topology;
@@ -100,23 +93,13 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
     protected final CriticalQuorum criticalQuorum;
     protected final NetworkMetrics networkMetrics;
     protected final SyncMetrics syncMetrics;
-    protected final ShadowGraph shadowGraph;
     protected final EventTaskCreator eventTaskCreator;
     protected final ReconnectHelper reconnectHelper;
     protected final StaticConnectionManagers connectionManagers;
-    protected final AtomicReference<Consensus> consensusRef;
-    protected final QueueThread<EventIntakeTask> intakeQueue;
-    protected final FreezeManager freezeManager;
-    protected final StartUpEventFrozenManager startUpEventFrozenManager;
     protected final FallenBehindManagerImpl fallenBehindManager;
-    protected final SwirldStateManager swirldStateManager;
     protected final SyncManagerImpl syncManager;
     protected final ReconnectThrottle reconnectThrottle;
-    protected final StateManagementComponent stateManagementComponent;
     protected final ReconnectMetrics reconnectMetrics;
-    protected final EventMapper eventMapper;
-    protected final EventIntakeMetrics eventIntakeMetrics;
-    protected final EventObserverDispatcher eventObserverDispatcher;
     protected final Runnable updatePlatformStatus;
     protected final List<Startable> thingsToStart = new ArrayList<>();
 
@@ -128,20 +111,15 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
      *
      * @param platformContext           the platform context
      * @param threadManager             the thread manager
-     * @param time                      the wall clock time
      * @param crypto                    can be used to sign things
-     * @param notificationEngine        used to send notifications to the app
      * @param addressBook               the current address book
      * @param selfId                    this node's ID
      * @param appVersion                the version of the app
-     * @param shadowGraph               contains non-ancient events
-     * @param consensusRef              a pointer to consensus
      * @param intakeQueue               the event intake queue
      * @param freezeManager             handles freezes
      * @param startUpEventFrozenManager prevents event creation during startup
      * @param swirldStateManager        manages the mutable state
-     * @param stateManagementComponent  manages the lifecycle of the state
-     *                                  queue
+     * @param stateManagementComponent  manages the lifecycle of the state queue
      * @param eventObserverDispatcher   the object used to wire event intake
      * @param eventMapper               a data structure used to track the most recent event from each node
      * @param eventIntakeMetrics        metrics for event intake
@@ -151,14 +129,10 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
     protected AbstractGossip(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
-            @NonNull final Time time,
             @NonNull final Crypto crypto,
-            @NonNull final NotificationEngine notificationEngine,
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
             @NonNull final SoftwareVersion appVersion,
-            @NonNull final ShadowGraph shadowGraph,
-            @NonNull final AtomicReference<Consensus> consensusRef,
             @NonNull final QueueThread<EventIntakeTask> intakeQueue,
             @NonNull final FreezeManager freezeManager,
             @NonNull final StartUpEventFrozenManager startUpEventFrozenManager,
@@ -172,32 +146,15 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
 
         this.platformContext = Objects.requireNonNull(platformContext);
         this.threadManager = Objects.requireNonNull(threadManager);
-        this.time = Objects.requireNonNull(time);
-        this.crypto = Objects.requireNonNull(crypto);
-        this.notificationEngine = Objects.requireNonNull(notificationEngine);
         this.addressBook = Objects.requireNonNull(addressBook);
         this.selfId = Objects.requireNonNull(selfId);
-        this.shadowGraph = Objects.requireNonNull(shadowGraph);
-        this.consensusRef = Objects.requireNonNull(consensusRef);
-        this.intakeQueue = Objects.requireNonNull(intakeQueue);
-        this.freezeManager = Objects.requireNonNull(freezeManager);
-        this.startUpEventFrozenManager = Objects.requireNonNull(startUpEventFrozenManager);
-        this.swirldStateManager = Objects.requireNonNull(swirldStateManager);
-        this.stateManagementComponent = Objects.requireNonNull(stateManagementComponent);
-        this.eventMapper = Objects.requireNonNull(eventMapper);
-        this.eventIntakeMetrics = Objects.requireNonNull(eventIntakeMetrics);
-        this.eventObserverDispatcher = Objects.requireNonNull(eventObserverDispatcher);
         this.updatePlatformStatus = Objects.requireNonNull(updatePlatformStatus);
 
         criticalQuorum = buildCriticalQuorum();
         eventObserverDispatcher.addObserver(criticalQuorum);
 
         topology = new StaticTopology(
-                selfId,
-                addressBook.getSize(),
-                settings.getNumConnections(),
-                // unidirectional connections are ONLY used for old-style syncs, that don't run as a protocol
-                unidirectionalConnectionsEnabled());
+                selfId, addressBook.getSize(), settings.getNumConnections(), unidirectionalConnectionsEnabled());
 
         final SocketFactory socketFactory = PlatformConstructor.socketFactory(
                 crypto.getKeysAndCerts(), platformContext.getConfiguration().getConfigData(CryptoConfig.class));
@@ -208,7 +165,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
                 this,
                 socketFactory,
                 addressBook,
-                doVersionCheck(),
+                shouldDoVersionCheck(),
                 appVersion);
         connectionManagers = new StaticConnectionManagers(topology, connectionCreator);
         final InboundConnectionHandler inboundConnectionHandler = new InboundConnectionHandler(
@@ -217,7 +174,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
                 addressBook,
                 connectionManagers::newConnection,
                 StaticSettingsProvider.getSingleton(),
-                doVersionCheck(),
+                shouldDoVersionCheck(),
                 appVersion);
         // allow other members to create connections to me
         final Address address = addressBook.getAddress(selfId.id());
@@ -250,7 +207,6 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
 
         eventTaskCreator = new EventTaskCreator(
                 eventMapper,
-                // hashgraph and state get separate copies of the address book
                 addressBook,
                 selfId,
                 eventIntakeMetrics,
@@ -287,6 +243,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
     /**
      * Build the fallen behind manager.
      */
+    @Nullable
     protected abstract FallenBehindManagerImpl buildFallenBehindManager();
 
     /**
@@ -297,6 +254,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
     /**
      * Build the critical quorum object.
      */
+    @Nullable
     protected abstract CriticalQuorum buildCriticalQuorum();
 
     /**
@@ -381,5 +339,5 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
      *
      * @return true if a version check should be done
      */
-    protected abstract boolean doVersionCheck();
+    protected abstract boolean shouldDoVersionCheck();
 }

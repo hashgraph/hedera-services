@@ -106,7 +106,7 @@ public class ChatterGossip extends AbstractGossip {
     private final Clearable clearAllPipelines;
 
     /**
-     * Builds the gossip engine, depending on which flavor is requested in the configuration.
+     * Builds the gossip engine that implements the chatter v1 algorithm.
      *
      * @param platformContext           the platform context
      * @param threadManager             the thread manager
@@ -162,14 +162,10 @@ public class ChatterGossip extends AbstractGossip {
         super(
                 platformContext,
                 threadManager,
-                time,
                 crypto,
-                notificationEngine,
                 addressBook,
                 selfId,
                 appVersion,
-                shadowGraph,
-                consensusRef,
                 intakeQueue,
                 freezeManager,
                 startUpEventFrozenManager,
@@ -416,7 +412,7 @@ public class ChatterGossip extends AbstractGossip {
      * {@inheritDoc}
      */
     @Override
-    protected boolean doVersionCheck() {
+    protected boolean shouldDoVersionCheck() {
         return false;
     }
 
