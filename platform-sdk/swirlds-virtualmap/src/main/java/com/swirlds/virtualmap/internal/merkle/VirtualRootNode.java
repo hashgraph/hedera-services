@@ -19,6 +19,7 @@ package com.swirlds.virtualmap.internal.merkle;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.RECONNECT;
+import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.logging.LogMarker.TESTING_EXCEPTIONS_ACCEPTABLE_RECONNECT;
 import static com.swirlds.logging.LogMarker.VIRTUAL_MERKLE_STATS;
 import static com.swirlds.virtualmap.internal.Path.FIRST_LEFT_PATH;
@@ -429,6 +430,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         final long lastLeafPath = dataSource.getLastLeafPath();
         if (firstLeafPath < 0 || lastLeafPath < 0) {
             logger.info(
+                    STARTUP.getMarker(),
                     "Paths range is invalid, skipping full rehash. First path: {}, last path: {}",
                     firstLeafPath,
                     lastLeafPath);
@@ -437,14 +439,17 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         try {
             Hash loadedHash = dataSource.loadHash(lastLeafPath);
             if (loadedHash != null) {
-                logger.info("Calculated hash found for the last leaf path: {}, skipping full rehash", lastLeafPath);
+                logger.info(
+                        STARTUP.getMarker(),
+                        "Calculated hash found for the last leaf path: {}, skipping full rehash",
+                        lastLeafPath);
                 return;
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
 
-        logger.info("Doing full rehash for the path range: {} - {}", firstLeafPath, lastLeafPath);
+        logger.info(STARTUP.getMarker(), "Doing full rehash for the path range: {} - {}", firstLeafPath, lastLeafPath);
         final FullLeafRehashHashListener<K, V> hashListener =
                 new FullLeafRehashHashListener<>(firstLeafPath, lastLeafPath, dataSource);
 
