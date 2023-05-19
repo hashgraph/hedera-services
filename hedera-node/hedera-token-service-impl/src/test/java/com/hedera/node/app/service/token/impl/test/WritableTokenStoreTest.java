@@ -38,8 +38,8 @@ class WritableTokenStoreTest extends TokenHandlerTestBase {
     @Test
     void throwsIfNullValuesAsArgs() {
         assertThrows(NullPointerException.class, () -> new WritableTokenStore(null));
-        assertThrows(NullPointerException.class, () -> writableStore.put(null));
-        assertThrows(NullPointerException.class, () -> writableStore.put(null));
+        assertThrows(NullPointerException.class, () -> writableTokenStore.put(null));
+        assertThrows(NullPointerException.class, () -> writableTokenStore.put(null));
     }
 
     @Test
@@ -51,9 +51,9 @@ class WritableTokenStoreTest extends TokenHandlerTestBase {
     @Test
     void getReturnsImmutableToken() {
         token = createToken();
-        writableStore.put(token);
+        writableTokenStore.put(token);
 
-        final var readToken = writableStore.get(tokenId);
+        final var readToken = writableTokenStore.get(tokenId);
 
         assertEquals(token, readToken);
     }
@@ -62,9 +62,9 @@ class WritableTokenStoreTest extends TokenHandlerTestBase {
     void getForModifyReturnsImmutableToken() {
         token = createToken();
 
-        writableStore.put(token);
+        writableTokenStore.put(token);
 
-        final var maybeReadToken = writableStore.getForModify(tokenEntityNum.longValue());
+        final var maybeReadToken = writableTokenStore.getForModify(tokenEntityNum.longValue());
 
         assertTrue(maybeReadToken.isPresent());
         final var readToken = maybeReadToken.get();
@@ -77,7 +77,7 @@ class WritableTokenStoreTest extends TokenHandlerTestBase {
         assertFalse(writableTokenState.contains(tokenEntityNum));
 
         // put, keeps the token in the modifications
-        writableStore.put(token);
+        writableTokenStore.put(token);
 
         assertTrue(writableTokenState.contains(tokenEntityNum));
         final var writtenToken = writableTokenState.get(tokenEntityNum);
@@ -90,28 +90,28 @@ class WritableTokenStoreTest extends TokenHandlerTestBase {
         assertFalse(writableTokenState.contains(tokenEntityNum));
         // put, keeps the token in the modifications.
         // Size of state includes modifications and size of backing state.
-        writableStore.put(token);
+        writableTokenStore.put(token);
 
         assertTrue(writableTokenState.contains(tokenEntityNum));
         final var writtenToken = writableTokenState.get(tokenEntityNum);
-        assertEquals(1, writableStore.sizeOfState());
-        assertTrue(writableStore.modifiedTokens().contains(tokenEntityNum));
+        assertEquals(1, writableTokenStore.sizeOfState());
+        assertTrue(writableTokenStore.modifiedTokens().contains(tokenEntityNum));
         assertEquals(token, writtenToken);
 
         // commit, pushes modifications to backing store. But the size of state is still 1
-        writableStore.commit();
-        assertEquals(1, writableStore.sizeOfState());
-        assertTrue(writableStore.modifiedTokens().contains(tokenEntityNum));
+        writableTokenStore.commit();
+        assertEquals(1, writableTokenStore.sizeOfState());
+        assertTrue(writableTokenStore.modifiedTokens().contains(tokenEntityNum));
     }
 
     @Test
     void getsSizeOfState() {
         token = createToken();
-        assertEquals(0, writableStore.sizeOfState());
-        assertEquals(Collections.EMPTY_SET, writableStore.modifiedTokens());
-        writableStore.put(token);
+        assertEquals(0, writableTokenStore.sizeOfState());
+        assertEquals(Collections.EMPTY_SET, writableTokenStore.modifiedTokens());
+        writableTokenStore.put(token);
 
-        assertEquals(1, writableStore.sizeOfState());
-        assertEquals(Set.of(tokenEntityNum), writableStore.modifiedTokens());
+        assertEquals(1, writableTokenStore.sizeOfState());
+        assertEquals(Set.of(tokenEntityNum), writableTokenStore.modifiedTokens());
     }
 }

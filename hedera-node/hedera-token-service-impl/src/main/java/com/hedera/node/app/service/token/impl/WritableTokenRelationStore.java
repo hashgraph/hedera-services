@@ -37,7 +37,7 @@ import java.util.Set;
  * <p>This class is not exported from the module. It is an internal implementation detail.
  * This class is not complete, it will be extended with other methods like remove, update etc.,
  */
-public class WritableTokenRelationStore {
+public class WritableTokenRelationStore extends ReadableTokenRelationStoreImpl {
     /** The underlying data storage class that holds the token data. */
     private final WritableKVState<EntityNumPair, TokenRelation> tokenRelState;
 
@@ -47,6 +47,7 @@ public class WritableTokenRelationStore {
      * @param states The state to use.
      */
     public WritableTokenRelationStore(@NonNull final WritableStates states) {
+        super(states);
         this.tokenRelState = requireNonNull(states).get(TokenServiceImpl.TOKEN_RELS_KEY);
     }
 
@@ -71,22 +72,6 @@ public class WritableTokenRelationStore {
     }
 
     /**
-     * Returns the {@link TokenRelation} with the given IDs. If no such token relation exists, returns {@code Optional.empty()}
-     *
-     * @param accountId - the id of the account in the token-relation to be retrieved
-     * @param tokenId   - the id of the token in the token-relation to be retrieved
-     */
-    @NonNull
-    public Optional<TokenRelation> get(@NonNull final AccountID accountId, @NonNull final TokenID tokenId) {
-        requireNonNull(accountId);
-        requireNonNull(tokenId);
-
-        final var tokenRelation = Objects.requireNonNull(tokenRelState)
-                .get(EntityNumPair.fromLongs(accountId.accountNumOrThrow(), tokenId.tokenNum()));
-        return Optional.ofNullable(tokenRelation);
-    }
-
-    /**
      * Returns the {@link TokenRelation} with the given token number and account number.
      * If no such token relation exists, returns {@code Optional.empty()}
      *
@@ -101,13 +86,6 @@ public class WritableTokenRelationStore {
         final var token = Objects.requireNonNull(tokenRelState)
                 .getForModify(EntityNumPair.fromLongs(accountId.accountNumOrThrow(), tokenId.tokenNum()));
         return Optional.ofNullable(token);
-    }
-
-    /**
-     * @return the number of token relations in state
-     */
-    public long sizeOfState() {
-        return tokenRelState.size();
     }
 
     /**

@@ -15,6 +15,7 @@ module com.hedera.node.app.service.token.impl {
     requires transitive com.hedera.node.hapi;
     requires org.apache.logging.log4j;
     requires com.swirlds.config;
+    requires com.hedera.node.config;
 
     provides com.hedera.node.app.service.token.TokenService with
             com.hedera.node.app.service.token.impl.TokenServiceImpl;
@@ -25,6 +26,10 @@ module com.hedera.node.app.service.token.impl {
     exports com.hedera.node.app.service.token.impl.serdes;
     exports com.hedera.node.app.service.token.impl;
     exports com.hedera.node.app.service.token.impl.records to
+            com.hedera.node.app.service.token.impl.test,
+            com.hedera.node.app;
+    exports com.hedera.node.app.service.token.impl.validators;
+    exports com.hedera.node.app.service.token.impl.config to
             com.hedera.node.app.service.token.impl.test,
             com.hedera.node.app;
 }
