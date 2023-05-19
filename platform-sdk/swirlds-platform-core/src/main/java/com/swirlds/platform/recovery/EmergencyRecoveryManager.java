@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.state;
+package com.swirlds.platform.recovery;
 
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.platform.system.SystemExitReason.EMERGENCY_RECOVERY_ERROR;

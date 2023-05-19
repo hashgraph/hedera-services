@@ -21,7 +21,7 @@ import static com.swirlds.logging.LogMarker.RECONNECT;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.reconnect.ReconnectController;
 import com.swirlds.platform.reconnect.ReconnectException;
-import com.swirlds.platform.state.EmergencyRecoveryFile;
+import com.swirlds.platform.recovery.EmergencyRecoveryFile;
 import java.io.IOException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

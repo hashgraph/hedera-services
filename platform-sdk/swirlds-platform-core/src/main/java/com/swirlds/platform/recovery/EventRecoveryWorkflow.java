@@ -49,7 +49,6 @@ import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.internal.EventStreamRoundIterator;
 import com.swirlds.platform.recovery.internal.RecoveryPlatform;
-import com.swirlds.platform.state.EmergencyRecoveryFile;
 import com.swirlds.platform.state.MinGenInfo;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.ReservedSignedState;

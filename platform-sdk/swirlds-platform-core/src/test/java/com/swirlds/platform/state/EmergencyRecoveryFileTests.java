@@ -33,6 +33,8 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.stream.Collectors;
+
+import com.swirlds.platform.recovery.EmergencyRecoveryFile;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
