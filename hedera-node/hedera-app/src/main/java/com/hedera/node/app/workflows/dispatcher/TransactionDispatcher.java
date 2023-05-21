@@ -110,6 +110,7 @@ public class TransactionDispatcher {
             case TOKEN_FEE_SCHEDULE_UPDATE -> dispatchTokenFeeScheduleUpdate(
                     txn, writableStoreFactory.createTokenStore());
             case CRYPTO_CREATE -> dispatchCryptoCreate(txn, writableStoreFactory.createAccountStore());
+            case CRYPTO_DELETE -> dispatchCryptoDelete(txn, writableStoreFactory.createAccountStore());
             case UTIL_PRNG -> dispatchPrng(txn);
             default -> throw new IllegalArgumentException(TYPE_NOT_SUPPORTED);
         }
@@ -432,8 +433,8 @@ public class TransactionDispatcher {
     }
 
     /**
-     * Dispatches the crypto create transaction to the appropriate handler.
-     * @param cryptoCreate the crypto create transaction body
+     * Dispatches the crypto delete transaction to the appropriate handler.
+     * @param cryptoDelete the crypto delete transaction body
      * @param accountStore the writable account store
      */
     private void dispatchCryptoDelete(
@@ -456,6 +457,13 @@ public class TransactionDispatcher {
         // No-op by default
     }
 
+    /**
+     * A temporary hook to isolate logic that we expect to move to a workflow, but
+     * is currently needed when running with facility implementations that are adapters
+     * for either {@code mono-service} logic or integration tests.
+     *
+     * @param accountStore the account store used for the creation
+     */
     protected void finishCryptoDelete(@NonNull final WritableAccountStore accountStore) {
         // No-op by default
     }

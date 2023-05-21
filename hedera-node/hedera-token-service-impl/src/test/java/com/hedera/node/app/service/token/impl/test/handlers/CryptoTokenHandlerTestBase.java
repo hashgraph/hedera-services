@@ -61,6 +61,7 @@ import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.config.data.TokensConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -167,6 +168,10 @@ public class CryptoTokenHandlerTestBase {
             .fallbackFee(fixedFee)
             .build();
     protected List<CustomFee> customFees = List.of(withFixedFee(fixedFee), withFractionalFee(fractionalFee));
+
+    protected TokensConfig tokensConfig = new TokensConfig(
+            10000000, false, 1000000, 1000, 1000, 100, 100, 10, 2, true, 100, 10, 10, 10, 500000, 100, true, false,
+            true);
 
     protected MapReadableKVState<String, EntityNumValue> readableAliases;
     protected MapReadableKVState<EntityNumVirtualKey, Account> readableAccounts;

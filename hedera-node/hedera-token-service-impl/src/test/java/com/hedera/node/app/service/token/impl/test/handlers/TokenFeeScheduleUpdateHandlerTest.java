@@ -34,7 +34,6 @@ import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
-import com.hedera.node.app.service.token.impl.config.TokenServiceConfig;
 import com.hedera.node.app.service.token.impl.handlers.TokenFeeScheduleUpdateHandler;
 import com.hedera.node.app.service.token.impl.validators.CustomFeesValidator;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
@@ -42,6 +41,7 @@ import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.config.data.TokensConfig;
 import com.swirlds.config.api.Configuration;
 import java.util.List;
 import java.util.Set;
@@ -57,7 +57,6 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     private TokenFeeScheduleUpdateHandler subject;
     private CustomFeesValidator validator;
     private TransactionBody txn;
-    private TokenServiceConfig config = new TokenServiceConfig(1000, Set.of("CONTRACT"));
 
     @Mock(strictness = LENIENT)
     private HandleContext context;
@@ -76,7 +75,7 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         subject = new TokenFeeScheduleUpdateHandler(validator);
         givenTxn();
         given(context.getConfiguration()).willReturn(tokenServiceConfig);
-        given(tokenServiceConfig.getConfigData(TokenServiceConfig.class)).willReturn(config);
+        given(tokenServiceConfig.getConfigData(TokensConfig.class)).willReturn(tokensConfig);
         given(context.createReadableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
         given(context.createReadableStore(ReadableTokenRelationStore.class)).willReturn(readableTokenRelStore);
     }
@@ -160,8 +159,11 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     @DisplayName("fee schedule update fails if custom fees list is too long")
     void failsIfTooManyCustomFees() {
-        given(tokenServiceConfig.getConfigData(TokenServiceConfig.class))
-                .willReturn(new TokenServiceConfig(1, Set.of("CONTRACT")));
+        final var config = new TokensConfig(
+                10000000, false, 1000000, 1000, 1000, 100, 100, 1, 2, true, 100, 10, 10, 10, 500000, 100, true, false,
+                true);
+
+        given(tokenServiceConfig.getConfigData(TokensConfig.class)).willReturn(config);
         assertThatThrownBy(() -> subject.handle(context, txn, writableTokenStore))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(CUSTOM_FEES_LIST_TOO_LONG));

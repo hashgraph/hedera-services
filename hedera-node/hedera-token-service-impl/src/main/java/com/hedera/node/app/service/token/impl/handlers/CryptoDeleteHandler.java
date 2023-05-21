@@ -35,12 +35,12 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoDeleteTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
-import com.hedera.node.app.service.token.impl.config.TokenServiceConfig;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.config.data.AutoRenewConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -97,19 +97,20 @@ public class CryptoDeleteHandler implements TransactionHandler {
         requireNonNull(accountStore);
 
         final var op = txn.cryptoDelete();
-        // get the configuration for the token service
-        final var config = context.getConfiguration().getConfigData(TokenServiceConfig.class);
+        // get the configuration for the auto-renewal
+        final var autoRenewConfig = context.getConfiguration().getConfigData(AutoRenewConfig.class);
 
         // validate the semantics involving dynamic properties and state. Get delete and transfer accounts
-        final var deleteAndTransferAccounts = validateSemantics(op, accountStore, context.expiryValidator(), config);
-        transferToBeneficiary(context.expiryValidator(), config, deleteAndTransferAccounts, accountStore);
+        final var deleteAndTransferAccounts =
+                validateSemantics(op, accountStore, context.expiryValidator(), autoRenewConfig);
+        transferToBeneficiary(context.expiryValidator(), autoRenewConfig, deleteAndTransferAccounts, accountStore);
 
         accountStore.remove(op.deleteAccountID());
     }
 
     private void transferToBeneficiary(
             @NonNull final ExpiryValidator expiryValidator,
-            @NonNull final TokenServiceConfig config,
+            @NonNull final AutoRenewConfig config,
             @NonNull final Pair<Account, Account> deleteAndTransferAccounts,
             @NonNull final WritableAccountStore accountStore) {
         final var fromAccount = deleteAndTransferAccounts.getLeft();
@@ -126,7 +127,7 @@ public class CryptoDeleteHandler implements TransactionHandler {
 
     private long computeNewBalance(
             final ExpiryValidator expiryValidator,
-            final TokenServiceConfig config,
+            final AutoRenewConfig config,
             final Account account,
             final long adjustment) {
         validateTrue(!account.deleted(), ACCOUNT_DELETED);
@@ -143,7 +144,7 @@ public class CryptoDeleteHandler implements TransactionHandler {
             @NonNull final CryptoDeleteTransactionBody op,
             @NonNull final WritableAccountStore accountStore,
             @NonNull final ExpiryValidator expiryValidator,
-            @NonNull final TokenServiceConfig config) {
+            @NonNull final AutoRenewConfig config) {
         final var deleteAccountId = op.deleteAccountID();
         final var transferAccountId = op.transferAccountID();
 
@@ -168,7 +169,7 @@ public class CryptoDeleteHandler implements TransactionHandler {
     private boolean areAccountsDetached(
             @NonNull Account deleteAccount,
             @NonNull Account transferAccount,
-            @NonNull final TokenServiceConfig config,
+            @NonNull final AutoRenewConfig config,
             @NonNull final ExpiryValidator expiryValidator) {
         final var autoRenewEnabled = config.isAutoRenewEnabled();
         final var expireContracts = config.expireContracts();

@@ -139,9 +139,9 @@ public class StandardizedExpiryValidator implements ExpiryValidator {
             return OK;
         }
         if (isExpiryDisabled(account.smartContract(), expireAccounts, expireContracts)) {
-            return account.smartContract() ? CONTRACT_EXPIRED_AND_PENDING_REMOVAL : ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+            return OK;
         }
-        return OK;
+        return account.smartContract() ? CONTRACT_EXPIRED_AND_PENDING_REMOVAL : ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
     }
 
     /**

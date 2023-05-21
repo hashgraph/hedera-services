@@ -16,16 +16,22 @@
 
 package com.hedera.node.app.workflows.handle.validation;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.store.AccountStore;
@@ -60,6 +66,9 @@ class MonoExpiryValidatorTest {
 
     @Mock
     private HederaNumbers numbers;
+
+    @Mock
+    private Account account;
 
     private MonoExpiryValidator subject;
 
@@ -277,6 +286,40 @@ class MonoExpiryValidatorTest {
         final var update = new ExpiryMeta(bTime, bPeriod, 0);
 
         assertEquals(update, subject.resolveUpdateAttempt(current, update));
+    }
+
+    @Test
+    void checksIfAccountIsDetachedIfBalanceZero() {
+        given(account.tinybarBalance()).willReturn(0L);
+
+        assertEquals(OK, subject.expirationStatus(account, true, true, true));
+        assertFalse(subject.isDetached(account, true, true, true));
+    }
+
+    @Test
+    void failsIfAccountExpiredAndPendingRemoval() {
+        given(account.expiredAndPendingRemoval()).willReturn(true);
+
+        assertEquals(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL, subject.expirationStatus(account, true, true, true));
+        assertTrue(subject.isDetached(account, true, true, true));
+
+        given(account.smartContract()).willReturn(true);
+        assertEquals(CONTRACT_EXPIRED_AND_PENDING_REMOVAL, subject.expirationStatus(account, true, true, true));
+        assertTrue(subject.isDetached(account, true, true, true));
+    }
+
+    @Test
+    void notDetachedIfAccountNotExpired() {
+        given(account.expiredAndPendingRemoval()).willReturn(false);
+
+        assertEquals(OK, subject.expirationStatus(account, true, true, true));
+        assertFalse(subject.isDetached(account, true, true, true));
+    }
+
+    @Test
+    void notDetachedIfAutoRenewDisabled() {
+        assertEquals(OK, subject.expirationStatus(account, false, false, false));
+        assertFalse(subject.isDetached(account, false, false, false));
     }
 
     private static void assertFailsWith(final ResponseCodeEnum expected, final Runnable runnable) {

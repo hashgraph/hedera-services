@@ -38,13 +38,13 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
-import com.hedera.node.app.service.token.impl.config.TokenServiceConfig;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.config.data.AutoRenewConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -106,8 +106,10 @@ public class CryptoHandlerTestBase {
             .build();
     protected static final long defaultAutoRenewPeriod = 720000L;
     protected static final long payerBalance = 10_000L;
-    protected TokenServiceConfig config = new TokenServiceConfig(100, Set.of("CONTRACT"));
+    protected AutoRenewConfig config = new AutoRenewConfig(Set.of("CONTRACT"));
+
     protected MapReadableKVState<String, EntityNumValue> readableAliases;
+
     protected MapReadableKVState<EntityNumVirtualKey, Account> readableAccounts;
     protected MapWritableKVState<String, EntityNumValue> writableAliases;
     protected MapWritableKVState<EntityNumVirtualKey, Account> writableAccounts;
