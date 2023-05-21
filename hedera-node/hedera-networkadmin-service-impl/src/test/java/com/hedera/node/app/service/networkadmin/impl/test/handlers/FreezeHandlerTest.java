@@ -41,8 +41,10 @@ import com.hedera.hapi.node.freeze.FreezeType;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.networkadmin.ReadableSpecialFileStore;
+import com.hedera.node.app.service.networkadmin.impl.config.NetworkAdminServiceConfig;
 import com.hedera.node.app.service.networkadmin.impl.handlers.FreezeHandler;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.state.WritableFreezeStore;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.Optional;
@@ -66,6 +68,12 @@ class FreezeHandlerTest {
     @Mock(strictness = LENIENT)
     private Account account;
 
+    @Mock(strictness = LENIENT)
+    private NetworkAdminServiceConfig adminServiceConfig;
+
+    @Mock(strictness = LENIENT)
+    private WritableFreezeStore freezeStore;
+
     private final Key key = Key.newBuilder()
             .ed25519(Bytes.wrap("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes()))
             .build();
@@ -80,6 +88,8 @@ class FreezeHandlerTest {
 
         given(context.createStore(ReadableAccountStore.class)).willReturn(accountStore);
         given(context.createStore(ReadableSpecialFileStore.class)).willReturn(specialFileStore);
+
+        given(adminServiceConfig.upgradeArtifactsPath()).willReturn("src/test/resources/upgrade-artifacts");
     }
 
     @Test
@@ -197,6 +207,7 @@ class FreezeHandlerTest {
                 .build();
         given(context.body()).willReturn(txn);
         assertDoesNotThrow(() -> subject.preHandle(context));
+        assertDoesNotThrow(() -> subject.handle(txn, adminServiceConfig, specialFileStore, freezeStore));
     }
 
     @Test
@@ -223,6 +234,7 @@ class FreezeHandlerTest {
                     .build();
             given(context.body()).willReturn(txn);
             assertDoesNotThrow(() -> subject.preHandle(context));
+            assertDoesNotThrow(() -> subject.handle(txn, adminServiceConfig, specialFileStore, freezeStore));
         }
     }
 
@@ -247,6 +259,7 @@ class FreezeHandlerTest {
                 .build();
         given(context.body()).willReturn(txn);
         assertDoesNotThrow(() -> subject.preHandle(context));
+        assertDoesNotThrow(() -> subject.handle(txn, adminServiceConfig, specialFileStore, freezeStore));
     }
 
     @Test
@@ -266,6 +279,7 @@ class FreezeHandlerTest {
                 .build();
         given(context.body()).willReturn(txn);
         assertDoesNotThrow(() -> subject.preHandle(context));
+        assertDoesNotThrow(() -> subject.handle(txn, adminServiceConfig, specialFileStore, freezeStore));
     }
 
     @Test

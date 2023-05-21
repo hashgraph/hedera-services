@@ -96,7 +96,7 @@ public class FreezeHandler implements TransactionHandler {
     @SuppressWarnings("java:S1874") // disables the warnings for use of deprecated code
     // it is necessary to check startHour, startMin, endHour, endMin, all of which are deprecated
     // because if any are present then we set a status of INVALID_FREEZE_TRANSACTION_BODY
-    private void pureChecks(final FreezeTransactionBody freezeTxn, @NonNull final Timestamp txValidStart)
+    private static void pureChecks(final FreezeTransactionBody freezeTxn, @NonNull final Timestamp txValidStart)
             throws PreCheckException {
         // freeze.proto properties startHour, startMin, endHour, endMin are deprecated in the protobuf
         // reject any freeze transactions that set these properties
@@ -140,29 +140,28 @@ public class FreezeHandler implements TransactionHandler {
         validateSemantics(freezeTxn, specialFileStore, updateFileNum);
 
         final FreezeUpgradeActions upgradeActions = new FreezeUpgradeActions(adminServiceConfig, freezeStore);
-        final Timestamp freezeStartTime = freezeTxn.startTimeOrThrow();
-        final Instant freezeStartTimeInstant =
-                Instant.ofEpochSecond(freezeStartTime.seconds(), freezeStartTime.nanos());
+        final Timestamp freezeStartTime = freezeTxn.startTime(); // may be null for some freeze types
+        final Instant freezeStartTimeInstant = freezeStartTime == null
+                ? null
+                : Instant.ofEpochSecond(freezeStartTime.seconds(), freezeStartTime.nanos());
 
         switch (freezeTxn.freezeType()) {
-            case PREPARE_UPGRADE -> {
-                // by the time we get here, we've already checked that updateFileNum is non-null in validateSemantics()
-                final Optional<byte[]> updateFileZip = specialFileStore.get(updateFileNum.fileNum());
-                if (updateFileZip.isEmpty()) throw new IllegalStateException("Update file not found");
-                upgradeActions.extractSoftwareUpgrade(updateFileZip.get());
+            case PREPARE_UPGRADE ->
+            // by the time we get here, we've already checked that updateFileNum is non-null in validateSemantics()
+            upgradeActions.extractSoftwareUpgrade(specialFileStore
+                    .get(requireNonNull(updateFileNum).fileNum())
+                    .orElseThrow(() -> new IllegalStateException("Update file not found")));
                 // TODO: call networkCtx.recordPreparedUpgrade(freezeTxn); (issue #6201)
-            }
-            case FREEZE_UPGRADE -> upgradeActions.scheduleFreezeUpgradeAt(freezeStartTimeInstant);
+            case FREEZE_UPGRADE -> upgradeActions.scheduleFreezeUpgradeAt(requireNonNull(freezeStartTimeInstant));
             case FREEZE_ABORT -> upgradeActions.abortScheduledFreeze();
                 // TODO: call networkCtx.discardPreparedUpgradeMeta(); (issue #6201)
-            case TELEMETRY_UPGRADE -> {
-                requireNonNull(updateFileNum);
-                final Optional<byte[]> telemetryUpdateZip = specialFileStore.get(updateFileNum.fileNum());
-                if (telemetryUpdateZip.isEmpty()) throw new IllegalStateException("Telemetry update file not found");
-                upgradeActions.extractTelemetryUpgrade(telemetryUpdateZip.get(), freezeStartTimeInstant);
-            }
+            case TELEMETRY_UPGRADE -> upgradeActions.extractTelemetryUpgrade(
+                    specialFileStore
+                            .get(requireNonNull(updateFileNum).fileNum())
+                            .orElseThrow(() -> new IllegalStateException("Telemetry update file not found")),
+                    requireNonNull(freezeStartTimeInstant));
                 // case FREEZE_ONLY is default
-            default -> upgradeActions.scheduleFreezeOnlyAt(freezeStartTimeInstant);
+            default -> upgradeActions.scheduleFreezeOnlyAt(requireNonNull(freezeStartTimeInstant));
         }
     }
 
@@ -170,7 +169,7 @@ public class FreezeHandler implements TransactionHandler {
      * Performs checks that the entities related to this transaction exist and are valid
      */
     //    @NonNull
-    private void validateSemantics(
+    private static void validateSemantics(
             @NonNull final FreezeTransactionBody freezeTxn,
             @NonNull final ReadableSpecialFileStore specialFileStore,
             @Nullable final FileID updateFileNum) {
@@ -180,7 +179,9 @@ public class FreezeHandler implements TransactionHandler {
         if (freezeTxn.freezeType() == PREPARE_UPGRADE || freezeTxn.freezeType() == TELEMETRY_UPGRADE) {
             requireNonNull(updateFileNum);
             final Optional<byte[]> updateFileZip = specialFileStore.get(updateFileNum.fileNum());
-            if (updateFileZip.isEmpty()) throw new IllegalStateException("Update file not found");
+            if (updateFileZip.isEmpty()) {
+                throw new IllegalStateException("Update file not found");
+            }
         }
     }
     /**
@@ -188,10 +189,10 @@ public class FreezeHandler implements TransactionHandler {
      * a time in the future, where future is defined as a time after the current consensus time.
      * @throws PreCheckException if startTime is not in the future
      */
-    private void verifyFreezeStartTimeIsInFuture(FreezeTransactionBody freezeTxn, Timestamp curConsensusTime)
+    private static void verifyFreezeStartTimeIsInFuture(FreezeTransactionBody freezeTxn, Timestamp curConsensusTime)
             throws PreCheckException {
         final Timestamp freezeStartTime = freezeTxn.startTime();
-        if (freezeStartTime == null || freezeStartTime.seconds() == 0 && freezeStartTime.nanos() == 0) {
+        if (freezeStartTime == null || (freezeStartTime.seconds() == 0 && freezeStartTime.nanos() == 0)) {
             throw new PreCheckException(INVALID_FREEZE_TRANSACTION_BODY);
         }
         final Instant freezeStartTimeInstant =
@@ -207,11 +208,12 @@ public class FreezeHandler implements TransactionHandler {
     }
 
     /**
-     * For freeze types PREPARE_UPGRADE, FREEZE_UPGRADE, and TELEMETRY_UPGRADE, the updateFile and fileHash fields must be set.
+     * For freeze types PREPARE_UPGRADE, FREEZE_UPGRADE, and TELEMETRY_UPGRADE,
+     * the updateFile and fileHash fields must be set.
      * @throws PreCheckException if updateFile or fileHash are not set or don't pass sanity checks
      */
-    private void verifyUpdateFileAndHash(FreezeTransactionBody freezeTxn, ReadableSpecialFileStore specialFileStore)
-            throws PreCheckException {
+    private static void verifyUpdateFileAndHash(
+            FreezeTransactionBody freezeTxn, ReadableSpecialFileStore specialFileStore) throws PreCheckException {
         final FileID updateFile = freezeTxn.updateFile();
 
         if (updateFile == null || specialFileStore.get(updateFile.fileNum()).isEmpty()) {
