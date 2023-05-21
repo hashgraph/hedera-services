@@ -68,6 +68,12 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         // Exists for injection
     }
 
+    /** @inheritDoc */
+    @Override
+    public void pureChecks(@NonNull TransactionBody txn) {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);

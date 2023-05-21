@@ -58,6 +58,12 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
         this.customFeesValidator = customFeesValidator;
     }
 
+    /** @inheritDoc */
+    @Override
+    public void pureChecks(@NonNull TransactionBody txn) {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
     /**
      * {@inheritDoc}
      */

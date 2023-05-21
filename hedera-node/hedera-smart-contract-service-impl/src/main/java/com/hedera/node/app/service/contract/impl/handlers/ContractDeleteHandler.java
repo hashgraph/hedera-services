@@ -23,6 +23,7 @@ import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -39,6 +40,12 @@ public class ContractDeleteHandler implements TransactionHandler {
     @Inject
     public ContractDeleteHandler() {
         // Exists for injection
+    }
+
+    /** @inheritDoc */
+    @Override
+    public void pureChecks(@NonNull TransactionBody txn) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override

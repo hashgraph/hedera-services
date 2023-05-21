@@ -30,6 +30,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.consensus.ConsensusUpdateTopicTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusUpdateTopicRecordBuilder;
@@ -53,6 +54,12 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
     @Inject
     public ConsensusUpdateTopicHandler() {
         // Exists for injection
+    }
+
+    /** @inheritDoc */
+    @Override
+    public void pureChecks(@NonNull TransactionBody txn) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override

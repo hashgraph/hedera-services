@@ -28,6 +28,7 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.freeze.FreezeTransactionBody;
 import com.hedera.hapi.node.freeze.FreezeType;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.networkadmin.ReadableSpecialFileStore;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -50,6 +51,12 @@ public class FreezeHandler implements TransactionHandler {
     @Inject
     public FreezeHandler() {
         // Dagger2
+    }
+
+    /** @inheritDoc */
+    @Override
+    public void pureChecks(@NonNull TransactionBody txn) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
