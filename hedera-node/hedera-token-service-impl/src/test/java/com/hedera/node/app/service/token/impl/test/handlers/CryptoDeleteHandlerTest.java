@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
@@ -406,6 +407,27 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         assertThatThrownBy(() -> subject.handle(handleContext, txn, writableStore))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES));
+    }
+
+    @Test
+    void failsIfEitherDeleteOrTransferAccountDoesntExist() throws PreCheckException {
+        var txn = deleteAccountTransaction(null, transferAccountId);
+        final var context = new FakePreHandleContext(readableStore, txn);
+        assertThatThrownBy(() -> subject.preHandle(context))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(ACCOUNT_ID_DOES_NOT_EXIST));
+
+        txn = deleteAccountTransaction(deleteAccountId, null);
+        final var context1 = new FakePreHandleContext(readableStore, txn);
+        assertThatThrownBy(() -> subject.preHandle(context1))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(ACCOUNT_ID_DOES_NOT_EXIST));
+
+        txn = deleteAccountTransaction(null, null);
+        final var context2 = new FakePreHandleContext(readableStore, txn);
+        assertThatThrownBy(() -> subject.preHandle(context2))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(ACCOUNT_ID_DOES_NOT_EXIST));
     }
 
     private TransactionBody deleteAccountTransaction(

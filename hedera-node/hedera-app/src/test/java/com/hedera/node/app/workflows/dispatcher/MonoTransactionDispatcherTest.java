@@ -614,6 +614,14 @@ class MonoTransactionDispatcherTest {
     }
 
     @Test
+    void dispatchesCryptoDeleteAsExpected() {
+        given(writableStoreFactory.createAccountStore()).willReturn(writableAccountStore);
+
+        dispatcher.dispatchHandle(HederaFunctionality.CRYPTO_DELETE, transactionBody, writableStoreFactory);
+        verify(writableAccountStore).commit();
+    }
+
+    @Test
     void doesntCommitWhenUsageLimitsExceeded() {
         final var createBuilder = mock(CreateAccountRecordBuilder.class);
 
