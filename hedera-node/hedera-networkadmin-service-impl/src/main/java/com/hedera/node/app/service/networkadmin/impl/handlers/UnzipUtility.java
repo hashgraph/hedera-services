@@ -40,6 +40,13 @@ public final class UnzipUtility {
 
     private static final int BUFFER_SIZE = 4096;
 
+    // these constants are used to prevent Zip Bomb Attacks
+    private static final int THRESHOLD_ENTRIES = 10000; // max # of entries to allow in zip files
+    private static final int THRESHOLD_ZIP_SIZE = 1000000000; // 1 GB - max allowed total size of all uncompressed files
+    private static final int THRESHOLD_ENTRY_SIZE = 100000000; // 100 MB - max allowed size of one uncompressed file
+    // max allowed ratio between uncompressed and compressed file size
+    private static final double THRESHOLD_RATIO = 10;
+
     private UnzipUtility() {
         throw new UnsupportedOperationException("Utility Class");
     }
@@ -48,25 +55,33 @@ public final class UnzipUtility {
      * Extracts (unzips) a zipped file from a byte array
      * @param bytes the byte array containing the zipped file
      * @param dstDir the destination directory to extract the unzipped file to
-     * @return false if no zip entry was found in bytes, true if bytes argument was successfully unzipped
      * @throws IOException if the destination does not exist and can't be created, or if the file can't be written
      */
-    public static boolean unzip(@NonNull final byte[] bytes, @NonNull final String dstDir) throws IOException {
+    public static void unzip(@NonNull final byte[] bytes, @NonNull final String dstDir) throws IOException {
         requireNonNull(bytes);
         requireNonNull(dstDir);
         final File destDir = new File(dstDir);
         if (!destDir.exists()) {
             if (!destDir.mkdirs()) {
                 log.fatal("Unable to create the directory for update assets: {}", destDir);
-                return false;
+                throw new IOException("Unable to create the directory for update assets: " + destDir);
             }
             log.info("Created directory {} for update assets", destDir);
         }
 
         final var zipIn = new ZipInputStream(new ByteArrayInputStream(bytes));
+        int totalSizeArchive = 0; // total size of the zip archive once uncompressed
+        int totalEntryArchive = 0; // total number of entries in the zip archive
         ZipEntry entry = zipIn.getNextEntry();
-        if (entry == null) return false;
+        if (entry == null) {
+            throw new IOException("No zip entry found in bytes");
+        }
         while (entry != null) {
+            totalEntryArchive++;
+            if (totalEntryArchive > THRESHOLD_ENTRIES) {
+                log.error(" - Zip file entry count exceeds threshold: {}", THRESHOLD_ENTRIES);
+                throw new IOException("Zip file entry count exceeds threshold: " + THRESHOLD_ENTRIES);
+            }
             var filePath = dstDir + File.separator + entry.getName();
             final var fileOrDir = new File(filePath);
             filePath = fileOrDir.getCanonicalPath();
@@ -76,8 +91,11 @@ public final class UnzipUtility {
             }
 
             if (!entry.isDirectory()) {
-                ensureDirectoriesExist(fileOrDir);
-                extractSingleFile(zipIn, filePath);
+                totalSizeArchive += extractSingleFile(zipIn, filePath, entry.getCompressedSize());
+                if (totalSizeArchive > THRESHOLD_ZIP_SIZE) {
+                    log.error(" - Zip file size exceeds threshold: {}", THRESHOLD_ZIP_SIZE);
+                    throw new IOException("Zip file size exceeds threshold: " + THRESHOLD_ZIP_SIZE);
+                }
                 log.info(" - Extracted update file {}", filePath);
             } else {
                 if (!fileOrDir.mkdirs()) {
@@ -89,7 +107,6 @@ public final class UnzipUtility {
             entry = zipIn.getNextEntry();
         }
         zipIn.close();
-        return true;
     }
 
     /**
@@ -97,27 +114,33 @@ public final class UnzipUtility {
      *
      * @param inputStream Input stream of zip file content
      * @param filePath Output file name
+     * @param compressedSize Size of this zip entry while still compressed in bytes
+     * @return Size of this zip entry once uncompressed
      * @throws IOException if the file can't be written
      */
-    public static void extractSingleFile(@NonNull ZipInputStream inputStream, @NonNull String filePath)
-            throws IOException {
+    public static int extractSingleFile(
+            @NonNull ZipInputStream inputStream, @NonNull String filePath, long compressedSize) throws IOException {
         requireNonNull(inputStream);
         requireNonNull(filePath);
+        int totalSizeEntry = 0; // size of this zip entry once uncompressed
+
         try (var bos = new BufferedOutputStream(new FileOutputStream(filePath))) {
             final var bytesIn = new byte[BUFFER_SIZE];
             int read;
             while ((read = inputStream.read(bytesIn)) != -1) {
+                totalSizeEntry += read;
+                if (totalSizeEntry > THRESHOLD_ENTRY_SIZE) {
+                    // the uncompressed file size is too large, could be a zip bomb attack
+                    throw new IOException("Zip bomb attack detected, aborting unzip!");
+                }
+                if ((double) totalSizeEntry / compressedSize > THRESHOLD_RATIO) {
+                    // the uncompressed file size is too large compared to the compressed size,
+                    // could be a zip bomb attack
+                    throw new IOException("Zip bomb attack detected, aborting unzip!");
+                }
                 bos.write(bytesIn, 0, read);
             }
         }
-    }
-
-    static void ensureDirectoriesExist(@NonNull final File file) {
-        requireNonNull(file);
-        final File directory = file.getParentFile();
-
-        if (!directory.exists() && !directory.mkdirs()) {
-            log.fatal("Unable to create the parent directories for the file: {}", file);
-        }
+        return totalSizeEntry;
     }
 }

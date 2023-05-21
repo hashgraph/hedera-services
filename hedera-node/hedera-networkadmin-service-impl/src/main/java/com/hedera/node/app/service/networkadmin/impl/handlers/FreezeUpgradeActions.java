@@ -69,7 +69,7 @@ public class FreezeUpgradeActions {
     public void externalizeFreezeIfUpgradePending() {
         // TODO: call networkCtx.hasPreparedUpgrade() once available (issue #6201)
         // final var isUpgradePrepared = networkCtx.hasPreparedUpgrade();
-        final var isUpgradePrepared = true;
+        final boolean isUpgradePrepared = true;
 
         if (isUpgradePrepared) {
             writeCheckMarker(NOW_FROZEN_MARKER);
@@ -146,8 +146,7 @@ public class FreezeUpgradeActions {
                 log.error("Failed to delete existing files in {}", artifactsLoc, e);
             }
             try {
-                boolean result = UnzipUtility.unzip(archiveData, artifactsLoc);
-                if (!result) throw new IOException("Unzip failed");
+                UnzipUtility.unzip(archiveData, artifactsLoc);
                 log.info("Finished unzipping {} bytes for {} update into {}", size, desc, artifactsLoc);
                 writeSecondMarker(marker, now);
             } catch (final IOException e) {
