@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.spi.workflows;
 
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.records.RecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -32,6 +33,18 @@ public interface TransactionHandler {
      * @throws PreCheckException if the transaction is invalid
      */
     void preHandle(@NonNull final PreHandleContext context) throws PreCheckException;
+
+    /**
+     * Validate the transaction body, without involving state or dynamic properties.
+     * This method is called as first step of preHandle. If there is any failure,
+     * throws a {@link PreCheckException}.
+     * Since these checks are pure, they need not be repeated in handle workflow.
+     * The result of these checks is cached in the {@link PreHandleContext} for use
+     * in handle workflow.
+     * @param txn the transaction body
+     * @throws PreCheckException if the transaction is invalid
+     */
+    void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException;
 
     /**
      * Returns an instance of the transaction-specific {@link RecordBuilder}.
