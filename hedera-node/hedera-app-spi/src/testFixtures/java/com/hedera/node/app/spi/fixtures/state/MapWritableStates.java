@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.spi.fixtures.state;
 
-import com.hedera.node.app.spi.state.ReadableSingletonState;
 import com.hedera.node.app.spi.state.WritableKVState;
+import com.hedera.node.app.spi.state.WritableQueueState;
 import com.hedera.node.app.spi.state.WritableSingletonState;
 import com.hedera.node.app.spi.state.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -40,7 +40,7 @@ public class MapWritableStates implements WritableStates {
     @SuppressWarnings("unchecked")
     @NonNull
     @Override
-    public <K, V> WritableKVState<K, V> get(@NonNull String stateKey) {
+    public <K, V> WritableKVState<K, V> get(@NonNull final String stateKey) {
         final var state = states.get(Objects.requireNonNull(stateKey));
         if (state == null) {
             throw new IllegalArgumentException("Unknown k/v state key " + stateKey);
@@ -52,7 +52,7 @@ public class MapWritableStates implements WritableStates {
     @SuppressWarnings("unchecked")
     @NonNull
     @Override
-    public <T> WritableSingletonState<T> getSingleton(@NonNull String stateKey) {
+    public <T> WritableSingletonState<T> getSingleton(@NonNull final String stateKey) {
         final var state = states.get(Objects.requireNonNull(stateKey));
         if (state == null) {
             throw new IllegalArgumentException("Unknown singleton state key " + stateKey);
@@ -61,8 +61,20 @@ public class MapWritableStates implements WritableStates {
         return (WritableSingletonState<T>) state;
     }
 
+    @SuppressWarnings("unchecked")
+    @NonNull
     @Override
-    public boolean contains(@NonNull String stateKey) {
+    public <E> WritableQueueState<E> getQueue(@NonNull final String stateKey) {
+        final var state = states.get(Objects.requireNonNull(stateKey));
+        if (state == null) {
+            throw new IllegalArgumentException("Unknown queue state key " + stateKey);
+        }
+
+        return (WritableQueueState<E>) state;
+    }
+
+    @Override
+    public boolean contains(@NonNull final String stateKey) {
         return states.containsKey(stateKey);
     }
 
@@ -105,7 +117,7 @@ public class MapWritableStates implements WritableStates {
         }
 
         /**
-         * Defines a new {@link ReadableSingletonState} that should be available in the {@link
+         * Defines a new {@link WritableSingletonState} that should be available in the {@link
          * MapReadableStates} instance created by this builder.
          *
          * @param state The state to include
@@ -113,6 +125,19 @@ public class MapWritableStates implements WritableStates {
          */
         @NonNull
         public Builder state(@NonNull final WritableSingletonState<?> state) {
+            this.states.put(state.getStateKey(), state);
+            return this;
+        }
+
+        /**
+         * Defines a new {@link WritableQueueState} that should be available in the {@link
+         * MapReadableStates} instance created by this builder.
+         *
+         * @param state The state to include
+         * @return a reference to this builder
+         */
+        @NonNull
+        public Builder state(@NonNull final WritableQueueState<?> state) {
             this.states.put(state.getStateKey(), state);
             return this;
         }

@@ -18,12 +18,19 @@ package com.hedera.node.app.service.consensus.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
+import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.A_NONNULL_KEY;
+import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.EMPTY_KEYLIST;
+import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.EMPTY_THRESHOLD_KEY;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ENTITIES_MAX_LIFETIME;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
@@ -41,6 +48,8 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusUpdateTopicHandler;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusUpdateTopicRecordBuilder;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.meta.HandleContext;
@@ -49,6 +58,10 @@ import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.workflows.handle.validation.StandardizedAttributeValidator;
+import java.util.function.LongSupplier;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -56,8 +69,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
-    private static final TopicID WELL_KNOWN_TOPIC_ID =
-            TopicID.newBuilder().topicNum(1L).build();
+    private static final long maxLifetime = 3_000_000L;
 
     private final ConsensusUpdateTopicTransactionBody.Builder OP_BUILDER =
             ConsensusUpdateTopicTransactionBody.newBuilder();
@@ -83,14 +95,38 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
     @Mock
     private AttributeValidator attributeValidator;
 
-    private ConsensusUpdateTopicHandler subject = new ConsensusUpdateTopicHandler();
+    @Mock
+    private LongSupplier consensusSecondNow;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
+
+    @Mock
+    private PropertySource compositeProps;
+
+    private StandardizedAttributeValidator standardizedAttributeValidator;
+
+    private ConsensusUpdateTopicHandler subject;
+
+    //
+
+    @BeforeEach
+    void setUp() {
+        given(compositeProps.getLongProperty(ENTITIES_MAX_LIFETIME)).willReturn(maxLifetime);
+
+        standardizedAttributeValidator =
+                new StandardizedAttributeValidator(consensusSecondNow, compositeProps, dynamicProperties);
+        subject = new ConsensusUpdateTopicHandler();
+    }
 
     @Test
+    @DisplayName("Correct RecordBuilder type returned")
     void returnsExpectedRecordBuilderType() {
         assertInstanceOf(ConsensusUpdateTopicRecordBuilder.class, subject.newRecordBuilder());
     }
 
     @Test
+    @DisplayName("Update a missing topic ID fails")
     void rejectsMissingTopic() {
         final var op = OP_BUILDER.build();
 
@@ -99,34 +135,36 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
     }
 
     @Test
+    @DisplayName("Update a deleted topic ID fails")
     void rejectsDeletedTopic() {
         givenValidTopic(0, true);
         refreshStoresWithCurrentTopicInBothReadableAndWritable();
 
-        final var op = OP_BUILDER.topicID(wellKnownId()).build();
+        final var op = OP_BUILDER.topicID(topicId).build();
 
         // expect:
         assertFailsWith(INVALID_TOPIC_ID, () -> subject.handle(handleContext, op, writableStore));
     }
 
     @Test
+    @DisplayName("No admin key to update memo fails")
     void rejectsNonExpiryMutationOfImmutableTopic() {
         givenValidTopic(0, false, false);
         refreshStoresWithCurrentTopicInBothReadableAndWritable();
 
-        final var op =
-                OP_BUILDER.topicID(wellKnownId()).memo("Please mind the vase").build();
+        final var op = OP_BUILDER.topicID(topicId).memo("Please mind the vase").build();
 
         // expect:
         assertFailsWith(ResponseCodeEnum.UNAUTHORIZED, () -> subject.handle(handleContext, op, writableStore));
     }
 
     @Test
+    @DisplayName("Invalid new admin key update fails")
     void validatesNewAdminKey() {
         givenValidTopic(0, false);
         refreshStoresWithCurrentTopicInBothReadableAndWritable();
 
-        final var op = OP_BUILDER.topicID(wellKnownId()).adminKey(key).build();
+        final var op = OP_BUILDER.topicID(topicId).adminKey(key).build();
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
         willThrow(new HandleException(ResponseCodeEnum.BAD_ENCODING))
                 .given(attributeValidator)
@@ -137,26 +175,72 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
     }
 
     @Test
+    @DisplayName("Update admin key as expected")
     void appliesNewAdminKey() {
         givenValidTopic(0, false);
         refreshStoresWithCurrentTopicInBothReadableAndWritable();
 
-        final var op = OP_BUILDER.topicID(wellKnownId()).adminKey(anotherKey).build();
+        final var op = OP_BUILDER.topicID(topicId).adminKey(anotherKey).build();
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
 
         subject.handle(handleContext, op, writableStore);
 
         final var newTopic = writableTopicState.get(topicEntityNum);
-        final var expectedKey = anotherKey;
-        assertEquals(expectedKey, newTopic.adminKey());
+        assertEquals(anotherKey, newTopic.adminKey());
     }
 
     @Test
+    @DisplayName("Delete admin key with Key.DEFAULT failed")
+    void appliesDeleteAdminKeyWithDEFAULTKey() {
+        givenValidTopic(0, false);
+        refreshStoresWithCurrentTopicInBothReadableAndWritable();
+
+        final var op = OP_BUILDER.topicID(topicId).adminKey(A_NONNULL_KEY).build();
+        given(handleContext.attributeValidator()).willReturn(standardizedAttributeValidator);
+
+        assertFailsWith(ResponseCodeEnum.BAD_ENCODING, () -> subject.handle(handleContext, op, writableStore));
+
+        final var newTopic = writableTopicState.get(topicEntityNum);
+        assertNotNull(newTopic.adminKey());
+    }
+
+    @Test
+    @DisplayName("Delete admin key with empty KeyList succeeded")
+    void appliesDeleteAdminKeyWithEmptyKeyList() {
+        givenValidTopic(0, false);
+        refreshStoresWithCurrentTopicInBothReadableAndWritable();
+
+        final var op = OP_BUILDER.topicID(topicId).adminKey(EMPTY_KEYLIST).build();
+        given(handleContext.attributeValidator()).willReturn(standardizedAttributeValidator);
+
+        subject.handle(handleContext, op, writableStore);
+
+        final var newTopic = writableTopicState.get(topicEntityNum);
+        assertNull(newTopic.adminKey());
+    }
+
+    @Test
+    @DisplayName("Delete admin key with empty Threshold key failed")
+    void appliesDeleteEmptyAdminKeyWithThresholdKeyList() {
+        givenValidTopic(0, false);
+        refreshStoresWithCurrentTopicInBothReadableAndWritable();
+
+        final var op = OP_BUILDER.topicID(topicId).adminKey(EMPTY_THRESHOLD_KEY).build();
+        given(handleContext.attributeValidator()).willReturn(standardizedAttributeValidator);
+
+        assertFailsWith(ResponseCodeEnum.BAD_ENCODING, () -> subject.handle(handleContext, op, writableStore));
+
+        final var newTopic = writableTopicState.get(topicEntityNum);
+        assertNotNull(newTopic.adminKey());
+    }
+
+    @Test
+    @DisplayName("Invalid new submit key update fails")
     void validatesNewSubmitKey() {
         givenValidTopic(0, false);
         refreshStoresWithCurrentTopicInBothReadableAndWritable();
 
-        final var op = OP_BUILDER.topicID(wellKnownId()).submitKey(key).build();
+        final var op = OP_BUILDER.topicID(topicId).submitKey(key).build();
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
         willThrow(new HandleException(ResponseCodeEnum.BAD_ENCODING))
                 .given(attributeValidator)
@@ -167,27 +251,27 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
     }
 
     @Test
+    @DisplayName("Update submit key as expected")
     void appliesNewSubmitKey() {
         givenValidTopic(0, false);
         refreshStoresWithCurrentTopicInBothReadableAndWritable();
 
-        final var op = OP_BUILDER.topicID(wellKnownId()).submitKey(anotherKey).build();
+        final var op = OP_BUILDER.topicID(topicId).submitKey(anotherKey).build();
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
 
         subject.handle(handleContext, op, writableStore);
 
         final var newTopic = writableTopicState.get(topicEntityNum);
-        final var expectedKey = anotherKey;
-        assertEquals(expectedKey, newTopic.submitKey());
+        assertEquals(anotherKey, newTopic.submitKey());
     }
 
     @Test
+    @DisplayName("Too long memo update fails")
     void validatesNewMemo() {
         givenValidTopic(0, false);
         refreshStoresWithCurrentTopicInBothReadableAndWritable();
 
-        final var op =
-                OP_BUILDER.topicID(wellKnownId()).memo("Please mind the vase").build();
+        final var op = OP_BUILDER.topicID(topicId).memo("Please mind the vase").build();
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
         willThrow(new HandleException(ResponseCodeEnum.MEMO_TOO_LONG))
                 .given(attributeValidator)
@@ -198,12 +282,13 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
     }
 
     @Test
+    @DisplayName("Update memo as expected")
     void appliesNewMemo() {
         final var newMemo = "Please mind the vase";
         givenValidTopic(0, false);
         refreshStoresWithCurrentTopicInBothReadableAndWritable();
 
-        final var op = OP_BUILDER.topicID(wellKnownId()).memo(newMemo).build();
+        final var op = OP_BUILDER.topicID(topicId).memo(newMemo).build();
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
         subject.handle(handleContext, op, writableStore);
 
@@ -212,11 +297,12 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
     }
 
     @Test
+    @DisplayName("ExpiryMeta validation fails")
     void validatesNewExpiryViaMeta() {
         refreshStoresWithCurrentTopicInBothReadableAndWritable();
 
         final var expiry = Timestamp.newBuilder().seconds(123L).build();
-        final var op = OP_BUILDER.topicID(wellKnownId()).expirationTime(expiry).build();
+        final var op = OP_BUILDER.topicID(topicId).expirationTime(expiry).build();
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
         final var impliedMeta = new ExpiryMeta(123L, NA, NA, NA, NA);
@@ -230,11 +316,12 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
     }
 
     @Test
+    @DisplayName("Update expiry as expected")
     void appliesNewExpiryViaMeta() {
         refreshStoresWithCurrentTopicInBothReadableAndWritable();
 
         final var expiry = Timestamp.newBuilder().seconds(123L).build();
-        final var op = OP_BUILDER.topicID(wellKnownId()).expirationTime(expiry).build();
+        final var op = OP_BUILDER.topicID(topicId).expirationTime(expiry).build();
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
         final var impliedMeta = new ExpiryMeta(123L, NA, NA, NA, NA);
@@ -249,14 +336,13 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
     }
 
     @Test
+    @DisplayName("Invalid new auto renew period update fails")
     void validatesNewAutoRenewPeriodViaMeta() {
         refreshStoresWithCurrentTopicInBothReadableAndWritable();
 
         final var autoRenewPeriod = Duration.newBuilder().seconds(123L).build();
-        final var op = OP_BUILDER
-                .topicID(wellKnownId())
-                .autoRenewPeriod(autoRenewPeriod)
-                .build();
+        final var op =
+                OP_BUILDER.topicID(topicId).autoRenewPeriod(autoRenewPeriod).build();
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
         final var impliedMeta = new ExpiryMeta(NA, 123L, NA, NA, NA);
@@ -271,13 +357,12 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
     }
 
     @Test
+    @DisplayName("Update auto renew period as expected")
     void appliesNewAutoRenewPeriodViaMeta() {
         refreshStoresWithCurrentTopicInBothReadableAndWritable();
         final var autoRenewPeriod = Duration.newBuilder().seconds(123L).build();
-        final var op = OP_BUILDER
-                .topicID(wellKnownId())
-                .autoRenewPeriod(autoRenewPeriod)
-                .build();
+        final var op =
+                OP_BUILDER.topicID(topicId).autoRenewPeriod(autoRenewPeriod).build();
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         final var impliedMeta = new ExpiryMeta(NA, 123L, NA, NA, NA);
@@ -291,11 +376,11 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
     }
 
     @Test
+    @DisplayName("Invalid new auto renew account update fails")
     void validatesNewAutoRenewAccountViaMeta() {
         refreshStoresWithCurrentTopicInBothReadableAndWritable();
 
-        final var op =
-                OP_BUILDER.topicID(wellKnownId()).autoRenewAccount(autoRenewId).build();
+        final var op = OP_BUILDER.topicID(topicId).autoRenewAccount(autoRenewId).build();
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
         final var impliedMeta = new ExpiryMeta(NA, NA, autoRenewId.accountNum());
@@ -308,14 +393,13 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
     }
 
     @Test
+    @DisplayName("Update auto renew account as expected")
     void appliesNewAutoRenewNumViaMeta() {
         refreshStoresWithCurrentTopicInBothReadableAndWritable();
 
         final var autoRenewAccount = AccountID.newBuilder().accountNum(666).build();
-        final var op = OP_BUILDER
-                .topicID(wellKnownId())
-                .autoRenewAccount(autoRenewAccount)
-                .build();
+        final var op =
+                OP_BUILDER.topicID(topicId).autoRenewAccount(autoRenewAccount).build();
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
         final var impliedMeta = new ExpiryMeta(NA, NA, 0, 0, 666);
@@ -329,13 +413,14 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
     }
 
     @Test
+    @DisplayName("Topic is not updated if no fields are changed")
     void nothingHappensIfUpdateIsNoop() {
         refreshStoresWithCurrentTopicInBothReadableAndWritable();
 
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
         // No-op
-        final var op = OP_BUILDER.topicID(wellKnownId()).build();
+        final var op = OP_BUILDER.topicID(topicId).build();
 
         subject.handle(handleContext, op, writableStore);
 
@@ -343,30 +428,29 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
         assertEquals(topic, newTopic);
     }
 
-    public static void assertFailsWith(final ResponseCodeEnum status, final Runnable something) {
-        final var ex = assertThrows(HandleException.class, something::run);
-        assertEquals(status, ex.getStatus());
-    }
-
     @Test
+    @DisplayName("Check if there is memo update")
     void memoMutationsIsNonExpiry() {
         final var op = OP_BUILDER.memo("HI").build();
         assertTrue(ConsensusUpdateTopicHandler.wantsToMutateNonExpiryField(op));
     }
 
     @Test
+    @DisplayName("Check if there is adminKey update")
     void adminKeyMutationIsNonExpiry() {
         final var op = OP_BUILDER.adminKey(key).build();
         assertTrue(ConsensusUpdateTopicHandler.wantsToMutateNonExpiryField(op));
     }
 
     @Test
+    @DisplayName("Check if there is submitKey update")
     void submitKeyMutationIsNonExpiry() {
         final var op = OP_BUILDER.submitKey(key).build();
         assertTrue(ConsensusUpdateTopicHandler.wantsToMutateNonExpiryField(op));
     }
 
     @Test
+    @DisplayName("Validate Mutate NonExpiryField autoRenewPeriod as expected")
     void autoRenewPeriodMutationIsNonExpiry() {
         final var autoRenewPeriod = Duration.newBuilder().seconds(123L).build();
         final var op = OP_BUILDER.autoRenewPeriod(autoRenewPeriod).build();
@@ -374,12 +458,14 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
     }
 
     @Test
+    @DisplayName("Check if there is autoRenewAccount update")
     void autoRenewAccountMutationIsNonExpiry() {
         final var op = OP_BUILDER.autoRenewAccount(autoRenewId).build();
         assertTrue(ConsensusUpdateTopicHandler.wantsToMutateNonExpiryField(op));
     }
 
     @Test
+    @DisplayName("Check if there is autoRenewPeriod update")
     void expiryMutationIsExpiry() {
         final var expiryTime = Timestamp.newBuilder().seconds(123L).build();
         final var op = OP_BUILDER.expirationTime(expiryTime).build();
@@ -387,6 +473,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
     }
 
     @Test
+    @DisplayName("payer key as admin key is allowed")
     void noneOfFieldsSetHaveNoRequiredKeys() throws PreCheckException {
         given(accountStore.getAccountById(payerId)).willReturn(account);
         given(account.key()).willReturn(adminKey);
@@ -400,13 +487,14 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
         final var context = new FakePreHandleContext(accountStore, txnWith(op));
         context.registerStore(ReadableTopicStore.class, readableStore);
 
-        subject.preHandle(context);
+        assertDoesNotThrow(() -> subject.preHandle(context));
 
         assertThat(context.payerKey()).isEqualTo(adminKey);
         assertThat(context.requiredNonPayerKeys()).isEmpty();
     }
 
     @Test
+    @DisplayName("Missing topicId from ReadableTopicStore fails")
     void missingTopicFails() throws PreCheckException {
         given(accountStore.getAccountById(payerId)).willReturn(account);
         given(account.key()).willReturn(adminKey);
@@ -420,6 +508,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
     }
 
     @Test
+    @DisplayName("Update admin key in preHandle as expected")
     void adminKeyAndOpAdminKeyAdded() throws PreCheckException {
         given(accountStore.getAccountById(payerId)).willReturn(account);
         given(account.key()).willReturn(adminKey);
@@ -431,7 +520,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
         final var context = new FakePreHandleContext(accountStore, txnWith(op));
         context.registerStore(ReadableTopicStore.class, readableStore);
 
-        subject.preHandle(context);
+        assertDoesNotThrow(() -> subject.preHandle(context));
 
         assertThat(context.payerKey()).isEqualTo(adminKey);
         // adminKey is same as payer key. So will not be added to required keys.
@@ -441,20 +530,18 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
     }
 
     @Test
+    @DisplayName("Update autoRenewAccount in preHandle as expected")
     void autoRenewAccountKeyAdded() throws PreCheckException {
         given(accountStore.getAccountById(autoRenewId)).willReturn(autoRenewAccount);
         given(autoRenewAccount.key()).willReturn(autoRenewKey);
         given(accountStore.getAccountById(payerId)).willReturn(account);
         given(account.key()).willReturn(adminKey);
 
-        final var op = OP_BUILDER
-                .autoRenewAccount(autoRenewId)
-                .topicID(WELL_KNOWN_TOPIC_ID)
-                .build();
+        final var op = OP_BUILDER.autoRenewAccount(autoRenewId).topicID(topicId).build();
         final var context = new FakePreHandleContext(accountStore, txnWith(op));
         context.registerStore(ReadableTopicStore.class, readableStore);
 
-        subject.preHandle(context);
+        assertDoesNotThrow(() -> subject.preHandle(context));
 
         assertThat(context.payerKey()).isEqualTo(adminKey);
         // auto-renew key
@@ -462,15 +549,13 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
     }
 
     @Test
+    @DisplayName("Missing autoRenewAccount update fails")
     void missingAutoRenewAccountFails() throws PreCheckException {
         given(accountStore.getAccountById(autoRenewId)).willReturn(null);
         given(accountStore.getAccountById(payerId)).willReturn(account);
         given(account.key()).willReturn(adminKey);
 
-        final var op = OP_BUILDER
-                .autoRenewAccount(autoRenewId)
-                .topicID(TopicID.newBuilder().topicNum(1L).build())
-                .build();
+        final var op = OP_BUILDER.autoRenewAccount(autoRenewId).topicID(topicId).build();
 
         final var context = new FakePreHandleContext(accountStore, txnWith(op));
         context.registerStore(ReadableTopicStore.class, readableStore);
@@ -478,14 +563,15 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
         assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_AUTORENEW_ACCOUNT);
     }
 
+    private void assertFailsWith(final ResponseCodeEnum status, final Runnable something) {
+        final var ex = assertThrows(HandleException.class, something::run);
+        assertEquals(status, ex.getStatus());
+    }
+
     private TransactionBody txnWith(final ConsensusUpdateTopicTransactionBody op) {
         return TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder().accountID(payerId))
                 .consensusUpdateTopic(op)
                 .build();
-    }
-
-    private TopicID wellKnownId() {
-        return TopicID.newBuilder().topicNum(topicEntityNum.longValue()).build();
     }
 }

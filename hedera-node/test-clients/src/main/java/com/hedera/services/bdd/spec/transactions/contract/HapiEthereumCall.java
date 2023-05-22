@@ -52,6 +52,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -88,6 +89,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     private boolean isTokenFlow;
     private String account = null;
     private ByteString alias = null;
+    private byte[] explicitTo = null;
 
     public HapiEthereumCall withExplicitParams(final Supplier<String> supplier) {
         explicitHexedParams = Optional.of(supplier);
@@ -123,6 +125,16 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         this.abi = FALLBACK_ABI;
         this.params = new Object[0];
         this.payer = Optional.of(RELAYER);
+    }
+
+    public static HapiEthereumCall explicitlyTo(@NonNull final byte[] to, long amount) {
+        final var call = new HapiEthereumCall();
+        call.explicitTo = to;
+        call.valueSent = Optional.of(WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(amount)));
+        call.abi = FALLBACK_ABI;
+        call.params = new Object[0];
+        call.payer = Optional.of(RELAYER);
+        return call;
     }
 
     public HapiEthereumCall(final HapiContractCall contractCall) {
@@ -288,7 +300,9 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         byte[] callData = initializeCallData();
 
         final byte[] to;
-        if (alias != null) {
+        if (explicitTo != null) {
+            to = explicitTo;
+        } else if (alias != null) {
             to = recoverAddressFromPubKey(alias.toByteArray());
         } else if (account != null) {
             to = Utils.asAddress(spec.registry().getAccountID(account));
