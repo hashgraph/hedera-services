@@ -33,12 +33,12 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
-import com.hedera.node.app.service.token.impl.config.TokenServiceConfig;
 import com.hedera.node.app.service.token.impl.validators.CustomFeesValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -91,7 +91,7 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
         final var txn = context.body();
 
         // get the latest configuration
-        final var config = context.configuration().getConfigData(TokenServiceConfig.class);
+        final var config = context.configuration().getConfigData(TokensConfig.class);
         final var op = txn.tokenFeeScheduleUpdateOrThrow();
 
         // validate checks in handle
@@ -122,7 +122,7 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
     private Token validateSemantics(
             @NonNull final TokenFeeScheduleUpdateTransactionBody op,
             @NonNull final WritableTokenStore tokenStore,
-            @NonNull final TokenServiceConfig config) {
+            @NonNull final TokensConfig config) {
         var token = tokenStore.get(op.tokenIdOrElse(TokenID.DEFAULT).tokenNum());
         validateTrue(token.isPresent(), INVALID_TOKEN_ID);
         validateTrue(token.get().hasFeeScheduleKey(), TOKEN_HAS_NO_FEE_SCHEDULE_KEY);

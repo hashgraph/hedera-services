@@ -11,18 +11,14 @@ module com.hedera.node.app.service.consensus.impl {
     requires com.github.spotbugs.annotations;
     requires com.hedera.node.app.service.token;
     requires com.swirlds.config;
+    requires com.hedera.node.config;
 
     provides com.hedera.node.app.service.consensus.ConsensusService with
             ConsensusServiceImpl;
 
     exports com.hedera.node.app.service.consensus.impl to
-            com.hedera.node.app.service.consensus.impl.test,
             com.hedera.node.app;
     exports com.hedera.node.app.service.consensus.impl.handlers;
     exports com.hedera.node.app.service.consensus.impl.codecs;
-    exports com.hedera.node.app.service.consensus.impl.config;
     exports com.hedera.node.app.service.consensus.impl.records;
-
-    opens com.hedera.node.app.service.consensus.impl.handlers to
-            com.hedera.node.app.service.consensus.impl.test;
 }

@@ -21,15 +21,10 @@ module com.hedera.node.app.service.token.impl {
             com.hedera.node.app.service.token.impl.TokenServiceImpl;
 
     exports com.hedera.node.app.service.token.impl.handlers to
-            com.hedera.node.app.service.token.impl.test,
             com.hedera.node.app;
     exports com.hedera.node.app.service.token.impl.serdes;
     exports com.hedera.node.app.service.token.impl;
     exports com.hedera.node.app.service.token.impl.records to
-            com.hedera.node.app.service.token.impl.test,
             com.hedera.node.app;
     exports com.hedera.node.app.service.token.impl.validators;
-    exports com.hedera.node.app.service.token.impl.config to
-            com.hedera.node.app.service.token.impl.test,
-            com.hedera.node.app;
 }

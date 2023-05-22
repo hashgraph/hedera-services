@@ -43,7 +43,6 @@ import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
-import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.service.mono.utils.EntityNum;
@@ -55,7 +54,7 @@ import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.swirlds.config.api.Configuration;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.time.Instant;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -73,9 +72,6 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
 
     @Mock(strictness = LENIENT)
     private HandleContext handleContext;
-
-    @Mock(strictness = LENIENT)
-    private Configuration config;
 
     @Mock
     private AttributeValidator validator;
@@ -113,8 +109,9 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
     void setUp() {
         subject = new ConsensusCreateTopicHandler();
         topicStore = new WritableTopicStore(writableStates);
-        final var consensusServiceConfig = new ConsensusServiceConfig(10L, 100);
-        given(config.getConfigData(ConsensusServiceConfig.class)).willReturn(consensusServiceConfig);
+        final var config = new HederaTestConfigBuilder()
+                .withValue("topics.maxNumber", 10L)
+                .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(config);
         given(handleContext.writableStore(WritableTopicStore.class)).willReturn(topicStore);
         given(handleContext.recordBuilder(ConsensusCreateTopicRecordBuilder.class))
@@ -389,8 +386,10 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         given(handleContext.writableStore(WritableTopicStore.class)).willReturn(topicStore);
 
         given(handleContext.attributeValidator()).willReturn(validator);
-        final var consensusServiceConfig = new ConsensusServiceConfig(1L, 1);
-        given(config.getConfigData(ConsensusServiceConfig.class)).willReturn(consensusServiceConfig);
+        final var config = new HederaTestConfigBuilder()
+                .withValue("topics.maxNumber", 1L)
+                .getOrCreateConfig();
+        given(handleContext.configuration()).willReturn(config);
 
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
 

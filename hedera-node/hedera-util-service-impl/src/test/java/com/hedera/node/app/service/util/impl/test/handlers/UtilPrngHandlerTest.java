@@ -33,7 +33,6 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionRecord.EntropyOneOfType;
 import com.hedera.hapi.node.util.UtilPrngTransactionBody;
 import com.hedera.node.app.service.networkadmin.ReadableRunningHashLeafStore;
-import com.hedera.node.app.service.util.impl.config.PrngConfig;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
 import com.hedera.node.app.service.util.impl.records.PrngRecordBuilder;
 import com.hedera.node.app.spi.fixtures.TestBase;
@@ -41,12 +40,12 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.threading.futures.StandardFuture;
-import com.swirlds.config.api.Configuration;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.BeforeEach;
@@ -70,9 +69,6 @@ class UtilPrngHandlerTest {
     @Mock
     private PrngRecordBuilder recordBuilder;
 
-    @Mock(strictness = LENIENT)
-    private Configuration config;
-
     private UtilPrngHandler subject;
     private UtilPrngTransactionBody txn;
     private static final Random random = new Random(92399921);
@@ -81,8 +77,9 @@ class UtilPrngHandlerTest {
 
     @BeforeEach
     void setUp() {
-        final var prngConfig = new PrngConfig(true);
-        given(config.getConfigData(PrngConfig.class)).willReturn(prngConfig);
+        final var config = new HederaTestConfigBuilder()
+                .withValue("utilPrng.isEnabled", true)
+                .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(config);
 
         subject = new UtilPrngHandler();
@@ -135,8 +132,10 @@ class UtilPrngHandlerTest {
     @Test
     void returnsIfNotEnabled() {
         givenTxnWithoutRange();
-        final var prngConfig = new PrngConfig(false);
-        given(config.getConfigData(PrngConfig.class)).willReturn(prngConfig);
+        final var config = new HederaTestConfigBuilder()
+                .withValue("utilPrng.isEnabled", false)
+                .getOrCreateConfig();
+        given(handleContext.configuration()).willReturn(config);
 
         subject.handle(handleContext);
 

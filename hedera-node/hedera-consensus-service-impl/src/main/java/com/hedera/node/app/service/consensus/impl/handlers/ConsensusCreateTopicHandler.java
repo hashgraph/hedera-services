@@ -30,7 +30,6 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
-import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -38,6 +37,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.config.data.TopicsConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
@@ -82,7 +82,8 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
         requireNonNull(handleContext, "The argument 'context' must not be null");
 
         final var op = handleContext.body().consensusCreateTopicOrThrow();
-        final var consensusServiceConfig = handleContext.configuration().getConfigData(ConsensusServiceConfig.class);
+        final var configuration = handleContext.configuration();
+        final var topicConfig = configuration.getConfigData(TopicsConfig.class);
         final var topicStore = handleContext.writableStore(WritableTopicStore.class);
 
         final var builder = new Topic.Builder();
@@ -100,7 +101,7 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
         }
 
         /* Validate if the current topic can be created */
-        if (topicStore.sizeOfState() >= consensusServiceConfig.maxTopics()) {
+        if (topicStore.sizeOfState() >= topicConfig.maxNumber()) {
             throw new HandleException(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
         }
 
