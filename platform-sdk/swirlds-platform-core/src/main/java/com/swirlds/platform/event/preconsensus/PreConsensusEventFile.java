@@ -189,8 +189,9 @@ public final class PreConsensusEventFile implements Comparable<PreConsensusEvent
 
         final String fileName = filePath.getFileName().toString();
 
-        final String[] elements = fileName.substring(0, fileName.length() - EVENT_FILE_EXTENSION.length())
-                .split(EVENT_FILE_SEPARATOR);
+        final String extension = discontinuity ? EVENT_FILE_DISCONTINUITY_EXTENSION : EVENT_FILE_EXTENSION;
+        final String[] elements =
+                fileName.substring(0, fileName.length() - extension.length()).split(EVENT_FILE_SEPARATOR);
 
         if (elements.length != 4) {
             throw new IOException("Unable to parse fields from " + filePath);
@@ -397,7 +398,7 @@ public final class PreConsensusEventFile implements Comparable<PreConsensusEvent
      * @return true if it is legal for this event to be in the file described by this object
      */
     public boolean canContain(final long generation) {
-        return generation >= minimumGeneration && generation <= maximumGeneration;
+        return !discontinuity && generation >= minimumGeneration && generation <= maximumGeneration;
     }
 
     /**
