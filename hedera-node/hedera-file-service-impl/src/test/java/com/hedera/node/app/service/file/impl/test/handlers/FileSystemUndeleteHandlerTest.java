@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 
@@ -46,7 +47,9 @@ import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.config.data.FilesConfig;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import java.time.Instant;
@@ -70,8 +73,11 @@ class FileSystemUndeleteHandlerTest extends FileHandlerTestBase {
     @Mock
     private FileSystemUndeleteHandler subject;
 
-    @Mock
+    @Mock(strictness = LENIENT)
     private HandleContext handleContext;
+
+    @Mock(strictness = LENIENT)
+    private PreHandleContext preHandleContext;
 
     @Mock
     private Instant instant;
@@ -89,9 +95,9 @@ class FileSystemUndeleteHandlerTest extends FileHandlerTestBase {
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<EntityNum, File>get(FILES)).willReturn(writableFileState);
         writableStore = new WritableFileStoreImpl(writableStates);
-        config = new FilesConfig(101L, 121L, 112L, 111L, 122L, 102L, 123L, 1000000L, 1024);
+        configuration = new HederaTestConfigBuilder().getOrCreateConfig();
+        lenient().when(preHandleContext.getConfiguration()).thenReturn(configuration);
         lenient().when(handleContext.getConfiguration()).thenReturn(configuration);
-        lenient().when(configuration.getConfigData(FilesConfig.class)).thenReturn(config);
     }
 
     @Test
@@ -118,11 +124,13 @@ class FileSystemUndeleteHandlerTest extends FileHandlerTestBase {
         // given:
         mockPayerLookup();
         mockFileLookup(null, mockStore);
-        final var context = new FakePreHandleContext(accountStore, newSystemDeleteTxn());
-        context.registerStore(ReadableFileStoreImpl.class, mockStore);
+        lenient().when(preHandleContext.body()).thenReturn(newSystemDeleteTxn());
+        lenient()
+                .when(preHandleContext.createStore(ReadableFileStoreImpl.class))
+                .thenReturn(mockStore);
 
         // when:
-        assertThrowsPreCheck(() -> subject.preHandle(context), UNAUTHORIZED);
+        assertThrowsPreCheck(() -> subject.preHandle(preHandleContext), UNAUTHORIZED);
     }
 
     @Test

@@ -86,7 +86,7 @@ public class FileServiceUtils {
         mustExist(fileMeta, INVALID_FILE_ID);
 
         final var ledgerConfig = context.getConfiguration().getConfigData(LedgerConfig.class);
-        if (fileId.fileNum() > ledgerConfig.numReservedSystemEntities()) {
+        if (fileId.fileNum() > ledgerConfig.numReservedSystemEntities() && isSpecialFile) {
             throw new HandleException(INVALID_FILE_ID);
         }
 
@@ -143,7 +143,6 @@ public class FileServiceUtils {
 
         // where to get the max special file number
         final var ledgerConfig = handleContext.getConfiguration().getConfigData(LedgerConfig.class);
-        // TODO: change to the property file config value
         if (fileId.fileNum() > ledgerConfig.numReservedSystemEntities()) {
             throw new HandleException(INVALID_FILE_ID);
         }
