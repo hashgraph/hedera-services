@@ -17,6 +17,7 @@
 package com.hedera.node.app.workflows.dispatcher;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hedera.hapi.node.freeze.FreezeType.FREEZE_ABORT;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -39,7 +40,9 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TopicID;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.consensus.ConsensusCreateTopicTransactionBody;
 import com.hedera.hapi.node.consensus.ConsensusDeleteTopicTransactionBody;
 import com.hedera.hapi.node.consensus.ConsensusSubmitMessageTransactionBody;
@@ -150,6 +153,7 @@ import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
 import com.hedera.node.app.service.util.impl.records.UtilPrngRecordBuilder;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.node.app.spi.state.WritableFreezeStore;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -334,6 +338,9 @@ class MonoTransactionDispatcherTest {
 
     @Mock
     private WritableTokenRelationStore writableTokenRelStore;
+
+    @Mock
+    private WritableFreezeStore writableFreezeStore;
 
     @Mock
     private UsageLimits usageLimits;
@@ -655,6 +662,23 @@ class MonoTransactionDispatcherTest {
 
         assertEquals(123, sideEffectsTracker.getPseudorandomNumber());
         assertNull(sideEffectsTracker.getPseudorandomBytes());
+    }
+
+    @Test
+    void dispatchesFreezeExpected() {
+        given(writableStoreFactory.createFreezeStore()).willReturn(writableFreezeStore);
+        transactionBody = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder()
+                        .transactionValidStart(
+                                Timestamp.newBuilder().seconds(1000).build()))
+                .freeze(FreezeTransactionBody.newBuilder()
+                        .freezeType(FREEZE_ABORT)
+                        .build())
+                .build();
+
+        dispatcher.dispatchHandle(HederaFunctionality.FREEZE, transactionBody, writableStoreFactory);
+
+        verifyNoInteractions(txnCtx);
     }
 
     @Test
