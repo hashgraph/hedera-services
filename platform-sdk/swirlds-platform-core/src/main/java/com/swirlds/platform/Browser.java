@@ -516,6 +516,11 @@ public class Browser {
             }
             logger = LogManager.getLogger(Browser.class);
 
+            if (Thread.getDefaultUncaughtExceptionHandler() == null) {
+                Thread.setDefaultUncaughtExceptionHandler((final Thread t, final Throwable e) ->
+                        logger.error(EXCEPTION.getMarker(), "exception on thread {}", t.getName(), e));
+            }
+
             final LoggerContextFactory factory = LogManager.getFactory();
             if (factory instanceof final Log4jContextFactory contextFactory) {
                 // Do not allow log4j to use its own shutdown hook. Use our own shutdown
@@ -676,13 +681,10 @@ public class Browser {
                 GuiPlatformAccessor.getInstance().setInstanceNumber(address.getId(), i);
 
                 final SwirldsPlatform platform = new SwirldsPlatform(
-                        // all key pairs and CSPRNG state for this member
-                        crypto.get(address.getNodeId()),
-                        // address book index, which is the member ID
-                        nodeId,
-                        // copy of the address book,
-                        initialAddressBook,
                         platformContext,
+                        crypto.get(address.getNodeId()),
+                        initialAddressBook,
+                        nodeId,
                         mainClassName,
                         swirldName,
                         appVersion,
