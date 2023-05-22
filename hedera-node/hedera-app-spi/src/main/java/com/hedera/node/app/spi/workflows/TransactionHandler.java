@@ -44,7 +44,7 @@ public interface TransactionHandler {
      * @param txn the transaction body
      * @throws PreCheckException if the transaction is invalid
      */
-    void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException;
+    default void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {}
 
     /**
      * Returns an instance of the transaction-specific {@link RecordBuilder}.

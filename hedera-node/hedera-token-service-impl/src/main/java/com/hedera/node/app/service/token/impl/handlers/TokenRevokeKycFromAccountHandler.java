@@ -26,7 +26,6 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.TokenRelation;
-import com.hedera.hapi.node.token.TokenRevokeKycTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
@@ -49,11 +48,6 @@ public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
         // Exists for injection
     }
 
-    @Override
-    public void pureChecks(@NonNull TransactionBody txn) {
-        throw new UnsupportedOperationException("Not implemented yet");
-    }
-
     /**
      * This method is called during the pre-handle workflow.
      *
@@ -64,9 +58,9 @@ public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
-        final var op = context.body().tokenRevokeKycOrThrow();
-        pureChecks(op);
+        pureChecks(context.body());
 
+        final var op = context.body().tokenRevokeKycOrThrow();
         final var tokenStore = context.createStore(ReadableTokenStore.class);
         final var tokenMeta = tokenStore.getTokenMeta(op.tokenOrElse(TokenID.DEFAULT));
         if (tokenMeta == null) throw new PreCheckException(INVALID_TOKEN_ID);
@@ -101,7 +95,9 @@ public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
     /**
      * Performs checks independent of state or context
      */
-    private void pureChecks(TokenRevokeKycTransactionBody op) throws PreCheckException {
+    @Override
+    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
+        final var op = txn.tokenRevokeKycOrThrow();
         if (!op.hasToken()) {
             throw new PreCheckException(INVALID_TOKEN_ID);
         }

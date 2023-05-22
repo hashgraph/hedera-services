@@ -58,20 +58,17 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
         this.customFeesValidator = customFeesValidator;
     }
 
-    @Override
-    public void pureChecks(@NonNull TransactionBody txn) {
-        throw new UnsupportedOperationException("Not implemented yet");
-    }
-
     /**
      * {@inheritDoc}
      */
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
+        pureChecks(context.body());
+
         final var op = context.body().tokenFeeScheduleUpdateOrThrow();
         final var tokenId = op.tokenIdOrElse(TokenID.DEFAULT);
-        pureChecks(op);
+
         final var tokenStore = context.createStore(ReadableTokenStore.class);
         final var tokenMetadata = tokenStore.getTokenMeta(tokenId);
         if (tokenMetadata == null) throw new PreCheckException(INVALID_TOKEN_ID);
@@ -139,13 +136,9 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
         return token.get();
     }
 
-    /**
-     * Perform pure semantic checks on the transaction body, that doesn't involve any state lookups or dynamic property
-     * checks.
-     * @param op the transaction body
-     * @throws PreCheckException if any of the checks fail
-     */
-    private void pureChecks(@NonNull final TokenFeeScheduleUpdateTransactionBody op) throws PreCheckException {
+    @Override
+    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
+        final var op = txn.tokenFeeScheduleUpdateOrThrow();
         if (!op.hasTokenId()) {
             throw new PreCheckException(INVALID_TOKEN_ID);
         }
