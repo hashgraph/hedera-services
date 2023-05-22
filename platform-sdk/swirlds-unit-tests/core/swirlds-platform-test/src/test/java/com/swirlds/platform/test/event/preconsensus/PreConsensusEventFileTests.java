@@ -375,4 +375,34 @@ class PreConsensusEventFileTests {
             assertFalse(file.canContain(maximumGeneration + random.nextLong(1, 100)));
         }
     }
+
+    @Test
+    @DisplayName("Span Compression Test")
+    void spanCompressionTest() {
+        final Random random = getRandomPrintSeed();
+
+        final Path directory = Path.of("foo/bar/baz");
+
+        final long sequenceNumber = random.nextLong(1000);
+        final long minimumGeneration = random.nextLong(1000);
+        final long maximumGeneration = random.nextLong(minimumGeneration + 5, minimumGeneration + 1000);
+        final boolean discontinuity = random.nextBoolean();
+        final Instant timestamp = randomInstant(random);
+
+        final PreConsensusEventFile file = PreConsensusEventFile.of(
+                sequenceNumber, minimumGeneration, maximumGeneration, timestamp, directory, discontinuity);
+
+        assertThrows(IllegalArgumentException.class, () -> file.buildFileWithCompressedSpan(minimumGeneration - 1));
+        assertThrows(IllegalArgumentException.class, () -> file.buildFileWithCompressedSpan(maximumGeneration + 1));
+
+        final long newMaximumGeneration = random.nextLong(minimumGeneration, maximumGeneration);
+
+        final PreConsensusEventFile compressedFile = file.buildFileWithCompressedSpan(newMaximumGeneration);
+
+        assertEquals(sequenceNumber, compressedFile.getSequenceNumber());
+        assertEquals(minimumGeneration, compressedFile.getMinimumGeneration());
+        assertEquals(newMaximumGeneration, compressedFile.getMaximumGeneration());
+        assertEquals(timestamp, compressedFile.getTimestamp());
+        assertEquals(discontinuity, compressedFile.marksDiscontinuity());
+    }
 }

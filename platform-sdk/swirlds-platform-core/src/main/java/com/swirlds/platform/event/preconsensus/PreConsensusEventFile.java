@@ -91,8 +91,6 @@ public final class PreConsensusEventFile implements Comparable<PreConsensusEvent
     private final Path path;
     private final boolean discontinuity;
 
-    // TODO test edge cases of constructor
-
     /**
      * Construct a new PreConsensusEventFile.
      *
@@ -223,11 +221,13 @@ public final class PreConsensusEventFile implements Comparable<PreConsensusEvent
     @NonNull
     public PreConsensusEventFile buildFileWithCompressedSpan(final long maximumGenerationInFile) {
         if (maximumGenerationInFile < minimumGeneration) {
-            throw new IllegalArgumentException("maximumGenerationInFile < originalFile.minimumGeneration");
+            throw new IllegalArgumentException("maximumGenerationInFile " + maximumGenerationInFile
+                    + " is less than minimumGeneration " + minimumGeneration);
         }
 
         if (maximumGenerationInFile > maximumGeneration) {
-            throw new IllegalArgumentException("maximumGenerationInFile > originalFile.maximumGeneration");
+            throw new IllegalArgumentException("maximumGenerationInFile " + maximumGenerationInFile
+                    + " is greater than maximumGeneration " + maximumGeneration);
         }
 
         final Path parentDirectory = path.getParent();
