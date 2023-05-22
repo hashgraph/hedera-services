@@ -2,6 +2,6 @@ package com.swirlds.platform.poc.moduledefs;
 
 import com.swirlds.platform.poc.framework.Nexus;
 
-public interface Nexus2 extends Nexus {
-	String get();
+public interface Notion extends Nexus {
+	void write(String text);
 }

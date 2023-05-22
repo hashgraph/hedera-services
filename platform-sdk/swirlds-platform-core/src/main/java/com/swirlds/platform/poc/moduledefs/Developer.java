@@ -4,11 +4,11 @@ import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.platform.poc.framework.TaskProcessor;
 
 @FunctionalInterface
-public interface TaskProcessorExample1 extends TaskProcessor {
-	void process(String s) throws InterruptedException;
+public interface Developer extends TaskProcessor {
+	void implementFeature(String s) throws InterruptedException;
 
 	@Override
 	default InterruptableConsumer<?> getProcessingMethod() {
-		return (InterruptableConsumer<String>)this::process;
+		return (InterruptableConsumer<String>)this::implementFeature;
 	}
 }

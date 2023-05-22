@@ -6,20 +6,20 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.List;
 
-public interface MultiTaskExample extends MultiTaskProcessor {
-	void number(int num) throws InterruptedException;
-	void string(String s) throws InterruptedException;
+public interface Boss extends MultiTaskProcessor {
+	void requestPto(int days) throws InterruptedException;
+	void deliverFeature(String s) throws InterruptedException;
 
 	@Override
 	default List<Pair<Class<?>, InterruptableConsumer<?>>> getProcessingMethods(){
 		return List.of(
 				Pair.of(
 						Integer.class,
-						(InterruptableConsumer<Integer>) this::number
+						(InterruptableConsumer<Integer>) this::requestPto
 				),
 				Pair.of(
 						String.class,
-						(InterruptableConsumer<String>) this::string
+						(InterruptableConsumer<String>) this::deliverFeature
 				)
 		);
 	}
