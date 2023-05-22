@@ -43,7 +43,6 @@ public class CryptoUpdateHandler implements TransactionHandler {
         this.waivers = requireNonNull(waivers, "The supplied argument 'waivers' must not be null");
     }
 
-    /** @inheritDoc */
     @Override
     public void pureChecks(@NonNull TransactionBody txn) {
         throw new UnsupportedOperationException("Not implemented yet");

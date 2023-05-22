@@ -45,7 +45,6 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
         super(dispatcher);
     }
 
-    /** @inheritDoc */
     @Override
     public void pureChecks(@NonNull TransactionBody txn) {
         throw new UnsupportedOperationException("Not implemented yet");

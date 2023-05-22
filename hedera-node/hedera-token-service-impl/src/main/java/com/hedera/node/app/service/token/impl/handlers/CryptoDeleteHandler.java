@@ -41,7 +41,6 @@ public class CryptoDeleteHandler implements TransactionHandler {
         // Exists for injection
     }
 
-    /** @inheritDoc */
     @Override
     public void pureChecks(@NonNull TransactionBody txn) {
         throw new UnsupportedOperationException("Not implemented yet");
