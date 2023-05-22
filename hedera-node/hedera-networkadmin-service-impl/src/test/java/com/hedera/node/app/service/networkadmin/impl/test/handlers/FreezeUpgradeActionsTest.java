@@ -83,7 +83,7 @@ class FreezeUpgradeActionsTest {
     void complainsLoudlyWhenUnableToUnzipArchive() {
         rmIfPresent(EXEC_IMMEDIATE_MARKER);
 
-        given(adminServiceConfig.upgradeArtifactsPath()).willReturn(tempDir.toPath());
+        given(adminServiceConfig.upgradeArtifactsPath()).willReturn(tempDir.toString());
 
         subject.extractSoftwareUpgrade(PRETEND_ARCHIVE).join();
 
@@ -100,7 +100,7 @@ class FreezeUpgradeActionsTest {
         setupNoiseFiles();
         rmIfPresent(EXEC_IMMEDIATE_MARKER);
 
-        given(adminServiceConfig.upgradeArtifactsPath()).willReturn(tempDir.toPath());
+        given(adminServiceConfig.upgradeArtifactsPath()).willReturn(tempDir.toString());
 
         final byte[] realArchive = Files.readAllBytes(REAL_ARCHIVE_LOC);
         subject.extractSoftwareUpgrade(realArchive).join();
@@ -112,7 +112,7 @@ class FreezeUpgradeActionsTest {
     void upgradesTelemetry() throws IOException {
         rmIfPresent(EXEC_TELEMETRY_MARKER);
 
-        given(adminServiceConfig.upgradeArtifactsPath()).willReturn(tempDir.toPath());
+        given(adminServiceConfig.upgradeArtifactsPath()).willReturn(tempDir.toString());
 
         final byte[] realArchive = Files.readAllBytes(REAL_ARCHIVE_LOC);
         subject.extractTelemetryUpgrade(realArchive, then).join();
@@ -124,7 +124,7 @@ class FreezeUpgradeActionsTest {
     void externalizesFreeze() throws IOException {
         rmIfPresent(NOW_FROZEN_MARKER);
 
-        given(adminServiceConfig.upgradeArtifactsPath()).willReturn(tempDir.toPath());
+        given(adminServiceConfig.upgradeArtifactsPath()).willReturn(tempDir.toString());
 
         subject.externalizeFreezeIfUpgradePending();
 
@@ -135,7 +135,7 @@ class FreezeUpgradeActionsTest {
     void setsExpectedFreezeAndWritesMarkerForFreezeUpgrade() throws IOException {
         rmIfPresent(FREEZE_SCHEDULED_MARKER);
 
-        given(adminServiceConfig.upgradeArtifactsPath()).willReturn(tempDir.toPath());
+        given(adminServiceConfig.upgradeArtifactsPath()).willReturn(tempDir.toString());
 
         subject.scheduleFreezeUpgradeAt(then);
 
@@ -157,7 +157,7 @@ class FreezeUpgradeActionsTest {
     void nullsOutDualOnAborting() throws IOException {
         rmIfPresent(FREEZE_ABORTED_MARKER);
 
-        given(adminServiceConfig.upgradeArtifactsPath()).willReturn(tempDir.toPath());
+        given(adminServiceConfig.upgradeArtifactsPath()).willReturn(tempDir.toString());
 
         subject.abortScheduledFreeze();
 
@@ -175,7 +175,7 @@ class FreezeUpgradeActionsTest {
             assertThat(d.delete()).isTrue();
         }
 
-        given(adminServiceConfig.upgradeArtifactsPath()).willReturn(otherMarkerFilesLoc);
+        given(adminServiceConfig.upgradeArtifactsPath()).willReturn(otherMarkerFilesLoc.toString());
 
         subject.abortScheduledFreeze();
 

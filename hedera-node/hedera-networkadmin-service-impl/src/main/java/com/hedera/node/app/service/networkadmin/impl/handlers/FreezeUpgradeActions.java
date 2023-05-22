@@ -27,6 +27,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.concurrent.CompletableFuture;
@@ -127,7 +128,7 @@ public class FreezeUpgradeActions {
         requireNonNull(marker);
 
         final int size = archiveData.length;
-        final Path artifactsLoc = adminServiceConfig.upgradeArtifactsPath();
+        final String artifactsLoc = adminServiceConfig.upgradeArtifactsPath();
         requireNonNull(artifactsLoc);
         log.info("About to unzip {} bytes for {} update into {}", size, desc, artifactsLoc);
         // we spin off a separate thread to avoid blocking handleTransaction
@@ -135,7 +136,7 @@ public class FreezeUpgradeActions {
         return runAsync(() -> {
             try {
                 // delete any existing files in the artifacts directory
-                Files.walk(artifactsLoc)
+                Files.walk(Paths.get(artifactsLoc))
                         .sorted(Comparator.reverseOrder())
                         .map(Path::toFile)
                         .forEach(File::delete);
@@ -145,7 +146,7 @@ public class FreezeUpgradeActions {
                 log.error("Failed to delete existing files in {}", artifactsLoc, e);
             }
             try {
-                UnzipUtility.unzip(archiveData, artifactsLoc);
+                UnzipUtility.unzip(archiveData, Paths.get(artifactsLoc));
                 log.info("Finished unzipping {} bytes for {} update into {}", size, desc, artifactsLoc);
                 writeSecondMarker(marker, now);
             } catch (final IOException e) {
@@ -178,7 +179,7 @@ public class FreezeUpgradeActions {
 
     private void writeMarker(@NonNull final String file, @Nullable final Instant now) {
         requireNonNull(file);
-        final var artifactsDirPath = adminServiceConfig.upgradeArtifactsPath();
+        final Path artifactsDirPath = Paths.get(adminServiceConfig.upgradeArtifactsPath());
         final var filePath = artifactsDirPath.resolve(file);
         try {
             if (!artifactsDirPath.toFile().exists()) {
