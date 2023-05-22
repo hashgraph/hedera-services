@@ -252,26 +252,6 @@ public class PreConsensusEventFileManager {
         }
     }
 
-    /**
-     * <p>
-     * Get an iterator that walks over all event files currently being tracked, in order.
-     * </p>
-     *
-     * <p>
-     * Note: this iterator is not thread safe when events are actively being written. A future task will be to make it
-     * thread safe. Until then, don't use this iterator while events are being written.
-     * </p>
-     *
-     * @param minimumGeneration the desired minimum generation, iterator is guaranteed to walk over all files that may
-     *                          contain events with a generation greater or equal to this value. A value of
-     *                          {@link #NO_MINIMUM_GENERATION} will cause the returned iterator to walk over all
-     *                          available event files.
-     * @return an iterator that walks over event files in order
-     */
-    public @NonNull Iterator<PreConsensusEventFile> getFileIterator(final long minimumGeneration) {
-        return getFileIterator(minimumGeneration, false);
-    }
-
     // TODO ensure there are unit tests for all of these branches
 
     /**
@@ -292,14 +272,18 @@ public class PreConsensusEventFileManager {
      *                                 in the event files. If false, then the iterator will walk over events starting at
      *                                 the first generation on disk that is greater or equal to the requested minimum
      *                                 generation.
+     * @param fixDiscontinuities       if true, any discontinuities after the requested minimum generation will be
+     *                                 "fixed" by deleting all data following the first discontinuity.
      * @return an iterator that walks over event files in order
      */
     public @NonNull Iterator<PreConsensusEventFile> getFileIterator(
-            final long minimumGeneration, final boolean requireMinimumGeneration) {
+            final long minimumGeneration, final boolean requireMinimumGeneration, final boolean fixDiscontinuities) {
 
         // Edge case: we want all events regardless of generation
         if (minimumGeneration == NO_MINIMUM_GENERATION) {
-            scanForDiscontinuities(0);
+            if (fixDiscontinuities) {
+                scanForDiscontinuities(0);
+            }
             return files.iterator();
         }
 
@@ -322,7 +306,9 @@ public class PreConsensusEventFileManager {
                         + "generation of " + files.getFirst().minimumGeneration());
             } else {
                 // All files match.
-                scanForDiscontinuities(0);
+                if (fixDiscontinuities) {
+                    scanForDiscontinuities(0);
+                }
                 return files.iterator();
             }
         }
@@ -344,7 +330,9 @@ public class PreConsensusEventFileManager {
             final PreConsensusEventFile file = files.get(index);
             if (file.maximumGeneration() >= minimumGeneration) {
                 // We have found the first file that may contain events at the requested generation.
-                scanForDiscontinuities(0);
+                if (fixDiscontinuities) {
+                    scanForDiscontinuities(index);
+                }
                 return files.iterator(index);
             }
         }
@@ -420,12 +408,22 @@ public class PreConsensusEventFileManager {
      * thread safe. Until then, don't use this iterator while events are being written.
      * </p>
      *
-     * @param minimumGeneration the minimum generation, all events in the stream with this generation or higher are
-     *                          guaranteed to be returned by the iterator.
+     * @param minimumGeneration        the desired minimum generation, iterator is guaranteed to return all available
+     *                                 events with a generation greater or equal to this value. No events with a smaller
+     *                                 generation will be returned. A value of {@link #NO_MINIMUM_GENERATION} will cause
+     *                                 the returned iterator to walk over all available events.
+     * @param requireMinimumGeneration if true, then throw if data for the requested minimum generation is not available
+     *                                 in the event files. If false, then the iterator will walk over events starting at
+     *                                 the first generation on disk that is greater or equal to the requested minimum
+     *                                 generation.
+     * @param fixDiscontinuities       if true, any discontinuities after the requested minimum generation will be
+     *                                 "fixed" by deleting all data following the first discontinuity.
      * @return an iterator that walks over events
      */
-    public @NonNull PreConsensusEventMultiFileIterator getEventIterator(final long minimumGeneration) {
-        return new PreConsensusEventMultiFileIterator(minimumGeneration, getFileIterator(minimumGeneration));
+    public @NonNull PreConsensusEventMultiFileIterator getEventIterator(
+            final long minimumGeneration, final boolean requireMinimumGeneration, final boolean fixDiscontinuities) {
+        return new PreConsensusEventMultiFileIterator(
+                minimumGeneration, getFileIterator(minimumGeneration, requireMinimumGeneration, fixDiscontinuities));
     }
 
     /**

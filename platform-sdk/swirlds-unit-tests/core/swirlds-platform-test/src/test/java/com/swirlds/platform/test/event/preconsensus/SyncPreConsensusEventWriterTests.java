@@ -321,7 +321,7 @@ class SyncPreConsensusEventWriterTests {
 
         // Without advancing the first non-ancient generation,
         // we should never be able to increase the minimum generation from 0.
-        for (final Iterator<PreConsensusEventFile> it = fileManager.getFileIterator(0); it.hasNext(); ) {
+        for (final Iterator<PreConsensusEventFile> it = fileManager.getFileIterator(0, false, false); it.hasNext(); ) {
             final PreConsensusEventFile file = it.next();
             assertEquals(0, file.minimumGeneration());
         }
@@ -373,7 +373,7 @@ class SyncPreConsensusEventWriterTests {
 
         // We shouldn't find any events in the stream.
         assertFalse(() -> fileManager
-                .getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION)
+                .getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION, false, false)
                 .hasNext());
 
         writer.stop();

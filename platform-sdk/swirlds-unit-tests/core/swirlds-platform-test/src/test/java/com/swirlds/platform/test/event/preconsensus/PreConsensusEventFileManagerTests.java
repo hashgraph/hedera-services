@@ -221,15 +221,17 @@ class PreConsensusEventFileManagerTests {
                 new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), 0);
 
         assertIteratorEquality(
-                files.iterator(), manager.getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION, false));
+                files.iterator(),
+                manager.getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION, false, false));
 
         assertIteratorEquality(
-                files.iterator(), manager.getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION, true));
+                files.iterator(),
+                manager.getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION, true, false));
 
         // attempt to start a non-existent generation
-        assertIteratorEquality(files.iterator(), manager.getFileIterator(nonExistentGeneration, false));
+        assertIteratorEquality(files.iterator(), manager.getFileIterator(nonExistentGeneration, false, false));
 
-        assertThrows(NoSuchElementException.class, () -> manager.getFileIterator(nonExistentGeneration, true));
+        assertThrows(NoSuchElementException.class, () -> manager.getFileIterator(nonExistentGeneration, true, false));
     }
 
     @ParameterizedTest
@@ -284,7 +286,8 @@ class PreConsensusEventFileManagerTests {
                     new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), 0);
 
             assertIteratorEquality(
-                    files.iterator(), manager.getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION));
+                    files.iterator(),
+                    manager.getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION, false, false));
         } else {
             // Gaps are not allowed.
             assertThrows(
@@ -340,7 +343,7 @@ class PreConsensusEventFileManagerTests {
                 (files.get(0).maximumGeneration() + files.get(fileCount - 1).maximumGeneration()) / 2;
 
         final List<PreConsensusEventFile> iteratedFiles = new ArrayList<>();
-        manager.getFileIterator(targetGeneration).forEachRemaining(iteratedFiles::add);
+        manager.getFileIterator(targetGeneration, false, false).forEachRemaining(iteratedFiles::add);
 
         // Find the index in the file list that was returned first by the iterator
         int indexOfFirstFile = 0;
@@ -419,7 +422,7 @@ class PreConsensusEventFileManagerTests {
                 (files.get(0).maximumGeneration() + files.get(fileCount - 1).maximumGeneration()) / 2;
 
         final List<PreConsensusEventFile> iteratedFiles = new ArrayList<>();
-        manager.getFileIterator(targetGeneration).forEachRemaining(iteratedFiles::add);
+        manager.getFileIterator(targetGeneration, false, false).forEachRemaining(iteratedFiles::add);
 
         // Find the index in the file list that was returned first by the iterator
         int indexOfFirstFile = 0;
@@ -487,7 +490,7 @@ class PreConsensusEventFileManagerTests {
         // Request a generation higher than all files in the data store
         final long targetGeneration = files.get(fileCount - 1).maximumGeneration() + 1;
 
-        final Iterator<PreConsensusEventFile> iterator = manager.getFileIterator(targetGeneration);
+        final Iterator<PreConsensusEventFile> iterator = manager.getFileIterator(targetGeneration, false, false);
 
         assertFalse(iterator.hasNext());
     }
@@ -531,7 +534,8 @@ class PreConsensusEventFileManagerTests {
                 new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), 0);
 
         assertIteratorEquality(
-                files.iterator(), manager.getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION));
+                files.iterator(),
+                manager.getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION, false, false));
     }
 
     @Test
@@ -585,7 +589,8 @@ class PreConsensusEventFileManagerTests {
         final PreConsensusEventFileManager manager = new PreConsensusEventFileManager(platformContext, time, 0);
 
         assertIteratorEquality(
-                files.iterator(), manager.getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION));
+                files.iterator(),
+                manager.getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION, false, false));
 
         // Increase the pruned generation a little at a time,
         // until the middle file is almost GC eligible but not quite.
@@ -599,7 +604,7 @@ class PreConsensusEventFileManagerTests {
             // removing the in-memory descriptor without also removing the file on disk
             final List<PreConsensusEventFile> parsedFiles = new ArrayList<>();
             new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), 0)
-                    .getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION)
+                    .getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION, false, false)
                     .forEachRemaining(parsedFiles::add);
 
             final PreConsensusEventFile firstUnPrunedFile = parsedFiles.get(0);
@@ -639,7 +644,7 @@ class PreConsensusEventFileManagerTests {
         // removing the in-memory descriptor without also removing the file on disk
         final List<PreConsensusEventFile> parsedFiles = new ArrayList<>();
         new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), 0)
-                .getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION)
+                .getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION, false, false)
                 .forEachRemaining(parsedFiles::add);
 
         final PreConsensusEventFile firstUnPrunedFile = parsedFiles.get(0);
@@ -706,7 +711,8 @@ class PreConsensusEventFileManagerTests {
         final PreConsensusEventFileManager manager = new PreConsensusEventFileManager(platformContext, time, 0);
 
         assertIteratorEquality(
-                files.iterator(), manager.getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION));
+                files.iterator(),
+                manager.getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION, false, false));
 
         // Increase the timestamp a little at a time. We should gradually delete files up until
         // all files before the middle file have been deleted.
@@ -719,7 +725,7 @@ class PreConsensusEventFileManagerTests {
             // removing the in-memory descriptor without also removing the file on disk
             final List<PreConsensusEventFile> parsedFiles = new ArrayList<>();
             new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), 0)
-                    .getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION)
+                    .getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION, false, false)
                     .forEachRemaining(parsedFiles::add);
 
             final PreConsensusEventFile firstUnPrunedFile = parsedFiles.get(0);
@@ -764,7 +770,7 @@ class PreConsensusEventFileManagerTests {
         // removing the in-memory descriptor without also removing the file on disk
         final List<PreConsensusEventFile> parsedFiles = new ArrayList<>();
         new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), 0)
-                .getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION)
+                .getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION, false, false)
                 .forEachRemaining(parsedFiles::add);
 
         final PreConsensusEventFile firstUnPrunedFile = parsedFiles.get(0);
