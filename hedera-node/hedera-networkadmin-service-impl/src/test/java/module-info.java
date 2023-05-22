@@ -1,17 +1,12 @@
 module com.hedera.node.app.service.networkadmin.impl.test {
-    requires com.hedera.node.app.service.networkadmin;
+    requires com.hedera.hashgraph.protobuf.java.api;
     requires com.hedera.node.app.service.networkadmin.impl;
-    requires com.hedera.pbj.runtime;
-    requires org.junit.jupiter.api;
-    requires org.mockito;
-    requires org.mockito.junit.jupiter;
-    requires com.hedera.node.app.service.mono;
-    requires com.swirlds.common;
-    requires com.swirlds.fcqueue;
-    requires com.google.protobuf;
-    requires com.hedera.node.app.spi.fixtures;
     requires com.hedera.node.app.service.token;
-    requires org.assertj.core;
+    requires com.hedera.node.app.spi.test.fixtures;
+    requires com.swirlds.fcqueue;
+    requires org.junit.jupiter.api;
+    requires org.mockito.junit.jupiter;
+    requires org.mockito;
 
     opens com.hedera.node.app.service.networkadmin.impl.test to
             org.junit.platform.commons,

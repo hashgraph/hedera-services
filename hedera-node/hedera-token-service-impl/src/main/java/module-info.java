@@ -1,21 +1,18 @@
 module com.hedera.node.app.service.token.impl {
-    requires com.hedera.node.app.service.token;
-    requires org.apache.commons.lang3;
-    requires com.google.common;
-    requires com.hedera.node.app.service.mono;
-    requires com.google.protobuf;
-    requires com.hedera.node.app.service.evm;
-    requires com.hedera.node.app.spi;
-    requires com.swirlds.virtualmap;
-    requires com.swirlds.jasperdb;
-    requires dagger;
-    requires javax.inject;
-    requires com.hedera.pbj.runtime;
-    requires com.github.spotbugs.annotations;
+    requires transitive com.hedera.node.app.service.mono;
+    requires transitive com.hedera.node.app.service.token;
+    requires transitive com.hedera.node.app.spi;
     requires transitive com.hedera.node.hapi;
-    requires org.apache.logging.log4j;
-    requires com.swirlds.config;
-    requires com.hedera.node.config;
+    requires transitive com.hedera.pbj.runtime;
+    requires transitive com.swirlds.config;
+    requires transitive dagger;
+    requires transitive javax.inject;
+    requires com.hedera.node.app.service.evm;
+    requires com.github.spotbugs.annotations;
+    requires com.google.common;
+    requires com.google.protobuf;
+    requires com.swirlds.jasperdb;
+    requires org.apache.commons.lang3;
 
     provides com.hedera.node.app.service.token.TokenService with
             com.hedera.node.app.service.token.impl.TokenServiceImpl;

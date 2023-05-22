@@ -21,8 +21,6 @@ plugins {
 
 description = "Hedera Services Command-Line Clients"
 
-tasks.jar { manifest { attributes("Automatic-Module-Name" to "com.hedera.services.cli") } }
-
 configurations.all {
   exclude("javax.annotation", "javax.annotation.api")
   exclude("com.google.code.findbugs", "jsr305")
@@ -32,10 +30,9 @@ configurations.all {
 }
 
 dependencies {
-  implementation(project(mapOf("path" to ":hedera-node:hapi-utils")))
-  compileOnly(libs.spotbugs.annotations)
-  implementation(libs.bundles.swirlds)
-  implementation(project(":hedera-node:hedera-mono-service"))
-  implementation(testLibs.picocli)
-  testImplementation(testLibs.bundles.testing)
+  javaModuleDependencies {
+    testImplementation(gav("org.junit.jupiter.api"))
+    testImplementation(gav("org.mockito"))
+    testImplementation(gav("org.mockito.junit.jupiter"))
+  }
 }

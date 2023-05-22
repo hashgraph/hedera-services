@@ -18,21 +18,13 @@ plugins { id("com.hedera.hashgraph.conventions") }
 
 description = "Default Hedera Util Service Implementation"
 
-configurations.all {
-  exclude("javax.annotation", "javax.annotation-api")
+dependencies { javaModuleDependencies { annotationProcessor(gav("dagger.compiler")) } }
 
-  exclude("io.grpc", "grpc-core")
-  exclude("io.grpc", "grpc-context")
-  exclude("io.grpc", "grpc-api")
-  exclude("io.grpc", "grpc-testing")
-}
-
-dependencies {
-  testImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
-  annotationProcessor(libs.dagger.compiler)
-  api(project(":hedera-node:hedera-util-service"))
-  implementation(project(":hedera-node:hedera-mono-service"))
-  implementation(libs.bundles.di)
-  testImplementation(testLibs.bundles.mockito)
-  testImplementation(testLibs.assertj.core)
+// TODO module-info.java in 'test'
+// https://github.com/autonomousapps/dependency-analysis-android-gradle-plugin/issues/900
+dependencyAnalysis.issues {
+  onUnusedDependencies {
+    exclude(":hedera-node:node-app-service-networkadmin")
+    exclude("com.swirlds:swirlds-common")
+  }
 }

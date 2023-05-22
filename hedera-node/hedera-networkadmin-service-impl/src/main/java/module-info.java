@@ -2,13 +2,15 @@ import com.hedera.node.app.service.networkadmin.NetworkService;
 import com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl;
 
 module com.hedera.node.app.service.networkadmin.impl {
+    requires transitive com.hedera.node.app.service.mono;
     requires transitive com.hedera.node.app.service.networkadmin;
+    requires transitive com.hedera.node.app.spi;
+    requires transitive com.hedera.node.hapi;
+    requires transitive com.hedera.pbj.runtime;
+    requires transitive com.swirlds.common;
+    requires transitive dagger;
+    requires transitive javax.inject;
     requires com.github.spotbugs.annotations;
-    requires dagger;
-    requires javax.inject;
-    requires com.hedera.pbj.runtime;
-    requires com.hedera.node.app.service.mono;
-    requires com.swirlds.common;
 
     provides com.hedera.node.app.service.networkadmin.FreezeService with
             FreezeServiceImpl;

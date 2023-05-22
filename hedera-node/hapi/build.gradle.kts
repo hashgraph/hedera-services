@@ -22,17 +22,15 @@ plugins {
 
 description = "Hedera API"
 
-configurations.all { exclude("javax.annotation", "javax.annotation-api") }
-
 dependencies {
-  api(libs.spotbugs.annotations)
-  implementation(libs.pbj.runtime)
-  implementation(libs.bundles.di)
-  testImplementation(testLibs.bundles.testing)
-  // we depend on the protoc compiled hapi during test as we test our pbj generated code against it
-  // to make sure it is compatible
-  testImplementation(libs.hapi)
-  testFixturesImplementation(libs.pbj.runtime)
+  javaModuleDependencies {
+    testImplementation(gav("com.google.protobuf"))
+    // we depend on the protoc compiled hapi during test as we test our pbj generated code against
+    // it to make sure it is compatible
+    testImplementation(gav("com.hedera.hashgraph.protobuf.java.api"))
+    testImplementation(gav("org.junit.jupiter.api"))
+    testImplementation(gav("org.junit.jupiter.params"))
+  }
 }
 
 // Add downloaded HAPI repo protobuf files into build directory and add to sources to build them
@@ -46,7 +44,7 @@ sourceSets {
 }
 
 // Give JUnit more ram and make it execute tests in parallel
-tasks.withType<Test> {
+tasks.withType<Test>().configureEach {
   // We are running a lot of tests 10s of thousands, so they need to run in parallel. Make each
   // class run in parallel.
   systemProperties["junit.jupiter.execution.parallel.enabled"] = true
@@ -62,4 +60,4 @@ tasks.withType<Test> {
 }
 
 // Add "hedera-protobufs" repository to clean task
-tasks.named("clean") { delete(projectDir.absolutePath + "hedera-protobufs") }
+tasks.named("clean") { doLast { delete(projectDir.absolutePath + "hedera-protobufs") } }

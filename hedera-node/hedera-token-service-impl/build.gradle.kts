@@ -18,32 +18,15 @@ plugins { id("com.hedera.hashgraph.conventions") }
 
 description = "Default Hedera Token Service Implementation"
 
-configurations.all {
-  exclude("javax.annotation", "javax.annotation-api")
+dependencies { javaModuleDependencies { annotationProcessor(gav("dagger.compiler")) } }
 
-  exclude("io.grpc", "grpc-core")
-  exclude("io.grpc", "grpc-context")
-  exclude("io.grpc", "grpc-api")
-  exclude("io.grpc", "grpc-testing")
-}
-
-dependencies {
-  implementation(project(":hedera-node:hapi"))
-  implementation(project(":hedera-node:hedera-config"))
-  testImplementation(project(mapOf("path" to ":hedera-node:hedera-app")))
-  annotationProcessor(libs.dagger.compiler)
-  api(project(":hedera-node:hedera-token-service"))
-  implementation(project(":hedera-node:hapi"))
-  implementation(project(":hedera-node:hedera-mono-service"))
-  implementation(libs.bundles.di)
-  implementation(libs.pbj.runtime)
-  implementation(libs.swirlds.virtualmap)
-  implementation(libs.swirlds.jasperdb)
-  implementation(libs.swirlds.config)
-
-  testImplementation(testLibs.bundles.testing)
-  testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
-  testImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
-  testImplementation(testLibs.mockito.inline)
-  testImplementation(project(":hedera-node:hedera-app-spi"))
+// TODO module-info.java in 'test'
+// https://github.com/autonomousapps/dependency-analysis-android-gradle-plugin/issues/900
+dependencyAnalysis.issues {
+  onUnusedDependencies {
+    exclude(":hedera-node:node-app-service-evm")
+    exclude(javaModuleDependencies.ga("com.github.spotbugs.annotations").get())
+    exclude(javaModuleDependencies.ga("com.google.protobuf").get())
+    exclude(javaModuleDependencies.ga("org.apache.commons.lang3").get())
+  }
 }

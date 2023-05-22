@@ -18,25 +18,4 @@ plugins { id("com.hedera.hashgraph.conventions") }
 
 description = "Default Hedera NetworkAdmin Service Implementation"
 
-configurations.all {
-  exclude("javax.annotation", "javax.annotation-api")
-
-  exclude("io.grpc", "grpc-core")
-  exclude("io.grpc", "grpc-context")
-  exclude("io.grpc", "grpc-api")
-  exclude("io.grpc", "grpc-testing")
-}
-
-dependencies {
-  annotationProcessor(libs.dagger.compiler)
-  api(project(":hedera-node:hedera-networkadmin-service"))
-  implementation(libs.bundles.di)
-  implementation(project(":hedera-node:hedera-mono-service"))
-  implementation(libs.swirlds.common)
-
-  testImplementation(testLibs.bundles.testing)
-  testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
-  testImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
-  testImplementation(testLibs.mockito.inline)
-  testImplementation(libs.swirlds.fcqueue)
-}
+dependencies { javaModuleDependencies { annotationProcessor(gav("dagger.compiler")) } }

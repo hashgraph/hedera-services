@@ -48,6 +48,11 @@ on:
         type: boolean
         required: false
         default: false
+      enable-dependency-check:
+        description: "Dependency Scope Check Enabled"
+        type: boolean
+        required: false
+        default: false
       enable-snyk-scan:
         description: "Snyk Scan Enabled"
         type: boolean
@@ -155,6 +160,14 @@ jobs:
         with:
           gradle-version: ${{ inputs.gradle-version }}
           arguments: spotlessCheck --scan
+
+      - name: Gradle Dependency Scopes Check
+        uses: gradle/gradle-build-action@v2
+        if: ${{ inputs.enable-dependency-check && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        with:
+          build-root-directory: ${{ github.workspace }}/platform-sdk
+          gradle-version: ${{ inputs.gradle-version }}
+          arguments: checkAllModuleInfo --scan --continue
 
       - name: Unit Testing
         id: gradle-test
