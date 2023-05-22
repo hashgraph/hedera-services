@@ -115,11 +115,11 @@ class PreConsensusEventFileManagerTests {
     @DisplayName("Maximum Less Than Minimum Test")
     void maximumLessThanMinimumTest() throws IOException {
 
-        createDummyFile(PreConsensusEventFile.of(0, 0, 1, Instant.now(), fileDirectory));
+        createDummyFile(PreConsensusEventFile.of(0, 0, 1, Instant.now(), fileDirectory, false));
 
-        createDummyFile(PreConsensusEventFile.of(1, 10, 5, Instant.now(), fileDirectory));
+        createDummyFile(PreConsensusEventFile.of(1, 10, 5, Instant.now(), fileDirectory, false));
 
-        createDummyFile(PreConsensusEventFile.of(2, 10, 20, Instant.now(), fileDirectory));
+        createDummyFile(PreConsensusEventFile.of(2, 10, 20, Instant.now(), fileDirectory, false));
 
         final PlatformContext platformContext = buildContext();
 
@@ -132,11 +132,11 @@ class PreConsensusEventFileManagerTests {
     @DisplayName("Minimum Decreases Test")
     void minimumDecreasesTest() throws IOException {
 
-        createDummyFile(PreConsensusEventFile.of(0, 5, 10, Instant.now(), fileDirectory));
+        createDummyFile(PreConsensusEventFile.of(0, 5, 10, Instant.now(), fileDirectory, false));
 
-        createDummyFile(PreConsensusEventFile.of(1, 4, 11, Instant.now(), fileDirectory));
+        createDummyFile(PreConsensusEventFile.of(1, 4, 11, Instant.now(), fileDirectory, false));
 
-        createDummyFile(PreConsensusEventFile.of(2, 10, 20, Instant.now(), fileDirectory));
+        createDummyFile(PreConsensusEventFile.of(2, 10, 20, Instant.now(), fileDirectory, false));
 
         final PlatformContext platformContext = buildContext();
 
@@ -149,11 +149,11 @@ class PreConsensusEventFileManagerTests {
     @DisplayName("Maximum Decreases Test")
     void maximumDecreasesTest() throws IOException {
 
-        createDummyFile(PreConsensusEventFile.of(0, 5, 10, Instant.now(), fileDirectory));
+        createDummyFile(PreConsensusEventFile.of(0, 5, 10, Instant.now(), fileDirectory, false));
 
-        createDummyFile(PreConsensusEventFile.of(1, 6, 9, Instant.now(), fileDirectory));
+        createDummyFile(PreConsensusEventFile.of(1, 6, 9, Instant.now(), fileDirectory, false));
 
-        createDummyFile(PreConsensusEventFile.of(2, 10, 20, Instant.now(), fileDirectory));
+        createDummyFile(PreConsensusEventFile.of(2, 10, 20, Instant.now(), fileDirectory, false));
 
         final PlatformContext platformContext = buildContext();
 
@@ -166,11 +166,11 @@ class PreConsensusEventFileManagerTests {
     @DisplayName("Timestamp Decreases Test")
     void timestampDecreasesTest() throws IOException {
 
-        createDummyFile(PreConsensusEventFile.of(0, 5, 10, Instant.ofEpochMilli(1000), fileDirectory));
+        createDummyFile(PreConsensusEventFile.of(0, 5, 10, Instant.ofEpochMilli(1000), fileDirectory, false));
 
-        createDummyFile(PreConsensusEventFile.of(1, 6, 11, Instant.ofEpochMilli(500), fileDirectory));
+        createDummyFile(PreConsensusEventFile.of(1, 6, 11, Instant.ofEpochMilli(500), fileDirectory, false));
 
-        createDummyFile(PreConsensusEventFile.of(2, 7, 12, Instant.ofEpochMilli(2000), fileDirectory));
+        createDummyFile(PreConsensusEventFile.of(2, 7, 12, Instant.ofEpochMilli(2000), fileDirectory, false));
 
         final PlatformContext platformContext = buildContext();
 
@@ -204,7 +204,7 @@ class PreConsensusEventFileManagerTests {
                 sequenceNumber++) {
 
             final PreConsensusEventFile file = PreConsensusEventFile.of(
-                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, fileDirectory);
+                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, fileDirectory, false);
 
             minimumGeneration = random.nextLong(minimumGeneration, maximumGeneration + 1);
             maximumGeneration =
@@ -262,7 +262,7 @@ class PreConsensusEventFileManagerTests {
                 sequenceNumber++) {
 
             final PreConsensusEventFile file = PreConsensusEventFile.of(
-                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, fileDirectory);
+                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, fileDirectory, false);
 
             minimumGeneration = random.nextLong(minimumGeneration, maximumGeneration + 1);
             maximumGeneration =
@@ -320,7 +320,7 @@ class PreConsensusEventFileManagerTests {
                 sequenceNumber++) {
 
             final PreConsensusEventFile file = PreConsensusEventFile.of(
-                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, fileDirectory);
+                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, fileDirectory, false);
 
             minimumGeneration = random.nextLong(minimumGeneration, maximumGeneration + 1);
             maximumGeneration =
@@ -397,7 +397,7 @@ class PreConsensusEventFileManagerTests {
                 sequenceNumber++) {
 
             final PreConsensusEventFile file = PreConsensusEventFile.of(
-                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, fileDirectory);
+                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, fileDirectory, false);
 
             // Advance the generation bounds only 10% of the time
             if (random.nextLong() < 0.1) {
@@ -471,7 +471,7 @@ class PreConsensusEventFileManagerTests {
                 sequenceNumber++) {
 
             final PreConsensusEventFile file = PreConsensusEventFile.of(
-                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, fileDirectory);
+                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, fileDirectory, false);
 
             minimumGeneration = random.nextLong(minimumGeneration, maximumGeneration + 1);
             maximumGeneration =
@@ -562,7 +562,7 @@ class PreConsensusEventFileManagerTests {
                 sequenceNumber++) {
 
             final PreConsensusEventFile file = PreConsensusEventFile.of(
-                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, fileDirectory);
+                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, fileDirectory, false);
 
             minimumGeneration = random.nextLong(minimumGeneration, maximumGeneration + 1);
             maximumGeneration =
@@ -684,7 +684,7 @@ class PreConsensusEventFileManagerTests {
                 sequenceNumber++) {
 
             final PreConsensusEventFile file = PreConsensusEventFile.of(
-                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, fileDirectory);
+                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, fileDirectory, false);
 
             minimumGeneration = random.nextLong(minimumGeneration, maximumGeneration + 1);
             maximumGeneration =

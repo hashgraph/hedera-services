@@ -33,7 +33,7 @@ import java.util.stream.Stream;
 
 /**
  * <p>
- * Describes a pre-consensus event DB file.
+ * Describes a pre-consensus event stream file.
  * </p>
  *
  * <p>
@@ -97,26 +97,6 @@ public record PreConsensusEventFile(
      * Written before the maximum generation in the file name. Improves readability for humans.
      */
     public static final String MAXIMUM_GENERATION_PREFIX = "maxg";
-
-    /**
-     * Create a new event file descriptor.
-     *
-     * @param sequenceNumber    the sequence number of the descriptor
-     * @param minimumGeneration the minimum event generation permitted to be in this file (inclusive)
-     * @param maximumGeneration the maximum event generation permitted to be in this file (inclusive)
-     * @param timestamp         the timestamp when this file was created (wall clock time)
-     * @param rootDirectory     the directory where event stream files are stored
-     * @return a description of the file
-     */
-    public static PreConsensusEventFile of(
-            final long sequenceNumber,
-            final long minimumGeneration,
-            final long maximumGeneration,
-            final Instant timestamp,
-            final Path rootDirectory) {
-
-        return of(sequenceNumber, minimumGeneration, maximumGeneration, timestamp, rootDirectory, false);
-    }
 
     /**
      * Create a new event file descriptor.

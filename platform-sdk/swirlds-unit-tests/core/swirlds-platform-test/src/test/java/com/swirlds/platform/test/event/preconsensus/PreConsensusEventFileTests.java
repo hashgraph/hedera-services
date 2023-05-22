@@ -92,7 +92,12 @@ class PreConsensusEventFileTests {
         Assertions.assertEquals(
                 expectedName,
                 PreConsensusEventFile.of(
-                                sequenceNumber, minimumGeneration, maximumGeneration, timestamp, Path.of("foo/bar"))
+                                sequenceNumber,
+                                minimumGeneration,
+                                maximumGeneration,
+                                timestamp,
+                                Path.of("foo/bar"),
+                                false)
                         .getFileName());
     }
 
@@ -117,7 +122,12 @@ class PreConsensusEventFileTests {
         assertEquals(
                 expectedPath,
                 PreConsensusEventFile.of(
-                                sequenceNumber, minimumGeneration, maximumGeneration, timestamp, Path.of("foo/bar"))
+                                sequenceNumber,
+                                minimumGeneration,
+                                maximumGeneration,
+                                timestamp,
+                                Path.of("foo/bar"),
+                                false)
                         .path()
                         .getParent());
     }
@@ -134,8 +144,8 @@ class PreConsensusEventFileTests {
 
         final Path directory = Path.of("foo/bar/baz");
 
-        final PreConsensusEventFile expected =
-                PreConsensusEventFile.of(sequenceNumber, minimumGeneration, maximumGeneration, timestamp, directory);
+        final PreConsensusEventFile expected = PreConsensusEventFile.of(
+                sequenceNumber, minimumGeneration, maximumGeneration, timestamp, directory, false);
 
         final PreConsensusEventFile parsed = PreConsensusEventFile.of(expected.path());
 
@@ -172,7 +182,7 @@ class PreConsensusEventFileTests {
         for (int index = 0; index < times.size(); index++) {
             final Instant timestamp = times.get(index);
             // We don't care about generations for this test
-            final PreConsensusEventFile file = PreConsensusEventFile.of(index, 0, 0, timestamp, testDirectory);
+            final PreConsensusEventFile file = PreConsensusEventFile.of(index, 0, 0, timestamp, testDirectory, false);
 
             writeRandomBytes(random, file.path(), 100);
             files.add(file);
@@ -211,9 +221,9 @@ class PreConsensusEventFileTests {
             final long sequenceB = random.nextLong(100);
 
             final PreConsensusEventFile a = PreConsensusEventFile.of(
-                    sequenceA, random.nextLong(), random.nextLong(), randomInstant(random), directory);
+                    sequenceA, random.nextLong(), random.nextLong(), randomInstant(random), directory, false);
             final PreConsensusEventFile b = PreConsensusEventFile.of(
-                    sequenceB, random.nextLong(), random.nextLong(), randomInstant(random), directory);
+                    sequenceB, random.nextLong(), random.nextLong(), randomInstant(random), directory, false);
 
             assertEquals(Long.compare(sequenceA, sequenceB), a.compareTo(b));
         }
@@ -233,7 +243,7 @@ class PreConsensusEventFileTests {
             final Instant timestamp = RandomUtils.randomInstant(random);
 
             final PreConsensusEventFile file = PreConsensusEventFile.of(
-                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, directory);
+                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, directory, false);
 
             // An event with a sequence number that is too small
             final EventImpl eventA = mock(EventImpl.class);

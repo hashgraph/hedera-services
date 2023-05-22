@@ -113,7 +113,8 @@ class PreConsensusEventReadWriteTests {
                 minimumGeneration,
                 maximumGeneration,
                 RandomUtils.randomInstant(random),
-                testDirectory);
+                testDirectory,
+                false);
 
         final PreConsensusEventMutableFile mutableFile = file.getMutableFile();
         for (final EventImpl event : events) {
@@ -167,7 +168,8 @@ class PreConsensusEventReadWriteTests {
                 minimumGeneration,
                 maximumGeneration,
                 RandomUtils.randomInstant(random),
-                testDirectory);
+                testDirectory,
+                false);
 
         final PreConsensusEventMutableFile mutableFile = file.getMutableFile();
         for (final EventImpl event : events) {
@@ -205,7 +207,8 @@ class PreConsensusEventReadWriteTests {
                 random.nextLong(0, 1000),
                 random.nextLong(1000, 2000),
                 RandomUtils.randomInstant(random),
-                testDirectory);
+                testDirectory,
+                false);
 
         final PreConsensusEventMutableFile mutableFile = file.getMutableFile();
         mutableFile.close();
@@ -249,7 +252,8 @@ class PreConsensusEventReadWriteTests {
                 minimumGeneration,
                 maximumGeneration,
                 RandomUtils.randomInstant(random),
-                testDirectory);
+                testDirectory,
+                false);
 
         final Map<Integer /* event index */, Integer /* last byte position */> byteBoundaries = new HashMap<>();
 
@@ -316,7 +320,8 @@ class PreConsensusEventReadWriteTests {
                 minimumGeneration,
                 maximumGeneration,
                 RandomUtils.randomInstant(random),
-                testDirectory);
+                testDirectory,
+                false);
 
         final Map<Integer /* event index */, Integer /* last byte position */> byteBoundaries = new HashMap<>();
 
@@ -380,7 +385,8 @@ class PreConsensusEventReadWriteTests {
                 restrictedMinimumGeneration,
                 restrictedMaximumGeneration,
                 RandomUtils.randomInstant(random),
-                testDirectory);
+                testDirectory,
+                false);
         final PreConsensusEventMutableFile mutableFile = file.getMutableFile();
 
         final List<EventImpl> validEvents = new ArrayList<>();
@@ -437,7 +443,8 @@ class PreConsensusEventReadWriteTests {
                 minimumGeneration,
                 maximumGeneration,
                 RandomUtils.randomInstant(random),
-                testDirectory);
+                testDirectory,
+                false);
 
         final PreConsensusEventMutableFile mutableFile = file.getMutableFile();
         for (final EventImpl event : events) {
@@ -502,7 +509,8 @@ class PreConsensusEventReadWriteTests {
                 minimumEventGeneration,
                 maximumFileGeneration,
                 RandomUtils.randomInstant(random),
-                testDirectory);
+                testDirectory,
+                false);
 
         final PreConsensusEventMutableFile mutableFile = file.getMutableFile();
         for (final EventImpl event : events) {
