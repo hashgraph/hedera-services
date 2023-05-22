@@ -45,7 +45,8 @@ import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.swirlds.config.api.Configuration;
+import com.hedera.node.config.data.EntitiesConfig;
+import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -100,8 +101,10 @@ public class TokenAssociateToAccountHandler implements TransactionHandler {
 
         final var op = txn.tokenAssociateOrThrow();
         final var tokenIds = op.tokensOrElse(Collections.emptyList());
+        final var tokensConfig = context.getConfiguration().getConfigData(TokensConfig.class);
+        final var entitiesConfig = context.getConfiguration().getConfigData(EntitiesConfig.class);
         final var validated = validateSemantics(
-                tokenIds, op.accountOrThrow(), context.getConfiguration(), accountStore, tokenStore, tokenRelStore);
+                tokenIds, op.accountOrThrow(), tokensConfig, entitiesConfig, accountStore, tokenStore, tokenRelStore);
 
         // Now that we've validated we can link all the new token IDs to the account,
         // create the corresponding token relations and update the account
@@ -223,16 +226,17 @@ public class TokenAssociateToAccountHandler implements TransactionHandler {
     private Validated validateSemantics(
             @NonNull final List<TokenID> tokenIds,
             @NonNull final AccountID accountId,
-            @NonNull final Configuration config,
+            @NonNull final TokensConfig tokenConfig,
+            @NonNull final EntitiesConfig entitiesConfig,
             @NonNull final WritableAccountStore accountStore,
             @NonNull final ReadableTokenStore tokenStore,
             @NonNull final WritableTokenRelationStore tokenRelStore) {
-        requireNonNull(config);
+        requireNonNull(tokenConfig);
+        requireNonNull(entitiesConfig);
 
         // Check that the system hasn't reached its limit of token associations
-        var maxTokenRels = config.getValue("maxNumTokenRels", Long.class);
         validateTrue(
-                isTotalNumTokenRelsWithinMax(tokenIds.size(), tokenRelStore, maxTokenRels),
+                isTotalNumTokenRelsWithinMax(tokenIds.size(), tokenRelStore, tokenConfig.maxAggregateRels()),
                 MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
 
         // Check that the account exists
@@ -252,7 +256,8 @@ public class TokenAssociateToAccountHandler implements TransactionHandler {
         // Check that the total number of old and new token IDs wouldn't be bigger than
         // the max number of token associations allowed per account (if the rel limit is enabled)
         validateTrue(
-                maxAccountAssociationsAllowTokenRels(config, account, tokenIds), TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
+                maxAccountAssociationsAllowTokenRels(tokenConfig, entitiesConfig, account, tokenIds),
+                TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
 
         // Check that a token rel doesn't already exist for each new token ID
         for (final TokenID tokenId : tokenIds) {
@@ -276,10 +281,13 @@ public class TokenAssociateToAccountHandler implements TransactionHandler {
      * within the allowed maxTokensPerAccount
      */
     private boolean maxAccountAssociationsAllowTokenRels(
-            @NonNull Configuration config, @NonNull Account account, @NonNull List<TokenID> tokenIds) {
+            @NonNull final TokensConfig config,
+            @NonNull final EntitiesConfig entitiesConfig,
+            @NonNull final Account account,
+            @NonNull final List<TokenID> tokenIds) {
         final var numAssociations = requireNonNull(account).numberAssociations();
-        final var tokenAssociationsLimited = config.getValue("areTokenAssociationsLimited", Boolean.class);
-        final var maxTokensPerAccount = config.getValue("maxTokensPerAccount", Long.class);
+        final var tokenAssociationsLimited = entitiesConfig.limitTokenAssociations();
+        final var maxTokensPerAccount = config.maxPerAccount();
         return !tokenAssociationsLimited || (numAssociations + tokenIds.size() <= maxTokensPerAccount);
     }
 

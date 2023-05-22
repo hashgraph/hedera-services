@@ -45,6 +45,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -62,6 +63,8 @@ import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.config.data.EntitiesConfig;
+import com.hedera.node.config.data.TokensConfig;
 import com.swirlds.config.api.Configuration;
 import java.util.Collections;
 import java.util.List;
@@ -71,7 +74,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 class TokenAssociateToAccountHandlerTest {
@@ -230,11 +232,12 @@ class TokenAssociateToAccountHandlerTest {
         }
 
         @Test
-        void exceedsTokenAssociationLimit() {
-            // There are already 3 tokens already associated with the account we're putting in the transaction, so we
+        void exceedsTokenAssociationLimitForAccount() {
+            // There are 3 tokens already associated with the account we're putting in the transaction, so we
             // need maxTokensPerAccount to be at least 3
-            final var context = mockContext(1000L, 3L);
-            final var txn = newAssociateTxn(toPbj(KNOWN_TOKEN_IMMUTABLE));
+            final var context = mock(HandleContext.class);
+            mockConfig(context, 2000L, true, 3);
+            final var txn = newAssociateTxn(toPbj(KNOWN_TOKEN_WITH_FREEZE));
 
             assertThatThrownBy(() -> subject.handle(txn, context, writableAccountStore, writableTokenRelStore))
                     .isInstanceOf(HandleException.class)
@@ -255,14 +258,11 @@ class TokenAssociateToAccountHandlerTest {
         void tokensAssociateToAccountWithNoTokenRels() {
             // Mock config context to allow unlimited token associations
             var context = mock(HandleContext.class);
-            given(context.createReadableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
-            final var config = mock(Configuration.class);
-            given(context.getConfiguration()).willReturn(config);
-            given(config.getValue("areTokenAssociationsLimited", Boolean.class)).willReturn(false);
-            given(config.getValue("maxNumTokenRels", Long.class)).willReturn(1000L);
             // Set maxTokensPerAccount to a value that will fail if areTokenAssociationsLimited
             // is incorrectly ignored
-            given(config.getValue("maxTokensPerAccount", Long.class)).willReturn(0L);
+            mockConfig(context, 2000L, false, 4);
+            given(context.createReadableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
+
             // Put a new account into the account store that has no tokens associated with it
             final var newAcctNum = 12345L;
             final var newAcctId = AccountID.newBuilder().accountNum(newAcctNum).build();
@@ -428,22 +428,32 @@ class TokenAssociateToAccountHandlerTest {
         }
 
         private HandleContext mockContext(final long maxNumTokenRels, final long maxTokensPerAccount) {
-            var handleContext = mock(HandleContext.class);
-            final var config = mock(Configuration.class);
-            given(handleContext.getConfiguration()).willReturn(config);
-            Mockito.lenient()
-                    .when(config.getValue("areTokenAssociationsLimited", Boolean.class))
-                    .thenReturn(true);
-            Mockito.lenient()
-                    .when(config.getValue("maxNumTokenRels", Long.class))
-                    .thenReturn(maxNumTokenRels);
-            Mockito.lenient()
-                    .when(config.getValue("maxTokensPerAccount", Long.class))
-                    .thenReturn(maxTokensPerAccount);
+            final var handleContext = mock(HandleContext.class);
+            mockConfig(handleContext, maxNumTokenRels, false, (int) maxTokensPerAccount);
 
             given(handleContext.createReadableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
 
             return handleContext;
+        }
+
+        // The context passed in needs to be a mock
+        private void mockConfig(
+                final HandleContext mockedContext,
+                final long maxAggregateRels,
+                final boolean limitedRels,
+                final int maxRelsPerAccount) {
+            lenient()
+                    .when(mockedContext.createReadableStore(ReadableTokenStore.class))
+                    .thenReturn(readableTokenStore);
+            final var config = mock(Configuration.class);
+            lenient().when(mockedContext.getConfiguration()).thenReturn(config);
+            final var tokensConfig = mock(TokensConfig.class);
+            lenient().when(tokensConfig.maxAggregateRels()).thenReturn(maxAggregateRels);
+            lenient().when(tokensConfig.maxPerAccount()).thenReturn(maxRelsPerAccount);
+            lenient().when(config.getConfigData(TokensConfig.class)).thenReturn(tokensConfig);
+            final var entitiesConfig = mock(EntitiesConfig.class);
+            lenient().when(config.getConfigData(EntitiesConfig.class)).thenReturn(entitiesConfig);
+            lenient().when(entitiesConfig.limitTokenAssociations()).thenReturn(limitedRels);
         }
     }
 
