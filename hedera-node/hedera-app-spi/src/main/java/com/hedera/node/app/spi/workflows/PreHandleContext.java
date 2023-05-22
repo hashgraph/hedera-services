@@ -228,7 +228,5 @@ public interface PreHandleContext {
      * @return the {@link Configuration}
      */
     @NonNull
-    default Configuration getConfiguration() {
-        throw new UnsupportedOperationException("getConfiguration() not implemented, will be done by next PR");
-    }
+    Configuration configuration();
 }

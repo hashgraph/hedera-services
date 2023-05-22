@@ -52,6 +52,7 @@ import java.util.concurrent.Future;
  *                            {@link SignatureVerificationFuture} for a given cryptographic key. Ony cryptographic keys
  *                            are used as the key of this map.
  * @param innerResult {@link PreHandleResult} of the inner transaction (where appropriate)
+ * @param configVersion The version of the configuration that was used during pre-handle
  */
 public record PreHandleResult(
         @Nullable AccountID payer,
@@ -60,7 +61,8 @@ public record PreHandleResult(
         @NonNull ResponseCodeEnum responseCode,
         @Nullable TransactionInfo txInfo,
         @Nullable Map<Key, SignatureVerificationFuture> verificationResults,
-        @Nullable PreHandleResult innerResult) {
+        @Nullable PreHandleResult innerResult,
+        long configVersion) {
 
     /**
      * An enumeration of all possible types of pre-handle results.
@@ -82,6 +84,8 @@ public record PreHandleResult(
          */
         SO_FAR_SO_GOOD
     }
+
+    private static final long UNKNOWN_VERSION = -1L;
 
     /** Create a new instance. */
     public PreHandleResult {
@@ -179,7 +183,7 @@ public record PreHandleResult(
      */
     @NonNull
     public static PreHandleResult unknownFailure() {
-        return new PreHandleResult(null, null, Status.UNKNOWN_FAILURE, UNKNOWN, null, null, null);
+        return new PreHandleResult(null, null, Status.UNKNOWN_FAILURE, UNKNOWN, null, null, null, UNKNOWN_VERSION);
     }
 
     /**
@@ -198,7 +202,8 @@ public record PreHandleResult(
             @NonNull final AccountID node,
             @NonNull final ResponseCodeEnum responseCode,
             @Nullable final TransactionInfo txInfo) {
-        return new PreHandleResult(node, null, Status.NODE_DUE_DILIGENCE_FAILURE, responseCode, txInfo, null, null);
+        return new PreHandleResult(
+                node, null, Status.NODE_DUE_DILIGENCE_FAILURE, responseCode, txInfo, null, null, UNKNOWN_VERSION);
     }
 
     /**
@@ -220,7 +225,14 @@ public record PreHandleResult(
             @NonNull final TransactionInfo txInfo,
             @Nullable Map<Key, SignatureVerificationFuture> verificationResults) {
         return new PreHandleResult(
-                payer, payerKey, Status.PRE_HANDLE_FAILURE, responseCode, txInfo, verificationResults, null);
+                payer,
+                payerKey,
+                Status.PRE_HANDLE_FAILURE,
+                responseCode,
+                txInfo,
+                verificationResults,
+                null,
+                UNKNOWN_VERSION);
     }
 
     /** Convenience method to create a SignatureVerification that failed */

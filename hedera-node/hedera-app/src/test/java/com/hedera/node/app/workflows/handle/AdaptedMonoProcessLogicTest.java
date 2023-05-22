@@ -55,6 +55,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class AdaptedMonoProcessLogicTest extends AppTestBase implements Scenarios {
+
+    private static final long DEFAULT_CONFIG_VERSION = 1L;
+
     @Mock
     private StandardProcessLogic monoProcessLogic;
 
@@ -96,7 +99,8 @@ class AdaptedMonoProcessLogicTest extends AppTestBase implements Scenarios {
                 OK,
                 null,
                 verificationResults(PAYER_KEY_PBJ),
-                null);
+                null,
+                DEFAULT_CONFIG_VERSION);
 
         given(platformTxn.getMetadata()).willReturn(meta);
         given(platformTxn.getContents()).willReturn(asByteArray(noopTxn));
@@ -126,7 +130,8 @@ class AdaptedMonoProcessLogicTest extends AppTestBase implements Scenarios {
                 INVALID_ACCOUNT_ID,
                 null,
                 verificationResults(PAYER_KEY_PBJ),
-                null);
+                null,
+                DEFAULT_CONFIG_VERSION);
 
         given(platformTxn.getMetadata()).willReturn(meta);
         given(platformTxn.getContents()).willReturn(asByteArray(noopTxn));
@@ -156,7 +161,8 @@ class AdaptedMonoProcessLogicTest extends AppTestBase implements Scenarios {
                 INVALID_ACCOUNT_ID,
                 null,
                 verificationResults(PAYER_KEY_PBJ),
-                null);
+                null,
+                DEFAULT_CONFIG_VERSION);
 
         given(platformTxn.getMetadata()).willReturn(meta);
         given(platformTxn.getContents()).willReturn(asByteArray(noopTxn));
@@ -182,7 +188,14 @@ class AdaptedMonoProcessLogicTest extends AppTestBase implements Scenarios {
                 .signedTransactionBytes(Bytes.wrap("NONSENSE"))
                 .build();
         final var meta = new PreHandleResult(
-                ALICE.accountID(), null, Status.NODE_DUE_DILIGENCE_FAILURE, INVALID_ACCOUNT_ID, null, Map.of(), null);
+                ALICE.accountID(),
+                null,
+                Status.NODE_DUE_DILIGENCE_FAILURE,
+                INVALID_ACCOUNT_ID,
+                null,
+                Map.of(),
+                null,
+                DEFAULT_CONFIG_VERSION);
 
         given(platformTxn.getMetadata()).willReturn(meta);
         given(platformTxn.getContents()).willReturn(asByteArray(nonsenseTxn));
