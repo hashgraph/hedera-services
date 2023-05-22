@@ -137,15 +137,15 @@ public class PreConsensusEventFileManager {
 
         // Measure the size of each file.
         for (final PreConsensusEventFile file : files) {
-            totalFileByteCount += Files.size(file.path());
+            totalFileByteCount += Files.size(file.getPath());
         }
 
         if (files.size() > 0) {
             metrics.getPreconsensusEventFileOldestGeneration()
-                    .set(files.getFirst().minimumGeneration());
+                    .set(files.getFirst().getMinimumGeneration());
             metrics.getPreconsensusEventFileYoungestGeneration()
-                    .set(files.getLast().maximumGeneration());
-            final Duration age = Duration.between(files.getFirst().timestamp(), time.now());
+                    .set(files.getLast().getMaximumGeneration());
+            final Duration age = Duration.between(files.getFirst().getTimestamp(), time.now());
             metrics.getPreconsensusEventFileOldestSeconds().set(age.toSeconds());
         } else {
             metrics.getPreconsensusEventFileOldestGeneration().set(NO_MINIMUM_GENERATION);
@@ -194,10 +194,10 @@ public class PreConsensusEventFileManager {
                     previousTimestamp,
                     descriptor);
 
-            previousSequenceNumber.setValue(descriptor.sequenceNumber());
-            previousMinimumGeneration.setValue(descriptor.minimumGeneration());
-            previousMaximumGeneration.setValue(descriptor.maximumGeneration());
-            previousTimestamp.setValue(descriptor.timestamp());
+            previousSequenceNumber.setValue(descriptor.getSequenceNumber());
+            previousMinimumGeneration.setValue(descriptor.getMinimumGeneration());
+            previousMaximumGeneration.setValue(descriptor.getMaximumGeneration());
+            previousTimestamp.setValue(descriptor.getTimestamp());
 
             // If the sequence number is good then add it to the collection of tracked files
             files.addLast(descriptor);
@@ -219,34 +219,29 @@ public class PreConsensusEventFileManager {
         // Sequence number should always monotonically increase
         if (!permitGaps
                 && previousSequenceNumber.getValue() != -1
-                && previousSequenceNumber.getValue() + 1 != descriptor.sequenceNumber()) {
+                && previousSequenceNumber.getValue() + 1 != descriptor.getSequenceNumber()) {
             throw new IllegalStateException("Gap in pre-consensus event files detected! Previous sequence number was "
-                    + previousSequenceNumber.getValue() + ", next sequence number is " + descriptor.sequenceNumber());
-        }
-
-        // Maximum generation should never be less than minimum generation
-        if (descriptor.maximumGeneration() < descriptor.minimumGeneration()) {
-            throw new IllegalStateException(
-                    "File " + descriptor.path() + " has a maximum generation that is less than its minimum generation");
+                    + previousSequenceNumber.getValue() + ", next sequence number is "
+                    + descriptor.getSequenceNumber());
         }
 
         // Sanity check on the minimum generation
-        if (descriptor.minimumGeneration() < previousMinimumGeneration.getValue()) {
-            throw new IllegalStateException("Minimum generation must never decrease, file " + descriptor.path()
+        if (descriptor.getMinimumGeneration() < previousMinimumGeneration.getValue()) {
+            throw new IllegalStateException("Minimum generation must never decrease, file " + descriptor.getPath()
                     + " has a minimum generation that is less than the previous minimum generation of "
                     + previousMinimumGeneration.getValue());
         }
 
         // Sanity check on the maximum generation
-        if (descriptor.maximumGeneration() < previousMaximumGeneration.getValue()) {
-            throw new IllegalStateException("Maximum generation must never decrease, file " + descriptor.path()
+        if (descriptor.getMaximumGeneration() < previousMaximumGeneration.getValue()) {
+            throw new IllegalStateException("Maximum generation must never decrease, file " + descriptor.getPath()
                     + " has a maximum generation that is less than the previous maximum generation of "
                     + previousMaximumGeneration.getValue());
         }
 
         // Sanity check on timestamp
-        if (previousTimestamp.getValue() != null && descriptor.timestamp().isBefore(previousTimestamp.getValue())) {
-            throw new IllegalStateException("Timestamp must never decrease, file " + descriptor.path()
+        if (previousTimestamp.getValue() != null && descriptor.getTimestamp().isBefore(previousTimestamp.getValue())) {
+            throw new IllegalStateException("Timestamp must never decrease, file " + descriptor.getPath()
                     + " has a timestamp that is less than the previous timestamp of "
                     + previousTimestamp.getValue());
         }
@@ -297,13 +292,13 @@ public class PreConsensusEventFileManager {
         }
 
         // Edge case: our first file comes after the requested starting generation
-        if (files.getFirst().minimumGeneration() >= minimumGeneration) {
+        if (files.getFirst().getMinimumGeneration() >= minimumGeneration) {
             if (requireMinimumGeneration) {
                 // Unless we observe at least one file with a minimum generation less than the requested minimum,
                 // then we can't know for certain that we have all data for the requested minimum generation.
                 throw new NoSuchElementException("The preconscious event stream has insufficient data to satisfy the "
                         + "requested minimum generation of " + minimumGeneration + ", the first file has a minimum "
-                        + "generation of " + files.getFirst().minimumGeneration());
+                        + "generation of " + files.getFirst().getMinimumGeneration());
             } else {
                 // All files match.
                 if (fixDiscontinuities) {
@@ -314,11 +309,11 @@ public class PreConsensusEventFileManager {
         }
 
         // Edge case: all of our data comes before the requested starting generation
-        if (files.getLast().maximumGeneration() < minimumGeneration) {
+        if (files.getLast().getMaximumGeneration() < minimumGeneration) {
             if (requireMinimumGeneration) {
                 throw new NoSuchElementException("The preconscious event stream has insufficient data to satisfy the "
                         + "requested minimum generation of " + minimumGeneration + ", the last file has a maximum "
-                        + "generation of " + files.getLast().maximumGeneration());
+                        + "generation of " + files.getLast().getMaximumGeneration());
             } else {
                 return Collections.emptyIterator();
             }
@@ -328,7 +323,7 @@ public class PreConsensusEventFileManager {
         final int fileCount = files.size();
         for (int index = 0; index < fileCount; index++) {
             final PreConsensusEventFile file = files.get(index);
-            if (file.maximumGeneration() >= minimumGeneration) {
+            if (file.getMaximumGeneration() >= minimumGeneration) {
                 // We have found the first file that may contain events at the requested generation.
                 if (fixDiscontinuities) {
                     scanForDiscontinuities(index);
@@ -351,7 +346,7 @@ public class PreConsensusEventFileManager {
         final int fileCount = files.size();
         for (int index = startingIndex; index < fileCount; index++) {
             final PreConsensusEventFile file = files.get(index);
-            if (file.discontinuity()) {
+            if (file.marksDiscontinuity()) {
                 // We have found a discontinuity, remove this and all following files.
                 resolveDiscontinuity(index);
                 return;
@@ -378,7 +373,7 @@ public class PreConsensusEventFileManager {
                 files.getLast());
 
         // Delete files in reverse order, so that if we crash prior to finishing at least
-        // the file does not have gaps in sequence numbers.
+        // the stream does not have gaps in sequence numbers.
         for (int index = files.size() - 1; index >= indexOfDiscontinuity; index--) {
             try {
                 // TODO perhaps instead move this file
@@ -390,7 +385,7 @@ public class PreConsensusEventFileManager {
 
         if (files.size() > 0) {
             metrics.getPreconsensusEventFileOldestGeneration()
-                    .set(files.getFirst().minimumGeneration());
+                    .set(files.getFirst().getMinimumGeneration());
         } else {
             metrics.getPreconsensusEventFileOldestGeneration().set(NO_MINIMUM_GENERATION);
             metrics.getPreconsensusEventFileYoungestGeneration().set(NO_MINIMUM_GENERATION);
@@ -435,7 +430,7 @@ public class PreConsensusEventFileManager {
         if (files.size() == 0) {
             return 0;
         }
-        return files.getLast().sequenceNumber() + 1;
+        return files.getLast().getSequenceNumber() + 1;
     }
 
     /**
@@ -477,9 +472,9 @@ public class PreConsensusEventFileManager {
         } else {
             // This is not the first file, min/max values are constrained to only increase
             minimumGenerationForFile =
-                    Math.max(minimumGeneration, files.getLast().minimumGeneration());
+                    Math.max(minimumGeneration, files.getLast().getMinimumGeneration());
             maximumGenerationForFile =
-                    Math.max(maximumGeneration, files.getLast().maximumGeneration());
+                    Math.max(maximumGeneration, files.getLast().getMaximumGeneration());
         }
 
         final PreConsensusEventFile descriptor = PreConsensusEventFile.of(
@@ -492,7 +487,7 @@ public class PreConsensusEventFileManager {
 
         files.addLast(descriptor);
 
-        metrics.getPreconsensusEventFileYoungestGeneration().set(descriptor.maximumGeneration());
+        metrics.getPreconsensusEventFileYoungestGeneration().set(descriptor.getMaximumGeneration());
 
         return descriptor;
     }
@@ -507,7 +502,7 @@ public class PreConsensusEventFileManager {
         if (files.size() == 1) {
             previousFileHighestGeneration = 0;
         } else {
-            previousFileHighestGeneration = files.get(files.size() - 2).maximumGeneration();
+            previousFileHighestGeneration = files.get(files.size() - 2).getMaximumGeneration();
         }
 
         // Compress the generational span of the file. Reduces overlap between files.
@@ -534,18 +529,18 @@ public class PreConsensusEventFileManager {
         final Instant minimumTimestamp = time.now().minus(minimumRetentionPeriod);
 
         while (files.size() > 0
-                && files.getFirst().maximumGeneration() < minimumGeneration
-                && files.getFirst().timestamp().isBefore(minimumTimestamp)) {
+                && files.getFirst().getMaximumGeneration() < minimumGeneration
+                && files.getFirst().getTimestamp().isBefore(minimumTimestamp)) {
 
             final PreConsensusEventFile file = files.removeFirst();
-            totalFileByteCount -= Files.size(file.path());
+            totalFileByteCount -= Files.size(file.getPath());
             file.deleteFile(databaseDirectory);
         }
 
         if (files.size() > 0) {
             metrics.getPreconsensusEventFileOldestGeneration()
-                    .set(files.getFirst().minimumGeneration());
-            final Duration age = Duration.between(files.getFirst().timestamp(), time.now());
+                    .set(files.getFirst().getMinimumGeneration());
+            final Duration age = Duration.between(files.getFirst().getTimestamp(), time.now());
             metrics.getPreconsensusEventFileOldestSeconds().set(age.toSeconds());
         }
         updateFileSizeMetrics();

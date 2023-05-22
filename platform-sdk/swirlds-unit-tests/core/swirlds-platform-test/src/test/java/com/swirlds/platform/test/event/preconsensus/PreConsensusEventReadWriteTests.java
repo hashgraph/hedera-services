@@ -271,7 +271,7 @@ class PreConsensusEventReadWriteTests {
 
         final int truncationPosition = byteBoundaries.get(lastEventIndex) + (truncateOnBoundary ? 0 : 1);
 
-        truncateFile(file.path(), truncationPosition);
+        truncateFile(file.getPath(), truncationPosition);
 
         final PreConsensusEventFileIterator iterator = file.iterator(Long.MIN_VALUE);
         final List<EventImpl> deserializedEvents = new ArrayList<>();
@@ -339,7 +339,7 @@ class PreConsensusEventReadWriteTests {
 
         final int corruptionPosition = byteBoundaries.get(lastEventIndex);
 
-        corruptFile(random, file.path(), corruptionPosition);
+        corruptFile(random, file.getPath(), corruptionPosition);
 
         final PreConsensusEventFileIterator iterator = file.iterator(Long.MIN_VALUE);
 
@@ -454,17 +454,17 @@ class PreConsensusEventReadWriteTests {
         mutableFile.close();
         final PreConsensusEventFile compressedFile = mutableFile.compressGenerationalSpan(0);
 
-        assertEquals(file.path().getParent(), compressedFile.path().getParent());
-        assertEquals(file.sequenceNumber(), compressedFile.sequenceNumber());
-        assertEquals(file.minimumGeneration(), compressedFile.minimumGeneration());
-        assertTrue(maximumGeneration > compressedFile.maximumGeneration());
+        assertEquals(file.getPath().getParent(), compressedFile.getPath().getParent());
+        assertEquals(file.getSequenceNumber(), compressedFile.getSequenceNumber());
+        assertEquals(file.getMinimumGeneration(), compressedFile.getMinimumGeneration());
+        assertTrue(maximumGeneration > compressedFile.getMaximumGeneration());
         assertEquals(
                 mutableFile.getUtilizedGenerationalSpan(),
-                compressedFile.maximumGeneration() - compressedFile.minimumGeneration());
-        assertNotEquals(file.path(), compressedFile.path());
-        assertNotEquals(file.maximumGeneration(), compressedFile.maximumGeneration());
-        assertTrue(Files.exists(compressedFile.path()));
-        assertFalse(Files.exists(file.path()));
+                compressedFile.getMaximumGeneration() - compressedFile.getMinimumGeneration());
+        assertNotEquals(file.getPath(), compressedFile.getPath());
+        assertNotEquals(file.getMaximumGeneration(), compressedFile.getMaximumGeneration());
+        assertTrue(Files.exists(compressedFile.getPath()));
+        assertFalse(Files.exists(file.getPath()));
 
         final IOIterator<EventImpl> iterator = compressedFile.iterator(Long.MIN_VALUE);
         final List<EventImpl> deserializedEvents = new ArrayList<>();
@@ -521,17 +521,17 @@ class PreConsensusEventReadWriteTests {
         final PreConsensusEventFile compressedFile =
                 mutableFile.compressGenerationalSpan(maximumEventGeneration + uncompressedSpan);
 
-        assertEquals(file.path().getParent(), compressedFile.path().getParent());
-        assertEquals(file.sequenceNumber(), compressedFile.sequenceNumber());
-        assertEquals(file.minimumGeneration(), compressedFile.minimumGeneration());
-        assertEquals(maximumEventGeneration + uncompressedSpan, compressedFile.maximumGeneration());
+        assertEquals(file.getPath().getParent(), compressedFile.getPath().getParent());
+        assertEquals(file.getSequenceNumber(), compressedFile.getSequenceNumber());
+        assertEquals(file.getMinimumGeneration(), compressedFile.getMinimumGeneration());
+        assertEquals(maximumEventGeneration + uncompressedSpan, compressedFile.getMaximumGeneration());
         assertEquals(
                 mutableFile.getUtilizedGenerationalSpan(),
-                compressedFile.maximumGeneration() - compressedFile.minimumGeneration() - uncompressedSpan);
-        assertNotEquals(file.path(), compressedFile.path());
-        assertNotEquals(file.maximumGeneration(), compressedFile.maximumGeneration());
-        assertTrue(Files.exists(compressedFile.path()));
-        assertFalse(Files.exists(file.path()));
+                compressedFile.getMaximumGeneration() - compressedFile.getMinimumGeneration() - uncompressedSpan);
+        assertNotEquals(file.getPath(), compressedFile.getPath());
+        assertNotEquals(file.getMaximumGeneration(), compressedFile.getMaximumGeneration());
+        assertTrue(Files.exists(compressedFile.getPath()));
+        assertFalse(Files.exists(file.getPath()));
 
         final IOIterator<EventImpl> iterator = compressedFile.iterator(Long.MIN_VALUE);
         final List<EventImpl> deserializedEvents = new ArrayList<>();

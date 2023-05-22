@@ -215,21 +215,21 @@ class AsyncPreConsensusEventWriterTests {
         long previousMinimum = Long.MIN_VALUE;
         long previousMaximum = Long.MIN_VALUE;
         for (final PreConsensusEventFile file : files) {
-            assertEquals(nextSequenceNumber, file.sequenceNumber());
+            assertEquals(nextSequenceNumber, file.getSequenceNumber());
             nextSequenceNumber++;
-            assertTrue(isGreaterThan(file.timestamp(), previousTimestamp));
-            previousTimestamp = file.timestamp();
-            assertTrue(file.minimumGeneration() <= file.maximumGeneration());
-            assertTrue(file.minimumGeneration() >= previousMinimum);
-            previousMinimum = file.minimumGeneration();
-            assertTrue(file.maximumGeneration() >= previousMaximum);
-            previousMaximum = file.maximumGeneration();
+            assertTrue(isGreaterThan(file.getTimestamp(), previousTimestamp));
+            previousTimestamp = file.getTimestamp();
+            assertTrue(file.getMinimumGeneration() <= file.getMaximumGeneration());
+            assertTrue(file.getMinimumGeneration() >= previousMinimum);
+            previousMinimum = file.getMinimumGeneration();
+            assertTrue(file.getMaximumGeneration() >= previousMaximum);
+            previousMaximum = file.getMaximumGeneration();
 
             final IOIterator<EventImpl> fileEvents = file.iterator(0);
             while (fileEvents.hasNext()) {
                 final EventImpl event = fileEvents.next();
-                assertTrue(event.getGeneration() >= file.minimumGeneration());
-                assertTrue(event.getGeneration() <= file.maximumGeneration());
+                assertTrue(event.getGeneration() >= file.getMinimumGeneration());
+                assertTrue(event.getGeneration() <= file.getMaximumGeneration());
             }
         }
     }
@@ -300,7 +300,7 @@ class AsyncPreConsensusEventWriterTests {
         // we should never be able to increase the minimum generation from 0.
         for (final Iterator<PreConsensusEventFile> it = fileManager.getFileIterator(0, false, false); it.hasNext(); ) {
             final PreConsensusEventFile file = it.next();
-            assertEquals(0, file.minimumGeneration());
+            assertEquals(0, file.getMinimumGeneration());
         }
     }
 
@@ -417,7 +417,7 @@ class AsyncPreConsensusEventWriterTests {
         // We shouldn't see any files that are incapable of storing events above the minimum
         fileManager
                 .getFileIterator(NO_MINIMUM_GENERATION, false, false)
-                .forEachRemaining(file -> assertTrue(file.maximumGeneration() >= minimumGenerationToStore));
+                .forEachRemaining(file -> assertTrue(file.getMaximumGeneration() >= minimumGenerationToStore));
 
         writer.stop();
 
@@ -426,7 +426,7 @@ class AsyncPreConsensusEventWriterTests {
         boolean foundNonZeroMinimumGeneration = false;
         for (Iterator<PreConsensusEventFile> it2 = fileManager.getFileIterator(0, false, false); it2.hasNext(); ) {
             final PreConsensusEventFile file = it2.next();
-            if (file.minimumGeneration() > 0) {
+            if (file.getMinimumGeneration() > 0) {
                 foundNonZeroMinimumGeneration = true;
                 break;
             }
@@ -503,7 +503,7 @@ class AsyncPreConsensusEventWriterTests {
             while (it.hasNext()) {
                 final PreConsensusEventFile file = it.next();
                 if (!it.hasNext()) {
-                    FileManipulation.truncateNBytesFromFile(file.path(), 1);
+                    FileManipulation.truncateNBytesFromFile(file.getPath(), 1);
                 }
             }
 

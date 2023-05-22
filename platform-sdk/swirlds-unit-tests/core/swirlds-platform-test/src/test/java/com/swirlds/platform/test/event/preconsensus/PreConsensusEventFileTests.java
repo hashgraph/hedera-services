@@ -26,13 +26,10 @@ import static com.swirlds.platform.event.preconsensus.PreConsensusEventFile.SEQU
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventFile;
-import com.swirlds.platform.internal.EventImpl;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -80,14 +77,15 @@ class PreConsensusEventFileTests {
 
         final long sequenceNumber = random.nextLong(1000);
         final long minimumGeneration = random.nextLong(1000);
-        final long maximumGeneration = random.nextLong(1000);
+        final long maximumGeneration = random.nextLong(minimumGeneration, minimumGeneration + 1000);
         final Instant timestamp = RandomUtils.randomInstant(random);
+        final boolean discontinuity = random.nextBoolean();
 
         final String expectedName =
                 timestamp.toString().replace(":", "+") + EVENT_FILE_SEPARATOR + SEQUENCE_NUMBER_PREFIX
                         + sequenceNumber + EVENT_FILE_SEPARATOR + MINIMUM_GENERATION_PREFIX
                         + minimumGeneration + EVENT_FILE_SEPARATOR + MAXIMUM_GENERATION_PREFIX
-                        + maximumGeneration + ".pces";
+                        + maximumGeneration + ".pces" + (discontinuity ? "D" : "");
 
         Assertions.assertEquals(
                 expectedName,
@@ -97,7 +95,7 @@ class PreConsensusEventFileTests {
                                 maximumGeneration,
                                 timestamp,
                                 Path.of("foo/bar"),
-                                false)
+                                discontinuity)
                         .getFileName());
     }
 
@@ -128,7 +126,7 @@ class PreConsensusEventFileTests {
                                 timestamp,
                                 Path.of("foo/bar"),
                                 false)
-                        .path()
+                        .getPath()
                         .getParent());
     }
 
@@ -147,13 +145,13 @@ class PreConsensusEventFileTests {
         final PreConsensusEventFile expected = PreConsensusEventFile.of(
                 sequenceNumber, minimumGeneration, maximumGeneration, timestamp, directory, false);
 
-        final PreConsensusEventFile parsed = PreConsensusEventFile.of(expected.path());
+        final PreConsensusEventFile parsed = PreConsensusEventFile.of(expected.getPath());
 
         assertEquals(expected, parsed);
-        assertEquals(sequenceNumber, parsed.sequenceNumber());
-        assertEquals(minimumGeneration, parsed.minimumGeneration());
-        assertEquals(maximumGeneration, parsed.maximumGeneration());
-        assertEquals(timestamp, parsed.timestamp());
+        assertEquals(sequenceNumber, parsed.getSequenceNumber());
+        assertEquals(minimumGeneration, parsed.getMinimumGeneration());
+        assertEquals(maximumGeneration, parsed.getMaximumGeneration());
+        assertEquals(timestamp, parsed.getTimestamp());
     }
 
     @SuppressWarnings("resource")
@@ -184,7 +182,7 @@ class PreConsensusEventFileTests {
             // We don't care about generations for this test
             final PreConsensusEventFile file = PreConsensusEventFile.of(index, 0, 0, timestamp, testDirectory, false);
 
-            writeRandomBytes(random, file.path(), 100);
+            writeRandomBytes(random, file.getPath(), 100);
             files.add(file);
         }
 
@@ -195,9 +193,9 @@ class PreConsensusEventFileTests {
 
             for (final PreConsensusEventFile fileToCheck : files) {
                 if (deletedFiles.contains(fileToCheck)) {
-                    assertFalse(Files.exists(fileToCheck.path()));
+                    assertFalse(Files.exists(fileToCheck.getPath()));
                 } else {
-                    assertTrue(Files.exists(fileToCheck.path()));
+                    assertTrue(Files.exists(fileToCheck.getPath()));
                 }
             }
 
@@ -246,29 +244,19 @@ class PreConsensusEventFileTests {
                     sequenceNumber, minimumGeneration, maximumGeneration, timestamp, directory, false);
 
             // An event with a sequence number that is too small
-            final EventImpl eventA = mock(EventImpl.class);
-            when(eventA.getGeneration()).thenReturn(minimumGeneration - random.nextLong(1, 100));
-            assertFalse(file.canContain(eventA));
+            assertFalse(file.canContain(minimumGeneration - random.nextLong(1, 100)));
 
             // An event with a sequence number matching the minimum exactly
-            final EventImpl eventB = mock(EventImpl.class);
-            when(eventB.getGeneration()).thenReturn(minimumGeneration);
-            assertTrue(file.canContain(eventB));
+            assertTrue(file.canContain(minimumGeneration));
 
             // An event with a sequence somewhere between the minimum and maximum
-            final EventImpl eventC = mock(EventImpl.class);
-            when(eventC.getGeneration()).thenReturn(random.nextLong(minimumGeneration, maximumGeneration));
-            assertTrue(file.canContain(eventC));
+            assertTrue(file.canContain(maximumGeneration));
 
             // An event with a sequence somewhere exactly matching the maximum
-            final EventImpl eventD = mock(EventImpl.class);
-            when(eventD.getGeneration()).thenReturn(maximumGeneration);
-            assertTrue(file.canContain(eventD));
+            assertTrue(file.canContain(maximumGeneration));
 
             // An event with a sequence number that is too big
-            final EventImpl eventE = mock(EventImpl.class);
-            when(eventE.getGeneration()).thenReturn(maximumGeneration + random.nextLong(1, 100));
-            assertFalse(file.canContain(eventE));
+            assertFalse(file.canContain(maximumGeneration + random.nextLong(1, 100)));
         }
     }
 }

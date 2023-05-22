@@ -213,7 +213,7 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
         final PreConsensusEventFile file = fileManager.getNextFileDescriptor(0, 0, true);
 
         try {
-            Files.createFile(file.path());
+            Files.createFile(file.getPath());
         } catch (final IOException e) {
             throw new UncheckedIOException("unable create file to mark discontinuity", e);
         }
@@ -379,7 +379,7 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
      */
     private void prepareOutputStream(@NonNull final EventImpl eventToWrite) throws IOException {
         if (currentMutableFile != null) {
-            final boolean fileCanContainEvent = currentMutableFile.canContain(eventToWrite);
+            final boolean fileCanContainEvent = currentMutableFile.canContain(eventToWrite.getGeneration());
             final boolean fileIsFull =
                     UNIT_BYTES.convertTo(currentMutableFile.fileSize(), UNIT_MEGABYTES) >= preferredFileSizeMegabytes;
 

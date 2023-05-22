@@ -101,12 +101,12 @@ class PreConsensusEventFileManagerTests {
      * 		a description of the file
      */
     private void createDummyFile(final PreConsensusEventFile descriptor) throws IOException {
-        final Path parentDir = descriptor.path().getParent();
+        final Path parentDir = descriptor.getPath().getParent();
         if (!Files.exists(parentDir)) {
             Files.createDirectories(parentDir);
         }
         final SerializableDataOutputStream out = new SerializableDataOutputStream(
-                new FileOutputStream(descriptor.path().toFile()));
+                new FileOutputStream(descriptor.getPath().toFile()));
         out.writeNormalisedString("foo bar baz");
         out.close();
     }
@@ -340,7 +340,7 @@ class PreConsensusEventFileManagerTests {
         // with a generation greater than or equal to the target generation. Choose a generation that falls
         // roughly in the middle of the sequence of files.
         final long targetGeneration =
-                (files.get(0).maximumGeneration() + files.get(fileCount - 1).maximumGeneration()) / 2;
+                (files.get(0).getMaximumGeneration() + files.get(fileCount - 1).getMaximumGeneration()) / 2;
 
         final List<PreConsensusEventFile> iteratedFiles = new ArrayList<>();
         manager.getFileIterator(targetGeneration, false, false).forEachRemaining(iteratedFiles::add);
@@ -354,11 +354,11 @@ class PreConsensusEventFileManagerTests {
         }
 
         // The file immediately before the returned file should not contain any targeted events
-        assertTrue(files.get(indexOfFirstFile - 1).maximumGeneration() < targetGeneration);
+        assertTrue(files.get(indexOfFirstFile - 1).getMaximumGeneration() < targetGeneration);
 
         // The first file returned from the iterator should
         // have a maximum generation greater than or equal to the target generation.
-        assertTrue(iteratedFiles.get(0).maximumGeneration() >= targetGeneration);
+        assertTrue(iteratedFiles.get(0).getMaximumGeneration() >= targetGeneration);
 
         // Make sure that the iterator returns files in the correct order.
         final List<PreConsensusEventFile> expectedFiles = new ArrayList<>(iteratedFiles.size());
@@ -419,7 +419,7 @@ class PreConsensusEventFileManagerTests {
         // with a generation greater than or equal to the target generation. Choose a generation that falls
         // roughly in the middle of the sequence of files.
         final long targetGeneration =
-                (files.get(0).maximumGeneration() + files.get(fileCount - 1).maximumGeneration()) / 2;
+                (files.get(0).getMaximumGeneration() + files.get(fileCount - 1).getMaximumGeneration()) / 2;
 
         final List<PreConsensusEventFile> iteratedFiles = new ArrayList<>();
         manager.getFileIterator(targetGeneration, false, false).forEachRemaining(iteratedFiles::add);
@@ -433,11 +433,11 @@ class PreConsensusEventFileManagerTests {
         }
 
         // The file immediately before the returned file should not contain any targeted events
-        assertTrue(files.get(indexOfFirstFile - 1).maximumGeneration() < targetGeneration);
+        assertTrue(files.get(indexOfFirstFile - 1).getMaximumGeneration() < targetGeneration);
 
         // The first file returned from the iterator should
         // have a maximum generation greater than or equal to the target generation.
-        assertTrue(iteratedFiles.get(0).maximumGeneration() >= targetGeneration);
+        assertTrue(iteratedFiles.get(0).getMaximumGeneration() >= targetGeneration);
 
         // Make sure that the iterator returns files in the correct order.
         final List<PreConsensusEventFile> expectedFiles = new ArrayList<>(iteratedFiles.size());
@@ -488,7 +488,7 @@ class PreConsensusEventFileManagerTests {
                 new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), 0);
 
         // Request a generation higher than all files in the data store
-        final long targetGeneration = files.get(fileCount - 1).maximumGeneration() + 1;
+        final long targetGeneration = files.get(fileCount - 1).getMaximumGeneration() + 1;
 
         final Iterator<PreConsensusEventFile> iterator = manager.getFileIterator(targetGeneration, false, false);
 
@@ -518,8 +518,8 @@ class PreConsensusEventFileManagerTests {
             final PreConsensusEventFile file =
                     generatingManager.getNextFileDescriptor(minimumGeneration, maximumGeneration);
 
-            assertTrue(file.minimumGeneration() >= minimumGeneration);
-            assertTrue(file.maximumGeneration() >= maximumGeneration);
+            assertTrue(file.getMinimumGeneration() >= minimumGeneration);
+            assertTrue(file.getMaximumGeneration() >= maximumGeneration);
 
             // Intentionally allow generations to be chosen that may not be legal (i.e. a generation decreases)
             minimumGeneration = random.nextLong(minimumGeneration - 1, maximumGeneration + 1);
@@ -584,7 +584,7 @@ class PreConsensusEventFileManagerTests {
         final PreConsensusEventFile lastFile = files.get(files.size() - 1);
 
         // Set the far in the future, we want all files to be GC eligible by temporal reckoning.
-        final FakeTime time = new FakeTime(lastFile.timestamp().plus(Duration.ofHours(1)), Duration.ZERO);
+        final FakeTime time = new FakeTime(lastFile.getTimestamp().plus(Duration.ofHours(1)), Duration.ZERO);
 
         final PreConsensusEventFileManager manager = new PreConsensusEventFileManager(platformContext, time, 0);
 
@@ -594,8 +594,8 @@ class PreConsensusEventFileManagerTests {
 
         // Increase the pruned generation a little at a time,
         // until the middle file is almost GC eligible but not quite.
-        for (long generation = firstFile.maximumGeneration() - 100;
-                generation <= middleFile.maximumGeneration();
+        for (long generation = firstFile.getMaximumGeneration() - 100;
+                generation <= middleFile.getMaximumGeneration();
                 generation++) {
 
             manager.pruneOldFiles(generation);
@@ -620,13 +620,13 @@ class PreConsensusEventFileManagerTests {
             // Check the first file that wasn't pruned
             assertTrue(firstUnPrunedIndex <= middleFileIndex);
             if (firstUnPrunedIndex < middleFileIndex) {
-                assertTrue(firstUnPrunedFile.maximumGeneration() >= generation);
+                assertTrue(firstUnPrunedFile.getMaximumGeneration() >= generation);
             }
 
             // Check the file right before the first un-pruned file.
             if (firstUnPrunedIndex > 0) {
                 final PreConsensusEventFile lastPrunedFile = files.get(firstUnPrunedIndex - 1);
-                assertTrue(lastPrunedFile.maximumGeneration() < generation);
+                assertTrue(lastPrunedFile.getMaximumGeneration() < generation);
             }
 
             // Check all remaining files to make sure we didn't accidentally delete something from the end
@@ -638,7 +638,7 @@ class PreConsensusEventFileManagerTests {
         }
 
         // Now, prune files so that the middle file is no longer needed.
-        manager.pruneOldFiles(middleFile.maximumGeneration() + 1);
+        manager.pruneOldFiles(middleFile.getMaximumGeneration() + 1);
 
         // Parse files with a new manager to make sure we aren't "cheating" by just
         // removing the in-memory descriptor without also removing the file on disk
@@ -706,7 +706,7 @@ class PreConsensusEventFileManagerTests {
         final PreConsensusEventFile lastFile = files.get(files.size() - 1);
 
         // Set the clock before the first file is not garbage collection eligible
-        final FakeTime time = new FakeTime(firstFile.timestamp().plus(Duration.ofMinutes(59)), Duration.ZERO);
+        final FakeTime time = new FakeTime(firstFile.getTimestamp().plus(Duration.ofMinutes(59)), Duration.ZERO);
 
         final PreConsensusEventFileManager manager = new PreConsensusEventFileManager(platformContext, time, 0);
 
@@ -717,9 +717,9 @@ class PreConsensusEventFileManagerTests {
         // Increase the timestamp a little at a time. We should gradually delete files up until
         // all files before the middle file have been deleted.
         final Instant endingTime =
-                middleFile.timestamp().plus(Duration.ofMinutes(60).minus(Duration.ofNanos(1)));
+                middleFile.getTimestamp().plus(Duration.ofMinutes(60).minus(Duration.ofNanos(1)));
         while (time.now().isBefore(endingTime)) {
-            manager.pruneOldFiles(lastFile.maximumGeneration() + 1);
+            manager.pruneOldFiles(lastFile.getMaximumGeneration() + 1);
 
             // Parse files with a new manager to make sure we aren't "cheating" by just
             // removing the in-memory descriptor without also removing the file on disk
@@ -741,15 +741,15 @@ class PreConsensusEventFileManagerTests {
             // Check the first file that wasn't pruned
             assertTrue(firstUnPrunedIndex <= middleFileIndex);
             if (firstUnPrunedIndex < middleFileIndex
-                    && files.get(firstUnPrunedIndex).maximumGeneration() < middleFile.maximumGeneration()) {
+                    && files.get(firstUnPrunedIndex).getMaximumGeneration() < middleFile.getMaximumGeneration()) {
                 assertTrue(CompareTo.isGreaterThanOrEqualTo(
-                        firstUnPrunedFile.timestamp().plus(Duration.ofHours(1)), time.now()));
+                        firstUnPrunedFile.getTimestamp().plus(Duration.ofHours(1)), time.now()));
             }
 
             // Check the file right before the first un-pruned file.
             if (firstUnPrunedIndex > 0) {
                 final PreConsensusEventFile lastPrunedFile = files.get(firstUnPrunedIndex - 1);
-                assertTrue(lastPrunedFile.timestamp().isBefore(timestamp));
+                assertTrue(lastPrunedFile.getTimestamp().isBefore(timestamp));
             }
 
             // Check all remaining files to make sure we didn't accidentally delete something from the end
@@ -764,7 +764,7 @@ class PreConsensusEventFileManagerTests {
 
         // Now, increase the generation by a little and try again.
         // The middle file should now be garbage collection eligible.
-        manager.pruneOldFiles(lastFile.maximumGeneration() + 1);
+        manager.pruneOldFiles(lastFile.getMaximumGeneration() + 1);
 
         // Parse files with a new manager to make sure we aren't "cheating" by just
         // removing the in-memory descriptor without also removing the file on disk

@@ -323,7 +323,7 @@ class SyncPreConsensusEventWriterTests {
         // we should never be able to increase the minimum generation from 0.
         for (final Iterator<PreConsensusEventFile> it = fileManager.getFileIterator(0, false, false); it.hasNext(); ) {
             final PreConsensusEventFile file = it.next();
-            assertEquals(0, file.minimumGeneration());
+            assertEquals(0, file.getMinimumGeneration());
         }
     }
 
