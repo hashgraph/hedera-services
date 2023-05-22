@@ -82,7 +82,7 @@ public class RandomERC20TransferLazyCreate implements OpProvider {
 
                 updateSpecFor(spec, evmAddressRecipient);
                 final var opUpdate = cryptoUpdateAliased(evmAddressRecipient)
-                        .maxAutomaticAssociations(1000000000)
+                        .maxAutomaticAssociations(5000)
                         .payingWith(GENESIS)
                         .signedBy(evmAddressRecipient, GENESIS)
                         .sigMapPrefixes(uniqueWithFullPrefixesFor(evmAddressRecipient))
