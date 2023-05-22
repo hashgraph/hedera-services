@@ -16,12 +16,12 @@
 
 package com.hedera.node.app.service.consensus.impl;
 
+import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.TOPICS_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
-import com.hedera.node.app.service.consensus.TopicMetadata;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
@@ -36,7 +36,7 @@ import java.util.Optional;
  *
  * <p>This class is not exported from the module. It is an internal implementation detail.
  */
-public class ReadableTopicStoreImpl extends TopicStore implements ReadableTopicStore {
+public class ReadableTopicStoreImpl implements ReadableTopicStore {
     /** The underlying data storage class that holds the topic data. */
     private final ReadableKVState<EntityNum, Topic> topicState;
 
@@ -48,7 +48,7 @@ public class ReadableTopicStoreImpl extends TopicStore implements ReadableTopicS
     public ReadableTopicStoreImpl(@NonNull final ReadableStates states) {
         requireNonNull(states);
 
-        this.topicState = states.get("TOPICS");
+        this.topicState = states.get(TOPICS_KEY);
     }
 
     /**
@@ -58,11 +58,9 @@ public class ReadableTopicStoreImpl extends TopicStore implements ReadableTopicS
      * @param id topic id being looked up
      * @return topic's metadata
      */
-    // TODO : Change to return Topic instead of TopicMetadata
     @Nullable
-    public TopicMetadata getTopicMetadata(@Nullable final TopicID id) {
-        final var topic = getTopicLeaf(id);
-        return topic.map(TopicStore::topicMetaFrom).orElse(null);
+    public Topic getTopic(@Nullable final TopicID id) {
+        return getTopicLeaf(id).orElse(null);
     }
 
     @NonNull
