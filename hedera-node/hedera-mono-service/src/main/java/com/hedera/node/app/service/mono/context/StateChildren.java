@@ -29,6 +29,7 @@ import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.RecordsStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.UniqueTokenMapAdapter;
+import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.state.virtual.ContractKey;
 import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
@@ -36,6 +37,8 @@ import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.fcqueue.FCQueue;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Map;
 
@@ -71,4 +74,7 @@ public interface StateChildren {
     RecordsRunningHashLeaf runningHashLeaf();
 
     Map<ByteString, EntityNum> aliases();
+
+    @Nullable
+    FCQueue<ExpirableTxnRecord> records();
 }

@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.mono.records;
 
 import com.hedera.node.app.service.mono.state.EntityCreator;
-import com.hedera.node.app.service.mono.state.expiry.ExpiryManager;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.state.submerkle.TxnId;
 import com.hedera.node.app.service.mono.stream.RecordStreamObject;
@@ -139,12 +138,6 @@ public interface RecordsHistorian {
      * @param sourceId the id of the source whose records should be reverted
      */
     void revertChildRecordsFromSource(int sourceId);
-
-    /**
-     * At the moment before committing the active transaction, takes the opportunity to track any
-     * new expiring entities with the {@link ExpiryManager}.
-     */
-    void noteNewExpirationEvents();
 
     /**
      * Provides the next consensus timestamp that will be used; needed for assigning creation times

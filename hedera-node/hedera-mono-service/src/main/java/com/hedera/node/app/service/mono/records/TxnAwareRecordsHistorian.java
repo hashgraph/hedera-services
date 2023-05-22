@@ -41,7 +41,6 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -142,14 +141,6 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
         save(followingChildStreamObjs, effPayer, submittingMember);
 
         consensusTimeTracker.setActualFollowingRecordsCount(followingChildStreamObjs.size());
-    }
-
-    @Override
-    public void noteNewExpirationEvents() {
-        for (final var expiringEntity : txnCtx.expiringEntities()) {
-            expiries.trackExpirationEvent(
-                    Pair.of(expiringEntity.id().num(), expiringEntity.consumer()), expiringEntity.expiry());
-        }
     }
 
     @Override

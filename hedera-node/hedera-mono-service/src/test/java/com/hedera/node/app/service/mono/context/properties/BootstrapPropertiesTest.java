@@ -182,6 +182,7 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.QUERIES_BLOB_LOOK_UP_RETRIES;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.RATES_MIDNIGHT_CHECK_INTERVAL;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.RECORDS_USE_CONSOLIDATED_FCQ;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.SCHEDULING_LONG_TERM_ENABLED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.SCHEDULING_MAX_EXPIRATION_FUTURE_SECS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.SCHEDULING_MAX_NUM;
@@ -556,7 +557,8 @@ class BootstrapPropertiesTest {
             entry(ACCOUNTS_BLOCKLIST_RESOURCE, "evm-addresses-blocklist.csv"),
             entry(STAKING_SUM_OF_CONSENSUS_WEIGHTS, 500),
             entry(CACHE_CRYPTO_TRANSFER_WARM_THREADS, 30),
-            entry(CONFIG_VERSION, 10));
+            entry(CONFIG_VERSION, 10),
+            entry(RECORDS_USE_CONSOLIDATED_FCQ, false));
 
     @Test
     void containsProperty() {

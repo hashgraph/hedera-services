@@ -18,6 +18,7 @@ package com.hedera.node.app.service.mono.state.migration;
 
 import static com.hedera.node.app.service.mono.state.migration.QueryableRecords.NO_QUERYABLE_RECORDS;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.forEach;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
@@ -26,7 +27,11 @@ import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkle.map.MerkleMap;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Queue;
 import java.util.function.BiConsumer;
 
 /**
@@ -48,30 +53,65 @@ import java.util.function.BiConsumer;
  * </ul>
  */
 public class RecordsStorageAdapter {
-    private final boolean accountsOnDisk;
+
+    private final StorageStrategy strategy;
+    private final @Nullable FCQueue<ExpirableTxnRecord> records;
+    private final @Nullable Map<EntityNum, Queue<ExpirableTxnRecord>> queryableRecords;
     private final @Nullable MerkleMapLike<EntityNum, MerkleAccount> legacyAccounts;
     private final @Nullable MerkleMapLike<EntityNum, MerklePayerRecords> payerRecords;
 
     public static RecordsStorageAdapter fromLegacy(final MerkleMapLike<EntityNum, MerkleAccount> accounts) {
-        return new RecordsStorageAdapter(accounts, null);
+        return new RecordsStorageAdapter(null, null, accounts, null);
     }
 
     public static RecordsStorageAdapter fromDedicated(final MerkleMapLike<EntityNum, MerklePayerRecords> payerRecords) {
-        return new RecordsStorageAdapter(null, payerRecords);
+        return new RecordsStorageAdapter(null, null, null, payerRecords);
+    }
+
+    public static RecordsStorageAdapter fromConsolidated(
+            final @NonNull FCQueue<ExpirableTxnRecord> records,
+            final @NonNull Map<EntityNum, Queue<ExpirableTxnRecord>> queryableRecords) {
+        return new RecordsStorageAdapter(requireNonNull(records), requireNonNull(queryableRecords), null, null);
     }
 
     private RecordsStorageAdapter(
+            @Nullable final FCQueue<ExpirableTxnRecord> records,
+            @Nullable final Map<EntityNum, Queue<ExpirableTxnRecord>> queryableRecords,
             @Nullable final MerkleMapLike<EntityNum, MerkleAccount> accounts,
             @Nullable final MerkleMapLike<EntityNum, MerklePayerRecords> payerRecords) {
-        if (accounts != null) {
-            this.accountsOnDisk = false;
+        if (records != null) {
+            this.strategy = StorageStrategy.IN_SINGLE_FCQ;
+            this.records = records;
+            this.queryableRecords = requireNonNull(queryableRecords);
+            this.legacyAccounts = null;
+            this.payerRecords = null;
+        } else if (accounts != null) {
+            this.strategy = StorageStrategy.IN_ACCOUNT_CHILD_FCQ;
             this.legacyAccounts = accounts;
             this.payerRecords = null;
+            this.records = null;
+            this.queryableRecords = null;
         } else {
-            this.accountsOnDisk = true;
+            this.strategy = StorageStrategy.IN_PAYER_SCOPED_FCQ;
             this.legacyAccounts = null;
             this.payerRecords = payerRecords;
+            this.records = null;
+            this.queryableRecords = null;
         }
+    }
+
+    public StorageStrategy getStrategy() {
+        return strategy;
+    }
+
+    @Nullable
+    public Map<EntityNum, Queue<ExpirableTxnRecord>> getQueryableRecords() {
+        return queryableRecords;
+    }
+
+    @Nullable
+    public FCQueue<ExpirableTxnRecord> getRecords() {
+        return records;
     }
 
     /**
@@ -80,60 +120,90 @@ public class RecordsStorageAdapter {
      * @param payerNum the new payer number
      */
     public void prepForPayer(final EntityNum payerNum) {
-        // If accounts are in memory, the needed FCQ was created as a
-        // side-effect of creating the account itself
-        if (accountsOnDisk) {
-            payerRecords.put(payerNum, new MerklePayerRecords());
+        switch (strategy) {
+            case IN_ACCOUNT_CHILD_FCQ -> {
+                // In-memory pattern with MerkleInternal accounts each w/ child records FCQ; nothing to do here
+            }
+            case IN_PAYER_SCOPED_FCQ -> // On-disk pattern with per-payer FCQ created as needed
+            requireNonNull(payerRecords).put(payerNum, new MerklePayerRecords());
+            case IN_SINGLE_FCQ -> // New on-disk pattern with a single FCQ and a rebuilt per-payer queue for queries
+            requireNonNull(queryableRecords).put(payerNum, new LinkedList<>());
         }
     }
 
     public void forgetPayer(final EntityNum payerNum) {
-        // If accounts are in memory, the needed FCQ was removed as a
-        // side-effect of removing the account itself
-        if (accountsOnDisk) {
-            payerRecords.remove(payerNum);
+        switch (strategy) {
+            case IN_ACCOUNT_CHILD_FCQ -> {
+                // In-memory pattern with MerkleInternal accounts each w/ child records FCQ; nothing to do here
+            }
+            case IN_PAYER_SCOPED_FCQ -> // On-disk pattern with per-payer FCQ created as needed
+            requireNonNull(payerRecords).remove(payerNum);
+            case IN_SINGLE_FCQ -> // New on-disk pattern with a single FCQ and a rebuilt per-payer queue for queries
+            requireNonNull(queryableRecords).remove(payerNum);
         }
     }
 
     public void addPayerRecord(final EntityNum payerNum, final ExpirableTxnRecord payerRecord) {
-        if (accountsOnDisk) {
-            final var mutableRecords = payerRecords.getForModify(payerNum);
-            mutableRecords.offer(payerRecord);
-        } else {
-            final var mutableAccount = legacyAccounts.getForModify(payerNum);
-            mutableAccount.records().offer(payerRecord);
+        switch (strategy) {
+            case IN_ACCOUNT_CHILD_FCQ -> {
+                final var mutableAccount = requireNonNull(legacyAccounts).getForModify(payerNum);
+                mutableAccount.records().offer(payerRecord);
+            }
+            case IN_PAYER_SCOPED_FCQ -> {
+                final var mutableRecords = requireNonNull(payerRecords).getForModify(payerNum);
+                mutableRecords.offer(payerRecord);
+            }
+            case IN_SINGLE_FCQ -> {
+                requireNonNull(records).add(payerRecord);
+                requireNonNull(queryableRecords).get(payerNum).add(payerRecord);
+            }
         }
     }
 
     public FCQueue<ExpirableTxnRecord> getMutablePayerRecords(final EntityNum payerNum) {
-        if (accountsOnDisk) {
-            final var mutableRecords = payerRecords.getForModify(payerNum);
-            return mutableRecords.mutableQueue();
-        } else {
-            final var mutableAccount = legacyAccounts.getForModify(payerNum);
-            return mutableAccount.records();
-        }
+        return switch (strategy) {
+            case IN_ACCOUNT_CHILD_FCQ -> {
+                final var mutableAccount = requireNonNull(legacyAccounts).getForModify(payerNum);
+                yield mutableAccount.records();
+            }
+            case IN_PAYER_SCOPED_FCQ -> {
+                final var mutableRecords = requireNonNull(payerRecords).getForModify(payerNum);
+                yield mutableRecords.mutableQueue();
+            }
+            case IN_SINGLE_FCQ -> records;
+        };
     }
 
     public QueryableRecords getReadOnlyPayerRecords(final EntityNum payerNum) {
-        if (accountsOnDisk) {
-            final var payerRecordsView = payerRecords.get(payerNum);
-            return (payerRecordsView == null) ? NO_QUERYABLE_RECORDS : payerRecordsView.asQueryableRecords();
-        } else {
-            final var payerAccountView = legacyAccounts.get(payerNum);
-            return (payerAccountView == null)
-                    ? NO_QUERYABLE_RECORDS
-                    : new QueryableRecords(payerAccountView.numRecords(), payerAccountView.recordIterator());
-        }
+        return switch (strategy) {
+            case IN_ACCOUNT_CHILD_FCQ -> {
+                final var payerAccountView = requireNonNull(legacyAccounts).get(payerNum);
+                yield (payerAccountView == null)
+                        ? NO_QUERYABLE_RECORDS
+                        : new QueryableRecords(payerAccountView.numRecords(), payerAccountView.recordIterator());
+            }
+            case IN_PAYER_SCOPED_FCQ -> {
+                final var payerRecordsView = requireNonNull(payerRecords).get(payerNum);
+                yield (payerRecordsView == null) ? NO_QUERYABLE_RECORDS : payerRecordsView.asQueryableRecords();
+            }
+            case IN_SINGLE_FCQ -> {
+                final var accountRecords = requireNonNull(queryableRecords).get(payerNum);
+                yield (accountRecords == null)
+                        ? NO_QUERYABLE_RECORDS
+                        : new QueryableRecords(accountRecords.size(), accountRecords.iterator());
+            }
+        };
     }
 
-    public void doForEach(final BiConsumer<EntityNum, FCQueue<ExpirableTxnRecord>> observer) {
-        if (accountsOnDisk) {
-            forEach(
-                    payerRecords,
+    public void doForEach(final BiConsumer<EntityNum, Queue<ExpirableTxnRecord>> observer) {
+        switch (strategy) {
+            case IN_ACCOUNT_CHILD_FCQ -> forEach(
+                    requireNonNull(legacyAccounts),
+                    (payerNum, account) -> observer.accept(payerNum, account.records()));
+            case IN_PAYER_SCOPED_FCQ -> forEach(
+                    requireNonNull(payerRecords),
                     (payerNum, accountRecords) -> observer.accept(payerNum, accountRecords.readOnlyQueue()));
-        } else {
-            forEach(legacyAccounts, (payerNum, account) -> observer.accept(payerNum, account.records()));
+            case IN_SINGLE_FCQ -> requireNonNull(queryableRecords).forEach(observer);
         }
     }
 }
