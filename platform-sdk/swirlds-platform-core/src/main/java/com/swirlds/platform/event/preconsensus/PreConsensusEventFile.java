@@ -112,6 +112,10 @@ public final class PreConsensusEventFile implements Comparable<PreConsensusEvent
             final @NonNull Path path,
             final boolean discontinuity) {
 
+        if (sequenceNumber < 0) {
+            throw new IllegalArgumentException("sequence number " + minimumGeneration + " is negative");
+        }
+
         if (minimumGeneration < 0) {
             throw new IllegalArgumentException("minimum generation " + minimumGeneration + " is negative");
         }

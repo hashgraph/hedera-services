@@ -25,6 +25,7 @@ import static com.swirlds.platform.event.preconsensus.PreConsensusEventFile.MINI
 import static com.swirlds.platform.event.preconsensus.PreConsensusEventFile.SEQUENCE_NUMBER_PREFIX;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.io.utility.FileUtils;
@@ -44,7 +45,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -71,32 +71,58 @@ class PreConsensusEventFileTests {
     }
 
     @Test
+    @DisplayName("Invalid Parameters Test")
+    void invalidParametersTest() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> PreConsensusEventFile.of(-1, 1, 2, Instant.now(), Path.of("foo"), false));
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> PreConsensusEventFile.of(1, -1, 2, Instant.now(), Path.of("foo"), false));
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> PreConsensusEventFile.of(1, -2, -1, Instant.now(), Path.of("foo"), false));
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> PreConsensusEventFile.of(1, 1, -1, Instant.now(), Path.of("foo"), false));
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> PreConsensusEventFile.of(1, 2, 1, Instant.now(), Path.of("foo"), false));
+
+        assertThrows(NullPointerException.class, () -> PreConsensusEventFile.of(1, 1, 2, null, Path.of("foo"), false));
+
+        assertThrows(NullPointerException.class, () -> PreConsensusEventFile.of(1, 1, 2, Instant.now(), null, false));
+    }
+
+    @Test
     @DisplayName("File Name Test")
     void fileNameTest() {
         final Random random = getRandomPrintSeed();
 
-        final long sequenceNumber = random.nextLong(1000);
-        final long minimumGeneration = random.nextLong(1000);
-        final long maximumGeneration = random.nextLong(minimumGeneration, minimumGeneration + 1000);
-        final Instant timestamp = RandomUtils.randomInstant(random);
-        final boolean discontinuity = random.nextBoolean();
+        int count = 100;
+        while (count-- > 0) {
+            final long sequenceNumber = random.nextLong(1000);
+            final long minimumGeneration = random.nextLong(1000);
+            final long maximumGeneration = random.nextLong(minimumGeneration, minimumGeneration + 1000);
+            final Instant timestamp = RandomUtils.randomInstant(random);
+            final boolean discontinuity = random.nextBoolean();
 
-        final String expectedName =
-                timestamp.toString().replace(":", "+") + EVENT_FILE_SEPARATOR + SEQUENCE_NUMBER_PREFIX
-                        + sequenceNumber + EVENT_FILE_SEPARATOR + MINIMUM_GENERATION_PREFIX
-                        + minimumGeneration + EVENT_FILE_SEPARATOR + MAXIMUM_GENERATION_PREFIX
-                        + maximumGeneration + ".pces" + (discontinuity ? "D" : "");
+            final String expectedName =
+                    timestamp.toString().replace(":", "+") + EVENT_FILE_SEPARATOR + SEQUENCE_NUMBER_PREFIX
+                            + sequenceNumber + EVENT_FILE_SEPARATOR + MINIMUM_GENERATION_PREFIX
+                            + minimumGeneration + EVENT_FILE_SEPARATOR + MAXIMUM_GENERATION_PREFIX
+                            + maximumGeneration + ".pces" + (discontinuity ? "D" : "");
 
-        Assertions.assertEquals(
-                expectedName,
-                PreConsensusEventFile.of(
-                                sequenceNumber,
-                                minimumGeneration,
-                                maximumGeneration,
-                                timestamp,
-                                Path.of("foo/bar"),
-                                discontinuity)
-                        .getFileName());
+            final PreConsensusEventFile file = PreConsensusEventFile.of(
+                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, Path.of("foo/bar"), discontinuity);
+
+            assertEquals(expectedName, file.getFileName());
+            assertEquals(expectedName, file.toString());
+        }
     }
 
     @Test
@@ -104,56 +130,88 @@ class PreConsensusEventFileTests {
     void filePathTest() {
         final Random random = getRandomPrintSeed();
 
-        final long sequenceNumber = random.nextLong(1000);
-        final long minimumGeneration = random.nextLong(1000);
-        final long maximumGeneration = random.nextLong(minimumGeneration, minimumGeneration + 1000);
-        final Instant timestamp = RandomUtils.randomInstant(random);
+        int count = 100;
+        while (count-- > 0) {
 
-        final ZonedDateTime zonedDateTime = timestamp.atZone(ZoneId.systemDefault());
-        final int year = zonedDateTime.getYear();
-        final int month = zonedDateTime.getMonthValue();
-        final int day = zonedDateTime.getDayOfMonth();
+            final long sequenceNumber = random.nextLong(1000);
+            final long minimumGeneration = random.nextLong(1000);
+            final long maximumGeneration = random.nextLong(minimumGeneration, minimumGeneration + 1000);
+            final Instant timestamp = RandomUtils.randomInstant(random);
 
-        final Path expectedPath = Path.of(
-                "foo/bar", String.format("%04d", year), String.format("%02d", month), String.format("%02d", day));
+            final ZonedDateTime zonedDateTime = timestamp.atZone(ZoneId.systemDefault());
+            final int year = zonedDateTime.getYear();
+            final int month = zonedDateTime.getMonthValue();
+            final int day = zonedDateTime.getDayOfMonth();
 
-        assertEquals(
-                expectedPath,
-                PreConsensusEventFile.of(
-                                sequenceNumber,
-                                minimumGeneration,
-                                maximumGeneration,
-                                timestamp,
-                                Path.of("foo/bar"),
-                                random.nextBoolean())
-                        .getPath()
-                        .getParent());
+            final Path expectedPath = Path.of(
+                    "foo/bar", String.format("%04d", year), String.format("%02d", month), String.format("%02d", day));
+
+            assertEquals(
+                    expectedPath,
+                    PreConsensusEventFile.of(
+                                    sequenceNumber,
+                                    minimumGeneration,
+                                    maximumGeneration,
+                                    timestamp,
+                                    Path.of("foo/bar"),
+                                    random.nextBoolean())
+                            .getPath()
+                            .getParent());
+        }
     }
 
     @Test
     @DisplayName("Parsing Test")
     void parsingTest() throws IOException {
-        final Random random = getRandomPrintSeed(3153206032301550583L);
+        final Random random = getRandomPrintSeed();
 
-        final long sequenceNumber = random.nextLong(1000);
-        final long minimumGeneration = random.nextLong(1000);
-        final long maximumGeneration = random.nextLong(minimumGeneration, minimumGeneration + 1000);
-        final Instant timestamp = RandomUtils.randomInstant(random);
-        final boolean discontinuity = random.nextBoolean();
+        int count = 100;
+        while (count-- > 0) {
+            final long sequenceNumber = random.nextLong(1000);
+            final long minimumGeneration = random.nextLong(1000);
+            final long maximumGeneration = random.nextLong(minimumGeneration, minimumGeneration + 1000);
+            final Instant timestamp = RandomUtils.randomInstant(random);
+            final boolean discontinuity = random.nextBoolean();
 
-        final Path directory = Path.of("foo/bar/baz");
+            final Path directory = Path.of("foo/bar/baz");
 
-        final PreConsensusEventFile expected = PreConsensusEventFile.of(
-                sequenceNumber, minimumGeneration, maximumGeneration, timestamp, directory, discontinuity);
+            final PreConsensusEventFile expected = PreConsensusEventFile.of(
+                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, directory, discontinuity);
 
-        final PreConsensusEventFile parsed = PreConsensusEventFile.of(expected.getPath());
+            final PreConsensusEventFile parsed = PreConsensusEventFile.of(expected.getPath());
 
-        assertEquals(expected, parsed);
-        assertEquals(sequenceNumber, parsed.getSequenceNumber());
-        assertEquals(minimumGeneration, parsed.getMinimumGeneration());
-        assertEquals(maximumGeneration, parsed.getMaximumGeneration());
-        assertEquals(timestamp, parsed.getTimestamp());
-        assertEquals(discontinuity, parsed.marksDiscontinuity());
+            assertEquals(expected, parsed);
+            assertEquals(sequenceNumber, parsed.getSequenceNumber());
+            assertEquals(minimumGeneration, parsed.getMinimumGeneration());
+            assertEquals(maximumGeneration, parsed.getMaximumGeneration());
+            assertEquals(timestamp, parsed.getTimestamp());
+            assertEquals(discontinuity, parsed.marksDiscontinuity());
+        }
+    }
+
+    @Test
+    @DisplayName("Invalid File Parsing Test")
+    void invalidFileParsingTest() {
+        // Invalid format
+        assertThrows(IOException.class, () -> PreConsensusEventFile.of(Path.of(";laksjdf;laksjdf")));
+        assertThrows(IOException.class, () -> PreConsensusEventFile.of(Path.of(".pces")));
+        assertThrows(IOException.class, () -> PreConsensusEventFile.of(Path.of("foobar.txt")));
+        assertThrows(IOException.class, () -> PreConsensusEventFile.of(Path.of("foobar.pces")));
+        assertThrows(IOException.class, () -> PreConsensusEventFile.of(Path.of("foobar.pcesD")));
+        assertThrows(
+                IOException.class,
+                () -> PreConsensusEventFile.of(Path.of("1997-0DERPT21+42+49.730Z_seq443_ming303_maxg884.pces")));
+        assertThrows(
+                IOException.class,
+                () -> PreConsensusEventFile.of(Path.of("1997-02-16T21+42+49.730Z_seq4DERP3_ming303_maxg884.pces")));
+        assertThrows(
+                IOException.class,
+                () -> PreConsensusEventFile.of(Path.of("1997-02-16T21+42+49.730Z_seq443_ming303_maxg8DERP4.pces")));
+
+        // Valid format, invalid data
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> PreConsensusEventFile.of(Path.of("1997-02-16T21+42+49.730Z_seq443_ming884_maxg303.pces")));
     }
 
     @SuppressWarnings("resource")
@@ -203,6 +261,12 @@ class PreConsensusEventFileTests {
             }
 
             file.deleteFile(testDirectory);
+
+            if (random.nextBoolean()) {
+                // Deleting twice shouldn't have any ill effects
+                file.deleteFile(testDirectory);
+            }
+
             deletedFiles.add(file);
         }
 
