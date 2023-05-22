@@ -55,8 +55,8 @@ The following is a table with general use cases and behavior for Ethereum and He
 ### Feature Flags
 
 We will need to add two feature flags:
-- one for toggling the contract nonce externalization in transaction handling
-- one for triggering the migration of contract nonces for existing contracts
+- one for toggling the contract nonce externalization in transaction handling e.g. `contracts.nonces.externalization.enabled`
+- one for triggering the migration of contract nonces for existing contracts e.g. `contracts.nonces.migration.enabled`
 
 ### Merging of contract into hollow account
 
