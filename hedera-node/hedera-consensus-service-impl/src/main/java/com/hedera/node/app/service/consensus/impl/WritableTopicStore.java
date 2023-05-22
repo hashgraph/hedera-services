@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.consensus.impl;
 
+import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.TOPICS_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.consensus.Topic;
@@ -36,7 +37,7 @@ import java.util.Set;
  * <p>This class is not exported from the module. It is an internal implementation detail.
  * This class is not complete, it will be extended with other methods like remove, update etc.,
  */
-public class WritableTopicStore extends TopicStore {
+public class WritableTopicStore {
     /** The underlying data storage class that holds the topic data. */
     private final WritableKVState<EntityNum, Topic> topicState;
 
@@ -48,7 +49,7 @@ public class WritableTopicStore extends TopicStore {
     public WritableTopicStore(@NonNull final WritableStates states) {
         requireNonNull(states);
 
-        this.topicState = states.get("TOPICS");
+        this.topicState = states.get(TOPICS_KEY);
     }
 
     /**

@@ -43,7 +43,7 @@ public class SubmitMessageRecordBuilder extends UniversalRecordBuilder<Consensus
      */
     @NonNull
     @Override
-    public ConsensusSubmitMessageRecordBuilder setNewTopicMetadata(
+    public ConsensusSubmitMessageRecordBuilder setNewTopic(
             final @NonNull byte[] topicRunningHash,
             final long sequenceNumber,
             // The mono context will (correctly) assume the latest running hash version,
