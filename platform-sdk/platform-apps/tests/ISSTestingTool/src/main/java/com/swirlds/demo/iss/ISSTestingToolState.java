@@ -224,9 +224,10 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
 
             logger.info(
                     STARTUP.getMarker(),
-                    "ISS intentionally provoked. This node ({}) is in partition {} and will agree "
+                    "ISS intentionally provoked at {}. This node ({}) is in partition {} and will agree "
                             + "with the hashes of all other nodes in partition {}. Nodes in other partitions "
                             + "are expected to have divergent hashes.",
+                    currentTimestamp,
                     selfId,
                     hashPartitionIndex,
                     hashPartitionIndex);

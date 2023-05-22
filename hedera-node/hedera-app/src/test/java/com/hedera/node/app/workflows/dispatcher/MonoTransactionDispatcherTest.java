@@ -538,7 +538,7 @@ class MonoTransactionDispatcherTest {
 
         doAnswer(invocation -> {
                     final var builder = (SubmitMessageRecordBuilder) invocation.getArguments()[3];
-                    builder.setNewTopicMetadata(newRunningHash, 2, 3L);
+                    builder.setNewTopic(newRunningHash, 2, 3L);
                     return null;
                 })
                 .when(consensusSubmitMessageHandler)
@@ -567,6 +567,15 @@ class MonoTransactionDispatcherTest {
                 HederaFunctionality.TOKEN_REVOKE_KYC_FROM_ACCOUNT, transactionBody, writableStoreFactory);
 
         verify(writableTokenRelStore).commit();
+    }
+
+    @Test
+    void dispatchesTokenFeeScheduleUpdateAsExpected() {
+        given(writableStoreFactory.createTokenStore()).willReturn(writableTokenStore);
+
+        dispatcher.dispatchHandle(HederaFunctionality.TOKEN_FEE_SCHEDULE_UPDATE, transactionBody, writableStoreFactory);
+
+        verify(writableTokenStore).commit();
     }
 
     @Test

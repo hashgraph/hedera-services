@@ -105,6 +105,13 @@ public class EntityNum implements Comparable<EntityNum> {
         return fromLong(pbj.topicNum());
     }
 
+    public static EntityNum fromFileId(final com.hedera.hapi.node.base.FileID pbj) {
+        if (!areValidNums(pbj.shardNum(), pbj.realmNum())) {
+            return MISSING_NUM;
+        }
+        return fromLong(pbj.fileNum());
+    }
+
     public static EntityNum fromContractId(final ContractID grpc) {
         if (!areValidNums(grpc.getShardNum(), grpc.getRealmNum())) {
             return MISSING_NUM;

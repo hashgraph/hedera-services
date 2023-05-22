@@ -23,6 +23,7 @@ import static com.hedera.node.app.service.mono.pbj.PbjConverter.protoToPbj;
 import static com.hedera.node.app.service.token.impl.test.handlers.AdapterUtils.txnFrom;
 import static com.hedera.node.app.service.token.impl.test.util.MetaAssertion.basicContextAssertions;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
+import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.test.factories.scenarios.TokenKycRevokeScenarios.REVOKE_FOR_TOKEN_WITHOUT_KYC;
 import static com.hedera.test.factories.scenarios.TokenKycRevokeScenarios.REVOKE_WITH_INVALID_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenKycRevokeScenarios.REVOKE_WITH_MISSING_TXN_BODY;
@@ -56,8 +57,8 @@ import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenRevokeKycFromAccountHandler;
 import com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -191,7 +192,9 @@ class TokenRevokeKycFromAccountHandlerTest {
             given(tokenRelStore.getForModify(anyLong(), anyLong())).willReturn(Optional.empty());
 
             final var txnBody = newTxnBody();
-            assertThatThrownBy(() -> subject.handle(txnBody, tokenRelStore)).isInstanceOf(NoSuchElementException.class);
+            assertThatThrownBy(() -> subject.handle(txnBody, tokenRelStore))
+                    .isInstanceOf(HandleException.class)
+                    .has(responseCode(INVALID_TOKEN_ID));
 
             verify(tokenRelStore, never()).put(any(TokenRelation.class));
         }
@@ -204,7 +207,7 @@ class TokenRevokeKycFromAccountHandlerTest {
                     .accountNumber(ACCOUNT_100.accountNumOrThrow())
                     .kycGranted(true)
                     .build();
-            given(tokenRelStore.getForModify(TOKEN_10.tokenNum(), ACCOUNT_100.accountNumOrThrow()))
+            given(tokenRelStore.getForModify(ACCOUNT_100.accountNumOrThrow(), TOKEN_10.tokenNum()))
                     .willReturn(Optional.of(stateTokenRel));
 
             final var txnBody = newTxnBody();

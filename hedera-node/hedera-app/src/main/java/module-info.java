@@ -24,6 +24,7 @@ module com.hedera.node.app {
     requires com.swirlds.config;
     requires com.swirlds.common;
     requires com.swirlds.merkle;
+    requires com.swirlds.fcqueue;
     requires com.swirlds.jasperdb;
     requires com.swirlds.virtualmap;
     requires io.helidon.grpc.core;
@@ -65,4 +66,6 @@ module com.hedera.node.app {
     exports com.hedera.node.app.throttle to
             com.swirlds.platform;
     exports com.hedera.node.app.workflows.dispatcher;
+    exports com.hedera.node.app.config;
+    exports com.hedera.node.app.workflows.handle.validation;
 }

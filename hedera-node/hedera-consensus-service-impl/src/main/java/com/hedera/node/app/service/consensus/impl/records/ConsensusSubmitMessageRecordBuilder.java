@@ -34,7 +34,7 @@ public interface ConsensusSubmitMessageRecordBuilder extends RecordBuilder<Conse
      * @return this builder
      */
     @NonNull
-    ConsensusSubmitMessageRecordBuilder setNewTopicMetadata(
+    ConsensusSubmitMessageRecordBuilder setNewTopic(
             @NonNull byte[] topicRunningHash, long sequenceNumber, long runningHashVersion);
 
     /**

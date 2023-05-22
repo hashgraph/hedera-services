@@ -69,7 +69,7 @@ class WritableTokenRelationStoreTest {
                 .tokenNumber(TOKEN_10)
                 .accountNumber(ACCOUNT_20)
                 .build();
-        final var expectedEntityNumPair = EntityNumPair.fromLongs(TOKEN_10, ACCOUNT_20);
+        final var expectedEntityNumPair = EntityNumPair.fromLongs(ACCOUNT_20, TOKEN_10);
 
         subject.put(expectedTokenRel);
         verify(tokenRelState).put(expectedEntityNumPair, expectedTokenRel);
@@ -95,7 +95,7 @@ class WritableTokenRelationStoreTest {
                 .build();
         given(tokenRelState.get(notNull())).willReturn(tokenRelation);
 
-        final var result = subject.get(TOKEN_10, ACCOUNT_20);
+        final var result = subject.get(ACCOUNT_20, TOKEN_10);
         Assertions.assertThat(result.orElseThrow()).isEqualTo(tokenRelation);
     }
 
@@ -103,7 +103,7 @@ class WritableTokenRelationStoreTest {
     void testGetEmpty() {
         given(tokenRelState.get(notNull())).willReturn(null);
 
-        final var result = subject.get(-1L, ACCOUNT_20);
+        final var result = subject.get(ACCOUNT_20, -1L);
         Assertions.assertThat(result).isEmpty();
     }
 
@@ -112,7 +112,7 @@ class WritableTokenRelationStoreTest {
         TokenRelation tokenRelation = mock(TokenRelation.class);
         given(tokenRelState.getForModify(notNull())).willReturn(tokenRelation);
 
-        final var result = subject.getForModify(TOKEN_10, ACCOUNT_20);
+        final var result = subject.getForModify(ACCOUNT_20, TOKEN_10);
         Assertions.assertThat(result.orElseThrow()).isEqualTo(tokenRelation);
     }
 
@@ -120,7 +120,7 @@ class WritableTokenRelationStoreTest {
     void testGetForModifyEmpty() {
         given(tokenRelState.getForModify(notNull())).willReturn(null);
 
-        final var result = subject.getForModify(TOKEN_10, -2L);
+        final var result = subject.getForModify(-2L, TOKEN_10);
         Assertions.assertThat(result).isEmpty();
     }
 
@@ -135,7 +135,7 @@ class WritableTokenRelationStoreTest {
 
     @Test
     void testModifiedTokens() {
-        final var modifiedKeys = Set.of(EntityNumPair.fromLongs(TOKEN_10, ACCOUNT_20), EntityNumPair.fromLongs(1L, 2L));
+        final var modifiedKeys = Set.of(EntityNumPair.fromLongs(ACCOUNT_20, TOKEN_10), EntityNumPair.fromLongs(2L, 1L));
         given(tokenRelState.modifiedKeys()).willReturn(modifiedKeys);
 
         final var result = subject.modifiedTokens();

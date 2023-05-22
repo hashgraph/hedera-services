@@ -19,6 +19,7 @@ package com.hedera.node.app.spi.validation;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A type that any {@link TransactionHandler} can use to validate entity
@@ -56,4 +57,12 @@ public interface AttributeValidator {
      * @throws HandleException if the auto-renew period is invalid
      */
     void validateAutoRenewPeriod(long autoRenewPeriod);
+
+    /**
+     * Validates if immutable entity with the key
+     *
+     * @param key the key to validate
+     * @return true if immutable entity with the key
+     */
+    boolean isImmutableKey(@NonNull Key key);
 }
