@@ -18,7 +18,6 @@ package com.hedera.node.app.service.file.impl.handlers;
 
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.preValidate;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateAndAddRequiredKeys;
-import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.verifyFileSystem;
 
 import static java.util.Objects.requireNonNull;
 
@@ -29,6 +28,7 @@ import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.records.DeleteFileRecordBuilder;
+import com.hedera.node.app.service.file.impl.utils.FileServiceUtils;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -65,7 +65,7 @@ public class FileSystemUndeleteHandler implements TransactionHandler {
 
         final var transactionBody = context.body().systemUndeleteOrThrow();
         final var fileStore = context.createStore(ReadableFileStoreImpl.class);
-        final var fileMeta = preValidate(transactionBody.fileID(), fileStore);
+        final var fileMeta = preValidate(transactionBody.fileID(), fileStore, true);
 
         validateAndAddRequiredKeys(fileMeta.keys(), context, true);
     }
@@ -88,7 +88,7 @@ public class FileSystemUndeleteHandler implements TransactionHandler {
 
         final var fileId = systemUndeleteTransactionBody.fileIDOrElse(FileID.DEFAULT);
 
-        final File file = verifyFileSystem(handleContext, fileStore, fileId, true);
+        final File file = FileServiceUtils.verifySystemFile(handleContext, fileStore, fileId, true);
 
         final var oldExpiry = file.expirationTime();
         if (oldExpiry <= handleContext.consensusNow().getEpochSecond()) {

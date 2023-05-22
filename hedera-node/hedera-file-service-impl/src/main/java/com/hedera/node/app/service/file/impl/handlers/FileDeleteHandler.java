@@ -67,7 +67,7 @@ public class FileDeleteHandler implements TransactionHandler {
 
         final var transactionBody = context.body().fileDeleteOrThrow();
         final var fileStore = context.createStore(ReadableFileStoreImpl.class);
-        final var fileMeta = preValidate(transactionBody.fileID(), fileStore);
+        final var fileMeta = preValidate(transactionBody.fileID(), fileStore, false);
 
         validateAndAddRequiredKeys(fileMeta.keys(), context, true);
     }

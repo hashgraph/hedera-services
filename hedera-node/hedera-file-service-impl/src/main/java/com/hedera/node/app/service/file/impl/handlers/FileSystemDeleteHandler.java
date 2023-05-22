@@ -18,7 +18,7 @@ package com.hedera.node.app.service.file.impl.handlers;
 
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.preValidate;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateAndAddRequiredKeys;
-import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.verifyFileSystem;
+import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.verifySystemFile;
 
 import static java.util.Objects.requireNonNull;
 
@@ -66,7 +66,7 @@ public class FileSystemDeleteHandler implements TransactionHandler {
 
         final var transactionBody = context.body().systemDeleteOrThrow();
         final var fileStore = context.createStore(ReadableFileStoreImpl.class);
-        final var fileMeta = preValidate(transactionBody.fileID(), fileStore);
+        final var fileMeta = preValidate(transactionBody.fileID(), fileStore, true);
 
         validateAndAddRequiredKeys(fileMeta.keys(), context, true);
     }
@@ -89,7 +89,7 @@ public class FileSystemDeleteHandler implements TransactionHandler {
 
         final var fileId = systemDeleteTransactionBody.fileIDOrElse(FileID.DEFAULT);
 
-        final File file = verifyFileSystem(handleContext, fileStore, fileId);
+        final File file = verifySystemFile(handleContext, fileStore, fileId);
 
         final var newExpiry =
                 systemDeleteTransactionBody
@@ -98,7 +98,7 @@ public class FileSystemDeleteHandler implements TransactionHandler {
         if (newExpiry <= handleContext.consensusNow().getEpochSecond()) {
             fileStore.removeFile(fileId.fileNum());
         } else {
-            /* Copy all the fields from existing file and change deleted flag */
+            /* Get all the fields from existing file and change deleted flag */
             final var fileBuilder =
                     new File.Builder()
                             .fileNumber(file.fileNumber())

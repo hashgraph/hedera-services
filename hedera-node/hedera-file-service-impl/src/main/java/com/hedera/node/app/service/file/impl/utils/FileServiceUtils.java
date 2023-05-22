@@ -28,6 +28,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.FileMetadata;
 import com.hedera.node.app.service.file.ReadableFileStore;
@@ -72,7 +73,9 @@ public class FileServiceUtils {
      * @throws PreCheckException if the file id is invalid or the file does not exist
      */
     public static @NonNull FileMetadata preValidate(
-            @Nullable final FileID fileId, @NonNull final ReadableFileStore fileStore)
+            @Nullable final FileID fileId,
+            @NonNull final ReadableFileStore fileStore,
+            boolean isSpecialFile)
             throws PreCheckException {
 
         if (fileId == null) {
@@ -81,6 +84,11 @@ public class FileServiceUtils {
 
         final var fileMeta = fileStore.getFileMetadata(fileId);
         mustExist(fileMeta, INVALID_FILE_ID);
+
+        if (isSpecialFile && fileId.fileNum() > 750) {
+            throw new HandleException(INVALID_FILE_ID);
+        }
+
         return fileMeta;
     }
 
@@ -108,22 +116,26 @@ public class FileServiceUtils {
     }
 
     /**
-     * The function validates the file id and returns the file metadata for system files.
+     * This version of the method requires that the file exist in state and not be deleted. If the
+     * file is empty this call will fail with {@link ResponseCodeEnum#INVALID_FILE_ID}. If the
+     * special file id is greater than special file config , this call will fail with {@link
+     * ResponseCodeEnum#INVALID_FILE_ID}. If the file has no keys or empty list, this call will fail
+     * with {@link ResponseCodeEnum#UNAUTHORIZED}. If the file is already deleted, this call will
+     * fail with {@link ResponseCodeEnum#FILE_DELETED}.
      *
      * @param handleContext the handle context for the transaction.
      * @param fileStore the file store to fetch the metadata of specified file id
      * @param fileId the file id to validate and to fetch the metadata
-     * @param canBeDeleted flag if the file can be deleted or not
+     * @param canBeDeleted flag indicating that the file may be deleted, and the call should not
+     *     fail if it is.
      * @return the file metadata of specific system file id
      */
-    public static @NonNull File verifyFileSystem(
+    public static @NonNull File verifySystemFile(
             @NonNull final HandleContext handleContext,
             @NonNull final WritableFileStoreImpl fileStore,
             @NonNull final FileID fileId,
             final boolean canBeDeleted) {
         requireNonNull(handleContext);
-        requireNonNull(fileStore);
-        requireNonNull(fileId);
 
         var optionalFile = fileStore.get(fileId.fileNum());
 
@@ -154,17 +166,23 @@ public class FileServiceUtils {
     }
 
     /**
-     * The function validates the file id and returns the file metadata for system files.
+     * The function validates the file id and returns the file metadata for system files. This
+     * version of the method requires that the file exist in state and not be deleted. If the file
+     * is empty this call will fail with {@link ResponseCodeEnum#INVALID_FILE_ID}. If the special
+     * file id is greater than special file config , this call will fail with {@link
+     * ResponseCodeEnum#INVALID_FILE_ID}. If the file has no keys or empty list, this call will fail
+     * with {@link ResponseCodeEnum#UNAUTHORIZED}. If the file is already deleted, this call will
+     * fail with {@link ResponseCodeEnum#FILE_DELETED}.
      *
      * @param handleContext the handle context for the transaction.
      * @param fileStore the file store to fetch the metadata of specified file id
      * @param fileId the file id to validate and to fetch the metadata
      * @return the file metadata of specific system file id
      */
-    public static @NonNull File verifyFileSystem(
+    public static @NonNull File verifySystemFile(
             @NonNull final HandleContext handleContext,
             @NonNull final WritableFileStoreImpl fileStore,
             @NonNull final FileID fileId) {
-        return verifyFileSystem(handleContext, fileStore, fileId, false);
+        return verifySystemFile(handleContext, fileStore, fileId, false);
     }
 }

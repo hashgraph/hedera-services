@@ -22,6 +22,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.preValidate;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateAndAddRequiredKeys;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateContent;
+
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -38,15 +39,19 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
-import javax.inject.Inject;
-import javax.inject.Singleton;
+
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 /**
- * This class contains all workflow-related functionality regarding {@link HederaFunctionality#FILE_APPEND}.
+ * This class contains all workflow-related functionality regarding {@link
+ * HederaFunctionality#FILE_APPEND}.
  */
 @Singleton
 public class FileAppendHandler implements TransactionHandler {
@@ -71,7 +76,7 @@ public class FileAppendHandler implements TransactionHandler {
 
         final var transactionBody = context.body().fileAppendOrThrow();
         final var fileStore = context.createStore(ReadableFileStoreImpl.class);
-        final var fileMeta = preValidate(transactionBody.fileID(), fileStore);
+        final var fileMeta = preValidate(transactionBody.fileID(), fileStore, false);
 
         validateAndAddRequiredKeys(fileMeta.keys(), context, true);
     }
@@ -121,22 +126,21 @@ public class FileAppendHandler implements TransactionHandler {
         var newContents = ArrayUtils.addAll(contents, PbjConverter.asBytes(data));
         validateContent(newContents, fileServiceConfig);
         /* Copy all the fields from existing file and change deleted flag */
-        final var fileBuilder = new File.Builder()
-                .fileNumber(file.fileNumber())
-                .expirationTime(file.expirationTime())
-                .keys(file.keys())
-                .contents(Bytes.wrap(newContents))
-                .memo(file.memo())
-                .deleted(file.deleted());
+        final var fileBuilder =
+                new File.Builder()
+                        .fileNumber(file.fileNumber())
+                        .expirationTime(file.expirationTime())
+                        .keys(file.keys())
+                        .contents(Bytes.wrap(newContents))
+                        .memo(file.memo())
+                        .deleted(file.deleted());
 
         /* --- Put the modified file. It will be in underlying state's modifications map.
         It will not be committed to state until commit is called on the state.--- */
         fileStore.put(fileBuilder.build());
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public UpdateFileRecordBuilder newRecordBuilder() {
         return new UpdateFileRecordBuilder();
