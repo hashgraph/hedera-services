@@ -215,7 +215,6 @@ class FileCreateHandlerTest extends FileHandlerTestBase {
         assertTrue(fileStore.get(1234L).isPresent());
     }
 
-    // TODO irrelevant for me
     @Test
     @DisplayName("Handle works as expected without keys")
     void handleDoesntRequireKeys() {
@@ -285,6 +284,7 @@ class FileCreateHandlerTest extends FileHandlerTestBase {
 
         given(writableStates.<EntityNum, File>get(FILES)).willReturn(writableState);
         final var fileStore = new WritableFileStoreImpl(writableStates);
+
         assertEquals(2, fileStore.sizeOfState());
 
         config = new FilesConfig(1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1);

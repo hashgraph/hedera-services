@@ -63,7 +63,7 @@ public class FileServiceUtils {
     }
 
     /**
-     * The function validation the file id and returns the file metadata.
+     * The function validates that the fileId is non-null, not a reserved system Id, and matches a file in the store.
      *
      * @param fileId the file id to validate and to fetch the metadata
      * @param fileStore the file store to fetch the metadata of specified file id
@@ -87,7 +87,7 @@ public class FileServiceUtils {
 
         final var ledgerConfig = context.getConfiguration().getConfigData(LedgerConfig.class);
         if (fileId.fileNum() > ledgerConfig.numReservedSystemEntities() && isSpecialFile) {
-            throw new HandleException(INVALID_FILE_ID);
+            throw new PreCheckException(INVALID_FILE_ID);
         }
 
         return fileMeta;

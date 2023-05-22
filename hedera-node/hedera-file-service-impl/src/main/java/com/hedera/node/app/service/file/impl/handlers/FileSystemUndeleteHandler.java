@@ -54,7 +54,7 @@ public class FileSystemUndeleteHandler implements TransactionHandler {
      *
      * @param context the {@link PreHandleContext} which collects all information that will be
      *     passed to {@code handle()}
-     * @throws NullPointerException if any of the arguments are {@code null}
+     * @throws PreCheckException if any issue happens on the pre handle level
      */
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
