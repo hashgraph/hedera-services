@@ -62,8 +62,10 @@ import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.config.data.TokensConfig;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.List;
@@ -209,8 +211,12 @@ public class CryptoTokenHandlerTestBase {
     @Mock
     protected CryptoSignatureWaiversImpl waivers;
 
+    protected Configuration configuration;
+
     @BeforeEach
     public void setUp() {
+        configuration = new HederaTestConfigBuilder().getOrCreateConfig();
+        tokensConfig = configuration.getConfigData(TokensConfig.class);
         givenValidAccount();
         givenValidFungibleToken();
         givenValidNonFungibleToken();

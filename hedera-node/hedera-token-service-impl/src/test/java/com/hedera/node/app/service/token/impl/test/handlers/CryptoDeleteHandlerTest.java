@@ -51,7 +51,7 @@ import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.config.data.AutoRenewConfig;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -66,16 +66,16 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
     private HandleContext handleContext;
 
     @Mock
-    private Configuration configuration;
-
-    @Mock
     private ExpiryValidator expiryValidator;
+
+    private Configuration configuration;
 
     private CryptoDeleteHandler subject = new CryptoDeleteHandler();
 
     @BeforeEach
     public void setUp() {
         super.setUp();
+        configuration = new HederaTestConfigBuilder().getOrCreateConfig();
         readableAccounts = emptyReadableAccountStateBuilder()
                 .value(EntityNumVirtualKey.fromLong(accountNum), account)
                 .value(EntityNumVirtualKey.fromLong(deleteAccountNum), deleteAccount)
@@ -241,7 +241,6 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
         given(writableStore.get(deleteAccountId)).willReturn(null);
         given(handleContext.getConfiguration()).willReturn(configuration);
-        given(configuration.getConfigData(AutoRenewConfig.class)).willReturn(config);
 
         assertThatThrownBy(() -> subject.handle(handleContext, txn, writableStore))
                 .isInstanceOf(HandleException.class)
@@ -260,7 +259,6 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
         given(writableStore.get(deleteAccountId)).willReturn(null);
         given(handleContext.getConfiguration()).willReturn(configuration);
-        given(configuration.getConfigData(AutoRenewConfig.class)).willReturn(config);
 
         assertThatThrownBy(() -> subject.handle(handleContext, txn, writableStore))
                 .isInstanceOf(HandleException.class)
@@ -282,7 +280,6 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
         given(writableStore.get(deleteAccountId)).willReturn(null);
         given(handleContext.getConfiguration()).willReturn(configuration);
-        given(configuration.getConfigData(AutoRenewConfig.class)).willReturn(config);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.isDetached(any(), anyBoolean(), anyBoolean(), anyBoolean()))
                 .willReturn(false);
@@ -304,7 +301,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
         given(handleContext.getConfiguration()).willReturn(configuration);
-        given(configuration.getConfigData(AutoRenewConfig.class)).willReturn(config);
+
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.isDetached(any(), anyBoolean(), anyBoolean(), anyBoolean()))
                 .willReturn(false);
@@ -328,7 +325,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
         given(writableStore.get(deleteAccountId)).willReturn(null);
         given(handleContext.getConfiguration()).willReturn(configuration);
-        given(configuration.getConfigData(AutoRenewConfig.class)).willReturn(config);
+
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.isDetached(eq(deleteAccount), anyBoolean(), anyBoolean(), anyBoolean()))
                 .willReturn(true);
@@ -351,7 +348,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
         given(writableStore.get(deleteAccountId)).willReturn(null);
         given(handleContext.getConfiguration()).willReturn(configuration);
-        given(configuration.getConfigData(AutoRenewConfig.class)).willReturn(config);
+
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.isDetached(eq(deleteAccount), anyBoolean(), anyBoolean(), anyBoolean()))
                 .willReturn(false);
@@ -378,7 +375,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
 
         given(handleContext.getConfiguration()).willReturn(configuration);
-        given(configuration.getConfigData(AutoRenewConfig.class)).willReturn(config);
+
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
 
         assertThatThrownBy(() -> subject.handle(handleContext, txn, writableStore))
@@ -401,7 +398,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
 
         given(handleContext.getConfiguration()).willReturn(configuration);
-        given(configuration.getConfigData(AutoRenewConfig.class)).willReturn(config);
+
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
 
         assertThatThrownBy(() -> subject.handle(handleContext, txn, writableStore))

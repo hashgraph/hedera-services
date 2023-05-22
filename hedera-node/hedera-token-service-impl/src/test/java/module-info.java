@@ -22,6 +22,7 @@ module com.hedera.node.app.service.token.impl.test {
     requires com.hedera.node.app;
     requires com.hedera.node.config;
     requires com.swirlds.config;
+    requires com.hedera.node.config.testfixtures;
 
     opens com.hedera.node.app.service.token.impl.test.util to
             org.junit.platform.commons;

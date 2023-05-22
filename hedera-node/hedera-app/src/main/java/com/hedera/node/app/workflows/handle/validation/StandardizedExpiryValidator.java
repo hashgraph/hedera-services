@@ -129,19 +129,15 @@ public class StandardizedExpiryValidator implements ExpiryValidator {
             final boolean isAutoRenewEnabled,
             final boolean expireAccounts,
             final boolean expireContracts) {
-        if (!isAutoRenewEnabled) {
+        final var isSmartContract = account.smartContract();
+        if (!isAutoRenewEnabled
+                || account.tinybarBalance() > 0
+                || account.expiredAndPendingRemoval()
+                || isExpiryDisabled(isSmartContract, expireAccounts, expireContracts)) {
             return OK;
         }
-        if (account.tinybarBalance() > 0) {
-            return OK;
-        }
-        if (!account.expiredAndPendingRemoval()) {
-            return OK;
-        }
-        if (isExpiryDisabled(account.smartContract(), expireAccounts, expireContracts)) {
-            return OK;
-        }
-        return account.smartContract() ? CONTRACT_EXPIRED_AND_PENDING_REMOVAL : ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+
+        return isSmartContract ? CONTRACT_EXPIRED_AND_PENDING_REMOVAL : ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
     }
 
     /**
