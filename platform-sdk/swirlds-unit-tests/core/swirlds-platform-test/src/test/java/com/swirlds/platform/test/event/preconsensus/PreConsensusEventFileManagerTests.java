@@ -97,8 +97,7 @@ class PreConsensusEventFileManagerTests {
     /**
      * Create a dummy file.
      *
-     * @param descriptor
-     * 		a description of the file
+     * @param descriptor a description of the file
      */
     private void createDummyFile(final PreConsensusEventFile descriptor) throws IOException {
         final Path parentDir = descriptor.getPath().getParent();
@@ -210,6 +209,15 @@ class PreConsensusEventFileManagerTests {
         assertIteratorEquality(
                 files.iterator(),
                 manager.getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION, true, false));
+
+        assertIteratorEquality(
+                files.iterator(), manager.getFileIterator(files.get(0).getMinimumGeneration(), false, false));
+
+        // Requesting the first generation specifically with the "requireMinimumGeneration" flag should throw, since
+        // it is unclear if we have all events from the requested generation.
+        assertThrows(
+                NoSuchElementException.class,
+                () -> manager.getFileIterator(files.get(0).getMinimumGeneration(), true, false));
 
         // attempt to start a non-existent generation
         assertIteratorEquality(files.iterator(), manager.getFileIterator(nonExistentGeneration, false, false));
@@ -352,9 +360,9 @@ class PreConsensusEventFileManagerTests {
     }
 
     /**
-     * Similar to the other test that starts iteration in the middle, except that files will have the same
-     * generational bounds with high probability. Not a scenario we are likely to encounter in production,
-     * but it's a tricky edge case we need to handle elegantly.
+     * Similar to the other test that starts iteration in the middle, except that files will have the same generational
+     * bounds with high probability. Not a scenario we are likely to encounter in production, but it's a tricky edge
+     * case we need to handle elegantly.
      */
     @Test
     @DisplayName("Read Files From Middle Repeating Generations Test")
@@ -782,5 +790,90 @@ class PreConsensusEventFileManagerTests {
         }
 
         assertEquals(middleFileIndex + 1, firstUnPrunedIndex);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    @DisplayName("Start And First File Discontinuity In Middle Test")
+    void startAtFirstFileDiscontinuityInMiddleTest(final boolean startAtSpecificGeneration) throws IOException {
+        final Random random = getRandomPrintSeed();
+
+        final int fileCount = 100;
+
+        final List<PreConsensusEventFile> files = new ArrayList<>();
+        final List<PreConsensusEventFile> filesBeforeDiscontinuity = new ArrayList<>();
+
+        // Intentionally pick values close to wrapping around the 3 digit to 4 digit sequence number.
+        // This will cause the files not to line up alphabetically, and this is a scenario that the
+        // code should be able to handle.
+        final long firstSequenceNumber = random.nextLong(950, 1000);
+
+        final long maxDelta = random.nextLong(10, 20);
+        long minimumGeneration = random.nextLong(0, 1000);
+        long maximumGeneration = random.nextLong(minimumGeneration, minimumGeneration + maxDelta);
+        Instant timestamp = Instant.now();
+
+        final long discontinuitySequenceNumber =
+                random.nextLong(firstSequenceNumber + 1, firstSequenceNumber + fileCount - 1);
+
+        for (long sequenceNumber = firstSequenceNumber;
+                sequenceNumber < firstSequenceNumber + fileCount;
+                sequenceNumber++) {
+
+            final boolean discontinuity = sequenceNumber == discontinuitySequenceNumber;
+
+            final PreConsensusEventFile file = PreConsensusEventFile.of(
+                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, fileDirectory, discontinuity);
+
+            minimumGeneration = random.nextLong(minimumGeneration, maximumGeneration + 1);
+            maximumGeneration =
+                    Math.max(maximumGeneration, random.nextLong(minimumGeneration, minimumGeneration + maxDelta));
+            timestamp = timestamp.plusMillis(random.nextInt(1, 100_000));
+
+            files.add(file);
+            if (sequenceNumber < discontinuitySequenceNumber) {
+                filesBeforeDiscontinuity.add(file);
+            }
+            createDummyFile(file);
+        }
+
+        final PlatformContext platformContext = buildContext();
+
+        final PreConsensusEventFileManager manager =
+                new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), 0);
+
+        // Don't try to fix discontinuities, we should see all files
+        assertIteratorEquality(
+                files.iterator(),
+                manager.getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION, false, false));
+
+        assertIteratorEquality(
+                files.iterator(), manager.getFileIterator(files.get(0).getMinimumGeneration(), false, false));
+
+        // Now, request that the discontinuity be fixed
+        if (startAtSpecificGeneration) {
+            assertIteratorEquality(
+                    filesBeforeDiscontinuity.iterator(),
+                    manager.getFileIterator(files.get(0).getMinimumGeneration(), false, true));
+        } else {
+            assertIteratorEquality(
+                    filesBeforeDiscontinuity.iterator(),
+                    manager.getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION, false, true));
+        }
+
+        // Future requests for files should not return files after the discontinuity
+        assertIteratorEquality(
+                filesBeforeDiscontinuity.iterator(),
+                manager.getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION, false, false));
+
+        assertIteratorEquality(
+                filesBeforeDiscontinuity.iterator(),
+                manager.getFileIterator(files.get(0).getMinimumGeneration(), false, false));
+    }
+
+    @Test
+    @DisplayName("Start And Middle File Discontinuity In Middle Test")
+    void startAtMiddleFileDiscontinuityInMiddleTest() throws IOException {
+        // TODO
     }
 }
