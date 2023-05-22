@@ -115,9 +115,6 @@ public class VirtualMapFactory {
                     new VirtualBlobMerkleDbValueSerializer());
             tableConfig.maxNumberOfKeys(MAX_BLOBS);
             tableConfig.preferDiskIndices(PREFER_DISK_BASED_INDICIES);
-            // FIXME: use hashesRamToDiskThreshold after the merge of
-            //  https://github.com/hashgraph/hedera-services/pull/5825
-            // (see https://github.com/hashgraph/hedera-services/issues/6037)
             tableConfig.hashesRamToDiskThreshold(MAX_IN_MEMORY_HASHES);
             dsBuilder = new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
         } else {
