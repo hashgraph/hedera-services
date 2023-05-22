@@ -45,6 +45,12 @@ The following is a table with general use cases and behavior for Ethereum and He
 
 - We need perform a migration for all existing contract nonces from Consensus Node state to Mirror Node e.g. similar to traceability migration performed in the past
 - For all contracts in state we should produce synthetic transaction records that would contain the contract id and it's corresponding nonce value
+  - We will create a synthetic `ContractCall` transaction body with:
+    - `contractID` field set to the contract which nonce we want to externalize
+    - `gas` field set to 0
+    - `amount` field set to 0
+    - `functionParameters` field set to empty byte array
+  - For each synthetic `ContractCall` transaction we will create a corresponding record with the `contractCallResult` field set to `ContractFunctionResult` value containing the contract id and its nonce value
 
 ### Feature Flags
 
