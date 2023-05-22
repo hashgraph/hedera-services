@@ -1,6 +1,3 @@
-import com.diffplug.gradle.spotless.JavaExtension
-import java.time.Duration
-
 /*
  * Copyright 2016-2022 Hedera Hashgraph, LLC
  *
@@ -19,7 +16,7 @@ import java.time.Duration
  */
 
 plugins {
-    `java`
+    java
     `maven-publish`
     signing
 }
@@ -90,20 +87,17 @@ signing {
     sign(publishing.publications.getByName("maven"))
 }
 
-tasks.register("release-maven-central") {
+tasks.register("releaseMavenCentral") {
     group = "release"
-    dependsOn(tasks.named<Task>("publishMavenPublicationToSonatypeRepository"))
+    dependsOn(tasks.named("publishMavenPublicationToSonatypeRepository"))
 }
 
-tasks.register("release-maven-central-snapshot") {
+tasks.register("releaseMavenCentralSnapshot") {
     group = "release"
-    dependsOn(tasks.named<Task>("publishMavenPublicationToSonatypeSnapshotRepository"))
+    dependsOn(tasks.named("publishMavenPublicationToSonatypeSnapshotRepository"))
 }
 
 java {
-    if (tasks.getByName("release-maven-central").enabled ||
-            tasks.getByName("release-maven-central-snapshot").enabled) {
-        withJavadocJar()
-        withSourcesJar()
-    }
+    withJavadocJar()
+    withSourcesJar()
 }
