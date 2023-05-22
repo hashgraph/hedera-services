@@ -166,7 +166,7 @@ public class SigSet implements FastCopyable, Iterable<NodeId>, SelfSerializable 
      */
     @Override
     public int getMinimumSupportedVersion() {
-        return ClassVersion.MIGRATE_TO_SERIALIZABLE;
+        return ClassVersion.CLEANUP;
     }
 
     /**
@@ -190,19 +190,6 @@ public class SigSet implements FastCopyable, Iterable<NodeId>, SelfSerializable 
      */
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        if (version == ClassVersion.MIGRATE_TO_SERIALIZABLE) {
-            final int numMembers = in.readInt();
-
-            final SigInfo[] sigInfoArr = in.readSerializableArray(SigInfo[]::new, numMembers, false, SigInfo::new);
-
-            for (final SigInfo sigInfo : sigInfoArr) {
-                if (sigInfo != null) {
-                    signatures.put(sigInfo.getMemberId(), sigInfo.getSignature());
-                }
-            }
-            return;
-        }
-
         final int signatureCount = in.readInt();
         if (signatureCount > MAX_SIGNATURE_COUNT) {
             throw new IOException(
