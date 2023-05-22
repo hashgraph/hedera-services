@@ -132,7 +132,7 @@ public class StandardizedExpiryValidator implements ExpiryValidator {
         final var isSmartContract = account.smartContract();
         if (!isAutoRenewEnabled
                 || account.tinybarBalance() > 0
-                || account.expiredAndPendingRemoval()
+                || !account.expiredAndPendingRemoval()
                 || isExpiryDisabled(isSmartContract, expireAccounts, expireContracts)) {
             return OK;
         }
