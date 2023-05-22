@@ -51,7 +51,7 @@ public class ExpiryManager {
     private final Map<TransactionID, TxnIdRecentHistory> txnHistories;
     private final Supplier<RecordsStorageAdapter> records;
     private final StorageStrategy strategyInUse;
-    // Needed is strategyInUse != IN_SINGLE_FCQ so we can do deterministic expiration
+    // Needed if strategyInUse != IN_SINGLE_FCQ so we can do deterministic expiration
     private final MonotonicFullQueueExpiries<Long> payerRecordExpiries = new MonotonicFullQueueExpiries<>();
 
     @Inject
@@ -59,7 +59,7 @@ public class ExpiryManager {
             final Map<TransactionID, TxnIdRecentHistory> txnHistories, final Supplier<RecordsStorageAdapter> records) {
         this.records = records;
         this.txnHistories = txnHistories;
-        this.strategyInUse = records.get().getStrategy();
+        this.strategyInUse = records.get().storageStrategy();
     }
 
     /**
@@ -109,7 +109,6 @@ public class ExpiryManager {
             payerExpiries.sort(comparing(Map.Entry<Long, Long>::getValue).thenComparing(Map.Entry::getKey));
             payerExpiries.forEach(entry -> payerRecordExpiries.track(entry.getKey(), entry.getValue()));
         }
-
         txnHistories.values().forEach(TxnIdRecentHistory::observeStaged);
     }
 

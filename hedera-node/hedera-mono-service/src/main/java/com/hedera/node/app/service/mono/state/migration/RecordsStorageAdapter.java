@@ -54,7 +54,7 @@ import java.util.function.BiConsumer;
  */
 public class RecordsStorageAdapter {
 
-    private final StorageStrategy strategy;
+    private final StorageStrategy storageStrategy;
     private final @Nullable FCQueue<ExpirableTxnRecord> records;
     private final @Nullable Map<EntityNum, Queue<ExpirableTxnRecord>> queryableRecords;
     private final @Nullable MerkleMapLike<EntityNum, MerkleAccount> legacyAccounts;
@@ -80,19 +80,19 @@ public class RecordsStorageAdapter {
             @Nullable final MerkleMapLike<EntityNum, MerkleAccount> accounts,
             @Nullable final MerkleMapLike<EntityNum, MerklePayerRecords> payerRecords) {
         if (records != null) {
-            this.strategy = StorageStrategy.IN_SINGLE_FCQ;
+            this.storageStrategy = StorageStrategy.IN_SINGLE_FCQ;
             this.records = records;
             this.queryableRecords = requireNonNull(queryableRecords);
             this.legacyAccounts = null;
             this.payerRecords = null;
         } else if (accounts != null) {
-            this.strategy = StorageStrategy.IN_ACCOUNT_CHILD_FCQ;
+            this.storageStrategy = StorageStrategy.IN_ACCOUNT_CHILD_FCQ;
             this.legacyAccounts = accounts;
             this.payerRecords = null;
             this.records = null;
             this.queryableRecords = null;
         } else {
-            this.strategy = StorageStrategy.IN_PAYER_SCOPED_FCQ;
+            this.storageStrategy = StorageStrategy.IN_PAYER_SCOPED_FCQ;
             this.legacyAccounts = null;
             this.payerRecords = payerRecords;
             this.records = null;
@@ -100,8 +100,8 @@ public class RecordsStorageAdapter {
         }
     }
 
-    public StorageStrategy getStrategy() {
-        return strategy;
+    public StorageStrategy storageStrategy() {
+        return storageStrategy;
     }
 
     @Nullable
@@ -120,7 +120,7 @@ public class RecordsStorageAdapter {
      * @param payerNum the new payer number
      */
     public void prepForPayer(final EntityNum payerNum) {
-        switch (strategy) {
+        switch (storageStrategy) {
             case IN_ACCOUNT_CHILD_FCQ -> {
                 // In-memory pattern with MerkleInternal accounts each w/ child records FCQ; nothing to do here
             }
@@ -132,7 +132,7 @@ public class RecordsStorageAdapter {
     }
 
     public void forgetPayer(final EntityNum payerNum) {
-        switch (strategy) {
+        switch (storageStrategy) {
             case IN_ACCOUNT_CHILD_FCQ -> {
                 // In-memory pattern with MerkleInternal accounts each w/ child records FCQ; nothing to do here
             }
@@ -144,7 +144,7 @@ public class RecordsStorageAdapter {
     }
 
     public void addPayerRecord(final EntityNum payerNum, final ExpirableTxnRecord payerRecord) {
-        switch (strategy) {
+        switch (storageStrategy) {
             case IN_ACCOUNT_CHILD_FCQ -> {
                 final var mutableAccount = requireNonNull(legacyAccounts).getForModify(payerNum);
                 mutableAccount.records().offer(payerRecord);
@@ -161,7 +161,7 @@ public class RecordsStorageAdapter {
     }
 
     public FCQueue<ExpirableTxnRecord> getMutablePayerRecords(final EntityNum payerNum) {
-        return switch (strategy) {
+        return switch (storageStrategy) {
             case IN_ACCOUNT_CHILD_FCQ -> {
                 final var mutableAccount = requireNonNull(legacyAccounts).getForModify(payerNum);
                 yield mutableAccount.records();
@@ -175,7 +175,7 @@ public class RecordsStorageAdapter {
     }
 
     public QueryableRecords getReadOnlyPayerRecords(final EntityNum payerNum) {
-        return switch (strategy) {
+        return switch (storageStrategy) {
             case IN_ACCOUNT_CHILD_FCQ -> {
                 final var payerAccountView = requireNonNull(legacyAccounts).get(payerNum);
                 yield (payerAccountView == null)
@@ -196,7 +196,7 @@ public class RecordsStorageAdapter {
     }
 
     public void doForEach(final BiConsumer<EntityNum, Queue<ExpirableTxnRecord>> observer) {
-        switch (strategy) {
+        switch (storageStrategy) {
             case IN_ACCOUNT_CHILD_FCQ -> forEach(
                     requireNonNull(legacyAccounts),
                     (payerNum, account) -> observer.accept(payerNum, account.records()));

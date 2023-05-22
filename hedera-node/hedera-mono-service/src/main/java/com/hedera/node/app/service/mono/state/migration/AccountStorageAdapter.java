@@ -146,4 +146,9 @@ public class AccountStorageAdapter {
     public VirtualMapLike<EntityNumVirtualKey, OnDiskAccount> getOnDiskAccounts() {
         return onDiskAccounts;
     }
+
+    @Nullable
+    public MerkleMapLike<EntityNum, MerklePayerRecords> getPayerRecords() {
+        return payerRecords;
+    }
 }

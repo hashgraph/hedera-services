@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.mono.state.migration;
 
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.ACCOUNTS;
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.PAYER_RECORDS;
+import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.PAYER_RECORDS_OR_CONSOLIDATED_FCQ;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.TOKEN_ASSOCIATIONS;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.forEach;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.withLoggedDuration;
@@ -90,7 +90,7 @@ public class MapMigrationToDisk {
                 log,
                 "accounts-to-disk migration");
         mutableState.setChild(ACCOUNTS, onDiskAccounts.get());
-        mutableState.setChild(PAYER_RECORDS, payerRecords);
+        mutableState.setChild(PAYER_RECORDS_OR_CONSOLIDATED_FCQ, payerRecords);
     }
 
     @SuppressWarnings("unchecked")
