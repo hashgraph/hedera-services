@@ -40,7 +40,20 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
  */
 public class Address implements SelfSerializable {
     private static final long CLASS_ID = 0x5acfd3a4a32376eL;
-    private static final int CLASS_VERSION = 3;
+
+    /** The Class Versions for this class */
+    private static class ClassVersion {
+        /**
+         * The original version of the class.
+         */
+        public static final int ORIGINAL = 3;
+        /**
+         * The NodeId is SelfSerializable.
+         * @since 0.39.0
+         */
+        public static final int SELF_SERIALIZABLE_NODE_ID = 4;
+    }
+
     private static final byte[] ALL_INTERFACES = new byte[] {0, 0, 0, 0};
     private static final int MAX_IP_LENGTH = 16;
     private static final int STRING_MAX_BYTES = 512;
@@ -268,8 +281,16 @@ public class Address implements SelfSerializable {
      * {@inheritDoc}
      */
     @Override
+    public int getMinimumSupportedVersion() {
+        return ClassVersion.ORIGINAL;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public int getVersion() {
-        return CLASS_VERSION;
+        return ClassVersion.SELF_SERIALIZABLE_NODE_ID;
     }
 
     /**
@@ -746,7 +767,7 @@ public class Address implements SelfSerializable {
      */
     @Override
     public void serialize(SerializableDataOutputStream outStream) throws IOException {
-        outStream.writeLong(id.id());
+        outStream.writeSerializable(id, false);
         outStream.writeNormalisedString(nickname);
         outStream.writeNormalisedString(selfName);
         outStream.writeLong(weight);
@@ -769,7 +790,11 @@ public class Address implements SelfSerializable {
      */
     @Override
     public void deserialize(SerializableDataInputStream inStream, int version) throws IOException {
-        id = new NodeId(inStream.readLong());
+        if (version < ClassVersion.SELF_SERIALIZABLE_NODE_ID) {
+            id = new NodeId(inStream.readLong());
+        } else {
+            id = inStream.readSerializable(false, NodeId::new);
+        }
         nickname = inStream.readNormalisedString(STRING_MAX_BYTES);
         selfName = inStream.readNormalisedString(STRING_MAX_BYTES);
         weight = inStream.readLong();
