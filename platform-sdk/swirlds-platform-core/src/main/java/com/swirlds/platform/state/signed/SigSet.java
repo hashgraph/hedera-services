@@ -47,6 +47,7 @@ public class SigSet implements FastCopyable, Iterable<NodeId>, SelfSerializable 
         public static final int ORIGINAL = 1;
         public static final int MIGRATE_TO_SERIALIZABLE = 2;
         public static final int CLEANUP = 3;
+        public static final int SELF_SERIALIZABLE_NODE_ID = 4;
     }
 
     private final Map<NodeId, Signature> signatures = new HashMap<>();
@@ -180,7 +181,7 @@ public class SigSet implements FastCopyable, Iterable<NodeId>, SelfSerializable 
         signatures.keySet().stream().sorted().forEachOrdered(sortedIds::add);
 
         for (final NodeId nodeId : sortedIds) {
-            out.writeLong(nodeId.id());
+            out.writeSerializable(nodeId, false);
             out.writeSerializable(signatures.get(nodeId), false);
         }
     }
@@ -197,7 +198,12 @@ public class SigSet implements FastCopyable, Iterable<NodeId>, SelfSerializable 
         }
 
         for (int index = 0; index < signatureCount; index++) {
-            final NodeId nodeId = new NodeId(in.readLong());
+            final NodeId nodeId;
+            if (version < ClassVersion.SELF_SERIALIZABLE_NODE_ID) {
+                nodeId = new NodeId(in.readLong());
+            } else {
+                nodeId = in.readSerializable(false, NodeId::new);
+            }
             final Signature signature = in.readSerializable(false, Signature::new);
             signatures.put(nodeId, signature);
         }
@@ -216,6 +222,6 @@ public class SigSet implements FastCopyable, Iterable<NodeId>, SelfSerializable 
      */
     @Override
     public int getVersion() {
-        return ClassVersion.CLEANUP;
+        return ClassVersion.SELF_SERIALIZABLE_NODE_ID;
     }
 }
