@@ -351,6 +351,7 @@ public class ChatterGossip extends AbstractGossip {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     protected CriticalQuorum buildCriticalQuorum() {
         final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
@@ -361,6 +362,7 @@ public class ChatterGossip extends AbstractGossip {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     protected FallenBehindManagerImpl buildFallenBehindManager() {
         return new FallenBehindManagerImpl(

@@ -65,7 +65,6 @@ import com.swirlds.platform.reconnect.ReconnectThrottle;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -243,7 +242,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
     /**
      * Build the fallen behind manager.
      */
-    @Nullable
+    @NonNull
     protected abstract FallenBehindManagerImpl buildFallenBehindManager();
 
     /**
@@ -254,7 +253,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
     /**
      * Build the critical quorum object.
      */
-    @Nullable
+    @NonNull
     protected abstract CriticalQuorum buildCriticalQuorum();
 
     /**

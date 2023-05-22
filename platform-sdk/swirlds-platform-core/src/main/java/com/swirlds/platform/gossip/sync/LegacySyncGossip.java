@@ -276,6 +276,7 @@ public class LegacySyncGossip extends AbstractGossip {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     protected CriticalQuorum buildCriticalQuorum() {
         return new CriticalQuorumImpl(platformContext.getMetrics(), selfId.id(), addressBook);
@@ -284,6 +285,7 @@ public class LegacySyncGossip extends AbstractGossip {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     protected FallenBehindManagerImpl buildFallenBehindManager() {
         return new FallenBehindManagerImpl(

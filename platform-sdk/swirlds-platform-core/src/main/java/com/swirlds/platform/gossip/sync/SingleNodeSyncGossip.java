@@ -21,6 +21,7 @@ import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
@@ -37,6 +38,7 @@ import com.swirlds.platform.FreezeManager;
 import com.swirlds.platform.PlatformConstructor;
 import com.swirlds.platform.StartUpEventFrozenManager;
 import com.swirlds.platform.components.CriticalQuorum;
+import com.swirlds.platform.components.CriticalQuorumImpl;
 import com.swirlds.platform.components.EventMapper;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.event.EventIntakeTask;
@@ -49,7 +51,6 @@ import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
@@ -185,19 +186,25 @@ public class SingleNodeSyncGossip extends AbstractGossip {
     /**
      * {@inheritDoc}
      */
-    @Nullable
+    @NonNull
     @Override
     protected CriticalQuorum buildCriticalQuorum() {
-        return null;
+        return new CriticalQuorumImpl(platformContext.getMetrics(), selfId.id(), addressBook);
     }
 
     /**
      * {@inheritDoc}
      */
-    @Nullable
+    @NonNull
     @Override
     protected FallenBehindManagerImpl buildFallenBehindManager() {
-        return null;
+        return new FallenBehindManagerImpl(
+                selfId,
+                topology.getConnectionGraph(),
+                updatePlatformStatus,
+                // Fallen behind callback is intentional no-op, is impossible to fall behind
+                () -> {},
+                platformContext.getConfiguration().getConfigData(ReconnectConfig.class));
     }
 
     /**
