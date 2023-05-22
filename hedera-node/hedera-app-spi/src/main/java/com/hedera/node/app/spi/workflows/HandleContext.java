@@ -74,12 +74,6 @@ public interface HandleContext {
     TransactionBody body();
 
     /**
-     * Returns the category of the current transaction.
-     */
-    @NonNull
-    TransactionCategory category();
-
-    /**
      * Returns the current {@link Configuration} for the node.
      *
      * @return the {@code Configuration}

@@ -86,12 +86,6 @@ public class MonoHandleContext implements HandleContext {
         return txBody;
     }
 
-    @NonNull
-    @Override
-    public TransactionCategory category() {
-        return TransactionCategory.USER;
-    }
-
     /**
      * {@inheritDoc}
      */

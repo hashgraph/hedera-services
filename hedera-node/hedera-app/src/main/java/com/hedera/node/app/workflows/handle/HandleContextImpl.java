@@ -25,29 +25,23 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.records.RecordListBuilder;
 import com.hedera.node.app.records.SingleTransactionRecordBuilder;
+import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
-import com.hedera.node.app.spi.state.ReadableStates;
-import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.state.RecordCache;
-import com.hedera.node.app.state.WrappedHederaState;
+import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
-import com.hedera.node.app.workflows.handle.stack.ReadableStatesStack;
 import com.hedera.node.app.workflows.handle.stack.Savepoint;
-import com.hedera.node.app.workflows.handle.stack.WritableStatesStack;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * The default implementation of {@link HandleContext}.
@@ -59,42 +53,50 @@ public class HandleContextImpl implements HandleContext {
     private final TransactionCategory category;
     private final SingleTransactionRecordBuilder recordBuilder;
     private final SavepointStackImpl stack;
-    private final WritableStoreFactory writableStoreFactory;
-    private final Map<Key, SignatureVerification> keyVerifications;
+    private final HandleContextVerifier verifier;
     private final RecordListBuilder recordListBuilder;
-    private final HandleContextService service;
+    private final TransactionChecker checker;
+    private final TransactionDispatcher dispatcher;
+    private final ServiceScopeLookup serviceScopeLookup;
+    private final WritableStoreFactory writableStoreFactory;
 
     private ReadableStoreFactory readableStoreFactory;
 
     /**
      * Constructs a {@link HandleContextImpl}.
      *
-     * @param rootState The {@link HederaState} that forms the root of the state changes
      * @param txBody The {@link TransactionBody} of the transaction
      * @param category The {@link TransactionCategory} of the transaction (either user, preceding, or child)
      * @param recordBuilder The main {@link SingleTransactionRecordBuilder}
-     * @param keyVerifications The {@link SignatureVerification}s of the transaction
+     * @param stack The {@link SavepointStackImpl} used to manage savepoints
+     * @param verifier The {@link HandleContextVerifier} used to verify signatures and hollow accounts
      * @param recordListBuilder The {@link RecordListBuilder} used to build the record stream
-     * @param service A reference to {@link HandleContextService} for more complex operations
+     * @param checker The {@link TransactionChecker} used to check dispatched transaction
+     * @param dispatcher The {@link TransactionDispatcher} used to dispatch child transactions
+     * @param serviceScopeLookup The {@link ServiceScopeLookup} used to look up the scope of a service
      */
     public HandleContextImpl(
-            @NonNull final HederaState rootState,
             @NonNull final TransactionBody txBody,
             @NonNull final TransactionCategory category,
             @NonNull final SingleTransactionRecordBuilder recordBuilder,
-            @NonNull final Map<Key, SignatureVerification> keyVerifications,
+            @NonNull final SavepointStackImpl stack,
+            @NonNull final HandleContextVerifier verifier,
             @NonNull final RecordListBuilder recordListBuilder,
-            @NonNull final HandleContextService service) {
+            @NonNull final TransactionChecker checker,
+            @NonNull final TransactionDispatcher dispatcher,
+            @NonNull final ServiceScopeLookup serviceScopeLookup) {
         this.txBody = requireNonNull(txBody, "txBody must not be null");
         this.category = requireNonNull(category, "category must not be null");
         this.recordBuilder = requireNonNull(recordBuilder, "recordBuilder must not be null");
-        this.keyVerifications = requireNonNull(keyVerifications, "keyVerifications must not be null");
+        this.stack = requireNonNull(stack, "stack must not be null");
+        this.verifier = requireNonNull(verifier, "verifier must not be null");
         this.recordListBuilder = requireNonNull(recordListBuilder, "recordListBuilder must not be null");
-        this.service = requireNonNull(service, "service must not be null");
+        this.checker = requireNonNull(checker, "checker must not be null");
+        this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
+        this.serviceScopeLookup = requireNonNull(serviceScopeLookup, "serviceScopeLookup must not be null");
 
         this.consensusNow = recordBuilder.consensusNow();
-        this.stack = new SavepointStackImpl(rootState);
-        final var serviceScope = service.getServiceScope(txBody);
+        final var serviceScope = serviceScopeLookup.getServiceName(txBody);
         this.writableStoreFactory = new WritableStoreFactory(stack, serviceScope);
     }
 
@@ -112,12 +114,6 @@ public class HandleContextImpl implements HandleContext {
     @NonNull
     public TransactionBody body() {
         return txBody;
-    }
-
-    @Override
-    @NonNull
-    public TransactionCategory category() {
-        return category;
     }
 
     @Override
@@ -147,23 +143,14 @@ public class HandleContextImpl implements HandleContext {
     @Nullable
     public SignatureVerification verificationFor(@NonNull final Key key) {
         requireNonNull(key, "key must not be null");
-        return keyVerifications.get(key);
+        return verifier.verificationFor(key);
     }
 
     @Override
     @Nullable
     public SignatureVerification verificationFor(@NonNull final Bytes evmAlias) {
         requireNonNull(evmAlias, "evmAlias must not be null");
-        // TODO: This code is shared with PreHandleResult and should probably be moved to a shared place
-        if (evmAlias.length() == 20) {
-            for (final var result : keyVerifications.values()) {
-                final var account = result.evmAlias();
-                if (account != null && evmAlias.matchesPrefix(account)) {
-                    return result;
-                }
-            }
-        }
-        return null;
+        return verifier.verificationFor(evmAlias);
     }
 
     @Override
@@ -213,53 +200,38 @@ public class HandleContextImpl implements HandleContext {
                     "Cannot dispatch a preceding transaction when child transactions have been dispatched");
         }
 
-        final var state = currentState();
-        if (state.isModified()) {
+        if (current().state().isModified()) {
             throw new IllegalStateException("Cannot dispatch a preceding transaction when the state has been modified");
         }
 
         // run the transaction
         final var precedingRecordBuilder = recordListBuilder.addPreceding(configuration());
-        final var result =
-                service.dispatch(txBody, PRECEDING, state, keyVerifications, recordListBuilder, precedingRecordBuilder);
-        return castRecordBuilder(result, recordBuilderClass);
+        dispatch(txBody, PRECEDING, precedingRecordBuilder);
+
+        return castRecordBuilder(precedingRecordBuilder, recordBuilderClass);
     }
 
     @Override
     @NonNull
     public <T> T dispatchChildTransaction(
             @NonNull final TransactionBody txBody, @NonNull final Class<T> recordBuilderClass) {
-        requireNonNull(txBody, "txBody must not be null");
-        requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
-
-        if (category == PRECEDING) {
-            throw new IllegalArgumentException("A preceding transaction cannot have child transactions");
-        }
-
-        // create a savepoint
-        stack.createSavepoint();
-
-        // run the child-transaction
         final var childRecordBuilder = recordListBuilder.addChild(configuration());
-        final var result = service.dispatch(
-                txBody, CHILD, currentState(), keyVerifications, recordListBuilder, childRecordBuilder);
-
-        // rollback if the child-transaction failed
-        if (result.status() != ResponseCodeEnum.OK) {
-            stack.rollback();
-        }
-
-        return castRecordBuilder(result, recordBuilderClass);
+        return dispatchChildTransaction(txBody, childRecordBuilder, recordBuilderClass);
     }
 
     @Override
     @NonNull
     public <T> T dispatchRemovableChildTransaction(
-            @NonNull TransactionBody txBody,
-            @NonNull Class<T> recordBuilderClass) {
-        requireNonNull(txBody, "txBody must not be null");
-        requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
+            @NonNull final TransactionBody txBody, @NonNull final Class<T> recordBuilderClass) {
+        final var childRecordBuilder = recordListBuilder.addRemovableChild(configuration());
+        return dispatchChildTransaction(txBody, childRecordBuilder, recordBuilderClass);
+    }
 
+    @NonNull
+    private <T> T dispatchChildTransaction(
+            @NonNull final TransactionBody txBody,
+            @NonNull final SingleTransactionRecordBuilder childRecordBuilder,
+            @NonNull final Class<T> recordBuilderClass) {
         if (category == PRECEDING) {
             throw new IllegalArgumentException("A preceding transaction cannot have child transactions");
         }
@@ -268,112 +240,58 @@ public class HandleContextImpl implements HandleContext {
         stack.createSavepoint();
 
         // run the child-transaction
-        final var childRecordBuilder = recordListBuilder.addRemovableChild(configuration());
-        final var result = service.dispatch(
-                txBody, CHILD, currentState(), keyVerifications, recordListBuilder, childRecordBuilder);
+        dispatch(txBody, CHILD, childRecordBuilder);
 
         // rollback if the child-transaction failed
-        if (result.status() != ResponseCodeEnum.OK) {
+        if (childRecordBuilder.status() != ResponseCodeEnum.OK) {
             stack.rollback();
         }
 
-        return castRecordBuilder(result, recordBuilderClass);
+        return castRecordBuilder(childRecordBuilder, recordBuilderClass);
     }
 
-    @NonNull
+    private void dispatch(
+            @NonNull final TransactionBody txBody,
+            @NonNull final TransactionCategory childCategory,
+            @NonNull final SingleTransactionRecordBuilder childRecordBuilder) {
+        try {
+            checker.checkTransactionBody(txBody);
+            dispatcher.dispatchValidate(txBody);
+        } catch (PreCheckException e) {
+            recordBuilder.status(e.responseCode());
+            return;
+        }
+
+        final var childStack = new SavepointStackImpl(current().state(), configuration());
+        final var context = new HandleContextImpl(txBody, childCategory, childRecordBuilder, childStack, verifier,
+                recordListBuilder, checker, dispatcher, serviceScopeLookup);
+
+        try {
+            dispatcher.dispatchHandle(context);
+            childStack.commit();
+        } catch (HandleException e) {
+            childRecordBuilder.status(e.getStatus());
+            recordListBuilder.revertChildRecordBuilders(recordBuilder);
+        }
+    }
+
     @Override
+    @NonNull
     public <T> T addChildRecordBuilder(@NonNull Class<T> recordBuilderClass) {
         final var result = recordListBuilder.addChild(configuration());
         return castRecordBuilder(result, recordBuilderClass);
     }
 
-    @NonNull
     @Override
+    @NonNull
     public <T> T addRemovableChildRecordBuilder(@NonNull Class<T> recordBuilderClass) {
         final var result = recordListBuilder.addRemovableChild(configuration());
         return castRecordBuilder(result, recordBuilderClass);
     }
 
-    @NonNull
     @Override
+    @NonNull
     public SavepointStack savepointStack() {
         return stack;
     }
-
-    public void commitStateChanges() {
-        stack.commit();
-    }
-
-    public WrappedHederaState currentState() {
-        return current().state();
-    }
-
-    public class SavepointStackImpl implements SavepointStack, HederaState {
-
-        private final Deque<Savepoint> stack = new ArrayDeque<>();
-        private final Map<String, WritableStatesStack> writableStatesMap = new HashMap<>();
-
-        public SavepointStackImpl(@NonNull final HederaState root) {
-            setupSavepoint(root);
-        }
-
-        private void setupSavepoint(@NonNull HederaState state) {
-            final var newState = new WrappedHederaState(state);
-            final var savepoint = new Savepoint(newState, configuration());
-            stack.push(savepoint);
-        }
-
-        @Override
-        public void createSavepoint() {
-            setupSavepoint(peek().state());
-        }
-
-        @Override
-        public void rollback(final int level) {
-            if (stack.size() <= level) {
-                throw new IllegalStateException("The transaction stack does not contain enough elements");
-            }
-            for (int i = 0; i < level; i++) {
-                stack.pop();
-            }
-        }
-
-        @Override
-        public int depth() {
-            return stack.size();
-        }
-
-        @NonNull
-        public Savepoint peek() {
-            if (stack.isEmpty()) {
-                throw new IllegalStateException("The stack has already been committed");
-            }
-            return stack.peek();
-        }
-
-        public void commit() {
-            while (!stack.isEmpty()) {
-                stack.pop().state().commit();
-            }
-        }
-
-        @Override
-        @NonNull
-        public ReadableStates createReadableStates(@NonNull final String serviceName) {
-            return new ReadableStatesStack(this, serviceName);
-        }
-
-        @Override
-        @NonNull
-        public WritableStates createWritableStates(@NonNull String serviceName) {
-            return writableStatesMap.computeIfAbsent(serviceName, s -> new WritableStatesStack(this, s));
-        }
-
-        @Override
-        @NonNull
-        public RecordCache getRecordCache() {
-            throw new UnsupportedOperationException();
-        }
-    }
-
 }

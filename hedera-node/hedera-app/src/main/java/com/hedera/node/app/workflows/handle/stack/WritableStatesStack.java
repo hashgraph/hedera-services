@@ -22,7 +22,7 @@ import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableSingletonState;
 import com.hedera.node.app.spi.state.WritableStates;
-import com.hedera.node.app.workflows.handle.HandleContextImpl.SavepointStackImpl;
+import com.hedera.node.app.workflows.handle.SavepointStackImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 

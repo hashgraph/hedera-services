@@ -26,6 +26,7 @@ import com.hedera.node.app.records.RecordListBuilder;
 import com.hedera.node.app.records.RecordManager;
 import com.hedera.node.app.records.SingleTransactionRecordBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.ExpandedSignaturePair;
 import com.hedera.node.app.signature.SignatureExpander;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
@@ -36,6 +37,7 @@ import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
@@ -62,10 +64,11 @@ public class HandleWorkflow {
     private final NodeInfo nodeInfo;
     private final PreHandleWorkflow preHandleWorkflow;
     private final TransactionDispatcher dispatcher;
-    private final HandleContextService contextService;
     private final RecordManager recordManager;
     private final SignatureExpander signatureExpander;
     private final SignatureVerifier signatureVerifier;
+    private final TransactionChecker checker;
+    private final ServiceScopeLookup serviceScopeLookup;
     private final ConfigProvider configProvider;
 
     @Inject
@@ -73,18 +76,20 @@ public class HandleWorkflow {
             @NonNull final NodeInfo nodeInfo,
             @NonNull final PreHandleWorkflow preHandleWorkflow,
             @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final HandleContextService contextService,
             @NonNull final RecordManager recordManager,
             @NonNull final SignatureExpander signatureExpander,
             @NonNull final SignatureVerifier signatureVerifier,
+            @NonNull final TransactionChecker checker,
+            @NonNull final ServiceScopeLookup serviceScopeLookup,
             @NonNull final ConfigProvider configProvider) {
         this.nodeInfo = requireNonNull(nodeInfo, "nodeInfo must not be null");
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow, "preHandleWorkflow must not be null");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
-        this.contextService = requireNonNull(contextService, "contextService must not be null");
         this.recordManager = requireNonNull(recordManager, "recordManager must not be null");
         this.signatureExpander = requireNonNull(signatureExpander, "signatureExpander must not be null");
         this.signatureVerifier = requireNonNull(signatureVerifier, "signatureVerifier must not be null");
+        this.checker = requireNonNull(checker, "checker must not be null");
+        this.serviceScopeLookup = requireNonNull(serviceScopeLookup, "serviceScopeLookup must not be null");
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
     }
 
@@ -131,14 +136,19 @@ public class HandleWorkflow {
             }
 
             // Setup context
+            final var txBody = verifications.txBody();
+            final var stack = new SavepointStackImpl(state, configProvider.getConfiguration());
+            final var verifier = new HandleContextVerifier(keyVerifications);
             final var context = new HandleContextImpl(
-                    state,
-                    verifications.txBody(),
+                    txBody,
                     TransactionCategory.USER,
                     recordBuilder,
-                    keyVerifications,
+                    stack,
+                    verifier,
                     recordListBuilder,
-                    contextService);
+                    checker,
+                    dispatcher,
+                    serviceScopeLookup);
 
             // Dispatch the transaction to the handler
             dispatcher.dispatchHandle(context);
@@ -146,15 +156,11 @@ public class HandleWorkflow {
             // TODO: Finalize transaction
 
             // commit state
-            context.commitStateChanges();
+            stack.commit();
+        } catch (PreCheckException e) {
+            recordFailedTransaction(e.responseCode(), recordBuilder, recordListBuilder);
         } catch (HandleException e) {
-            recordBuilder.status(e.getStatus());
-            recordListBuilder.revertChildRecordBuilders(recordBuilder);
-            // TODO: Finalize failed transaction and commit changes
-        } catch (InterruptedException e) {
-            LOG.error("Interrupted while waiting for signature verification", e);
-            Thread.currentThread().interrupt();
-            recordBuilder.status(ResponseCodeEnum.UNKNOWN);
+            recordFailedTransaction(e.getStatus(), recordBuilder, recordListBuilder);
         } catch (Throwable e) {
             LOG.error("An unexpected exception was thrown during handle", e);
             recordBuilder.status(ResponseCodeEnum.UNKNOWN);
@@ -168,6 +174,15 @@ public class HandleWorkflow {
 
         // store all records at once
         recordManager.endUserTransaction(recordListBuilder.build());
+    }
+
+    private void recordFailedTransaction(
+            @NonNull final ResponseCodeEnum status,
+            @NonNull final SingleTransactionRecordBuilder recordBuilder,
+            @NonNull final RecordListBuilder recordListBuilder) {
+        recordBuilder.status(status);
+        recordListBuilder.revertChildRecordBuilders(recordBuilder);
+        // TODO: Finalize failed transaction and commit required state changes
     }
 
     private VerificationResult getUpdatedVerifications(

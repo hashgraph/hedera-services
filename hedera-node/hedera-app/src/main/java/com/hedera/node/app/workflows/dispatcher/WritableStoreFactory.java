@@ -26,7 +26,7 @@ import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.workflows.handle.HandleContextImpl.SavepointStackImpl;
+import com.hedera.node.app.workflows.handle.SavepointStackImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 import java.util.function.Function;
