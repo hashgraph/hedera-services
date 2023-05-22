@@ -166,7 +166,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      * The number of seconds to wait for the hashing buffer during full leaf rehash
      * (see {@link VirtualRootNode#fullLeafRehash()}) before we cancel the rehashing with an exception.
      */
-    private static final int MAX_FULL_REHASHING_BUFFER_TIMEOUT = 10;
+    private static final int MAX_FULL_REHASHING_BUFFER_TIMEOUT = 60;
 
     /**
      * Placeholder (since this is such a hotspot) to hold the results from {@link VirtualMapSettingsFactory#get()}
