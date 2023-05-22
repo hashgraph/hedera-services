@@ -60,46 +60,37 @@ public final class UnzipUtility {
     public static void unzip(@NonNull final byte[] bytes, @NonNull final String dstDir) throws IOException {
         requireNonNull(bytes);
         requireNonNull(dstDir);
-        final File destDir = new File(dstDir);
-        if (!destDir.exists()) {
-            if (!destDir.mkdirs()) {
-                log.fatal("Unable to create the directory for update assets: {}", destDir);
-                throw new IOException("Unable to create the directory for update assets: " + destDir);
-            }
-            log.info("Created directory {} for update assets", destDir);
-        }
 
         final var zipIn = new ZipInputStream(new ByteArrayInputStream(bytes));
         int totalSizeArchive = 0; // total size of the zip archive once uncompressed
         int totalEntryArchive = 0; // total number of entries in the zip archive
         ZipEntry entry = zipIn.getNextEntry();
+
         if (entry == null) {
             throw new IOException("No zip entry found in bytes");
         }
         while (entry != null) {
             totalEntryArchive++;
             if (totalEntryArchive > THRESHOLD_ENTRIES) {
-                log.error(" - Zip file entry count exceeds threshold: {}", THRESHOLD_ENTRIES);
                 throw new IOException("Zip file entry count exceeds threshold: " + THRESHOLD_ENTRIES);
             }
-            var filePath = dstDir + File.separator + entry.getName();
-            final var fileOrDir = new File(filePath);
-            filePath = fileOrDir.getCanonicalPath();
-
-            if (!filePath.startsWith(destDir.getCanonicalPath() + File.separator)) {
-                throw new IllegalArgumentException("Zip file entry " + filePath + " has an invalid path prefix!");
+            String filePath = dstDir + File.separator + entry.getName();
+            final File fileOrDir = new File(filePath);
+            final File directory = fileOrDir.getParentFile();
+            if (!directory.exists() && !directory.mkdirs()) {
+                throw new IOException("Unable to create the parent directories for the file: " + fileOrDir);
             }
+            filePath = fileOrDir.getCanonicalPath();
 
             if (!entry.isDirectory()) {
                 totalSizeArchive += extractSingleFile(zipIn, filePath, entry.getCompressedSize());
                 if (totalSizeArchive > THRESHOLD_ZIP_SIZE) {
-                    log.error(" - Zip file size exceeds threshold: {}", THRESHOLD_ZIP_SIZE);
                     throw new IOException("Zip file size exceeds threshold: " + THRESHOLD_ZIP_SIZE);
                 }
                 log.info(" - Extracted update file {}", filePath);
             } else {
                 if (!fileOrDir.mkdirs()) {
-                    log.error(" - Unable to create assets sub-directory: {}", fileOrDir);
+                    throw new IOException("Unable to create assets sub-directory: " + fileOrDir);
                 }
                 log.info(" - Created assets sub-directory {}", fileOrDir);
             }
