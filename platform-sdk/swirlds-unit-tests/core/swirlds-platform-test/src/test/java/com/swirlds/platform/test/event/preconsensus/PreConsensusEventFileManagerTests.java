@@ -432,7 +432,7 @@ class PreConsensusEventFileManagerTests {
 
     @Test
     @DisplayName("Read Files From High Generation Test")
-    void readFilesFromHighGeneration() throws IOException {
+    void readFilesFromHighGenerationTest() throws IOException {
         final Random random = getRandomPrintSeed();
 
         final int fileCount = 100;
@@ -474,8 +474,23 @@ class PreConsensusEventFileManagerTests {
         final long targetGeneration = files.get(fileCount - 1).getMaximumGeneration() + 1;
 
         final Iterator<PreConsensusEventFile> iterator = manager.getFileIterator(targetGeneration, false, false);
-
         assertFalse(iterator.hasNext());
+
+        assertThrows(NoSuchElementException.class, () -> manager.getFileIterator(targetGeneration, true, false));
+    }
+
+    @Test
+    @DisplayName("Read Files From Empty Stream Test")
+    void readFilesFromEmptyStreamTest() throws IOException {
+        final PlatformContext platformContext = buildContext();
+
+        final PreConsensusEventFileManager manager =
+                new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), 0);
+
+        final Iterator<PreConsensusEventFile> iterator = manager.getFileIterator(1234, false, false);
+        assertFalse(iterator.hasNext());
+
+        assertThrows(NoSuchElementException.class, () -> manager.getFileIterator(1234, true, false));
     }
 
     @Test

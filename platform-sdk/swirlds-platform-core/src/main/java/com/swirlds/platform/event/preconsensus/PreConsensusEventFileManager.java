@@ -63,7 +63,7 @@ public class PreConsensusEventFileManager {
     /**
      * The initial size of the ring buffer used to track event files.
      */
-    private static final int INITIAL_RING_BUFFER_SIZE = 1024 * 1024;
+    private static final int INITIAL_RING_BUFFER_SIZE = 1024;
 
     /**
      * Provides the wall clock time.
@@ -246,8 +246,6 @@ public class PreConsensusEventFileManager {
                     + previousTimestamp.getValue());
         }
     }
-
-    // TODO ensure there are unit tests for all of these branches
 
     /**
      * <p>
