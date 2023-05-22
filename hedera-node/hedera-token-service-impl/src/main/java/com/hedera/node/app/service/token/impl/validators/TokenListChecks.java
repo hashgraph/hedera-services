@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.token.impl.handlers;
+package com.hedera.node.app.service.token.impl.validators;
 
 import static java.util.Objects.requireNonNull;
 
@@ -26,7 +26,7 @@ import java.util.List;
 /**
  * Utility methods for checking the validity of {@link TokenID} lists
  */
-final class TokenListChecks {
+public final class TokenListChecks {
 
     private TokenListChecks() {
         throw new UnsupportedOperationException("Utility class only");
@@ -38,7 +38,7 @@ final class TokenListChecks {
      * @param tokens the list of {@link TokenID}s to check
      * @throws NullPointerException if {@code tokens} is {@code null}
      */
-    static boolean repeatsItself(@NonNull final List<TokenID> tokens) {
+    public static boolean repeatsItself(@NonNull final List<TokenID> tokens) {
         requireNonNull(tokens);
         return new HashSet<>(tokens).size() < tokens.size();
     }
