@@ -59,9 +59,4 @@ public class PreCheckException extends Exception {
             throw new PreCheckException(errorStatus);
         }
     }
-
-    public static void validateFalsePreCheck(final boolean flag, final ResponseCodeEnum errorStatus)
-            throws PreCheckException {
-        validateTruePreCheck(!flag, errorStatus);
-    }
 }
