@@ -161,8 +161,13 @@ public class HandleWorkflow {
             recordBuilder.status(e.getStatus());
             recordListBuilder.revertChildRecordBuilders(recordBuilder);
             // TODO: Finalize failed transaction and commit changes
+        } catch (InterruptedException e) {
+            LOG.error("Interrupted while waiting for signature verification", e);
+            Thread.currentThread().interrupt();
+            recordBuilder.status(ResponseCodeEnum.UNKNOWN);
         } catch (Throwable e) {
             LOG.error("An unexpected exception was thrown during handle", e);
+            recordBuilder.status(ResponseCodeEnum.UNKNOWN);
         }
 
         // TODO update receipt

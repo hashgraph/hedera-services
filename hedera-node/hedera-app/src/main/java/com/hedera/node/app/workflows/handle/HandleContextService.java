@@ -29,7 +29,7 @@ import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.ConfigProvider;
-import com.hedera.node.config.data.ConsensusConfig;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 
@@ -55,13 +55,14 @@ public class HandleContextService {
     public SingleTransactionRecordBuilder dispatchPrecedingTransaction(
             @NonNull final TransactionBody txBody,
             @NonNull final HederaState root,
-            @NonNull final HandleContextBase base) {
+            @NonNull final HandleContextBase base,
+            @NonNull final Configuration currentConfig) {
         requireNonNull(txBody, "txBody must not be null");
         requireNonNull(root, "root must not be null");
         requireNonNull(base, "base must not be null");
+        requireNonNull(currentConfig, "currentConfig must not be null");
 
-        final var config = configProvider.getConfiguration().getConfigData(ConsensusConfig.class);
-        final var recordBuilder = base.recordListBuilder().addPreceding(config);
+        final var recordBuilder = base.recordListBuilder().addPreceding(currentConfig);
 
         return dispatch(txBody, TransactionCategory.PRECEDING, root, base, recordBuilder);
     }
@@ -69,13 +70,29 @@ public class HandleContextService {
     public SingleTransactionRecordBuilder dispatchChildTransaction(
             @NonNull final TransactionBody txBody,
             @NonNull final HederaState root,
-            @NonNull final HandleContextBase base) {
+            @NonNull final HandleContextBase base,
+            @NonNull final Configuration currentConfig) {
         requireNonNull(txBody, "txBody must not be null");
         requireNonNull(root, "root must not be null");
         requireNonNull(base, "base must not be null");
+        requireNonNull(currentConfig, "currentConfig must not be null");
 
-        final var config = configProvider.getConfiguration().getConfigData(ConsensusConfig.class);
-        final var recordBuilder = base.recordListBuilder().addChild(config);
+        final var recordBuilder = base.recordListBuilder().addChild(currentConfig);
+
+        return dispatch(txBody, TransactionCategory.CHILD, root, base, recordBuilder);
+    }
+
+    public SingleTransactionRecordBuilder dispatchRemovableChildTransaction(
+            @NonNull final TransactionBody txBody,
+            @NonNull final HederaState root,
+            @NonNull final HandleContextBase base,
+            @NonNull final Configuration currentConfig) {
+        requireNonNull(txBody, "txBody must not be null");
+        requireNonNull(root, "root must not be null");
+        requireNonNull(base, "base must not be null");
+        requireNonNull(currentConfig, "currentConfig must not be null");
+
+        final var recordBuilder = base.recordListBuilder().addRemovableChild(currentConfig);
 
         return dispatch(txBody, TransactionCategory.CHILD, root, base, recordBuilder);
     }

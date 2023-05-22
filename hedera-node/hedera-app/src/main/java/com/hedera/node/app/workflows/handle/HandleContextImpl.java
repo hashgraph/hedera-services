@@ -28,6 +28,7 @@ import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
+import com.hedera.node.app.workflows.handle.stack.Savepoint;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
@@ -82,6 +83,10 @@ public class HandleContextImpl implements HandleContext {
         this.writableStoreFactory = new WritableStoreFactory(stack, serviceScope);
     }
 
+    private Savepoint current() {
+        return stack.peek();
+    }
+
     @Override
     @NonNull
     public Instant consensusNow() {
@@ -103,24 +108,24 @@ public class HandleContextImpl implements HandleContext {
     @Override
     @NonNull
     public Configuration configuration() {
-        return stack.peek().config();
+        return current().config();
     }
 
     @Override
     public long newEntityNum() {
-        return stack.peek().newEntityNum();
+        return current().newEntityNum();
     }
 
     @Override
     @NonNull
     public AttributeValidator attributeValidator() {
-        return stack.peek().attributeValidator();
+        return current().attributeValidator();
     }
 
     @Override
     @NonNull
     public ExpiryValidator expiryValidator() {
-        return stack.peek().expiryValidator();
+        return current().expiryValidator();
     }
 
     @Override
@@ -166,7 +171,7 @@ public class HandleContextImpl implements HandleContext {
     @Override
     @NonNull
     public <T> T recordBuilder(@NonNull final Class<T> recordBuilderClass) {
-        requireNonNull(recordBuilderClass, "singleTransactionRecordBuilderClass must not be null");
+        requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
         return castRecordBuilder(recordBuilder, recordBuilderClass);
     }
 
@@ -183,7 +188,7 @@ public class HandleContextImpl implements HandleContext {
     public <T> T dispatchPrecedingTransaction(
             @NonNull final TransactionBody txBody, @NonNull final Class<T> recordBuilderClass) {
         requireNonNull(txBody, "txBody must not be null");
-        requireNonNull(recordBuilderClass, "singleTransactionRecordBuilderClass must not be null");
+        requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
 
         if (category != TransactionCategory.USER) {
             throw new IllegalArgumentException("Only user-transactions can dispatch preceding transactions");
@@ -192,13 +197,13 @@ public class HandleContextImpl implements HandleContext {
             throw new IllegalStateException(
                     "Cannot dispatch a preceding transaction when child transactions have been dispatched");
         }
-        if (stack.peek().state().isModified()) {
+        if (current().state().isModified()) {
             throw new IllegalStateException("Cannot dispatch a preceding transaction when the state has been modified");
         }
 
         // run the transaction
         final var result =
-                service.dispatchPrecedingTransaction(txBody, stack.peek().state(), base);
+                service.dispatchPrecedingTransaction(txBody, current().state(), base, configuration());
         return castRecordBuilder(result, recordBuilderClass);
     }
 
@@ -207,7 +212,7 @@ public class HandleContextImpl implements HandleContext {
     public <T> T dispatchChildTransaction(
             @NonNull final TransactionBody txBody, @NonNull final Class<T> recordBuilderClass) {
         requireNonNull(txBody, "txBody must not be null");
-        requireNonNull(recordBuilderClass, "singleTransactionRecordBuilderClass must not be null");
+        requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
 
         if (category == TransactionCategory.PRECEDING) {
             throw new IllegalArgumentException("A preceding transaction cannot have child transactions");
@@ -217,13 +222,53 @@ public class HandleContextImpl implements HandleContext {
         stack.createSavepoint();
 
         // run the child-transaction
-        final var result = service.dispatchChildTransaction(txBody, stack.peek().state(), base);
+        final var result = service.dispatchChildTransaction(txBody, current().state(), base, configuration());
 
         // rollback if the child-transaction failed
         if (result.status() != ResponseCodeEnum.OK) {
             stack.rollback();
         }
 
+        return castRecordBuilder(result, recordBuilderClass);
+    }
+
+    @Override
+    @NonNull
+    public <T> T dispatchRemovableChildTransaction(
+            @NonNull TransactionBody txBody,
+            @NonNull Class<T> recordBuilderClass) {
+        requireNonNull(txBody, "txBody must not be null");
+        requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
+
+        if (category == TransactionCategory.PRECEDING) {
+            throw new IllegalArgumentException("A preceding transaction cannot have child transactions");
+        }
+
+        // create a savepoint
+        stack.createSavepoint();
+
+        // run the child-transaction
+        final var result = service.dispatchRemovableChildTransaction(txBody, current().state(), base, configuration());
+
+        // rollback if the child-transaction failed
+        if (result.status() != ResponseCodeEnum.OK) {
+            stack.rollback();
+        }
+
+        return castRecordBuilder(result, recordBuilderClass);
+    }
+
+    @NonNull
+    @Override
+    public <T> T addChildRecordBuilder(@NonNull Class<T> recordBuilderClass) {
+        final var result = base.recordListBuilder().addChild(configuration());
+        return castRecordBuilder(result, recordBuilderClass);
+    }
+
+    @NonNull
+    @Override
+    public <T> T addRemovableChildRecordBuilder(@NonNull Class<T> recordBuilderClass) {
+        final var result = base.recordListBuilder().addRemovableChild(configuration());
         return castRecordBuilder(result, recordBuilderClass);
     }
 
