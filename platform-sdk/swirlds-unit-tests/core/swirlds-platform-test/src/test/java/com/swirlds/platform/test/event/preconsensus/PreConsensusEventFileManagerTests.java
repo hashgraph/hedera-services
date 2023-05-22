@@ -112,23 +112,6 @@ class PreConsensusEventFileManagerTests {
     }
 
     @Test
-    @DisplayName("Maximum Less Than Minimum Test")
-    void maximumLessThanMinimumTest() throws IOException {
-
-        createDummyFile(PreConsensusEventFile.of(0, 0, 1, Instant.now(), fileDirectory, false));
-
-        createDummyFile(PreConsensusEventFile.of(1, 10, 5, Instant.now(), fileDirectory, false));
-
-        createDummyFile(PreConsensusEventFile.of(2, 10, 20, Instant.now(), fileDirectory, false));
-
-        final PlatformContext platformContext = buildContext();
-
-        assertThrows(
-                IllegalStateException.class,
-                () -> new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), 0));
-    }
-
-    @Test
     @DisplayName("Minimum Decreases Test")
     void minimumDecreasesTest() throws IOException {
 

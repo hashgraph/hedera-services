@@ -210,7 +210,7 @@ class PreConsensusEventFileTests {
 
         // Valid format, invalid data
         assertThrows(
-                IllegalArgumentException.class,
+                IOException.class,
                 () -> PreConsensusEventFile.of(Path.of("1997-02-16T21+42+49.730Z_seq443_ming884_maxg303.pces")));
     }
 

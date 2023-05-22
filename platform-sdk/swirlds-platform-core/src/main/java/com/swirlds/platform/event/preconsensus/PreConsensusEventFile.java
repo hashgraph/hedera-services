@@ -207,7 +207,7 @@ public final class PreConsensusEventFile implements Comparable<PreConsensusEvent
                     parseSanitizedTimestamp(elements[0]),
                     filePath,
                     discontinuity);
-        } catch (final NumberFormatException | DateTimeParseException ex) {
+        } catch (final DateTimeParseException | IllegalArgumentException ex) {
             throw new IOException("unable to parse " + filePath, ex);
         }
     }
