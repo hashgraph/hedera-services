@@ -141,12 +141,6 @@ public class CryptoCreateHandler implements TransactionHandler {
 
     /* ----------- Helper Methods ----------- */
 
-    /**
-     * Validate the basic fields in the transaction body that does not involve checking with dynamic
-     * properties or state. This check is done as part of the pre-handle workflow.
-     * @param txn the transaction body
-     * @return OK if the transaction body is valid, otherwise return the appropriate error code
-     */
     @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
         final var op = txn.cryptoCreateAccountOrThrow();
