@@ -282,9 +282,6 @@ public class Browser {
                     .setTransactionMaxBytes(value));
             configurationProperties.ipTos().ifPresent(ipTos -> Settings.getInstance()
                     .setSocketIpTos(ipTos));
-            configurationProperties
-                    .saveStatePeriod()
-                    .ifPresent(value -> Settings.getInstance().getState().saveStatePeriod = value);
 
             // Write the settingsUsed.txt file
             writeSettingsUsed(configuration);
@@ -753,7 +750,7 @@ public class Browser {
             return savedStateLoader.getSavedStateToLoad();
         } catch (final Exception e) {
             logger.error(EXCEPTION.getMarker(), "Signed state not loaded from disk:", e);
-            if (Settings.getInstance().isRequireStateLoad()) {
+            if (configuration.getConfigData(StateConfig.class).requireStateLoad()) {
                 SystemUtils.exitSystem(SystemExitReason.SAVED_STATE_NOT_LOADED);
             }
         }

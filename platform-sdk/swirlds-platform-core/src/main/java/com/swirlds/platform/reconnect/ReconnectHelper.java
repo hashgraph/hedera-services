@@ -19,6 +19,8 @@ package com.swirlds.platform.reconnect;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.RECONNECT;
 
+import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.logging.payloads.ReconnectFinishPayload;
@@ -27,7 +29,6 @@ import com.swirlds.logging.payloads.ReconnectStartPayload;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.state.State;
-import com.swirlds.platform.state.StateSettings;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
@@ -140,12 +141,13 @@ public class ReconnectHelper {
                         lastRoundReceived)
                 .toString());
 
+        final StateConfig stateConfig = ConfigurationHolder.getConfigData(StateConfig.class);
         logger.info(
                 RECONNECT.getMarker(),
                 "Information for state received during reconnect:\n{}\n{}",
                 () -> reservedState.get().getState().getPlatformState().getInfoString(),
                 () -> new MerkleTreeVisualizer(reservedState.get().getState())
-                        .setDepth(StateSettings.getDebugHashDepth())
+                        .setDepth(stateConfig.debugHashDepth())
                         .render());
 
         logger.info(

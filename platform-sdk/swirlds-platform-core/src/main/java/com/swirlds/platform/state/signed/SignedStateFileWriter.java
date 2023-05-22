@@ -26,6 +26,8 @@ import static com.swirlds.platform.state.signed.SignedStateFileUtils.HASH_INFO_F
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.SIGNED_STATE_FILE_NAME;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.VERSIONED_FILE_BYTE;
 
+import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.system.NodeId;
@@ -34,7 +36,6 @@ import com.swirlds.logging.payloads.StateSavedToDiskPayload;
 import com.swirlds.platform.Settings;
 import com.swirlds.platform.state.EmergencyRecoveryFile;
 import com.swirlds.platform.state.State;
-import com.swirlds.platform.state.StateSettings;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.BufferedWriter;
@@ -64,9 +65,10 @@ public final class SignedStateFileWriter {
      * @param directory the directory where the state is being written
      */
     public static void writeHashInfoFile(final Path directory, final State state) throws IOException {
+        final StateConfig stateConfig = ConfigurationHolder.getConfigData(StateConfig.class);
         final String platformInfo = state.getPlatformState().getInfoString();
         final String hashInfo = new MerkleTreeVisualizer(state)
-                .setDepth(StateSettings.getDebugHashDepth())
+                .setDepth(stateConfig.debugHashDepth())
                 .render();
         logger.info(
                 STATE_TO_DISK.getMarker(), "Information for state written to disk:\n{}\n{}", platformInfo, hashInfo);

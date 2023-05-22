@@ -25,6 +25,7 @@ import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 import com.swirlds.base.function.CheckedConsumer;
 import com.swirlds.base.state.Startable;
 import com.swirlds.common.config.ConsensusConfig;
+import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -439,10 +440,11 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
     }
 
     private boolean timeToSignState(final long roundNum) {
-        return settings.getSignedStateFreq() > 0 // and we are signing states
+        final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
+        return stateConfig.signedStateFreq() > 0 // and we are signing states
 
                 // the first round should be signed and every Nth should be signed, where N is signedStateFreq
-                && (roundNum == 1 || roundNum % settings.getSignedStateFreq() == 0);
+                && (roundNum == 1 || roundNum % stateConfig.signedStateFreq() == 0);
     }
 
     /**

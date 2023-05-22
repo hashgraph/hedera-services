@@ -17,7 +17,13 @@
 package com.swirlds.platform;
 
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.SIGNED_STATE_FILE_NAME;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -48,13 +54,13 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 public class SavedStateLoaderTests {
-
-    private static boolean requireStateLoad;
-    private static boolean checkSignedStateFromDisk;
 
     @TempDir
     Path tmpDir;
@@ -86,15 +92,7 @@ public class SavedStateLoaderTests {
 
     @BeforeAll
     static void beforeAll() throws ConstructableRegistryException {
-        requireStateLoad = Settings.getInstance().isRequireStateLoad();
-        checkSignedStateFromDisk = Settings.getInstance().isRequireStateLoad();
         ConstructableRegistry.getInstance().registerConstructables("");
-    }
-
-    @AfterAll
-    static void afterAll() {
-        Settings.getInstance().setRequireStateLoad(requireStateLoad);
-        Settings.getInstance().setCheckSignedStateFromDisk(checkSignedStateFromDisk);
     }
 
     @Test
@@ -314,13 +312,11 @@ public class SavedStateLoaderTests {
     }
 
     private void testSavedStateLoadWithBadValue(final SavedStateInfo[] savedStateInfos) {
-        requireStateLoad(false);
         init(savedStateInfos);
         final SignedState stateToLoad =
                 assertDoesNotThrow(() -> savedStateLoader.getSavedStateToLoad().getNullable());
         assertNull(stateToLoad, "stateToLoad should be null if the list of saved state files is null");
 
-        requireStateLoad(true);
         assertThrows(
                 SignedStateLoadingException.class,
                 () -> savedStateLoader.getSavedStateToLoad().get(),
@@ -338,20 +334,11 @@ public class SavedStateLoaderTests {
         final SavedStateInfo[] stateInfos = toStateInfos(statesOnDisk);
         init(stateInfos);
 
-        checkSignedStateFromDisk(true);
         final SignedState stateToLoad = assertDoesNotThrow(
                 () -> savedStateLoader.getSavedStateToLoad().get(), "loading state should not throw");
         assertHashesMatch(statesOnDisk.get(0), stateToLoad, "the latest state should be returned");
         assertDoesNotThrow(
                 () -> savedStateLoader.getSavedStateToLoad().get(), "null version should not cause an exception");
-    }
-
-    private void checkSignedStateFromDisk(final boolean value) {
-        Settings.getInstance().setCheckSignedStateFromDisk(value);
-    }
-
-    private void requireStateLoad(final boolean value) {
-        Settings.getInstance().setRequireStateLoad(value);
     }
 
     private void verifyNoSignedStateFound(final SignedState actual) {

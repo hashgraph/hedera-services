@@ -299,8 +299,6 @@ class EventFlowTests {
             final SwirldState origSwirldState) {
         final Random random = RandomUtils.initRandom(seed);
 
-        when(settingsProvider.getSignedStateFreq()).thenReturn(signedStateFreq);
-
         init(random, numNodes, origSwirldState);
         final EventFlowWrapper wrapper = createEventFlowWrapper(random, numNodes);
 
@@ -360,8 +358,6 @@ class EventFlowTests {
             final int desiredFreezeRound,
             final SwirldState origSwirldState) {
         final Random random = RandomUtils.initRandom(seed);
-
-        when(settingsProvider.getSignedStateFreq()).thenReturn(signedStateFreq);
 
         // Will hold the freeze round when the last event of the round is generated
         final AtomicLong freezeRound = new AtomicLong(-1);
