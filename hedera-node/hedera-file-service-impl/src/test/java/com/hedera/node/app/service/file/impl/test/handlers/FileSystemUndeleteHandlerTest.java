@@ -21,7 +21,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.service.file.impl.test.handlers.FileTestUtils.mockFileLookup;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -50,7 +49,8 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
-
+import java.time.Instant;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -58,23 +58,26 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.Instant;
-import java.util.Optional;
-
 @ExtendWith(MockitoExtension.class)
 class FileSystemUndeleteHandlerTest extends FileHandlerTestBase {
 
-    @Mock private ReadableAccountStore accountStore;
+    @Mock
+    private ReadableAccountStore accountStore;
 
-    @Mock private ReadableFileStoreImpl mockStore;
+    @Mock
+    private ReadableFileStoreImpl mockStore;
 
-    @Mock private FileSystemUndeleteHandler subject;
+    @Mock
+    private FileSystemUndeleteHandler subject;
 
-    @Mock private HandleContext handleContext;
+    @Mock
+    private HandleContext handleContext;
 
-    @Mock private Instant instant;
+    @Mock
+    private Instant instant;
 
-    @Mock private Configuration configuration;
+    @Mock
+    private Configuration configuration;
 
     private FilesConfig config;
 
@@ -131,10 +134,7 @@ class FileSystemUndeleteHandlerTest extends FileHandlerTestBase {
         given(writableStates.<EntityNum, File>get(FILES)).willReturn(writableFileState);
         writableStore = new WritableFileStoreImpl(writableStates);
 
-        final var msg =
-                assertThrows(
-                        HandleException.class,
-                        () -> subject.handle(handleContext, txn, writableStore));
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext, txn, writableStore));
         assertEquals(INVALID_FILE_ID, msg.getStatus());
     }
 
@@ -147,10 +147,7 @@ class FileSystemUndeleteHandlerTest extends FileHandlerTestBase {
         assertTrue(existingFile.isPresent());
         assertFalse(existingFile.get().deleted());
 
-        final var msg =
-                assertThrows(
-                        HandleException.class,
-                        () -> subject.handle(handleContext, txn, writableStore));
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext, txn, writableStore));
         assertEquals(INVALID_FILE_ID, msg.getStatus());
     }
 
@@ -158,30 +155,19 @@ class FileSystemUndeleteHandlerTest extends FileHandlerTestBase {
     @DisplayName("Fails handle if keys doesn't exist on file system to be deleted")
     void keysDoesntExist() {
         final var txn = newSystemDeleteTxn().systemUndeleteOrThrow();
-        fileSystem =
-                new File(
-                        fileSystemfileId.fileNum(),
-                        expirationTime,
-                        null,
-                        Bytes.wrap(contents),
-                        memo,
-                        false);
+        fileSystem = new File(fileSystemfileId.fileNum(), expirationTime, null, Bytes.wrap(contents), memo, false);
 
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<EntityNum, File>get(FILES)).willReturn(writableFileState);
         writableStore = new WritableFileStoreImpl(writableStates);
 
-        final var msg =
-                assertThrows(
-                        HandleException.class,
-                        () -> subject.handle(handleContext, txn, writableStore));
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext, txn, writableStore));
 
         assertEquals(UNAUTHORIZED, msg.getStatus());
     }
 
     @Test
-    @DisplayName(
-            "Handle works as expected and file system deleted when time is expired(less than epoch second)")
+    @DisplayName("Handle works as expected and file system deleted when time is expired(less than epoch second)")
     void handleWorksAsExpectedWhenExpirationTimeIsExpired() {
         final var txn = newSystemDeleteTxn().systemUndeleteOrThrow();
 
@@ -190,9 +176,7 @@ class FileSystemUndeleteHandlerTest extends FileHandlerTestBase {
         assertFalse(existingFile.get().deleted());
 
         lenient().when(handleContext.consensusNow()).thenReturn(instant);
-        lenient()
-                .when(instant.getEpochSecond())
-                .thenReturn(existingFile.get().expirationTime() + 100);
+        lenient().when(instant.getEpochSecond()).thenReturn(existingFile.get().expirationTime() + 100);
         subject.handle(handleContext, txn, writableStore);
 
         final var changedFile = writableStore.get(fileSystemEntityNum.longValue());
@@ -210,9 +194,7 @@ class FileSystemUndeleteHandlerTest extends FileHandlerTestBase {
         assertFalse(existingFile.get().deleted());
 
         lenient().when(handleContext.consensusNow()).thenReturn(instant);
-        lenient()
-                .when(instant.getEpochSecond())
-                .thenReturn(existingFile.get().expirationTime() - 100);
+        lenient().when(instant.getEpochSecond()).thenReturn(existingFile.get().expirationTime() - 100);
         subject.handle(handleContext, txn, writableStore);
 
         final var changedFile = writableStore.get(fileSystemEntityNum.longValue());

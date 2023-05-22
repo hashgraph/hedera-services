@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.file.impl;
 
 import static com.hedera.node.app.service.file.impl.FileServiceImpl.BLOBS_KEY;
-
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.file.File;
@@ -26,10 +25,8 @@ import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
-
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;

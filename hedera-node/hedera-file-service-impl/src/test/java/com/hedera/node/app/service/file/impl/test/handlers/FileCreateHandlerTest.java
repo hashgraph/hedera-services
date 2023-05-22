@@ -20,7 +20,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -59,7 +58,6 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -73,15 +71,20 @@ class FileCreateHandlerTest extends FileHandlerTestBase {
     private static final AccountID AUTO_RENEW_ACCOUNT =
             AccountID.newBuilder().accountNum(4L).build();
 
-    @Mock private ReadableAccountStore accountStore;
+    @Mock
+    private ReadableAccountStore accountStore;
 
-    @Mock private HandleContext handleContext;
+    @Mock
+    private HandleContext handleContext;
 
-    @Mock private AttributeValidator validator;
+    @Mock
+    private AttributeValidator validator;
 
-    @Mock private ExpiryValidator expiryValidator;
+    @Mock
+    private ExpiryValidator expiryValidator;
 
-    @Mock private Configuration configuration;
+    @Mock
+    private Configuration configuration;
 
     //    @Mock
     //    private LongSupplier consensusSecondNow;
@@ -132,8 +135,7 @@ class FileCreateHandlerTest extends FileHandlerTestBase {
         final var keys = anotherKeys;
 
         // when:
-        final var context =
-                new FakePreHandleContext(accountStore, newCreateTxn(keys, expirationTime));
+        final var context = new FakePreHandleContext(accountStore, newCreateTxn(keys, expirationTime));
         subject.preHandle(context);
 
         // then:
@@ -148,8 +150,7 @@ class FileCreateHandlerTest extends FileHandlerTestBase {
         final var payerKey = mockPayerLookup();
 
         // when:
-        final var context =
-                new FakePreHandleContext(accountStore, newCreateTxn(null, expirationTime));
+        final var context = new FakePreHandleContext(accountStore, newCreateTxn(null, expirationTime));
 
         // then:
         assertThat(context.payerKey()).isEqualTo(payerKey);
@@ -176,8 +177,7 @@ class FileCreateHandlerTest extends FileHandlerTestBase {
     void requiresPayerKey() throws PreCheckException {
         // given:
         final var payerKey = mockPayerLookup();
-        final var context =
-                new FakePreHandleContext(accountStore, newCreateTxn(null, expirationTime));
+        final var context = new FakePreHandleContext(accountStore, newCreateTxn(null, expirationTime));
 
         // when:
         subject.preHandle(context);
@@ -253,9 +253,7 @@ class FileCreateHandlerTest extends FileHandlerTestBase {
                 .willThrow(new HandleException(ResponseCodeEnum.INVALID_EXPIRATION_TIME));
 
         final var failure =
-                assertThrows(
-                        HandleException.class,
-                        () -> subject.handle(handleContext, op, recordBuilder, fileStore));
+                assertThrows(HandleException.class, () -> subject.handle(handleContext, op, recordBuilder, fileStore));
         assertEquals(ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE, failure.getStatus());
     }
 
@@ -274,9 +272,7 @@ class FileCreateHandlerTest extends FileHandlerTestBase {
                 .when(validator)
                 .validateMemo(op.memo());
 
-        assertThrows(
-                HandleException.class,
-                () -> subject.handle(handleContext, op, recordBuilder, fileStore));
+        assertThrows(HandleException.class, () -> subject.handle(handleContext, op, recordBuilder, fileStore));
         assertTrue(fileStore.get(1234L).isEmpty());
     }
 
@@ -295,11 +291,8 @@ class FileCreateHandlerTest extends FileHandlerTestBase {
         given(configuration.getConfigData(any())).willReturn(config);
 
         final var msg =
-                assertThrows(
-                        HandleException.class,
-                        () -> subject.handle(handleContext, op, recordBuilder, fileStore));
-        assertEquals(
-                ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED, msg.getStatus());
+                assertThrows(HandleException.class, () -> subject.handle(handleContext, op, recordBuilder, fileStore));
+        assertEquals(ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED, msg.getStatus());
         assertEquals(0, this.fileStore.modifiedFiles().size());
     }
 

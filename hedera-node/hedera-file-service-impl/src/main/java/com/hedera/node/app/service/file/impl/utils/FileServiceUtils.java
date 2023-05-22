@@ -22,7 +22,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_FILE_SIZE_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
-
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;
@@ -38,7 +37,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.config.data.FilesConfig;
-
+import com.hedera.node.config.data.LedgerConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -51,8 +50,7 @@ public class FileServiceUtils {
      * @param content the file content
      * @param fileServiceConfig the file service configuration
      */
-    public static void validateContent(
-            @NonNull byte[] content, @NonNull FilesConfig fileServiceConfig) {
+    public static void validateContent(@NonNull byte[] content, @NonNull FilesConfig fileServiceConfig) {
         var contentLength = content.length;
 
         if (contentLength <= 0) {
@@ -75,8 +73,10 @@ public class FileServiceUtils {
     public static @NonNull FileMetadata preValidate(
             @Nullable final FileID fileId,
             @NonNull final ReadableFileStore fileStore,
+            @NonNull final PreHandleContext context,
             boolean isSpecialFile)
             throws PreCheckException {
+        requireNonNull(context);
 
         if (fileId == null) {
             throw new PreCheckException(INVALID_FILE_ID);
@@ -85,7 +85,8 @@ public class FileServiceUtils {
         final var fileMeta = fileStore.getFileMetadata(fileId);
         mustExist(fileMeta, INVALID_FILE_ID);
 
-        if (isSpecialFile && fileId.fileNum() > 750) {
+        final var ledgerConfig = context.getConfiguration().getConfigData(LedgerConfig.class);
+        if (fileId.fileNum() > ledgerConfig.numReservedSystemEntities()) {
             throw new HandleException(INVALID_FILE_ID);
         }
 
@@ -102,17 +103,14 @@ public class FileServiceUtils {
      * @throws PreCheckException
      */
     public static void validateAndAddRequiredKeys(
-            @Nullable final KeyList listKeys,
-            @NonNull final PreHandleContext context,
-            final boolean areKeysRequired)
+            @Nullable final KeyList listKeys, @NonNull final PreHandleContext context, final boolean areKeysRequired)
             throws PreCheckException {
         if (listKeys == null || !listKeys.hasKeys() || listKeys.keys().isEmpty()) {
             // @todo('protobuf change needed') change to immutable file response code
             if (areKeysRequired) throw new PreCheckException(UNAUTHORIZED);
         }
 
-        if (listKeys != null && listKeys.hasKeys())
-            for (Key key : listKeys.keys()) context.requireKey(key);
+        if (listKeys != null && listKeys.hasKeys()) for (Key key : listKeys.keys()) context.requireKey(key);
     }
 
     /**
@@ -144,10 +142,9 @@ public class FileServiceUtils {
         }
 
         // where to get the max special file number
-        final var fileServiceConfig =
-                handleContext.getConfiguration().getConfigData(FilesConfig.class);
+        final var ledgerConfig = handleContext.getConfiguration().getConfigData(LedgerConfig.class);
         // TODO: change to the property file config value
-        if (fileId.fileNum() > 750) {
+        if (fileId.fileNum() > ledgerConfig.numReservedSystemEntities()) {
             throw new HandleException(INVALID_FILE_ID);
         }
 

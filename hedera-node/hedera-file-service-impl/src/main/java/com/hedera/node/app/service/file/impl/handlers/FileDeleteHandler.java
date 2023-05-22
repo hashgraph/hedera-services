@@ -21,7 +21,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.preValidate;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateAndAddRequiredKeys;
-
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;
@@ -35,9 +34,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -67,7 +64,7 @@ public class FileDeleteHandler implements TransactionHandler {
 
         final var transactionBody = context.body().fileDeleteOrThrow();
         final var fileStore = context.createStore(ReadableFileStoreImpl.class);
-        final var fileMeta = preValidate(transactionBody.fileID(), fileStore, false);
+        final var fileMeta = preValidate(transactionBody.fileID(), fileStore, context, false);
 
         validateAndAddRequiredKeys(fileMeta.keys(), context, true);
     }
@@ -106,14 +103,13 @@ public class FileDeleteHandler implements TransactionHandler {
         }
 
         /* Copy all the fields from existing file and change deleted flag */
-        final var fileBuilder =
-                new File.Builder()
-                        .fileNumber(file.fileNumber())
-                        .expirationTime(file.expirationTime())
-                        .keys(file.keys())
-                        .contents(null)
-                        .memo(file.memo())
-                        .deleted(true);
+        final var fileBuilder = new File.Builder()
+                .fileNumber(file.fileNumber())
+                .expirationTime(file.expirationTime())
+                .keys(file.keys())
+                .contents(null)
+                .memo(file.memo())
+                .deleted(true);
 
         /* --- Put the modified file. It will be in underlying state's modifications map.
         It will not be committed to state until commit is called on the state.--- */

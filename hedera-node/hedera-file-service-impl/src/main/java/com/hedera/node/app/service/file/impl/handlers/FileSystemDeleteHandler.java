@@ -19,7 +19,6 @@ package com.hedera.node.app.service.file.impl.handlers;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.preValidate;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateAndAddRequiredKeys;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.verifySystemFile;
-
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;
@@ -34,9 +33,7 @@ import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -66,7 +63,7 @@ public class FileSystemDeleteHandler implements TransactionHandler {
 
         final var transactionBody = context.body().systemDeleteOrThrow();
         final var fileStore = context.createStore(ReadableFileStoreImpl.class);
-        final var fileMeta = preValidate(transactionBody.fileID(), fileStore, true);
+        final var fileMeta = preValidate(transactionBody.fileID(), fileStore, context, true);
 
         validateAndAddRequiredKeys(fileMeta.keys(), context, true);
     }
@@ -91,22 +88,20 @@ public class FileSystemDeleteHandler implements TransactionHandler {
 
         final File file = verifySystemFile(handleContext, fileStore, fileId);
 
-        final var newExpiry =
-                systemDeleteTransactionBody
-                        .expirationTimeOrElse(new TimestampSeconds(file.expirationTime()))
-                        .seconds();
+        final var newExpiry = systemDeleteTransactionBody
+                .expirationTimeOrElse(new TimestampSeconds(file.expirationTime()))
+                .seconds();
         if (newExpiry <= handleContext.consensusNow().getEpochSecond()) {
             fileStore.removeFile(fileId.fileNum());
         } else {
             /* Get all the fields from existing file and change deleted flag */
-            final var fileBuilder =
-                    new File.Builder()
-                            .fileNumber(file.fileNumber())
-                            .expirationTime(newExpiry)
-                            .keys(file.keys())
-                            .contents(file.contents())
-                            .memo(file.memo())
-                            .deleted(true);
+            final var fileBuilder = new File.Builder()
+                    .fileNumber(file.fileNumber())
+                    .expirationTime(newExpiry)
+                    .keys(file.keys())
+                    .contents(file.contents())
+                    .memo(file.memo())
+                    .deleted(true);
 
             /* --- Put the modified file. It will be in underlying state's modifications map.
             It will not be committed to state until commit is called on the state.--- */

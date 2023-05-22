@@ -25,9 +25,7 @@ import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
-
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.Set;
 
 /** Standard implementation of the {@link FileService} {@link com.hedera.node.app.spi.Service}. */
@@ -61,8 +59,7 @@ public final class FileServiceImpl implements FileService {
     private static StateDefinition<EntityNum, File> filesDef() {
         final var keyCodec = new EntityNumCodec();
 
-        final var valueCodec =
-                CodecFactory.newInMemoryCodec(File.PROTOBUF::parse, File.PROTOBUF::write);
+        final var valueCodec = CodecFactory.newInMemoryCodec(File.PROTOBUF::parse, File.PROTOBUF::write);
 
         return StateDefinition.onDisk(BLOBS_KEY, keyCodec, valueCodec, MAX_BLOBS);
     }

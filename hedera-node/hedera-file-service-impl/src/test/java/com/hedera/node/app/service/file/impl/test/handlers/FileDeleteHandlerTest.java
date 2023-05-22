@@ -21,7 +21,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.service.file.impl.test.handlers.FileTestUtils.mockFileLookup;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -48,7 +47,6 @@ import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -59,11 +57,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class FileDeleteHandlerTest extends FileHandlerTestBase {
 
-    @Mock private ReadableAccountStore accountStore;
+    @Mock
+    private ReadableAccountStore accountStore;
 
-    @Mock private ReadableFileStoreImpl mockStore;
+    @Mock
+    private ReadableFileStoreImpl mockStore;
 
-    @Mock private FileDeleteHandler subject;
+    @Mock
+    private FileDeleteHandler subject;
 
     @BeforeEach
     void setUp() {
@@ -115,8 +116,7 @@ class FileDeleteHandlerTest extends FileHandlerTestBase {
         given(writableStates.<EntityNum, File>get(FILES)).willReturn(writableFileState);
         writableStore = new WritableFileStoreImpl(writableStates);
 
-        final var msg =
-                assertThrows(HandleException.class, () -> subject.handle(txn, writableStore));
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(txn, writableStore));
         assertEquals(INVALID_FILE_ID, msg.getStatus());
     }
 
@@ -131,8 +131,7 @@ class FileDeleteHandlerTest extends FileHandlerTestBase {
         given(writableStates.<EntityNum, File>get(FILES)).willReturn(writableFileState);
         writableStore = new WritableFileStoreImpl(writableStates);
 
-        final var msg =
-                assertThrows(HandleException.class, () -> subject.handle(txn, writableStore));
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(txn, writableStore));
 
         assertEquals(ResponseCodeEnum.UNAUTHORIZED, msg.getStatus());
     }
@@ -161,8 +160,7 @@ class FileDeleteHandlerTest extends FileHandlerTestBase {
 
     private TransactionBody newDeleteTxn() {
         final var txnId = TransactionID.newBuilder().accountID(payerId).build();
-        final var deleteFileBuilder =
-                FileDeleteTransactionBody.newBuilder().fileID(WELL_KNOWN_FILE_ID);
+        final var deleteFileBuilder = FileDeleteTransactionBody.newBuilder().fileID(WELL_KNOWN_FILE_ID);
         return TransactionBody.newBuilder()
                 .transactionID(txnId)
                 .fileDelete(deleteFileBuilder.build())
