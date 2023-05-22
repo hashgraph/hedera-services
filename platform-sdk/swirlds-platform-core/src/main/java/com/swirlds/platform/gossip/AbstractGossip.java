@@ -84,7 +84,6 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
     private LifecyclePhase lifecyclePhase = LifecyclePhase.NOT_STARTED;
 
     protected final PlatformContext platformContext;
-    protected final ThreadManager threadManager;
     protected final AddressBook addressBook;
     protected final NodeId selfId;
     protected final NetworkTopology topology;
@@ -144,7 +143,6 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
             @NonNull final Consumer<SignedState> loadReconnectState) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
-        this.threadManager = Objects.requireNonNull(threadManager);
         this.addressBook = Objects.requireNonNull(addressBook);
         this.selfId = Objects.requireNonNull(selfId);
         this.updatePlatformStatus = Objects.requireNonNull(updatePlatformStatus);
@@ -176,7 +174,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
                 shouldDoVersionCheck(),
                 appVersion);
         // allow other members to create connections to me
-        final Address address = addressBook.getAddress(selfId.id());
+        final Address address = addressBook.getAddress(selfId);
         final ConnectionServer connectionServer = new ConnectionServer(
                 threadManager,
                 address.getListenAddressIpv4(),
@@ -305,7 +303,9 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
      * {@inheritDoc}
      */
     @Override
-    public void newConnectionOpened(final Connection sc) {
+    public void newConnectionOpened(@NonNull final Connection sc) {
+        Objects.requireNonNull(sc);
+
         activeConnectionNumber.getAndIncrement();
         updatePlatformStatus.run();
         networkMetrics.connectionEstablished(sc);
@@ -315,7 +315,9 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
      * {@inheritDoc}
      */
     @Override
-    public void connectionClosed(final boolean outbound, final Connection conn) {
+    public void connectionClosed(final boolean outbound, @NonNull final Connection conn) {
+        Objects.requireNonNull(conn);
+
         final int connectionNumber = activeConnectionNumber.decrementAndGet();
         if (connectionNumber < 0) {
             logger.error(EXCEPTION.getMarker(), "activeConnectionNumber is {}, this is a bug!", connectionNumber);

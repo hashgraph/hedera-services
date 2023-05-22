@@ -78,6 +78,7 @@ public class LegacySyncGossip extends AbstractGossip {
     private final ShadowGraphSynchronizer syncShadowgraphSynchronizer;
     private final InterruptableConsumer<EventIntakeTask> eventIntakeLambda;
     private final Clearable clearAllPipelines;
+    private final ThreadManager threadManager;
 
     /**
      * Builds the gossip engine, depending on which flavor is requested in the configuration.
@@ -141,6 +142,7 @@ public class LegacySyncGossip extends AbstractGossip {
                 updatePlatformStatus,
                 loadReconnectState);
 
+        this.threadManager = Objects.requireNonNull(threadManager);
         this.eventIntakeLambda = Objects.requireNonNull(eventIntakeLambda);
 
         final ParallelExecutor shadowgraphExecutor = PlatformConstructor.parallelExecutor(threadManager);
@@ -154,7 +156,6 @@ public class LegacySyncGossip extends AbstractGossip {
                 eventTaskCreator::addEvent,
                 syncManager,
                 shadowgraphExecutor,
-                // don't send or receive init bytes if running sync as a protocol. the negotiator handles this
                 true,
                 () -> {});
 

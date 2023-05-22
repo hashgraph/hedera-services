@@ -407,9 +407,6 @@ public class SwirldsPlatform implements Platform, Startable {
                 settings.getEventStreamQueueCapacity(),
                 this::isLastEventBeforeRestart);
 
-        final EventTaskDispatcher taskDispatcher;
-        final EventObserverDispatcher eventObserverDispatcher;
-
         if (loadedSignedState.isNotNull()) {
             diskStateHash = loadedSignedState.get().getState().getHash();
             diskStateRound = loadedSignedState.get().getRound();
@@ -489,7 +486,7 @@ public class SwirldsPlatform implements Platform, Startable {
             final AddedEventMetrics addedEventMetrics = new AddedEventMetrics(this.selfId, metrics);
             final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
 
-            eventObserverDispatcher = new EventObserverDispatcher(
+            final EventObserverDispatcher eventObserverDispatcher = new EventObserverDispatcher(
                     new ShadowGraphEventObserver(shadowGraph),
                     consensusRoundHandler,
                     preConsensusEventHandler,
@@ -546,7 +543,7 @@ public class SwirldsPlatform implements Platform, Startable {
             /* validates events received from gossip */
             final EventValidator eventValidator = new EventValidator(eventValidators, eventIntake::addUnlinkedEvent);
 
-            taskDispatcher = new EventTaskDispatcher(
+            final EventTaskDispatcher taskDispatcher = new EventTaskDispatcher(
                     time,
                     eventValidator,
                     eventCreator,
@@ -558,6 +555,9 @@ public class SwirldsPlatform implements Platform, Startable {
                     .setNodeId(selfId.id())
                     .setComponent(PLATFORM_THREAD_POOL_NAME)
                     .setThreadName("event-intake")
+                    // There is a circular dependency between the intake queue and gossip,
+                    // which the handler lambda sidesteps (since the lambda is not invoked
+                    // until after all things have been constructed).
                     .setHandler(e -> getGossip().getEventIntakeLambda().accept(e))
                     .setCapacity(settings.getEventIntakeQueueSize())
                     .setLogAfterPauseDuration(platformContext

@@ -30,12 +30,10 @@ import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.LoggingClearables;
 import com.swirlds.platform.Crypto;
 import com.swirlds.platform.FreezeManager;
-import com.swirlds.platform.PlatformConstructor;
 import com.swirlds.platform.StartUpEventFrozenManager;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.components.CriticalQuorumImpl;
@@ -68,10 +66,6 @@ public class SingleNodeSyncGossip extends AbstractGossip {
 
     private final InterruptableConsumer<EventIntakeTask> eventIntakeLambda;
     private final Clearable clearAllPipelines;
-
-    /**
-     * A list of threads that execute the sync protocol using bidirectional connections
-     */
     private final StoppableThread syncProtocolThread;
 
     /**
@@ -135,9 +129,6 @@ public class SingleNodeSyncGossip extends AbstractGossip {
                 loadReconnectState);
 
         this.eventIntakeLambda = Objects.requireNonNull(eventIntakeLambda);
-
-        final ParallelExecutor shadowgraphExecutor = PlatformConstructor.parallelExecutor(threadManager);
-        thingsToStart.add(shadowgraphExecutor);
 
         clearAllPipelines = new LoggingClearables(
                 RECONNECT.getMarker(),
