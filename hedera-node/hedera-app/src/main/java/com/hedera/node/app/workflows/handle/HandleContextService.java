@@ -18,19 +18,20 @@ package com.hedera.node.app.workflows.handle;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.records.RecordListBuilder;
 import com.hedera.node.app.records.SingleTransactionRecordBuilder;
 import com.hedera.node.app.services.ServiceScopeLookup;
+import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
-import com.hedera.node.config.ConfigProvider;
-import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Map;
 import javax.inject.Inject;
 
 public class HandleContextService {
@@ -38,71 +39,36 @@ public class HandleContextService {
     private final TransactionChecker checker;
     private final TransactionDispatcher dispatcher;
     private final ServiceScopeLookup serviceScopeLookup;
-    private final ConfigProvider configProvider;
 
     @Inject
     public HandleContextService(
             @NonNull final TransactionChecker checker,
             @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final ServiceScopeLookup serviceScopeLookup,
-            @NonNull final ConfigProvider configProvider) {
+            @NonNull final ServiceScopeLookup serviceScopeLookup) {
         this.checker = requireNonNull(checker, "checker must not be null");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
         this.serviceScopeLookup = requireNonNull(serviceScopeLookup, "serviceScopeLookup must not be null");
-        this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
     }
 
-    public SingleTransactionRecordBuilder dispatchPrecedingTransaction(
-            @NonNull final TransactionBody txBody,
-            @NonNull final HederaState root,
-            @NonNull final HandleContextBase base,
-            @NonNull final Configuration currentConfig) {
+    @NonNull
+    public String getServiceScope(@NonNull final TransactionBody txBody) {
         requireNonNull(txBody, "txBody must not be null");
-        requireNonNull(root, "root must not be null");
-        requireNonNull(base, "base must not be null");
-        requireNonNull(currentConfig, "currentConfig must not be null");
-
-        final var recordBuilder = base.recordListBuilder().addPreceding(currentConfig);
-
-        return dispatch(txBody, TransactionCategory.PRECEDING, root, base, recordBuilder);
+        return serviceScopeLookup.getServiceName(txBody);
     }
 
-    public SingleTransactionRecordBuilder dispatchChildTransaction(
-            @NonNull final TransactionBody txBody,
-            @NonNull final HederaState root,
-            @NonNull final HandleContextBase base,
-            @NonNull final Configuration currentConfig) {
-        requireNonNull(txBody, "txBody must not be null");
-        requireNonNull(root, "root must not be null");
-        requireNonNull(base, "base must not be null");
-        requireNonNull(currentConfig, "currentConfig must not be null");
-
-        final var recordBuilder = base.recordListBuilder().addChild(currentConfig);
-
-        return dispatch(txBody, TransactionCategory.CHILD, root, base, recordBuilder);
-    }
-
-    public SingleTransactionRecordBuilder dispatchRemovableChildTransaction(
-            @NonNull final TransactionBody txBody,
-            @NonNull final HederaState root,
-            @NonNull final HandleContextBase base,
-            @NonNull final Configuration currentConfig) {
-        requireNonNull(txBody, "txBody must not be null");
-        requireNonNull(root, "root must not be null");
-        requireNonNull(base, "base must not be null");
-        requireNonNull(currentConfig, "currentConfig must not be null");
-
-        final var recordBuilder = base.recordListBuilder().addRemovableChild(currentConfig);
-
-        return dispatch(txBody, TransactionCategory.CHILD, root, base, recordBuilder);
-    }
-
-    private SingleTransactionRecordBuilder dispatch(
+    public SingleTransactionRecordBuilder dispatch(
             @NonNull final TransactionBody txBody,
             @NonNull final TransactionCategory category,
             @NonNull final HederaState root,
-            @NonNull final HandleContextBase base,
+            @NonNull final Map<Key, SignatureVerification> keyVerifications,
+            @NonNull final RecordListBuilder recordListBuilder,
             @NonNull final SingleTransactionRecordBuilder recordBuilder) {
+        requireNonNull(txBody, "txBody must not be null");
+        requireNonNull(category, "category must not be null");
+        requireNonNull(root, "root must not be null");
+        requireNonNull(keyVerifications, "keyVerifications must not be null");
+        requireNonNull(recordListBuilder, "recordListBuilder must not be null");
+        requireNonNull(recordBuilder, "recordBuilder must not be null");
 
         try {
             checker.checkTransactionBody(txBody);
@@ -112,16 +78,15 @@ public class HandleContextService {
             return recordBuilder;
         }
 
-        final var serviceScope = serviceScopeLookup.getServiceName(txBody);
-        final var stack = new SavepointStackImpl(configProvider, root);
-        final var context = new HandleContextImpl(serviceScope, txBody, category, recordBuilder, stack, base, this);
+        final var context =
+                new HandleContextImpl(root, txBody, category, recordBuilder, keyVerifications, recordListBuilder, this);
 
         try {
             dispatcher.dispatchHandle(context);
-            stack.commit();
+            context.commitStateChanges();
         } catch (HandleException e) {
             recordBuilder.status(e.getStatus());
-            base.recordListBuilder().revertChildRecordBuilders(recordBuilder);
+            recordListBuilder.revertChildRecordBuilders(recordBuilder);
         }
         return recordBuilder;
     }
