@@ -126,6 +126,10 @@ public abstract class CryptoBench extends VirtualMapBench {
 
         logger.info(RUN_DELIMITER);
 
+        if (getConfig().enableSnapshots()) {
+            enableSnapshots();
+        }
+
         final long[] map = new long[verify ? maxKey : 0];
         VirtualMap<BenchmarkKey, BenchmarkValue> virtualMap = createMap(map);
 
@@ -199,6 +203,10 @@ public abstract class CryptoBench extends VirtualMapBench {
         beforeTest("transferPrefetch");
 
         logger.info(RUN_DELIMITER);
+
+        if (getConfig().enableSnapshots()) {
+            enableSnapshots();
+        }
 
         final long[] map = new long[verify ? maxKey : 0];
         VirtualMap<BenchmarkKey, BenchmarkValue> virtualMap = createMap(map);
@@ -311,6 +319,10 @@ public abstract class CryptoBench extends VirtualMapBench {
         beforeTest("transferParallel");
 
         logger.info(RUN_DELIMITER);
+
+        if (getConfig().enableSnapshots()) {
+            enableSnapshots();
+        }
 
         final long[] map = new long[verify ? maxKey : 0];
         VirtualMap<BenchmarkKey, BenchmarkValue> virtualMap = createMap(map);
