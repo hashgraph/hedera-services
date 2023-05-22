@@ -12,7 +12,9 @@ module com.hedera.node.app.service.networkadmin.impl.test {
     requires com.hedera.node.app.spi.fixtures;
     requires com.hedera.node.app.service.token;
     requires org.assertj.core;
+    requires com.hedera.node.config.testfixtures;
     requires static com.github.spotbugs.annotations;
+    requires com.swirlds.config;
 
     opens com.hedera.node.app.service.networkadmin.impl.test to
             org.junit.platform.commons,

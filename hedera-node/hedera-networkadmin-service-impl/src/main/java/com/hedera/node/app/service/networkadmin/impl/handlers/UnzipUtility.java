@@ -24,6 +24,7 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import org.apache.logging.log4j.LogManager;
@@ -57,7 +58,7 @@ public final class UnzipUtility {
      * @param dstDir the destination directory to extract the unzipped file to
      * @throws IOException if the destination does not exist and can't be created, or if the file can't be written
      */
-    public static void unzip(@NonNull final byte[] bytes, @NonNull final String dstDir) throws IOException {
+    public static void unzip(@NonNull final byte[] bytes, @NonNull final Path dstDir) throws IOException {
         requireNonNull(bytes);
         requireNonNull(dstDir);
 
@@ -74,13 +75,12 @@ public final class UnzipUtility {
             if (totalEntryArchive > THRESHOLD_ENTRIES) {
                 throw new IOException("Zip file entry count exceeds threshold: " + THRESHOLD_ENTRIES);
             }
-            String filePath = dstDir + File.separator + entry.getName();
-            final File fileOrDir = new File(filePath);
+            Path filePath = dstDir.resolve(entry.getName());
+            final File fileOrDir = filePath.toFile();
             final File directory = fileOrDir.getParentFile();
             if (!directory.exists() && !directory.mkdirs()) {
                 throw new IOException("Unable to create the parent directories for the file: " + fileOrDir);
             }
-            filePath = fileOrDir.getCanonicalPath();
 
             if (!entry.isDirectory()) {
                 totalSizeArchive += extractSingleFile(zipIn, filePath, entry.getCompressedSize());
@@ -110,12 +110,12 @@ public final class UnzipUtility {
      * @throws IOException if the file can't be written
      */
     public static int extractSingleFile(
-            @NonNull ZipInputStream inputStream, @NonNull String filePath, long compressedSize) throws IOException {
+            @NonNull ZipInputStream inputStream, @NonNull Path filePath, long compressedSize) throws IOException {
         requireNonNull(inputStream);
         requireNonNull(filePath);
         int totalSizeEntry = 0; // size of this zip entry once uncompressed
 
-        try (var bos = new BufferedOutputStream(new FileOutputStream(filePath))) {
+        try (var bos = new BufferedOutputStream(new FileOutputStream(filePath.toFile()))) {
             final var bytesIn = new byte[BUFFER_SIZE];
             int read;
             while ((read = inputStream.read(bytesIn)) != -1) {

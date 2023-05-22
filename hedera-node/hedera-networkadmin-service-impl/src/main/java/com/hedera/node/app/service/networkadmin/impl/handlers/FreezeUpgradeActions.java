@@ -27,7 +27,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.concurrent.CompletableFuture;
@@ -127,8 +126,8 @@ public class FreezeUpgradeActions {
         requireNonNull(desc);
         requireNonNull(marker);
 
-        final var size = archiveData.length;
-        final var artifactsLoc = adminServiceConfig.upgradeArtifactsPath();
+        final int size = archiveData.length;
+        final Path artifactsLoc = adminServiceConfig.upgradeArtifactsPath();
         requireNonNull(artifactsLoc);
         log.info("About to unzip {} bytes for {} update into {}", size, desc, artifactsLoc);
         // we spin off a separate thread to avoid blocking handleTransaction
@@ -136,7 +135,7 @@ public class FreezeUpgradeActions {
         return runAsync(() -> {
             try {
                 // delete any existing files in the artifacts directory
-                Files.walk(Paths.get(artifactsLoc))
+                Files.walk(artifactsLoc)
                         .sorted(Comparator.reverseOrder())
                         .map(Path::toFile)
                         .forEach(File::delete);
@@ -179,17 +178,17 @@ public class FreezeUpgradeActions {
 
     private void writeMarker(@NonNull final String file, @Nullable final Instant now) {
         requireNonNull(file);
-        final var path = Paths.get(adminServiceConfig.upgradeArtifactsPath(), file);
-        final var artifactsDirPath = Paths.get(adminServiceConfig.upgradeArtifactsPath());
+        final var artifactsDirPath = adminServiceConfig.upgradeArtifactsPath();
+        final var filePath = artifactsDirPath.resolve(file);
         try {
             if (!artifactsDirPath.toFile().exists()) {
                 Files.createDirectories(artifactsDirPath);
             }
             final var contents = (now == null) ? MARK : (String.valueOf(now.getEpochSecond()));
-            Files.writeString(path, contents);
-            log.info("Wrote marker {}", path);
+            Files.writeString(filePath, contents);
+            log.info("Wrote marker {}", filePath);
         } catch (final IOException e) {
-            log.error("Failed to write NMT marker {}", path, e);
+            log.error("Failed to write NMT marker {}", filePath, e);
             log.error(MANUAL_REMEDIATION_ALERT);
         }
     }

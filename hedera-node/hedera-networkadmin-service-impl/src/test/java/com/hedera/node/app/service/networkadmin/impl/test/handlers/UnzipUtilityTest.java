@@ -56,15 +56,15 @@ public class UnzipUtilityTest {
         final var zipFile = "src/test/resources/testfiles/updateFeature/valid.zip";
         final var data = Files.readAllBytes(Paths.get(zipFile));
 
-        assertDoesNotThrow(() -> UnzipUtility.unzip(data, tempDir.toString()));
+        assertDoesNotThrow(() -> UnzipUtility.unzip(data, tempDir));
         final Path path = tempDir.resolve("aaaa.txt");
         assert (path.toFile().exists());
-        assert (logCaptor.infoLogs().contains("- Extracted update file /private" + path));
+        assert (logCaptor.infoLogs().contains("- Extracted update file " + path));
     }
 
     @Test
     void failsWhenArchiveIsInvalidZip() throws IOException {
         final byte[] data = new byte[] {'a', 'b', 'c'};
-        assertThrows(IOException.class, () -> UnzipUtility.unzip(data, tempDir.toString()));
+        assertThrows(IOException.class, () -> UnzipUtility.unzip(data, tempDir));
     }
 }

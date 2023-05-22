@@ -16,13 +16,17 @@
 
 package com.hedera.node.app.service.networkadmin.impl.config;
 
-import com.hedera.node.app.service.mono.context.properties.PropertyNames;
+import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
+import java.nio.file.Path;
 
 /**
  * Configuration for the NetworkAdmin service. Contains only the path to the upgrade artifacts directory.
  *
- * @param upgradeArtifactsPath path to the location where upgrade zip files are stored
+ * @param upgradeArtifactsPath path to the location where upgrade files are stored once uncompressed, and upgrade
+ *                             marker files are written
  */
+@ConfigData("networkAdmin")
 public record NetworkAdminServiceConfig(
-        @ConfigProperty(PropertyNames.UPGRADE_ARTIFACTS_PATH) String upgradeArtifactsPath) {}
+        @ConfigProperty(defaultValue = "/opt/hgcapp/services-hedera/HapiApp2.0/data/upgrade/current")
+                Path upgradeArtifactsPath) {}

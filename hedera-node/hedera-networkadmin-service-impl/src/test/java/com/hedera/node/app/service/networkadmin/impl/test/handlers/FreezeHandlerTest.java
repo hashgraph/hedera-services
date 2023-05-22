@@ -46,7 +46,9 @@ import com.hedera.node.app.service.networkadmin.impl.handlers.FreezeHandler;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.state.WritableFreezeStore;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -69,11 +71,9 @@ class FreezeHandlerTest {
     private Account account;
 
     @Mock(strictness = LENIENT)
-    private NetworkAdminServiceConfig adminServiceConfig;
-
-    @Mock(strictness = LENIENT)
     private WritableFreezeStore freezeStore;
 
+    private NetworkAdminServiceConfig adminServiceConfig;
     private final Key key = Key.newBuilder()
             .ed25519(Bytes.wrap("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes()))
             .build();
@@ -83,13 +83,15 @@ class FreezeHandlerTest {
 
     @BeforeEach
     void setUp() {
+        Configuration config = new HederaTestConfigBuilder().getOrCreateConfig();
+        given(context.getConfiguration()).willReturn(config);
+        adminServiceConfig = config.getConfigData(NetworkAdminServiceConfig.class);
+
         given(accountStore.getAccountById(nonAdminAccount)).willReturn(account);
         given(account.key()).willReturn(key);
 
         given(context.createStore(ReadableAccountStore.class)).willReturn(accountStore);
         given(context.createStore(ReadableSpecialFileStore.class)).willReturn(specialFileStore);
-
-        given(adminServiceConfig.upgradeArtifactsPath()).willReturn("src/test/resources/upgrade-artifacts");
     }
 
     @Test
