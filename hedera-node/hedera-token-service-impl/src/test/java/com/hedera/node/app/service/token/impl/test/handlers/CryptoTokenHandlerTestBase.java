@@ -171,10 +171,7 @@ public class CryptoTokenHandlerTestBase {
             .build();
     protected List<CustomFee> customFees = List.of(withFixedFee(fixedFee), withFractionalFee(fractionalFee));
 
-    protected TokensConfig tokensConfig = new TokensConfig(
-            10000000, false, 1000000, 1000, 1000, 100, 100, 10, 2, true, 100, 10, 10, 10, 500000, 100, true, false,
-            true);
-
+    protected TokensConfig tokensConfig;
     protected MapReadableKVState<String, EntityNumValue> readableAliases;
     protected MapReadableKVState<EntityNumVirtualKey, Account> readableAccounts;
     protected MapWritableKVState<String, EntityNumValue> writableAliases;
