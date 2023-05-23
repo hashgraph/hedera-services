@@ -111,7 +111,6 @@ import com.swirlds.platform.state.DualStateImpl;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileReader;
 import com.swirlds.virtualmap.VirtualMap;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -122,7 +121,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
-
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -221,6 +219,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
 
     @Mock
     private ServicesState.MapToDiskMigration mapToDiskMigration;
+
     @Mock
     private ServicesState.RecordConsolidator recordConsolidator;
 
@@ -797,6 +796,8 @@ class ServicesStateTest extends ResponsibleVMapUser {
                 .willReturn(true);
         given(bootstrapProperties.getBooleanProperty(PropertyNames.TOKENS_STORE_RELS_ON_DISK))
                 .willReturn(false);
+        given(bootstrapProperties.getBooleanProperty(PropertyNames.RECORDS_USE_CONSOLIDATED_FCQ))
+                .willReturn(false);
         ServicesState.setMapToDiskMigration(mapToDiskMigration);
         ServicesState.setVmFactory(vmf);
         given(vmf.get()).willReturn(virtualMapFactory);
@@ -845,6 +846,8 @@ class ServicesStateTest extends ResponsibleVMapUser {
                 .willReturn(false);
         given(bootstrapProperties.getBooleanProperty(PropertyNames.TOKENS_STORE_RELS_ON_DISK))
                 .willReturn(true);
+        given(bootstrapProperties.getBooleanProperty(PropertyNames.RECORDS_USE_CONSOLIDATED_FCQ))
+                .willReturn(false);
         ServicesState.setMapToDiskMigration(mapToDiskMigration);
         ServicesState.setVmFactory(vmf);
         given(vmf.get()).willReturn(virtualMapFactory);

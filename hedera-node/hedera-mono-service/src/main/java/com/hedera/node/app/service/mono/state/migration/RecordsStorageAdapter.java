@@ -154,8 +154,8 @@ public class RecordsStorageAdapter {
                 mutableRecords.offer(payerRecord);
             }
             case IN_SINGLE_FCQ -> {
-                requireNonNull(records).add(payerRecord);
-                requireNonNull(queryableRecords).get(payerNum).add(payerRecord);
+                requireNonNull(records).offer(payerRecord);
+                requireNonNull(queryableRecords).get(payerNum).offer(payerRecord);
             }
         }
     }

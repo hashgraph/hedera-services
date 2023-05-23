@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.mono.state.migration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -33,6 +34,9 @@ import com.hedera.test.utils.SeededPropertySource;
 import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkle.map.MerkleMap;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.function.BiConsumer;
 import org.junit.jupiter.api.Test;
@@ -44,6 +48,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class RecordsStorageAdapterTest {
     private static final EntityNum SOME_NUM = EntityNum.fromInt(1234);
     private static final EntityNum SOME_MISSING_NUM = EntityNum.fromInt(4321);
+
+    @Mock
+    private FCQueue<ExpirableTxnRecord> consolidatedRecords;
+
+    @Mock
+    private Map<EntityNum, Queue<ExpirableTxnRecord>> queryableRecords;
 
     @Mock
     private @Nullable MerkleMap<EntityNum, MerkleAccount> accounts;
@@ -77,6 +87,13 @@ class RecordsStorageAdapterTest {
     }
 
     @Test
+    void removingConsolidatedPayerRequiresWork() {
+        withConsolidatedSubject();
+        subject.forgetPayer(SOME_NUM);
+        verify(queryableRecords).remove(SOME_NUM);
+    }
+
+    @Test
     void creatingLegacyPayerIsNoop() {
         withLegacySubject();
         subject.prepForPayer(SOME_NUM);
@@ -91,6 +108,13 @@ class RecordsStorageAdapterTest {
     }
 
     @Test
+    void creatingConsolidatedPayerRequiresWork() {
+        withConsolidatedSubject();
+        subject.prepForPayer(SOME_NUM);
+        verify(queryableRecords).put(eq(SOME_NUM), any());
+    }
+
+    @Test
     void addingWithDedicatedPayerWorks() {
         withDedicatedSubject();
         given(payerRecords.getForModify(SOME_NUM)).willReturn(accountRecords);
@@ -102,6 +126,33 @@ class RecordsStorageAdapterTest {
     }
 
     @Test
+    void addingWithLegacyPayerWorks() {
+        withLegacySubject();
+        final FCQueue<ExpirableTxnRecord> records = new FCQueue<>();
+        given(accounts.getForModify(SOME_NUM)).willReturn(account);
+        given(account.records()).willReturn(records);
+
+        final var aRecord = SeededPropertySource.forSerdeTest(11, 1).nextRecord();
+        subject.addPayerRecord(SOME_NUM, aRecord);
+
+        final var added = records.poll();
+        assertSame(aRecord, added);
+    }
+
+    @Test
+    void addingWithConsolidatedFcqWorks() {
+        withConsolidatedSubject();
+        final Queue<ExpirableTxnRecord> someQueryableRecords = new LinkedList<>();
+        given(queryableRecords.get(SOME_NUM)).willReturn(someQueryableRecords);
+
+        final var aRecord = SeededPropertySource.forSerdeTest(11, 1).nextRecord();
+        subject.addPayerRecord(SOME_NUM, aRecord);
+
+        verify(consolidatedRecords).offer(aRecord);
+        assertEquals(List.of(aRecord), someQueryableRecords);
+    }
+
+    @Test
     void gettingMutableWithDedicatedPayerWorks() {
         withDedicatedSubject();
         final FCQueue<ExpirableTxnRecord> records = new FCQueue<>();
@@ -109,6 +160,13 @@ class RecordsStorageAdapterTest {
         given(accountRecords.mutableQueue()).willReturn(records);
 
         assertSame(records, subject.getMutablePayerRecords(SOME_NUM));
+    }
+
+    @Test
+    void gettingMutableWithConsolidatedPayerWorks() {
+        withConsolidatedSubject();
+
+        assertSame(consolidatedRecords, subject.getMutablePayerRecords(SOME_NUM));
     }
 
     @Test
@@ -136,6 +194,22 @@ class RecordsStorageAdapterTest {
     }
 
     @Test
+    void gettingReadOnlyWithConsolidatedPayerWorks() {
+        withConsolidatedSubject();
+        final var aRecord = SeededPropertySource.forSerdeTest(11, 1).nextRecord();
+        final Queue<ExpirableTxnRecord> records = new LinkedList<>();
+        records.add(aRecord);
+        given(queryableRecords.get(SOME_NUM)).willReturn(records);
+
+        final var queryable = subject.getReadOnlyPayerRecords(SOME_NUM);
+
+        final var nextRecord = queryable.iterator().next();
+
+        assertEquals(aRecord, nextRecord);
+        assertFalse(queryable.iterator().hasNext());
+    }
+
+    @Test
     void gettingReadOnlyWithLegacyPayerWorks() {
         withLegacySubject();
         final var aRecord = SeededPropertySource.forSerdeTest(11, 1).nextRecord();
@@ -150,20 +224,6 @@ class RecordsStorageAdapterTest {
     }
 
     @Test
-    void addingWithLegacyPayerWorks() {
-        withLegacySubject();
-        final FCQueue<ExpirableTxnRecord> records = new FCQueue<>();
-        given(accounts.getForModify(SOME_NUM)).willReturn(account);
-        given(account.records()).willReturn(records);
-
-        final var aRecord = SeededPropertySource.forSerdeTest(11, 1).nextRecord();
-        subject.addPayerRecord(SOME_NUM, aRecord);
-
-        final var added = records.poll();
-        assertSame(aRecord, added);
-    }
-
-    @Test
     void canReviewDedicatedRecords() {
         payerRecords = new MerkleMap<>();
         withDedicatedSubject();
@@ -175,6 +235,15 @@ class RecordsStorageAdapterTest {
         subject.doForEach(observer);
 
         verify(observer).accept(eq(SOME_NUM), any());
+    }
+
+    @Test
+    void canReviewConsolidateRecords() {
+        withConsolidatedSubject();
+
+        subject.doForEach(observer);
+
+        verify(queryableRecords).forEach(observer);
     }
 
     @Test
@@ -197,5 +266,9 @@ class RecordsStorageAdapterTest {
 
     private void withDedicatedSubject() {
         subject = RecordsStorageAdapter.fromDedicated(MerkleMapLike.from(payerRecords));
+    }
+
+    private void withConsolidatedSubject() {
+        subject = RecordsStorageAdapter.fromConsolidated(consolidatedRecords, queryableRecords);
     }
 }

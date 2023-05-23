@@ -46,8 +46,8 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
-import com.hedera.node.app.service.mono.state.migration.RecordConsolidation;
 import com.hedera.node.app.service.mono.state.migration.MapMigrationToDisk;
+import com.hedera.node.app.service.mono.state.migration.RecordConsolidation;
 import com.hedera.node.app.service.mono.state.migration.RecordsStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.StakingInfoMapBuilder;
 import com.hedera.node.app.service.mono.state.migration.StateChildIndices;
@@ -106,7 +106,6 @@ import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
@@ -116,7 +115,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -532,10 +530,10 @@ public class ServicesState extends PartialNaryMerkleInternal
         final var accountsStorage = getChild(StateChildIndices.ACCOUNTS);
         return (accountsStorage instanceof VirtualMap)
                 ? AccountStorageAdapter.fromOnDisk(
-                MerkleMapLike.from(getChild(StateChildIndices.PAYER_RECORDS_OR_CONSOLIDATED_FCQ)),
-                VirtualMapLike.from((VirtualMap<EntityNumVirtualKey, OnDiskAccount>) accountsStorage))
+                        MerkleMapLike.from(getChild(StateChildIndices.PAYER_RECORDS_OR_CONSOLIDATED_FCQ)),
+                        VirtualMapLike.from((VirtualMap<EntityNumVirtualKey, OnDiskAccount>) accountsStorage))
                 : AccountStorageAdapter.fromInMemory(
-                MerkleMapLike.from((MerkleMap<EntityNum, MerkleAccount>) accountsStorage));
+                        MerkleMapLike.from((MerkleMap<EntityNum, MerkleAccount>) accountsStorage));
     }
 
     public VirtualMapLike<VirtualBlobKey, VirtualBlobValue> storage() {
@@ -555,7 +553,7 @@ public class ServicesState extends PartialNaryMerkleInternal
         final var relsStorage = getChild(StateChildIndices.TOKEN_ASSOCIATIONS);
         return (relsStorage instanceof VirtualMap)
                 ? TokenRelStorageAdapter.fromOnDisk(
-                VirtualMapLike.from((VirtualMap<EntityNumVirtualKey, OnDiskTokenRel>) relsStorage))
+                        VirtualMapLike.from((VirtualMap<EntityNumVirtualKey, OnDiskTokenRel>) relsStorage))
                 : TokenRelStorageAdapter.fromInMemory((MerkleMap<EntityNumPair, MerkleTokenRelStatus>) relsStorage);
     }
 
@@ -585,7 +583,7 @@ public class ServicesState extends PartialNaryMerkleInternal
         return tokensMap.getClass() == MerkleMap.class
                 ? UniqueTokenMapAdapter.wrap((MerkleMap<EntityNumPair, MerkleUniqueToken>) tokensMap)
                 : UniqueTokenMapAdapter.wrap(
-                VirtualMapLike.from((VirtualMap<UniqueTokenKey, UniqueTokenValue>) tokensMap));
+                        VirtualMapLike.from((VirtualMap<UniqueTokenKey, UniqueTokenValue>) tokensMap));
     }
 
     public RecordsStorageAdapter payerRecords() {
@@ -616,9 +614,7 @@ public class ServicesState extends PartialNaryMerkleInternal
     }
 
     void createGenesisChildren(
-            final AddressBook addressBook,
-            final long seqStart,
-            final BootstrapProperties bootstrapProperties) {
+            final AddressBook addressBook, final long seqStart, final BootstrapProperties bootstrapProperties) {
         final VirtualMapFactory virtualMapFactory = getVirtualMapFactory();
         if (enabledVirtualNft) {
             setChild(StateChildIndices.UNIQUE_TOKENS, virtualMapFactory.newVirtualizedUniqueTokenStorage());
@@ -699,8 +695,8 @@ public class ServicesState extends PartialNaryMerkleInternal
     }
 
     boolean recordConsolidationRequiresMigration() {
-        return consolidateRecordStorage &&
-                (getNumberOfChildren() < StateChildIndices.NUM_032X_CHILDREN
+        return consolidateRecordStorage
+                && (getNumberOfChildren() < StateChildIndices.NUM_032X_CHILDREN
                         || getChild(StateChildIndices.PAYER_RECORDS_OR_CONSOLIDATED_FCQ) instanceof MerkleMap<?, ?>);
     }
 

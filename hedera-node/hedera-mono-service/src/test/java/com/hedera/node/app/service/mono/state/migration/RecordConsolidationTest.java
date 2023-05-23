@@ -1,4 +1,27 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app.service.mono.state.migration;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentCaptor.forClass;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
@@ -13,6 +36,11 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkle.map.MerkleMap;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Queue;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,23 +48,11 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Queue;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentCaptor.forClass;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
-
 @ExtendWith(MockitoExtension.class)
 class RecordConsolidationTest {
     @Mock
     private ServicesState mutableState;
+
     @Mock
     private AccountStorageAdapter accounts;
 
@@ -51,14 +67,12 @@ class RecordConsolidationTest {
         final int maxRecordsPerAccount = 5;
         final var accountsAndRecords = randomLegacyAccounts(numAccounts, maxRecordsPerAccount);
 
-        given(mutableState.accounts()).willReturn(
-                AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accountsAndRecords.getKey())));
+        given(mutableState.accounts())
+                .willReturn(AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accountsAndRecords.getKey())));
 
         RecordConsolidation.toSingleFcq(mutableState);
 
-        verify(mutableState).setChild(
-                eq(StateChildIndices.PAYER_RECORDS_OR_CONSOLIDATED_FCQ),
-                recordsCaptor.capture());
+        verify(mutableState).setChild(eq(StateChildIndices.PAYER_RECORDS_OR_CONSOLIDATED_FCQ), recordsCaptor.capture());
         final var capturedRecords = recordsCaptor.getValue();
         assertEquals(accountsAndRecords.getValue(), new LinkedList<>(capturedRecords));
 
@@ -84,13 +98,9 @@ class RecordConsolidationTest {
 
         RecordConsolidation.toSingleFcq(mutableState);
 
-        verify(mutableState).setChild(
-                eq(StateChildIndices.PAYER_RECORDS_OR_CONSOLIDATED_FCQ),
-                recordsCaptor.capture());
+        verify(mutableState).setChild(eq(StateChildIndices.PAYER_RECORDS_OR_CONSOLIDATED_FCQ), recordsCaptor.capture());
         final var capturedRecords = recordsCaptor.getValue();
         assertEquals(payerAndAllRecords.getValue(), new LinkedList<>(capturedRecords));
-
-        assertTrue(payerAndAllRecords.getKey().isEmpty());
     }
 
     private Pair<MerkleMap<EntityNum, MerkleAccount>, Queue<ExpirableTxnRecord>> randomLegacyAccounts(

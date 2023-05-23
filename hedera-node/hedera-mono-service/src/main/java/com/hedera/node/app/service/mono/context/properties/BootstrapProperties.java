@@ -791,6 +791,7 @@ public final class BootstrapProperties implements PropertySource {
             entry(CONTRACTS_DYNAMIC_EVM_VERSION, AS_BOOLEAN),
             entry(RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT, AS_INT),
             entry(RATES_MIDNIGHT_CHECK_INTERVAL, AS_LONG),
+            entry(RECORDS_USE_CONSOLIDATED_FCQ, AS_BOOLEAN),
             entry(SIGS_EXPAND_FROM_IMMUTABLE_STATE, AS_BOOLEAN),
             entry(SCHEDULING_LONG_TERM_ENABLED, AS_BOOLEAN),
             entry(SCHEDULING_MAX_TXN_PER_SEC, AS_LONG),

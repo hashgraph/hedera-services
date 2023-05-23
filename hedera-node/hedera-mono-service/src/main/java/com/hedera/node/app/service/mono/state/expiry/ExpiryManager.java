@@ -50,7 +50,8 @@ public class ExpiryManager {
 
     private final Map<TransactionID, TxnIdRecentHistory> txnHistories;
     private final Supplier<RecordsStorageAdapter> records;
-    private final StorageStrategy strategyInUse;
+    // Lazy-initialized after the storage strategy is known, post SwirldState.init()
+    private StorageStrategy strategyInUse;
     // Needed if strategyInUse != IN_SINGLE_FCQ so we can do deterministic expiration
     private final MonotonicFullQueueExpiries<Long> payerRecordExpiries = new MonotonicFullQueueExpiries<>();
 
@@ -59,7 +60,6 @@ public class ExpiryManager {
             final Map<TransactionID, TxnIdRecentHistory> txnHistories, final Supplier<RecordsStorageAdapter> records) {
         this.records = records;
         this.txnHistories = txnHistories;
-        this.strategyInUse = records.get().storageStrategy();
     }
 
     /**
@@ -68,7 +68,7 @@ public class ExpiryManager {
      * @param now the consensus second
      */
     public void purge(final long now) {
-        if (strategyInUse == StorageStrategy.IN_SINGLE_FCQ) {
+        if (storageStrategy() == StorageStrategy.IN_SINGLE_FCQ) {
             purgeExpiredRecordsFromConsolidatedStorageAt(now);
         } else {
             purgeExpiredRecordsFromPayerScopedStorageAt(now);
@@ -90,7 +90,7 @@ public class ExpiryManager {
 
         final var payerExpiries = new ArrayList<Map.Entry<Long, Long>>();
         final var savedRecords = records.get();
-        if (strategyInUse == StorageStrategy.IN_SINGLE_FCQ) {
+        if (storageStrategy() == StorageStrategy.IN_SINGLE_FCQ) {
             final var queryableRecords = requireNonNull(savedRecords.getQueryableRecords());
             queryableRecords.clear();
             requireNonNull(savedRecords.getRecords()).forEach(savedRecord -> {
@@ -114,7 +114,7 @@ public class ExpiryManager {
 
     void trackRecordInState(final AccountID owner, final long expiry) {
         // We only need to use an auxiliary expiration queue if records are kept per-payer in state
-        if (strategyInUse != StorageStrategy.IN_SINGLE_FCQ) {
+        if (storageStrategy() != StorageStrategy.IN_SINGLE_FCQ) {
             payerRecordExpiries.track(owner.getAccountNum(), expiry);
         }
     }
@@ -189,5 +189,13 @@ public class ExpiryManager {
     private void stage(final ExpirableTxnRecord expirableTxnRecord) {
         final var txnId = expirableTxnRecord.getTxnId().toGrpc();
         txnHistories.computeIfAbsent(txnId, ignore -> new TxnIdRecentHistory()).stage(expirableTxnRecord);
+    }
+
+    private StorageStrategy storageStrategy() {
+        if (strategyInUse == null) {
+            strategyInUse = records.get().storageStrategy();
+            log.info("Using {} strategy for record storage", strategyInUse);
+        }
+        return strategyInUse;
     }
 }
