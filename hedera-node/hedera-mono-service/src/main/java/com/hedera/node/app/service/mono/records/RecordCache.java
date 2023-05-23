@@ -30,6 +30,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -73,9 +74,9 @@ public class RecordCache {
     }
 
     public void setFailInvalid(
-            final AccountID effectivePayer,
-            final TxnAccessor accessor,
-            final Instant consensusTimestamp,
+            @NonNull final AccountID effectivePayer,
+            @NonNull final TxnAccessor accessor,
+            @NonNull final Instant consensusTimestamp,
             final long submittingMember) {
         setRecordWithStatus(effectivePayer, accessor, consensusTimestamp, submittingMember, FAIL_INVALID);
     }
@@ -90,9 +91,9 @@ public class RecordCache {
      * @param submittingMember submitting member
      */
     public void setStaleTransaction(
-            final AccountID effectivePayer,
-            final TxnAccessor accessor,
-            final Instant consensusTimestamp,
+            @NonNull final AccountID effectivePayer,
+            @NonNull final TxnAccessor accessor,
+            @NonNull final Instant consensusTimestamp,
             final long submittingMember) {
         setRecordWithStatus(effectivePayer, accessor, consensusTimestamp, submittingMember, BUSY);
     }
@@ -106,11 +107,11 @@ public class RecordCache {
      * @param status status of the transaction
      */
     private void setRecordWithStatus(
-            final AccountID effectivePayer,
-            final TxnAccessor accessor,
-            final Instant consensusTimestamp,
+            @NonNull final AccountID effectivePayer,
+            @NonNull final TxnAccessor accessor,
+            @NonNull final Instant consensusTimestamp,
             final long submittingMember,
-            final ResponseCodeEnum status) {
+            @NonNull final ResponseCodeEnum status) {
         final var recordBuilder = creator.createInvalidFailureRecord(accessor, consensusTimestamp);
         final var expiringRecord = creator.saveExpiringRecord(
                 effectivePayer, recordBuilder.build(), consensusTimestamp.getEpochSecond(), submittingMember);
