@@ -369,7 +369,7 @@ public class FakePreHandleContext implements PreHandleContext {
     @Override
     @NonNull
     public Configuration configuration() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("This class is deprecated. New functionality will not be added.");
     }
 
     @Override
