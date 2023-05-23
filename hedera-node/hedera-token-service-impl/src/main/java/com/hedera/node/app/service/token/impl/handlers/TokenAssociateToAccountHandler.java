@@ -17,15 +17,11 @@
 package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_WAS_DELETED;
-import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
@@ -247,10 +243,7 @@ public class TokenAssociateToAccountHandler implements TransactionHandler {
         // Check that the given tokens exist and are usable
         final var tokens = new ArrayList<Token>();
         for (final TokenID tokenId : tokenIds) {
-            final var token = tokenStore.get(tokenId);
-            validateTrue(token != null, INVALID_TOKEN_ID);
-            validateFalse(token.deleted(), TOKEN_WAS_DELETED);
-            validateFalse(token.paused(), TOKEN_IS_PAUSED);
+            final var token = ContextualRetriever.getIfUsable(tokenId, tokenStore);
             tokens.add(token);
         }
 
