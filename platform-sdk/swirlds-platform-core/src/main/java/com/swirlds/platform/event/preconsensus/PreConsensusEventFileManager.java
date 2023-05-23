@@ -18,6 +18,7 @@ package com.swirlds.platform.event.preconsensus;
 
 import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.LogMarker.STARTUP;
 
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
@@ -35,7 +36,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -261,16 +261,12 @@ public class PreConsensusEventFileManager {
      *                                 that may contain events with a generation greater or equal to this value. A value
      *                                 of {@link #NO_MINIMUM_GENERATION} will cause the returned iterator to walk over
      *                                 all available event files.
-     * @param requireMinimumGeneration if true, then throw if data for the requested minimum generation is not available
-     *                                 in the event files. If false, then the iterator will walk over events starting at
-     *                                 the first generation on disk that is greater or equal to the requested minimum
-     *                                 generation.
      * @param fixDiscontinuities       if true, any discontinuities after the requested minimum generation will be
      *                                 "fixed" by deleting all data following the first discontinuity.
      * @return an iterator that walks over event files in order
      */
     public @NonNull Iterator<PreConsensusEventFile> getFileIterator(
-            final long minimumGeneration, final boolean requireMinimumGeneration, final boolean fixDiscontinuities) {
+            final long minimumGeneration, final boolean fixDiscontinuities) {
 
         // Edge case: we want all events regardless of generation
         if (minimumGeneration == NO_MINIMUM_GENERATION) {
@@ -282,39 +278,38 @@ public class PreConsensusEventFileManager {
 
         // Edge case: there are no files
         if (files.size() == 0) {
-            if (requireMinimumGeneration) {
-                throw new NoSuchElementException("No event files are available, cannot iterate over events");
-            } else {
-                return Collections.emptyIterator();
-            }
+            logger.warn(STARTUP.getMarker(), "No preconsensus event files available");
+            return Collections.emptyIterator();
         }
 
         // Edge case: our first file comes after the requested starting generation
         if (files.getFirst().getMinimumGeneration() >= minimumGeneration) {
-            if (requireMinimumGeneration) {
-                // Unless we observe at least one file with a minimum generation less than the requested minimum,
-                // then we can't know for certain that we have all data for the requested minimum generation.
-                throw new NoSuchElementException("The preconscious event stream has insufficient data to satisfy the "
-                        + "requested minimum generation of " + minimumGeneration + ", the first file has a minimum "
-                        + "generation of " + files.getFirst().getMinimumGeneration());
-            } else {
-                // All files match.
-                if (fixDiscontinuities) {
-                    scanForDiscontinuities(0);
-                }
-                return files.iterator();
+            // Unless we observe at least one file with a minimum generation less than the requested minimum,
+            // then we can't know for certain that we have all data for the requested minimum generation.
+            logger.warn(
+                    STARTUP.getMarker(),
+                    "The preconscious event stream has insufficient data to satisfy the "
+                            + "requested minimum generation of {}, the first file has a minimum "
+                            + "generation of {}",
+                    minimumGeneration,
+                    files.getFirst().getMinimumGeneration());
+
+            if (fixDiscontinuities) {
+                scanForDiscontinuities(0);
             }
+            return files.iterator();
         }
 
         // Edge case: all of our data comes before the requested starting generation
         if (files.getLast().getMaximumGeneration() < minimumGeneration) {
-            if (requireMinimumGeneration) {
-                throw new NoSuchElementException("The preconscious event stream has insufficient data to satisfy the "
-                        + "requested minimum generation of " + minimumGeneration + ", the last file has a maximum "
-                        + "generation of " + files.getLast().getMaximumGeneration());
-            } else {
-                return Collections.emptyIterator();
-            }
+            logger.warn(
+                    STARTUP.getMarker(),
+                    "The preconscious event stream has insufficient data to satisfy the "
+                            + "requested minimum generation of {}, the last file has a maximum "
+                            + "generation of {}",
+                    minimumGeneration,
+                    files.getLast().getMaximumGeneration());
+            return Collections.emptyIterator();
         }
 
         // Standard case: we need to stream data starting from a file somewhere in the middle of stream
@@ -418,18 +413,14 @@ public class PreConsensusEventFileManager {
      *                                 events with a generation greater or equal to this value. No events with a smaller
      *                                 generation will be returned. A value of {@link #NO_MINIMUM_GENERATION} will cause
      *                                 the returned iterator to walk over all available events.
-     * @param requireMinimumGeneration if true, then throw if data for the requested minimum generation is not available
-     *                                 in the event files. If false, then the iterator will walk over events starting at
-     *                                 the first generation on disk that is greater or equal to the requested minimum
-     *                                 generation.
      * @param fixDiscontinuities       if true, any discontinuities after the requested minimum generation will be
      *                                 "fixed" by deleting all data following the first discontinuity.
      * @return an iterator that walks over events
      */
     public @NonNull PreConsensusEventMultiFileIterator getEventIterator(
-            final long minimumGeneration, final boolean requireMinimumGeneration, final boolean fixDiscontinuities) {
+            final long minimumGeneration, final boolean fixDiscontinuities) {
         return new PreConsensusEventMultiFileIterator(
-                minimumGeneration, getFileIterator(minimumGeneration, requireMinimumGeneration, fixDiscontinuities));
+                minimumGeneration, getFileIterator(minimumGeneration, fixDiscontinuities));
     }
 
     /**
