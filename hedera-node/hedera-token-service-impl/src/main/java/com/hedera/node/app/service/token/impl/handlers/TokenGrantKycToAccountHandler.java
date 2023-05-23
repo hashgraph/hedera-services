@@ -113,6 +113,6 @@ public class TokenGrantKycToAccountHandler implements TransactionHandler {
         final var tokenRel = tokenRelStore.getForModify(accountId, tokenId).orElse(null);
         validateTrue(tokenRel != null, INVALID_TOKEN_ID);
 
-        return requireNonNull(tokenRel);
+        return tokenRel;
     }
 }
