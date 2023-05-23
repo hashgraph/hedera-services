@@ -93,9 +93,11 @@ public class AddressBookUtils {
         } catch (NumberFormatException e) {
             throw new ParseException("Cannot parse ip port from '" + parts[7] + "'", 7);
         }
-        String memoToUse = memo;
+        final String memoToUse;
         if (parts.length == 9) {
             memoToUse = parts[8];
+        } else {
+            memoToUse = memo;
         }
 
         final boolean isOwnHost = isOwnHostDeterminer.apply(internalIp);

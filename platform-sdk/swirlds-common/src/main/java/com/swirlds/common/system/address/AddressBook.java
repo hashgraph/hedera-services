@@ -622,17 +622,20 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
     public String toConfigText() {
         final TextTable table = new TextTable().setBordersEnabled(false);
         for (final Address address : this) {
-            final boolean hasMemo = address.getMemo() != null && !address.getMemo().isEmpty();
+            final String memo = address.getMemo();
+            final boolean hasMemo = !memo.trim().isEmpty();
+            final boolean hasInternalIpv4 = address.getAddressInternalIpv4() != null;
+            final boolean hasExternalIpv4 = address.getAddressExternalIpv4() != null;
             table.addRow(
                     "address,",
                     address.getNickname() + ",",
                     address.getSelfName() + ",",
                     address.getWeight() + ",",
-                    ipString(address.getAddressInternalIpv4()) + ",",
+                    (hasInternalIpv4 ? ipString(address.getAddressInternalIpv4()) : "") + ",",
                     address.getPortInternalIpv4() + ",",
-                    ipString(address.getAddressExternalIpv4()) + ",",
+                    (hasExternalIpv4 ? ipString(address.getAddressExternalIpv4()) : "") + ",",
                     address.getPortExternalIpv4() + (hasMemo ? "," : ""),
-                    address.getMemo());
+                    memo);
         }
         return table.render();
     }
