@@ -33,6 +33,7 @@ falls through to the status with next highest precedent
 - If this call causes the total number of fallen behind reports to exceed the threshold, then
   `SwirldsPlatform::checkPlatformStatus` is called, which results in the status transitioning to `PlatformStatus::BEHIND`
   - This only occurs when the threshold is first crossed, and not on subsequent reports
+- The only way to transition out of this status is to perform a reconnect
 
 ### `MAINTENANCE`
 - Each time a round is handled with `ConsensusRoundHandler::consensusRound`,`SwirldStateManager::isInFreezePeriod`
@@ -41,16 +42,20 @@ is queried to determine whether a freeze period has started
 `SwirldsPlatform::checkPlatformStatus`, which triggers a state change to `MAINTENANCE`
   - NOTE: this will only execute a single time, since the call to `FreezeManager::freezeStarted` is guarded by a boolean
   that flips true after the first call, and is never set back to false
+- Once a round has been handled that causes the freeze (consensus) time to be reach or passed (causing the platform
+to change to `MAINTENANCE` status), no more consensus transactions will be applied to the state
 
 ### `FREEZE_COMPLETE`
 
 - When `FreezeManager::stateToDisk` is finished executing, `SwirldsPlatform::checkPlatformStatus` is called, which
 results in the status transitioning to `FREEZE_COMPLETE`
+- Once the status has changed to `FREEZE_COMPLETE`, no more events will be created
 
 ### `ACTIVE`
 
 - `SwirldsPlatform::checkPlatformStatus` is called at the end of `SwirldsPlatform::start`, which should result in the
 status transitioning to `ACTIVE`
+- This is the **only** status in which transactions are accepted from the application
 
 ### Special Case: Single Node Network
 
