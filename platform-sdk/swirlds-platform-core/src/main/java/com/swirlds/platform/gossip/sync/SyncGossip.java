@@ -122,6 +122,7 @@ public class SyncGossip extends AbstractGossip {
      * @param eventIntakeMetrics        metrics for event intake
      * @param updatePlatformStatus      a method that updates the platform status, when called
      * @param loadReconnectState        a method that should be called when a state from reconnect is obtained
+     * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
      */
     public SyncGossip(
             @NonNull final PlatformContext platformContext,
@@ -145,7 +146,8 @@ public class SyncGossip extends AbstractGossip {
             @NonNull final EventMapper eventMapper,
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
             @NonNull final Runnable updatePlatformStatus,
-            @NonNull final Consumer<SignedState> loadReconnectState) {
+            @NonNull final Consumer<SignedState> loadReconnectState,
+            @NonNull final Runnable clearAllPipelinesForReconnect) {
         super(
                 platformContext,
                 threadManager,
@@ -162,7 +164,8 @@ public class SyncGossip extends AbstractGossip {
                 eventIntakeMetrics,
                 eventObserverDispatcher,
                 updatePlatformStatus,
-                loadReconnectState);
+                loadReconnectState,
+                clearAllPipelinesForReconnect);
 
         this.eventIntakeLambda = Objects.requireNonNull(eventIntakeLambda);
 
