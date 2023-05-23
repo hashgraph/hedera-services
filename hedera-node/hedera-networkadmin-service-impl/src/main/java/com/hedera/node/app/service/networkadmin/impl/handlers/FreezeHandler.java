@@ -96,12 +96,13 @@ public class FreezeHandler implements TransactionHandler {
     @SuppressWarnings("java:S1874") // disables the warnings for use of deprecated code
     // it is necessary to check startHour, startMin, endHour, endMin, all of which are deprecated
     // because if any are present then we set a status of INVALID_FREEZE_TRANSACTION_BODY
-    private static void pureChecks(final FreezeTransactionBody freezeTxn, @NonNull final Timestamp txValidStart)
+    private static void pureChecks(
+            @NonNull final FreezeTransactionBody freezeTxn, @NonNull final Timestamp txValidStart)
             throws PreCheckException {
+        requireNonNull(freezeTxn);
         // freeze.proto properties startHour, startMin, endHour, endMin are deprecated in the protobuf
         // reject any freeze transactions that set these properties
-        if (freezeTxn == null
-                || freezeTxn.startHour() != 0
+        if (freezeTxn.startHour() != 0
                 || freezeTxn.startMin() != 0
                 || freezeTxn.endHour() != 0
                 || freezeTxn.endMin() != 0) {
@@ -133,6 +134,9 @@ public class FreezeHandler implements TransactionHandler {
             @NonNull final ReadableSpecialFileStore specialFileStore,
             @NonNull final WritableFreezeStore freezeStore) {
         requireNonNull(txn);
+        requireNonNull(adminServiceConfig);
+        requireNonNull(specialFileStore);
+        requireNonNull(freezeStore);
         final FreezeTransactionBody freezeTxn = txn.freezeOrThrow();
         final FileID updateFileNum =
                 freezeTxn.updateFile(); // only some freeze types require this, it may be null for others
@@ -189,8 +193,11 @@ public class FreezeHandler implements TransactionHandler {
      * a time in the future, where future is defined as a time after the current consensus time.
      * @throws PreCheckException if startTime is not in the future
      */
-    private static void verifyFreezeStartTimeIsInFuture(FreezeTransactionBody freezeTxn, Timestamp curConsensusTime)
+    private static void verifyFreezeStartTimeIsInFuture(
+            final @NonNull FreezeTransactionBody freezeTxn, final @NonNull Timestamp curConsensusTime)
             throws PreCheckException {
+        requireNonNull(freezeTxn);
+        requireNonNull(curConsensusTime);
         final Timestamp freezeStartTime = freezeTxn.startTime();
         if (freezeStartTime == null || (freezeStartTime.seconds() == 0 && freezeStartTime.nanos() == 0)) {
             throw new PreCheckException(INVALID_FREEZE_TRANSACTION_BODY);
@@ -213,7 +220,10 @@ public class FreezeHandler implements TransactionHandler {
      * @throws PreCheckException if updateFile or fileHash are not set or don't pass sanity checks
      */
     private static void verifyUpdateFileAndHash(
-            FreezeTransactionBody freezeTxn, ReadableSpecialFileStore specialFileStore) throws PreCheckException {
+            final @NonNull FreezeTransactionBody freezeTxn, final @NonNull ReadableSpecialFileStore specialFileStore)
+            throws PreCheckException {
+        requireNonNull(freezeTxn);
+        requireNonNull(specialFileStore);
         final FileID updateFile = freezeTxn.updateFile();
 
         if (updateFile == null || specialFileStore.get(updateFile.fileNum()).isEmpty()) {

@@ -33,6 +33,7 @@ import java.util.Comparator;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -133,30 +134,32 @@ public class FreezeUpgradeActions {
         log.info("About to unzip {} bytes for {} update into {}", size, desc, artifactsLoc);
         // we spin off a separate thread to avoid blocking handleTransaction
         // if we block handle, there could be a dramatic spike in E2E latency at the time of PREPARE_UPGRADE
-        return runAsync(() -> {
-            try {
+        return runAsync(() -> extractAndReplaceArtifacts(artifactsLoc, archiveData, size, desc, marker, now));
+    }
+
+    private void extractAndReplaceArtifacts(
+            String artifactsLoc, byte[] archiveData, int size, String desc, String marker, Instant now) {
+        try {
+            try (Stream<Path> paths = Files.walk(Paths.get(artifactsLoc))) {
                 // delete any existing files in the artifacts directory
-                Files.walk(Paths.get(artifactsLoc))
-                        .sorted(Comparator.reverseOrder())
-                        .map(Path::toFile)
-                        .forEach(File::delete);
-            } catch (final IOException e) {
-                // above is a best-effort delete
-                // if it fails, we log the error and continue
-                log.error("Failed to delete existing files in {}", artifactsLoc, e);
+                paths.sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
             }
-            try {
-                UnzipUtility.unzip(archiveData, Paths.get(artifactsLoc));
-                log.info("Finished unzipping {} bytes for {} update into {}", size, desc, artifactsLoc);
-                writeSecondMarker(marker, now);
-            } catch (final IOException e) {
-                // catch and log instead of throwing because upgrade process looks at the presence or absence
-                // of marker files to determine whether to proceed with the upgrade
-                // if second marker is present, that means the zip file was successfully extracted
-                log.error("Failed to unzip archive for NMT consumption", e);
-                log.error(MANUAL_REMEDIATION_ALERT);
-            }
-        });
+        } catch (final IOException e) {
+            // above is a best-effort delete
+            // if it fails, we log the error and continue
+            log.error("Failed to delete existing files in {}", artifactsLoc, e);
+        }
+        try {
+            UnzipUtility.unzip(archiveData, Paths.get(artifactsLoc));
+            log.info("Finished unzipping {} bytes for {} update into {}", size, desc, artifactsLoc);
+            writeSecondMarker(marker, now);
+        } catch (final IOException e) {
+            // catch and log instead of throwing because upgrade process looks at the presence or absence
+            // of marker files to determine whether to proceed with the upgrade
+            // if second marker is present, that means the zip file was successfully extracted
+            log.error("Failed to unzip archive for NMT consumption", e);
+            log.error(MANUAL_REMEDIATION_ALERT);
+        }
     }
 
     private void withNonNullDualState(

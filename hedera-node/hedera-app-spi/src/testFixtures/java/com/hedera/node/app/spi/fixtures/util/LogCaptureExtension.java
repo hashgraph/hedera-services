@@ -58,8 +58,8 @@ import org.junit.jupiter.api.extension.TestInstancePostProcessor;
  *  }
  * }</pre>
  *
- * This class was copied over from mono-service. When mono-service module goes away, it will be deleted from there and this
- * will be the only copy.
+ * This class was copied over from mono-service. When mono-service module goes away, it will be deleted from there
+ * and this will be the only copy.
  */
 public class LogCaptureExtension implements TestInstancePostProcessor, AfterEachCallback {
     private LogCaptor injectedCaptor = null;
@@ -72,10 +72,12 @@ public class LogCaptureExtension implements TestInstancePostProcessor, AfterEach
     }
 
     @Override
-    public void postProcessTestInstance(@NonNull final Object o, ExtensionContext extensionContext)
+    public void postProcessTestInstance(@NonNull final Object o, @NonNull final ExtensionContext extensionContext)
             throws IllegalAccessException {
         requireNonNull(o);
-        Class<?> testCls = o.getClass();
+        requireNonNull(extensionContext);
+
+        final Class<?> testCls = o.getClass();
 
         Field subject = null;
         Field logCaptor = null;
@@ -83,8 +85,10 @@ public class LogCaptureExtension implements TestInstancePostProcessor, AfterEach
         for (var field : testCls.getDeclaredFields()) {
             if (subject == null && isSubject(field)) {
                 subject = field;
-            } else if (isInjectableCaptor(field)) {
-                logCaptor = field;
+            } else {
+                if (isInjectableCaptor(field)) {
+                    logCaptor = field;
+                }
             }
         }
 
@@ -108,13 +112,13 @@ public class LogCaptureExtension implements TestInstancePostProcessor, AfterEach
         logCaptor.set(test, injectedCaptor);
     }
 
-    private boolean isSubject(@NonNull final Field field) {
+    private static boolean isSubject(@NonNull final Field field) {
         requireNonNull(field);
         final var annotations = field.getDeclaredAnnotations();
         return Stream.of(annotations).anyMatch(a -> a.annotationType().equals(LoggingSubject.class));
     }
 
-    private boolean isInjectableCaptor(@NonNull final Field field) {
+    private static boolean isInjectableCaptor(@NonNull final Field field) {
         if (!field.getType().equals(LogCaptor.class)) {
             return false;
         }
