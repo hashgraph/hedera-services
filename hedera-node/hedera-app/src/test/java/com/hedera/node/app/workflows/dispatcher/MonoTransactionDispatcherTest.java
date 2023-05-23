@@ -665,7 +665,7 @@ class MonoTransactionDispatcherTest {
     }
 
     @Test
-    void dispatchesFreezeExpected() {
+    void dispatchesFreezeAsExpected() {
         given(writableStoreFactory.createFreezeStore()).willReturn(writableFreezeStore);
         transactionBody = TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder()
