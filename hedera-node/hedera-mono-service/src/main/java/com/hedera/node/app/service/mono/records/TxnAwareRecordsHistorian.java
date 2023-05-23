@@ -25,7 +25,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.exceptions.ResourceLimitException;
 import com.hedera.node.app.service.mono.state.EntityCreator;
-import com.hedera.node.app.service.mono.state.expiry.ExpiryManager;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.submerkle.TxnId;
@@ -51,7 +50,6 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
     public static final int DEFAULT_SOURCE_ID = 0;
 
     private final RecordCache recordCache;
-    private final ExpiryManager expiries;
     private final TransactionContext txnCtx;
     private final ConsensusTimeTracker consensusTimeTracker;
     private final List<RecordStreamObject> precedingChildStreamObjs = new ArrayList<>();
@@ -67,11 +65,7 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
 
     @Inject
     public TxnAwareRecordsHistorian(
-            RecordCache recordCache,
-            TransactionContext txnCtx,
-            ExpiryManager expiries,
-            ConsensusTimeTracker consensusTimeTracker) {
-        this.expiries = expiries;
+            RecordCache recordCache, TransactionContext txnCtx, ConsensusTimeTracker consensusTimeTracker) {
         this.txnCtx = txnCtx;
         this.recordCache = recordCache;
         this.consensusTimeTracker = consensusTimeTracker;

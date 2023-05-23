@@ -210,6 +210,13 @@ class RecordsStorageAdapterTest {
     }
 
     @Test
+    void gettingReadOnlyForNoQueryableWithConsolidatedPayerWorks() {
+        withConsolidatedSubject();
+        final var queryable = subject.getReadOnlyPayerRecords(SOME_NUM);
+        assertSame(QueryableRecords.NO_QUERYABLE_RECORDS, queryable);
+    }
+
+    @Test
     void gettingReadOnlyWithLegacyPayerWorks() {
         withLegacySubject();
         final var aRecord = SeededPropertySource.forSerdeTest(11, 1).nextRecord();

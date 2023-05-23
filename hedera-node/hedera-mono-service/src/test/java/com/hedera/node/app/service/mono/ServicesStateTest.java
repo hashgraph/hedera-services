@@ -803,7 +803,8 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(vmf.get()).willReturn(virtualMapFactory);
 
         final var vmap = mock(VirtualMap.class);
-        mockAllMaps(mock(MerkleMap.class), vmap);
+        final var mmap = mock(MerkleMap.class);
+        mockAllMaps(mmap, vmap);
         subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
         subject.setChild(StateChildIndices.STORAGE, vmap);
         subject.setChild(StateChildIndices.CONTRACT_STORAGE, vmap);
@@ -832,6 +833,8 @@ class ServicesStateTest extends ResponsibleVMapUser {
                         virtualMapFactory,
                         ServicesState.accountMigrator,
                         ServicesState.tokenRelMigrator);
+        subject.setChild(StateChildIndices.PAYER_RECORDS_OR_CONSOLIDATED_FCQ, mmap);
+        assertEquals(StorageStrategy.IN_PAYER_SCOPED_FCQ, subject.payerRecords().storageStrategy());
 
         ServicesState.setMapToDiskMigration(MapMigrationToDisk::migrateToDiskAsApropos);
         ServicesState.setVmFactory(VirtualMapFactory::new);

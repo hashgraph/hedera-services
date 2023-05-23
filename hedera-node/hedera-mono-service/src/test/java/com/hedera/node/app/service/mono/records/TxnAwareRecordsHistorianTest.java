@@ -40,8 +40,6 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
 import com.hedera.node.app.service.mono.state.expiry.ExpiringCreations;
-import com.hedera.node.app.service.mono.state.expiry.ExpiringEntity;
-import com.hedera.node.app.service.mono.state.expiry.ExpiryManager;
 import com.hedera.node.app.service.mono.state.submerkle.CurrencyAdjustments;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
@@ -104,13 +102,7 @@ class TxnAwareRecordsHistorianTest {
     private RecordCache recordCache;
 
     @Mock
-    private ExpiryManager expiries;
-
-    @Mock
     private ExpiringCreations creator;
-
-    @Mock
-    private ExpiringEntity expiringEntity;
 
     @Mock
     private TransactionContext txnCtx;
@@ -131,7 +123,7 @@ class TxnAwareRecordsHistorianTest {
 
     @BeforeEach
     void setUp() {
-        subject = new TxnAwareRecordsHistorian(recordCache, txnCtx, expiries, consensusTimeTracker);
+        subject = new TxnAwareRecordsHistorian(recordCache, txnCtx, consensusTimeTracker);
         subject.setCreator(creator);
     }
 

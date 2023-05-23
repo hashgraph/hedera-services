@@ -72,6 +72,7 @@ class AccountStorageAdapterTest {
         assertTrue(subject.areOnDisk());
         assertNull(subject.getInMemoryAccounts());
         assertNotNull(subject.getOnDiskAccounts());
+        assertNotNull(subject.getPayerRecords());
     }
 
     @Test
@@ -80,6 +81,7 @@ class AccountStorageAdapterTest {
         assertFalse(subject.areOnDisk());
         assertNotNull(subject.getInMemoryAccounts());
         assertNull(subject.getOnDiskAccounts());
+        assertNull(subject.getPayerRecords());
     }
 
     @Test
