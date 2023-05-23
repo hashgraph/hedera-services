@@ -32,7 +32,6 @@ import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.FileMetadata;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
-import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -121,29 +120,26 @@ public class FileServiceUtils {
      * with {@link ResponseCodeEnum#UNAUTHORIZED}. If the file is already deleted, this call will
      * fail with {@link ResponseCodeEnum#FILE_DELETED}.
      *
-     * @param handleContext the handle context for the transaction.
+     * @param ledgerConfig the ledger configuration params that is need in order to verify the max file system number.
      * @param fileStore the file store to fetch the metadata of specified file id
      * @param fileId the file id to validate and to fetch the metadata
-     * @param canBeDeleted flag indicating that the file may be deleted, and the call should not
+     * @param canBeDeleted flag indicating that the file or file system may be deleted, and the call should not
      *     fail if it is.
      * @return the file metadata of specific system file id
      */
     public static @NonNull File verifySystemFile(
-            @NonNull final HandleContext handleContext,
+            @NonNull final LedgerConfig ledgerConfig,
             @NonNull final WritableFileStoreImpl fileStore,
             @NonNull final FileID fileId,
             final boolean canBeDeleted) {
-        requireNonNull(handleContext);
+
+        if (fileId.fileNum() > ledgerConfig.numReservedSystemEntities()) {
+            throw new HandleException(INVALID_FILE_ID);
+        }
 
         var optionalFile = fileStore.get(fileId.fileNum());
 
         if (optionalFile.isEmpty()) {
-            throw new HandleException(INVALID_FILE_ID);
-        }
-
-        // where to get the max special file number
-        final var ledgerConfig = handleContext.getConfiguration().getConfigData(LedgerConfig.class);
-        if (fileId.fileNum() > ledgerConfig.numReservedSystemEntities()) {
             throw new HandleException(INVALID_FILE_ID);
         }
 
@@ -170,15 +166,15 @@ public class FileServiceUtils {
      * with {@link ResponseCodeEnum#UNAUTHORIZED}. If the file is already deleted, this call will
      * fail with {@link ResponseCodeEnum#FILE_DELETED}.
      *
-     * @param handleContext the handle context for the transaction.
+     * @param ledgerConfig the ledger configuration params that is need in order to verify the max file system number.
      * @param fileStore the file store to fetch the metadata of specified file id
      * @param fileId the file id to validate and to fetch the metadata
      * @return the file metadata of specific system file id
      */
     public static @NonNull File verifySystemFile(
-            @NonNull final HandleContext handleContext,
+            @NonNull final LedgerConfig ledgerConfig,
             @NonNull final WritableFileStoreImpl fileStore,
             @NonNull final FileID fileId) {
-        return verifySystemFile(handleContext, fileStore, fileId, false);
+        return verifySystemFile(ledgerConfig, fileStore, fileId, false);
     }
 }

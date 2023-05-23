@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.file.impl;
 
 import static com.hedera.node.app.service.file.impl.FileServiceImpl.BLOBS_KEY;
-import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
@@ -76,7 +75,6 @@ public class WritableFileStoreImpl extends ReadableFileStoreImpl {
      * @param fileNum - the number of the file to be retrieved.
      */
     public @Nullable Optional<File> get(final long fileNum) {
-        requireNonNull(fileNum);
         final var file = filesState.get(EntityNum.fromLong(fileNum));
         return Optional.ofNullable(file);
     }
@@ -88,7 +86,6 @@ public class WritableFileStoreImpl extends ReadableFileStoreImpl {
      * @param fileNum - the number of the file to be retrieved.
      */
     public @Nullable Optional<File> getForModify(final long fileNum) {
-        requireNonNull(fileNum);
         final var file = filesState.getForModify(EntityNum.fromLong(fileNum));
         return Optional.ofNullable(file);
     }
@@ -117,7 +114,6 @@ public class WritableFileStoreImpl extends ReadableFileStoreImpl {
      * @param fileNum - the number of the file to be removed from state.
      */
     public void removeFile(final long fileNum) {
-        requireNonNull(fileNum);
         filesState.remove(EntityNum.fromLong(fileNum));
     }
 }

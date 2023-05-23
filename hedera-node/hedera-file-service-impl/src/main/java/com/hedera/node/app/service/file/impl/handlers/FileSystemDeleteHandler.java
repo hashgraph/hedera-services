@@ -33,6 +33,7 @@ import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.config.data.LedgerConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -85,12 +86,14 @@ public class FileSystemDeleteHandler implements TransactionHandler {
         requireNonNull(fileStore);
 
         final var fileId = systemDeleteTransactionBody.fileIDOrElse(FileID.DEFAULT);
+        final var ledgerConfig = handleContext.getConfiguration().getConfigData(LedgerConfig.class);
 
-        final File file = verifySystemFile(handleContext, fileStore, fileId);
+        final File file = verifySystemFile(ledgerConfig, fileStore, fileId);
 
         final var newExpiry = systemDeleteTransactionBody
                 .expirationTimeOrElse(new TimestampSeconds(file.expirationTime()))
                 .seconds();
+        // If the file is already expired, remove it from state completely otherwise change the deleted flag to be true.
         if (newExpiry <= handleContext.consensusNow().getEpochSecond()) {
             fileStore.removeFile(fileId.fileNum());
         } else {

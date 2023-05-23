@@ -102,7 +102,7 @@ public class FileDeleteHandler implements TransactionHandler {
             throw new HandleException(FILE_DELETED);
         }
 
-        /* Copy all the fields from existing file and change deleted flag */
+        /* Copy part of the fields from existing, delete the file content and set the deleted flag  */
         final var fileBuilder = new File.Builder()
                 .fileNumber(file.fileNumber())
                 .expirationTime(file.expirationTime())
