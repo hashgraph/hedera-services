@@ -358,17 +358,30 @@ public class PreConsensusEventFileManager {
      * @param indexOfDiscontinuity the file index of the discontinuity
      */
     private void resolveDiscontinuity(final int indexOfDiscontinuity) {
-        final PreConsensusEventFile lastUndeletedFile = files.size() == 0 ? null : files.get(indexOfDiscontinuity - 1);
 
-        logger.error(
-                EXCEPTION.getMarker(),
-                "Discontinuity detected in preconscious event stream, "
-                        + "unable to replay all events in the stream. "
-                        + "Events written to the stream after the discontinuity will be deleted. "
-                        + "Last undeleted file: {}, first deleted file: {}, last file in stream: {}",
-                lastUndeletedFile,
-                files.get(indexOfDiscontinuity),
-                files.getLast());
+        if (indexOfDiscontinuity == 0) {
+            logger.error(
+                    EXCEPTION.getMarker(),
+                    "Discontinuity detected at beginning of preconscious event stream, "
+                            + "unable to replay any events in the stream. "
+                            + "All events in the stream will be deleted. "
+                            + "first deleted file: {}, last file in stream: {}",
+                    files.get(indexOfDiscontinuity),
+                    files.getLast());
+        } else {
+            final PreConsensusEventFile lastUndeletedFile =
+                    files.size() == 0 ? null : files.get(indexOfDiscontinuity - 1);
+
+            logger.error(
+                    EXCEPTION.getMarker(),
+                    "Discontinuity detected in preconscious event stream, "
+                            + "unable to replay all events in the stream. "
+                            + "Events written to the stream after the discontinuity will be deleted. "
+                            + "Last undeleted file: {}, first deleted file: {}, last file in stream: {}",
+                    lastUndeletedFile,
+                    files.get(indexOfDiscontinuity),
+                    files.getLast());
+        }
 
         // Delete files in reverse order, so that if we crash prior to finishing at least
         // the stream does not have gaps in sequence numbers.

@@ -44,6 +44,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -792,6 +793,10 @@ class PreConsensusEventFileManagerTests {
         assertEquals(middleFileIndex + 1, firstUnPrunedIndex);
     }
 
+    /**
+     * In this test, a discontinuity is placed in the middle of the stream. We begin iterating at the first
+     * file in the stream.
+     */
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     @DisplayName("Start And First File Discontinuity In Middle Test")
@@ -871,9 +876,220 @@ class PreConsensusEventFileManagerTests {
                 manager.getFileIterator(files.get(0).getMinimumGeneration(), false, false));
     }
 
+    /**
+     * In this test, a discontinuity is placed in the first stream file. We begin iterating at the first
+     * file in the stream.
+     */
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    @DisplayName("Start And First File Discontinuity In First File Test")
+    void startAtFirstFileDiscontinuityInFirstFileTest(final boolean startAtSpecificGeneration) throws IOException {
+        final Random random = getRandomPrintSeed();
+
+        final int fileCount = 100;
+
+        final List<PreConsensusEventFile> files = new ArrayList<>();
+
+        // Intentionally pick values close to wrapping around the 3 digit to 4 digit sequence number.
+        // This will cause the files not to line up alphabetically, and this is a scenario that the
+        // code should be able to handle.
+        final long firstSequenceNumber = random.nextLong(950, 1000);
+
+        final long maxDelta = random.nextLong(10, 20);
+        long minimumGeneration = random.nextLong(0, 1000);
+        long maximumGeneration = random.nextLong(minimumGeneration, minimumGeneration + maxDelta);
+        Instant timestamp = Instant.now();
+
+        for (long sequenceNumber = firstSequenceNumber;
+                sequenceNumber < firstSequenceNumber + fileCount;
+                sequenceNumber++) {
+
+            final boolean discontinuity = sequenceNumber == firstSequenceNumber;
+
+            final PreConsensusEventFile file = PreConsensusEventFile.of(
+                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, fileDirectory, discontinuity);
+
+            minimumGeneration = random.nextLong(minimumGeneration, maximumGeneration + 1);
+            maximumGeneration =
+                    Math.max(maximumGeneration, random.nextLong(minimumGeneration, minimumGeneration + maxDelta));
+            timestamp = timestamp.plusMillis(random.nextInt(1, 100_000));
+
+            files.add(file);
+            createDummyFile(file);
+        }
+
+        final PlatformContext platformContext = buildContext();
+
+        final PreConsensusEventFileManager manager =
+                new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), 0);
+
+        // Don't try to fix discontinuities, we should see all files
+        assertIteratorEquality(
+                files.iterator(),
+                manager.getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION, false, false));
+
+        assertIteratorEquality(
+                files.iterator(), manager.getFileIterator(files.get(0).getMinimumGeneration(), false, false));
+
+        // Now, request that the discontinuity be fixed
+        if (startAtSpecificGeneration) {
+            assertIteratorEquality(
+                    Collections.emptyIterator(),
+                    manager.getFileIterator(files.get(0).getMinimumGeneration(), false, true));
+        } else {
+            assertIteratorEquality(
+                    Collections.emptyIterator(),
+                    manager.getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION, false, true));
+        }
+
+        // Future requests for files should not return any files.
+        assertIteratorEquality(
+                Collections.emptyIterator(),
+                manager.getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION, false, false));
+
+        assertIteratorEquality(
+                Collections.emptyIterator(),
+                manager.getFileIterator(files.get(0).getMinimumGeneration(), false, false));
+    }
+
+    /**
+     * In this test, a discontinuity is placed in the middle of the stream. We begin iterating at a file
+     * that comes before the discontinuity, but it isn't the first file in the stream.
+     */
     @Test
-    @DisplayName("Start And Middle File Discontinuity In Middle Test")
+    @DisplayName("Start At Middle File Discontinuity In Middle Test")
     void startAtMiddleFileDiscontinuityInMiddleTest() throws IOException {
-        // TODO
+        final Random random = getRandomPrintSeed();
+
+        final int fileCount = 100;
+
+        final List<PreConsensusEventFile> files = new ArrayList<>();
+        final List<PreConsensusEventFile> filesBeforeDiscontinuity = new ArrayList<>();
+
+        // Intentionally pick values close to wrapping around the 3 digit to 4 digit sequence number.
+        // This will cause the files not to line up alphabetically, and this is a scenario that the
+        // code should be able to handle.
+        final int firstSequenceNumber = random.nextInt(950, 1000);
+
+        // In this test, sequence numbers are intentionally chosen so that the min/max sequence number always
+        // increases by at least 1 from file to file. The purpose for this is to make validation logic simpler.
+
+        final long maxDelta = random.nextLong(10, 20);
+        long minimumGeneration = random.nextLong(0, 1000);
+        long maximumGeneration = random.nextLong(minimumGeneration + 1, minimumGeneration + maxDelta);
+        Instant timestamp = Instant.now();
+
+        final int discontinuitySequenceNumber =
+                (int) random.nextLong(firstSequenceNumber + 2, firstSequenceNumber + fileCount - 1);
+
+        final int startSequenceNumber = random.nextInt(firstSequenceNumber, discontinuitySequenceNumber - 1);
+
+        for (long sequenceNumber = firstSequenceNumber;
+                sequenceNumber < firstSequenceNumber + fileCount;
+                sequenceNumber++) {
+
+            final boolean discontinuity = sequenceNumber == discontinuitySequenceNumber;
+
+            final PreConsensusEventFile file = PreConsensusEventFile.of(
+                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, fileDirectory, discontinuity);
+
+            minimumGeneration = random.nextLong(minimumGeneration + 1, maximumGeneration + 1);
+            maximumGeneration = random.nextLong(maximumGeneration + 1, maximumGeneration + maxDelta);
+            timestamp = timestamp.plusMillis(random.nextInt(1, 100_000));
+
+            if (sequenceNumber >= startSequenceNumber) {
+                files.add(file);
+                if (sequenceNumber < discontinuitySequenceNumber) {
+                    filesBeforeDiscontinuity.add(file);
+                }
+            }
+            createDummyFile(file);
+        }
+
+        // Note that the file at index 0 is not the first file in the stream,
+        // but it is the first file we want to iterate
+        final long startGeneration = files.get(0).getMaximumGeneration();
+
+        final PlatformContext platformContext = buildContext();
+
+        final PreConsensusEventFileManager manager =
+                new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), 0);
+
+        // Don't try to fix discontinuities, we should see all files starting with the one we request
+        assertIteratorEquality(files.iterator(), manager.getFileIterator(startGeneration, false, false));
+
+        // Now, request that the discontinuity be fixed
+        assertIteratorEquality(
+                filesBeforeDiscontinuity.iterator(), manager.getFileIterator(startGeneration, false, true));
+
+        // Future requests for files should not return files after the discontinuity
+        assertIteratorEquality(
+                filesBeforeDiscontinuity.iterator(), manager.getFileIterator(startGeneration, false, false));
+    }
+
+    /**
+     * In this test, a discontinuity is placed in the middle of the stream, and we begin iterating on that exact file.
+     */
+    @Test
+    @DisplayName("Start At Middle File Discontinuity In Middle Test")
+    void startAtDiscontinuityInMiddleTest() throws IOException {
+        final Random random = getRandomPrintSeed();
+
+        final int fileCount = 100;
+
+        final List<PreConsensusEventFile> files = new ArrayList<>();
+
+        // Intentionally pick values close to wrapping around the 3 digit to 4 digit sequence number.
+        // This will cause the files not to line up alphabetically, and this is a scenario that the
+        // code should be able to handle.
+        final int firstSequenceNumber = random.nextInt(950, 1000);
+
+        // In this test, sequence numbers are intentionally chosen so that the min/max sequence number always
+        // increases by at least 1 from file to file. The purpose for this is to make validation logic simpler.
+
+        final long maxDelta = random.nextLong(10, 20);
+        long minimumGeneration = random.nextLong(0, 1000);
+        long maximumGeneration = random.nextLong(minimumGeneration + 1, minimumGeneration + maxDelta);
+        Instant timestamp = Instant.now();
+
+        final int discontinuitySequenceNumber =
+                (int) random.nextLong(firstSequenceNumber + 2, firstSequenceNumber + fileCount - 1);
+
+        for (long sequenceNumber = firstSequenceNumber;
+                sequenceNumber < firstSequenceNumber + fileCount;
+                sequenceNumber++) {
+
+            final boolean discontinuity = sequenceNumber == discontinuitySequenceNumber;
+
+            final PreConsensusEventFile file = PreConsensusEventFile.of(
+                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, fileDirectory, discontinuity);
+
+            minimumGeneration = random.nextLong(minimumGeneration + 1, maximumGeneration + 1);
+            maximumGeneration = random.nextLong(maximumGeneration + 1, maximumGeneration + maxDelta);
+            timestamp = timestamp.plusMillis(random.nextInt(1, 100_000));
+
+            if (sequenceNumber >= discontinuitySequenceNumber) {
+                files.add(file);
+            }
+            createDummyFile(file);
+        }
+
+        // Note that the file at index 0 is not the first file in the stream,
+        // but it is the first file we want to iterate
+        final long startGeneration = files.get(0).getMaximumGeneration();
+
+        final PlatformContext platformContext = buildContext();
+
+        final PreConsensusEventFileManager manager =
+                new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), 0);
+
+        // Don't try to fix discontinuities, we should see all files starting with the one we request
+        assertIteratorEquality(files.iterator(), manager.getFileIterator(startGeneration, false, false));
+
+        // Now, request that the discontinuity be fixed
+        assertIteratorEquality(Collections.emptyIterator(), manager.getFileIterator(startGeneration, false, true));
+
+        // Future requests for files should not return files after the discontinuity
+        assertIteratorEquality(Collections.emptyIterator(), manager.getFileIterator(startGeneration, false, false));
     }
 }
