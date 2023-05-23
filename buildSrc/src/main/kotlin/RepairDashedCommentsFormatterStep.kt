@@ -23,8 +23,8 @@ import com.diffplug.spotless.FormatterStep
 class RepairDashedCommentsFormatterStep {
     companion object {
         private const val NAME = "RepairDashedComments"
-        private const val OPENING_COMMENT_REGEX = "\\/\\*-+"
-        private const val CLOSING_COMMENT_REGEX = "-+\\*\\/"
+        private const val OPENING_COMMENT_REGEX = "/\\*-+"
+        private const val CLOSING_COMMENT_REGEX = "-+\\*/"
 
         fun create(): FormatterStep {
             val openingCommentRegex = Regex(OPENING_COMMENT_REGEX, setOf(RegexOption.IGNORE_CASE))

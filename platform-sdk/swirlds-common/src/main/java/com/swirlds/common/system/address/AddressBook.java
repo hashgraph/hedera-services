@@ -66,6 +66,10 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
          * In this version, the round number and next node ID fields were added to this class.
          */
         public static final int ADDRESS_BOOK_STORE_SUPPORT = 4;
+        /**
+         * In this version, NodeIds are SelfSerializable.
+         */
+        public static final int SELF_SERIALIZABLE_NODE_ID = 5;
     }
 
     // FUTURE WORK: remove this restriction and use other strategies to make serialization safe
@@ -157,7 +161,7 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
      */
     @Override
     public int getVersion() {
-        return ClassVersion.ADDRESS_BOOK_STORE_SUPPORT;
+        return ClassVersion.SELF_SERIALIZABLE_NODE_ID;
     }
 
     /**
@@ -555,7 +559,7 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
         Objects.requireNonNull(out, "out must not be null");
         out.writeSerializableIterableWithSize(iterator(), addresses.size(), false, true);
         out.writeLong(round);
-        out.writeLong(nextNodeId.id());
+        out.writeSerializable(nextNodeId, false);
     }
 
     /**
@@ -575,7 +579,11 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
         }
 
         round = in.readLong();
-        nextNodeId = new NodeId(in.readLong());
+        if (version < ClassVersion.SELF_SERIALIZABLE_NODE_ID) {
+            nextNodeId = new NodeId(in.readLong());
+        } else {
+            nextNodeId = in.readSerializable(false, NodeId::new);
+        }
     }
 
     /**

@@ -46,11 +46,11 @@ class UnitTests {
             for (final TimeUnit b : TimeUnit.values()) {
 
                 // excluding 0
-                final long quantity = random.nextInt(1, 1000) * (random.nextBoolean() ? 1 : -1);
+                final long quantity = random.nextInt(0, 1000) * (random.nextBoolean() ? 1 : -1);
                 final double newQuantity = a.convertTo(quantity, b);
                 if (a == b) {
                     assertEquals(quantity, newQuantity);
-                } else {
+                } else if (quantity != 0) {
                     assertNotEquals(quantity, newQuantity);
                 }
                 // There will be a slight difference due to imprecise floating point math, but it should be close.
@@ -210,7 +210,7 @@ class UnitTests {
                 final double newQuantity = a.convertTo(quantity, b);
                 if (a == b) {
                     assertEquals(quantity, newQuantity);
-                } else {
+                } else if (quantity != 0) {
                     assertNotEquals(quantity, newQuantity);
                 }
                 // There will be a slight difference due to imprecise floating point math, but it should be close.
@@ -362,7 +362,7 @@ class UnitTests {
                 final double newQuantity = a.convertTo(quantity, b);
                 if (a == b) {
                     assertEquals(quantity, newQuantity);
-                } else {
+                } else if (quantity != 0) {
                     assertNotEquals(quantity, newQuantity);
                 }
                 // There will be a slight difference due to imprecise floating point math, but it should be close.

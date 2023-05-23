@@ -138,7 +138,7 @@ class FilteredWritableStatesTest {
                     .state(writableCountryState()) // <-- singleton state
                     .state(writableAnimalState())
                     .state(writableSpaceState()) // <-- singleton state
-                    .state(writableSTEAMState())
+                    .state(writableSTEAMState()) // <-- queue state
                     .build();
             states = new FilteredWritableStates(delegate, Set.of(ANIMAL_STATE_KEY, COUNTRY_STATE_KEY));
         }
