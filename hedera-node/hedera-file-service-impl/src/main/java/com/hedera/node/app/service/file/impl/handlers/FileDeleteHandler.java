@@ -23,7 +23,6 @@ import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.preVa
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateAndAddRequiredKeys;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.file.FileDeleteTransactionBody;
 import com.hedera.hapi.node.state.file.File;
@@ -83,7 +82,10 @@ public class FileDeleteHandler implements TransactionHandler {
         requireNonNull(fileDeleteTransactionBody);
         requireNonNull(fileStore);
 
-        var fileId = fileDeleteTransactionBody.fileIDOrElse(FileID.DEFAULT);
+        if (!fileDeleteTransactionBody.hasFileID()) {
+            throw new HandleException(INVALID_FILE_ID);
+        }
+        var fileId = fileDeleteTransactionBody.fileIDOrThrow();
 
         var optionalFile = fileStore.get(fileId.fileNum());
 

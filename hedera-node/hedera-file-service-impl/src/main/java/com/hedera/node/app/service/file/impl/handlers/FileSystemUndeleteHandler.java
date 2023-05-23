@@ -16,11 +16,11 @@
 
 package com.hedera.node.app.service.file.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.preValidate;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateAndAddRequiredKeys;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.file.SystemUndeleteTransactionBody;
 import com.hedera.hapi.node.state.file.File;
@@ -29,6 +29,7 @@ import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.records.DeleteFileRecordBuilder;
 import com.hedera.node.app.service.file.impl.utils.FileServiceUtils;
 import com.hedera.node.app.spi.meta.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -84,7 +85,10 @@ public class FileSystemUndeleteHandler implements TransactionHandler {
         requireNonNull(systemUndeleteTransactionBody);
         requireNonNull(fileStore);
 
-        final var fileId = systemUndeleteTransactionBody.fileIDOrElse(FileID.DEFAULT);
+        if (!systemUndeleteTransactionBody.hasFileID()) {
+            throw new HandleException(INVALID_FILE_ID);
+        }
+        var fileId = systemUndeleteTransactionBody.fileIDOrThrow();
         final var ledgerConfig = handleContext.getConfiguration().getConfigData(LedgerConfig.class);
 
         final File file = FileServiceUtils.verifySystemFile(ledgerConfig, fileStore, fileId, true);
