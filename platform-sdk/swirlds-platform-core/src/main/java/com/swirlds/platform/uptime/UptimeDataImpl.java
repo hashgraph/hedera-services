@@ -50,6 +50,7 @@ public class UptimeDataImpl implements FastCopyable, SelfSerializable, MutableUp
 
     private static final class ClassVersion {
         public static final int ORIGINAL = 1;
+        public static final int SELF_SERIALIZABLE_NODE_ID = 2;
     }
 
     private final SortedMap<NodeId, NodeUptimeData> data = new TreeMap<>();
@@ -81,6 +82,14 @@ public class UptimeDataImpl implements FastCopyable, SelfSerializable, MutableUp
      */
     @Override
     public int getVersion() {
+        return ClassVersion.SELF_SERIALIZABLE_NODE_ID;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int getMinimumSupportedVersion() {
         return ClassVersion.ORIGINAL;
     }
 
@@ -198,7 +207,7 @@ public class UptimeDataImpl implements FastCopyable, SelfSerializable, MutableUp
     public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
         out.writeInt(data.size());
         for (final Entry<NodeId, NodeUptimeData> entry : data.entrySet()) {
-            out.writeLong(entry.getKey().id());
+            out.writeSerializable(entry.getKey(), false);
             out.writeSerializable(entry.getValue(), false);
         }
     }
@@ -213,9 +222,15 @@ public class UptimeDataImpl implements FastCopyable, SelfSerializable, MutableUp
             // Safety sanity check, don't let an attacker force us to allocate too much memory.
             throw new IOException("too many nodes");
         }
+
         for (int i = 0; i < lastConsensusEventTimesSize; i++) {
-            final long nodeId = in.readLong();
-            data.put(new NodeId(nodeId), in.readSerializable(false, NodeUptimeData::new));
+            final NodeId nodeId;
+            if (version < ClassVersion.SELF_SERIALIZABLE_NODE_ID) {
+                nodeId = new NodeId(in.readLong());
+            } else {
+                nodeId = in.readSerializable(false, NodeId::new);
+            }
+            data.put(nodeId, in.readSerializable(false, NodeUptimeData::new));
         }
     }
 

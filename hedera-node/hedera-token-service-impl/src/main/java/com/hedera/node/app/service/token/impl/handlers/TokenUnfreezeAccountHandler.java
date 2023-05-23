@@ -56,7 +56,7 @@ public class TokenUnfreezeAccountHandler implements TransactionHandler {
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
         final var op = context.body().tokenUnfreezeOrThrow();
-        pureChecks(op);
+        pureChecks(context.body());
 
         final var tokenStore = context.createStore(ReadableTokenStore.class);
         final var tokenMeta = tokenStore.getTokenMeta(op.tokenOrElse(TokenID.DEFAULT));
@@ -99,7 +99,9 @@ public class TokenUnfreezeAccountHandler implements TransactionHandler {
     /**
      * Performs checks independent of state or context
      */
-    private void pureChecks(@NonNull final TokenUnfreezeAccountTransactionBody op) throws PreCheckException {
+    @Override
+    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
+        final var op = txn.tokenUnfreezeOrThrow();
         if (!op.hasToken()) {
             throw new PreCheckException(INVALID_TOKEN_ID);
         }

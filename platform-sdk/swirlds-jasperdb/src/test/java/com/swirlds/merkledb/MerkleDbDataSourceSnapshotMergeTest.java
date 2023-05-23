@@ -119,7 +119,7 @@ class MerkleDbDataSourceSnapshotMergeTest {
             exec.submit(() -> {
                 // do a good snapshot
                 try {
-                    dataSource.getDatabase().snapshot(snapshotDir);
+                    dataSource.getDatabase().snapshot(snapshotDir, dataSource);
                 } finally {
                     countDownLatch.countDown();
                 }
@@ -131,7 +131,7 @@ class MerkleDbDataSourceSnapshotMergeTest {
                 try {
                     assertThrows(
                             IllegalStateException.class,
-                            () -> dataSource.getDatabase().snapshot(snapshotDir),
+                            () -> dataSource.getDatabase().snapshot(snapshotDir, dataSource),
                             "Snapshot while doing a snapshot should throw a IllegalStateException");
                 } finally {
                     countDownLatch.countDown();
