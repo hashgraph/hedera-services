@@ -210,8 +210,16 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
 
             if (isGreaterThan(
                     elapsedSinceGenesis, plannedIss.getTimeAfterGenesis().plus(ISS_WINDOW))) {
+
                 // Consensus time has skipped forward, possibly because this node was restarted.
                 // We are outside the allowable window for the scheduled ISS, so do not trigger this one.
+                logger.info(
+                        STARTUP.getMarker(),
+                        "Planned ISS skipped at {}. Planned time after genesis: {}. Elapsed time since genesis at skip: {}",
+                        currentTimestamp,
+                        plannedIss.getTimeAfterGenesis(),
+                        elapsedSinceGenesis);
+
                 continue;
             }
 
