@@ -76,6 +76,12 @@ class FilteredReadableStatesTest {
         void nonNullSingletonKey() {
             assertThatThrownBy(() -> states.getSingleton(UNKNOWN_KEY)).isInstanceOf(IllegalArgumentException.class);
         }
+
+        @Test
+        @DisplayName("Throws IAE for any non-null Queue key")
+        void nonNullQueueKey() {
+            assertThatThrownBy(() -> states.getQueue(UNKNOWN_KEY)).isInstanceOf(IllegalArgumentException.class);
+        }
     }
 
     @Nested
@@ -124,6 +130,12 @@ class FilteredReadableStatesTest {
         void nonNullSingletonKey() {
             assertThatThrownBy(() -> states.getSingleton(UNKNOWN_KEY)).isInstanceOf(IllegalArgumentException.class);
         }
+
+        @Test
+        @DisplayName("Throws IAE for any non-null Queue key")
+        void nonNullQueueKey() {
+            assertThatThrownBy(() -> states.getQueue(UNKNOWN_KEY)).isInstanceOf(IllegalArgumentException.class);
+        }
     }
 
     @Nested
@@ -138,7 +150,7 @@ class FilteredReadableStatesTest {
                     .state(readableCountryState()) // <-- singleton state
                     .state(readableAnimalState())
                     .state(readableSpaceState()) // <-- singleton state
-                    .state(readableSTEAMState())
+                    .state(readableSTEAMState()) // <-- queue state
                     .build();
             states = new FilteredReadableStates(delegate, Set.of(ANIMAL_STATE_KEY, COUNTRY_STATE_KEY));
         }
