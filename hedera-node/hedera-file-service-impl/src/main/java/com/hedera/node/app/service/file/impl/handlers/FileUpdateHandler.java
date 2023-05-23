@@ -84,8 +84,7 @@ public class FileUpdateHandler implements TransactionHandler {
 
         final var fileUpdate = handleContext.body().fileUpdate();
         final var fileStore = handleContext.writableStore(WritableFileStoreImpl.class);
-        final var maybeFile = requireNonNull(fileStore)
-                .get(fileUpdate.fileIDOrElse(FileID.DEFAULT).fileNum());
+        final var maybeFile = fileStore.get(fileUpdate.fileIDOrElse(FileID.DEFAULT).fileNum());
 
         final var fileServiceConfig = handleContext.configuration().getConfigData(FilesConfig.class);
 

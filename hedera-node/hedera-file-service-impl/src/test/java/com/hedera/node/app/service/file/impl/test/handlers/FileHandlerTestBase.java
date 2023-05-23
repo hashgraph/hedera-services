@@ -23,6 +23,7 @@ import static com.hedera.test.utils.KeyUtils.A_KEY_LIST;
 import static com.hedera.test.utils.KeyUtils.B_COMPLEX_KEY;
 import static com.hedera.test.utils.KeyUtils.B_KEY_LIST;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mock.Strictness.LENIENT;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
@@ -38,6 +39,7 @@ import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.junit.jupiter.api.BeforeEach;
@@ -86,6 +88,9 @@ public class FileHandlerTestBase {
     @Mock
     protected WritableStates writableStates;
 
+    @Mock(strictness = LENIENT)
+    protected HandleContext handleContext;
+
     protected MapReadableKVState<EntityNum, File> readableFileState;
     protected MapWritableKVState<EntityNum, File> writableFileState;
 
@@ -105,6 +110,7 @@ public class FileHandlerTestBase {
         given(writableStates.<EntityNum, File>get(FILES)).willReturn(writableFileState);
         readableStore = new ReadableFileStoreImpl(readableStates);
         writableStore = new WritableFileStoreImpl(writableStates);
+        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
     }
 
     protected void refreshStoresWithCurrentFileInBothReadableAndWritable() {
@@ -114,6 +120,7 @@ public class FileHandlerTestBase {
         given(writableStates.<EntityNum, File>get(FILES)).willReturn(writableFileState);
         readableStore = new ReadableFileStoreImpl(readableStates);
         writableStore = new WritableFileStoreImpl(writableStates);
+        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
     }
 
     @NonNull

@@ -23,7 +23,6 @@ import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.notNull;
@@ -39,10 +38,10 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.handlers.FileDeleteHandler;
-import com.hedera.node.app.service.file.impl.records.DeleteFileRecordBuilder;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -51,6 +50,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mock.Strictness;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -61,6 +61,9 @@ class FileDeleteHandlerTest extends FileHandlerTestBase {
 
     @Mock
     private ReadableFileStoreImpl mockStore;
+
+    @Mock(strictness = Strictness.LENIENT)
+    private HandleContext handleContext;
 
     @Mock
     private FileDeleteHandler subject;
@@ -73,11 +76,7 @@ class FileDeleteHandlerTest extends FileHandlerTestBase {
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<EntityNum, File>get(FILES)).willReturn(writableFileState);
         writableStore = new WritableFileStoreImpl(writableStates);
-    }
-
-    @Test
-    void returnsExpectedRecordBuilderType() {
-        assertInstanceOf(DeleteFileRecordBuilder.class, subject.newRecordBuilder());
+        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
     }
 
     @Test
@@ -109,28 +108,32 @@ class FileDeleteHandlerTest extends FileHandlerTestBase {
     @Test
     @DisplayName("Fails handle if file doesn't exist")
     void fileDoesntExist() {
-        final var txn = newDeleteTxn().fileDeleteOrThrow();
+        final var txn = newDeleteTxn();
+        given(handleContext.body()).willReturn(txn);
 
         writableFileState = emptyWritableFileState();
         given(writableStates.<EntityNum, File>get(FILES)).willReturn(writableFileState);
         writableStore = new WritableFileStoreImpl(writableStates);
+        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
 
-        final var msg = assertThrows(HandleException.class, () -> subject.handle(txn, writableStore));
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(INVALID_FILE_ID, msg.getStatus());
     }
 
     @Test
     @DisplayName("Fails handle if keys doesn't exist on file to be deleted")
     void keysDoesntExist() {
-        final var txn = newDeleteTxn().fileDeleteOrThrow();
+        final var txn = newDeleteTxn();
+        given(handleContext.body()).willReturn(txn);
 
         file = new File(fileId.fileNum(), expirationTime, null, Bytes.wrap(contents), memo, false);
 
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<EntityNum, File>get(FILES)).willReturn(writableFileState);
         writableStore = new WritableFileStoreImpl(writableStates);
+        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
 
-        final var msg = assertThrows(HandleException.class, () -> subject.handle(txn, writableStore));
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
 
         assertEquals(ResponseCodeEnum.UNAUTHORIZED, msg.getStatus());
     }
@@ -138,13 +141,14 @@ class FileDeleteHandlerTest extends FileHandlerTestBase {
     @Test
     @DisplayName("Handle works as expected")
     void handleWorksAsExpected() {
-        final var txn = newDeleteTxn().fileDeleteOrThrow();
+        final var txn = newDeleteTxn();
+        given(handleContext.body()).willReturn(txn);
 
         final var existingFile = writableStore.get(fileEntityNum.longValue());
         assertTrue(existingFile.isPresent());
         assertFalse(existingFile.get().deleted());
 
-        subject.handle(txn, writableStore);
+        subject.handle(handleContext);
 
         final var changedFile = writableStore.get(fileEntityNum.longValue());
 

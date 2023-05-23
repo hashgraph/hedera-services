@@ -19,6 +19,7 @@ package com.hedera.node.app.workflows.handle.stack;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.state.ReadableKVState;
+import com.hedera.node.app.spi.state.ReadableQueueState;
 import com.hedera.node.app.spi.state.ReadableSingletonState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.state.WrappedHederaState;
@@ -76,6 +77,12 @@ public class ReadableStatesStack implements ReadableStates {
     @NonNull
     public <T> ReadableSingletonState<T> getSingleton(@NonNull final String stateKey) {
         return new ReadableSingletonStateStack<>(this, stateKey);
+    }
+
+    @NonNull
+    @Override
+    public <E> ReadableQueueState<E> getQueue(@NonNull String stateKey) {
+        throw new UnsupportedOperationException("Queue state is not supported");
     }
 
     @Override

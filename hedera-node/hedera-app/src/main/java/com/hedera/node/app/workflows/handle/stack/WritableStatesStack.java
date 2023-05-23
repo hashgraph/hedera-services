@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableKVState;
+import com.hedera.node.app.spi.state.WritableQueueState;
 import com.hedera.node.app.spi.state.WritableSingletonState;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.workflows.handle.SavepointStackImpl;
@@ -72,6 +73,12 @@ public class WritableStatesStack implements WritableStates {
     @NonNull
     public <T> WritableSingletonState<T> getSingleton(@NonNull final String stateKey) {
         return new WritableSingletonStateStack<>(this, stateKey);
+    }
+
+    @Override
+    @NonNull
+    public <E> WritableQueueState<E> getQueue(@NonNull String stateKey) {
+        throw new UnsupportedOperationException("getQueue() is not supported");
     }
 
     @Override

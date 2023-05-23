@@ -45,6 +45,7 @@ import com.hedera.hapi.streams.RecordStreamItem;
 import com.hedera.hapi.streams.TransactionSidecarRecord;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
+import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
 import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.service.util.impl.records.PrngRecordBuilder;
 import com.hedera.node.app.spi.HapiUtils;
@@ -66,6 +67,7 @@ import java.util.List;
 public class SingleTransactionRecordBuilder
         implements ConsensusCreateTopicRecordBuilder,
                 ConsensusSubmitMessageRecordBuilder,
+                CreateFileRecordBuilder,
                 CryptoCreateRecordBuilder,
                 PrngRecordBuilder {
     // base transaction data
