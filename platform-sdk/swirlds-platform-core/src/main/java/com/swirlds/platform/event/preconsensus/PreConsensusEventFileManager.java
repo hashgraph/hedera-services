@@ -288,9 +288,8 @@ public class PreConsensusEventFileManager {
             // then we can't know for certain that we have all data for the requested minimum generation.
             logger.warn(
                     STARTUP.getMarker(),
-                    "The preconscious event stream has insufficient data to satisfy the "
-                            + "requested minimum generation of {}, the first file has a minimum "
-                            + "generation of {}",
+                    "The preconscious event stream has insufficient data to guarantee that all events with the "
+                            + "requested generation of {} are present, the first file has a minimum  generation of {}",
                     minimumGeneration,
                     files.getFirst().getMinimumGeneration());
 
@@ -304,9 +303,9 @@ public class PreConsensusEventFileManager {
         if (files.getLast().getMaximumGeneration() < minimumGeneration) {
             logger.warn(
                     STARTUP.getMarker(),
-                    "The preconscious event stream has insufficient data to satisfy the "
-                            + "requested minimum generation of {}, the last file has a maximum "
-                            + "generation of {}",
+                    "The preconscious event stream has insufficient data to guarantee that "
+                            + "all events with the requested minimum generation of {}, "
+                            + "the last file has a maximum generation of {}",
                     minimumGeneration,
                     files.getLast().getMaximumGeneration());
             return Collections.emptyIterator();
