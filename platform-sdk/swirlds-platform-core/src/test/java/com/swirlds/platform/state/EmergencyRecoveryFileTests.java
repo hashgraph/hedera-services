@@ -25,6 +25,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.test.RandomUtils;
+import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
+import com.swirlds.platform.recovery.emergencyfile.Intervals;
+import com.swirlds.platform.recovery.emergencyfile.Location;
+import com.swirlds.platform.recovery.emergencyfile.Package;
+import com.swirlds.platform.recovery.emergencyfile.Recovery;
+import com.swirlds.platform.recovery.emergencyfile.State;
+import com.swirlds.platform.recovery.emergencyfile.Stream;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -36,14 +43,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
-
-import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
-import com.swirlds.platform.recovery.emergencyfile.Intervals;
-import com.swirlds.platform.recovery.emergencyfile.Location;
-import com.swirlds.platform.recovery.emergencyfile.Package;
-import com.swirlds.platform.recovery.emergencyfile.Recovery;
-import com.swirlds.platform.recovery.emergencyfile.State;
-import com.swirlds.platform.recovery.emergencyfile.Stream;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
@@ -183,20 +182,11 @@ public class EmergencyRecoveryFileTests {
     @Test
     void testReadWriteLocations() throws IOException {
         final Random r = RandomUtils.getRandomPrintSeed();
-        final EmergencyRecoveryFile file = new EmergencyRecoveryFile(
-                new Recovery(
-                        new State(r.nextLong(), randomHash(r), Instant.now()),
-                        null,
-                        new Package(
-                                List.of(
-                                        randomLocation(r),
-                                        randomLocation(r),
-                                        randomLocation(r)
-                                )
-                        ),
-                        null
-                )
-        );
+        final EmergencyRecoveryFile file = new EmergencyRecoveryFile(new Recovery(
+                new State(r.nextLong(), randomHash(r), Instant.now()),
+                null,
+                new Package(List.of(randomLocation(r), randomLocation(r), randomLocation(r))),
+                null));
         file.write(tmpDir);
         assertDoesNotThrow(() -> EmergencyRecoveryFile.read(tmpDir), "Reading a valid file should not throw");
     }
@@ -206,24 +196,11 @@ public class EmergencyRecoveryFileTests {
         final URL badUrl = Mockito.mock(URL.class, Mockito.withSettings().mockMaker(MockMakers.INLINE));
         Mockito.when(badUrl.toString()).thenReturn("not a url");
         final Random r = RandomUtils.getRandomPrintSeed();
-        final EmergencyRecoveryFile file = new EmergencyRecoveryFile(
-                new Recovery(
-                        new State(r.nextLong(), randomHash(r), Instant.now()),
-                        null,
-                        new Package(
-                                List.of(
-                                        randomLocation(r),
-                                        randomLocation(r),
-                                        new Location(
-                                                "type",
-                                                badUrl,
-                                                randomHash(r)
-                                        )
-                                )
-                        ),
-                        null
-                )
-        );
+        final EmergencyRecoveryFile file = new EmergencyRecoveryFile(new Recovery(
+                new State(r.nextLong(), randomHash(r), Instant.now()),
+                null,
+                new Package(List.of(randomLocation(r), randomLocation(r), new Location("type", badUrl, randomHash(r)))),
+                null));
         file.write(tmpDir);
         assertThrows(
                 Exception.class,
@@ -234,14 +211,11 @@ public class EmergencyRecoveryFileTests {
     @Test
     void testReadWriteStream() throws IOException {
         final Random r = RandomUtils.getRandomPrintSeed();
-        final EmergencyRecoveryFile file = new EmergencyRecoveryFile(
-                new Recovery(
-                        new State(r.nextLong(), randomHash(r), Instant.now()),
-                        null,
-                        null,
-                        new Stream(new Intervals(2000, 5000, 900000))
-                )
-        );
+        final EmergencyRecoveryFile file = new EmergencyRecoveryFile(new Recovery(
+                new State(r.nextLong(), randomHash(r), Instant.now()),
+                null,
+                null,
+                new Stream(new Intervals(2000, 5000, 900000))));
         file.write(tmpDir);
         assertDoesNotThrow(() -> EmergencyRecoveryFile.read(tmpDir), "Reading a valid file should not throw");
     }
@@ -306,10 +280,7 @@ public class EmergencyRecoveryFileTests {
     private static Location randomLocation(final Random r) throws MalformedURLException {
         return new Location(
                 RandomStringUtils.randomAlphabetic(10),
-                new URL(String.format(
-                        "https://%s.com/",
-                        RandomStringUtils.randomAlphabetic(10)
-                )),
+                new URL(String.format("https://%s.com/", RandomStringUtils.randomAlphabetic(10))),
                 randomHash(r));
     }
 }

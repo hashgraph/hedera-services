@@ -127,5 +127,4 @@ public record EmergencyRecoveryFile(Recovery recovery) {
             throw new IOException("Required field 'hash' is null.");
         }
     }
-
 }

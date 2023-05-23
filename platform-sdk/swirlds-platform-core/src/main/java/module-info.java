@@ -125,9 +125,9 @@ module com.swirlds.platform {
     exports com.swirlds.platform.gossip;
     exports com.swirlds.platform.reconnect;
     exports com.swirlds.platform.gossip.shadowgraph;
-	exports com.swirlds.platform.recovery.emergencyfile;
+    exports com.swirlds.platform.recovery.emergencyfile;
 
-	/* Swirlds Libraries */
+    /* Swirlds Libraries */
     requires com.swirlds.base;
     requires transitive com.swirlds.common;
     requires com.swirlds.common.test;
