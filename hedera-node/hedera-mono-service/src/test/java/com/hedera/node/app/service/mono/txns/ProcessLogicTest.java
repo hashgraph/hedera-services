@@ -47,8 +47,6 @@ class ProcessLogicTest {
 
     @Mock
     private ProcessLogic subject;
-
-    private List<ConsensusTransaction> mockTxns = new ArrayList<>();
     private final SoftwareVersion eventVersion = SEMANTIC_VERSIONS.deployedSoftwareVersion();
 
     @BeforeEach
@@ -84,6 +82,7 @@ class ProcessLogicTest {
                     for (int i = 0; i < metadata.length; i++) {
                         final var event = mock(ConsensusEvent.class);
                         given(event.getCreatorId()).willReturn(metadata[i].getRight());
+                        given(event.getSoftwareVersion()).willReturn(eventVersion);
                         observer.accept(event, null);
                     }
                     return null;
