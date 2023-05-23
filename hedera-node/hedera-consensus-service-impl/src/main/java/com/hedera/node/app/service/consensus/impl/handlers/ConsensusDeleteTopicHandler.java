@@ -54,7 +54,7 @@ public class ConsensusDeleteTopicHandler implements TransactionHandler {
         final var op = context.body().consensusDeleteTopicOrThrow();
         final var topicStore = context.createStore(ReadableTopicStore.class);
         // The topic ID must be present on the transaction and the topic must exist.
-        final var topic = topicStore.getTopicMetadata(op.topicID());
+        final var topic = topicStore.getTopic(op.topicID());
         mustExist(topic, INVALID_TOPIC_ID);
         // To delete a topic, the transaction must be signed by the admin key. If there is no admin
         // key, then it is impossible to delete the topic.

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ public interface ChatterEvent extends SelfSerializable {
      *
      * @return the descriptor
      */
-    ChatterEventDescriptor getDescriptor();
+    EventDescriptor getDescriptor();
 
     /**
      * @return the time at which the event has been received
