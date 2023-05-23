@@ -27,7 +27,6 @@ import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
 import org.apache.commons.lang3.tuple.Pair;
@@ -47,6 +46,7 @@ class ProcessLogicTest {
 
     @Mock
     private ProcessLogic subject;
+
     private final SoftwareVersion eventVersion = SEMANTIC_VERSIONS.deployedSoftwareVersion();
 
     @BeforeEach
