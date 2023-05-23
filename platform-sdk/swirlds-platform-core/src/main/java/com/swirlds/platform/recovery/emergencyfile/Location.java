@@ -23,6 +23,12 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.jackson.HashDeserializer;
 import java.net.URL;
 
+/**
+ * A location where a recovery package can be downloaded from
+ * @param type the type of package file (e.g. "zip")
+ * @param url the URL where the package can be downloaded from
+ * @param hash the hash of the package file
+ */
 public record Location(
         String type,
         URL url,

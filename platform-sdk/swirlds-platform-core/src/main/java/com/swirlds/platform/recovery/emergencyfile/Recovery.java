@@ -26,5 +26,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * @param boostrap
  * 		information about the state used to bootstrap event recovery. Not written during normal
  * 		operation. Only written during event recovery.
+ * @param pkg information about where to find the emergency recovery package
+ * @param stream information about the various file streams
  */
 public record Recovery(State state, Boostrap boostrap, @JsonProperty("package") Package pkg, Stream stream) {}

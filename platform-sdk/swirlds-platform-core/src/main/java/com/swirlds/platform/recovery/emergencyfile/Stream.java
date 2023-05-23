@@ -16,4 +16,8 @@
 
 package com.swirlds.platform.recovery.emergencyfile;
 
+/**
+ * Information about the various file streams
+ * @param intervals the output intervals of the streams
+ */
 public record Stream(Intervals intervals) {}

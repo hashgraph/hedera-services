@@ -18,4 +18,8 @@ package com.swirlds.platform.recovery.emergencyfile;
 
 import java.util.List;
 
+/**
+ * Information about where to find the emergency recovery package
+ * @param locations the locations of the package
+ */
 public record Package(List<Location> locations) {}
