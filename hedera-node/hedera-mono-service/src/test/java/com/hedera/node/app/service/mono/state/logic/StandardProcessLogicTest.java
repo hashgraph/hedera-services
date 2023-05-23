@@ -253,7 +253,7 @@ class StandardProcessLogicTest {
     }
 
     @Test
-    void discardsOlderVersionEvents() throws InvalidProtocolBufferException {
+    void discardsOlderMinorVersionEvents() throws InvalidProtocolBufferException {
         final var payer = AccountID.newBuilder().setAccountNum(3).build();
         final var timeStamp = Instant.ofEpochSecond(2000L);
 
@@ -262,10 +262,12 @@ class StandardProcessLogicTest {
         given(platformTxn.getConsensusTimestamp()).willReturn(timeStamp);
 
         subject.incorporateConsensusTxn(
-                platformTxn, member, SerializableSemVers.forHapiAndHedera("1.2.3", "3.2.1-pre+1"));
-
-        assertThat(logCaptor.infoLogs(), contains(Matchers.startsWith("Rejecting transaction with transaction id")));
+                platformTxn, member, SerializableSemVers.forHapiAndHedera("0.2.3", "0.2.1-pre+1"));
         verify(recordCache).setStaleTransaction(payer, accessor, timeStamp, member);
+
+        subject.incorporateConsensusTxn(
+                platformTxn, member, SerializableSemVers.forHapiAndHedera("0.38.3", "0.38.1-pre+1"));
+        verify(recordCache, times(2)).setStaleTransaction(payer, accessor, timeStamp, member);
     }
 
     @Test

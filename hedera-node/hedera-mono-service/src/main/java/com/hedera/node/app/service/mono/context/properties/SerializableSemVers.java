@@ -37,37 +37,41 @@ public class SerializableSemVers implements SoftwareVersion {
     public static final int RELEASE_027_VERSION = 1;
     public static final long CLASS_ID = 0x6f2b1bc2df8cbd0bL;
 
-    public static final Comparator<SemanticVersion> SEM_VER_COMPARATOR = Comparator.comparingInt(
-                    SemanticVersion::getMajor)
-            .thenComparingInt(SemanticVersion::getMinor)
-            .thenComparingInt(SemanticVersion::getPatch)
-            .thenComparingInt(semver -> alphaNumberOf(semver.getPre()))
-            // Whenever there is a need for doing an upgrade with config-only changes,
-            // we set the build portion on semver. This is needed to trigger platform
-            // upgrade code, which is otherwise not triggered for config-only changes.
-            .thenComparing(SemanticVersion::getBuild);
-    public static final Comparator<SerializableSemVers> FULL_COMPARATOR = Comparator.comparing(
-                    SerializableSemVers::getServices, SEM_VER_COMPARATOR)
-            .thenComparing(SerializableSemVers::getProto, SEM_VER_COMPARATOR);
-
+    private int servicesPreAlphaNumber;
+    private int protoPreAlphaNumber;
+    private String servicesBuild;
+    private String protoBuild;
     private SemanticVersion proto;
     private SemanticVersion services;
+
+    // Just compares major minor and patch versions. Pre and Build are compared in FULL_COMPARATOR.
+    private static final Comparator<SemanticVersion> SEM_VER_COMPARATOR = Comparator.comparingInt(
+                    SemanticVersion::getMajor)
+            .thenComparingInt(SemanticVersion::getMinor)
+            .thenComparingInt(SemanticVersion::getPatch);
+
+    // Whenever there is a need for doing an upgrade with config-only changes,
+    // we set the build portion on semver. This is needed to trigger platform
+    // upgrade code, which is otherwise not triggered for config-only changes.
+    static final Comparator<SerializableSemVers> FULL_COMPARATOR = Comparator.comparing(
+                    SerializableSemVers::getServices, SEM_VER_COMPARATOR)
+            .thenComparingInt(SerializableSemVers::getServicesPreAlphaNumber)
+            .thenComparing(SerializableSemVers::getServicesBuild)
+            .thenComparing(SerializableSemVers::getProto, SEM_VER_COMPARATOR)
+            .thenComparingInt(SerializableSemVers::getProtoPreAlphaNumber)
+            .thenComparing(SerializableSemVers::getProtoBuild);
 
     public SerializableSemVers() {
         // RuntimeConstructable
     }
 
-    public SemanticVersion getProto() {
-        return proto;
-    }
-
-    public SemanticVersion getServices() {
-        return services;
-    }
-
     public SerializableSemVers(@NonNull final SemanticVersion proto, @NonNull final SemanticVersion services) {
         this.proto = proto;
         this.services = services;
+        this.servicesPreAlphaNumber = alphaNumberOf(services.getPre());
+        this.protoPreAlphaNumber = alphaNumberOf(proto.getPre());
+        this.protoBuild = proto.getBuild();
+        this.servicesBuild = services.getBuild();
     }
 
     public static SerializableSemVers forHapiAndHedera(@NonNull final String proto, @NonNull final String services) {
@@ -258,10 +262,35 @@ public class SerializableSemVers implements SoftwareVersion {
         return sb.toString();
     }
 
-    private static int alphaNumberOf(@NonNull final String pre) {
+    private int alphaNumberOf(@NonNull final String pre) {
         final var alphaMatch = ALPHA_PRE_PATTERN.matcher(pre);
         // alpha versions come before everything else
-        return alphaMatch.matches() ? Integer.parseInt(alphaMatch.group(1)) : Integer.MAX_VALUE;
+        servicesPreAlphaNumber = alphaMatch.matches() ? Integer.parseInt(alphaMatch.group(1)) : Integer.MAX_VALUE;
+        return servicesPreAlphaNumber;
+    }
+
+    public SemanticVersion getProto() {
+        return proto;
+    }
+
+    public SemanticVersion getServices() {
+        return services;
+    }
+
+    public int getServicesPreAlphaNumber() {
+        return servicesPreAlphaNumber;
+    }
+
+    public int getProtoPreAlphaNumber() {
+        return protoPreAlphaNumber;
+    }
+
+    public String getServicesBuild() {
+        return servicesBuild;
+    }
+
+    public String getProtoBuild() {
+        return protoBuild;
     }
 
     @VisibleForTesting
