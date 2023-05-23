@@ -622,6 +622,7 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
     public String toConfigText() {
         final TextTable table = new TextTable().setBordersEnabled(false);
         for (final Address address : this) {
+            final boolean hasMemo = address.getMemo() != null && !address.getMemo().isEmpty();
             table.addRow(
                     "address,",
                     address.getNickname() + ",",
@@ -630,7 +631,8 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
                     ipString(address.getAddressInternalIpv4()) + ",",
                     address.getPortInternalIpv4() + ",",
                     ipString(address.getAddressExternalIpv4()) + ",",
-                    address.getPortExternalIpv4());
+                    address.getPortExternalIpv4() + (hasMemo ? "," : ""),
+                    address.getMemo());
         }
         return table.render();
     }

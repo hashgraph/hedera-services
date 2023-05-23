@@ -52,8 +52,8 @@ public class AddressBookUtils {
         Objects.requireNonNull(isOwnHostDeterminer, "The isOwnHostDeterminer must not be null.");
         Objects.requireNonNull(memo, "The memo must not be null.");
         final String[] parts = addressLine.trim().split(",");
-        if (parts.length != 8) {
-            throw new ParseException("Not enough parts in the address line to parse correctly.", parts.length);
+        if (parts.length < 8 || parts.length > 9) {
+            throw new ParseException("Incorrect number of parts in the address line to parse correctly.", parts.length);
         }
         for (int i = 0; i < parts.length; i++) {
             parts[i] = parts[i].trim();
@@ -93,6 +93,11 @@ public class AddressBookUtils {
         } catch (NumberFormatException e) {
             throw new ParseException("Cannot parse ip port from '" + parts[7] + "'", 7);
         }
+        String memoToUse = memo;
+        if (parts.length == 9) {
+            memoToUse = parts[8];
+        }
+
         final boolean isOwnHost = isOwnHostDeterminer.apply(internalIp);
 
         return new Address(
@@ -105,7 +110,7 @@ public class AddressBookUtils {
                 internalPort,
                 externalIp.getAddress(),
                 externalPort,
-                memo);
+                memoToUse);
     }
 
     /**
