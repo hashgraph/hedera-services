@@ -12,50 +12,50 @@ import java.nio.file.Path;
 import java.util.List;
 
 @CommandLine.Command(
-		name = "generate-uid",
+		name = "validate-manifest-file",
 		mixinStandardHelpOptions = true,
 		description = "Validate whether an emergency recovery file is well formed and has the necessary information")
 @SubcommandOf(PlatformCli.class)
 public class ValidateManifestFileCommand extends AbstractCommand {
 
 	/** The path to the emergency recovery file. */
-	private Path file;
+	private Path dir;
 
 	@SuppressWarnings("unused")
-	@CommandLine.Parameters(description = "the path to manifest file, usually named emergencyRecovery.yaml")
-	private void setFile(final Path file) {
-		this.fileMustExist(file);
-		this.file = file;
+	@CommandLine.Parameters(description = "the path to dir containing manifest file which should be named emergencyRecovery.yaml")
+	private void setDir(final Path dir) {
+		this.pathMustExist(dir);
+		this.dir = dir;
 	}
 
 	@Override
 	public Integer call() throws IOException {
-		final EmergencyRecoveryFile erf = EmergencyRecoveryFile.read(file);
-		if (erf == null) {
-			// this will probably never happen, but just in case
-			throw new IOException("Emergency recovery file could not be read");
+		final EmergencyRecoveryFile file = EmergencyRecoveryFile.read(dir);
+		if (file == null) {
+			throw new IOException("Emergency recovery file could not be read from: "+dir.toAbsolutePath());
 		}
-		validateFieldExists(erf.recovery(), "recovery");
-		validateFieldExists(erf.recovery().state(), "recovery->state");
-		validateFieldExists(erf.recovery().state().hash(), "recovery->state->hash");
-		validateFieldExists(erf.recovery().state().timestamp(), "recovery->state->timestamp");
-		validateFieldExists(erf.recovery().boostrap(), "recovery->boostrap");
-		validateFieldExists(erf.recovery().boostrap().timestamp(), "recovery->boostrap->timestamp");
-		validateFieldExists(erf.recovery().pkg(), "recovery->package");
-		validateFieldExists(erf.recovery().pkg().locations(), "recovery->package->locations");
-		if(erf.recovery().pkg().locations().size() == 0) {
+		validateFieldExists(file.recovery(), "recovery");
+		validateFieldExists(file.recovery().state(), "recovery->state");
+		validateFieldExists(file.recovery().state().hash(), "recovery->state->hash");
+		validateFieldExists(file.recovery().state().timestamp(), "recovery->state->timestamp");
+		validateFieldExists(file.recovery().boostrap(), "recovery->boostrap");
+		validateFieldExists(file.recovery().boostrap().timestamp(), "recovery->boostrap->timestamp");
+		validateFieldExists(file.recovery().pkg(), "recovery->package");
+		validateFieldExists(file.recovery().pkg().locations(), "recovery->package->locations");
+		if(file.recovery().pkg().locations().size() == 0) {
 			throw new IOException("The file should have at least one location in the recovery->package->locations field");
 		}
-		List<Location> locations = erf.recovery().pkg().locations();
+		List<Location> locations = file.recovery().pkg().locations();
 		for (int i = 0; i < locations.size(); i++) {
 			final Location location = locations.get(i);
 			validateFieldExists(location.type(), String.format("recovery->package->locations[%d]->type", i));
 			validateFieldExists(location.url(), String.format("recovery->package->locations[%d]->url", i));
 			validateFieldExists(location.hash(), String.format("recovery->package->locations[%d]->hash", i));
 		}
-		validateFieldExists(erf.recovery().stream(), "recovery->stream");
-		validateFieldExists(erf.recovery().stream().intervals(), "recovery->stream->intervals");
+		validateFieldExists(file.recovery().stream(), "recovery->stream");
+		validateFieldExists(file.recovery().stream().intervals(), "recovery->stream->intervals");
 
+		System.out.println("The emergency recovery file is well formed and has the necessary information.");
 		return 0;
 	}
 
