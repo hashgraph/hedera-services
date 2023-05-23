@@ -27,7 +27,6 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.file.FileCreateTransactionBody;
 import com.hedera.hapi.node.state.file.File;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
@@ -50,11 +49,6 @@ public class FileCreateHandler implements TransactionHandler {
     @Inject
     public FileCreateHandler() {
         // Exists for injection
-    }
-
-    @Override
-    public void pureChecks(@NonNull TransactionBody txn) {
-        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     /**

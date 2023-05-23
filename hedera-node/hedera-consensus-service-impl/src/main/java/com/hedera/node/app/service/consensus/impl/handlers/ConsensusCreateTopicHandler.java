@@ -29,7 +29,6 @@ import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.consensus.ConsensusCreateTopicTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
@@ -53,11 +52,6 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
     @Inject
     public ConsensusCreateTopicHandler() {
         // Exists for injection
-    }
-
-    @Override
-    public void pureChecks(@NonNull TransactionBody txn) {
-        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override

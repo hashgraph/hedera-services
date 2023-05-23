@@ -19,7 +19,6 @@ package com.hedera.node.app.service.contract.impl.handlers;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -34,11 +33,6 @@ public class ContractSystemDeleteHandler implements TransactionHandler {
     @Inject
     public ContractSystemDeleteHandler() {
         // Exists for injection
-    }
-
-    @Override
-    public void pureChecks(@NonNull TransactionBody txn) {
-        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override

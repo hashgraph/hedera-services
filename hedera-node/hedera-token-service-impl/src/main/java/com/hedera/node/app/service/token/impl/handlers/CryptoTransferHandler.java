@@ -58,11 +58,6 @@ public class CryptoTransferHandler implements TransactionHandler {
         // Exists for injection
     }
 
-    @Override
-    public void pureChecks(@NonNull TransactionBody txn) {
-        throw new UnsupportedOperationException("Not implemented yet");
-    }
-
     /**
      * Validates a {@link HederaFunctionality#CRYPTO_TRANSFER} that is part of a {@link Query}.
      *

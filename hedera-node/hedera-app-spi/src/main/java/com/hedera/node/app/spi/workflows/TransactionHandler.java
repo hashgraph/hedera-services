@@ -44,6 +44,8 @@ public interface TransactionHandler {
      * @param txn the transaction body
      * @throws PreCheckException if the transaction is invalid
      */
+    // NOTE: FUTURE: This method should not be default, but should be implemented by all
+    // transaction handlers. This is a temporary measure to avoid merge conflicts.
     default void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {}
 
     /**
