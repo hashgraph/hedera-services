@@ -99,10 +99,10 @@ public class FreezeHandler implements TransactionHandler {
     private static void pureChecks(
             @NonNull final FreezeTransactionBody freezeTxn, @NonNull final Timestamp txValidStart)
             throws PreCheckException {
-        requireNonNull(freezeTxn);
         // freeze.proto properties startHour, startMin, endHour, endMin are deprecated in the protobuf
         // reject any freeze transactions that set these properties
-        if (freezeTxn.startHour() != 0
+        if (freezeTxn == null
+                || freezeTxn.startHour() != 0
                 || freezeTxn.startMin() != 0
                 || freezeTxn.endHour() != 0
                 || freezeTxn.endMin() != 0) {

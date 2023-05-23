@@ -88,24 +88,27 @@ public class FreezeUpgradeActions {
         return extractNow(archiveData, PREPARE_UPGRADE_DESC, EXEC_IMMEDIATE_MARKER, null);
     }
 
-    public void scheduleFreezeOnlyAt(@NonNull final Instant freezeTime) {
+    public CompletableFuture<Void> scheduleFreezeOnlyAt(@NonNull final Instant freezeTime) {
         requireNonNull(freezeTime);
         withNonNullDualState("schedule freeze", ds -> ds.freezeTime(freezeTime));
+        return CompletableFuture.completedFuture(null); // return a future which completes immediately
     }
 
-    public void scheduleFreezeUpgradeAt(@NonNull final Instant freezeTime) {
+    public CompletableFuture<Void> scheduleFreezeUpgradeAt(@NonNull final Instant freezeTime) {
         requireNonNull(freezeTime);
         withNonNullDualState("schedule freeze", ds -> {
             ds.freezeTime(freezeTime);
             writeSecondMarker(FREEZE_SCHEDULED_MARKER, freezeTime);
         });
+        return CompletableFuture.completedFuture(null); // return a future which completes immediately
     }
 
-    public void abortScheduledFreeze() {
+    public CompletableFuture<Void> abortScheduledFreeze() {
         withNonNullDualState("abort freeze", ds -> {
             ds.freezeTime(null);
             writeCheckMarker(FREEZE_ABORTED_MARKER);
         });
+        return CompletableFuture.completedFuture(null); // return a future which completes immediately
     }
 
     public boolean isFreezeScheduled() {
