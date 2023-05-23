@@ -5,14 +5,13 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.hedera.node.app.service.file.impl.test.handlers;
@@ -95,6 +94,7 @@ class FileCreateHandlerTest extends FileHandlerTestBase {
 
     @Mock
     private CreateFileRecordBuilder recordBuilder;
+
     private FilesConfig config;
 
     private WritableFileStoreImpl fileStore;
@@ -124,7 +124,9 @@ class FileCreateHandlerTest extends FileHandlerTestBase {
         subject = new FileCreateHandler();
         fileStore = new WritableFileStoreImpl(writableStates);
         config = new FilesConfig(101L, 121L, 112L, 111L, 122L, 102L, 123L, 1000000L, 1024);
-        lenient().when(handleContext.recordBuilder(CreateFileRecordBuilder.class)).thenReturn(recordBuilder);
+        lenient()
+                .when(handleContext.recordBuilder(CreateFileRecordBuilder.class))
+                .thenReturn(recordBuilder);
         lenient().when(handleContext.configuration()).thenReturn(configuration);
         lenient().when(configuration.getConfigData(FilesConfig.class)).thenReturn(config);
         lenient().when(handleContext.writableStore(WritableFileStoreImpl.class)).thenReturn(fileStore);
@@ -258,8 +260,7 @@ class FileCreateHandlerTest extends FileHandlerTestBase {
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any()))
                 .willThrow(new HandleException(ResponseCodeEnum.INVALID_EXPIRATION_TIME));
 
-        final var failure =
-                assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        final var failure = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE, failure.getStatus());
     }
 
@@ -299,8 +300,7 @@ class FileCreateHandlerTest extends FileHandlerTestBase {
         config = new FilesConfig(1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1);
         given(configuration.getConfigData(any())).willReturn(config);
 
-        final var msg =
-                assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED, msg.getStatus());
         assertEquals(0, this.fileStore.modifiedFiles().size());
     }

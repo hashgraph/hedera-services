@@ -190,8 +190,7 @@ class FileUpdateHandlerTest extends FileHandlerTestBase {
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
 
         // expect:
-        assertFailsWith(
-                ResponseCodeEnum.MAX_FILE_SIZE_EXCEEDED, () -> subject.handle(handleContext));
+        assertFailsWith(ResponseCodeEnum.MAX_FILE_SIZE_EXCEEDED, () -> subject.handle(handleContext));
     }
 
     @Test

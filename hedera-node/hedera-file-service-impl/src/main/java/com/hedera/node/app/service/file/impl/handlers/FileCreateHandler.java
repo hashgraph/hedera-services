@@ -125,8 +125,7 @@ public class FileCreateHandler implements TransactionHandler {
             fileStore.put(file);
 
             final var fileID = FileID.newBuilder().fileNum(file.fileNumber()).build();
-            handleContext.recordBuilder(CreateFileRecordBuilder.class)
-                            .fileID(fileID);
+            handleContext.recordBuilder(CreateFileRecordBuilder.class).fileID(fileID);
         } catch (final HandleException e) {
             if (e.getStatus() == INVALID_EXPIRATION_TIME) {
                 // Since for some reason CreateTransactionBody does not have an expiration time,
