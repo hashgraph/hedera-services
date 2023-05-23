@@ -83,8 +83,10 @@ public class WritableTokenRelationStore extends ReadableTokenRelationStoreImpl {
         requireNonNull(accountId);
         requireNonNull(tokenId);
 
+        if (AccountID.DEFAULT.equals(accountId) || TokenID.DEFAULT.equals(tokenId)) return Optional.empty();
+
         final var token = Objects.requireNonNull(tokenRelState)
-                .getForModify(EntityNumPair.fromLongs(accountId.accountNumOrThrow(), tokenId.tokenNum()));
+                .getForModify(EntityNumPair.fromLongs(accountId.accountNum(), tokenId.tokenNum()));
         return Optional.ofNullable(token);
     }
 
