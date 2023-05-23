@@ -81,6 +81,12 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
         return stack.size();
     }
 
+    /**
+     * Returns the current {@link Savepoint} without removing it from the stack.
+     *
+     * @return the current {@link Savepoint}
+     * @throws IllegalStateException if the stack has been committed already
+     */
     @NonNull
     public Savepoint peek() {
         if (stack.isEmpty()) {
@@ -106,7 +112,7 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
 
     @Override
     @NonNull
-    public WritableStates createWritableStates(@NonNull String serviceName) {
+    public WritableStates createWritableStates(@NonNull final String serviceName) {
         return writableStatesMap.computeIfAbsent(serviceName, s -> new WritableStatesStack(this, s));
     }
 

@@ -79,17 +79,17 @@ public class WritableKVStateStack<K, V> implements WritableKVState<K, V> {
 
     @Override
     @Nullable
-    public V getForModify(@NonNull K key) {
+    public V getForModify(@NonNull final K key) {
         return getCurrent().getForModify(key);
     }
 
     @Override
-    public void put(@NonNull K key, @NonNull V value) {
+    public void put(@NonNull final K key, @NonNull final V value) {
         getCurrent().put(key, value);
     }
 
     @Override
-    public void remove(@NonNull K key) {
+    public void remove(@NonNull final K key) {
         getCurrent().remove(key);
     }
 
@@ -99,8 +99,8 @@ public class WritableKVStateStack<K, V> implements WritableKVState<K, V> {
         return getCurrent().keys();
     }
 
-    @NonNull
     @Override
+    @NonNull
     public Set<K> modifiedKeys() {
         return getCurrent().modifiedKeys();
     }

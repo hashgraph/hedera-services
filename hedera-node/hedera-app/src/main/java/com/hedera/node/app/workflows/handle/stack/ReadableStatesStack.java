@@ -49,7 +49,9 @@ public class ReadableStatesStack implements ReadableStates {
      * @param stack the {@link SavepointStackImpl} that contains the stack of states
      * @param serviceName the name of the service that owns the state
      */
-    public ReadableStatesStack(SavepointStackImpl stack, String serviceName) {
+    public ReadableStatesStack(
+            @NonNull final SavepointStackImpl stack,
+            @NonNull final String serviceName) {
         this.stack = requireNonNull(stack, "stack must not be null");
         this.statesName = requireNonNull(serviceName, "serviceName must not be null");
     }
@@ -66,20 +68,20 @@ public class ReadableStatesStack implements ReadableStates {
                 stack.peek().state(), hederaState -> hederaState.createReadableStates(statesName));
     }
 
-    @NonNull
     @Override
-    public <K, V> ReadableKVState<K, V> get(@NonNull String stateKey) {
+    @NonNull
+    public <K, V> ReadableKVState<K, V> get(@NonNull final String stateKey) {
         return new ReadableKVStateStack<>(this, stateKey);
     }
 
-    @NonNull
     @Override
-    public <T> ReadableSingletonState<T> getSingleton(@NonNull String stateKey) {
+    @NonNull
+    public <T> ReadableSingletonState<T> getSingleton(@NonNull final String stateKey) {
         return new ReadableSingletonStateStack<>(this, stateKey);
     }
 
     @Override
-    public boolean contains(@NonNull String stateKey) {
+    public boolean contains(@NonNull final String stateKey) {
         return getCurrent().contains(stateKey);
     }
 

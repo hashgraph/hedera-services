@@ -155,7 +155,7 @@ public class HandleContextImpl implements HandleContext {
 
     @Override
     @NonNull
-    public <C> C readableStore(@NonNull Class<C> storeInterface) {
+    public <C> C readableStore(@NonNull final Class<C> storeInterface) {
         requireNonNull(storeInterface, "storeInterface must not be null");
         if (readableStoreFactory == null) {
             readableStoreFactory = new ReadableStoreFactory(stack);
@@ -165,7 +165,7 @@ public class HandleContextImpl implements HandleContext {
 
     @Override
     @NonNull
-    public <C> C writableStore(@NonNull Class<C> storeInterface) {
+    public <C> C writableStore(@NonNull final Class<C> storeInterface) {
         requireNonNull(storeInterface, "storeInterface must not be null");
         return writableStoreFactory.getStore(storeInterface);
     }
@@ -178,7 +178,8 @@ public class HandleContextImpl implements HandleContext {
     }
 
     private static <T> T castRecordBuilder(
-            @NonNull final SingleTransactionRecordBuilder recordBuilder, @NonNull final Class<T> recordBuilderClass) {
+            @NonNull final SingleTransactionRecordBuilder recordBuilder,
+            @NonNull final Class<T> recordBuilderClass) {
         if (!recordBuilderClass.isInstance(recordBuilder)) {
             throw new IllegalArgumentException("Not a valid record builder class");
         }
@@ -188,7 +189,8 @@ public class HandleContextImpl implements HandleContext {
     @Override
     @NonNull
     public <T> T dispatchPrecedingTransaction(
-            @NonNull final TransactionBody txBody, @NonNull final Class<T> recordBuilderClass) {
+            @NonNull final TransactionBody txBody,
+            @NonNull final Class<T> recordBuilderClass) {
         requireNonNull(txBody, "txBody must not be null");
         requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
 
@@ -214,7 +216,8 @@ public class HandleContextImpl implements HandleContext {
     @Override
     @NonNull
     public <T> T dispatchChildTransaction(
-            @NonNull final TransactionBody txBody, @NonNull final Class<T> recordBuilderClass) {
+            @NonNull final TransactionBody txBody,
+            @NonNull final Class<T> recordBuilderClass) {
         final var childRecordBuilder = recordListBuilder.addChild(configuration());
         return dispatchChildTransaction(txBody, childRecordBuilder, recordBuilderClass);
     }
@@ -222,7 +225,8 @@ public class HandleContextImpl implements HandleContext {
     @Override
     @NonNull
     public <T> T dispatchRemovableChildTransaction(
-            @NonNull final TransactionBody txBody, @NonNull final Class<T> recordBuilderClass) {
+            @NonNull final TransactionBody txBody,
+            @NonNull final Class<T> recordBuilderClass) {
         final var childRecordBuilder = recordListBuilder.addRemovableChild(configuration());
         return dispatchChildTransaction(txBody, childRecordBuilder, recordBuilderClass);
     }
@@ -277,14 +281,14 @@ public class HandleContextImpl implements HandleContext {
 
     @Override
     @NonNull
-    public <T> T addChildRecordBuilder(@NonNull Class<T> recordBuilderClass) {
+    public <T> T addChildRecordBuilder(@NonNull final Class<T> recordBuilderClass) {
         final var result = recordListBuilder.addChild(configuration());
         return castRecordBuilder(result, recordBuilderClass);
     }
 
     @Override
     @NonNull
-    public <T> T addRemovableChildRecordBuilder(@NonNull Class<T> recordBuilderClass) {
+    public <T> T addRemovableChildRecordBuilder(@NonNull final Class<T> recordBuilderClass) {
         final var result = recordListBuilder.addRemovableChild(configuration());
         return castRecordBuilder(result, recordBuilderClass);
     }

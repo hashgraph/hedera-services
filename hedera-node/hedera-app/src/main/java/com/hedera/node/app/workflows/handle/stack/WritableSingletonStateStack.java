@@ -62,8 +62,8 @@ public class WritableSingletonStateStack<T> implements WritableSingletonState<T>
         return writableStatesStack.getCurrent().getSingleton(stateKey);
     }
 
-    @NonNull
     @Override
+    @NonNull
     public String getStateKey() {
         return getCurrent().getStateKey();
     }
@@ -80,7 +80,7 @@ public class WritableSingletonStateStack<T> implements WritableSingletonState<T>
     }
 
     @Override
-    public void put(@Nullable T value) {
+    public void put(@Nullable final T value) {
         getCurrent().put(value);
     }
 

@@ -57,6 +57,9 @@ import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * The handle workflow that is responsible for handling the next {@link Round} of transactions.
+ */
 public class HandleWorkflow {
 
     private static final Logger LOG = LogManager.getLogger(HandleWorkflow.class);
@@ -122,7 +125,7 @@ public class HandleWorkflow {
         final var recordListBuilder = new RecordListBuilder(consensusNow, recordBuilder);
 
         try {
-            final var verifications = getUpdatedVerifications(state, platformEvent, platformTxn);
+            final var verifications = getVerifications(state, platformEvent, platformTxn);
 
             // Read all signature verifications. This will also wait, if validation is still ongoing.
             final var keyVerifications = new HashMap<Key, SignatureVerification>();
@@ -153,7 +156,9 @@ public class HandleWorkflow {
             // Dispatch the transaction to the handler
             dispatcher.dispatchHandle(context);
 
-            // TODO: Finalize transaction
+            // TODO: Kick off special file handling if needed
+
+            // TODO: Finalize transaction with the help of the token service
 
             // commit state
             stack.commit();
@@ -182,10 +187,17 @@ public class HandleWorkflow {
             @NonNull final RecordListBuilder recordListBuilder) {
         recordBuilder.status(status);
         recordListBuilder.revertChildRecordBuilders(recordBuilder);
-        // TODO: Finalize failed transaction and commit required state changes
+        // TODO: Finalize failed transaction with the help of token-service and commit required state changes
     }
 
-    private VerificationResult getUpdatedVerifications(
+    /*
+     * This method gets all the verification data for the current transaction. If pre-handle was previously ran
+     * successfully, we only add the missing keys. If it did not run or an error occurred, we run it again.
+     * If there is a due diligence error, this method will return a CryptoTransfer to charge the node along with
+     * its verification data.
+     */
+    @NonNull
+    private VerificationResult getVerifications(
             @NonNull final HederaState state,
             @NonNull final ConsensusEvent platformEvent,
             @NonNull final ConsensusTransaction platformTxn)
@@ -194,22 +206,28 @@ public class HandleWorkflow {
         // We do not know how long transactions are kept in memory. Clearing metadata to avoid keeping it for too long.
         platformTxn.setMetadata(null);
 
+        // First check if pre-handle was run successfully and all configuration has not changed
         if (preHandleStillValid(metadata)) {
             final var previousResult = (PreHandleResult) metadata;
+            // In case of due diligence error, we prepare a CryptoTransfer to charge the node and return immediately.
             if (previousResult.status() == Status.NODE_DUE_DILIGENCE_FAILURE) {
                 return createPenaltyPayment();
             }
 
+            // If pre-handle was successful, we need to add signatures that were not known at the time of pre-handle.
             if (previousResult.status() == Status.SO_FAR_SO_GOOD) {
                 return addMissingSignatures(state, previousResult);
             }
         }
 
+        // If we reach this point, either pre-handle was not run or it failed but may succeed now.
+        // Therefore we simply rerun pre-handle.
         final var storeFactory = new ReadableStoreFactory(state);
         final var accountStore = storeFactory.getStore(ReadableAccountStore.class);
         final var creator = nodeInfo.accountOf(platformEvent.getCreatorId());
         final var result = preHandleWorkflow.preHandleTransaction(creator, storeFactory, accountStore, platformTxn);
 
+        // If pre-handle was successful, we return the result. Otherwise, we charge the node or throw an exception.
         return switch (result.status()) {
             case SO_FAR_SO_GOOD -> new VerificationResult(result);
             case NODE_DUE_DILIGENCE_FAILURE -> createPenaltyPayment();
@@ -217,6 +235,7 @@ public class HandleWorkflow {
         };
     }
 
+    @NonNull
     private VerificationResult createPenaltyPayment() {
         // TODO: Implement HandleWorkflow.createPnealtyPayment()
         throw new UnsupportedOperationException("Not implemented yet");
@@ -227,8 +246,16 @@ public class HandleWorkflow {
         return metadata instanceof PreHandleResult;
     }
 
+    /*
+     * This method is called when a previous run of pre-handle was successful. We gather the keys again and check if
+     * any keys need to be added. If so, we trigger the signature verification for the new keys and collect all
+     * results.
+     */
+    @NonNull
     private VerificationResult addMissingSignatures(
-            @NonNull final HederaState state, @NonNull final PreHandleResult previousResult) throws PreCheckException {
+            @NonNull final HederaState state,
+            @NonNull final PreHandleResult previousResult)
+            throws PreCheckException {
         final var txBody = previousResult.txInfo().txBody();
 
         // extract keys and hollow accounts again
@@ -260,8 +287,15 @@ public class HandleWorkflow {
         return new VerificationResult(txBody, newVerifications);
     }
 
+    /**
+     * A small data structure to hold the verification data of a transaction
+     * @param txBody
+     * @param keyVerifications
+     */
     private record VerificationResult(
-            @NonNull TransactionBody txBody, @NonNull Map<Key, SignatureVerificationFuture> keyVerifications) {
+            @NonNull TransactionBody txBody,
+            @NonNull Map<Key, SignatureVerificationFuture> keyVerifications) {
+
         @SuppressWarnings("DataFlowIssue")
         public VerificationResult(PreHandleResult result) {
             this(result.txInfo().txBody(), result.verificationResults());

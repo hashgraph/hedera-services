@@ -49,7 +49,8 @@ public class ReadableSingletonStateStack<T> implements ReadableSingletonState<T>
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public ReadableSingletonStateStack(
-            @NonNull final ReadableStatesStack readableStatesStack, @NonNull final String stateKey) {
+            @NonNull final ReadableStatesStack readableStatesStack,
+            @NonNull final String stateKey) {
         this.readableStatesStack = requireNonNull(readableStatesStack, "readableStates must not be null");
         this.stateKey = requireNonNull(stateKey, "stateKey must not be null");
     }
