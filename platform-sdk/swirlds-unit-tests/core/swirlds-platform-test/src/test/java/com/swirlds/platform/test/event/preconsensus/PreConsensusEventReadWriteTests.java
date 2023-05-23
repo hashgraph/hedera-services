@@ -98,23 +98,15 @@ class PreConsensusEventReadWriteTests {
             events.add(generator.generateEvent());
         }
 
-        long minimumGeneration = Long.MAX_VALUE;
         long maximumGeneration = Long.MIN_VALUE;
         for (final EventImpl event : events) {
-            minimumGeneration = Math.min(minimumGeneration, event.getGeneration());
             maximumGeneration = Math.max(maximumGeneration, event.getGeneration());
         }
 
-        minimumGeneration -= random.nextInt(0, 10);
         maximumGeneration += random.nextInt(0, 10);
 
         final PreConsensusEventFile file = PreConsensusEventFile.of(
-                random.nextInt(0, 100),
-                minimumGeneration,
-                maximumGeneration,
-                RandomUtils.randomInstant(random),
-                testDirectory,
-                false);
+                random.nextInt(0, 100), 0, maximumGeneration, RandomUtils.randomInstant(random), testDirectory, false);
 
         final PreConsensusEventMutableFile mutableFile = file.getMutableFile();
         for (final EventImpl event : events) {
@@ -151,25 +143,17 @@ class PreConsensusEventReadWriteTests {
             events.add(generator.generateEvent());
         }
 
-        long minimumGeneration = Long.MAX_VALUE;
         long maximumGeneration = Long.MIN_VALUE;
         for (final EventImpl event : events) {
-            minimumGeneration = Math.min(minimumGeneration, event.getGeneration());
             maximumGeneration = Math.max(maximumGeneration, event.getGeneration());
         }
 
-        final long middle = (minimumGeneration + maximumGeneration) / 2;
+        final long middle = maximumGeneration / 2;
 
-        minimumGeneration -= random.nextInt(0, 10);
         maximumGeneration += random.nextInt(0, 10);
 
         final PreConsensusEventFile file = PreConsensusEventFile.of(
-                random.nextInt(0, 100),
-                minimumGeneration,
-                maximumGeneration,
-                RandomUtils.randomInstant(random),
-                testDirectory,
-                false);
+                random.nextInt(0, 100), 0, maximumGeneration, RandomUtils.randomInstant(random), testDirectory, false);
 
         final PreConsensusEventMutableFile mutableFile = file.getMutableFile();
         for (final EventImpl event : events) {
@@ -237,23 +221,15 @@ class PreConsensusEventReadWriteTests {
             events.add(generator.generateEvent());
         }
 
-        long minimumGeneration = Long.MAX_VALUE;
         long maximumGeneration = Long.MIN_VALUE;
         for (final EventImpl event : events) {
-            minimumGeneration = Math.min(minimumGeneration, event.getGeneration());
             maximumGeneration = Math.max(maximumGeneration, event.getGeneration());
         }
 
-        minimumGeneration -= random.nextInt(0, 10);
         maximumGeneration += random.nextInt(0, 10);
 
         final PreConsensusEventFile file = PreConsensusEventFile.of(
-                random.nextInt(0, 100),
-                minimumGeneration,
-                maximumGeneration,
-                RandomUtils.randomInstant(random),
-                testDirectory,
-                false);
+                random.nextInt(0, 100), 0, maximumGeneration, RandomUtils.randomInstant(random), testDirectory, false);
 
         final Map<Integer /* event index */, Integer /* last byte position */> byteBoundaries = new HashMap<>();
 
@@ -305,23 +281,15 @@ class PreConsensusEventReadWriteTests {
             events.add(generator.generateEvent());
         }
 
-        long minimumGeneration = Long.MAX_VALUE;
         long maximumGeneration = Long.MIN_VALUE;
         for (final EventImpl event : events) {
-            minimumGeneration = Math.min(minimumGeneration, event.getGeneration());
             maximumGeneration = Math.max(maximumGeneration, event.getGeneration());
         }
 
-        minimumGeneration -= random.nextInt(0, 10);
         maximumGeneration += random.nextInt(0, 10);
 
         final PreConsensusEventFile file = PreConsensusEventFile.of(
-                random.nextInt(0, 100),
-                minimumGeneration,
-                maximumGeneration,
-                RandomUtils.randomInstant(random),
-                testDirectory,
-                false);
+                random.nextInt(0, 100), 0, maximumGeneration, RandomUtils.randomInstant(random), testDirectory, false);
 
         final Map<Integer /* event index */, Integer /* last byte position */> byteBoundaries = new HashMap<>();
 
