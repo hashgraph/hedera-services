@@ -628,13 +628,9 @@ public class Browser {
         for (final Address address : addressBook) {
             final NodeId nodeId = address.getNodeId();
             final int instanceNumber = addressBook.getIndexOfNodeId(nodeId);
-            if (!appMains.containsKey(nodeId)) {
-                // this node is not set to run locally
-                continue;
-            }
 
-            if (address.isOwnHost()) {
-
+            if (appMains.containsKey(nodeId)) {
+                // this is a node to start locally.
                 final String platformName = address.getNickname()
                         + " - " + address.getSelfName()
                         + " - " + infoSwirld.name
