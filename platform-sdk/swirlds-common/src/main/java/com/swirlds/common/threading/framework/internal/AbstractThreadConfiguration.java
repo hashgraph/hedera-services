@@ -483,7 +483,7 @@ public abstract class AbstractThreadConfiguration<C extends AbstractThreadConfig
     }
 
     /**
-     * Set the node ID. Null is interpreted as "no node ID".
+     * Set the node ID.
      *
      * @return this object
      */

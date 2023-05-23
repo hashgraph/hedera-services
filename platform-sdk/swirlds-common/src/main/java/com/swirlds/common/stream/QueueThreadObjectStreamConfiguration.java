@@ -202,7 +202,7 @@ public class QueueThreadObjectStreamConfiguration<T extends RunningHashable> {
     }
 
     /**
-     * Set the node ID. Node IDs less than 0 are interpreted as "no node ID".
+     * Set the node ID.
      *
      * @return this object
      */
