@@ -62,42 +62,43 @@ public final class UnzipUtility {
         requireNonNull(bytes);
         requireNonNull(dstDir);
 
-        final var zipIn = new ZipInputStream(new ByteArrayInputStream(bytes));
         int totalSizeArchive = 0; // total size of the zip archive once uncompressed
         int totalEntryArchive = 0; // total number of entries in the zip archive
-        ZipEntry entry = zipIn.getNextEntry();
 
-        if (entry == null) {
-            throw new IOException("No zip entry found in bytes");
-        }
-        while (entry != null) {
-            totalEntryArchive++;
-            if (totalEntryArchive > THRESHOLD_ENTRIES) {
-                throw new IOException("Zip file entry count exceeds threshold: " + THRESHOLD_ENTRIES);
-            }
-            Path filePath = dstDir.resolve(entry.getName());
-            final File fileOrDir = filePath.toFile();
-            final File directory = fileOrDir.getParentFile();
-            if (!directory.exists() && !directory.mkdirs()) {
-                throw new IOException("Unable to create the parent directories for the file: " + fileOrDir);
-            }
+        try (final var zipIn = new ZipInputStream(new ByteArrayInputStream(bytes))) {
+            ZipEntry entry = zipIn.getNextEntry();
 
-            if (!entry.isDirectory()) {
-                totalSizeArchive += extractSingleFile(zipIn, filePath, entry.getCompressedSize());
-                if (totalSizeArchive > THRESHOLD_ZIP_SIZE) {
-                    throw new IOException("Zip file size exceeds threshold: " + THRESHOLD_ZIP_SIZE);
-                }
-                log.info(" - Extracted update file {}", filePath);
-            } else {
-                if (!fileOrDir.mkdirs()) {
-                    throw new IOException("Unable to create assets sub-directory: " + fileOrDir);
-                }
-                log.info(" - Created assets sub-directory {}", fileOrDir);
+            if (entry == null) {
+                throw new IOException("No zip entry found in bytes");
             }
-            zipIn.closeEntry();
-            entry = zipIn.getNextEntry();
+            while (entry != null) {
+                totalEntryArchive++;
+                if (totalEntryArchive > THRESHOLD_ENTRIES) {
+                    throw new IOException("Zip file entry count exceeds threshold: " + THRESHOLD_ENTRIES);
+                }
+                Path filePath = dstDir.resolve(entry.getName());
+                final File fileOrDir = filePath.toFile();
+                final File directory = fileOrDir.getParentFile();
+                if (!directory.exists() && !directory.mkdirs()) {
+                    throw new IOException("Unable to create the parent directories for the file: " + fileOrDir);
+                }
+
+                if (!entry.isDirectory()) {
+                    totalSizeArchive += extractSingleFile(zipIn, filePath, entry.getCompressedSize());
+                    if (totalSizeArchive > THRESHOLD_ZIP_SIZE) {
+                        throw new IOException("Zip file size exceeds threshold: " + THRESHOLD_ZIP_SIZE);
+                    }
+                    log.info(" - Extracted update file {}", filePath);
+                } else {
+                    if (!fileOrDir.mkdirs()) {
+                        throw new IOException("Unable to create assets sub-directory: " + fileOrDir);
+                    }
+                    log.info(" - Created assets sub-directory {}", fileOrDir);
+                }
+                zipIn.closeEntry();
+                entry = zipIn.getNextEntry();
+            }
         }
-        zipIn.close();
     }
 
     /**

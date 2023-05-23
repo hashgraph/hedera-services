@@ -23,8 +23,9 @@ import java.util.Optional;
  * Provides read-only methods for interacting with the underlying data storage mechanisms for
  * working with special files used in freeze transactions.
  * <br/>
- * This is a temporary interface. It will be replaced by a new interface in FileService.
+ * @deprecated This is a temporary interface. It will be replaced by a new interface in FileService.
  */
+@Deprecated
 public interface ReadableSpecialFileStore {
 
     /**
