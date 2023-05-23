@@ -167,30 +167,6 @@ public class SerializableSemVers implements SoftwareVersion {
     }
 
     @Override
-    public boolean equals(@Nullable final Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || SerializableSemVers.class != o.getClass()) {
-            return false;
-        }
-        final var that = (SerializableSemVers) o;
-        if (proto == null || services == null) {
-            throw new IllegalStateException("Uninitialized version " + this + IS_INCOMPARABLE_MSG + that);
-        }
-        return this.services.getMinor() == that.services.getMinor()
-                && this.services.getMajor() == that.services.getMajor()
-                && this.services.getPatch() == that.services.getPatch()
-                && this.services.getPre().equals(that.services.getPre())
-                && this.services.getBuild().equals(that.services.getBuild())
-                && this.proto.getMinor() == that.proto.getMinor()
-                && this.proto.getMajor() == that.proto.getMajor()
-                && this.proto.getPatch() == that.proto.getPatch()
-                && this.proto.getPre().equals(that.proto.getPre())
-                && this.proto.getBuild().equals(that.proto.getBuild());
-    }
-
-    @Override
     public int hashCode() {
         return Objects.hash(proto, services);
     }

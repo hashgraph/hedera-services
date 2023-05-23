@@ -58,7 +58,7 @@ class SerializableSemVersTest {
     }
 
     @Test
-    void equalsWorks() {
+    void equalsWorksWithCompareTo() {
         final var actual = SerializableSemVers.forHapiAndHedera("1.2.3", "3.2.1-pre+build");
 
         final var alpha2SameAsAlpha1 = SerializableSemVers.forHapiAndHedera("1.2.3", "3.2.1-pre+build");
@@ -72,17 +72,17 @@ class SerializableSemVersTest {
         final var servicesPatchDiff = SerializableSemVers.forHapiAndHedera("1.2.3", "3.2.3-pre+build");
         final var servicesBuildDiff = SerializableSemVers.forHapiAndHedera("1.2.3", "3.2.1-pre+1");
 
-        assertEquals(actual, alpha2SameAsAlpha1);
+        assertEquals(0, actual.compareTo(alpha2SameAsAlpha1));
 
-        assertNotEquals(actual, protoMajorDiff);
-        assertNotEquals(actual, protoMinorDiff);
-        assertNotEquals(actual, protoPatchDiff);
-        assertNotEquals(actual, protoBuildDiff);
+        assertNotEquals(0, actual.compareTo(protoMajorDiff));
+        assertNotEquals(0, actual.compareTo(protoMinorDiff));
+        assertNotEquals(0, actual.compareTo(protoPatchDiff));
+        assertNotEquals(0, actual.compareTo(protoBuildDiff));
 
-        assertNotEquals(actual, servicesMajorDiff);
-        assertNotEquals(actual, servicesMinorDiff);
-        assertNotEquals(actual, servicesPatchDiff);
-        assertNotEquals(actual, servicesBuildDiff);
+        assertNotEquals(0, actual.compareTo(servicesMajorDiff));
+        assertNotEquals(0, actual.compareTo(servicesMinorDiff));
+        assertNotEquals(0, actual.compareTo(servicesPatchDiff));
+        assertNotEquals(0, actual.compareTo(servicesBuildDiff));
     }
 
     @Test
