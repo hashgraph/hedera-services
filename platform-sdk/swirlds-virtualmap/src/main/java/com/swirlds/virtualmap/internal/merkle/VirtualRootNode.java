@@ -426,6 +426,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         final ConcurrentBlockingIterator<VirtualLeafRecord<K, V>> rehashIterator =
                 new ConcurrentBlockingIterator<>(MAX_REHASHING_BUFFER_SIZE, Integer.MAX_VALUE, MILLISECONDS);
         final CompletableFuture<Hash> fullRehashFuture = new CompletableFuture<>();
+        final CompletableFuture<Void> leafFeedFuture = new CompletableFuture<>();
         // getting a range that is relevant for the data source
         final long firstLeafPath = dataSource.getFirstLeafPath();
         final long lastLeafPath = dataSource.getLastLeafPath();
@@ -520,19 +521,28 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                         }
                     }
                     rehashIterator.close();
+                    leafFeedFuture.complete(null);
                 })
                 .setExceptionHandler((thread, exception) -> {
                     // Shut down the iterator.
                     rehashIterator.close();
-                    final var message = "VirtualMap@" + getRoute() + " failed to do full rehash";
+                    final var message = "VirtualMap@" + getRoute() + " failed to feed all leaves the hasher";
                     logger.error(EXCEPTION.getMarker(), message, exception);
-                    fullRehashFuture.completeExceptionally(new MerkleSynchronizationException(message, exception));
+                    leafFeedFuture.completeExceptionally(new MerkleSynchronizationException(message, exception));
                 })
                 .build()
                 .start();
 
         try {
-            super.setHash(fullRehashFuture.get(MAX_FULL_REHASHING_TIMEOUT, SECONDS));
+            final long start = System.currentTimeMillis();
+            leafFeedFuture.get(MAX_FULL_REHASHING_TIMEOUT, SECONDS);
+            final long secondsSpent = (System.currentTimeMillis() - start) / 1000;
+            logger.info(
+                    STARTUP.getMarker(),
+                    "It took {} seconds to feed all leaves to the hasher for the VirtualMap at {}",
+                    secondsSpent,
+                    getRoute());
+            super.setHash(fullRehashFuture.get(MAX_FULL_REHASHING_TIMEOUT - secondsSpent, SECONDS));
         } catch (ExecutionException e) {
             final var message = "VirtualMap@" + getRoute() + " failed to get hash during full rehashing";
             throw new MerkleSynchronizationException(message, e);
