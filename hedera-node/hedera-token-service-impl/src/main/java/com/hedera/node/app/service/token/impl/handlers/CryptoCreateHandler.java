@@ -53,7 +53,7 @@ import javax.inject.Singleton;
  * HederaFunctionality#CRYPTO_CREATE}.
  */
 @Singleton
-public class CryptoCreateHandler implements TransactionHandler {
+public class CryptoCreateHandler extends BaseCryptoHandler implements TransactionHandler {
     @Inject
     public CryptoCreateHandler() {
         // Exists for injection
@@ -225,7 +225,7 @@ public class CryptoCreateHandler implements TransactionHandler {
         }
 
         if (op.hasStakedAccountId() || op.hasStakedNodeId()) {
-            final var stakeNumber = getStakedId(op);
+            final var stakeNumber = getStakedId(op.stakedId().kind().toString(), op.stakedNodeId(), op.stakedAccountId());
             builder.stakedNumber(stakeNumber);
         }
         // set the new account number
@@ -251,27 +251,5 @@ public class CryptoCreateHandler implements TransactionHandler {
      */
     private boolean keyAndAliasProvided(@NonNull final CryptoCreateTransactionBody op) {
         return op.hasKey() && !op.alias().equals(Bytes.EMPTY);
-    }
-
-    /**
-     * Gets the stakedId from the provided staked_account_id or staked_node_id.
-     * When staked_node_id is provided, it is stored as negative number in state to
-     * distinguish it from staked_account_id. It will be converted back to positive number
-     * when it is retrieved from state.
-     *
-     * To distinguish for node 0, it will be stored as - node_id -1.
-     * For example, if staked_node_id is 0, it will be stored as -1 in state.
-     *
-     * @param op given transaction body
-     * @return valid staked id
-     */
-    private long getStakedId(final CryptoCreateTransactionBody op) {
-        if (StakedIdOneOfType.STAKED_ACCOUNT_ID.equals(op.stakedId().kind())) {
-            return op.stakedAccountIdOrThrow().accountNum();
-        } else {
-            // return a number less than the given node Id, in order to recognize the if nodeId 0 is
-            // set
-            return -op.stakedNodeIdOrThrow() - 1;
-        }
     }
 }
