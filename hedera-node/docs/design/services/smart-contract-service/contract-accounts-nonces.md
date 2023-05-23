@@ -50,7 +50,13 @@ The following is a table with general use cases and behavior for Ethereum and He
     - `gas` field set to 0
     - `amount` field set to 0
     - `functionParameters` field set to empty byte array
-  - For each synthetic `ContractCall` transaction we will create a corresponding record with the `contractCallResult` field set to `ContractFunctionResult` value containing the contract id and its nonce value
+  - For each synthetic `ContractCall` transaction we will create a corresponding record with the `contractCallResult` field set to `ContractFunctionResult` value containing the following:
+    - `contractID` field set to the contract which nonce we want to externalize
+    - `contractCallResult` field set to empty byte array
+    - `errorMessage` field set to empty string
+    - `bloom` field set to empty byte array
+    - `gasUsed` field set to 0
+    - `contract_nonces` field set to `ContractNonceInfo` value with `contract_id` field set to the contract which nonce we want to externalize and `nonce` field set to the contract nonce value
 
 ### Feature Flags
 
