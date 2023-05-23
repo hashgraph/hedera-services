@@ -52,8 +52,7 @@ public class ReadableKVStateStack<K, V> implements ReadableKVState<K, V> {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public ReadableKVStateStack(
-            @NonNull final ReadableStatesStack readableStatesStack,
-            @NonNull final String stateKey) {
+            @NonNull final ReadableStatesStack readableStatesStack, @NonNull final String stateKey) {
         this.readableStatesStack = requireNonNull(readableStatesStack, "readableStates must not be null");
         this.stateKey = requireNonNull(stateKey, "stateKey must not be null");
     }

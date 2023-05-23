@@ -178,8 +178,7 @@ public class HandleContextImpl implements HandleContext {
     }
 
     private static <T> T castRecordBuilder(
-            @NonNull final SingleTransactionRecordBuilder recordBuilder,
-            @NonNull final Class<T> recordBuilderClass) {
+            @NonNull final SingleTransactionRecordBuilder recordBuilder, @NonNull final Class<T> recordBuilderClass) {
         if (!recordBuilderClass.isInstance(recordBuilder)) {
             throw new IllegalArgumentException("Not a valid record builder class");
         }
@@ -189,8 +188,7 @@ public class HandleContextImpl implements HandleContext {
     @Override
     @NonNull
     public <T> T dispatchPrecedingTransaction(
-            @NonNull final TransactionBody txBody,
-            @NonNull final Class<T> recordBuilderClass) {
+            @NonNull final TransactionBody txBody, @NonNull final Class<T> recordBuilderClass) {
         requireNonNull(txBody, "txBody must not be null");
         requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
 
@@ -216,8 +214,7 @@ public class HandleContextImpl implements HandleContext {
     @Override
     @NonNull
     public <T> T dispatchChildTransaction(
-            @NonNull final TransactionBody txBody,
-            @NonNull final Class<T> recordBuilderClass) {
+            @NonNull final TransactionBody txBody, @NonNull final Class<T> recordBuilderClass) {
         final var childRecordBuilder = recordListBuilder.addChild(configuration());
         return dispatchChildTransaction(txBody, childRecordBuilder, recordBuilderClass);
     }
@@ -225,8 +222,7 @@ public class HandleContextImpl implements HandleContext {
     @Override
     @NonNull
     public <T> T dispatchRemovableChildTransaction(
-            @NonNull final TransactionBody txBody,
-            @NonNull final Class<T> recordBuilderClass) {
+            @NonNull final TransactionBody txBody, @NonNull final Class<T> recordBuilderClass) {
         final var childRecordBuilder = recordListBuilder.addRemovableChild(configuration());
         return dispatchChildTransaction(txBody, childRecordBuilder, recordBuilderClass);
     }
@@ -267,8 +263,16 @@ public class HandleContextImpl implements HandleContext {
         }
 
         final var childStack = new SavepointStackImpl(current().state(), configuration());
-        final var context = new HandleContextImpl(txBody, childCategory, childRecordBuilder, childStack, verifier,
-                recordListBuilder, checker, dispatcher, serviceScopeLookup);
+        final var context = new HandleContextImpl(
+                txBody,
+                childCategory,
+                childRecordBuilder,
+                childStack,
+                verifier,
+                recordListBuilder,
+                checker,
+                dispatcher,
+                serviceScopeLookup);
 
         try {
             dispatcher.dispatchHandle(context);

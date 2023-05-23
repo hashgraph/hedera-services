@@ -49,9 +49,7 @@ public class ReadableStatesStack implements ReadableStates {
      * @param stack the {@link SavepointStackImpl} that contains the stack of states
      * @param serviceName the name of the service that owns the state
      */
-    public ReadableStatesStack(
-            @NonNull final SavepointStackImpl stack,
-            @NonNull final String serviceName) {
+    public ReadableStatesStack(@NonNull final SavepointStackImpl stack, @NonNull final String serviceName) {
         this.stack = requireNonNull(stack, "stack must not be null");
         this.statesName = requireNonNull(serviceName, "serviceName must not be null");
     }

@@ -253,9 +253,7 @@ public class HandleWorkflow {
      */
     @NonNull
     private VerificationResult addMissingSignatures(
-            @NonNull final HederaState state,
-            @NonNull final PreHandleResult previousResult)
-            throws PreCheckException {
+            @NonNull final HederaState state, @NonNull final PreHandleResult previousResult) throws PreCheckException {
         final var txBody = previousResult.txInfo().txBody();
 
         // extract keys and hollow accounts again
@@ -293,8 +291,7 @@ public class HandleWorkflow {
      * @param keyVerifications
      */
     private record VerificationResult(
-            @NonNull TransactionBody txBody,
-            @NonNull Map<Key, SignatureVerificationFuture> keyVerifications) {
+            @NonNull TransactionBody txBody, @NonNull Map<Key, SignatureVerificationFuture> keyVerifications) {
 
         @SuppressWarnings("DataFlowIssue")
         public VerificationResult(PreHandleResult result) {

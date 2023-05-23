@@ -174,8 +174,7 @@ public class MonoHandleContext implements HandleContext {
     @Override
     @NonNull
     public <T> T dispatchRemovableChildTransaction(
-            @NonNull TransactionBody txBody,
-            @NonNull Class<T> recordBuilderClass) {
+            @NonNull TransactionBody txBody, @NonNull Class<T> recordBuilderClass) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 

@@ -109,9 +109,8 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
     void setUp() {
         subject = new ConsensusCreateTopicHandler();
         topicStore = new WritableTopicStore(writableStates);
-        final var config = new HederaTestConfigBuilder()
-                .withValue("topics.maxNumber", 10L)
-                .getOrCreateConfig();
+        final var config =
+                new HederaTestConfigBuilder().withValue("topics.maxNumber", 10L).getOrCreateConfig();
         given(handleContext.configuration()).willReturn(config);
         given(handleContext.writableStore(WritableTopicStore.class)).willReturn(topicStore);
         given(handleContext.recordBuilder(ConsensusCreateTopicRecordBuilder.class))
@@ -386,9 +385,8 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         given(handleContext.writableStore(WritableTopicStore.class)).willReturn(topicStore);
 
         given(handleContext.attributeValidator()).willReturn(validator);
-        final var config = new HederaTestConfigBuilder()
-                .withValue("topics.maxNumber", 1L)
-                .getOrCreateConfig();
+        final var config =
+                new HederaTestConfigBuilder().withValue("topics.maxNumber", 1L).getOrCreateConfig();
         given(handleContext.configuration()).willReturn(config);
 
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
