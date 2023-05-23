@@ -144,16 +144,17 @@ public class CryptoCreateHandler implements TransactionHandler {
     @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
         final var op = txn.cryptoCreateAccountOrThrow();
-        validateTruePreCheck(op.initialBalance() < 0L, INVALID_INITIAL_BALANCE);
-        validateTruePreCheck(!op.hasAutoRenewPeriod(), INVALID_RENEWAL_PERIOD);
+        validateTruePreCheck(op.initialBalance() >= 0L, INVALID_INITIAL_BALANCE);
+        validateTruePreCheck(op.hasAutoRenewPeriod(), INVALID_RENEWAL_PERIOD);
         validateTruePreCheck(
-                op.sendRecordThreshold() < 0L, INVALID_SEND_RECORD_THRESHOLD); // FUTURE: should this return
+                op.sendRecordThreshold() >= 0L, INVALID_SEND_RECORD_THRESHOLD); // FUTURE: should this return
         // SEND_RECORD_THRESHOLD_FIELD_IS_DEPRECATED
         validateTruePreCheck(
-                op.receiveRecordThreshold() < 0L, INVALID_RECEIVE_RECORD_THRESHOLD); // FUTURE: should this return
+                op.receiveRecordThreshold() >= 0L, INVALID_RECEIVE_RECORD_THRESHOLD); // FUTURE: should this return
         // RECEIVE_RECORD_THRESHOLD_FIELD_IS_DEPRECATED
         validateTruePreCheck(
-                op.hasProxyAccountID() && !op.proxyAccountID().equals(AccountID.DEFAULT),
+                !op.hasProxyAccountID()
+                        || (op.hasProxyAccountID() && op.proxyAccountID().equals(AccountID.DEFAULT)),
                 PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED);
     }
 
