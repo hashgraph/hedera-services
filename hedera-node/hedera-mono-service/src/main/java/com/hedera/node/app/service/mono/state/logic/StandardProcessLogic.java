@@ -98,7 +98,7 @@ public class StandardProcessLogic implements ProcessLogic {
 
         try {
             final var accessor = expandHandleSpan.accessorFor(platformTxn);
-            // Check if the transaction is not from current event version.
+            // Check if the transaction is not submitted by the deployed version.
             // If so, return and set the status on the receipt to BUSY
             if (!SEMANTIC_VERSIONS.deployedSoftwareVersion().equals(softwareVersion)) {
                 recordCache.setStaleTransaction(
