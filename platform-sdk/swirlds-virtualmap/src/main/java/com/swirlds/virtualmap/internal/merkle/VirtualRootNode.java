@@ -484,11 +484,12 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                 .setComponent("virtualmap")
                 .setThreadName("leafFeeder")
                 .setRunnable(() -> {
-                    long onePercent = (lastLeafPath - firstLeafPath) / 100 + 1;
-                    for (long i = firstLeafPath; i <= lastLeafPath; i++) {
-                        try {
-                            VirtualLeafRecord<K, V> leafRecord = dataSource.loadLeafRecord(i);
-                            if (leafRecord != null) {
+                    final long onePercent = (lastLeafPath - firstLeafPath) / 100 + 1;
+                    try {
+                        for (long i = firstLeafPath; i <= lastLeafPath; i++) {
+                            try {
+                                VirtualLeafRecord<K, V> leafRecord = dataSource.loadLeafRecord(i);
+                                assert leafRecord != null : "Leaf record should not be null";
                                 try {
                                     final boolean success =
                                             rehashIterator.supply(leafRecord, Integer.MAX_VALUE, SECONDS);
@@ -507,20 +508,21 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                                     throw new MerkleSynchronizationException(
                                             "Failed to handle a leaf during full rehashing", e);
                                 }
+                            } catch (IOException e) {
+                                throw new UncheckedIOException(e);
                             }
-                        } catch (IOException e) {
-                            throw new UncheckedIOException(e);
+                            // we don't care about tracking progress on small maps.
+                            if (onePercent > 10 && i % onePercent == 0) {
+                                logger.info(
+                                        STARTUP.getMarker(),
+                                        "Full rehash progress for the VirtualMap at {}: {}%",
+                                        getRoute(),
+                                        (i - firstLeafPath) / onePercent + 1);
+                            }
                         }
-                        // we don't care about tracking progress on small maps.
-                        if (onePercent > 10 && i % onePercent == 0) {
-                            logger.info(
-                                    STARTUP.getMarker(),
-                                    "Full rehash progress for the VirtualMap at {}: {}%",
-                                    getRoute(),
-                                    (i - firstLeafPath) / onePercent + 1);
-                        }
+                    } finally {
+                        rehashIterator.close();
                     }
-                    rehashIterator.close();
                     leafFeedFuture.complete(null);
                 })
                 .setExceptionHandler((thread, exception) -> {
