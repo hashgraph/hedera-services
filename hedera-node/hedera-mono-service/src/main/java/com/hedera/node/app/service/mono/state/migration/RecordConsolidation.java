@@ -17,7 +17,9 @@
 package com.hedera.node.app.service.mono.state.migration;
 
 import com.hedera.node.app.service.mono.ServicesState;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.node.app.service.mono.state.merkle.MerklePayerRecords;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.swirlds.fcqueue.FCQueue;
@@ -33,7 +35,7 @@ public class RecordConsolidation {
     public static void toSingleFcq(@NonNull final ServicesState mutableState) {
         final var accounts = mutableState.accounts();
         if (accounts.areOnDisk()) {
-            toSingleFcqFromDisk(mutableState, accounts);
+            toSingleFcqFromDisk(mutableState);
         } else {
             toSingleFcqFromInMemory(mutableState, accounts);
         }
@@ -61,12 +63,12 @@ public class RecordConsolidation {
         finishConsolidation(savedRecords, mutableState);
     }
 
-    private static void toSingleFcqFromDisk(
-            @NonNull final ServicesState mutableState, @NonNull final AccountStorageAdapter accounts) {
+    private static void toSingleFcqFromDisk(@NonNull final ServicesState mutableState) {
         final List<ExpirableTxnRecord> savedRecords = new ArrayList<>();
 
         // Traverse all payer records in state and accumulate
-        final var payerRecords = accounts.getPayerRecords();
+        final MerkleMapLike<EntityNum, MerklePayerRecords> payerRecords =
+                MerkleMapLike.from(mutableState.getChild(StateChildIndices.PAYER_RECORDS_OR_CONSOLIDATED_FCQ));
         payerRecords.forEach((num, recordsHere) -> {
             final var fcq = recordsHere.mutableQueue();
             if (fcq.isEmpty()) {

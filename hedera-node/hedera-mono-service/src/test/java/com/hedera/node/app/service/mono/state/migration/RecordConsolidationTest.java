@@ -93,7 +93,8 @@ class RecordConsolidationTest {
         final var payerAndAllRecords = randomPayerRecords(numAccounts, maxRecordsPerAccount);
 
         given(accounts.areOnDisk()).willReturn(true);
-        given(accounts.getPayerRecords()).willReturn(MerkleMapLike.from(payerAndAllRecords.getKey()));
+        given(mutableState.getChild(StateChildIndices.PAYER_RECORDS_OR_CONSOLIDATED_FCQ))
+                .willReturn(payerAndAllRecords.getKey());
         given(mutableState.accounts()).willReturn(accounts);
 
         RecordConsolidation.toSingleFcq(mutableState);

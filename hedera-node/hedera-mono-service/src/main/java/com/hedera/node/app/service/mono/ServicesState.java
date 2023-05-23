@@ -530,7 +530,6 @@ public class ServicesState extends PartialNaryMerkleInternal
         final var accountsStorage = getChild(StateChildIndices.ACCOUNTS);
         return (accountsStorage instanceof VirtualMap)
                 ? AccountStorageAdapter.fromOnDisk(
-                        MerkleMapLike.from(getChild(StateChildIndices.PAYER_RECORDS_OR_CONSOLIDATED_FCQ)),
                         VirtualMapLike.from((VirtualMap<EntityNumVirtualKey, OnDiskAccount>) accountsStorage))
                 : AccountStorageAdapter.fromInMemory(
                         MerkleMapLike.from((MerkleMap<EntityNum, MerkleAccount>) accountsStorage));
