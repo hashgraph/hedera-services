@@ -81,4 +81,10 @@ public class PreCheckException extends Exception {
     public String toString() {
         return "PreCheckException{" + "responseCode=" + responseCode + '}';
     }
+
+    public static void validateTruePreCheck(boolean condition, ResponseCodeEnum errorStatus) throws PreCheckException {
+        if (!condition) {
+            throw new PreCheckException(errorStatus);
+        }
+    }
 }

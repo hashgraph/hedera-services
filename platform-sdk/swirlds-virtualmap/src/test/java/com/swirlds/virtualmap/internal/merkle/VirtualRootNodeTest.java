@@ -454,7 +454,7 @@ class VirtualRootNodeTest extends VirtualTestBase {
         final VirtualRootNode<TestKey, TestValue> root = prepareRootForFullRehash();
         ((InMemoryDataSource) root.getDataSource()).setFailureOnLeafRecordLookup(true);
 
-        assertThrows(UncheckedIOException.class, () -> root.fullLeafRehash());
+        assertThrows(MerkleSynchronizationException.class, () -> root.fullLeafRehash());
     }
 
     @Test
