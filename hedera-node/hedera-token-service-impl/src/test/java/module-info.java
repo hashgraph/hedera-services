@@ -20,6 +20,8 @@ module com.hedera.node.app.service.token.impl.test {
     requires static com.github.spotbugs.annotations;
     requires com.swirlds.merkle;
     requires com.hedera.node.app;
+    requires com.hedera.node.config;
+    requires com.swirlds.config;
 
     opens com.hedera.node.app.service.token.impl.test.util to
             org.junit.platform.commons;
@@ -32,6 +34,12 @@ module com.hedera.node.app.service.token.impl.test {
             org.junit.platform.commons,
             org.mockito;
     opens com.hedera.node.app.service.token.impl.test.records to
+            org.junit.platform.commons,
+            org.mockito;
+    opens com.hedera.node.app.service.token.impl.test.config to
+            org.junit.platform.commons,
+            org.mockito;
+    opens com.hedera.node.app.service.token.impl.test.validators to
             org.junit.platform.commons,
             org.mockito;
 }

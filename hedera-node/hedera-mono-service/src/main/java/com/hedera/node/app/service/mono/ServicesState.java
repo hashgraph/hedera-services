@@ -31,6 +31,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.context.StateChildrenProvider;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
+import com.hedera.node.app.service.mono.context.properties.PropertyNames;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
@@ -68,7 +69,6 @@ import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
-import com.hedera.node.app.spi.config.PropertyNames;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -91,6 +91,7 @@ import com.swirlds.common.system.state.notifications.NewRecoveredStateListener;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.jasperdb.VirtualDataSourceJasperDB;
+import com.swirlds.logging.LogMarker;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.platform.gui.SwirldsGui;
 import com.swirlds.platform.state.DualStateImpl;
@@ -249,7 +250,7 @@ public class ServicesState extends PartialNaryMerkleInternal
             // Note this returns the app in case we need to do something with it after making
             // final changes to state (e.g. after migrating something from memory to disk)
             deserializedInit(platform, dualState, trigger, deserializedVersion);
-            final var isUpgrade = SEMANTIC_VERSIONS.deployedSoftwareVersion().isAfter(deserializedVersion);
+            final var isUpgrade = SEMANTIC_VERSIONS.deployedSoftwareVersion().isNonConfigUpgrade(deserializedVersion);
             if (isUpgrade) {
                 migrateFrom(deserializedVersion);
             }
@@ -293,7 +294,7 @@ public class ServicesState extends PartialNaryMerkleInternal
         throwIfImmutable();
         stakingInfo()
                 .forEach((nodeNum, stakingInfo) ->
-                        configAddressBook.updateWeight(nodeNum.longValue(), stakingInfo.getWeight()));
+                        configAddressBook.updateWeight(new NodeId(nodeNum.longValue()), stakingInfo.getWeight()));
         return configAddressBook;
     }
 
@@ -333,7 +334,7 @@ public class ServicesState extends PartialNaryMerkleInternal
             final InitTrigger trigger,
             @Nullable final SoftwareVersion deserializedVersion) {
         this.platform = platform;
-        final var selfId = platform.getSelfId().getId();
+        final var selfId = platform.getSelfId().getIdAsInt();
 
         final ServicesApp app;
         if (APPS.includes(selfId)) {
@@ -374,7 +375,7 @@ public class ServicesState extends PartialNaryMerkleInternal
                     deployedVersion);
             app.systemExits().fail(1);
         } else {
-            final var isUpgrade = deployedVersion.isAfter(deserializedVersion);
+            final var isUpgrade = deployedVersion.isNonConfigUpgrade(deserializedVersion);
             if (trigger == RESTART) {
                 // We may still want to change the address book without an upgrade. But note
                 // that without a dynamic address book, this MUST be a no-op during reconnect.
@@ -396,6 +397,25 @@ public class ServicesState extends PartialNaryMerkleInternal
             app.initializationFlow().runWith(this, bootstrapProps);
             if (trigger == RESTART && isUpgrade) {
                 app.stakeStartupHelper().doUpgradeHousekeeping(networkCtx(), accounts(), stakingInfo());
+                log.info(
+                        LogMarker.STARTUP.getMarker(),
+                        "Starting leaf rehashing for VirtualMap(s) that have the hashes absent");
+                if (getChild(StateChildIndices.ACCOUNTS) instanceof VirtualMap<?, ?> accounts) {
+                    accounts.fullLeafRehash();
+                }
+                if (getChild(StateChildIndices.TOKEN_ASSOCIATIONS) instanceof VirtualMap<?, ?> tokenAssociations) {
+                    tokenAssociations.fullLeafRehash();
+                }
+                if (getChild(StateChildIndices.CONTRACT_STORAGE) instanceof VirtualMap<?, ?> contractStorage) {
+                    contractStorage.fullLeafRehash();
+                }
+                if (getChild(StateChildIndices.STORAGE) instanceof VirtualMap<?, ?> storage) {
+                    storage.fullLeafRehash();
+                }
+                if (getChild(StateChildIndices.UNIQUE_TOKENS) instanceof VirtualMap<?, ?> storage) {
+                    storage.fullLeafRehash();
+                }
+                log.info(LogMarker.STARTUP.getMarker(), "The leaf rehashing for VirtualMap(s) is completed");
             }
 
             // Ensure the prefetch queue is created and thread pool is active instead of waiting
@@ -443,7 +463,7 @@ public class ServicesState extends PartialNaryMerkleInternal
 
     /* -- Getters and helpers -- */
     public AccountID getAccountFromNodeId(final NodeId nodeId) {
-        final var address = addressBook().getAddress(nodeId.getId());
+        final var address = addressBook().getAddress(nodeId.getIdAsInt());
         final var memo = address.getMemo();
         return parseAccount(memo);
     }

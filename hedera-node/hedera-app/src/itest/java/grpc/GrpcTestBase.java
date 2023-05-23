@@ -27,7 +27,7 @@ import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.config.api.ConfigurationBuilder;
 import io.grpc.ManagedChannelBuilder;
 import io.helidon.grpc.client.ClientServiceDescriptor;
 import io.helidon.grpc.client.GrpcServiceClient;
@@ -48,14 +48,13 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 
 /**
- * Base class for testing the gRPC handling engine. This implementation is not suitable for general
- * integration testing, but is tailored for testing the gRPC engine itself. Specifically, it does
- * not use real workflow implementations, but allows subclasses to mock them instead to test various
- * failure scenarios.
+ * Base class for testing the gRPC handling engine. This implementation is not suitable for general integration testing,
+ * but is tailored for testing the gRPC engine itself. Specifically, it does not use real workflow implementations, but
+ * allows subclasses to mock them instead to test various failure scenarios.
  *
  * <p>Our use of gRPC deals in bytes -- we do not ask the gRPC system to serialize and deserialize
- * our protobuf objects. Because of this, we *can* actually test using any type of byte[] payload
- * (including strings!) rather than protobuf objects.
+ * our protobuf objects. Because of this, we *can* actually test using any type of byte[] payload (including strings!)
+ * rather than protobuf objects.
  */
 abstract class GrpcTestBase extends TestBase {
     /** Used as a dependency to the {@link Metrics} system. */
@@ -67,46 +66,47 @@ abstract class GrpcTestBase extends TestBase {
     protected static final QueryWorkflow NOOP_QUERY_WORKFLOW = (requestBuffer, responseBuffer) -> {};
 
     /**
-     * This {@link GrpcServer} is used to handle the wire protocol tasks and delegate to our gRPC
-     * handlers
+     * This {@link GrpcServer} is used to handle the wire protocol tasks and delegate to our gRPC handlers
      */
     private GrpcServer grpcServer;
 
     /**
-     * The {@link GrpcServiceClient}s to use for making different calls to the server. Each
-     * different gRPC service has its own client. The key in this map is the service name.
+     * The {@link GrpcServiceClient}s to use for making different calls to the server. Each different gRPC service has
+     * its own client. The key in this map is the service name.
      */
-    private Map<String, GrpcServiceClient> clients = new HashMap<>();
+    private final Map<String, GrpcServiceClient> clients = new HashMap<>();
 
     /**
-     * The registered services. These must be created through {@link
-     * #registerService(GrpcServiceBuilder)} <b>BEFORE</b> the server is started to take any effect.
-     * These services will be registered on the server <b>AND</b> on the client.
+     * The registered services. These must be created through {@link #registerService(GrpcServiceBuilder)} <b>BEFORE</b>
+     * the server is started to take any effect. These services will be registered on the server <b>AND</b> on the
+     * client.
      */
-    private Set<ServiceDescriptor> services = new HashSet<>();
+    private final Set<ServiceDescriptor> services = new HashSet<>();
 
     /**
-     * The set of services to be registered <b>ON THE CLIENT ONLY</b>. The server won't know about
-     * these. This allows us to test cases where either the method or service is known to the client
-     * but not known to the server.
+     * The set of services to be registered <b>ON THE CLIENT ONLY</b>. The server won't know about these. This allows us
+     * to test cases where either the method or service is known to the client but not known to the server.
      */
-    private Set<ServiceDescriptor> clientOnlyServices = new HashSet<>();
+    private final Set<ServiceDescriptor> clientOnlyServices = new HashSet<>();
 
     /**
      * Represents "this node" in our tests.
      */
-    private final NodeId nodeSelfId = new NodeId(false, 7);
+    private final NodeId nodeSelfId = new NodeId(7);
 
     /**
-     * The gRPC system has extensive metrics. This object allows us to inspect them and make sure
-     * they are being set correctly for different types of calls.
+     * The gRPC system has extensive metrics. This object allows us to inspect them and make sure they are being set
+     * correctly for different types of calls.
      */
     protected Metrics metrics = new DefaultMetrics(
             nodeSelfId,
             new MetricKeyRegistry(),
             METRIC_EXECUTOR,
             new DefaultMetricsFactory(),
-            new TestConfigBuilder().getOrCreateConfig().getConfigData(MetricsConfig.class));
+            ConfigurationBuilder.create()
+                    .withConfigDataType(MetricsConfig.class)
+                    .build()
+                    .getConfigData(MetricsConfig.class));
 
     /** The host of our gRPC server. */
     protected String host = "127.0.0.1";
@@ -115,16 +115,16 @@ abstract class GrpcTestBase extends TestBase {
     protected int port;
 
     /**
-     * Registers the given service with this test server and client. This method must be called
-     * before the server is started.
+     * Registers the given service with this test server and client. This method must be called before the server is
+     * started.
      *
      * @param builder builds the service
      */
-    protected void registerService(GrpcServiceBuilder builder) {
+    protected void registerService(final GrpcServiceBuilder builder) {
         services.add(builder.build(metrics));
     }
 
-    protected void registerServiceOnClientOnly(GrpcServiceBuilder builder) {
+    protected void registerServiceOnClientOnly(final GrpcServiceBuilder builder) {
         clientOnlyServices.add(builder.build(metrics));
     }
 
@@ -142,7 +142,7 @@ abstract class GrpcTestBase extends TestBase {
         // Block this main thread until the server starts
         try {
             latch.await();
-        } catch (InterruptedException e) {
+        } catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
             Assertions.fail("GRPC Server did not startup", e);
         }
@@ -188,7 +188,7 @@ abstract class GrpcTestBase extends TestBase {
         grpcServer.shutdown().thenRun(shutdownLatch::countDown);
         try {
             shutdownLatch.await();
-        } catch (InterruptedException e) {
+        } catch (final InterruptedException e) {
             throw new RuntimeException(e);
         }
         clients.clear();
@@ -197,16 +197,15 @@ abstract class GrpcTestBase extends TestBase {
 
     /**
      * Called to invoke a service's function that had been previously registered with {@link
-     * #registerService(GrpcServiceBuilder)}, using the given payload and receiving the given
-     * response. Since the gRPC code only deals in bytes, we can test everything with just strings,
-     * no protobuf encoding required.
+     * #registerService(GrpcServiceBuilder)}, using the given payload and receiving the given response. Since the gRPC
+     * code only deals in bytes, we can test everything with just strings, no protobuf encoding required.
      *
-     * @param service The service to invoke
+     * @param service  The service to invoke
      * @param function The function on the service to invoke
-     * @param payload The payload to send to the function on the service
+     * @param payload  The payload to send to the function on the service
      * @return The response from the service function.
      */
-    protected String send(String service, String function, String payload) {
+    protected String send(final String service, final String function, final String payload) {
         final var client = clients.get(service);
         assert client != null;
         final var bb = BufferedData.wrap(payload.getBytes(StandardCharsets.UTF_8));

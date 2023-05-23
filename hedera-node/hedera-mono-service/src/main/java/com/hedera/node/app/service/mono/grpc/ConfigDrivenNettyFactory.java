@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.service.mono.grpc;
 
-import static com.hedera.node.app.spi.config.Profile.DEV;
-import static com.hedera.node.app.spi.config.Profile.PROD;
+import static com.hedera.node.app.service.mono.context.properties.Profile.DEV;
+import static com.hedera.node.app.service.mono.context.properties.Profile.PROD;
 import static io.netty.handler.ssl.SupportedCipherSuiteFilter.INSTANCE;
 
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;

@@ -17,6 +17,7 @@
 package com.swirlds.jasperdb.files;
 
 import static com.swirlds.jasperdb.files.DataFileCommon.FOOTER_SIZE;
+import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.swirlds.jasperdb.utilities.JasperDBFileUtils;
 import java.io.IOException;
@@ -27,6 +28,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
 import java.util.Objects;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * DataFile's metadata that is stored in the data file's footer
@@ -204,14 +206,15 @@ public final class DataFileMetadata {
     /** toString for debugging */
     @Override
     public String toString() {
-        return "DataFileMetadata{" + "fileFormatVersion="
-                + fileFormatVersion + ", dataItemValueSize="
-                + dataItemValueSize + ", dataItemCount="
-                + dataItemCount + ", index="
-                + index + ", creationDate="
-                + creationDate + ", isMergeFile="
-                + isMergeFile + ", serializationVersion="
-                + serializationVersion + '}';
+        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+                .append("fileFormatVersion", fileFormatVersion)
+                .append("dataItemValueSize", dataItemValueSize)
+                .append("dataItemCount", dataItemCount)
+                .append("index", index)
+                .append("creationDate", creationDate)
+                .append("isMergeFile", isMergeFile)
+                .append("serializationVersion", serializationVersion)
+                .toString();
     }
 
     /**

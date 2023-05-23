@@ -17,6 +17,7 @@
 package com.hedera.node.app.spi.fixtures.workflows;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
+import static com.hedera.node.app.spi.HapiUtils.isHollow;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static java.util.Objects.requireNonNull;
@@ -27,6 +28,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.Key.KeyOneOfType;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -62,6 +64,16 @@ public class FakePreHandleContext implements PreHandleContext {
      * be updated to compare set contents rather than ordering.
      */
     private final Set<Key> requiredNonPayerKeys = new LinkedHashSet<>();
+    /** The set of all hollow accounts that need to be validated. */
+    private final Set<Account> requiredHollowAccounts = new LinkedHashSet<>();
+    /**
+     * The set of all optional non-payer keys. A {@link LinkedHashSet} is used to maintain a consistent ordering.
+     * While not strictly necessary, it is useful at the moment to ensure tests are deterministic. The tests should
+     * be updated to compare set contents rather than ordering.
+     */
+    private final Set<Key> optionalNonPayerKeys = new LinkedHashSet<>();
+    /** The set of all hollow accounts that <strong>might</strong> need to be validated, but also might not. */
+    private final Set<Account> optionalHollowAccounts = new LinkedHashSet<>();
     /** Scheduled transactions have a secondary "inner context". Seems not quite right. */
     private PreHandleContext innerContext;
 
@@ -76,33 +88,27 @@ public class FakePreHandleContext implements PreHandleContext {
      */
     public FakePreHandleContext(@NonNull final ReadableAccountStore accountStore, @NonNull final TransactionBody txn)
             throws PreCheckException {
-        this(
-                accountStore,
-                txn,
-                txn.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT),
-                INVALID_PAYER_ACCOUNT_ID);
+        this(accountStore, txn, txn.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT));
     }
 
     /** Create a new instance */
     private FakePreHandleContext(
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final TransactionBody txn,
-            @NonNull final AccountID payer,
-            @NonNull final ResponseCodeEnum responseCode)
+            @NonNull final AccountID payer)
             throws PreCheckException {
         this.accountStore = requireNonNull(accountStore, "The supplied argument 'accountStore' cannot be null!");
         this.txn = requireNonNull(txn, "The supplied argument 'txn' cannot be null!");
         this.payer = requireNonNull(payer, "The supplied argument 'payer' cannot be null!");
 
         stores.put(ReadableAccountStore.class, accountStore);
-
         // Find the account, which must exist or throw a PreCheckException with the given response code.
         final var account = accountStore.getAccountById(payer);
-        mustExist(account, responseCode);
+        mustExist(account, INVALID_PAYER_ACCOUNT_ID);
         // NOTE: While it is true that the key can be null on some special accounts like
         // account 800, those accounts cannot be the payer.
-        this.payerKey = account.key();
-        mustExist(this.payerKey, responseCode);
+        payerKey = account.key();
+        mustExist(payerKey, INVALID_PAYER_ACCOUNT_ID);
     }
 
     @Override
@@ -138,6 +144,54 @@ public class FakePreHandleContext implements PreHandleContext {
     @Override
     public Set<Key> requiredNonPayerKeys() {
         return Collections.unmodifiableSet(requiredNonPayerKeys);
+    }
+
+    @NonNull
+    @Override
+    public Set<Key> optionalNonPayerKeys() {
+        return Collections.unmodifiableSet(optionalNonPayerKeys);
+    }
+
+    @NonNull
+    @Override
+    public PreHandleContext optionalKey(@NonNull final Key key) {
+        if (!key.equals(payerKey) && isValid(key)) {
+            optionalNonPayerKeys.add(key);
+        }
+        return this;
+    }
+
+    @NonNull
+    @Override
+    public PreHandleContext optionalKeys(@NonNull final Set<Key> keys) {
+        for (final Key nextKey : keys) {
+            optionalKey(nextKey);
+        }
+        return this;
+    }
+
+    @NonNull
+    @Override
+    public Set<Account> optionalHollowAccounts() {
+        return Collections.unmodifiableSet(optionalHollowAccounts);
+    }
+
+    @NonNull
+    @Override
+    public PreHandleContext optionalSignatureForHollowAccount(@NonNull final Account hollowAccount) {
+        requireNonNull(hollowAccount);
+        if (!isHollow(hollowAccount)) {
+            throw new IllegalArgumentException(
+                    "Account %d is not a hollow account".formatted(hollowAccount.accountNumber()));
+        }
+        optionalHollowAccounts.add(hollowAccount);
+        return this;
+    }
+
+    @Override
+    @NonNull
+    public Set<Account> requiredHollowAccounts() {
+        return Collections.unmodifiableSet(requiredHollowAccounts);
     }
 
     @Override
@@ -286,13 +340,23 @@ public class FakePreHandleContext implements PreHandleContext {
 
     @Override
     @NonNull
+    public PreHandleContext requireSignatureForHollowAccount(@NonNull final Account hollowAccount) {
+        requireNonNull(hollowAccount);
+        if (!isHollow(hollowAccount)) {
+            throw new IllegalArgumentException("Account " + hollowAccount.accountNumber() + " is not a hollow account");
+        }
+
+        requiredHollowAccounts.add(hollowAccount);
+        return this;
+    }
+
+    @Override
+    @NonNull
     public PreHandleContext createNestedContext(
-            @NonNull final TransactionBody nestedTxn,
-            @NonNull final AccountID payerForNested,
-            @NonNull final ResponseCodeEnum responseCode)
+            @NonNull final TransactionBody nestedTxn, @NonNull final AccountID payerForNested)
             throws PreCheckException {
-        this.innerContext = new FakePreHandleContext(accountStore, nestedTxn, payerForNested, responseCode);
-        return this.innerContext;
+        innerContext = new FakePreHandleContext(accountStore, nestedTxn, payerForNested);
+        return innerContext;
     }
 
     @Override

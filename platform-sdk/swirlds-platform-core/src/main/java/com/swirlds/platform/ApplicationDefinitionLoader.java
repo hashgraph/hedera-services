@@ -20,6 +20,7 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 import com.swirlds.common.internal.ApplicationDefinition;
 import com.swirlds.common.internal.ConfigurationException;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.config.legacy.AddressConfig;
@@ -124,7 +125,7 @@ public final class ApplicationDefinitionLoader {
             throw new UncheckedIOException(e);
         }
         bookData.add(new Address(
-                bookData.size(), // Id
+                new NodeId(bookData.size()), // Id
                 addressConfig.nickname(), // nickname
                 addressConfig.selfName(), // selfName
                 addressConfig.weight(), // weight

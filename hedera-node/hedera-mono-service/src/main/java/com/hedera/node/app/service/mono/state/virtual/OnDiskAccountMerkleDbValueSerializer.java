@@ -59,6 +59,11 @@ public class OnDiskAccountMerkleDbValueSerializer implements ValueSerializer<OnD
         return VARIABLE_DATA_SIZE;
     }
 
+    // FUTURE WORK: mark it as @Override after migration to platform 0.39
+    public int getTypicalSerializedSize() {
+        return OnDiskAccount.getTypicalSerializedSize();
+    }
+
     @Override
     public int serialize(final OnDiskAccount value, final ByteBuffer out) throws IOException {
         Objects.requireNonNull(value);

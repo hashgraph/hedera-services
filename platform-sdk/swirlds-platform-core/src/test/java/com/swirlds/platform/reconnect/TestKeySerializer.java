@@ -36,7 +36,7 @@ public class TestKeySerializer implements KeySerializer<TestKey>, SelfSerializab
     }
 
     @Override
-    public int getSerializedSize() {
+    public int getSerializedSize(long dataVersion) {
         return TestKey.BYTES;
     }
 

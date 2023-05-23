@@ -30,7 +30,6 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
-import com.swirlds.common.merkle.synchronization.settings.ReconnectSettings;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
@@ -81,8 +80,8 @@ import org.junit.jupiter.api.Test;
 public class EmergencyReconnectTests {
     private static final Future<Boolean> trueFuture = mock(Future.class);
     private final RandomSignedStateGenerator signedStateGenerator = new RandomSignedStateGenerator();
-    private final NodeId learnerId = new NodeId(false, 0L);
-    private final NodeId teacherId = new NodeId(false, 1L);
+    private final NodeId learnerId = new NodeId(0L);
+    private final NodeId teacherId = new NodeId(1L);
     private final ReconnectThrottle reconnectThrottle = mock(ReconnectThrottle.class);
     private final SignedStateManager signedStateManager = mock(SignedStateManager.class);
     private final ParallelExecutor executor = new CachedPoolParallelExecutor(getStaticThreadManager(), "test-executor");
@@ -131,8 +130,8 @@ public class EmergencyReconnectTests {
         final Random random = RandomUtils.initRandom(null);
         final NotificationEngine notificationEngine = NotificationEngine.buildEngine(getStaticThreadManager());
         final int numNodes = 4;
-        final List<Long> nodeIds =
-                IntStream.range(0, numNodes).mapToLong(i -> (long) i).boxed().toList();
+        final List<NodeId> nodeIds =
+                IntStream.range(0, numNodes).mapToObj(NodeId::new).toList();
         final long emergencyRound = 1L;
 
         final AddressBook addressBook = newAddressBook(random, numNodes);
@@ -233,7 +232,7 @@ public class EmergencyReconnectTests {
                         TestPlatformContextBuilder.create().build(),
                         getStaticThreadManager(),
                         addressBook,
-                        mock(ReconnectSettings.class),
+                        100_000,
                         mock(ReconnectMetrics.class)));
 
         return new ReconnectController(getStaticThreadManager(), helper, () -> {});

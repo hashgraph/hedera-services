@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,7 +72,7 @@ class EventTaskCreatorTest {
         address = mock(Address.class);
         when(addressBook.getAddress(Mockito.anyLong())).thenReturn(address);
         when(addressBook.copy()).thenReturn(addressBook);
-        selfId = NodeId.createMain(1);
+        selfId = new NodeId(1);
         eventIntakeMetrics = mock(EventIntakeMetrics.class);
         eventQueueThread = mock(BlockingQueue.class);
         setting = mock(SettingsProvider.class);
@@ -139,7 +139,7 @@ class EventTaskCreatorTest {
         assertEquals(
                 eventToRescue.getCreatorId(),
                 captor.getValue().getOtherId(),
-                "otherId should match the creatorId of the rescued event");
+                "otherId should match the senderId of the rescued event");
 
         reset(eventQueueThread);
 
@@ -169,7 +169,7 @@ class EventTaskCreatorTest {
         when(syncManager.shouldCreateEvent(any())).thenReturn(true);
 
         SyncResult syncResult = mock(SyncResult.class);
-        when(syncResult.getOtherId()).thenReturn(mock(NodeId.class));
+        when(syncResult.getOtherId()).thenReturn(new NodeId(2));
 
         taskCreator.syncDone(syncResult);
 
@@ -185,7 +185,7 @@ class EventTaskCreatorTest {
         when(setting.getRandomEventProbability()).thenReturn(1);
 
         SyncResult syncResult = mock(SyncResult.class);
-        when(syncResult.getOtherId()).thenReturn(mock(NodeId.class));
+        when(syncResult.getOtherId()).thenReturn(new NodeId(2));
 
         taskCreator.syncDone(syncResult);
 

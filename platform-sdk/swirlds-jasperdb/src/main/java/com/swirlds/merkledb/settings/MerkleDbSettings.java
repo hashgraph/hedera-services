@@ -37,7 +37,7 @@ public interface MerkleDbSettings {
     long getMaxNumOfKeys();
 
     /**
-     * Get threshold where we switch from storing internal hashes in ram to storing them on disk. If
+     * Get threshold where we switch from storing hashes in ram to storing them on disk. If
      * it is 0 then everything is on disk, if it is Long.MAX_VALUE then everything is in ram. Any
      * value in the middle is the path value at which we swap from ram to disk. This allows a tree
      * where the lower levels of the tree nodes hashes are in ram and the upper larger less changing
@@ -46,7 +46,7 @@ public interface MerkleDbSettings {
      * <b>IMPORTANT: This can only be set before a new database is created, changing on an
      * existing database will break it.</b>
      */
-    long getInternalHashesRamToDiskThreshold();
+    long getHashesRamToDiskThreshold();
 
     /**
      * The cutoff size in MB of files to include in a "medium" merge. Default is 10240MB.

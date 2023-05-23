@@ -18,22 +18,24 @@ package com.hedera.node.app.workflows.dispatcher;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.service.admin.FreezeService;
-import com.hedera.node.app.service.admin.ReadableSpecialFileStore;
-import com.hedera.node.app.service.admin.impl.ReadableSpecialFileStoreImpl;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
-import com.hedera.node.app.service.network.NetworkService;
-import com.hedera.node.app.service.network.ReadableRunningHashLeafStore;
-import com.hedera.node.app.service.network.impl.ReadableRunningHashLeafStoreImpl;
+import com.hedera.node.app.service.networkadmin.FreezeService;
+import com.hedera.node.app.service.networkadmin.NetworkService;
+import com.hedera.node.app.service.networkadmin.ReadableRunningHashLeafStore;
+import com.hedera.node.app.service.networkadmin.ReadableSpecialFileStore;
+import com.hedera.node.app.service.networkadmin.impl.ReadableRunningHashLeafStoreImpl;
+import com.hedera.node.app.service.networkadmin.impl.ReadableSpecialFileStoreImpl;
 import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStoreImpl;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
+import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.state.HederaState;
@@ -59,7 +61,8 @@ public class ReadableStoreFactory {
             ReadableScheduleStore.class, new StoreEntry(ScheduleService.NAME, ReadableScheduleStoreImpl::new),
             ReadableSpecialFileStore.class, new StoreEntry(FreezeService.NAME, ReadableSpecialFileStoreImpl::new),
             ReadableRunningHashLeafStore.class,
-                    new StoreEntry(NetworkService.NAME, ReadableRunningHashLeafStoreImpl::new));
+                    new StoreEntry(NetworkService.NAME, ReadableRunningHashLeafStoreImpl::new),
+            ReadableTokenRelationStore.class, new StoreEntry(TokenService.NAME, ReadableTokenRelationStoreImpl::new));
 
     private final HederaState state;
 

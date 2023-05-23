@@ -32,13 +32,14 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.PlatformWithDeprecatedMethods;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.PlatformEvent;
 import com.swirlds.platform.Browser;
+import com.swirlds.platform.ParameterProvider;
+import com.swirlds.platform.gui.GuiPlatformAccessor;
 import com.swirlds.platform.gui.SwirldsGui;
 import com.swirlds.platform.network.ExternalIpAddress;
 import com.swirlds.platform.network.IpAddressStatus;
@@ -54,8 +55,6 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.Label;
 import java.awt.TextField;
-import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
 import java.awt.geom.Rectangle2D;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -244,7 +243,7 @@ public class HashgraphDemoMain implements SwirldMain {
             print(g, "%5.3f sec, create to consensus", createCons);
             print(g, "%5.3f sec, receive to consensus", recCons);
             final Address address =
-                    platform.getAddressBook().getAddress(platform.getSelfId().getId());
+                    platform.getAddressBook().getAddress(platform.getSelfId().id());
             print(g, "Internal: " + Network.getInternalIPAddress() + " : " + address.getPortInternalIpv4(), 0);
 
             final ExternalIpAddress ipAddress = Network.getExternalIpAddress();
@@ -392,22 +391,23 @@ public class HashgraphDemoMain implements SwirldMain {
     @Override
     public void init(final Platform platform, final NodeId id) {
         this.platform = platform;
-        this.selfId = id.getId();
-        final String[] parameters = ((PlatformWithDeprecatedMethods) platform).getParameters();
+        this.selfId = id.id();
+        final String[] parameters = ParameterProvider.getInstance().getParameters();
 
-        SwirldsGui.setAbout(
-                platform.getSelfId().getId(),
-                "Hashgraph Demo v. 1.1\n" + "\n"
-                        + "trans/sec = # transactions added to the hashgraph per second\n"
-                        + "events/sec = # events added to the hashgraph per second\n"
-                        + "duplicate events = percentage of events a member receives that they already know.\n"
-                        + "bad events/sec = number of events per second received by a member that are invalid.\n"
-                        + "propagation time = average seconds from creating a new event to a given member receiving it.\n"
-                        + "create to consensus = average seconds from creating a new event to knowing its consensus order.\n"
-                        + "receive to consensus = average seconds from receiving an event to knowing its consensus order.\n"
-                        + "Witnesses are colored circles, non-witnesses are black/gray.\n"
-                        + "Dark circles are part of the consensus, light are not.\n"
-                        + "Fame is true for green, false for blue, unknown for red.\n");
+        GuiPlatformAccessor.getInstance()
+                .setAbout(
+                        platform.getSelfId().id(),
+                        "Hashgraph Demo v. 1.1\n" + "\n"
+                                + "trans/sec = # transactions added to the hashgraph per second\n"
+                                + "events/sec = # events added to the hashgraph per second\n"
+                                + "duplicate events = percentage of events a member receives that they already know.\n"
+                                + "bad events/sec = number of events per second received by a member that are invalid.\n"
+                                + "propagation time = average seconds from creating a new event to a given member receiving it.\n"
+                                + "create to consensus = average seconds from creating a new event to knowing its consensus order.\n"
+                                + "receive to consensus = average seconds from receiving an event to knowing its consensus order.\n"
+                                + "Witnesses are colored circles, non-witnesses are black/gray.\n"
+                                + "Dark circles are part of the consensus, light are not.\n"
+                                + "Fame is true for green, false for blue, unknown for red.\n");
         window = SwirldsGui.createWindow(platform, false); // Uses BorderLayout. Size is chosen by the Platform
         window.setLayout(new GridBagLayout()); // use a layout more powerful than BorderLayout
         int p = 0; // which parameter to use
@@ -426,12 +426,6 @@ public class HashgraphDemoMain implements SwirldMain {
 
         eventLimit = new TextField(parameters.length <= p ? "" : parameters[p].trim(), 5);
         p++;
-
-        slowCheckbox.addItemListener(new ItemListener() {
-            public void itemStateChanged(final ItemEvent e) {
-                ((PlatformWithDeprecatedMethods) platform).setSleepAfterSync(e.getStateChange() == 1 ? 1000 : 0);
-            }
-        });
 
         final GridBagConstraints constr = new GridBagConstraints();
         constr.fill = GridBagConstraints.NONE; // don't stretch components
@@ -482,7 +476,8 @@ public class HashgraphDemoMain implements SwirldMain {
     public void run() {
         while (true) {
             if (window != null && !freezeCheckbox.getState()) {
-                eventsCache = ((PlatformWithDeprecatedMethods) platform).getAllEvents();
+                eventsCache = GuiPlatformAccessor.getInstance()
+                        .getAllEvents(platform.getSelfId().id());
                 // after this getAllEvents call, the set of events to draw is frozen
                 // for the duration of this screen redraw. But their status (consensus or not) may change
                 // while it is being drawn. If an event is discarded while being drawn, then it forgets its

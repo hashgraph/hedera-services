@@ -23,7 +23,9 @@ import com.swirlds.common.crypto.SerializablePublicKey;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.system.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.security.PublicKey;
 import java.util.Arrays;
@@ -38,13 +40,26 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
  */
 public class Address implements SelfSerializable {
     private static final long CLASS_ID = 0x5acfd3a4a32376eL;
-    private static final int CLASS_VERSION = 3;
+
+    /** The Class Versions for this class */
+    private static class ClassVersion {
+        /**
+         * The original version of the class.
+         */
+        public static final int ORIGINAL = 3;
+        /**
+         * The NodeId is SelfSerializable.
+         * @since 0.39.0
+         */
+        public static final int SELF_SERIALIZABLE_NODE_ID = 4;
+    }
+
     private static final byte[] ALL_INTERFACES = new byte[] {0, 0, 0, 0};
     private static final int MAX_IP_LENGTH = 16;
     private static final int STRING_MAX_BYTES = 512;
 
-    /** ID number of this member. All agree on numbering for old members, and if config.txt used */
-    private long id;
+    /** ID of this member. All agree on numbering for old members, and if config.txt used */
+    private NodeId id;
     /** name this member uses to refer to that member */
     private String nickname;
     /** name that member uses to refer to their self */
@@ -85,7 +100,7 @@ public class Address implements SelfSerializable {
      */
     public Address() {
         this(
-                -1L,
+                NodeId.FIRST_NODE_ID,
                 "",
                 "",
                 1,
@@ -101,20 +116,20 @@ public class Address implements SelfSerializable {
                 (SerializablePublicKey) null,
                 (SerializablePublicKey) null,
                 (SerializablePublicKey) null,
-                null);
+                "");
     }
 
     public Address(
-            final long id,
-            final String nickname,
-            final String selfName,
+            @NonNull final NodeId id,
+            @NonNull final String nickname,
+            @NonNull final String selfName,
             final long weight,
             final boolean ownHost,
-            final byte[] addressInternalIpv4,
+            @Nullable final byte[] addressInternalIpv4,
             final int portInternalIpv4,
-            final byte[] addressExternalIpv4,
+            @Nullable final byte[] addressExternalIpv4,
             final int portExternalIpv4,
-            final String memo) {
+            @NonNull final String memo) {
         this(
                 id,
                 nickname,
@@ -141,7 +156,7 @@ public class Address implements SelfSerializable {
 
     /**
      * Same as
-     * {@link #Address(long, String, String, long, boolean, byte[], int, byte[], int, byte[], int, byte[], int,
+     * {@link #Address(NodeId, String, String, long, boolean, byte[], int, byte[], int, byte[], int, byte[], int,
      * SerializablePublicKey, SerializablePublicKey, SerializablePublicKey, String)} but with different key types.
      * Deprecated, should use the method mentioned above.
      *
@@ -167,24 +182,24 @@ public class Address implements SelfSerializable {
     @Deprecated
     public Address(
             long id,
-            String nickname,
-            String selfName,
+            @NonNull String nickname,
+            @NonNull String selfName,
             long weight,
             boolean ownHost,
-            byte[] addressInternalIpv4,
+            @Nullable byte[] addressInternalIpv4,
             int portInternalIpv4,
-            byte[] addressExternalIpv4,
+            @Nullable byte[] addressExternalIpv4,
             int portExternalIpv4,
-            byte[] addressInternalIpv6,
+            @Nullable byte[] addressInternalIpv6,
             int portInternalIpv6,
-            byte[] addressExternalIpv6,
+            @Nullable byte[] addressExternalIpv6,
             int portExternalIpv6,
-            PublicKey sigPublicKey,
-            PublicKey encPublicKey,
-            PublicKey agreePublicKey,
-            String memo) {
+            @Nullable PublicKey sigPublicKey,
+            @Nullable PublicKey encPublicKey,
+            @Nullable PublicKey agreePublicKey,
+            @NonNull String memo) {
         this(
-                id,
+                new NodeId(id),
                 nickname,
                 selfName,
                 weight,
@@ -226,26 +241,26 @@ public class Address implements SelfSerializable {
      * @param memo                additional information about the node, can be null
      */
     public Address(
-            final long id,
-            final String nickname,
-            final String selfName,
+            @NonNull final NodeId id,
+            @NonNull final String nickname,
+            @NonNull final String selfName,
             final long weight,
             final boolean ownHost,
-            final byte[] addressInternalIpv4,
+            @Nullable final byte[] addressInternalIpv4,
             final int portInternalIpv4,
-            final byte[] addressExternalIpv4,
+            @Nullable final byte[] addressExternalIpv4,
             final int portExternalIpv4,
-            final byte[] addressInternalIpv6,
+            @Nullable final byte[] addressInternalIpv6,
             final int portInternalIpv6,
-            final byte[] addressExternalIpv6,
+            @Nullable final byte[] addressExternalIpv6,
             final int portExternalIpv6,
-            final SerializablePublicKey sigPublicKey,
-            final SerializablePublicKey encPublicKey,
-            final SerializablePublicKey agreePublicKey,
-            final String memo) {
-        this.id = id;
-        this.nickname = nickname;
-        this.selfName = selfName;
+            @Nullable final SerializablePublicKey sigPublicKey,
+            @Nullable final SerializablePublicKey encPublicKey,
+            @Nullable final SerializablePublicKey agreePublicKey,
+            @NonNull final String memo) {
+        this.id = Objects.requireNonNull(id, "id must not be null");
+        this.nickname = Objects.requireNonNull(nickname, "nickname must not be null");
+        this.selfName = Objects.requireNonNull(selfName, "selfName must not be null");
         this.weight = weight;
         this.ownHost = ownHost;
         this.portInternalIpv4 = portInternalIpv4;
@@ -259,7 +274,15 @@ public class Address implements SelfSerializable {
         this.sigPublicKey = sigPublicKey;
         this.encPublicKey = encPublicKey;
         this.agreePublicKey = agreePublicKey;
-        this.memo = memo;
+        this.memo = Objects.requireNonNull(memo, "memo must not be null");
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int getMinimumSupportedVersion() {
+        return ClassVersion.ORIGINAL;
     }
 
     /**
@@ -267,7 +290,7 @@ public class Address implements SelfSerializable {
      */
     @Override
     public int getVersion() {
-        return CLASS_VERSION;
+        return ClassVersion.SELF_SERIALIZABLE_NODE_ID;
     }
 
     /**
@@ -297,12 +320,24 @@ public class Address implements SelfSerializable {
     }
 
     /**
+     * Get the NodeId of this address.
+     *
+     * @return the NodeId of this address.
+     */
+    @NonNull
+    public NodeId getNodeId() {
+        return id;
+    }
+
+    /**
      * Get the Id of this member.
      *
      * @return The Id of this member.
+     * @deprecated Use {@link #getNodeId()} instead.
      */
+    @Deprecated(since = "0.39.0", forRemoval = true)
     public long getId() {
-        return id;
+        return id.id();
     }
 
     /**
@@ -479,13 +514,15 @@ public class Address implements SelfSerializable {
     }
 
     /**
-     * Create a new Address object based this one with different Id.
+     * Create a new Address object based this one with different NodeId.
      *
-     * @param id New Id for the created Address.
-     * @return The new Address.
+     * @param id new NodeId for the created Address.
+     * @return the new Address.
      */
-    public Address copySetId(long id) {
-        Address a = copy();
+    @NonNull
+    public Address copySetNodeId(@NonNull final NodeId id) {
+        Objects.requireNonNull(id, "id must not be null");
+        final Address a = copy();
         a.id = id;
         return a;
     }
@@ -730,7 +767,7 @@ public class Address implements SelfSerializable {
      */
     @Override
     public void serialize(SerializableDataOutputStream outStream) throws IOException {
-        outStream.writeLong(id);
+        outStream.writeSerializable(id, false);
         outStream.writeNormalisedString(nickname);
         outStream.writeNormalisedString(selfName);
         outStream.writeLong(weight);
@@ -753,7 +790,11 @@ public class Address implements SelfSerializable {
      */
     @Override
     public void deserialize(SerializableDataInputStream inStream, int version) throws IOException {
-        id = inStream.readLong();
+        if (version < ClassVersion.SELF_SERIALIZABLE_NODE_ID) {
+            id = new NodeId(inStream.readLong());
+        } else {
+            id = inStream.readSerializable(false, NodeId::new);
+        }
         nickname = inStream.readNormalisedString(STRING_MAX_BYTES);
         selfName = inStream.readNormalisedString(STRING_MAX_BYTES);
         weight = inStream.readLong();
@@ -830,7 +871,7 @@ public class Address implements SelfSerializable {
      * values, false otherwise.
      */
     public boolean equalsWithoutWeightAndOwnHost(@NonNull final Address address) {
-        return id == address.id
+        return Objects.equals(id, address.id)
                 && portInternalIpv4 == address.portInternalIpv4
                 && portExternalIpv4 == address.portExternalIpv4
                 && portInternalIpv6 == address.portInternalIpv6
@@ -858,7 +899,7 @@ public class Address implements SelfSerializable {
      */
     @Override
     public int hashCode() {
-        return hash32(id);
+        return hash32(id.id());
     }
 
     /**

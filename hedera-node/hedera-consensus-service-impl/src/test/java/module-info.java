@@ -16,4 +16,5 @@ open module com.hedera.node.app.service.consensus.impl.test {
     requires org.apache.commons.codec;
     requires com.hedera.node.hapi;
     requires static com.github.spotbugs.annotations;
+    requires com.hedera.node.app;
 }

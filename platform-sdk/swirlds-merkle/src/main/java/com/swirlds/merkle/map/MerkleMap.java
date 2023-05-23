@@ -20,6 +20,7 @@ import static com.swirlds.common.merkle.copy.MerklePathReplacement.getParentInPa
 import static com.swirlds.common.merkle.copy.MerklePathReplacement.replacePath;
 import static com.swirlds.common.merkle.utility.MerkleUtils.findChildPositionInParent;
 
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
@@ -31,9 +32,8 @@ import com.swirlds.common.utility.Labeled;
 import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.fchashmap.FCHashMap;
-import com.swirlds.fchashmap.FCHashMapSettings;
-import com.swirlds.fchashmap.FCHashMapSettingsFactory;
 import com.swirlds.fchashmap.ModifiableValue;
+import com.swirlds.fchashmap.config.FCHashMapConfig;
 import com.swirlds.merkle.map.internal.MerkleMapEntrySet;
 import com.swirlds.merkle.map.internal.MerkleMapInfo;
 import com.swirlds.merkle.tree.MerkleBinaryTree;
@@ -883,10 +883,10 @@ public class MerkleMap<K, V extends MerkleNode & Keyed<K>> extends PartialBinary
     @SuppressWarnings("unchecked")
     @Override
     public void rebuild() {
-        final FCHashMapSettings settings = FCHashMapSettingsFactory.get();
+        final FCHashMapConfig fcHashMapConfig = ConfigurationHolder.getConfigData(FCHashMapConfig.class);
 
         final int splitDepth =
-                settings.getRebuildSplitFactor() + getTree().getRoot().getDepth();
+                fcHashMapConfig.rebuildSplitFactor() + getTree().getRoot().getDepth();
 
         // Collect all internal nodes at the split depth, and any
         // entries that happen to appear at or above the split depth.
@@ -919,7 +919,7 @@ public class MerkleMap<K, V extends MerkleNode & Keyed<K>> extends PartialBinary
             // Process each subtree using the thread pool.
 
             final List<Future<?>> futures = new ArrayList<>(internalNodes.size());
-            final ExecutorService executor = new ForkJoinPool(settings.getRebuildThreadCount());
+            final ExecutorService executor = new ForkJoinPool(fcHashMapConfig.rebuildThreadCount());
             for (final MerkleNode subtreeRoot : internalNodes) {
                 futures.add(executor.submit(() -> rebuildSubtree(subtreeRoot)));
             }

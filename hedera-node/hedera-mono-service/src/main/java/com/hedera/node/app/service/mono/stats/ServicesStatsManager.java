@@ -120,7 +120,7 @@ public class ServicesStatsManager {
         });
 
         updateThread.setName(
-                String.format(STATS_UPDATE_THREAD_NAME_TPL, platform.getSelfId().getId()));
+                String.format(STATS_UPDATE_THREAD_NAME_TPL, platform.getSelfId().getIdAsInt()));
         updateThread.start();
     }
 

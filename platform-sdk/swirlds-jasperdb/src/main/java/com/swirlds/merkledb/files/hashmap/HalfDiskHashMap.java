@@ -42,6 +42,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Iterator;
 import java.util.List;
 import java.util.LongSummaryStatistics;
 import java.util.Queue;
@@ -51,7 +52,6 @@ import java.util.concurrent.Executors;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.eclipse.collections.api.list.MutableList;
 import org.eclipse.collections.api.tuple.primitive.IntObjectPair;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 
@@ -94,6 +94,8 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
     private static final long GOOD_AVERAGE_BUCKET_ENTRY_COUNT = 20;
     /** how full should all available bins be if we are at the specified map size */
     public static final double LOADING_FACTOR = 0.6;
+    /** The limit on the number of concurrent read tasks in {@code endWriting()} */
+    private static final int MAX_IN_FLIGHT = 64;
     /**
      * Long list used for mapping bucketIndex(index into list) to disk location for latest copy of
      * bucket
@@ -421,32 +423,40 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
             throw new IllegalStateException("Tried calling endWriting with different thread to startWriting()");
         }
         writingThread = null;
+        final int size = oneTransactionsData.size();
         logger.info(
                 MERKLE_DB.getMarker(),
                 "Finishing writing to {}, num of changed bins = {}, num of changed keys = {}",
                 storeName,
-                oneTransactionsData.size(),
+                size,
                 oneTransactionsData.stream().mapToLong(BucketMutation::size).sum());
-        // iterate over transaction cache and save it all to file
-        if (!oneTransactionsData.isEmpty()) {
-            // for each changed bucket, write the new buckets to file but do not update index yet
-            final MutableList<IntObjectPair<BucketMutation<K>>> bucketUpdates =
-                    oneTransactionsData.keyValuesView().toList();
-            final int size = bucketUpdates.size();
+
+        if (size > 0) {
             final Queue<ReadBucketResult<K>> queue = new ConcurrentLinkedQueue<>();
-            for (final IntObjectPair<BucketMutation<K>> keyValue : bucketUpdates) {
-                final int bucketIndex = keyValue.getOne();
-                final BucketMutation<K> bucketMap = keyValue.getTwo();
-                flushExecutor.execute(() -> readUpdateQueueBucket(bucketIndex, bucketMap, queue));
-            }
-            //  write to files
+            final Iterator<IntObjectPair<BucketMutation<K>>> iterator =
+                    oneTransactionsData.keyValuesView().iterator();
+
+            // read and update all buckets in parallel, write sequentially in random order
             fileCollection.startWriting();
             int processed = 0;
+            int inFlight = 0;
             while (processed < size) {
+                // submit read tasks
+                while (inFlight < MAX_IN_FLIGHT && iterator.hasNext()) {
+                    IntObjectPair<BucketMutation<K>> keyValue = iterator.next();
+                    final int bucketIndex = keyValue.getOne();
+                    final BucketMutation<K> bucketMap = keyValue.getTwo();
+                    flushExecutor.execute(() -> readUpdateQueueBucket(bucketIndex, bucketMap, queue));
+                    ++inFlight;
+                }
+
                 final ReadBucketResult<K> res = queue.poll();
                 if (res == null) {
+                    Thread.onSpinWait();
                     continue;
                 }
+                --inFlight;
+
                 if (res.error != null) {
                     throw new RuntimeException(res.error);
                 }
@@ -462,7 +472,7 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
                         bucketIndexToBucketLocation.put(bucketIndex, bucketLocation);
                     }
                 } finally {
-                    processed++;
+                    ++processed;
                 }
             }
             // close files session
@@ -470,6 +480,7 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
             // we have updated all indexes so the data file can now be included in merges
             dataFileReader.setFileCompleted();
         }
+
         // clear put cache
         oneTransactionsData = null;
     }
@@ -495,10 +506,10 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
             }
             // for each changed key in bucket, update bucket
             keyUpdates.forEachKeyValue(bucket::putValue);
-            queue.add(new ReadBucketResult<>(bucket, null));
+            queue.offer(new ReadBucketResult<>(bucket, null));
         } catch (final Exception e) {
             logger.error(MERKLE_DB.getMarker(), "Failed to read / update bucket", e);
-            queue.add(new ReadBucketResult<>(null, e));
+            queue.offer(new ReadBucketResult<>(null, e));
         }
     }
 

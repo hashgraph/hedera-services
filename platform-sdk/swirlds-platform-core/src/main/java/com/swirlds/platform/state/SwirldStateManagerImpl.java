@@ -130,9 +130,9 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
         Objects.requireNonNull(inFreeze);
         Objects.requireNonNull(state);
 
-        this.transactionPool = new EventTransactionPool(settings, inFreeze);
+        this.transactionPool = new EventTransactionPool(platformContext.getMetrics(), settings, inFreeze);
         this.transactionHandler = new TransactionHandler(selfId, stats);
-        this.uptimeTracker = new UptimeTracker(platformContext, addressBook, selfId.getId(), OSTime.getInstance());
+        this.uptimeTracker = new UptimeTracker(platformContext, addressBook, selfId, OSTime.getInstance());
         initialState(state);
     }
 
