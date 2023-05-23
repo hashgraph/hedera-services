@@ -262,7 +262,7 @@ class StandardProcessLogicTest {
         given(platformTxn.getConsensusTimestamp()).willReturn(timeStamp);
 
         subject.incorporateConsensusTxn(
-                platformTxn, member, SerializableSemVers.forHapiAndHedera("0.38.1", "0.38.1-pre+1"));
+                platformTxn, member, SerializableSemVers.forHapiAndHedera("0.28.1", "0.28.1-pre+1"));
         verify(recordCache).setStaleTransaction(payer, accessor, timeStamp, member);
     }
 
