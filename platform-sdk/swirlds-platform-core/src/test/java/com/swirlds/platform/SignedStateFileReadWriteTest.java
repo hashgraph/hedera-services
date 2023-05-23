@@ -156,7 +156,7 @@ class SignedStateFileReadWriteTest {
         final Path addressBookFile = directory.resolve(CURRENT_ADDRESS_BOOK_FILE_NAME);
 
         throwIfFileExists(stateFile, hashInfoFile, settingsUsedFile, directory);
-        writeSignedStateToDisk(0, directory, signedState, "test");
+        writeSignedStateToDisk(new NodeId(0), directory, signedState, "test");
 
         assertTrue(exists(stateFile), "state file should exist");
         assertTrue(exists(hashInfoFile), "hash info file should exist");

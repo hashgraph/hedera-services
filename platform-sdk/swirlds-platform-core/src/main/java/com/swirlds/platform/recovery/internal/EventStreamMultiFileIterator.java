@@ -130,7 +130,7 @@ public class EventStreamMultiFileIterator implements IOIterator<DetailedConsensu
             }
 
             if (previousHash != null && !eventIterator.getStartHash().equals(previousHash)) {
-                throw new IOException("missing event stream file detected");
+                throw new IOException("missing event stream file prior to `%s` detected".formatted(nextFile));
             }
         }
 
