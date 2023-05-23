@@ -34,12 +34,15 @@ import com.hedera.node.app.spi.fixtures.util.LoggingTarget;
 import com.hedera.node.app.spi.state.WritableFreezeStore;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -52,12 +55,13 @@ class FreezeUpgradeActionsTest {
     private static final Instant then = Instant.ofEpochSecond(1_234_567L, 890);
     private Path noiseFileLoc;
     private Path noiseSubFileLoc;
-    private static final byte[] PRETEND_ARCHIVE = "Not a valid zip archive".getBytes(StandardCharsets.UTF_8);
-
-    private static final Path REAL_ARCHIVE_LOC = Path.of("src/test/resources/testfiles/updateFeature/valid.zip");
+    private Path zipArchivePath; // path to valid.zip test zip file (in zipSourceDir directory)
 
     @TempDir
-    private File tempDir;
+    private Path zipSourceDir; // temp directory to place test zip files
+
+    @TempDir
+    private File zipOutputDir; // temp directory to place marker files and output of zip extraction
 
     @Mock
     private WritableFreezeStore freezeStore;
@@ -72,27 +76,41 @@ class FreezeUpgradeActionsTest {
     private FreezeUpgradeActions subject;
 
     @BeforeEach
-    void setUp() {
-        noiseFileLoc = tempDir.toPath().resolve("forgotten.cfg");
-        noiseSubFileLoc = tempDir.toPath().resolve("edargpu");
+    void setUp() throws IOException {
+        noiseFileLoc = zipOutputDir.toPath().resolve("forgotten.cfg");
+        noiseSubFileLoc = zipOutputDir.toPath().resolve("edargpu");
 
         subject = new FreezeUpgradeActions(adminServiceConfig, freezeStore);
+
+        // set up test zip
+        zipSourceDir = Files.createTempDirectory("zipSourceDir");
+        zipArchivePath = Path.of(zipSourceDir + "/valid.zip");
+        try (ZipOutputStream out = new ZipOutputStream(new FileOutputStream(zipArchivePath.toFile()))) {
+            ZipEntry e = new ZipEntry("garden_path_sentence.txt");
+            out.putNextEntry(e);
+
+            String fileContent = "The old man the boats";
+            byte[] data = fileContent.getBytes();
+            out.write(data, 0, data.length);
+            out.closeEntry();
+        }
     }
 
     @Test
     void complainsLoudlyWhenUnableToUnzipArchive() {
         rmIfPresent(EXEC_IMMEDIATE_MARKER);
 
-        given(adminServiceConfig.upgradeArtifactsPath()).willReturn(tempDir.toString());
+        given(adminServiceConfig.upgradeArtifactsPath()).willReturn(zipOutputDir.toString());
 
-        subject.extractSoftwareUpgrade(PRETEND_ARCHIVE).join();
+        final byte[] invalidArchive = "Not a valid zip archive".getBytes(StandardCharsets.UTF_8);
+        subject.extractSoftwareUpgrade(invalidArchive).join();
 
         assertThat(logCaptor.errorLogs())
                 .anyMatch(l -> l.startsWith("Failed to unzip archive for NMT consumption java.io.IOException:" + " "));
         assertThat(logCaptor.errorLogs())
                 .anyMatch(l -> l.equals("Manual remediation may be necessary to avoid node ISS"));
 
-        assertThat(new File(tempDir, EXEC_IMMEDIATE_MARKER)).doesNotExist();
+        assertThat(new File(zipOutputDir, EXEC_IMMEDIATE_MARKER)).doesNotExist();
     }
 
     @Test
@@ -100,9 +118,9 @@ class FreezeUpgradeActionsTest {
         setupNoiseFiles();
         rmIfPresent(EXEC_IMMEDIATE_MARKER);
 
-        given(adminServiceConfig.upgradeArtifactsPath()).willReturn(tempDir.toString());
+        given(adminServiceConfig.upgradeArtifactsPath()).willReturn(zipOutputDir.toString());
 
-        final byte[] realArchive = Files.readAllBytes(REAL_ARCHIVE_LOC);
+        final byte[] realArchive = Files.readAllBytes(zipArchivePath);
         subject.extractSoftwareUpgrade(realArchive).join();
 
         assertMarkerCreated(EXEC_IMMEDIATE_MARKER, null);
@@ -112,9 +130,9 @@ class FreezeUpgradeActionsTest {
     void upgradesTelemetry() throws IOException {
         rmIfPresent(EXEC_TELEMETRY_MARKER);
 
-        given(adminServiceConfig.upgradeArtifactsPath()).willReturn(tempDir.toString());
+        given(adminServiceConfig.upgradeArtifactsPath()).willReturn(zipOutputDir.toString());
 
-        final byte[] realArchive = Files.readAllBytes(REAL_ARCHIVE_LOC);
+        final byte[] realArchive = Files.readAllBytes(zipArchivePath);
         subject.extractTelemetryUpgrade(realArchive, then).join();
 
         assertMarkerCreated(EXEC_TELEMETRY_MARKER, then);
@@ -124,7 +142,7 @@ class FreezeUpgradeActionsTest {
     void externalizesFreeze() throws IOException {
         rmIfPresent(NOW_FROZEN_MARKER);
 
-        given(adminServiceConfig.upgradeArtifactsPath()).willReturn(tempDir.toString());
+        given(adminServiceConfig.upgradeArtifactsPath()).willReturn(zipOutputDir.toString());
 
         subject.externalizeFreezeIfUpgradePending();
 
@@ -135,7 +153,7 @@ class FreezeUpgradeActionsTest {
     void setsExpectedFreezeAndWritesMarkerForFreezeUpgrade() throws IOException {
         rmIfPresent(FREEZE_SCHEDULED_MARKER);
 
-        given(adminServiceConfig.upgradeArtifactsPath()).willReturn(tempDir.toString());
+        given(adminServiceConfig.upgradeArtifactsPath()).willReturn(zipOutputDir.toString());
 
         subject.scheduleFreezeUpgradeAt(then);
 
@@ -157,7 +175,7 @@ class FreezeUpgradeActionsTest {
     void nullsOutDualOnAborting() throws IOException {
         rmIfPresent(FREEZE_ABORTED_MARKER);
 
-        given(adminServiceConfig.upgradeArtifactsPath()).willReturn(tempDir.toString());
+        given(adminServiceConfig.upgradeArtifactsPath()).willReturn(zipOutputDir.toString());
 
         subject.abortScheduledFreeze();
 
@@ -194,7 +212,7 @@ class FreezeUpgradeActionsTest {
     }
 
     private void rmIfPresent(final String file) {
-        rmIfPresent(tempDir.toPath(), file);
+        rmIfPresent(zipOutputDir.toPath(), file);
     }
 
     private static void rmIfPresent(final Path baseDir, final String file) {
@@ -206,7 +224,7 @@ class FreezeUpgradeActionsTest {
     }
 
     private void assertMarkerCreated(final String file, final @Nullable Instant when) throws IOException {
-        assertMarkerCreated(file, when, tempDir.toPath());
+        assertMarkerCreated(file, when, zipOutputDir.toPath());
     }
 
     private void assertMarkerCreated(final String file, final @Nullable Instant when, final Path baseDir)

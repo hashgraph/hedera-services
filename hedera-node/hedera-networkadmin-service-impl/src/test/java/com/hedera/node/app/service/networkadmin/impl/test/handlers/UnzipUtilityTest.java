@@ -24,47 +24,100 @@ import com.hedera.node.app.spi.fixtures.util.LogCaptor;
 import com.hedera.node.app.spi.fixtures.util.LogCaptureExtension;
 import com.hedera.node.app.spi.fixtures.util.LoggingSubject;
 import com.hedera.node.app.spi.fixtures.util.LoggingTarget;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.zip.ZipInputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({LogCaptureExtension.class, MockitoExtension.class})
 public class UnzipUtilityTest {
-    @Mock
-    private ZipInputStream zipIn;
-
     @LoggingTarget
     private LogCaptor logCaptor;
 
     @LoggingSubject
     private UnzipUtility subject;
 
-    // This folder and the files created in it will be deleted after
+    // These @TempDir folders and the files created in them will be deleted after
     // tests are run, even in the event of failures or exceptions.
     @TempDir
-    private Path tempDir;
+    private Path unzipOutputDir; // unzip test zips to this directory
+
+    @TempDir
+    private Path zipSourceDir; // contains test zips
+
+    private File testZipWithOneFile;
+    private File testZipWithSubdirectory;
+    private final String FILENAME_1 = "fileToZip.txt";
+    private final String FILENAME_2 = "subdirectory/subdirectoryFileToZip.txt";
+
+    @BeforeEach
+    void setup() throws IOException {
+        zipSourceDir = Files.createTempDirectory("zipSourceDir");
+
+        // set up test zip with one file in it
+        testZipWithOneFile = new File(zipSourceDir + "/testZipWithOneFile.zip");
+        try (ZipOutputStream out = new ZipOutputStream(new FileOutputStream(testZipWithOneFile))) {
+            ZipEntry e = new ZipEntry(FILENAME_1);
+            out.putNextEntry(e);
+
+            String fileContent = "Time flies like an arrow but fruit flies like a banana";
+            byte[] data = fileContent.getBytes();
+            out.write(data, 0, data.length);
+            out.closeEntry();
+        }
+
+        // set up test zip with a file and a subdirectory in it
+        testZipWithSubdirectory = new File(zipSourceDir + "/testZipWithSubdirectory.zip");
+        try (ZipOutputStream out = new ZipOutputStream(new FileOutputStream(testZipWithSubdirectory))) {
+            ZipEntry e1 = new ZipEntry(FILENAME_1);
+            out.putNextEntry(e1);
+            byte[] data = "Time flies like an arrow but fruit flies like a banana".getBytes();
+            out.write(data, 0, data.length);
+            out.closeEntry();
+
+            ZipEntry e2 = new ZipEntry(FILENAME_2);
+            out.putNextEntry(e2);
+            data = "If you aren't fired with enthusiasm, you will be fired, with enthusiasm".getBytes();
+            out.write(data, 0, data.length);
+            out.closeEntry();
+        }
+    }
 
     @Test
-    void unzipSucceedsAndLogs() throws IOException {
-        final var zipFile = "src/test/resources/testfiles/updateFeature/valid.zip";
-        final var data = Files.readAllBytes(Paths.get(zipFile));
+    void unzipOneFileSucceedsAndLogs() throws IOException {
+        final var data = Files.readAllBytes(testZipWithOneFile.toPath());
 
-        assertDoesNotThrow(() -> UnzipUtility.unzip(data, tempDir));
-        final Path path = tempDir.resolve("aaaa.txt");
+        assertDoesNotThrow(() -> UnzipUtility.unzip(data, unzipOutputDir));
+        final Path path = unzipOutputDir.resolve(FILENAME_1);
         assert (path.toFile().exists());
         assert (logCaptor.infoLogs().contains("- Extracted update file " + path));
     }
 
     @Test
-    void failsWhenArchiveIsInvalidZip() throws IOException {
+    void unzipWithSubDirectorySucceedsAndLogs() throws IOException {
+        final var data = Files.readAllBytes(testZipWithSubdirectory.toPath());
+
+        assertDoesNotThrow(() -> UnzipUtility.unzip(data, unzipOutputDir));
+        final Path path = unzipOutputDir.resolve(FILENAME_1);
+        assert (path.toFile().exists());
+        assert (logCaptor.infoLogs().contains("- Extracted update file " + path));
+
+        final Path path2 = unzipOutputDir.resolve(FILENAME_2);
+        assert (path2.toFile().exists());
+        assert (logCaptor.infoLogs().contains("- Extracted update file " + path2));
+    }
+
+    @Test
+    void failsWhenArchiveIsInvalidZip() {
         final byte[] data = new byte[] {'a', 'b', 'c'};
-        assertThrows(IOException.class, () -> UnzipUtility.unzip(data, tempDir));
+        assertThrows(IOException.class, () -> UnzipUtility.unzip(data, unzipOutputDir));
     }
 }
