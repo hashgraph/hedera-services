@@ -101,7 +101,7 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
         requireNonNull(context);
         requireNonNull(header);
         final var query = context.query();
-        final var config = context.getConfiguration().getConfigData(TokenServiceConfig.class);
+        final var config = context.configuration().getConfigData(TokenServiceConfig.class);
         final var accountStore = context.createStore(ReadableAccountStore.class);
         final var tokenRelationStore = context.createStore(ReadableTokenRelationStore.class);
         final var tokenStore = context.createStore(ReadableTokenStore.class);

@@ -228,8 +228,8 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
         final var query = createGetAccountBalanceQuery(accountNum);
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableAccountStore.class)).thenReturn(readableStore);
-        when(context.getConfiguration()).thenReturn(tokenServiceConfig);
-        when(context.getConfiguration().getConfigData(TokenServiceConfig.class)).thenReturn(config);
+        when(context.configuration()).thenReturn(tokenServiceConfig);
+        when(context.configuration().getConfigData(TokenServiceConfig.class)).thenReturn(config);
 
         final var response = subject.findResponse(context, responseHeader);
         final var op = response.cryptogetAccountBalance();
@@ -281,8 +281,8 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
         when(context.createStore(ReadableAccountStore.class)).thenReturn(ReadableAccountStore);
         when(context.createStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
         when(context.createStore(ReadableTokenRelationStore.class)).thenReturn(readableTokenRelStore);
-        when(context.getConfiguration()).thenReturn(tokenServiceConfig);
-        when(context.getConfiguration().getConfigData(TokenServiceConfig.class)).thenReturn(config);
+        when(context.configuration()).thenReturn(tokenServiceConfig);
+        when(context.configuration().getConfigData(TokenServiceConfig.class)).thenReturn(config);
 
         final var response = subject.findResponse(context, responseHeader);
         final var accountBalanceResponse = response.cryptogetAccountBalance();
