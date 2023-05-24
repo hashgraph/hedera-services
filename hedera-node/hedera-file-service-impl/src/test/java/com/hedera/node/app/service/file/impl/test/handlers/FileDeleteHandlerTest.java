@@ -85,7 +85,7 @@ class FileDeleteHandlerTest extends FileHandlerTestBase {
         given(writableStates.<EntityNum, File>get(FILES)).willReturn(writableFileState);
         writableStore = new WritableFileStoreImpl(writableStates);
         configuration = new HederaTestConfigBuilder().getOrCreateConfig();
-        lenient().when(preHandleContext.getConfiguration()).thenReturn(configuration);
+        lenient().when(preHandleContext.configuration()).thenReturn(configuration);
     }
 
     @Test
