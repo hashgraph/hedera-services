@@ -24,6 +24,7 @@ dependencies {
 
     testImplementation(project(":hedera-node:node-app-service-token"))
     testImplementation(testFixtures(project(":hedera-node:node-app-service-mono")))
+    testImplementation(testFixtures(project(":hedera-node:node-config")))
     testImplementation(testFixtures(project(":hedera-node:node-app-spi")))
     testImplementation(gav("org.assertj.core"))
     testImplementation(gav("org.junit.jupiter.api"))
