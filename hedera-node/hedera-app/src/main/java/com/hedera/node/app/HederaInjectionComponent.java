@@ -113,6 +113,10 @@ public interface HederaInjectionComponent extends ServicesApp {
         @BindsInstance
         Builder maxSignedTxnSize(@MaxSignedTxnSize final int maxSignedTxnSize);
 
+        /**
+         * @deprecated we need to define the correct workflow to define that genesis is used
+         */
+        @Deprecated
         @BindsInstance
         Builder genesisUsage(@GenesisUsage final boolean genesisUsage);
 

@@ -26,7 +26,10 @@ import javax.inject.Qualifier;
 
 /**
  * Qualifier for Dagger to define the boolean value of whether the node is a genesis node.
+ *
+ * @deprecated we need to define the correct workflow to define that genesis is used
  */
+@Deprecated(forRemoval = true)
 @Target({ElementType.METHOD, ElementType.PARAMETER})
 @Qualifier
 @Retention(RUNTIME)
