@@ -58,7 +58,7 @@ public class ValidateManifestFileCommand extends AbstractCommand {
         validateFieldExists(file.recovery().boostrap().timestamp(), "recovery->boostrap->timestamp");
         validateFieldExists(file.recovery().pkg(), "recovery->package");
         validateFieldExists(file.recovery().pkg().locations(), "recovery->package->locations");
-        if (file.recovery().pkg().locations().size() == 0) {
+        if (file.recovery().pkg().locations().isEmpty()) {
             throw new IOException(
                     "The file should have at least one location in the recovery->package->locations field");
         }
