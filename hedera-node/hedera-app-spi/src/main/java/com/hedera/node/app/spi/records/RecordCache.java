@@ -82,8 +82,8 @@ public interface RecordCache {
      */
     @Nullable
     default TransactionReceipt getReceipt(@NonNull TransactionID transactionID) {
-        final var records = getReceipts(transactionID);
-        return records.isEmpty() ? null : records.get(0);
+        final var receipts = getReceipts(transactionID);
+        return receipts.isEmpty() ? null : receipts.get(0);
     }
 
     /**
