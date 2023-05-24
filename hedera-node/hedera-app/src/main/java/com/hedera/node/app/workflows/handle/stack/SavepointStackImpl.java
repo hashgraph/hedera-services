@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle;
+package com.hedera.node.app.workflows.handle.stack;
 
 import static java.util.Objects.requireNonNull;
 
@@ -24,9 +24,6 @@ import com.hedera.node.app.spi.workflows.HandleContext.SavepointStack;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.RecordCache;
 import com.hedera.node.app.state.WrappedHederaState;
-import com.hedera.node.app.workflows.handle.stack.ReadableStatesStack;
-import com.hedera.node.app.workflows.handle.stack.Savepoint;
-import com.hedera.node.app.workflows.handle.stack.WritableStatesStack;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayDeque;
@@ -62,7 +59,7 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
 
     @Override
     public void createSavepoint() {
-        setupSavepoint(peek().state(), peek().config());
+        setupSavepoint(peek().state(), peek().configuration());
     }
 
     @Override
@@ -101,6 +98,16 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
         while (!stack.isEmpty()) {
             stack.pop().state().commit();
         }
+    }
+
+    /**
+     * Sets the configuration of the current savepoint.
+     *
+     * @param configuration the configuration of the savepoint
+     * @throws NullPointerException if {@code configuration} is {@code null}
+     */
+    public void configuration(@NonNull final Configuration configuration) {
+        peek().configuration(configuration);
     }
 
     @Override

@@ -37,6 +37,7 @@ import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.stack.Savepoint;
+import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -119,7 +120,7 @@ public class HandleContextImpl implements HandleContext {
     @Override
     @NonNull
     public Configuration configuration() {
-        return current().config();
+        return current().configuration();
     }
 
     @Override
@@ -263,7 +264,7 @@ public class HandleContextImpl implements HandleContext {
         }
 
         final var childStack = new SavepointStackImpl(current().state(), configuration());
-        final var context = new HandleContextImpl(
+        final var childContext = new HandleContextImpl(
                 txBody,
                 childCategory,
                 childRecordBuilder,
@@ -275,8 +276,9 @@ public class HandleContextImpl implements HandleContext {
                 serviceScopeLookup);
 
         try {
-            dispatcher.dispatchHandle(context);
+            dispatcher.dispatchHandle(childContext);
             childStack.commit();
+            stack.configuration(childContext.configuration());
         } catch (HandleException e) {
             childRecordBuilder.status(e.getStatus());
             recordListBuilder.revertChildRecordBuilders(recordBuilder);

@@ -40,6 +40,7 @@ import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult.Status;
@@ -155,6 +156,7 @@ public class HandleWorkflow {
 
             // Dispatch the transaction to the handler
             dispatcher.dispatchHandle(context);
+            stack.configuration(configProvider.getConfiguration());
 
             // TODO: Kick off special file handling if needed
 

@@ -76,11 +76,12 @@ public class RecordListBuilder {
         }
         final int precedingCount = precedingRecordBuilders.size();
         final var consensusConfig = configuration.getConfigData(ConsensusConfig.class);
-        if (precedingCount >= consensusConfig.handleMaxPrecedingRecords()) {
+        final long maxRecords = consensusConfig.handleMaxPrecedingRecords();
+        if (precedingCount >= maxRecords) {
             throw new IndexOutOfBoundsException("No more preceding slots available");
         }
 
-        final var consensusNow = baseConsensusTime.minusNanos(3L - precedingCount);
+        final var consensusNow = baseConsensusTime.minusNanos(maxRecords - precedingCount);
         final var recordBuilder = new SingleTransactionRecordBuilder(consensusNow);
 
         precedingRecordBuilders.add(recordBuilder);

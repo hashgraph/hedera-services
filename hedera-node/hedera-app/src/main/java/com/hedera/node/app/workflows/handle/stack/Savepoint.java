@@ -28,7 +28,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * A savepoint in the state stack.
  *
  * <p>Savepoints are used to track the state and configuration during the handle workflow. Together with the
- * {@link com.hedera.node.app.workflows.handle.SavepointStackImpl} they allow to revert the state to a previous point
+ * {@link SavepointStackImpl} they allow to revert the state to a previous point
  * in time.
  *
  * <p>A savepoint also contains convenience functionality, that depends on either the state or the configuration.
@@ -36,18 +36,18 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public class Savepoint {
 
     private final WrappedHederaState state;
-    private Configuration config;
+    private Configuration configuration;
 
     /**
      * Constructs a new {@link Savepoint} with the given state and configuration.
      *
      * @param state the state of the savepoint
-     * @param config the configuration of the savepoint
+     * @param configuration the configuration of the savepoint
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public Savepoint(@NonNull final WrappedHederaState state, @NonNull final Configuration config) {
+    public Savepoint(@NonNull final WrappedHederaState state, @NonNull final Configuration configuration) {
         this.state = requireNonNull(state, "state must not be null");
-        this.config = requireNonNull(config, "config must not be null");
+        this.configuration = requireNonNull(configuration, "configuration must not be null");
     }
 
     /**
@@ -66,18 +66,18 @@ public class Savepoint {
      * @return the configuration of the savepoint
      */
     @NonNull
-    public Configuration config() {
-        return config;
+    public Configuration configuration() {
+        return configuration;
     }
 
     /**
      * Sets the configuration of the savepoint.
      *
-     * @param config the configuration of the savepoint
-     * @throws NullPointerException if {@code config} is {@code null}
+     * @param configuration the configuration of the savepoint
+     * @throws NullPointerException if {@code configuration} is {@code null}
      */
-    public void config(@NonNull final Configuration config) {
-        this.config = requireNonNull(config, "config must not be null");
+    void configuration(@NonNull final Configuration configuration) {
+        this.configuration = requireNonNull(configuration, "configuration must not be null");
     }
 
     /**
