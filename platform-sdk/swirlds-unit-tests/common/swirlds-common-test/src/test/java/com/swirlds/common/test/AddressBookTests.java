@@ -497,9 +497,12 @@ class AddressBookTests {
 
         // Too many parts
         validateParseException("address, nickname, selfname, 10, 192.168.0.1, 5000, 8.8.8.8, 5000, memo, extra", 10);
-        validateParseException("address, nickname, selfname, 10, 192.168.0.1, 5000, 8.8.8.8, 5000, memo.with,comma,", 10);
-        validateParseException("address, nickname, selfname, 10, 192.168.0.1, 5000, 8.8.8.8, 5000, 'memo.with,comma',", 10);
-        validateParseException("address, nickname, selfname, 10, 192.168.0.1, 5000, 8.8.8.8, 5000, \"memo.with,comma\",", 10);
+        validateParseException(
+                "address, nickname, selfname, 10, 192.168.0.1, 5000, 8.8.8.8, 5000, memo.with,comma,", 10);
+        validateParseException(
+                "address, nickname, selfname, 10, 192.168.0.1, 5000, 8.8.8.8, 5000, 'memo.with,comma',", 10);
+        validateParseException(
+                "address, nickname, selfname, 10, 192.168.0.1, 5000, 8.8.8.8, 5000, \"memo.with,comma\",", 10);
 
         // bad parsing of parts.
         validateParseException("not an address, nickname, selfname, 10, 192.168.0.1, 5000, 8.8.8.8, 5000", 0);
