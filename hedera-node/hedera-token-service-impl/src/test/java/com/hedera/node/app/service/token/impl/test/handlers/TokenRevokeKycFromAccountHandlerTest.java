@@ -39,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -189,7 +189,7 @@ class TokenRevokeKycFromAccountHandlerTest {
         @Test
         @DisplayName("When getForModify returns empty, should not put or commit")
         void emptyGetForModifyShouldNotPersist() {
-            given(tokenRelStore.getForModify(anyLong(), anyLong())).willReturn(Optional.empty());
+            given(tokenRelStore.getForModify(notNull(), notNull())).willReturn(Optional.empty());
 
             final var txnBody = newTxnBody();
             assertThatThrownBy(() -> subject.handle(txnBody, tokenRelStore))
@@ -207,8 +207,7 @@ class TokenRevokeKycFromAccountHandlerTest {
                     .accountNumber(ACCOUNT_100.accountNumOrThrow())
                     .kycGranted(true)
                     .build();
-            given(tokenRelStore.getForModify(ACCOUNT_100.accountNumOrThrow(), TOKEN_10.tokenNum()))
-                    .willReturn(Optional.of(stateTokenRel));
+            given(tokenRelStore.getForModify(ACCOUNT_100, TOKEN_10)).willReturn(Optional.of(stateTokenRel));
 
             final var txnBody = newTxnBody();
             subject.handle(txnBody, tokenRelStore);
