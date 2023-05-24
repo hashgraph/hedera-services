@@ -41,6 +41,7 @@ import java.io.IOException;
 import java.text.ParseException;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Random;
@@ -455,7 +456,9 @@ class AddressBookTests {
         final RandomAddressBookGenerator generator = new RandomAddressBookGenerator(getRandomPrintSeed());
         final AddressBook addressBook = generator.build();
         // make one of the memo fields an empty string
-        addressBook.add(addressBook.iterator().next().copySetMemo(""));
+        Iterator<Address> iterator = addressBook.iterator();
+        addressBook.add(iterator.next().copySetMemo(""));
+        addressBook.add(iterator.next().copySetMemo("has a memo"));
         final String addressBookText = addressBook.toConfigText();
         final Map<Long, Long> posToId = new HashMap<>();
         long pos = 0;
@@ -467,6 +470,9 @@ class AddressBookTests {
                 parseAddressBookConfigText(addressBookText, posToId::get, ip -> false, id -> "");
         // Equality done on toConfigText() strings since the randomly generated address book has public key data.
         assertEquals(addressBookText, parsedAddressBook.toConfigText(), "The AddressBooks are not equal.");
+        Iterator<Address> parsedIterator = parsedAddressBook.iterator();
+        assertTrue(parsedIterator.next().getMemo().isEmpty());
+        assertTrue(parsedIterator.next().getMemo().equals("has a memo"));
     }
 
     @Test
