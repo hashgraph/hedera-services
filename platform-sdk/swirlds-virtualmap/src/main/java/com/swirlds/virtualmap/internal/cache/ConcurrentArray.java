@@ -17,6 +17,7 @@
 package com.swirlds.virtualmap.internal.cache;
 
 import com.swirlds.common.threading.futures.StandardFuture;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.NoSuchElementException;
@@ -32,7 +33,7 @@ import java.util.stream.Stream;
  * <p>
  * This class has been carefully designed to enable a high rate of concurrency (mostly lock-free)
  * with a minimum of array copying overhead. We were not able to avoid all array copies (see the
- * implementation of {@link #sortedStream(Comparator)}. If we could have found a better way to do
+ * implementation of {@link #stream(Comparator)}. If we could have found a better way to do
  * concurrent sorting without needing to rewrite a pile of highly optimized sort code from the JDK
  * or an array copy, we would have done it). This class has been very careful to be defensive and
  * assert which operations are safe to execute concurrently on mutable instances and which require
@@ -48,7 +49,7 @@ import java.util.stream.Stream;
  * Both arrays for this operation <strong>must</strong> be immutable. An array is made immutable
  * by calling {@link #seal()}.
  * <p>
- * After all elements have been added, the {@link #sortedStream(Comparator)} method can be called to get
+ * After all elements have been added, the {@link #stream(Comparator)} method can be called to get
  * a sorted stream of all array elements. Since this operation is incompatible with concurrent calls to
  * {@link #add(Object)}, the instance must first be sealed {@link #seal()} before calling {@code sortedStream}.
  * This is a safety precaution to guard against accidental sorting of a mutable {@link ConcurrentArray}.
@@ -272,9 +273,38 @@ final class ConcurrentArray<T> {
     }
 
     /**
-     * Get a sorted stream of all elements. The comparator will be used to sort the elements.
-     * If the comparator is null, then the natural ordering of the elements will be used.
-     * This method can only be called on immutable instances. It may be called concurrently.
+     * Get a stream of all elements in this concurrent array.
+     *
+     * <p>This method can only be called on immutable instances. It may be called concurrently.
+     *
+     * @return A non-null stream over all elements
+     * @throws IllegalStateException
+     * 		If this instance is not immutable
+     */
+    Stream<T> stream() {
+        return stream(false, null);
+    }
+
+    /**
+     * Get a stream of all elements in this concurrent array. The elements will be sorted using the
+     * provided comparator, if not null, or in natural order.
+     *
+     * <p>This method can only be called on immutable instances. It may be called concurrently.
+     *
+     * @return A non-null sorted stream over all elements
+     * @throws IllegalStateException
+     * 		If this instance is not immutable
+     */
+    Stream<T> stream(@Nullable final Comparator<T> comparator) {
+        return stream(true, comparator);
+    }
+
+    /**
+     * Get a stream of all elements in this concurrent array. If requested, the elements will be sorted
+     * using the provided comparator, if not null, or in natural order. If sorting is not requested,
+     * the comparator is ignored.
+     *
+     * <p>This method can only be called on immutable instances. It may be called concurrently.
      *
      * @param comparator
      * 		The comparator to use to sort the elements. May be null, in which
@@ -284,31 +314,31 @@ final class ConcurrentArray<T> {
      * 		If this instance is not immutable.
      */
     @SuppressWarnings("unchecked")
-    Stream<T> sortedStream(Comparator<T> comparator) {
+    Stream<T> stream(final boolean sort, @Nullable final Comparator<T> comparator) {
         if (!immutable.get()) {
-            throw new IllegalStateException("You can not call sortedStream on a mutable ConcurrentArray");
+            throw new IllegalStateException("You can not call toArray on a mutable ConcurrentArray");
         }
 
-        // A quick exit: if there are no elements, then return an empty stream.
+        // A quick exit: if there are no elements, then return an empty array
         final int numberOfElements = this.elementCount.get();
         if (numberOfElements == 0) {
-            return Stream.empty();
+            return Stream.of();
         }
 
-        // Copy the sub-arrays into a single array and sort it.
-        T[] sortedArray = (T[]) new Object[numberOfElements];
+        // Copy the sub-arrays into a single array
+        T[] result = (T[]) new Object[numberOfElements];
         int nextIndex = 0;
         for (SubArray<T> array = head; array != null && nextIndex < numberOfElements; array = array.next) {
             final int arraySize = array.size.get();
-            System.arraycopy(array.array, 0, sortedArray, nextIndex, arraySize);
+            System.arraycopy(array.array, 0, result, nextIndex, arraySize);
             nextIndex += arraySize;
         }
 
-        // Now sort
-        Arrays.parallelSort(sortedArray, 0, numberOfElements, comparator);
+        if (sort) {
+            Arrays.parallelSort(result, 0, numberOfElements, comparator);
+        }
 
-        // Create and return the stream
-        return Arrays.stream(sortedArray);
+        return Arrays.stream(result);
     }
 
     public StandardFuture<Void> parallelTraverse(Executor executor, Consumer<T> action) {
