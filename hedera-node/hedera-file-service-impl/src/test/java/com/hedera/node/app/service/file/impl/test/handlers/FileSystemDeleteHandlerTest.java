@@ -48,7 +48,6 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.config.api.Configuration;
 import java.time.Instant;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -79,8 +78,6 @@ class FileSystemDeleteHandlerTest extends FileHandlerTestBase {
     @Mock
     private Instant instant;
 
-    private Configuration configuration;
-
     @BeforeEach
     void setUp() {
         mockStore = mock(ReadableFileStoreImpl.class);
@@ -89,7 +86,7 @@ class FileSystemDeleteHandlerTest extends FileHandlerTestBase {
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<EntityNum, File>get(FILES)).willReturn(writableFileState);
         writableStore = new WritableFileStoreImpl(writableStates);
-        configuration = new HederaTestConfigBuilder().getOrCreateConfig();
+        final var configuration = new HederaTestConfigBuilder().getOrCreateConfig();
         lenient().when(preHandleContext.configuration()).thenReturn(configuration);
         lenient().when(handleContext.configuration()).thenReturn(configuration);
     }
