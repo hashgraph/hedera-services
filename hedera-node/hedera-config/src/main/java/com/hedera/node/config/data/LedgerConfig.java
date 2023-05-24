@@ -19,6 +19,10 @@ package com.hedera.node.config.data;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
+/**
+ * Ledger configuration properties.
+ * @param numReservedSystemEntities the max file number of reserved system special files.
+ */
 @ConfigData("ledger")
 public record LedgerConfig(
         @ConfigProperty(defaultValue = "5000") int maxAutoAssociations,
