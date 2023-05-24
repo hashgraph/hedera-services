@@ -66,7 +66,7 @@ import java.util.function.BooleanSupplier;
 /**
  * Used to construct platform components that use DI
  */
-final class PlatformConstructor {
+public final class PlatformConstructor {
 
     /** The maximum size of the queue holding signed states ready to be hashed and signed by others. */
     private static final int STATE_HASH_QUEUE_MAX = 1;
@@ -81,15 +81,15 @@ final class PlatformConstructor {
      *
      * @param threadManager responsible for managing thread lifecycles
      */
-    static ParallelExecutor parallelExecutor(final ThreadManager threadManager) {
+    public static ParallelExecutor parallelExecutor(final ThreadManager threadManager) {
         return new CachedPoolParallelExecutor(threadManager, "node-sync");
     }
 
-    static SettingsProvider settingsProvider() {
+    public static SettingsProvider settingsProvider() {
         return StaticSettingsProvider.getSingleton();
     }
 
-    static SocketFactory socketFactory(final KeysAndCerts keysAndCerts, final CryptoConfig cryptoConfig) {
+    public static SocketFactory socketFactory(final KeysAndCerts keysAndCerts, final CryptoConfig cryptoConfig) {
         if (!Settings.getInstance().isUseTLS()) {
             return new TcpFactory(PlatformConstructor.settingsProvider());
         }
@@ -105,7 +105,8 @@ final class PlatformConstructor {
         }
     }
 
-    static PlatformSigner platformSigner(final KeysAndCerts keysAndCerts) {
+    public static PlatformSigner platformSigner(@NonNull final KeysAndCerts keysAndCerts) {
+        Objects.requireNonNull(keysAndCerts);
         try {
             return new PlatformSigner(keysAndCerts);
         } catch (final NoSuchAlgorithmException | NoSuchProviderException | InvalidKeyException e) {
