@@ -52,6 +52,9 @@ public class ReadableTokenRelationStoreImpl implements ReadableTokenRelationStor
      */
     @Override
     public Optional<TokenRelation> get(@NonNull final AccountID accountId, @NonNull final TokenID tokenId) {
+        requireNonNull(accountId);
+        requireNonNull(tokenId);
+
         if (AccountID.DEFAULT.equals(accountId) || TokenID.DEFAULT.equals(tokenId)) return Optional.empty();
 
         final var tokenRelation = Objects.requireNonNull(readableTokenRelState)

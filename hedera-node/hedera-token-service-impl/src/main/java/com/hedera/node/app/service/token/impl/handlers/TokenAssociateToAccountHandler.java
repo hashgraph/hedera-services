@@ -21,7 +21,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_R
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
@@ -51,6 +50,8 @@ import java.util.List;
 import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
@@ -58,6 +59,8 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TokenAssociateToAccountHandler implements TransactionHandler {
+    private static final Logger log = LoggerFactory.getLogger(TokenAssociateToAccountHandler.class);
+
     @Inject
     public TokenAssociateToAccountHandler() {
         // Exists for injection
@@ -169,23 +172,30 @@ public class TokenAssociateToAccountHandler implements TransactionHandler {
                                     .build(),
                             TokenID.newBuilder().tokenNum(currentHeadTokenNum).build())
                     .orElse(null);
-            validateTrue(headTokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+            if (headTokenRel != null) {
+                // Recreate the current head token's tokenRel, but with its previous pointer set to
+                // the last of the new tokenRels. This links the new token rels to the rest of the
+                // token rels connected via the old head token rel
+                final var lastOfNewTokenRels = newTokenRels.remove(newTokenRels.size() - 1);
+                final var headTokenAsNonHeadTokenRel = headTokenRel
+                        .copyBuilder()
+                        .previousToken(lastOfNewTokenRels.tokenNumber())
+                        .build(); // the old head token rel is no longer the head
 
-            // Recreate the current head token's tokenRel, but with its previous pointer set to
-            // the last of the new tokenRels. This links the new token rels to the rest of the
-            // token rels connected via the old head token rel
-            final var lastOfNewTokenRels = newTokenRels.remove(newTokenRels.size() - 1);
-            final var headTokenAsNonHeadTokenRel = headTokenRel
-                    .copyBuilder()
-                    .previousToken(lastOfNewTokenRels.tokenNumber())
-                    .build(); // the old head token rel is no longer the head
-
-            // Also connect the last of the new tokenRels to the old head token rel
-            newTokenRels.add(lastOfNewTokenRels
-                    .copyBuilder()
-                    .nextToken(headTokenAsNonHeadTokenRel.tokenNumber())
-                    .build());
-            tokenRelStore.put(headTokenAsNonHeadTokenRel);
+                // Also connect the last of the new tokenRels to the old head token rel
+                newTokenRels.add(lastOfNewTokenRels
+                        .copyBuilder()
+                        .nextToken(headTokenAsNonHeadTokenRel.tokenNumber())
+                        .build());
+                tokenRelStore.put(headTokenAsNonHeadTokenRel);
+            } else {
+                // This shouldn't happen, but if it does we'll log the error and continue with creating the token
+                // associations
+                log.error(
+                        "Unable to get head tokenRel for account {}, token {}! Linked-list relations are likely in a bad state",
+                        account.accountNumber(),
+                        currentHeadTokenNum);
+            }
         }
 
         // Now replace the account's old head token number with the new head token number. This is

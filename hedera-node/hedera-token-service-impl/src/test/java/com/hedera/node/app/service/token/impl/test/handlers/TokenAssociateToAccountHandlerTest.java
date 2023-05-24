@@ -412,6 +412,47 @@ class TokenAssociateToAccountHandlerTest {
             Assertions.assertThat(fourthTokenRel.automaticAssociation()).isFalse();
         }
 
+        @Test
+        void missingAccountHeadTokenDoesntStopTokenAssociation() {
+            final var context = mockContext();
+            final var newAcctNum = 21212L;
+            final var newAcctId = AccountID.newBuilder().accountNum(newAcctNum).build();
+            // put a new account into the account store that has a bogus head token number
+            writableAccountStore.put(Account.newBuilder()
+                    .accountNumber(newAcctNum)
+                    .headTokenNumber(TOKEN_300.tokenNum())
+                    .build());
+            writableAccountStore.commit();
+
+            final var txn = TransactionBody.newBuilder()
+                    .transactionID(
+                            TransactionID.newBuilder().accountID(ACCOUNT_888).build())
+                    .tokenAssociate(TokenAssociateTransactionBody.newBuilder()
+                            .account(newAcctId)
+                            .tokens(toPbj(KNOWN_TOKEN_WITH_FREEZE), toPbj(KNOWN_TOKEN_WITH_KYC))
+                            .build())
+                    .build();
+
+            subject.handle(txn, context, writableAccountStore, writableTokenRelStore);
+            // Commit the results of the handle() calls in order to do further verification
+            writableAccountStore.commit();
+            writableTokenRelStore.commit();
+
+            Assertions.assertThat(writableTokenRelStore.modifiedTokens())
+                    .contains(
+                            EntityNumPair.fromAccountTokenRel(fromPbj(newAcctId), KNOWN_TOKEN_WITH_FREEZE),
+                            EntityNumPair.fromAccountTokenRel(fromPbj(newAcctId), KNOWN_TOKEN_WITH_KYC));
+            final var updatedAcct = writableAccountStore.getAccountById(newAcctId);
+            Assertions.assertThat(updatedAcct).isNotNull();
+            // The account's updated head token num will point to the first new token
+            Assertions.assertThat(updatedAcct.headTokenNumber()).isEqualTo(KNOWN_TOKEN_WITH_FREEZE.getTokenNum());
+            // And new token relations will still exist for the new token IDs
+            Assertions.assertThat(writableTokenRelStore.get(newAcctId, toPbj(KNOWN_TOKEN_WITH_FREEZE)))
+                    .isNotNull();
+            Assertions.assertThat(writableTokenRelStore.get(newAcctId, toPbj(KNOWN_TOKEN_WITH_KYC)))
+                    .isNotNull();
+        }
+
         private TransactionBody newAssociateTxn(TokenID... ids) {
             return TransactionBody.newBuilder()
                     .transactionID(
