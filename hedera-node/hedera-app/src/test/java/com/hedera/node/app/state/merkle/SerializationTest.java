@@ -20,11 +20,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.node.app.spi.fixtures.state.TestSchema;
 import com.hedera.node.app.spi.state.ReadableKVState;
+import com.hedera.node.app.spi.state.ReadableQueueState;
 import com.hedera.node.app.spi.state.ReadableSingletonState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.app.spi.state.WritableKVState;
+import com.hedera.node.app.spi.state.WritableQueueState;
 import com.hedera.node.app.spi.state.WritableSingletonState;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.swirlds.common.constructable.ClassConstructorPair;
@@ -54,7 +56,8 @@ class SerializationTest extends MerkleTestBase {
                 final var fruitDef = StateDefinition.inMemory(FRUIT_STATE_KEY, STRING_CODEC, STRING_CODEC);
                 final var animalDef = StateDefinition.onDisk(ANIMAL_STATE_KEY, STRING_CODEC, STRING_CODEC, 100);
                 final var countryDef = StateDefinition.singleton(COUNTRY_STATE_KEY, STRING_CODEC);
-                return Set.of(fruitDef, animalDef, countryDef);
+                final var steamDef = StateDefinition.queue(STEAM_STATE_KEY, STRING_CODEC);
+                return Set.of(fruitDef, animalDef, countryDef, steamDef);
             }
 
             @Override
@@ -79,6 +82,15 @@ class SerializationTest extends MerkleTestBase {
 
                 final WritableSingletonState<String> country = newStates.getSingleton(COUNTRY_STATE_KEY);
                 country.put(CHAD);
+
+                final WritableQueueState<String> steam = newStates.getQueue(STEAM_STATE_KEY);
+                steam.add(ART);
+                steam.add(BIOLOGY);
+                steam.add(CHEMISTRY);
+                steam.add(DISCIPLINE);
+                steam.add(ECOLOGY);
+                steam.add(FIELDS);
+                steam.add(GEOMETRY);
             }
         };
     }
@@ -116,7 +128,7 @@ class SerializationTest extends MerkleTestBase {
         registry.registerConstructable(pair);
 
         final MerkleHederaState loadedTree = parseTree(serializedBytes, dir);
-        newRegistry.migrate(loadedTree, null, schemaV1.getVersion());
+        newRegistry.migrate(loadedTree, schemaV1.getVersion(), schemaV1.getVersion());
         loadedTree.migrate(1);
 
         // Then, we should be able to see all our original states again
@@ -141,5 +153,10 @@ class SerializationTest extends MerkleTestBase {
 
         final ReadableSingletonState<String> countryState = states.getSingleton(COUNTRY_STATE_KEY);
         assertThat(countryState.get()).isEqualTo(CHAD);
+
+        final ReadableQueueState<String> steamState = states.getQueue(STEAM_STATE_KEY);
+        assertThat(steamState.iterator())
+                .toIterable()
+                .containsExactly(ART, BIOLOGY, CHEMISTRY, DISCIPLINE, ECOLOGY, FIELDS, GEOMETRY);
     }
 }

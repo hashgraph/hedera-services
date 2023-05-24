@@ -80,7 +80,6 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.LongAdder;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.IntConsumer;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
@@ -210,13 +209,6 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
 
     /** Flag for if a snapshot is in progress */
     private final AtomicBoolean snapshotInProgress = new AtomicBoolean(false);
-
-    /**
-     * A lock for snapshots / flushes synchronization. Snapshots must be protected against
-     * concurrent saves of new data. Snapshots can not start while an existing save is happening and
-     * save can not start while a snapshot is active.
-     */
-    private final ReentrantLock flushLock = new ReentrantLock();
 
     /** The range of valid leaf paths for data currently stored by this data source. */
     private volatile KeyRange validLeafPathRange = INVALID_KEY_RANGE;
@@ -501,23 +493,6 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     }
 
     /**
-     * Waits for the current flush (if active) to complete and prevents new flushes from happening
-     * until {@link #flushUnlock()}} is called. This method is used by MerkleDb to make sure all
-     * data sources in a single database are in consistent state before taking a snapshot.
-     */
-    void flushLock() {
-        flushLock.lock();
-    }
-
-    /**
-     * Resumes data source flushes. This method is used by MerkleDb after database snapshot is
-     * taken.
-     */
-    void flushUnlock() {
-        flushLock.unlock();
-    }
-
-    /**
      * Pauses merging of all data file collections used by this data source. It may not stop merging
      * immediately, but as soon as merging process needs to update data source state, which is
      * critical for snapshots (e.g. update an index), it will be stopped until {@link
@@ -571,7 +546,6 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
             final Stream<VirtualLeafRecord<K, V>> leafRecordsToAddOrUpdate,
             final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete)
             throws IOException {
-        flushLock.lock();
         try {
             validLeafPathRange = new KeyRange(firstLeafPath, lastLeafPath);
             final CountDownLatch countDownLatch = new CountDownLatch(lastLeafPath > 0 ? 1 : 0);
@@ -608,7 +582,6 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                 Thread.currentThread().interrupt();
             }
         } finally {
-            flushLock.unlock();
             // update file stats
             updateFileStats();
             // update off-heap stats

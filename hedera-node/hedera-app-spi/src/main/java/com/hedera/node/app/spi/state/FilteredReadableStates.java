@@ -66,6 +66,17 @@ public class FilteredReadableStates implements ReadableStates {
         return delegate.getSingleton(stateKey);
     }
 
+    @NonNull
+    @Override
+    public <E> ReadableQueueState<E> getQueue(@NonNull String stateKey) {
+        Objects.requireNonNull(stateKey);
+        if (!contains(stateKey)) {
+            throw new IllegalArgumentException("Could not find queue state " + stateKey);
+        }
+
+        return delegate.getQueue(stateKey);
+    }
+
     @Override
     public boolean contains(@NonNull String stateKey) {
         return stateKeys.contains(stateKey);
