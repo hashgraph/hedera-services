@@ -261,6 +261,9 @@ public class ContractDeleteSuite extends HapiSuite {
                         createDefaultContract(tbdContract).bytecode(tbdFile).hasKnownStatus(FILE_DELETED))
                 .when(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .then(
+                        contractDelete(CONTRACT)
+                                .claimingPermanentRemoval()
+                                .hasPrecheck(PERMANENT_REMOVAL_REQUIRES_SYSTEM_INITIATION),
                         contractDelete(CONTRACT),
                         getContractInfo(CONTRACT).has(contractWith().isDeleted()));
     }
