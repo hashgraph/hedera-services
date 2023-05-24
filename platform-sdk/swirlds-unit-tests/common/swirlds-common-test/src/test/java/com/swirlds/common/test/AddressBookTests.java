@@ -471,8 +471,8 @@ class AddressBookTests {
         // Equality done on toConfigText() strings since the randomly generated address book has public key data.
         assertEquals(addressBookText, parsedAddressBook.toConfigText(), "The AddressBooks are not equal.");
         Iterator<Address> parsedIterator = parsedAddressBook.iterator();
-        assertTrue(parsedIterator.next().getMemo().isEmpty());
-        assertEquals("has a memo", parsedIterator.next().getMemo());
+        assertTrue(parsedIterator.next().getMemo().isEmpty(), "a memo appeared where no memo was expected.");
+        assertEquals("has a memo", parsedIterator.next().getMemo(), "memo did not survive round trip");
     }
 
     @Test
