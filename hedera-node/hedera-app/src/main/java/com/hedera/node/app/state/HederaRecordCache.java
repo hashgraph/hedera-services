@@ -18,10 +18,9 @@ package com.hedera.node.app.state;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TransactionID;
-import com.hedera.hapi.node.transaction.TransactionReceipt;
+import com.hedera.hapi.node.transaction.TransactionRecord;
+import com.hedera.node.app.spi.records.RecordCache;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Set;
 
 /**
  * A time-limited cache of transaction records and receipts.
@@ -42,48 +41,15 @@ import java.util.Set;
  * needs to be detected and the node charged for the duplicate transactions.
  */
 /*@ThreadSafe*/
-public interface RecordCache {
-    /**
-     * Represents a single item in the cache.
-     * @param transactionID The transaction ID associated with the receipt
-     * @param nodeAccountIDs The list nodes which have independently submitted events with the same transaction ID
-     * @param receipt The receipt for the transaction associated with the transaction ID
-     */
-    record CacheItem(
-            @NonNull TransactionID transactionID,
-            @NonNull Set<AccountID> nodeAccountIDs,
-            @NonNull TransactionReceipt receipt) {}
-
+public interface HederaRecordCache extends RecordCache {
     /**
      * Records the fact that the given {@link TransactionID} has been seen by the given node. If the node has already
-     * been seen, then this call is a no-op. This call does not validate that the transaction ID is valid.
+     * been seen, then this call is a no-op. This call does not perform any additional validation of the transaction ID.
      *
-     * @param transactionID The transaction to track
-     * @param nodeAccountID The node that has seen this transaction
+     * @param nodeId The node ID of the node that submitted this transaction to consensus, as known in the address book
+     * @param payerAccountId The {@link AccountID} of the "payer" of the transaction
+     * @param transactionRecord The transaction to track
      */
-    /*@ThreadSafe*/
-    void put(@NonNull TransactionID transactionID, @NonNull AccountID nodeAccountID);
-
-    /**
-     * Gets the {@link CacheItem} for the given {@link TransactionID}. If the {@link TransactionID} is not present in
-     * the cache, then a null response is returned.
-     *
-     * @param transactionID The {@link TransactionID} to lookup
-     * @return The {@link CacheItem} for the given {@link TransactionID}, or null if not present
-     */
-    @Nullable
-    /*@ThreadSafe*/
-    CacheItem get(@NonNull TransactionID transactionID);
-
-    /**
-     * Updates the receipt for the given {@link TransactionID} to the given {@link TransactionReceipt}. If the
-     * {@link TransactionID} is not present in the cache, then this method will fail with
-     * {@link IllegalArgumentException}. This method should <b>ONLY</b> be called on the handle thread.
-     *
-     * @param transactionID The transaction with receipt to update
-     * @param receipt The new receipt
-     * @throws IllegalArgumentException If the {@link TransactionID} is not present in the cache
-     */
-    /*@ThreadSafe*/
-    void update(@NonNull TransactionID transactionID, @NonNull TransactionReceipt receipt);
+    /*HANDLE THREAD ONLY*/
+    void add(long nodeId, @NonNull AccountID payerAccountId, @NonNull TransactionRecord transactionRecord);
 }
