@@ -60,7 +60,7 @@ public class FileUpdateHandler implements TransactionHandler {
      *
      * @param context the {@link PreHandleContext} which collects all information that will be
      *                passed to {@code #handle()}
-     * @throws NullPointerException if one of the arguments is {@code null}
+     * @throws PreCheckException if any issue happens on the pre handle level
      */
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
@@ -68,7 +68,7 @@ public class FileUpdateHandler implements TransactionHandler {
         final var transactionBody = context.body().fileUpdateOrThrow();
         final var fileStore = context.createStore(ReadableFileStoreImpl.class);
 
-        preValidate(transactionBody.fileID(), fileStore);
+        preValidate(transactionBody.fileID(), fileStore, context, false);
         validateAndAddRequiredKeys(transactionBody.keys(), context, true);
     }
 
