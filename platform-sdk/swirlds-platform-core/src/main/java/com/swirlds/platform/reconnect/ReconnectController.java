@@ -44,7 +44,7 @@ public class ReconnectController implements Runnable {
     private final ReconnectHelper helper;
     private final Semaphore threadRunning;
     private final BlockingResourceProvider<Connection> connectionProvider;
-    private final Runnable startChatter;
+    private final Runnable resumeGossip;
     private final AtomicReference<SignedStateValidator> validator = new AtomicReference<>();
     private final ThreadManager threadManager;
 
@@ -53,14 +53,14 @@ public class ReconnectController implements Runnable {
      * 		responsible for creating and managing threads
      * @param helper
      * 		executes phases of a reconnect
-     * @param startChatter
-     * 		starts chatter if previously suspended
+     * @param resumeGossip
+     * 		starts gossip if previously suspended
      */
     public ReconnectController(
-            final ThreadManager threadManager, final ReconnectHelper helper, final Runnable startChatter) {
+            final ThreadManager threadManager, final ReconnectHelper helper, final Runnable resumeGossip) {
         this.threadManager = threadManager;
         this.helper = helper;
-        this.startChatter = startChatter;
+        this.resumeGossip = resumeGossip;
         this.threadRunning = new Semaphore(1);
         this.connectionProvider = new BlockingResourceProvider<>();
     }
@@ -115,7 +115,7 @@ public class ReconnectController implements Runnable {
             logger.info(RECONNECT.getMarker(), "receiving signed state failed", e);
             return false;
         }
-        startChatter.run();
+        resumeGossip.run();
         return true;
     }
 

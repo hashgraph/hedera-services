@@ -18,12 +18,11 @@ import me.champeau.gradle.igp.gitRepositories
 
 // Add local maven build directory to plugin repos
 pluginManagement {
-    repositories {
-        gradlePluginPortal()
-        mavenCentral()
-        mavenLocal()
-        maven { url = uri("https://oss.sonatype.org/content/repositories/snapshots") }
-    }
+  repositories {
+    gradlePluginPortal()
+    mavenCentral()
+    maven { url = uri("https://oss.sonatype.org/content/repositories/snapshots") }
+  }
 }
 
 plugins {

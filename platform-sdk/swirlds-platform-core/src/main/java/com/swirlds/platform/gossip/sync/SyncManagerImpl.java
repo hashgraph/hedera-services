@@ -36,6 +36,7 @@ import com.swirlds.platform.network.RandomGraph;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.logging.log4j.LogManager;
@@ -87,24 +88,23 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
      */
     public SyncManagerImpl(
             @NonNull final Metrics metrics,
-            final BlockingQueue<EventIntakeTask> intakeQueue,
-            final RandomGraph connectionGraph,
-            final NodeId selfId,
-            final EventCreationRules eventCreationRules,
-            final CriticalQuorum criticalQuorum,
-            final AddressBook addressBook,
-            final FallenBehindManager fallenBehindManager) {
-        super();
+            @NonNull final BlockingQueue<EventIntakeTask> intakeQueue,
+            @NonNull final RandomGraph connectionGraph,
+            @NonNull final NodeId selfId,
+            @NonNull final EventCreationRules eventCreationRules,
+            @NonNull final CriticalQuorum criticalQuorum,
+            @NonNull final AddressBook addressBook,
+            @NonNull final FallenBehindManager fallenBehindManager) {
 
-        this.intakeQueue = intakeQueue;
-        this.connectionGraph = connectionGraph;
-        this.selfId = selfId;
+        this.intakeQueue = Objects.requireNonNull(intakeQueue);
+        this.connectionGraph = Objects.requireNonNull(connectionGraph);
+        this.selfId = Objects.requireNonNull(selfId);
 
-        this.eventCreationRules = eventCreationRules;
-        this.criticalQuorum = criticalQuorum;
-        this.addressBook = addressBook;
+        this.eventCreationRules = Objects.requireNonNull(eventCreationRules);
+        this.criticalQuorum = Objects.requireNonNull(criticalQuorum);
+        this.addressBook = Objects.requireNonNull(addressBook);
 
-        this.fallenBehindManager = fallenBehindManager;
+        this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager);
 
         metrics.getOrCreate(
                 new FunctionGauge.Config<>(INTERNAL_CATEGORY, "hasFallenBehind", Object.class, this::hasFallenBehind)
