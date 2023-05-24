@@ -31,6 +31,9 @@ public class AddressBookUtils {
 
     /**
      * Parses an address from a single line of text.  The address must be in the form used in config.txt
+     * <p>
+     * If the memo field can be parsed, the provided memo field is ignored.  If there is no memo field parsed, the
+     * provided memo field is used.
      *
      * @param addressLine         the string to parse an Address form.
      * @param id                  the id to give to the parsed Address.
@@ -49,8 +52,8 @@ public class AddressBookUtils {
         Objects.requireNonNull(isOwnHostDeterminer, "The isOwnHostDeterminer must not be null.");
         Objects.requireNonNull(memo, "The memo must not be null.");
         final String[] parts = addressLine.trim().split(",");
-        if (parts.length != 8) {
-            throw new ParseException("Not enough parts in the address line to parse correctly.", parts.length);
+        if (parts.length < 8 || parts.length > 9) {
+            throw new ParseException("Incorrect number of parts in the address line to parse correctly.", parts.length);
         }
         for (int i = 0; i < parts.length; i++) {
             parts[i] = parts[i].trim();
@@ -90,6 +93,13 @@ public class AddressBookUtils {
         } catch (NumberFormatException e) {
             throw new ParseException("Cannot parse ip port from '" + parts[7] + "'", 7);
         }
+        final String memoToUse;
+        if (parts.length == 9) {
+            memoToUse = parts[8];
+        } else {
+            memoToUse = memo;
+        }
+
         final boolean isOwnHost = isOwnHostDeterminer.apply(internalIp);
 
         return new Address(
@@ -102,7 +112,7 @@ public class AddressBookUtils {
                 internalPort,
                 externalIp.getAddress(),
                 externalPort,
-                memo);
+                memoToUse);
     }
 
     /**

@@ -454,6 +454,8 @@ class AddressBookTests {
     void roundTripSerializeAndDeserializeCompatibleWithConfigTxt() throws ParseException {
         final RandomAddressBookGenerator generator = new RandomAddressBookGenerator(getRandomPrintSeed());
         final AddressBook addressBook = generator.build();
+        // make one of the memo fields an empty string
+        addressBook.add(addressBook.iterator().next().copySetMemo(""));
         final String addressBookText = addressBook.toConfigText();
         final Map<Long, Long> posToId = new HashMap<>();
         long pos = 0;
@@ -480,7 +482,7 @@ class AddressBookTests {
         validateParseException("address, nickname, selfname, 10, 192.168.0.1, 5000, 8.8.8.8", 7);
 
         // Too many parts
-        validateParseException("address, nickname, selfname, 10, 192.168.0.1, 5000, 8.8.8.8, 5000, extra", 9);
+        validateParseException("address, nickname, selfname, 10, 192.168.0.1, 5000, 8.8.8.8, 5000, memo, extra", 10);
 
         // bad parsing of parts.
         validateParseException("not an address, nickname, selfname, 10, 192.168.0.1, 5000, 8.8.8.8, 5000", 0);
