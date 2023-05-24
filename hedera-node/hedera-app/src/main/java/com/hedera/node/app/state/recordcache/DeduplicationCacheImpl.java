@@ -48,13 +48,7 @@ public final class DeduplicationCacheImpl implements DeduplicationCache {
         this.props = requireNonNull(props);
     }
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>This method is not called at a super high rate, so synchronizing here is perfectly fine.
-     *
-     * @param transactionID
-     */
+    /** {@inheritDoc} */
     @Override
     public synchronized void add(@NonNull final TransactionID transactionID) {
         // We don't want to use another thread to prune the set, so we will take the opportunity here to do so.
