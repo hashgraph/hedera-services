@@ -115,12 +115,19 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
 
     @Override
     protected void finishTokenGrantKycToAccount(@NonNull final WritableTokenRelationStore tokenRelStore) {
-        tokenRelStore.commit();
+        requireNonNull(tokenRelStore).commit();
     }
 
     @Override
     protected void finishTokenRevokeKycFromAccount(@NonNull final WritableTokenRelationStore tokenRelStore) {
-        tokenRelStore.commit();
+        requireNonNull(tokenRelStore).commit();
+    }
+
+    @Override
+    protected void finishTokenAssociateToAccount(
+            @NonNull final WritableAccountStore accountStore, @NonNull final WritableTokenRelationStore tokenRelStore) {
+        requireNonNull(accountStore).commit();
+        requireNonNull(tokenRelStore).commit();
     }
 
     @Override
@@ -131,6 +138,16 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
     @Override
     protected void finishTokenUnPause(@NonNull final WritableTokenStore tokenStore) {
         tokenStore.commit();
+    }
+
+    @Override
+    protected void finishTokenFreeze(@NonNull final WritableTokenRelationStore tokenRelStore) {
+        requireNonNull(tokenRelStore).commit();
+    }
+
+    @Override
+    protected void finishTokenUnfreeze(@NonNull final WritableTokenRelationStore tokenRelStore) {
+        requireNonNull(tokenRelStore).commit();
     }
 
     @Override
