@@ -32,6 +32,9 @@ public class AddressBookUtils {
 
     /**
      * Parses an address from a single line of text.  The address must be in the form used in config.txt
+     * <p>
+     * If the memo field can be parsed, the provided memo field is ignored.  If there is no memo field parsed, the
+     * provided memo field is used.
      *
      * @param addressLine         the string to parse an Address form.
      * @param id                  the id to give to the parsed Address.

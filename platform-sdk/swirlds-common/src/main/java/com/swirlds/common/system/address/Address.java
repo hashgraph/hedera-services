@@ -751,7 +751,7 @@ public class Address implements SelfSerializable {
     @NonNull
     public Address copySetMemo(@NonNull final String memo) {
         Objects.requireNonNull(memo, "memo must not be null");
-        Address a = copy();
+        final Address a = copy();
         a.memo = memo;
         return a;
     }
