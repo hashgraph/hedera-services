@@ -50,14 +50,12 @@ public class RecordListBuilder {
     /**
      * Creates a new instance with a single record builder for the user transaction.
      *
-     * @param baseConsensusTime the consensus time of the user transaction
      * @param recordBuilder the record builder for the user transaction
      * @throws NullPointerException if {@code recordBuilder} is {@code null}
      */
-    public RecordListBuilder(
-            @NonNull final Instant baseConsensusTime, @NonNull final SingleTransactionRecordBuilder recordBuilder) {
-        this.baseConsensusTime = requireNonNull(baseConsensusTime, "baseConsensusTime must not be null");
+    public RecordListBuilder(@NonNull final SingleTransactionRecordBuilder recordBuilder) {
         requireNonNull(recordBuilder, "recordBuilder must not be null");
+        this.baseConsensusTime = recordBuilder.consensusNow();
         recordBuilders.add(recordBuilder);
     }
 
@@ -175,7 +173,9 @@ public class RecordListBuilder {
      * @return the stream of all records
      */
     public Stream<SingleTransactionRecord> build() {
-        return Stream.concat(precedingRecordBuilders.stream(), recordBuilders.stream())
-                .map(SingleTransactionRecordBuilder::build);
+        final var stream = precedingRecordBuilders == null
+                ? recordBuilders.stream()
+                : Stream.concat(precedingRecordBuilders.stream(), recordBuilders.stream());
+        return stream.map(SingleTransactionRecordBuilder::build);
     }
 }

@@ -90,7 +90,7 @@ public class SingleTransactionRecordBuilder
     private OneOf<TransactionRecord.EntropyOneOfType> entropy;
     private Bytes evmAddress;
     // fields needed for TransactionReceipt
-    private ResponseCodeEnum status;
+    private ResponseCodeEnum status = ResponseCodeEnum.OK;
     private AccountID accountID;
     private FileID fileID;
     private ContractID contractID;

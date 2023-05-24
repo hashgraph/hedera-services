@@ -151,7 +151,6 @@ public interface HandleContext {
      * @param <T> Interface class for a Store
      * @return An implementation of the provided store interface
      * @throws IllegalArgumentException if the storeInterface class provided is unknown to the app
-     * @throws IllegalStateException if the store is not accessible from the current transaction
      * @throws NullPointerException if {@code storeInterface} is {@code null}
      */
     @NonNull

@@ -123,7 +123,7 @@ public class HandleWorkflow {
         // Setup record builder list
         recordManager.startUserTransaction(consensusNow);
         final var recordBuilder = new SingleTransactionRecordBuilder(consensusNow);
-        final var recordListBuilder = new RecordListBuilder(consensusNow, recordBuilder);
+        final var recordListBuilder = new RecordListBuilder(recordBuilder);
 
         try {
             final var verifications = getVerifications(state, platformEvent, platformTxn);

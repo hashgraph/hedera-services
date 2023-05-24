@@ -49,7 +49,6 @@ import java.time.Instant;
  */
 public class HandleContextImpl implements HandleContext {
 
-    private final Instant consensusNow;
     private final TransactionBody txBody;
     private final TransactionCategory category;
     private final SingleTransactionRecordBuilder recordBuilder;
@@ -96,7 +95,6 @@ public class HandleContextImpl implements HandleContext {
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
         this.serviceScopeLookup = requireNonNull(serviceScopeLookup, "serviceScopeLookup must not be null");
 
-        this.consensusNow = recordBuilder.consensusNow();
         final var serviceScope = serviceScopeLookup.getServiceName(txBody);
         this.writableStoreFactory = new WritableStoreFactory(stack, serviceScope);
     }
@@ -108,7 +106,7 @@ public class HandleContextImpl implements HandleContext {
     @Override
     @NonNull
     public Instant consensusNow() {
-        return consensusNow;
+        return recordBuilder.consensusNow();
     }
 
     @Override
