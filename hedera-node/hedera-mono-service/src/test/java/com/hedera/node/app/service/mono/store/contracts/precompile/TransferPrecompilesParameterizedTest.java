@@ -21,14 +21,11 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiCon
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_TOKEN;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_TOKENS;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.senderAddress;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.KeyActivationUtils.validateKey;
 import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 
@@ -36,8 +33,10 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
+import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.CustomFeeType;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.node.app.service.mono.fees.FeeCalculator;
 import com.hedera.node.app.service.mono.fees.HbarCentExchange;
@@ -45,6 +44,7 @@ import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
 import com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfers;
 import com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfersMeta;
+import com.hedera.node.app.service.mono.keys.ActivationTest;
 import com.hedera.node.app.service.mono.ledger.BalanceChange;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.TransferLogic;
@@ -58,6 +58,7 @@ import com.hedera.node.app.service.mono.ledger.properties.ChangeSummaryManager;
 import com.hedera.node.app.service.mono.ledger.properties.NftProperty;
 import com.hedera.node.app.service.mono.ledger.properties.TokenProperty;
 import com.hedera.node.app.service.mono.ledger.properties.TokenRelProperty;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus;
@@ -65,7 +66,6 @@ import com.hedera.node.app.service.mono.state.migration.UniqueTokenAdapter;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.TransferPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.utils.KeyActivationUtils;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.store.tokens.HederaTokenStore;
@@ -74,23 +74,24 @@ import com.hedera.node.app.service.mono.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
+import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.fchashmap.FCHashMap;
+import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.BiPredicate;
 import java.util.stream.Stream;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -98,11 +99,20 @@ class TransferPrecompilesParameterizedTest {
     @Mock
     private HederaTokenStore hederaTokenStore;
 
-    @Mock
+    @Mock(strictness = LENIENT)
     private MessageFrame frame;
 
+    @Mock
+    private BiPredicate<JKey, TransactionSignature> cryptoValidity;
+
+    @Mock
+    private ActivationTest activationTest;
+
     @Mock(strictness = LENIENT)
-    private TxnAwareEvmSigsVerifier sigsVerifier;
+    private TransactionContext txnCtx;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
 
     @Mock
     private TransferLogic transferLogic;
@@ -110,9 +120,7 @@ class TransferPrecompilesParameterizedTest {
     @Mock
     private SideEffectsTracker sideEffects;
 
-    private final SyntheticTxnFactory syntheticTxnFactory = new SyntheticTxnFactory(null);
-
-    @Mock
+    @Mock(strictness = LENIENT)
     private HederaStackedWorldStateUpdater worldUpdater;
 
     @Mock
@@ -152,10 +160,13 @@ class TransferPrecompilesParameterizedTest {
     private static final Bytes TRANSFER_NFTS_INPUT = Bytes.fromHexString(
             "0x2c4ba191000000000000000000000000000000000000000000000000000000000000047a000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000e000000000000000000000000000000000000000000000000000000000000001400000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000047700000000000000000000000000000000000000000000000000000000000004770000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000047c000000000000000000000000000000000000000000000010000000000000047c0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000007b00000000000000000000000000000000000000000000000000000000000000ea");
 
+    private final SyntheticTxnFactory syntheticTxnFactory = new SyntheticTxnFactory(null);
     private PrecompilePricingUtils precompilePricingUtils;
     private TransferPrecompile subject;
-    private MockedStatic<KeyActivationUtils> keyActivationUtils;
-
+    private static final Id payerIsContractId = new Id(0, 0, 8);
+    private static final AccountID payerIsContract = asAccount("0.0.8");
+    private static final AccountID payerIsNotContract = asAccount("0.0.9");
+    private static final Address address = senderAddress;
     private final int maxHbarAdjusts = 5;
     private final int maxTokenAdjusts = 10;
     private final int maxOwnershipChanges = 15;
@@ -180,13 +191,6 @@ class TransferPrecompilesParameterizedTest {
     void setUp() {
         precompilePricingUtils = new PrecompilePricingUtils(
                 assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView, accessorFactory);
-
-        keyActivationUtils = Mockito.mockStatic(KeyActivationUtils.class);
-    }
-
-    @AfterEach
-    void closeMocks() {
-        keyActivationUtils.close();
     }
 
     @ParameterizedTest(name = "{0}")
@@ -199,7 +203,6 @@ class TransferPrecompilesParameterizedTest {
             final Bytes inputBytes,
             final List<BalanceChange> changes,
             final Set<CustomFeeType> htsUnsupportedCustomFeeReceiverDebits,
-            final boolean passesKeyActivation,
             final boolean canFallbaToApprovals) {
 
         final var liveTokenRels = new TransactionalLedger<>(
@@ -235,10 +238,16 @@ class TransferPrecompilesParameterizedTest {
         given(impliedTransfersMarshal.validityWithCurrentProps(any())).willReturn(OK);
         given(impliedTransfersMarshal.assessCustomFeesAndValidate(anyInt(), anyInt(), anyInt(), any(), any(), any()))
                 .willReturn(impliedTransfers);
-        // This test does not cover key activation. Rather a parameter is passed in to indicate pass/fail.
-        keyActivationUtils
-                .when(() -> validateKey(any(), any(), any(), any(), any(), eq(CryptoTransfer)))
-                .thenReturn(passesKeyActivation);
+        given(worldUpdater.aliases()).willReturn(liveAliases);
+
+        given(frame.getSenderAddress()).willReturn(address);
+        given(frame.getRecipientAddress()).willReturn(address);
+        given(frame.getContractAddress()).willReturn(address);
+        given(frame.getMessageFrameStack()).willReturn(new ArrayDeque<>());
+        given(txnCtx.activePayer()).willReturn(payerIsContract);
+
+        TxnAwareEvmSigsVerifier sigsVerifier =
+                new TxnAwareEvmSigsVerifier(activationTest, txnCtx, cryptoValidity, dynamicProperties);
 
         subject = new TransferPrecompile(
                 ledgers,
@@ -283,9 +292,8 @@ class TransferPrecompilesParameterizedTest {
                         true,
                         ABI_ID_TRANSFER_TOKEN,
                         TRANSFER_TOKEN_INPUT,
-                        getBasicFungibleChanges(),
+                        getBasicFungibleChanges(payerIsContract),
                         allTypes,
-                        true,
                         false),
                 Arguments.of(
                         "basic transferToken all custom fee types allowed ",
@@ -293,9 +301,8 @@ class TransferPrecompilesParameterizedTest {
                         true,
                         ABI_ID_TRANSFER_TOKEN,
                         TRANSFER_TOKEN_INPUT,
-                        getBasicFungibleChanges(),
+                        getBasicFungibleChanges(payerIsContract),
                         noType,
-                        true,
                         false),
                 Arguments.of(
                         "basic transferTokens",
@@ -303,9 +310,8 @@ class TransferPrecompilesParameterizedTest {
                         true,
                         ABI_ID_TRANSFER_TOKENS,
                         POSITIVE_AMOUNTS_TRANSFER_TOKENS_INPUT,
-                        getBasicFungibleChanges(),
+                        getBasicFungibleChanges(payerIsContract),
                         allTypes,
-                        true,
                         false),
                 Arguments.of(
                         "basic transferTokens with negative amount",
@@ -313,9 +319,8 @@ class TransferPrecompilesParameterizedTest {
                         true,
                         ABI_ID_TRANSFER_TOKENS,
                         POSITIVE_NEGATIVE_AMOUNT_TRANSFER_TOKENS_INPUT,
-                        getBasicFungibleChanges(),
+                        getBasicFungibleChanges(payerIsContract),
                         allTypes,
-                        true,
                         false),
                 Arguments.of(
                         "basic transferNFT",
@@ -323,9 +328,8 @@ class TransferPrecompilesParameterizedTest {
                         true,
                         ABI_ID_TRANSFER_NFT,
                         TRANSFER_NFT_INPUT,
-                        getBasicNFTChange(),
+                        getBasicNFTChange(payerIsContract),
                         allTypes,
-                        true,
                         false),
                 Arguments.of(
                         "basic transferNFTs",
@@ -333,9 +337,8 @@ class TransferPrecompilesParameterizedTest {
                         true,
                         ABI_ID_TRANSFER_NFTS,
                         TRANSFER_NFTS_INPUT,
-                        getBasicNFTChange(),
+                        getBasicNFTChange(payerIsContract),
                         allTypes,
-                        true,
                         false),
                 // Changes that have custom fee but allowed via dynamic property.
                 // A little odd in that the enum set contains fee types that are disallowed
@@ -347,7 +350,6 @@ class TransferPrecompilesParameterizedTest {
                         TRANSFER_NFTS_INPUT,
                         getBasicCustomFeeWithDebit(),
                         royaltyFallbackFeeType,
-                        true,
                         false),
                 Arguments.of(
                         "royalty with fallback fees with fixed fee type disallowed",
@@ -357,7 +359,6 @@ class TransferPrecompilesParameterizedTest {
                         TRANSFER_NFTS_INPUT,
                         getRoyaltyFallbackCustomFeeWithDebit(),
                         fixedFeeType,
-                        true,
                         false),
                 // Changes with approvals should pass even if the key activation fails
                 Arguments.of(
@@ -368,7 +369,6 @@ class TransferPrecompilesParameterizedTest {
                         TRANSFER_NFT_INPUT,
                         getApprovalNFTChange(),
                         allTypes,
-                        false,
                         false),
                 Arguments.of(
                         "transferToken with approval and failed key activation",
@@ -378,7 +378,6 @@ class TransferPrecompilesParameterizedTest {
                         TRANSFER_TOKEN_INPUT,
                         getApprovalFungibleChanges(),
                         allTypes,
-                        false,
                         false),
                 // Changes with fallback to approval should pass even if the key activation fails
                 Arguments.of(
@@ -387,9 +386,8 @@ class TransferPrecompilesParameterizedTest {
                         true,
                         ABI_ID_TRANSFER_NFT,
                         TRANSFER_NFT_INPUT,
-                        getBasicNFTChange(),
+                        getBasicNFTChange(payerIsContract),
                         allTypes,
-                        false,
                         true),
                 Arguments.of(
                         "transferToken with no approval but can fallback to approval",
@@ -399,7 +397,6 @@ class TransferPrecompilesParameterizedTest {
                         TRANSFER_TOKEN_INPUT,
                         getFungibleDebitChanges(),
                         allTypes,
-                        false,
                         true),
 
                 // These tests should fail
@@ -412,7 +409,6 @@ class TransferPrecompilesParameterizedTest {
                         TRANSFER_NFTS_INPUT,
                         getBasicCustomFeeWithDebit(),
                         fixedFeeType,
-                        true,
                         false),
                 Arguments.of(
                         "royalty with fallback fees with royalty fallback fee type disallowed",
@@ -422,7 +418,6 @@ class TransferPrecompilesParameterizedTest {
                         TRANSFER_NFTS_INPUT,
                         getRoyaltyFallbackCustomFeeWithDebit(),
                         royaltyFallbackFeeType,
-                        true,
                         false),
                 // Fail due to failed key activation
                 Arguments.of(
@@ -431,9 +426,8 @@ class TransferPrecompilesParameterizedTest {
                         false,
                         ABI_ID_TRANSFER_TOKEN,
                         TRANSFER_TOKEN_INPUT,
-                        getBasicFungibleChanges(),
+                        getBasicFungibleChanges(payerIsNotContract),
                         allTypes,
-                        false,
                         false),
                 Arguments.of(
                         "transferTokens with failed key activation",
@@ -441,9 +435,8 @@ class TransferPrecompilesParameterizedTest {
                         false,
                         ABI_ID_TRANSFER_TOKENS,
                         POSITIVE_AMOUNTS_TRANSFER_TOKENS_INPUT,
-                        getBasicFungibleChanges(),
+                        getBasicFungibleChanges(payerIsNotContract),
                         allTypes,
-                        false,
                         false),
                 Arguments.of(
                         "transferTokens with failed key activation and negative amount",
@@ -451,9 +444,8 @@ class TransferPrecompilesParameterizedTest {
                         false,
                         ABI_ID_TRANSFER_TOKENS,
                         POSITIVE_NEGATIVE_AMOUNT_TRANSFER_TOKENS_INPUT,
-                        getBasicFungibleChanges(),
+                        getBasicFungibleChanges(payerIsNotContract),
                         allTypes,
-                        false,
                         false),
                 Arguments.of(
                         "transferNFT with failed key activation",
@@ -461,9 +453,8 @@ class TransferPrecompilesParameterizedTest {
                         false,
                         ABI_ID_TRANSFER_NFT,
                         TRANSFER_NFT_INPUT,
-                        getBasicNFTChange(),
+                        getBasicNFTChange(payerIsNotContract),
                         allTypes,
-                        false,
                         false),
                 Arguments.of(
                         "transferNFTs with failed key activation",
@@ -471,9 +462,8 @@ class TransferPrecompilesParameterizedTest {
                         false,
                         ABI_ID_TRANSFER_NFTS,
                         TRANSFER_NFTS_INPUT,
-                        getBasicNFTChange(),
+                        getBasicNFTChange(payerIsNotContract),
                         allTypes,
-                        false,
                         false),
                 Arguments.of(
                         "negative amount transferToken should fail when processing body",
@@ -481,15 +471,12 @@ class TransferPrecompilesParameterizedTest {
                         true,
                         ABI_ID_TRANSFER_TOKEN,
                         NEGATIVE_AMOUNT_TRANSFER_TOKEN_INPUT,
-                        getBasicFungibleChanges(),
+                        getBasicFungibleChanges(payerIsNotContract),
                         allTypes,
-                        true,
                         false));
     }
 
-    private static List<BalanceChange> getBasicFungibleChanges() {
-        final AccountID payer = asAccount("0.0.1234");
-        final AccountID nullAccount = asAccount("0.0.0");
+    private static List<BalanceChange> getBasicFungibleChanges(AccountID payerAccount) {
         final AccountID account = asAccount("0.0.1077");
         final var token = new Id(0, 0, 1078);
         return List.of(
@@ -498,21 +485,20 @@ class TransferPrecompilesParameterizedTest {
                         token.asGrpcToken(),
                         AccountAmount.newBuilder()
                                 .setAmount(20)
-                                .setAccountID(nullAccount)
+                                .setAccountID(payerAccount)
                                 .build(),
-                        payer),
+                        account),
                 BalanceChange.changingFtUnits(
                         token,
                         token.asGrpcToken(),
                         AccountAmount.newBuilder()
                                 .setAmount(-20)
-                                .setAccountID(account)
+                                .setAccountID(payerAccount)
                                 .build(),
-                        payer));
+                        account));
     }
 
     private static List<BalanceChange> getApprovalFungibleChanges() {
-        final AccountID payer = asAccount("0.0.1234");
         final AccountID account = asAccount("0.0.1077");
         final var token = new Id(0, 0, 1078);
         return List.of(BalanceChange.changingFtUnits(
@@ -523,38 +509,37 @@ class TransferPrecompilesParameterizedTest {
                         .setAccountID(account)
                         .setIsApproval(true)
                         .build(),
-                payer));
+                payerIsContract));
     }
 
     private static List<BalanceChange> getFungibleDebitChanges() {
-        final AccountID payer = asAccount("0.0.1234");
         final AccountID account = asAccount("0.0.1077");
         final var token = new Id(0, 0, 1078);
         return List.of(BalanceChange.changingFtUnits(
                 token,
                 token.asGrpcToken(),
-                AccountAmount.newBuilder().setAmount(-20).setAccountID(account).build(),
-                payer));
+                AccountAmount.newBuilder()
+                        .setAmount(-20)
+                        .setAccountID(payerIsContract)
+                        .build(),
+                account));
     }
 
-    private static List<BalanceChange> getBasicNFTChange() {
-        final AccountID payer = asAccount("0.0.1234");
-        final AccountID sender = asAccount("0.0.1079");
+    private static List<BalanceChange> getBasicNFTChange(AccountID payerAccount) {
         final AccountID receiver = asAccount("0.0.1080");
         final var token = new Id(0, 0, 1081);
         return List.of(BalanceChange.changingNftOwnership(
                 token,
                 token.asGrpcToken(),
                 NftTransfer.newBuilder()
-                        .setSenderAccountID(sender)
+                        .setSenderAccountID(payerAccount)
                         .setReceiverAccountID(receiver)
                         .setSerialNumber(1)
                         .build(),
-                payer));
+                payerAccount));
     }
 
     private static List<BalanceChange> getApprovalNFTChange() {
-        final AccountID payer = asAccount("0.0.1234");
         final AccountID sender = asAccount("0.0.1079");
         final AccountID receiver = asAccount("0.0.1080");
         final var token = new Id(0, 0, 1081);
@@ -567,7 +552,7 @@ class TransferPrecompilesParameterizedTest {
                         .setSerialNumber(1)
                         .setIsApproval(true)
                         .build(),
-                payer));
+                payerIsContract));
     }
 
     private static List<BalanceChange> getBasicCustomFeeWithDebit() {
@@ -577,9 +562,9 @@ class TransferPrecompilesParameterizedTest {
     }
 
     private static List<BalanceChange> getRoyaltyFallbackCustomFeeWithDebit() {
-        final var account = new Id(0, 0, 1082);
         final var token = new Id(0, 0, 1083);
-        final var royaltyCustomFeeWithFallbackBalanceChange = BalanceChange.tokenCustomFeeAdjust(account, token, -10);
+        final var royaltyCustomFeeWithFallbackBalanceChange =
+                BalanceChange.tokenCustomFeeAdjust(payerIsContractId, token, -10);
         royaltyCustomFeeWithFallbackBalanceChange.setIncludesFallbackFee();
         return List.of(royaltyCustomFeeWithFallbackBalanceChange);
     }
