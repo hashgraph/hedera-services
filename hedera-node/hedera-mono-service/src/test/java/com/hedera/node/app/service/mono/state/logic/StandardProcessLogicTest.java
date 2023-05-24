@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono.state.logic;
 
+import static com.hedera.node.app.service.mono.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.mockito.ArgumentMatchers.any;
@@ -30,8 +31,10 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.properties.SerializableSemVers;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.records.ConsensusTimeTracker;
+import com.hedera.node.app.service.mono.records.RecordCache;
 import com.hedera.node.app.service.mono.state.expiry.EntityAutoExpiry;
 import com.hedera.node.app.service.mono.state.expiry.ExpiryManager;
 import com.hedera.node.app.service.mono.stats.ExecutionTimeTracker;
@@ -43,6 +46,9 @@ import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.swirlds.common.system.SoftwareVersion;
+import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import java.time.Instant;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -103,11 +109,19 @@ class StandardProcessLogicTest {
     @Mock
     private StateView workingView;
 
+    @Mock
+    private RecordCache recordCache;
+
+    @Mock
+    private ConsensusTransactionImpl platformTxn;
+
     @LoggingTarget
     private LogCaptor logCaptor;
 
     @LoggingSubject
     private StandardProcessLogic subject;
+
+    private SoftwareVersion eventVersion = SEMANTIC_VERSIONS.deployedSoftwareVersion();
 
     @BeforeEach
     void setUp() {
@@ -123,7 +137,8 @@ class StandardProcessLogicTest {
                 scheduleProcessing,
                 executionTimeTracker,
                 recordStreaming,
-                workingView);
+                workingView,
+                recordCache);
     }
 
     @Test
@@ -232,16 +247,30 @@ class StandardProcessLogicTest {
     void warnsOnNonGrpc() throws InvalidProtocolBufferException {
         given(expandHandleSpan.accessorFor(null)).willThrow(InvalidProtocolBufferException.class);
 
-        subject.incorporateConsensusTxn(null, member);
+        subject.incorporateConsensusTxn(null, member, eventVersion);
 
         assertThat(logCaptor.warnLogs(), contains(Matchers.startsWith("Consensus platform txn was not gRPC!")));
+    }
+
+    @Test
+    void discardsOlderMinorVersionEvents() throws InvalidProtocolBufferException {
+        final var payer = AccountID.newBuilder().setAccountNum(3).build();
+        final var timeStamp = Instant.ofEpochSecond(2000L);
+
+        given(expandHandleSpan.accessorFor(platformTxn)).willReturn(accessor);
+        given(accessor.getPayer()).willReturn(payer);
+        given(platformTxn.getConsensusTimestamp()).willReturn(timeStamp);
+
+        subject.incorporateConsensusTxn(
+                platformTxn, member, SerializableSemVers.forHapiAndHedera("0.28.1", "0.28.1-pre+1"));
+        verify(recordCache).setStaleTransaction(payer, accessor, timeStamp, member);
     }
 
     @Test
     void logsAtErrorForUnhandledInternalProcessFailure() throws InvalidProtocolBufferException {
         given(expandHandleSpan.accessorFor(null)).willThrow(IllegalStateException.class);
 
-        subject.incorporateConsensusTxn(null, member);
+        subject.incorporateConsensusTxn(null, member, eventVersion);
 
         assertThat(logCaptor.errorLogs(), contains(Matchers.startsWith("Unhandled internal process failure")));
     }
