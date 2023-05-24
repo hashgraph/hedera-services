@@ -62,7 +62,7 @@ public class ValidateManifestFileCommand extends AbstractCommand {
             throw new IOException(
                     "The file should have at least one location in the recovery->package->locations field");
         }
-        List<Location> locations = file.recovery().pkg().locations();
+        final List<Location> locations = file.recovery().pkg().locations();
         for (int i = 0; i < locations.size(); i++) {
             final Location location = locations.get(i);
             validateFieldExists(location.type(), String.format("recovery->package->locations[%d]->type", i));
