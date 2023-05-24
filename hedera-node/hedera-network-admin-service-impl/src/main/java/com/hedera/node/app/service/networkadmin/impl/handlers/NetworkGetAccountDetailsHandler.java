@@ -23,25 +23,40 @@ import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
+import static java.lang.System.arraycopy;
 import static java.util.Objects.requireNonNull;
 
+import com.google.common.primitives.Longs;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.base.ResponseType;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.AccountDetails;
 import com.hedera.hapi.node.token.GetAccountDetailsQuery;
 import com.hedera.hapi.node.token.GetAccountDetailsResponse;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
+import com.hedera.node.app.service.mono.state.migration.HederaAccount;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.hapi.node.base.Timestamp;
+import com.hederahashgraph.api.proto.java.GrantedCryptoAllowance;
+import com.hederahashgraph.api.proto.java.GrantedNftAllowance;
+import com.hederahashgraph.api.proto.java.GrantedTokenAllowance;
+import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -151,28 +166,77 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
         @Nullable List<GrantedNftAllowance> grantedNftAllowances,
         @Nullable List<GrantedTokenAllowance> grantedTokenAllowances*/
             final var info = AccountDetails.newBuilder();
-            final AccountID accountID = account.alias().length() <= 0 ? id : accountNum.toGrpcAccountId();
-            info.accountId(account.accountNumber()); // how to convert it
-            info.contractAccountId(account.contractAccountId()); //not exist in account
+            info.accountId(AccountID.newBuilder().accountNum(account.accountNumber()).build());
+            info.contractAccountId(asHexedEvmAddress(accountID)); //copy the logic from existing into util class
             info.deleted(account.deleted());
             if (!isEmpty(account.key())) info.key(account.key());
             info.balance(account.tinybarBalance());
             info.receiverSigRequired(account.receiverSigRequired());
-            if (!isEmpty(account.expirationTime())) info.expirationTime(account.expirationTime());//not exist in account
-            if (account.autoRenewSecs()) info.autoRenewPeriod(Duration.newBuilder().seconds(account.autoRenewSecs()));//not exist in account
+            info.expirationTime(Timestamp.newBuilder().seconds(account.expiry()).build());
+            info.autoRenewPeriod(Duration.newBuilder().seconds(account.autoRenewSecs()).build());
             info.tokenRelationships(account.tokenRelationships); //not exist in account
             info.memo(account.memo());
             info.ownedNfts(account.numberOwnedNfts());
             info.maxAutomaticTokenAssociations(account.maxAutoAssociations());
             info.alias(account.alias());
-            info.ledgerId(account.ledgerId());//not exist in account
-            info.grantedCryptoAllowances(account.cryptoAllowances());//is it right mapping
-            info.grantedNftAllowances(account.approveForAllNftAllowances());//is it right mapping
-            info.grantedTokenAllowances(account.tokenAllowances());//is it right mapping
-
-
             info.ledgerId(networkInfo.ledgerId());
+            info.grantedCryptoAllowances(getCryptoGrantedAllowancesList(account));//is it right mapping
+            info.grantedNftAllowances(getNftGrantedAllowancesList(account));//is it right mapping
+            info.grantedTokenAllowances(getFungibleGrantedTokenAllowancesList(account));//is it right mapping
             return Optional.of(info.build());
         }
+    }
+
+    private List<GrantedNftAllowance> getNftGrantedAllowancesList(final Account account) {
+        if (!account.approveForAllNftAllowances().isEmpty()) {
+            List<GrantedNftAllowance> nftAllowances = new ArrayList<>();
+            for (var a : account.approveForAllNftAllowances()) {
+                final var approveForAllNftsAllowance = GrantedNftAllowance.newBuilder();
+                approveForAllNftsAllowance.setTokenId(TokenID.newBuilder().tokenNum(a.tokenNum()).build());
+                approveForAllNftsAllowance.setSpender(AccountID.newBuilder().accountNum(a.spenderNum()).build());
+                nftAllowances.add(approveForAllNftsAllowance.build());
+            }
+            return nftAllowances;
+        }
+        return Collections.emptyList();
+    }
+
+    private static List<GrantedTokenAllowance> getFungibleGrantedTokenAllowancesList(final Account account) {
+        if (!account.tokenAllowances().isEmpty()) {
+            List<GrantedTokenAllowance> tokenAllowances = new ArrayList<>();
+            final var tokenAllowance = GrantedTokenAllowance.newBuilder();
+            for (var a : account.tokenAllowances()) {
+                tokenAllowance.setTokenId(TokenID.newBuilder().tokenNum(a.tokenNum()).build());
+                tokenAllowance.setSpender(AccountID.newBuilder().accountNum(a.spenderNum()).build());
+                tokenAllowance.setAmount(a.amount());
+                tokenAllowances.add(tokenAllowance.build());
+            }
+            return tokenAllowances;
+        }
+        return Collections.emptyList();
+    }
+
+    private static List<GrantedCryptoAllowance> getCryptoGrantedAllowancesList(final Account account) {
+        if (!account.cryptoAllowances().isEmpty()) {
+            List<GrantedCryptoAllowance> cryptoAllowances = new ArrayList<>();
+            final var cryptoAllowance = GrantedCryptoAllowance.newBuilder();
+            for (var a : account.cryptoAllowances()) {
+                cryptoAllowance.setSpender(AccountID.newBuilder().accountNum(a.spenderNum()).build());
+                cryptoAllowance.setAmount(a.amount());
+                cryptoAllowances.add(cryptoAllowance.build());
+            }
+            return cryptoAllowances;
+        }
+        return Collections.emptyList();
+    }
+
+    private static String asHexedEvmAddress(final AccountID id) {
+        return CommonUtils.hex(asEvmAddress(id.getAccountNum()));
+    }
+
+    public static byte[] asEvmAddress(final long num) {
+        final byte[] evmAddress = new byte[20];
+        arraycopy(Longs.toByteArray(num), 0, evmAddress, 12, 8);
+        return evmAddress;
     }
 }
