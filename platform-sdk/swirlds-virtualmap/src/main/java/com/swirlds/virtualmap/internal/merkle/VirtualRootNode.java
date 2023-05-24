@@ -86,6 +86,7 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
@@ -163,10 +164,10 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
     private static final int MAX_RECONNECT_HASHING_BUFFER_TIMEOUT = 60;
 
     /**
-     * The number of seconds to wait for the hashing buffer during full leaf rehash
-     * (see {@link VirtualRootNode#fullLeafRehash()}) before we cancel the rehashing with an exception.
+     * The number of seconds to wait for the full leaf rehash process to finish
+     * (see {@link VirtualRootNode#fullLeafRehash()}) before we fail with an exception.
      */
-    private static final int MAX_FULL_REHASHING_BUFFER_TIMEOUT = 10;
+    private static final int MAX_FULL_REHASHING_TIMEOUT = 21600; // 6 hours
 
     /**
      * Placeholder (since this is such a hotspot) to hold the results from {@link VirtualMapSettingsFactory#get()}
@@ -425,6 +426,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         final ConcurrentBlockingIterator<VirtualLeafRecord<K, V>> rehashIterator =
                 new ConcurrentBlockingIterator<>(MAX_REHASHING_BUFFER_SIZE, Integer.MAX_VALUE, MILLISECONDS);
         final CompletableFuture<Hash> fullRehashFuture = new CompletableFuture<>();
+        final CompletableFuture<Void> leafFeedFuture = new CompletableFuture<>();
         // getting a range that is relevant for the data source
         final long firstLeafPath = dataSource.getFirstLeafPath();
         final long lastLeafPath = dataSource.getLastLeafPath();
@@ -477,41 +479,81 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                 .build()
                 .start();
 
-        for (long i = firstLeafPath; i <= lastLeafPath; i++) {
-
-            try {
-                VirtualLeafRecord<K, V> leafRecord = dataSource.loadLeafRecord(i);
-                if (leafRecord != null) {
+        // This background thread will be responsible for feeding the iterator with data.
+        new ThreadConfiguration(getStaticThreadManager())
+                .setComponent("virtualmap")
+                .setThreadName("leafFeeder")
+                .setRunnable(() -> {
+                    final long onePercent = (lastLeafPath - firstLeafPath) / 100 + 1;
                     try {
-                        final boolean success =
-                                rehashIterator.supply(leafRecord, MAX_FULL_REHASHING_BUFFER_TIMEOUT, SECONDS);
-                        if (!success) {
-                            throw new MerkleSynchronizationException(
-                                    "Timed out waiting to supply a new leaf to the hashing iterator buffer");
+                        for (long i = firstLeafPath; i <= lastLeafPath; i++) {
+                            try {
+                                VirtualLeafRecord<K, V> leafRecord = dataSource.loadLeafRecord(i);
+                                assert leafRecord != null : "Leaf record should not be null";
+                                try {
+                                    final boolean success =
+                                            rehashIterator.supply(leafRecord, Integer.MAX_VALUE, SECONDS);
+                                    if (!success) {
+                                        throw new MerkleSynchronizationException(
+                                                "Timed out waiting to supply a new leaf to the hashing iterator buffer");
+                                    }
+                                } catch (final MerkleSynchronizationException e) {
+                                    throw e;
+                                } catch (final InterruptedException e) {
+                                    Thread.currentThread().interrupt();
+                                    throw new MerkleSynchronizationException(
+                                            "Interrupted while waiting to supply a new leaf to the hashing iterator buffer",
+                                            e);
+                                } catch (final Exception e) {
+                                    throw new MerkleSynchronizationException(
+                                            "Failed to handle a leaf during full rehashing", e);
+                                }
+                            } catch (IOException e) {
+                                throw new UncheckedIOException(e);
+                            }
+                            // we don't care about tracking progress on small maps.
+                            if (onePercent > 10 && i % onePercent == 0) {
+                                logger.info(
+                                        STARTUP.getMarker(),
+                                        "Full rehash progress for the VirtualMap at {}: {}%",
+                                        getRoute(),
+                                        (i - firstLeafPath) / onePercent + 1);
+                            }
                         }
-                    } catch (final MerkleSynchronizationException e) {
-                        throw e;
-                    } catch (final InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        throw new MerkleSynchronizationException(
-                                "Interrupted while waiting to supply a new leaf to the hashing iterator buffer", e);
-                    } catch (final Exception e) {
-                        throw new MerkleSynchronizationException("Failed to handle a leaf during full rehashing", e);
+                    } finally {
+                        rehashIterator.close();
                     }
-                }
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        }
-        rehashIterator.close();
+                    leafFeedFuture.complete(null);
+                })
+                .setExceptionHandler((thread, exception) -> {
+                    // Shut down the iterator.
+                    rehashIterator.close();
+                    final var message = "VirtualMap@" + getRoute() + " failed to feed all leaves the hasher";
+                    logger.error(EXCEPTION.getMarker(), message, exception);
+                    leafFeedFuture.completeExceptionally(new MerkleSynchronizationException(message, exception));
+                })
+                .build()
+                .start();
+
         try {
-            super.setHash(fullRehashFuture.get());
+            final long start = System.currentTimeMillis();
+            leafFeedFuture.get(MAX_FULL_REHASHING_TIMEOUT, SECONDS);
+            final long secondsSpent = (System.currentTimeMillis() - start) / 1000;
+            logger.info(
+                    STARTUP.getMarker(),
+                    "It took {} seconds to feed all leaves to the hasher for the VirtualMap at {}",
+                    secondsSpent,
+                    getRoute());
+            super.setHash(fullRehashFuture.get(MAX_FULL_REHASHING_TIMEOUT - secondsSpent, SECONDS));
         } catch (ExecutionException e) {
             final var message = "VirtualMap@" + getRoute() + " failed to get hash during full rehashing";
             throw new MerkleSynchronizationException(message, e);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             final var message = "VirtualMap@" + getRoute() + " interrupted while full rehashing";
+            throw new MerkleSynchronizationException(message, e);
+        } catch (TimeoutException e) {
+            final var message = "VirtualMap@" + getRoute() + "wasn't able to finish full rehashing in time";
             throw new MerkleSynchronizationException(message, e);
         }
     }

@@ -31,6 +31,8 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
  * 		parameter had no description in the old settings
  * @param verifyResult
  * 		parameter had no description in the old settings
+ * @param enableSnapshots
+ *      Indicates whether to take snapshots periodically during benchmarks
  * @param printHistogram
  * 		parameter had no description in the old settings
  * @param csvOutputFolder
@@ -50,6 +52,7 @@ public record BenchmarkConfig(
         @ConfigProperty(defaultValue = "") String benchmarkData,
         @ConfigProperty(defaultValue = "false") boolean saveDataDirectory,
         @ConfigProperty(defaultValue = "true") boolean verifyResult,
+        @ConfigProperty(defaultValue = "false") boolean enableSnapshots,
         @ConfigProperty(defaultValue = "false") boolean printHistogram,
         @ConfigProperty(defaultValue = "") String csvOutputFolder,
         @ConfigProperty(defaultValue = "BenchmarkMetrics.csv") String csvFileName,
@@ -61,6 +64,7 @@ public record BenchmarkConfig(
                 .append("benchmarkData", benchmarkData)
                 .append("saveDataDirectory", saveDataDirectory)
                 .append("verifyResult", verifyResult)
+                .append("enableSnapshots", enableSnapshots)
                 .append("printHistogram", printHistogram)
                 .append("csvOutputFolder", csvOutputFolder)
                 .append("csvFileName", csvFileName)
