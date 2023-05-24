@@ -46,7 +46,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * This class contains all workflow-related functionality regarding {@link HederaFunctionality#FILE_APPEND}.
+ * This class contains all workflow-related functionality regarding {@link
+ * HederaFunctionality#FILE_APPEND}.
  */
 @Singleton
 public class FileAppendHandler implements TransactionHandler {
@@ -71,7 +72,7 @@ public class FileAppendHandler implements TransactionHandler {
 
         final var transactionBody = context.body().fileAppendOrThrow();
         final var fileStore = context.createStore(ReadableFileStoreImpl.class);
-        final var fileMeta = preValidate(transactionBody.fileID(), fileStore);
+        final var fileMeta = preValidate(transactionBody.fileID(), fileStore, context, false);
 
         validateAndAddRequiredKeys(fileMeta.keys(), context, true);
     }
@@ -134,9 +135,7 @@ public class FileAppendHandler implements TransactionHandler {
         fileStore.put(fileBuilder.build());
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public UpdateFileRecordBuilder newRecordBuilder() {
         return new UpdateFileRecordBuilder();
