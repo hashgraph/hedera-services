@@ -38,20 +38,17 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.AccountDetails;
 import com.hedera.hapi.node.token.GetAccountDetailsQuery;
 import com.hedera.hapi.node.token.GetAccountDetailsResponse;
+import com.hedera.hapi.node.token.GrantedCryptoAllowance;
+import com.hedera.hapi.node.token.GrantedNftAllowance;
+import com.hedera.hapi.node.token.GrantedTokenAllowance;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
-import com.hedera.node.app.service.mono.state.migration.HederaAccount;
-import com.hedera.node.app.service.mono.state.submerkle.EntityId;
-import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.hapi.node.base.Timestamp;
-import com.hederahashgraph.api.proto.java.GrantedCryptoAllowance;
-import com.hederahashgraph.api.proto.java.GrantedNftAllowance;
-import com.hederahashgraph.api.proto.java.GrantedTokenAllowance;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -192,8 +189,8 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
             List<GrantedNftAllowance> nftAllowances = new ArrayList<>();
             for (var a : account.approveForAllNftAllowances()) {
                 final var approveForAllNftsAllowance = GrantedNftAllowance.newBuilder();
-                approveForAllNftsAllowance.setTokenId(TokenID.newBuilder().tokenNum(a.tokenNum()).build());
-                approveForAllNftsAllowance.setSpender(AccountID.newBuilder().accountNum(a.spenderNum()).build());
+                approveForAllNftsAllowance.tokenId(TokenID.newBuilder().tokenNum(a.tokenNum()).build());
+                approveForAllNftsAllowance.spender(AccountID.newBuilder().accountNum(a.spenderNum()).build());
                 nftAllowances.add(approveForAllNftsAllowance.build());
             }
             return nftAllowances;
@@ -206,9 +203,9 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
             List<GrantedTokenAllowance> tokenAllowances = new ArrayList<>();
             final var tokenAllowance = GrantedTokenAllowance.newBuilder();
             for (var a : account.tokenAllowances()) {
-                tokenAllowance.setTokenId(TokenID.newBuilder().tokenNum(a.tokenNum()).build());
-                tokenAllowance.setSpender(AccountID.newBuilder().accountNum(a.spenderNum()).build());
-                tokenAllowance.setAmount(a.amount());
+                tokenAllowance.tokenId(TokenID.newBuilder().tokenNum(a.tokenNum()).build());
+                tokenAllowance.spender(AccountID.newBuilder().accountNum(a.spenderNum()).build());
+                tokenAllowance.amount(a.amount());
                 tokenAllowances.add(tokenAllowance.build());
             }
             return tokenAllowances;
@@ -221,8 +218,8 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
             List<GrantedCryptoAllowance> cryptoAllowances = new ArrayList<>();
             final var cryptoAllowance = GrantedCryptoAllowance.newBuilder();
             for (var a : account.cryptoAllowances()) {
-                cryptoAllowance.setSpender(AccountID.newBuilder().accountNum(a.spenderNum()).build());
-                cryptoAllowance.setAmount(a.amount());
+                cryptoAllowance.spender(AccountID.newBuilder().accountNum(a.spenderNum()).build());
+                cryptoAllowance.amount(a.amount());
                 cryptoAllowances.add(cryptoAllowance.build());
             }
             return cryptoAllowances;
@@ -231,7 +228,7 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
     }
 
     private static String asHexedEvmAddress(final AccountID id) {
-        return CommonUtils.hex(asEvmAddress(id.getAccountNum()));
+        return CommonUtils.hex(asEvmAddress(id.accountNum()));
     }
 
     public static byte[] asEvmAddress(final long num) {
