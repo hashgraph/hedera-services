@@ -155,10 +155,10 @@ public class FreezeHandler implements TransactionHandler {
             upgradeActions.extractSoftwareUpgrade(specialFileStore
                     .get(requireNonNull(updateFileNum).fileNum())
                     .orElseThrow(() -> new IllegalStateException("Update file not found")));
-                // TODO: call networkCtx.recordPreparedUpgrade(freezeTxn); (issue #6201)
+                // @todo('Issue #6201'): call networkCtx.recordPreparedUpgrade(freezeTxn);
             case FREEZE_UPGRADE -> upgradeActions.scheduleFreezeUpgradeAt(requireNonNull(freezeStartTimeInstant));
             case FREEZE_ABORT -> upgradeActions.abortScheduledFreeze();
-                // TODO: call networkCtx.discardPreparedUpgradeMeta(); (issue #6201)
+                // @todo('Issue #6201'): call networkCtx.discardPreparedUpgradeMeta();
             case TELEMETRY_UPGRADE -> upgradeActions.extractTelemetryUpgrade(
                     specialFileStore
                             .get(requireNonNull(updateFileNum).fileNum())
