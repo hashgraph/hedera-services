@@ -472,7 +472,7 @@ class AddressBookTests {
         assertEquals(addressBookText, parsedAddressBook.toConfigText(), "The AddressBooks are not equal.");
         Iterator<Address> parsedIterator = parsedAddressBook.iterator();
         assertTrue(parsedIterator.next().getMemo().isEmpty());
-        assertTrue(parsedIterator.next().getMemo().equals("has a memo"));
+        assertEquals("has a memo", parsedIterator.next().getMemo());
     }
 
     @Test
