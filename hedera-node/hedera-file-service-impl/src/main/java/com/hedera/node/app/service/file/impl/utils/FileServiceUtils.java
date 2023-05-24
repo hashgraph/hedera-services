@@ -84,7 +84,7 @@ public class FileServiceUtils {
         final var fileMeta = fileStore.getFileMetadata(fileId);
         mustExist(fileMeta, INVALID_FILE_ID);
 
-        final var ledgerConfig = context.getConfiguration().getConfigData(LedgerConfig.class);
+        final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
         if (fileId.fileNum() > ledgerConfig.numReservedSystemEntities() && isSpecialFile) {
             throw new PreCheckException(INVALID_FILE_ID);
         }
