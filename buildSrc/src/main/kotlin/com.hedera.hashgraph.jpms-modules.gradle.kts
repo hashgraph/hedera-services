@@ -115,4 +115,8 @@ extraJavaModuleInfo {
     automaticModule("hamcrest-core-1.3.jar", "hamcrest.core")
     automaticModule("org.awaitility:awaitility", "awaitility")
     automaticModule("org.testcontainers:testcontainers", "org.testcontainers")
+
+    automaticModule("uk.org.webcompere:system-stubs-jupiter", "uk.org.webcompere.systemstubs.jupiter")
+    automaticModule("uk.org.webcompere:system-stubs-core", "uk.org.webcompere.systemstubs.core")
+
 }

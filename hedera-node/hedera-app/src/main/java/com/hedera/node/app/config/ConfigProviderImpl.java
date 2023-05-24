@@ -85,12 +85,16 @@ import java.util.Properties;
 import java.util.function.BiConsumer;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Implementation of the {@link ConfigProvider} interface.
  */
 @Singleton
 public class ConfigProviderImpl implements ConfigProvider {
+
+    private final static Logger log = LogManager.getLogger(ConfigProviderImpl.class);
 
     /**
      * Name of an environment variable that can be used to override the default path to the genesis.properties file (see
@@ -188,7 +192,7 @@ public class ConfigProviderImpl implements ConfigProvider {
                     throw new IllegalArgumentException("File " + path + " is a directory and not a property file");
                 }
             } else {
-                throw new IllegalArgumentException("File " + path + " does not exist");
+                log.warn("Properties file {} does not exist and won't be used as configuration source", path);
             }
         };
 
