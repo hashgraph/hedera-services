@@ -18,7 +18,6 @@ import org.gradle.api.Project
 import java.io.File
 import java.io.OutputStream
 import java.io.PrintStream
-import java.util.*
 
 
 class Utils {
