@@ -133,6 +133,15 @@ class DeterministicThrottleTest {
     }
 
     @Test
+    void canGetInstantaneousPercentUsed() {
+        final var now = Instant.ofEpochSecond(1_234_567L);
+        final var subject = DeterministicThrottle.withMtpsAndBurstPeriod(500, 4);
+        assertEquals(0.0, subject.instantaneousPercentUsed());
+        subject.allow(1, now.plusNanos(1));
+        assertEquals(50.0, subject.instantaneousPercentUsed());
+    }
+
+    @Test
     void throttlesWithinPermissibleTolerance() throws InterruptedException {
         final long mtps = 123_456L;
         final var subject = DeterministicThrottle.withMtps(mtps);
