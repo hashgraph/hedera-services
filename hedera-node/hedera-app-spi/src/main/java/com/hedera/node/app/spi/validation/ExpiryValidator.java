@@ -17,7 +17,6 @@
 package com.hedera.node.app.spi.validation;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -52,27 +51,33 @@ public interface ExpiryValidator {
     ExpiryMeta resolveUpdateAttempt(@NonNull ExpiryMeta currentMetadata, @NonNull ExpiryMeta updateMetadata);
 
     /**
-     * Gets the expiration status of an account
-     * @param account the account to check
-     * @param isAutoRenewEnabled whether auto-renew is enabled for the account
-     * @param expireContracts whether to expire contracts
-     * @param expireAccounts whether to expire accounts
+     *
      * @return OK if the account is not expired, otherwise the appropriate error code
+     */
+    /**
+     * Gets the expiration status of an entity based on the {@link EntityType}.
+     * @param entityType entity type
+     * @param isMarkedExpired if the entity is marked as expired and pending removal
+     * @param balanceAvailableForSelfRenewal if balance is available for self renewal
+     * @return OK if the entity is not expired, otherwise the appropriate error code
      */
     @NonNull
     ResponseCodeEnum expirationStatus(
-            @NonNull Account account, boolean isAutoRenewEnabled, boolean expireContracts, boolean expireAccounts);
+            @NonNull final EntityType entityType,
+            final boolean isMarkedExpired,
+            final long balanceAvailableForSelfRenewal);
 
     /**
      * Gets the expiration status of an account and returns if the account is detached
-     * @param account the account to check
-     * @param isAutoRenewEnabled whether auto-renew is enabled for the account
-     * @param expireContracts whether to expire contracts
-     * @param expireAccounts whether to expire accounts
+     * @param entityType entity type
+     * @param isMarkedExpired if the entity is marked as expired and pending removal
+     * @param balanceAvailableForSelfRenewal if balance is available for self renewal
      * @return true if the account is detached, otherwise false
      */
     default boolean isDetached(
-            @NonNull Account account, boolean isAutoRenewEnabled, boolean expireContracts, boolean expireAccounts) {
-        return expirationStatus(account, isAutoRenewEnabled, expireContracts, expireAccounts) != ResponseCodeEnum.OK;
+            @NonNull final EntityType entityType,
+            final boolean isMarkedExpired,
+            final long balanceAvailableForSelfRenewal) {
+        return expirationStatus(entityType, isMarkedExpired, balanceAvailableForSelfRenewal) != ResponseCodeEnum.OK;
     }
 }

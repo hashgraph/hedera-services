@@ -32,8 +32,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
@@ -48,6 +48,7 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoDeleteHandler;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.meta.HandleContext;
+import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -240,7 +241,6 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
         given(writableStore.get(deleteAccountId)).willReturn(null);
-        given(handleContext.getConfiguration()).willReturn(configuration);
 
         assertThatThrownBy(() -> subject.handle(handleContext, txn, writableStore))
                 .isInstanceOf(HandleException.class)
@@ -258,7 +258,6 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
         given(writableStore.get(deleteAccountId)).willReturn(null);
-        given(handleContext.getConfiguration()).willReturn(configuration);
 
         assertThatThrownBy(() -> subject.handle(handleContext, txn, writableStore))
                 .isInstanceOf(HandleException.class)
@@ -279,9 +278,8 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
         given(writableStore.get(deleteAccountId)).willReturn(null);
-        given(handleContext.getConfiguration()).willReturn(configuration);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
-        given(expiryValidator.isDetached(any(), anyBoolean(), anyBoolean(), anyBoolean()))
+        given(expiryValidator.isDetached(eq(EntityType.ACCOUNT), anyBoolean(), anyLong()))
                 .willReturn(false);
 
         assertThatThrownBy(() -> subject.handle(handleContext, txn, writableStore))
@@ -300,16 +298,15 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         writableStore = new WritableAccountStore(writableStates);
 
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
-        given(handleContext.getConfiguration()).willReturn(configuration);
 
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
-        given(expiryValidator.isDetached(any(), anyBoolean(), anyBoolean(), anyBoolean()))
+        given(expiryValidator.isDetached(eq(EntityType.ACCOUNT), anyBoolean(), anyLong()))
                 .willReturn(false);
 
         subject.handle(handleContext, txn, writableStore);
 
-        // When an account is deleted, marks the value of the accountId as null in state modifications
-        assertThat(writableStore.get(deleteAccountId)).isEmpty();
+        // When an account is deleted, marks the value of the account deleted flag to true
+        assertThat(writableStore.get(deleteAccountId).get().deleted()).isTrue();
     }
 
     @Test
@@ -324,10 +321,9 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
         given(writableStore.get(deleteAccountId)).willReturn(null);
-        given(handleContext.getConfiguration()).willReturn(configuration);
 
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
-        given(expiryValidator.isDetached(eq(deleteAccount), anyBoolean(), anyBoolean(), anyBoolean()))
+        given(expiryValidator.isDetached(eq(EntityType.ACCOUNT), anyBoolean(), anyLong()))
                 .willReturn(true);
 
         assertThatThrownBy(() -> subject.handle(handleContext, txn, writableStore))
@@ -347,12 +343,9 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
         given(writableStore.get(deleteAccountId)).willReturn(null);
-        given(handleContext.getConfiguration()).willReturn(configuration);
 
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
-        given(expiryValidator.isDetached(eq(deleteAccount), anyBoolean(), anyBoolean(), anyBoolean()))
-                .willReturn(false);
-        given(expiryValidator.isDetached(eq(transferAccount), anyBoolean(), anyBoolean(), anyBoolean()))
+        given(expiryValidator.isDetached(eq(EntityType.ACCOUNT), anyBoolean(), anyLong()))
                 .willReturn(true);
 
         assertThatThrownBy(() -> subject.handle(handleContext, txn, writableStore))
@@ -374,8 +367,6 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
 
-        given(handleContext.getConfiguration()).willReturn(configuration);
-
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
 
         assertThatThrownBy(() -> subject.handle(handleContext, txn, writableStore))
@@ -396,8 +387,6 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         writableStore = new WritableAccountStore(writableStates);
 
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
-
-        given(handleContext.getConfiguration()).willReturn(configuration);
 
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
 
