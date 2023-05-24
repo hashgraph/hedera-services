@@ -5,14 +5,13 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.hedera.node.app.workflows.handle;
@@ -86,29 +85,119 @@ class HandleContextImplTest {
     }
 
     private HandleContextImpl createContext(TransactionBody txBody) {
-        return new HandleContextImpl(txBody, TransactionCategory.USER, recordBuilder, stack, verifier, recordListBuilder, checker, dispatcher, serviceScopeLookup);
+        return new HandleContextImpl(
+                txBody,
+                TransactionCategory.USER,
+                recordBuilder,
+                stack,
+                verifier,
+                recordListBuilder,
+                checker,
+                dispatcher,
+                serviceScopeLookup);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithInvalidArguments() {
-        assertThatThrownBy(() -> new HandleContextImpl(null, TransactionCategory.USER, recordBuilder, stack, verifier, recordListBuilder, checker, dispatcher, serviceScopeLookup))
+        assertThatThrownBy(() -> new HandleContextImpl(
+                        null,
+                        TransactionCategory.USER,
+                        recordBuilder,
+                        stack,
+                        verifier,
+                        recordListBuilder,
+                        checker,
+                        dispatcher,
+                        serviceScopeLookup))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new HandleContextImpl(TransactionBody.DEFAULT, null, recordBuilder, stack, verifier, recordListBuilder, checker, dispatcher, serviceScopeLookup))
+        assertThatThrownBy(() -> new HandleContextImpl(
+                        TransactionBody.DEFAULT,
+                        null,
+                        recordBuilder,
+                        stack,
+                        verifier,
+                        recordListBuilder,
+                        checker,
+                        dispatcher,
+                        serviceScopeLookup))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new HandleContextImpl(TransactionBody.DEFAULT, TransactionCategory.USER, null, stack, verifier, recordListBuilder, checker, dispatcher, serviceScopeLookup))
+        assertThatThrownBy(() -> new HandleContextImpl(
+                        TransactionBody.DEFAULT,
+                        TransactionCategory.USER,
+                        null,
+                        stack,
+                        verifier,
+                        recordListBuilder,
+                        checker,
+                        dispatcher,
+                        serviceScopeLookup))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new HandleContextImpl(TransactionBody.DEFAULT, TransactionCategory.USER, recordBuilder, null, verifier, recordListBuilder, checker, dispatcher, serviceScopeLookup))
+        assertThatThrownBy(() -> new HandleContextImpl(
+                        TransactionBody.DEFAULT,
+                        TransactionCategory.USER,
+                        recordBuilder,
+                        null,
+                        verifier,
+                        recordListBuilder,
+                        checker,
+                        dispatcher,
+                        serviceScopeLookup))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new HandleContextImpl(TransactionBody.DEFAULT, TransactionCategory.USER, recordBuilder, stack, null, recordListBuilder, checker, dispatcher, serviceScopeLookup))
+        assertThatThrownBy(() -> new HandleContextImpl(
+                        TransactionBody.DEFAULT,
+                        TransactionCategory.USER,
+                        recordBuilder,
+                        stack,
+                        null,
+                        recordListBuilder,
+                        checker,
+                        dispatcher,
+                        serviceScopeLookup))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new HandleContextImpl(TransactionBody.DEFAULT, TransactionCategory.USER, recordBuilder, stack, verifier, null, checker, dispatcher, serviceScopeLookup))
+        assertThatThrownBy(() -> new HandleContextImpl(
+                        TransactionBody.DEFAULT,
+                        TransactionCategory.USER,
+                        recordBuilder,
+                        stack,
+                        verifier,
+                        null,
+                        checker,
+                        dispatcher,
+                        serviceScopeLookup))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new HandleContextImpl(TransactionBody.DEFAULT, TransactionCategory.USER, recordBuilder, stack, verifier, recordListBuilder, null, dispatcher, serviceScopeLookup))
+        assertThatThrownBy(() -> new HandleContextImpl(
+                        TransactionBody.DEFAULT,
+                        TransactionCategory.USER,
+                        recordBuilder,
+                        stack,
+                        verifier,
+                        recordListBuilder,
+                        null,
+                        dispatcher,
+                        serviceScopeLookup))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new HandleContextImpl(TransactionBody.DEFAULT, TransactionCategory.USER, recordBuilder, stack, verifier, recordListBuilder, checker, null, serviceScopeLookup))
+        assertThatThrownBy(() -> new HandleContextImpl(
+                        TransactionBody.DEFAULT,
+                        TransactionCategory.USER,
+                        recordBuilder,
+                        stack,
+                        verifier,
+                        recordListBuilder,
+                        checker,
+                        null,
+                        serviceScopeLookup))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new HandleContextImpl(TransactionBody.DEFAULT, TransactionCategory.USER, recordBuilder, stack, verifier, recordListBuilder, checker, dispatcher, null))
+        assertThatThrownBy(() -> new HandleContextImpl(
+                        TransactionBody.DEFAULT,
+                        TransactionCategory.USER,
+                        recordBuilder,
+                        stack,
+                        verifier,
+                        recordListBuilder,
+                        checker,
+                        dispatcher,
+                        null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -209,8 +298,7 @@ class HandleContextImplTest {
         }
 
         @Test
-        void testAccessExpiryValidator(
-                @Mock ExpiryValidator expiryValidator1, @Mock ExpiryValidator expiryValidator2) {
+        void testAccessExpiryValidator(@Mock ExpiryValidator expiryValidator1, @Mock ExpiryValidator expiryValidator2) {
             // given
             when(savepoint1.expiryValidator()).thenReturn(expiryValidator1);
             when(savepoint2.expiryValidator()).thenReturn(expiryValidator2);
@@ -260,14 +348,10 @@ class HandleContextImplTest {
             final var context = createContext(TransactionBody.DEFAULT);
 
             // then
-            assertThatThrownBy(() -> context.readableStore(null))
-                    .isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> context.readableStore(List.class))
-                    .isInstanceOf(IllegalArgumentException.class);
-            assertThatThrownBy(() -> context.writableStore(null))
-                    .isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> context.writableStore(List.class))
-                    .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> context.readableStore(null)).isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> context.readableStore(List.class)).isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> context.writableStore(null)).isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> context.writableStore(List.class)).isInstanceOf(IllegalArgumentException.class);
         }
     }
 
@@ -281,10 +365,8 @@ class HandleContextImplTest {
             final var context = createContext(TransactionBody.DEFAULT);
 
             // then
-            assertThatThrownBy(() -> context.verificationFor((Key) null))
-                    .isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> context.verificationFor((Bytes) null))
-                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> context.verificationFor((Key) null)).isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> context.verificationFor((Bytes) null)).isInstanceOf(NullPointerException.class);
         }
 
         @Test
@@ -323,7 +405,6 @@ class HandleContextImplTest {
             final var configuration = new HederaTestConfigBuilder().getOrCreateConfig();
             lenient().when(savepoint.configuration()).thenReturn(configuration);
             lenient().when(stack.peek()).thenReturn(savepoint);
-
         }
 
         @SuppressWarnings("ConstantConditions")
@@ -333,12 +414,9 @@ class HandleContextImplTest {
             final var context = createContext(TransactionBody.DEFAULT);
 
             // then
-            assertThatThrownBy(() -> context.recordBuilder(null))
-                    .isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> context.recordBuilder(List.class))
-                    .isInstanceOf(IllegalArgumentException.class);
-            assertThatThrownBy(() -> context.addChildRecordBuilder(null))
-                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> context.recordBuilder(null)).isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> context.recordBuilder(List.class)).isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> context.addChildRecordBuilder(null)).isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> context.addChildRecordBuilder(List.class))
                     .isInstanceOf(IllegalArgumentException.class);
             assertThatThrownBy(() -> context.addRemovableChildRecordBuilder(null))

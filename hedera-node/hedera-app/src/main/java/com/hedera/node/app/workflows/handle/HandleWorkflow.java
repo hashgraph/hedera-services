@@ -239,7 +239,7 @@ public class HandleWorkflow {
 
     @NonNull
     private VerificationResult createPenaltyPayment() {
-        // TODO: Implement HandleWorkflow.createPnealtyPayment()
+        // TODO: Implement HandleWorkflow.createPenaltyPayment()
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
