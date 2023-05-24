@@ -21,7 +21,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.swirlds.common.jackson.InstantDeserializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.time.Instant;
 
 /**
@@ -31,7 +30,5 @@ import java.time.Instant;
  * 		the consensus timestamp of the bootstrap state
  */
 public record Boostrap(
-        @NonNull
-        @JsonSerialize(using = ToStringSerializer.class)
-        @JsonDeserialize(using = InstantDeserializer.class)
-        Instant timestamp) {}
+        @NonNull @JsonSerialize(using = ToStringSerializer.class) @JsonDeserialize(using = InstantDeserializer.class)
+                Instant timestamp) {}

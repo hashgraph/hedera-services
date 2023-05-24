@@ -32,12 +32,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * @param stream information about the various file streams
  */
 public record Recovery(
-		@NonNull
-		State state,
-		@Nullable
-		Boostrap boostrap,
-		@Nullable
-		@JsonProperty("package")
-		Package pkg,
-		@Nullable
-		Stream stream) {}
+        @NonNull State state,
+        @Nullable Boostrap boostrap,
+        @Nullable @JsonProperty("package") Package pkg,
+        @Nullable Stream stream) {}

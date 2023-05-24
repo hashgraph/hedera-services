@@ -22,7 +22,6 @@ import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.jackson.HashDeserializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.net.URL;
 
 /**
@@ -32,11 +31,7 @@ import java.net.URL;
  * @param hash the hash of the package file
  */
 public record Location(
-		@NonNull
-        String type,
-		@NonNull
-        URL url,
-		@NonNull
-        @JsonSerialize(using = ToStringSerializer.class)
-		@JsonDeserialize(using = HashDeserializer.class)
-		Hash hash) {}
+        @NonNull String type,
+        @NonNull URL url,
+        @NonNull @JsonSerialize(using = ToStringSerializer.class) @JsonDeserialize(using = HashDeserializer.class)
+                Hash hash) {}

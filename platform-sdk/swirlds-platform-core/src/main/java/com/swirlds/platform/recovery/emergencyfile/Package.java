@@ -17,7 +17,6 @@
 package com.swirlds.platform.recovery.emergencyfile;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.List;
 
 /**
