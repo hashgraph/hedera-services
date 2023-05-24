@@ -57,7 +57,7 @@ public class FileCreateHandler implements TransactionHandler {
      * <p>Determines signatures needed for create a file
      *
      * @param context the {@link PreHandleContext} which collects all information
-     * @throws NullPointerException if one of the arguments is {@code null}
+     * @throws PreCheckException if any issue happens on the pre handle level
      */
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {

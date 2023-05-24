@@ -74,20 +74,32 @@ public class PreHandleContextImpl implements PreHandleContext {
 
     private final ReadableStoreFactory storeFactory;
 
-    public PreHandleContextImpl(@NonNull final ReadableStoreFactory storeFactory, @NonNull final TransactionBody txn)
+    /** Configuration to be used during pre-handle */
+    private final Configuration configuration;
+
+    public PreHandleContextImpl(
+            @NonNull final ReadableStoreFactory storeFactory,
+            @NonNull final TransactionBody txn,
+            @NonNull final Configuration configuration)
             throws PreCheckException {
-        this(storeFactory, txn, txn.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT));
+        this(
+                storeFactory,
+                txn,
+                txn.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT),
+                configuration);
     }
 
     /** Create a new instance */
     private PreHandleContextImpl(
             @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final TransactionBody txn,
-            @NonNull final AccountID payer)
+            @NonNull final AccountID payer,
+            @NonNull final Configuration configuration)
             throws PreCheckException {
         this.storeFactory = requireNonNull(storeFactory, "The supplied argument 'storeFactory' must not be null.");
         this.txn = requireNonNull(txn, "The supplied argument 'txn' cannot be null!");
         this.payer = requireNonNull(payer, "The supplied argument 'payer' cannot be null!");
+        this.configuration = requireNonNull(configuration, "The supplied argument 'configuration' cannot be null!");
 
         this.accountStore = storeFactory.getStore(ReadableAccountStore.class);
 
@@ -339,7 +351,7 @@ public class PreHandleContextImpl implements PreHandleContext {
     public PreHandleContext createNestedContext(
             @NonNull final TransactionBody nestedTxn, @NonNull final AccountID payerForNested)
             throws PreCheckException {
-        this.innerContext = new PreHandleContextImpl(storeFactory, nestedTxn, payerForNested);
+        this.innerContext = new PreHandleContextImpl(storeFactory, nestedTxn, payerForNested, configuration);
         return this.innerContext;
     }
 
@@ -347,6 +359,12 @@ public class PreHandleContextImpl implements PreHandleContext {
     @Nullable
     public PreHandleContext innerContext() {
         return innerContext;
+    }
+
+    @Override
+    @NonNull
+    public Configuration configuration() {
+        return configuration;
     }
 
     @Override

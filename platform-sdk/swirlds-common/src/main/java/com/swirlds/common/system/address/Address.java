@@ -345,6 +345,7 @@ public class Address implements SelfSerializable {
      *
      * @return The nickname of this member.
      */
+    @NonNull
     public String getNickname() {
         return nickname;
     }
@@ -354,6 +355,7 @@ public class Address implements SelfSerializable {
      *
      * @return Name to refer itself.
      */
+    @NonNull
     public String getSelfName() {
         return selfName;
     }
@@ -392,6 +394,7 @@ public class Address implements SelfSerializable {
      *
      * @return The IPv4 address to listen all interface: [0.0.0.0].
      */
+    @NonNull
     public byte[] getListenAddressIpv4() {
         return ALL_INTERFACES;
     }
@@ -446,6 +449,7 @@ public class Address implements SelfSerializable {
      *
      * @return The IPv4 address.
      */
+    @Nullable
     public byte[] getAddressInternalIpv4() {
         return clone(addressInternalIpv4);
     }
@@ -455,6 +459,7 @@ public class Address implements SelfSerializable {
      *
      * @return The IPv6 address.
      */
+    @Nullable
     public byte[] getAddressInternalIpv6() {
         return clone(addressInternalIpv6);
     }
@@ -464,6 +469,7 @@ public class Address implements SelfSerializable {
      *
      * @return The IPv4 address.
      */
+    @Nullable
     public byte[] getAddressExternalIpv4() {
         return clone(addressExternalIpv4);
     }
@@ -473,6 +479,7 @@ public class Address implements SelfSerializable {
      *
      * @return The IPv6 address.
      */
+    @Nullable
     public byte[] getAddressExternalIpv6() {
         return clone(addressExternalIpv6);
     }
@@ -482,6 +489,7 @@ public class Address implements SelfSerializable {
      *
      * @return This member's PublicKey for signing.
      */
+    @Nullable
     public PublicKey getSigPublicKey() {
         return sigPublicKey.getPublicKey();
     }
@@ -491,6 +499,7 @@ public class Address implements SelfSerializable {
      *
      * @return This member's PublicKey for encrypting.
      */
+    @Nullable
     public PublicKey getEncPublicKey() {
         return encPublicKey.getPublicKey();
     }
@@ -500,6 +509,7 @@ public class Address implements SelfSerializable {
      *
      * @return The member's PublicKey used for TLS key agreement.
      */
+    @Nullable
     public PublicKey getAgreePublicKey() {
         return agreePublicKey.getPublicKey();
     }
@@ -509,6 +519,7 @@ public class Address implements SelfSerializable {
      *
      * @return The String to supply additional information about this node.
      */
+    @NonNull
     public String getMemo() {
         return memo;
     }
@@ -533,6 +544,7 @@ public class Address implements SelfSerializable {
      * @param weight New weight for the created Address.
      * @return The new Address.
      */
+    @NonNull
     public Address copySetWeight(long weight) {
         Address a = copy();
         a.weight = weight;
@@ -545,7 +557,9 @@ public class Address implements SelfSerializable {
      * @param nickname New nickname for the created Address.
      * @return The new Address.
      */
-    public Address copySetNickname(String nickname) {
+    @NonNull
+    public Address copySetNickname(@NonNull final String nickname) {
+        Objects.requireNonNull(nickname, "nickname must not be null");
         Address a = copy();
         a.nickname = nickname;
         return a;
@@ -557,7 +571,9 @@ public class Address implements SelfSerializable {
      * @param selfName New selfName for the created Address.
      * @return The new Address.
      */
-    public Address copySetSelfName(String selfName) {
+    @NonNull
+    public Address copySetSelfName(@NonNull final String selfName) {
+        Objects.requireNonNull(selfName, "selfName must not be null");
         Address a = copy();
         a.selfName = selfName;
         return a;
@@ -569,6 +585,7 @@ public class Address implements SelfSerializable {
      * @param ownHost New ownHost for the created Address.
      * @return The new Address.
      */
+    @NonNull
     public Address copySetOwnHost(boolean ownHost) {
         Address a = copy();
         a.ownHost = ownHost;
@@ -581,6 +598,7 @@ public class Address implements SelfSerializable {
      * @param portInternalIpv4 New portInternalIpv4 for the created Address.
      * @return The new Address.
      */
+    @NonNull
     public Address copySetPortInternalIpv4(int portInternalIpv4) {
         Address a = copy();
         a.portInternalIpv4 = portInternalIpv4;
@@ -593,6 +611,7 @@ public class Address implements SelfSerializable {
      * @param portInternalIpv6 New portInternalIpv6 for the created Address.
      * @return The new Address.
      */
+    @NonNull
     public Address copySetPortInternalIpv6(int portInternalIpv6) {
         Address a = copy();
         a.portInternalIpv6 = portInternalIpv6;
@@ -605,6 +624,7 @@ public class Address implements SelfSerializable {
      * @param portExternalIpv4 New portExternalIpv4 for the created Address.
      * @return The new Address.
      */
+    @NonNull
     public Address copySetPortExternalIpv4(int portExternalIpv4) {
         Address a = copy();
         a.portExternalIpv4 = portExternalIpv4;
@@ -617,6 +637,7 @@ public class Address implements SelfSerializable {
      * @param portExternalIpv6 New portExternalIpv6 for the created Address.
      * @return The new Address.
      */
+    @NonNull
     public Address copySetPortExternalIpv6(int portExternalIpv6) {
         Address a = copy();
         a.portExternalIpv6 = portExternalIpv6;
@@ -626,48 +647,56 @@ public class Address implements SelfSerializable {
     /**
      * Create a new Address object based this one with different internal IPv4 address.
      *
-     * @param AddressInternalIpv4 New AddressInternalIpv4 for the created Address.
+     * @param addressInternalIpv4 New addressInternalIpv4 for the created Address.
      * @return The new Address.
      */
-    public Address copySetAddressInternalIpv4(byte[] AddressInternalIpv4) {
+    @NonNull
+    public Address copySetAddressInternalIpv4(@NonNull final byte[] addressInternalIpv4) {
+        Objects.requireNonNull(addressInternalIpv4, "addressInternalIpv4 must not be null");
         Address a = copy();
-        a.addressInternalIpv4 = clone(AddressInternalIpv4);
+        a.addressInternalIpv4 = clone(addressInternalIpv4);
         return a;
     }
 
     /**
      * Create a new Address object based this one with different internal IPv6 address.
      *
-     * @param AddressInternalIpv6 New AddressInternalIpv6 for the created Address.
+     * @param addressInternalIpv6 New addressInternalIpv6 for the created Address.
      * @return The new Address.
      */
-    public Address copySetAddressInternalIpv6(byte[] AddressInternalIpv6) {
+    @NonNull
+    public Address copySetAddressInternalIpv6(@NonNull final byte[] addressInternalIpv6) {
+        Objects.requireNonNull(addressInternalIpv6, "addressInternalIpv6 must not be null");
         Address a = copy();
-        a.addressInternalIpv6 = clone(AddressInternalIpv6);
+        a.addressInternalIpv6 = clone(addressInternalIpv6);
         return a;
     }
 
     /**
      * Create a new Address object based this one with different external IPv4 address.
      *
-     * @param AddressExternalIpv4 New AddressExternalIpv4 for the created Address.
+     * @param addressExternalIpv4 New addressExternalIpv4 for the created Address.
      * @return The new Address.
      */
-    public Address copySetAddressExternalIpv4(byte[] AddressExternalIpv4) {
+    @NonNull
+    public Address copySetAddressExternalIpv4(@NonNull final byte[] addressExternalIpv4) {
+        Objects.requireNonNull(addressExternalIpv4, "addressExternalIpv4 must not be null");
         Address a = copy();
-        a.addressExternalIpv4 = clone(AddressExternalIpv4);
+        a.addressExternalIpv4 = clone(addressExternalIpv4);
         return a;
     }
 
     /**
      * Create a new Address object based this one with different external IPv6 address.
      *
-     * @param AddressExternalIpv6 New AddressExternalIpv6 for the created Address.
+     * @param addressExternalIpv6 New addressExternalIpv6 for the created Address.
      * @return The new Address.
      */
-    public Address copySetAddressExternalIpv6(byte[] AddressExternalIpv6) {
+    @NonNull
+    public Address copySetAddressExternalIpv6(@NonNull final byte[] addressExternalIpv6) {
+        Objects.requireNonNull(addressExternalIpv6, "addressExternalIpv6 must not be null");
         Address a = copy();
-        a.addressExternalIpv6 = clone(AddressExternalIpv6);
+        a.addressExternalIpv6 = clone(addressExternalIpv6);
         return a;
     }
 
@@ -677,7 +706,9 @@ public class Address implements SelfSerializable {
      * @param sigPublicKey New sigPublicKey for the created Address.
      * @return The new Address.
      */
-    public Address copySetSigPublicKey(PublicKey sigPublicKey) {
+    @NonNull
+    public Address copySetSigPublicKey(@NonNull final PublicKey sigPublicKey) {
+        Objects.requireNonNull(sigPublicKey, "sigPublicKey must not be null");
         Address a = copy();
         a.sigPublicKey = new SerializablePublicKey(sigPublicKey);
         return a;
@@ -689,7 +720,9 @@ public class Address implements SelfSerializable {
      * @param encPublicKey New encPublicKey for the created Address.
      * @return The new Address.
      */
-    public Address copySetEncPublicKey(PublicKey encPublicKey) {
+    @NonNull
+    public Address copySetEncPublicKey(@NonNull final PublicKey encPublicKey) {
+        Objects.requireNonNull(encPublicKey, "encPublicKey must not be null");
         Address a = copy();
         a.encPublicKey = new SerializablePublicKey(encPublicKey);
         return a;
@@ -701,9 +734,25 @@ public class Address implements SelfSerializable {
      * @param agreePublicKey New agreePublicKey for the created Address.
      * @return The new Address.
      */
-    public Address copySetAgreePublicKey(PublicKey agreePublicKey) {
+    @NonNull
+    public Address copySetAgreePublicKey(@NonNull final PublicKey agreePublicKey) {
+        Objects.requireNonNull(agreePublicKey, "agreePublicKey must not be null");
         Address a = copy();
         a.agreePublicKey = new SerializablePublicKey(agreePublicKey);
+        return a;
+    }
+
+    /**
+     * Create a new Address object based this one with different memo.
+     *
+     * @param memo New memo for the created Address.
+     * @return The new Address.
+     */
+    @NonNull
+    public Address copySetMemo(@NonNull final String memo) {
+        Objects.requireNonNull(memo, "memo must not be null");
+        final Address a = copy();
+        a.memo = memo;
         return a;
     }
 

@@ -23,10 +23,14 @@ import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.Key;
@@ -44,7 +48,10 @@ import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -68,6 +75,11 @@ class FileDeleteHandlerTest extends FileHandlerTestBase {
     @Mock
     private FileDeleteHandler subject;
 
+    @Mock(strictness = LENIENT)
+    private PreHandleContext preHandleContext;
+
+    private Configuration configuration;
+
     @BeforeEach
     void setUp() {
         mockStore = mock(ReadableFileStoreImpl.class);
@@ -76,6 +88,8 @@ class FileDeleteHandlerTest extends FileHandlerTestBase {
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<EntityNum, File>get(FILES)).willReturn(writableFileState);
         writableStore = new WritableFileStoreImpl(writableStates);
+        configuration = new HederaTestConfigBuilder().getOrCreateConfig();
+        lenient().when(preHandleContext.configuration()).thenReturn(configuration);
         given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
     }
 
@@ -98,11 +112,13 @@ class FileDeleteHandlerTest extends FileHandlerTestBase {
         // given:
         mockPayerLookup();
         mockFileLookup(null, mockStore);
-        final var context = new FakePreHandleContext(accountStore, newDeleteTxn());
-        context.registerStore(ReadableFileStoreImpl.class, mockStore);
+        lenient().when(preHandleContext.body()).thenReturn(newDeleteTxn());
+        lenient()
+                .when(preHandleContext.createStore(ReadableFileStoreImpl.class))
+                .thenReturn(mockStore);
 
         // when:
-        assertThrowsPreCheck(() -> subject.preHandle(context), UNAUTHORIZED);
+        assertThrowsPreCheck(() -> subject.preHandle(preHandleContext), UNAUTHORIZED);
     }
 
     @Test
@@ -154,6 +170,7 @@ class FileDeleteHandlerTest extends FileHandlerTestBase {
 
         assertTrue(changedFile.isPresent());
         assertTrue(changedFile.get().deleted());
+        assertNull(changedFile.get().contents());
     }
 
     private Key mockPayerLookup() throws PreCheckException {

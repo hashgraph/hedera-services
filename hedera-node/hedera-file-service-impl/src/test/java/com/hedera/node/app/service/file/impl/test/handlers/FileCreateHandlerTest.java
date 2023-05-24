@@ -22,6 +22,7 @@ import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -216,12 +217,11 @@ class FileCreateHandlerTest extends FileHandlerTestBase {
         assertEquals(1_234_567L, actualFile.expirationTime());
         assertEquals(contentsBytes, actualFile.contents());
         assertEquals(fileEntityNum.longValue(), actualFile.fileNumber());
-        assertEquals(false, actualFile.deleted());
+        assertFalse(actualFile.deleted());
         verify(recordBuilder).fileID(FileID.newBuilder().fileNum(1_234L).build());
         assertTrue(fileStore.get(1234L).isPresent());
     }
 
-    // TODO irrelevant for me
     @Test
     @DisplayName("Handle works as expected without keys")
     void handleDoesntRequireKeys() {
@@ -245,7 +245,7 @@ class FileCreateHandlerTest extends FileHandlerTestBase {
         assertEquals(1_234_567L, actualFile.expirationTime());
         assertEquals(contentsBytes, actualFile.contents());
         assertEquals(fileEntityNum.longValue(), actualFile.fileNumber());
-        assertEquals(false, actualFile.deleted());
+        assertFalse(actualFile.deleted());
         verify(recordBuilder).fileID(FileID.newBuilder().fileNum(1_234L).build());
         assertTrue(fileStore.get(1234L).isPresent());
     }
@@ -294,8 +294,9 @@ class FileCreateHandlerTest extends FileHandlerTestBase {
 
         given(writableStates.<EntityNum, File>get(FILES)).willReturn(writableState);
         final var fileStore = new WritableFileStoreImpl(writableStates);
-        assertEquals(1, fileStore.sizeOfState());
         given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(fileStore);
+
+        assertEquals(2, fileStore.sizeOfState());
 
         config = new FilesConfig(1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1);
         given(configuration.getConfigData(any())).willReturn(config);

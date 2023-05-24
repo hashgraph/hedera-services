@@ -23,7 +23,6 @@ import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.preVa
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateAndAddRequiredKeys;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
@@ -38,7 +37,8 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link HederaFunctionality#FILE_DELETE}.
+ * This class contains all workflow-related functionality regarding {@link
+ * HederaFunctionality#FILE_DELETE}.
  */
 @Singleton
 public class FileDeleteHandler implements TransactionHandler {
@@ -54,7 +54,7 @@ public class FileDeleteHandler implements TransactionHandler {
      *
      * @param context the {@link PreHandleContext} which collects all information that will be
      *     passed to {@code handle()}
-     * @throws NullPointerException if any of the arguments are {@code null}
+     * @throws PreCheckException if any issue happens on the pre handle level
      */
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
@@ -62,7 +62,7 @@ public class FileDeleteHandler implements TransactionHandler {
 
         final var transactionBody = context.body().fileDeleteOrThrow();
         final var fileStore = context.createStore(ReadableFileStoreImpl.class);
-        final var fileMeta = preValidate(transactionBody.fileID(), fileStore);
+        final var fileMeta = preValidate(transactionBody.fileID(), fileStore, context, false);
 
         validateAndAddRequiredKeys(fileMeta.keys(), context, true);
     }
@@ -78,7 +78,10 @@ public class FileDeleteHandler implements TransactionHandler {
         requireNonNull(context);
 
         final var fileDeleteTransactionBody = context.body().fileDelete();
-        var fileId = fileDeleteTransactionBody.fileIDOrElse(FileID.DEFAULT);
+        if (!fileDeleteTransactionBody.hasFileID()) {
+            throw new HandleException(INVALID_FILE_ID);
+        }
+        var fileId = fileDeleteTransactionBody.fileIDOrThrow();
 
         final var fileStore = context.writableStore(WritableFileStoreImpl.class);
         var optionalFile = fileStore.get(fileId.fileNum());
@@ -98,12 +101,12 @@ public class FileDeleteHandler implements TransactionHandler {
             throw new HandleException(FILE_DELETED);
         }
 
-        /* Copy all the fields from existing topic and change deleted flag */
+        /* Copy part of the fields from existing, delete the file content and set the deleted flag  */
         final var fileBuilder = new File.Builder()
                 .fileNumber(file.fileNumber())
                 .expirationTime(file.expirationTime())
                 .keys(file.keys())
-                .contents(file.contents())
+                .contents(null)
                 .memo(file.memo())
                 .deleted(true);
 

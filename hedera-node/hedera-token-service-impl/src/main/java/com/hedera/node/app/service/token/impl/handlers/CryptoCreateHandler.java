@@ -25,6 +25,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SEND_RECORD_THRESHOLD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -61,10 +62,7 @@ public class CryptoCreateHandler implements TransactionHandler {
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
         final var op = context.body().cryptoCreateAccountOrThrow();
-        final var validationResult = pureChecks(op);
-        if (validationResult != OK) {
-            throw new PreCheckException(validationResult);
-        }
+        pureChecks(context.body());
         if (op.hasKey()) {
             final var receiverSigReq = op.receiverSigRequired();
             if (receiverSigReq && op.hasKey()) {
@@ -139,31 +137,21 @@ public class CryptoCreateHandler implements TransactionHandler {
 
     /* ----------- Helper Methods ----------- */
 
-    /**
-     * Validate the basic fields in the transaction body that does not involve checking with dynamic
-     * properties or state. This check is done as part of the pre-handle workflow.
-     * @param op the transaction body
-     * @return OK if the transaction body is valid, otherwise return the appropriate error code
-     */
-    private ResponseCodeEnum pureChecks(@NonNull final CryptoCreateTransactionBody op) {
-        if (op.initialBalance() < 0L) {
-            return INVALID_INITIAL_BALANCE;
-        }
-        if (!op.hasAutoRenewPeriod()) {
-            return INVALID_RENEWAL_PERIOD;
-        }
-        if (op.sendRecordThreshold() < 0L) {
-            return INVALID_SEND_RECORD_THRESHOLD; // FUTURE: should this return
-            // SEND_RECORD_THRESHOLD_FIELD_IS_DEPRECATED
-        }
-        if (op.receiveRecordThreshold() < 0L) {
-            return INVALID_RECEIVE_RECORD_THRESHOLD; // FUTURE: should this return
-            // RECEIVE_RECORD_THRESHOLD_FIELD_IS_DEPRECATED
-        }
-        if (op.hasProxyAccountID() && !op.proxyAccountID().equals(AccountID.DEFAULT)) {
-            return PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
-        }
-        return OK;
+    @Override
+    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
+        final var op = txn.cryptoCreateAccountOrThrow();
+        validateTruePreCheck(op.initialBalance() >= 0L, INVALID_INITIAL_BALANCE);
+        validateTruePreCheck(op.hasAutoRenewPeriod(), INVALID_RENEWAL_PERIOD);
+        validateTruePreCheck(
+                op.sendRecordThreshold() >= 0L, INVALID_SEND_RECORD_THRESHOLD); // FUTURE: should this return
+        // SEND_RECORD_THRESHOLD_FIELD_IS_DEPRECATED
+        validateTruePreCheck(
+                op.receiveRecordThreshold() >= 0L, INVALID_RECEIVE_RECORD_THRESHOLD); // FUTURE: should this return
+        // RECEIVE_RECORD_THRESHOLD_FIELD_IS_DEPRECATED
+        validateTruePreCheck(
+                !op.hasProxyAccountID()
+                        || (op.hasProxyAccountID() && op.proxyAccountID().equals(AccountID.DEFAULT)),
+                PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED);
     }
 
     /**

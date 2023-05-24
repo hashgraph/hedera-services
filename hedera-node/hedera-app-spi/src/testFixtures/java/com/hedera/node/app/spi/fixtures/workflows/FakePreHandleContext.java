@@ -373,6 +373,12 @@ public class FakePreHandleContext implements PreHandleContext {
     }
 
     @Override
+    @NonNull
+    public Configuration configuration() {
+        throw new UnsupportedOperationException("This class is deprecated. New functionality will not be added.");
+    }
+
+    @Override
     public String toString() {
         return "FakePreHandleContext{" + "accountStore="
                 + accountStore + ", txn="
