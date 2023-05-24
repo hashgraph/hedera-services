@@ -24,6 +24,8 @@ import com.swirlds.platform.recovery.emergencyfile.Location;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
+
+import edu.umd.cs.findbugs.annotations.NonNull;
 import picocli.CommandLine;
 
 @CommandLine.Command(
@@ -45,7 +47,7 @@ public class ValidateManifestFileCommand extends AbstractCommand {
     }
 
     @Override
-    public Integer call() throws IOException {
+    public @NonNull Integer call() throws IOException {
         final EmergencyRecoveryFile file = EmergencyRecoveryFile.read(dir);
         if (file == null) {
             throw new IOException("Emergency recovery file could not be read from: " + dir.toAbsolutePath());

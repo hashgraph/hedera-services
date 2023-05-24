@@ -17,6 +17,8 @@
 package com.swirlds.platform.recovery.emergencyfile;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * The top level of the emergency recovery YAML structure.
@@ -29,4 +31,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * @param pkg information about where to find the emergency recovery package
  * @param stream information about the various file streams
  */
-public record Recovery(State state, Boostrap boostrap, @JsonProperty("package") Package pkg, Stream stream) {}
+public record Recovery(
+		@NonNull
+		State state,
+		@Nullable
+		Boostrap boostrap,
+		@Nullable
+		@JsonProperty("package")
+		Package pkg,
+		@Nullable
+		Stream stream) {}

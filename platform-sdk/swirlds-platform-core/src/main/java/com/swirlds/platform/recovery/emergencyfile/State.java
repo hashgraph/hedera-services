@@ -22,6 +22,8 @@ import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.jackson.HashDeserializer;
 import com.swirlds.common.jackson.InstantDeserializer;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.time.Instant;
 
 /**
@@ -37,6 +39,11 @@ import java.time.Instant;
  */
 public record State(
         long round,
-        @JsonSerialize(using = ToStringSerializer.class) @JsonDeserialize(using = HashDeserializer.class) Hash hash,
-        @JsonSerialize(using = ToStringSerializer.class) @JsonDeserialize(using = InstantDeserializer.class)
-                Instant timestamp) {}
+        @NonNull
+        @JsonSerialize(using = ToStringSerializer.class)
+        @JsonDeserialize(using = HashDeserializer.class)
+        Hash hash,
+        @NonNull
+        @JsonSerialize(using = ToStringSerializer.class)
+        @JsonDeserialize(using = InstantDeserializer.class)
+        Instant timestamp) {}

@@ -16,10 +16,12 @@
 
 package com.swirlds.platform.recovery.emergencyfile;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.util.List;
 
 /**
  * Information about where to find the emergency recovery package
  * @param locations the locations of the package
  */
-public record Package(List<Location> locations) {}
+public record Package(@NonNull List<Location> locations) {}
