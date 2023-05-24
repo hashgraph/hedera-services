@@ -140,7 +140,12 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
         when(configProvider.getConfiguration()).thenReturn(config);
 
         workflow = new PreHandleWorkflowImpl(
-                dispatcher, transactionChecker, signatureVerifier, signatureExpander, configProvider, deduplicationCache);
+                dispatcher,
+                transactionChecker,
+                signatureVerifier,
+                signatureExpander,
+                configProvider,
+                deduplicationCache);
     }
 
     /** Null arguments are not permitted to the constructor. */
@@ -149,7 +154,12 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
     @SuppressWarnings("DataFlowIssue") // Suppress the warning about null args
     void nullConstructorArgsTest() {
         assertThatThrownBy(() -> new PreHandleWorkflowImpl(
-                        null, transactionChecker, signatureVerifier, signatureExpander, configProvider, deduplicationCache))
+                        null,
+                        transactionChecker,
+                        signatureVerifier,
+                        signatureExpander,
+                        configProvider,
+                        deduplicationCache))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new PreHandleWorkflowImpl(
                         dispatcher, null, signatureVerifier, signatureExpander, configProvider, deduplicationCache))
