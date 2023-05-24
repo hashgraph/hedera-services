@@ -58,6 +58,12 @@ public class ReadableTokenStoreImpl implements ReadableTokenStore {
         return tokenMetaFrom(token.get());
     }
 
+    @Nullable
+    @Override
+    public Token getToken(final long tokenNum) {
+        return getTokenLeaf(tokenNum).orElse(null);
+    }
+
     private TokenMetadata tokenMetaFrom(final Token token) {
         boolean hasRoyaltyWithFallback = false;
         final var customFees = token.customFees();

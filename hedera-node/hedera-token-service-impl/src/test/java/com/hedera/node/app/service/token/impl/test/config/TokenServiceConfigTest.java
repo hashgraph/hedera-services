@@ -24,7 +24,8 @@ import org.junit.jupiter.api.Test;
 class TokenServiceConfigTest {
     @Test
     void testGetter() {
-        final var subject = new TokenServiceConfig(100);
+        final var subject = new TokenServiceConfig(100, 100);
         assertEquals(100, subject.maxCustomFeesAllowed());
+        assertEquals(100, subject.maxTokenRelsPerInfoQuery());
     }
 }

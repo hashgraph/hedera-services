@@ -57,7 +57,7 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     private TokenFeeScheduleUpdateHandler subject;
     private CustomFeesValidator validator;
     private TransactionBody txn;
-    private TokenServiceConfig config = new TokenServiceConfig(1000);
+    private TokenServiceConfig config = new TokenServiceConfig(1000, 1000);
 
     @Mock(strictness = LENIENT)
     private HandleContext context;
@@ -160,7 +160,7 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     @DisplayName("fee schedule update fails if custom fees list is too long")
     void failsIfTooManyCustomFees() {
-        given(tokenServiceConfig.getConfigData(TokenServiceConfig.class)).willReturn(new TokenServiceConfig(1));
+        given(tokenServiceConfig.getConfigData(TokenServiceConfig.class)).willReturn(new TokenServiceConfig(1, 1000));
         assertThatThrownBy(() -> subject.handle(context, txn, writableTokenStore))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(CUSTOM_FEES_LIST_TOO_LONG));

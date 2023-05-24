@@ -19,6 +19,7 @@ package com.hedera.node.app.service.token;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.Key.KeyOneOfType;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.state.token.Token;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -36,6 +37,15 @@ public interface ReadableTokenStore {
      */
     @Nullable
     TokenMetadata getTokenMeta(@NonNull TokenID id);
+
+    /**
+     * Returns the token needed for signing requirements.
+     *
+     * @param tokenNum, the unique entity number of this token
+     * @return token's metadata
+     */
+    @Nullable
+    Token getToken(final long tokenNum);
 
     record TokenMetadata(
             @Nullable Key adminKey,
