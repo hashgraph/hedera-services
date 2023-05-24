@@ -65,8 +65,12 @@ public class SingleNodeSyncGossip extends AbstractGossip {
     private static final Logger logger = LogManager.getLogger(SingleNodeSyncGossip.class);
 
     private final InterruptableConsumer<EventIntakeTask> eventIntakeLambda;
-    private final Clearable clearAllPipelines;
     private final StoppableThread syncProtocolThread;
+
+    /**
+     * Holds a list of objects that need to be cleared when {@link #clear()} is called on this object.
+     */
+    private final Clearable clearAllInternalPipelines;
 
     /**
      * Builds the gossip engine, depending on which flavor is requested in the configuration.
@@ -133,7 +137,7 @@ public class SingleNodeSyncGossip extends AbstractGossip {
 
         this.eventIntakeLambda = Objects.requireNonNull(eventIntakeLambda);
 
-        clearAllPipelines = new LoggingClearables(
+        clearAllInternalPipelines = new LoggingClearables(
                 RECONNECT.getMarker(),
                 List.of(
                         Pair.of(intakeQueue, "intakeQueue"),
@@ -223,7 +227,7 @@ public class SingleNodeSyncGossip extends AbstractGossip {
      */
     @Override
     public void clear() {
-        clearAllPipelines.clear();
+        clearAllInternalPipelines.clear();
     }
 
     /**

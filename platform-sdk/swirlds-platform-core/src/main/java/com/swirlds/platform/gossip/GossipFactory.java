@@ -144,6 +144,7 @@ public final class GossipFactory {
         Objects.requireNonNull(eventLinker);
         Objects.requireNonNull(updatePlatformStatus);
         Objects.requireNonNull(loadReconnectState);
+        Objects.requireNonNull(clearAllPipelinesForReconnect);
 
         final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);

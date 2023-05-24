@@ -103,6 +103,10 @@ public class ChatterGossip extends AbstractGossip {
     private final List<StoppableThread> chatterThreads = new LinkedList<>();
     private final ChatterEventMapper chatterEventMapper = new ChatterEventMapper();
     private final SequenceCycle<EventIntakeTask> intakeCycle;
+
+    /**
+     * Holds a list of objects that need to be cleared when {@link #clear()} is called on this object.
+     */
     private final Clearable clearAllInternalPipelines;
 
     /**

@@ -77,8 +77,12 @@ public class LegacySyncGossip extends AbstractGossip {
     private final SimultaneousSyncThrottle simultaneousSyncThrottle;
     private final ShadowGraphSynchronizer syncShadowgraphSynchronizer;
     private final InterruptableConsumer<EventIntakeTask> eventIntakeLambda;
-    private final Clearable clearAllPipelines;
     private final ThreadManager threadManager;
+
+    /**
+     * Holds a list of objects that need to be cleared when {@link #clear()} is called on this object.
+     */
+    private final Clearable clearAllInternalPipelines;
 
     /**
      * Builds the gossip engine, depending on which flavor is requested in the configuration.
@@ -162,7 +166,7 @@ public class LegacySyncGossip extends AbstractGossip {
                 true,
                 () -> {});
 
-        clearAllPipelines = new LoggingClearables(
+        clearAllInternalPipelines = new LoggingClearables(
                 RECONNECT.getMarker(),
                 List.of(
                         Pair.of(intakeQueue, "intakeQueue"),
@@ -322,7 +326,7 @@ public class LegacySyncGossip extends AbstractGossip {
      */
     @Override
     public void clear() {
-        clearAllPipelines.clear();
+        clearAllInternalPipelines.clear();
     }
 
     /**
