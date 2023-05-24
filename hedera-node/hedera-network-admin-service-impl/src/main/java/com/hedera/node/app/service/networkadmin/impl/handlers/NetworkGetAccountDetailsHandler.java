@@ -43,6 +43,7 @@ import com.hedera.hapi.node.token.GrantedNftAllowance;
 import com.hedera.hapi.node.token.GrantedTokenAllowance;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
+import com.hedera.node.app.service.networkadmin.impl.utils.NetworkAdminServiceUtil;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
@@ -143,43 +144,27 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
         if (account == null) {
             return Optional.empty();
         } else {
-               /*       @Nullable AccountID accountId,
-        String contractAccountId,
-        boolean deleted,
-        @Nullable AccountID proxyAccountId,
-        long proxyReceived,
-        @Nullable Key key,
-        long balance,
-        boolean receiverSigRequired,
-        @Nullable Timestamp expirationTime,
-        @Nullable Duration autoRenewPeriod,
-        @Nullable List<TokenRelationship> tokenRelationships,
-        String memo,
-        long ownedNfts,
-        int maxAutomaticTokenAssociations,
-        Bytes alias,
-        Bytes ledgerId,
-        @Nullable List<GrantedCryptoAllowance> grantedCryptoAllowances,
-        @Nullable List<GrantedNftAllowance> grantedNftAllowances,
-        @Nullable List<GrantedTokenAllowance> grantedTokenAllowances*/
             final var info = AccountDetails.newBuilder();
             info.accountId(AccountID.newBuilder().accountNum(account.accountNumber()).build());
-            info.contractAccountId(asHexedEvmAddress(accountID)); //copy the logic from existing into util class
+            info.contractAccountId(NetworkAdminServiceUtil.asHexedEvmAddress(accountID));
             info.deleted(account.deleted());
             if (!isEmpty(account.key())) info.key(account.key());
             info.balance(account.tinybarBalance());
             info.receiverSigRequired(account.receiverSigRequired());
             info.expirationTime(Timestamp.newBuilder().seconds(account.expiry()).build());
             info.autoRenewPeriod(Duration.newBuilder().seconds(account.autoRenewSecs()).build());
-            info.tokenRelationships(account.tokenRelationships); //not exist in account
             info.memo(account.memo());
             info.ownedNfts(account.numberOwnedNfts());
             info.maxAutomaticTokenAssociations(account.maxAutoAssociations());
             info.alias(account.alias());
             info.ledgerId(networkInfo.ledgerId());
-            info.grantedCryptoAllowances(getCryptoGrantedAllowancesList(account));//is it right mapping
-            info.grantedNftAllowances(getNftGrantedAllowancesList(account));//is it right mapping
-            info.grantedTokenAllowances(getFungibleGrantedTokenAllowancesList(account));//is it right mapping
+            info.grantedCryptoAllowances(getCryptoGrantedAllowancesList(account));
+            info.grantedNftAllowances(getNftGrantedAllowancesList(account));
+            info.grantedTokenAllowances(getFungibleGrantedTokenAllowancesList(account));
+            final var tokenRels = tokenRels(this, account, maxTokensForAccountInfo);
+            if (!tokenRels.isEmpty()) {
+                info.tokenRelationships(tokenRels);
+            }
             return Optional.of(info.build());
         }
     }
@@ -227,13 +212,5 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
         return Collections.emptyList();
     }
 
-    private static String asHexedEvmAddress(final AccountID id) {
-        return CommonUtils.hex(asEvmAddress(id.accountNum()));
-    }
 
-    public static byte[] asEvmAddress(final long num) {
-        final byte[] evmAddress = new byte[20];
-        arraycopy(Longs.toByteArray(num), 0, evmAddress, 12, 8);
-        return evmAddress;
-    }
 }
