@@ -62,7 +62,7 @@ dependencies {
   jmhImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
 
   itestImplementation(project(":hedera-node:hapi"))
-  itestImplementation(project(":hedera-node:hedera-mono-service"))
+//  itestImplementation(project(":hedera-node:hedera-mono-service"))
   itestImplementation(testFixtures(project(":hedera-node:hapi")))
   itestImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
   itestImplementation(libs.pbj.runtime)
