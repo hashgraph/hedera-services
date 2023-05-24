@@ -186,13 +186,16 @@ public class PreConsensusEventFileManager {
         final ValueReference<Instant> previousTimestamp = new ValueReference<>();
 
         return descriptor -> {
-            fileSanityChecks(
-                    permitGaps,
-                    previousSequenceNumber,
-                    previousMinimumGeneration,
-                    previousMaximumGeneration,
-                    previousTimestamp,
-                    descriptor);
+
+            if (previousSequenceNumber.getValue() != -1) {
+                fileSanityChecks(
+                        permitGaps,
+                        previousSequenceNumber.getValue(),
+                        previousMinimumGeneration.getValue(),
+                        previousMaximumGeneration.getValue(),
+                        previousTimestamp.getValue(),
+                        descriptor);
+            }
 
             previousSequenceNumber.setValue(descriptor.getSequenceNumber());
             previousMinimumGeneration.setValue(descriptor.getMinimumGeneration());
@@ -205,45 +208,42 @@ public class PreConsensusEventFileManager {
     }
 
     /**
-     * Do a sanity check on an event file parsed from disk. Throw if an irregularity is detected. Better to crash than
-     * to have an ISS due to improper event playback.
+     * TODO
      */
     private static void fileSanityChecks(
             final boolean permitGaps,
-            @NonNull final ValueReference<Long> previousSequenceNumber,
-            @NonNull final ValueReference<Long> previousMinimumGeneration,
-            @NonNull final ValueReference<Long> previousMaximumGeneration,
-            @NonNull final ValueReference<Instant> previousTimestamp,
+            final long previousSequenceNumber,
+            final long previousMinimumGeneration,
+            final long previousMaximumGeneration,
+            @NonNull final Instant previousTimestamp,
             @NonNull final PreConsensusEventFile descriptor) {
 
         // Sequence number should always monotonically increase
-        if (!permitGaps
-                && previousSequenceNumber.getValue() != -1
-                && previousSequenceNumber.getValue() + 1 != descriptor.getSequenceNumber()) {
+        if (!permitGaps && previousSequenceNumber + 1 != descriptor.getSequenceNumber()) {
             throw new IllegalStateException("Gap in pre-consensus event files detected! Previous sequence number was "
-                    + previousSequenceNumber.getValue() + ", next sequence number is "
+                    + previousSequenceNumber + ", next sequence number is "
                     + descriptor.getSequenceNumber());
         }
 
         // Sanity check on the minimum generation
-        if (descriptor.getMinimumGeneration() < previousMinimumGeneration.getValue()) {
+        if (descriptor.getMinimumGeneration() < previousMinimumGeneration) {
             throw new IllegalStateException("Minimum generation must never decrease, file " + descriptor.getPath()
                     + " has a minimum generation that is less than the previous minimum generation of "
-                    + previousMinimumGeneration.getValue());
+                    + previousMinimumGeneration);
         }
 
         // Sanity check on the maximum generation
-        if (descriptor.getMaximumGeneration() < previousMaximumGeneration.getValue()) {
+        if (descriptor.getMaximumGeneration() < previousMaximumGeneration) {
             throw new IllegalStateException("Maximum generation must never decrease, file " + descriptor.getPath()
                     + " has a maximum generation that is less than the previous maximum generation of "
-                    + previousMaximumGeneration.getValue());
+                    + previousMaximumGeneration);
         }
 
         // Sanity check on timestamp
-        if (previousTimestamp.getValue() != null && descriptor.getTimestamp().isBefore(previousTimestamp.getValue())) {
+        if (descriptor.getTimestamp().isBefore(previousTimestamp)) {
             throw new IllegalStateException("Timestamp must never decrease, file " + descriptor.getPath()
                     + " has a timestamp that is less than the previous timestamp of "
-                    + previousTimestamp.getValue());
+                    + previousTimestamp);
         }
     }
 
@@ -486,8 +486,15 @@ public class PreConsensusEventFileManager {
                 databaseDirectory,
                 discontinuity);
 
-        files.addLast(descriptor);
+        if (files.size() > 0) {
+            // There are never enough sanity checks. This is the same sanity check that is run when we parse
+            // the files from disk, so if it doesn't pass now it's not going to pass when we read the files.
+            final PreConsensusEventFile previousFile = files.getLast();
+            fileSanityChecks(false, previousFile.getSequenceNumber(), previousFile.getMinimumGeneration(),
+                    previousFile.getMaximumGeneration(), previousFile.getTimestamp(), descriptor);
+        }
 
+        files.addLast(descriptor);
         metrics.getPreconsensusEventFileYoungestGeneration().set(descriptor.getMaximumGeneration());
 
         return descriptor;

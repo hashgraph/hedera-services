@@ -17,7 +17,10 @@
 package com.swirlds.common.formatting;
 
 import static com.swirlds.common.formatting.HorizontalAlignment.ALIGNED_RIGHT;
+import static com.swirlds.common.units.TimeUnit.UNIT_MILLISECONDS;
+import static com.swirlds.common.units.TimeUnit.UNIT_NANOSECONDS;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -204,14 +207,32 @@ public final class StringFormattingUtils {
     }
 
     /**
-     * Sanitize a timestamp to a string that is save to use in a file name. Replaces ":" with "+".
+     * Sanitize a timestamp to a string that is save to use in a file name. Replaces ":" with "+" and normalizes
+     * the number digits to millisecond precision (i.e. 3 decimal places).
      *
      * @param timestamp
      * 		the timestamp to sanitize
      * @return the sanitized timestamp
      */
-    public static String sanitizeTimestamp(final Instant timestamp) {
-        return timestamp.toString().replace(":", "+");
+    public static String sanitizeTimestamp(@NonNull final Instant timestamp) { // TODO test
+        final String timestampString = timestamp.toString();
+        try {
+            final String timestampStringWithoutDecimals = timestampString.substring(0, timestampString.indexOf('.'));
+
+            final long nanoseconds = timestamp.getNano();
+            final long milliseconds = Math.round(UNIT_NANOSECONDS.convertTo(nanoseconds, UNIT_MILLISECONDS));
+            // Sanity check, there should never be 1000 or more milliseconds
+            if (milliseconds >= 1000) {
+                throw new IllegalStateException("Unable to sanitize timestamp " + timestamp);
+            }
+            final String millsecondsString = ALIGNED_RIGHT.pad(Long.toString(milliseconds), '0', 3);
+
+            final String timeStampWithDecimals = timestampStringWithoutDecimals + "." + millsecondsString + "Z";
+            return timeStampWithDecimals.replace(":", "+");
+        } catch (final StringIndexOutOfBoundsException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     /**

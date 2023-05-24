@@ -20,6 +20,7 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static com.swirlds.common.units.DataUnit.UNIT_BYTES;
 import static com.swirlds.common.units.DataUnit.UNIT_KILOBYTES;
 import static com.swirlds.common.utility.CompareTo.isGreaterThan;
+import static com.swirlds.common.utility.CompareTo.isGreaterThanOrEqualTo;
 import static com.swirlds.platform.event.preconsensus.PreConsensusEventFileManager.NO_MINIMUM_GENERATION;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -222,7 +223,7 @@ class AsyncPreConsensusEventWriterTests {
         for (final PreConsensusEventFile file : files) {
             assertEquals(nextSequenceNumber, file.getSequenceNumber());
             nextSequenceNumber++;
-            assertTrue(isGreaterThan(file.getTimestamp(), previousTimestamp));
+            assertTrue(isGreaterThanOrEqualTo(file.getTimestamp(), previousTimestamp));
             previousTimestamp = file.getTimestamp();
             assertTrue(file.getMinimumGeneration() <= file.getMaximumGeneration());
             assertTrue(file.getMinimumGeneration() >= previousMinimum);
