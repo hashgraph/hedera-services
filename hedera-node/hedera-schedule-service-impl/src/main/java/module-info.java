@@ -11,7 +11,7 @@ module com.hedera.node.app.service.schedule.impl {
     requires com.hedera.hashgraph.protobuf.java.api;
     requires com.github.spotbugs.annotations;
     requires com.swirlds.jasperdb;
-	requires org.apache.logging.log4j;
+    requires org.apache.logging.log4j;
 
     exports com.hedera.node.app.service.schedule.impl to
             com.hedera.node.app.service.schedule.impl.test,
