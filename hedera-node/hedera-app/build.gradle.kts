@@ -29,6 +29,7 @@ dependencies {
     testImplementation(testFixtures(project(":hedera-node:node-config")))
     testImplementation(testFixtures(project(":hedera-node:node-app-service-mono")))
     testImplementation(testFixtures(project(":hedera-node:node-app-spi")))
+    testImplementation(project(":hedera-node:node-hapi"))
     testImplementation(gav("com.swirlds.base"))
     testImplementation(gav("com.swirlds.test.framework"))
     testImplementation(gav("io.github.classgraph"))
