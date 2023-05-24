@@ -35,8 +35,7 @@ class ConfigProviderImplTest {
     @Test
     void testNullConfig() {
         // then
-        assertThatThrownBy(() -> new ConfigProviderImpl(null))
-                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new ConfigProviderImpl(null)).isInstanceOf(NullPointerException.class);
     }
 
     @ParameterizedTest
@@ -93,6 +92,34 @@ class ConfigProviderImplTest {
     }
 
     @Test
+    void testDifferentApplicationPropertiesFile(final EnvironmentVariables environment) {
+        // given
+        environment.set(ConfigProviderImpl.APPLICATION_PROPERTIES_PATH_ENV, "for-test/application.properties.test");
+        final var configProvider = new ConfigProviderImpl(false);
+
+        // when
+        final var configuration = configProvider.getConfiguration();
+        final String bar = configuration.getValue("bar.test");
+
+        // then
+        assertThat(bar).isEqualTo("456Test");
+    }
+
+    @Test
+    void testDifferentGenesisPropertiesFile(final EnvironmentVariables environment) {
+        // given
+        environment.set(ConfigProviderImpl.GENESIS_PROPERTIES_PATH_ENV, "for-test/genesis.properties.test");
+        final var configProvider = new ConfigProviderImpl(true);
+
+        // when
+        final var configuration = configProvider.getConfiguration();
+        final String bar = configuration.getValue("bar.test");
+
+        // then
+        assertThat(bar).isEqualTo("genesisTest");
+    }
+
+    @Test
     void testApplicationPropertiesFileIsOptional(final EnvironmentVariables environment) {
         // given
         environment.set(ConfigProviderImpl.APPLICATION_PROPERTIES_PATH_ENV, "does-not-exist");
@@ -125,7 +152,7 @@ class ConfigProviderImplTest {
     void testUpdateDoesNotUseApplicationProperties() {
         // given
         final var configProvider = new ConfigProviderImpl(false);
-        final Bytes bytes = Bytes.wrap(new byte[]{});
+        final Bytes bytes = Bytes.wrap(new byte[] {});
 
         // when
         configProvider.update(bytes);
@@ -140,7 +167,7 @@ class ConfigProviderImplTest {
     void testUpdateDoesNotUseGenesisProperties() {
         // given
         final var configProvider = new ConfigProviderImpl(true);
-        final Bytes bytes = Bytes.wrap(new byte[]{});
+        final Bytes bytes = Bytes.wrap(new byte[] {});
 
         // when
         configProvider.update(bytes);
@@ -198,8 +225,7 @@ class ConfigProviderImplTest {
         final var configProvider = new ConfigProviderImpl(true);
 
         // then
-        assertThatThrownBy(() -> configProvider.update(null))
-                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> configProvider.update(null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -209,7 +235,6 @@ class ConfigProviderImplTest {
         final Bytes bytes = Bytes.wrap("\\uxxxx".getBytes(StandardCharsets.UTF_8));
 
         // then
-        assertThatThrownBy(() -> configProvider.update(bytes))
-                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> configProvider.update(bytes)).isInstanceOf(IllegalArgumentException.class);
     }
 }

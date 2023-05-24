@@ -94,7 +94,7 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public class ConfigProviderImpl implements ConfigProvider {
 
-    private final static Logger log = LogManager.getLogger(ConfigProviderImpl.class);
+    private static final Logger log = LogManager.getLogger(ConfigProviderImpl.class);
 
     /**
      * Name of an environment variable that can be used to override the default path to the genesis.properties file (see
@@ -150,14 +150,13 @@ public class ConfigProviderImpl implements ConfigProvider {
             addValidators(builder);
             addByteSource(builder, propertyFileContent);
             final Configuration config = builder.build();
-            configuration =
-                    new VersionedConfigImpl(config, this.configuration.getVersion() + 1);
+            configuration = new VersionedConfigImpl(config, this.configuration.getVersion() + 1);
         }
     }
 
     @NonNull
-    private ConfigurationBuilder addByteSource(@NonNull final ConfigurationBuilder builder,
-            @NonNull final Bytes propertyFileContent) {
+    private ConfigurationBuilder addByteSource(
+            @NonNull final ConfigurationBuilder builder, @NonNull final Bytes propertyFileContent) {
         Objects.requireNonNull(builder, "builder must not be null");
         Objects.requireNonNull(propertyFileContent, "propertyFileContent must not be null");
         try {
@@ -174,10 +173,9 @@ public class ConfigProviderImpl implements ConfigProvider {
         return builder;
     }
 
-
     @NonNull
-    private ConfigurationBuilder addFileSources(@NonNull final ConfigurationBuilder builder,
-            final boolean useGenesisSource) {
+    private ConfigurationBuilder addFileSources(
+            @NonNull final ConfigurationBuilder builder, final boolean useGenesisSource) {
         Objects.requireNonNull(builder, "builder must not be null");
 
         final BiConsumer<Path, Integer> addSource = (path, priority) -> {
