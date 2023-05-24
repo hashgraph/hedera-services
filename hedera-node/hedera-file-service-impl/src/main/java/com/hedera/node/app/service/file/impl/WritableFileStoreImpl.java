@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.file.impl;
 
 import static com.hedera.node.app.service.file.impl.FileServiceImpl.BLOBS_KEY;
-import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
@@ -32,11 +31,10 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * Provides write methods for modifying underlying data storage mechanisms for
- * working with Files.
+ * Provides write methods for modifying underlying data storage mechanisms for working with Files.
  *
- * <p>This class is not exported from the module. It is an internal implementation detail.
- * This class is not complete, it will be extended with other methods like remove, update etc.,
+ * <p>This class is not exported from the module. It is an internal implementation detail. This
+ * class is not complete, it will be extended with other methods like remove, update etc.,
  */
 public class WritableFileStoreImpl extends ReadableFileStoreImpl {
     /** The underlying data storage class that holds the file data. */
@@ -63,36 +61,38 @@ public class WritableFileStoreImpl extends ReadableFileStoreImpl {
     }
 
     /**
-     * Commits the changes to the underlying data storage.
-     * TODO: Not sure if the stores have responsibility of committing the changes. This might change in the future.
+     * Commits the changes to the underlying data storage. TODO: Not sure if the stores have
+     * responsibility of committing the changes. This might change in the future.
      */
     public void commit() {
         if (filesState instanceof WritableKVStateBase) ((WritableKVStateBase) filesState).commit();
     }
 
     /**
-     * Returns the {@link File} with the given number. If no such file exists, returns {@code Optional.empty()}
+     * Returns the {@link File} with the given number. If no such file exists, returns {@code
+     * Optional.empty()}
+     *
      * @param fileNum - the number of the file to be retrieved.
      */
     public @Nullable Optional<File> get(final long fileNum) {
-        requireNonNull(fileNum);
         final var file = filesState.get(EntityNum.fromLong(fileNum));
         return Optional.ofNullable(file);
     }
 
     /**
-     * Returns the {@link File} with the given number using {@link WritableKVState}.
-     * If no such file exists, returns {@code Optional.empty()}
+     * Returns the {@link File} with the given number using {@link WritableKVState}. If no such file
+     * exists, returns {@code Optional.empty()}
+     *
      * @param fileNum - the number of the file to be retrieved.
      */
     public @Nullable Optional<File> getForModify(final long fileNum) {
-        requireNonNull(fileNum);
         final var file = filesState.getForModify(EntityNum.fromLong(fileNum));
         return Optional.ofNullable(file);
     }
 
     /**
      * Returns the number of files in the state.
+     *
      * @return the number of files in the state.
      */
     public long sizeOfState() {
@@ -101,9 +101,19 @@ public class WritableFileStoreImpl extends ReadableFileStoreImpl {
 
     /**
      * Returns the set of files modified in existing state.
+     *
      * @return the set of files modified in existing state
      */
     public @NonNull Set<EntityNum> modifiedFiles() {
         return filesState.modifiedKeys();
+    }
+
+    /**
+     * remove the file from the state.
+     *
+     * @param fileNum - the number of the file to be removed from state.
+     */
+    public void removeFile(final long fileNum) {
+        filesState.remove(EntityNum.fromLong(fileNum));
     }
 }
