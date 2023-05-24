@@ -22,6 +22,8 @@ import com.hedera.node.app.annotations.NodeSelfId;
 import com.hedera.node.app.authorization.AuthorizerInjectionModule;
 import com.hedera.node.app.components.IngestInjectionComponent;
 import com.hedera.node.app.components.QueryInjectionComponent;
+import com.hedera.node.app.config.ConfigModule;
+import com.hedera.node.app.config.GenesisUsage;
 import com.hedera.node.app.fees.FeesInjectionModule;
 import com.hedera.node.app.info.InfoInjectionModule;
 import com.hedera.node.app.metrics.MetricsInjectionModule;
@@ -58,16 +60,17 @@ import javax.inject.Singleton;
 @Singleton
 @Component(
         modules = {
-            LegacyMonoInjectionModule.class,
-            ServicesInjectionModule.class,
-            WorkflowsInjectionModule.class,
-            HederaStateInjectionModule.class,
-            FeesInjectionModule.class,
-            MetricsInjectionModule.class,
-            AuthorizerInjectionModule.class,
-            InfoInjectionModule.class,
-            ThrottleInjectionModule.class,
-            SolvencyInjectionModule.class
+                LegacyMonoInjectionModule.class,
+                ServicesInjectionModule.class,
+                WorkflowsInjectionModule.class,
+                HederaStateInjectionModule.class,
+                FeesInjectionModule.class,
+                MetricsInjectionModule.class,
+                AuthorizerInjectionModule.class,
+                InfoInjectionModule.class,
+                ThrottleInjectionModule.class,
+                SolvencyInjectionModule.class,
+                ConfigModule.class
         })
 public interface HederaInjectionComponent extends ServicesApp {
     /* Needed by ServicesState */
@@ -109,6 +112,9 @@ public interface HederaInjectionComponent extends ServicesApp {
 
         @BindsInstance
         Builder maxSignedTxnSize(@MaxSignedTxnSize final int maxSignedTxnSize);
+
+        @BindsInstance
+        Builder genesisUsage(@GenesisUsage final boolean genesisUsage);
 
         HederaInjectionComponent build();
     }
