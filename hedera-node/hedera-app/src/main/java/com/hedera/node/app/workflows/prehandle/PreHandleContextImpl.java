@@ -130,10 +130,10 @@ public class PreHandleContextImpl implements PreHandleContext {
         return payer;
     }
 
-    @NonNull
     @Override
+    @NonNull
     public Configuration configuration() {
-        throw new UnsupportedOperationException("Not implemented yet");
+        return configuration;
     }
 
     @NonNull
@@ -359,12 +359,6 @@ public class PreHandleContextImpl implements PreHandleContext {
     @Nullable
     public PreHandleContext innerContext() {
         return innerContext;
-    }
-
-    @Override
-    @NonNull
-    public Configuration configuration() {
-        return configuration;
     }
 
     @Override

@@ -255,7 +255,7 @@ public class HandleContextImpl implements HandleContext {
             @NonNull final SingleTransactionRecordBuilder childRecordBuilder) {
         try {
             checker.checkTransactionBody(txBody);
-            dispatcher.dispatchValidate(txBody);
+            dispatcher.dispatchPureChecks(txBody);
         } catch (PreCheckException e) {
             recordBuilder.status(e.responseCode());
             return;

@@ -49,6 +49,7 @@ import com.hedera.node.config.ConfigProvider;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.HashMap;
@@ -125,8 +126,11 @@ public class HandleWorkflow {
         final var recordBuilder = new SingleTransactionRecordBuilder(consensusNow);
         final var recordListBuilder = new RecordListBuilder(recordBuilder);
 
+        // Setup configuration
+        var configuration = configProvider.getConfiguration();
+
         try {
-            final var verifications = getVerifications(state, platformEvent, platformTxn);
+            final var verifications = getVerifications(state, platformEvent, platformTxn, configuration);
 
             // Read all signature verifications. This will also wait, if validation is still ongoing.
             final var keyVerifications = new HashMap<Key, SignatureVerification>();
@@ -141,7 +145,7 @@ public class HandleWorkflow {
 
             // Setup context
             final var txBody = verifications.txBody();
-            final var stack = new SavepointStackImpl(state, configProvider.getConfiguration());
+            final var stack = new SavepointStackImpl(state, configuration);
             final var verifier = new HandleContextVerifier(keyVerifications);
             final var context = new HandleContextImpl(
                     txBody,
@@ -156,7 +160,8 @@ public class HandleWorkflow {
 
             // Dispatch the transaction to the handler
             dispatcher.dispatchHandle(context);
-            stack.configuration(configProvider.getConfiguration());
+            configuration = configProvider.getConfiguration();
+            stack.configuration(configuration);
 
             // TODO: Kick off special file handling if needed
 
@@ -202,7 +207,8 @@ public class HandleWorkflow {
     private VerificationResult getVerifications(
             @NonNull final HederaState state,
             @NonNull final ConsensusEvent platformEvent,
-            @NonNull final ConsensusTransaction platformTxn)
+            @NonNull final ConsensusTransaction platformTxn,
+            @NonNull final Configuration configuration)
             throws PreCheckException {
         final var metadata = platformTxn.getMetadata();
         // We do not know how long transactions are kept in memory. Clearing metadata to avoid keeping it for too long.
@@ -218,7 +224,7 @@ public class HandleWorkflow {
 
             // If pre-handle was successful, we need to add signatures that were not known at the time of pre-handle.
             if (previousResult.status() == Status.SO_FAR_SO_GOOD) {
-                return addMissingSignatures(state, previousResult);
+                return addMissingSignatures(state, previousResult, configuration);
             }
         }
 
@@ -255,12 +261,15 @@ public class HandleWorkflow {
      */
     @NonNull
     private VerificationResult addMissingSignatures(
-            @NonNull final HederaState state, @NonNull final PreHandleResult previousResult) throws PreCheckException {
+            @NonNull final HederaState state,
+            @NonNull final PreHandleResult previousResult,
+            @NonNull final Configuration configuration)
+            throws PreCheckException {
         final var txBody = previousResult.txInfo().txBody();
 
         // extract keys and hollow accounts again
         final var storeFactory = new ReadableStoreFactory(state);
-        final var context = new PreHandleContextImpl(storeFactory, txBody);
+        final var context = new PreHandleContextImpl(storeFactory, txBody, configuration);
         dispatcher.dispatchPreHandle(context);
 
         // sort keys

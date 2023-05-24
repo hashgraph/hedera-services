@@ -23,7 +23,6 @@ import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.notNull;
@@ -40,11 +39,10 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.handlers.FileSystemDeleteHandler;
-import com.hedera.node.app.service.file.impl.records.DeleteFileRecordBuilder;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
-import com.hedera.node.app.spi.meta.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -92,13 +90,8 @@ class FileSystemDeleteHandlerTest extends FileHandlerTestBase {
         given(writableStates.<EntityNum, File>get(FILES)).willReturn(writableFileState);
         writableStore = new WritableFileStoreImpl(writableStates);
         configuration = new HederaTestConfigBuilder().getOrCreateConfig();
-        lenient().when(preHandleContext.getConfiguration()).thenReturn(configuration);
-        lenient().when(handleContext.getConfiguration()).thenReturn(configuration);
-    }
-
-    @Test
-    void returnsExpectedRecordBuilderType() {
-        assertInstanceOf(DeleteFileRecordBuilder.class, subject.newRecordBuilder());
+        lenient().when(preHandleContext.configuration()).thenReturn(configuration);
+        lenient().when(handleContext.configuration()).thenReturn(configuration);
     }
 
     @Test
@@ -132,26 +125,28 @@ class FileSystemDeleteHandlerTest extends FileHandlerTestBase {
     @Test
     @DisplayName("Fails handle if file doesn't exist")
     void fileDoesntExist() {
-        final var txn = newSystemDeleteTxn().systemDeleteOrThrow();
+        given(handleContext.body()).willReturn(newSystemDeleteTxn());
 
         writableFileState = emptyWritableFileState();
         given(writableStates.<EntityNum, File>get(FILES)).willReturn(writableFileState);
         writableStore = new WritableFileStoreImpl(writableStates);
+        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
 
-        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext, txn, writableStore));
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(INVALID_FILE_ID, msg.getStatus());
     }
 
     @Test
     @DisplayName("Fails handle if the file is not a system file")
     void fileIsNotSystemFile() {
-        final var txn = newFileDeleteTxn().systemDeleteOrThrow();
+        given(handleContext.body()).willReturn(newFileDeleteTxn());
 
         final var existingFile = writableStore.get(fileEntityNum.longValue());
         assertTrue(existingFile.isPresent());
         assertFalse(existingFile.get().deleted());
+        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
 
-        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext, txn, writableStore));
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(INVALID_FILE_ID, msg.getStatus());
         assertFalse(existingFile.get().deleted());
     }
@@ -159,14 +154,15 @@ class FileSystemDeleteHandlerTest extends FileHandlerTestBase {
     @Test
     @DisplayName("Fails handle if keys doesn't exist on file system to be deleted")
     void keysDoesntExist() {
-        final var txn = newSystemDeleteTxn().systemDeleteOrThrow();
+        given(handleContext.body()).willReturn(newSystemDeleteTxn());
         fileSystem = new File(fileSystemfileId.fileNum(), expirationTime, null, Bytes.wrap(contents), memo, false);
 
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<EntityNum, File>get(FILES)).willReturn(writableFileState);
         writableStore = new WritableFileStoreImpl(writableStates);
+        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
 
-        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext, txn, writableStore));
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
 
         assertEquals(UNAUTHORIZED, msg.getStatus());
     }
@@ -174,15 +170,16 @@ class FileSystemDeleteHandlerTest extends FileHandlerTestBase {
     @Test
     @DisplayName("Handle works as expected and file system deleted when time is expired(less than epoch second)")
     void handleWorksAsExpectedWhenExpirationTimeIsExpired() {
-        final var txn = newSystemDeleteTxn().systemDeleteOrThrow();
+        given(handleContext.body()).willReturn(newSystemDeleteTxn());
 
         final var existingFile = writableStore.get(fileSystemEntityNum.longValue());
         assertTrue(existingFile.isPresent());
         assertFalse(existingFile.get().deleted());
+        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
 
         lenient().when(handleContext.consensusNow()).thenReturn(instant);
         lenient().when(instant.getEpochSecond()).thenReturn(existingFile.get().expirationTime() + 100);
-        subject.handle(handleContext, txn, writableStore);
+        subject.handle(handleContext);
 
         final var changedFile = writableStore.get(fileSystemEntityNum.longValue());
 
@@ -192,15 +189,16 @@ class FileSystemDeleteHandlerTest extends FileHandlerTestBase {
     @Test
     @DisplayName("Handle works as expected and the system file marked as deleted")
     void handleWorksAsExpectedWhenExpirationTimeIsNotExpired() {
-        final var txn = newSystemDeleteTxn().systemDeleteOrThrow();
+        given(handleContext.body()).willReturn(newSystemDeleteTxn());
 
         final var existingFile = writableStore.get(fileSystemEntityNum.longValue());
         assertTrue(existingFile.isPresent());
         assertFalse(existingFile.get().deleted());
+        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
 
         lenient().when(handleContext.consensusNow()).thenReturn(instant);
         lenient().when(instant.getEpochSecond()).thenReturn(existingFile.get().expirationTime() - 100);
-        subject.handle(handleContext, txn, writableStore);
+        subject.handle(handleContext);
 
         final var changedFile = writableStore.get(fileSystemEntityNum.longValue());
 

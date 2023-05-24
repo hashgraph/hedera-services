@@ -36,8 +36,8 @@ class HandleContextVerifierTest {
             new SignatureVerificationImpl(ALICE.keyInfo().publicKey(), null, true);
     private static final SignatureVerificationImpl BOB_VERIFICATION =
             new SignatureVerificationImpl(BOB.keyInfo().publicKey(), null, false);
-    private static final SignatureVerificationImpl ERIN_VERIFICATION =
-            new SignatureVerificationImpl(ERIN.keyInfo().publicKey(), ERIN.account().alias(), false);
+    private static final SignatureVerificationImpl ERIN_VERIFICATION = new SignatureVerificationImpl(
+            ERIN.keyInfo().publicKey(), ERIN.account().alias(), false);
 
     private static final Map<Key, SignatureVerification> VERIFICATIONS = Map.of(
             ALICE.keyInfo().publicKey(), ALICE_VERIFICATION,
