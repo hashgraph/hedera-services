@@ -46,6 +46,10 @@ class SerializableSemVersTest {
         final var expected = new SerializableSemVers(proto, services);
         final var actual = SerializableSemVers.forHapiAndHedera("1.2.3", "3.2.1-pre+build");
         assertEqualVersions(expected, actual);
+        assertEquals(Integer.MAX_VALUE, expected.getProtoPreAlphaNumber());
+        assertEquals(Integer.MAX_VALUE, expected.getServicesPreAlphaNumber());
+        assertEquals("", expected.getProtoBuild());
+        assertEquals("build", expected.getServicesBuild());
     }
 
     @Test

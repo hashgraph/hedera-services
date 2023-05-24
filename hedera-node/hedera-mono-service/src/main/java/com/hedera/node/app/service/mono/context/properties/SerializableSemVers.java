@@ -68,10 +68,9 @@ public class SerializableSemVers implements SoftwareVersion {
     public SerializableSemVers(@NonNull final SemanticVersion proto, @NonNull final SemanticVersion services) {
         this.proto = proto;
         this.services = services;
-        this.servicesPreAlphaNumber = alphaNumberOf(services.getPre());
-        this.protoPreAlphaNumber = alphaNumberOf(proto.getPre());
-        this.protoBuild = proto.getBuild();
-        this.servicesBuild = services.getBuild();
+
+        setServicesPreAlphaNumberAndBuild();
+        setProtoPreAlphaNumberAndBuild();
     }
 
     public static SerializableSemVers forHapiAndHedera(@NonNull final String proto, @NonNull final String services) {
@@ -175,6 +174,9 @@ public class SerializableSemVers implements SoftwareVersion {
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         proto = deserializeSemVer(in);
         services = deserializeSemVer(in);
+
+        setServicesPreAlphaNumberAndBuild();
+        setProtoPreAlphaNumberAndBuild();
     }
 
     @Override
@@ -241,8 +243,17 @@ public class SerializableSemVers implements SoftwareVersion {
     private int alphaNumberOf(@NonNull final String pre) {
         final var alphaMatch = ALPHA_PRE_PATTERN.matcher(pre);
         // alpha versions come before everything else
-        servicesPreAlphaNumber = alphaMatch.matches() ? Integer.parseInt(alphaMatch.group(1)) : Integer.MAX_VALUE;
-        return servicesPreAlphaNumber;
+        return alphaMatch.matches() ? Integer.parseInt(alphaMatch.group(1)) : Integer.MAX_VALUE;
+    }
+
+    private void setServicesPreAlphaNumberAndBuild() {
+        servicesPreAlphaNumber = alphaNumberOf(services.getPre());
+        servicesBuild = services.getBuild();
+    }
+
+    private void setProtoPreAlphaNumberAndBuild() {
+        protoPreAlphaNumber = alphaNumberOf(proto.getPre());
+        protoBuild = proto.getBuild();
     }
 
     public SemanticVersion getProto() {
