@@ -95,10 +95,10 @@ class ThrottleGaugesTest {
         givenThrottleCollabs();
         given(hapiThrottling.gasLimitThrottle()).willReturn(hapiGasThrottle);
         given(handleThrottling.gasLimitThrottle()).willReturn(consGasThrottle);
-        given(aThrottle.percentUsed(any())).willReturn(10.0);
-        given(bThrottle.percentUsed(any())).willReturn(50.0);
-        given(consGasThrottle.percentUsed(any())).willReturn(33.0);
-        given(hapiGasThrottle.percentUsed(any())).willReturn(13.0);
+        given(aThrottle.instantaneousPercentUsed()).willReturn(10.0);
+        given(bThrottle.instantaneousPercentUsed()).willReturn(50.0);
+        given(consGasThrottle.instantaneousPercentUsed()).willReturn(33.0);
+        given(hapiGasThrottle.instantaneousPercentUsed()).willReturn(13.0);
         final var platformContext = mock(PlatformContext.class);
         given(platform.getContext()).willReturn(platformContext);
         given(platformContext.getMetrics()).willReturn(metrics);
@@ -107,18 +107,18 @@ class ThrottleGaugesTest {
         subject.registerWith(platform);
         subject.updateAll();
 
-        verify(aThrottle, times(2)).percentUsed(any());
-        verify(bThrottle, times(1)).percentUsed(any());
-        verify(consGasThrottle).percentUsed(any());
-        verify(hapiGasThrottle).percentUsed(any());
+        verify(aThrottle, times(2)).instantaneousPercentUsed();
+        verify(bThrottle, times(1)).instantaneousPercentUsed();
+        verify(consGasThrottle).instantaneousPercentUsed();
+        verify(hapiGasThrottle).instantaneousPercentUsed();
     }
 
     @Test
     void updatesAsExpectedWithNoGasThrottles() {
         givenThrottleMocksWithoutGas();
         givenThrottleCollabs();
-        given(aThrottle.percentUsed(any())).willReturn(10.0);
-        given(bThrottle.percentUsed(any())).willReturn(50.0);
+        given(aThrottle.instantaneousPercentUsed()).willReturn(10.0);
+        given(bThrottle.instantaneousPercentUsed()).willReturn(50.0);
         final var platformContext = mock(PlatformContext.class);
         given(platform.getContext()).willReturn(platformContext);
         given(platformContext.getMetrics()).willReturn(metrics);
@@ -127,8 +127,8 @@ class ThrottleGaugesTest {
         subject.registerWith(platform);
         subject.updateAll();
 
-        verify(aThrottle, times(2)).percentUsed(any());
-        verify(bThrottle, times(1)).percentUsed(any());
+        verify(aThrottle, times(2)).instantaneousPercentUsed();
+        verify(bThrottle, times(1)).instantaneousPercentUsed();
     }
 
     @Test

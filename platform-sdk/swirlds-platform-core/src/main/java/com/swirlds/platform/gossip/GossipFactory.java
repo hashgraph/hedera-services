@@ -66,31 +66,32 @@ public final class GossipFactory {
     /**
      * Builds the gossip engine, depending on which flavor is requested in the configuration.
      *
-     * @param platformContext           the platform context
-     * @param threadManager             the thread manager
-     * @param time                      the wall clock time
-     * @param crypto                    can be used to sign things
-     * @param notificationEngine        used to send notifications to the app
-     * @param addressBook               the current address book
-     * @param selfId                    this node's ID
-     * @param appVersion                the version of the app
-     * @param shadowGraph               contains non-ancient events
-     * @param emergencyRecoveryManager  handles emergency recovery
-     * @param consensusRef              a pointer to consensus
-     * @param intakeQueue               the event intake queue
-     * @param freezeManager             handles freezes
-     * @param startUpEventFrozenManager prevents event creation during startup
-     * @param swirldStateManager        manages the mutable state
-     * @param startedFromGenesis        true if this node started from a genesis state
-     * @param stateManagementComponent  manages the lifecycle of the state
-     * @param eventIntakeLambda         a method that is called when something needs to be added to the event intake
-     *                                  queue
-     * @param eventObserverDispatcher   the object used to wire event intake
-     * @param eventMapper               a data structure used to track the most recent event from each node
-     * @param eventIntakeMetrics        metrics for event intake
-     * @param eventLinker               links together events, if chatter is enabled will also buffer orphans
-     * @param updatePlatformStatus      a method that updates the platform status, when called
-     * @param loadReconnectState        a method that should be called when a state from reconnect is obtained
+     * @param platformContext               the platform context
+     * @param threadManager                 the thread manager
+     * @param time                          the wall clock time
+     * @param crypto                        can be used to sign things
+     * @param notificationEngine            used to send notifications to the app
+     * @param addressBook                   the current address book
+     * @param selfId                        this node's ID
+     * @param appVersion                    the version of the app
+     * @param shadowGraph                   contains non-ancient events
+     * @param emergencyRecoveryManager      handles emergency recovery
+     * @param consensusRef                  a pointer to consensus
+     * @param intakeQueue                   the event intake queue
+     * @param freezeManager                 handles freezes
+     * @param startUpEventFrozenManager     prevents event creation during startup
+     * @param swirldStateManager            manages the mutable state
+     * @param startedFromGenesis            true if this node started from a genesis state
+     * @param stateManagementComponent      manages the lifecycle of the state
+     * @param eventIntakeLambda             a method that is called when something needs to be added to the event intake
+     *                                      queue
+     * @param eventObserverDispatcher       the object used to wire event intake
+     * @param eventMapper                   a data structure used to track the most recent event from each node
+     * @param eventIntakeMetrics            metrics for event intake
+     * @param eventLinker                   links together events, if chatter is enabled will also buffer orphans
+     * @param updatePlatformStatus          a method that updates the platform status, when called
+     * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
+     * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
      * @return the gossip engine
      */
     public static Gossip buildGossip(
@@ -117,7 +118,8 @@ public final class GossipFactory {
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
             @NonNull final EventLinker eventLinker,
             @NonNull final Runnable updatePlatformStatus,
-            @NonNull final Consumer<SignedState> loadReconnectState) {
+            @NonNull final Consumer<SignedState> loadReconnectState,
+            @NonNull final Runnable clearAllPipelinesForReconnect) {
 
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(threadManager);
@@ -142,6 +144,7 @@ public final class GossipFactory {
         Objects.requireNonNull(eventLinker);
         Objects.requireNonNull(updatePlatformStatus);
         Objects.requireNonNull(loadReconnectState);
+        Objects.requireNonNull(clearAllPipelinesForReconnect);
 
         final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
@@ -172,7 +175,8 @@ public final class GossipFactory {
                     eventIntakeMetrics,
                     eventLinker,
                     updatePlatformStatus,
-                    loadReconnectState);
+                    loadReconnectState,
+                    clearAllPipelinesForReconnect);
         } else if (syncConfig.syncAsProtocolEnabled()) {
             if (addressBook.getSize() == 1) {
                 logger.info(STARTUP.getMarker(), "Using SingleNodeSyncGossip");
@@ -194,7 +198,8 @@ public final class GossipFactory {
                         eventMapper,
                         eventIntakeMetrics,
                         updatePlatformStatus,
-                        loadReconnectState);
+                        loadReconnectState,
+                        clearAllPipelinesForReconnect);
             } else {
                 logger.info(STARTUP.getMarker(), "Using SyncGossip");
                 return new SyncGossip(
@@ -219,7 +224,8 @@ public final class GossipFactory {
                         eventMapper,
                         eventIntakeMetrics,
                         updatePlatformStatus,
-                        loadReconnectState);
+                        loadReconnectState,
+                        clearAllPipelinesForReconnect);
             }
         } else {
             logger.info(STARTUP.getMarker(), "Using LegacySyncGossip");
@@ -242,7 +248,8 @@ public final class GossipFactory {
                     eventMapper,
                     eventIntakeMetrics,
                     updatePlatformStatus,
-                    loadReconnectState);
+                    loadReconnectState,
+                    clearAllPipelinesForReconnect);
         }
     }
 }

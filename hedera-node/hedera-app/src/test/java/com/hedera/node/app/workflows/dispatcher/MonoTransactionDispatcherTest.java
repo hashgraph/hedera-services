@@ -160,6 +160,7 @@ import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -357,6 +358,9 @@ class MonoTransactionDispatcherTest {
     @Mock
     private Account account;
 
+    @Mock
+    Configuration configuration;
+
     private SideEffectsTracker sideEffectsTracker = new SideEffectsTracker();
 
     private TransactionHandlers handlers;
@@ -449,13 +453,15 @@ class MonoTransactionDispatcherTest {
                 readableStoreFactory,
                 TransactionBody.newBuilder()
                         .systemDelete(SystemDeleteTransactionBody.newBuilder().build())
-                        .build());
+                        .build(),
+                configuration);
         final var invalidSystemUndelete = new PreHandleContextImpl(
                 readableStoreFactory,
                 TransactionBody.newBuilder()
                         .systemUndelete(
                                 SystemUndeleteTransactionBody.newBuilder().build())
-                        .build());
+                        .build(),
+                configuration);
 
         // then
         assertThatThrownBy(() -> dispatcher.dispatchPreHandle(null)).isInstanceOf(NullPointerException.class);
@@ -472,7 +478,7 @@ class MonoTransactionDispatcherTest {
     void testDataNotSetFails() throws PreCheckException {
         // given
         final var txBody = TransactionBody.newBuilder().build();
-        final var context = new PreHandleContextImpl(readableStoreFactory, txBody);
+        final var context = new PreHandleContextImpl(readableStoreFactory, txBody, configuration);
 
         // then
         assertThatThrownBy(() -> dispatcher.dispatchPreHandle(context))
@@ -486,7 +492,7 @@ class MonoTransactionDispatcherTest {
         final var txBody = TransactionBody.newBuilder()
                 .nodeStakeUpdate(NodeStakeUpdateTransactionBody.newBuilder())
                 .build();
-        final var context = new PreHandleContextImpl(readableStoreFactory, txBody);
+        final var context = new PreHandleContextImpl(readableStoreFactory, txBody, configuration);
 
         // then
         assertThatThrownBy(() -> dispatcher.dispatchPreHandle(context))
@@ -694,7 +700,7 @@ class MonoTransactionDispatcherTest {
             final TransactionBody txBody, final Function<TransactionHandlers, TransactionHandler> handlerProvider)
             throws PreCheckException {
         // given
-        final var context = new PreHandleContextImpl(readableStoreFactory, txBody);
+        final var context = new PreHandleContextImpl(readableStoreFactory, txBody, configuration);
         final var handler = handlerProvider.apply(handlers);
 
         // when
