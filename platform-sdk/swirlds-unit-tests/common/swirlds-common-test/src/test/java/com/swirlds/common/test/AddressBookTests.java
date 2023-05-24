@@ -455,10 +455,15 @@ class AddressBookTests {
     void roundTripSerializeAndDeserializeCompatibleWithConfigTxt() throws ParseException {
         final RandomAddressBookGenerator generator = new RandomAddressBookGenerator(getRandomPrintSeed());
         final AddressBook addressBook = generator.build();
+        final Iterator<Address> iterator = addressBook.iterator();
+
         // make one of the memo fields an empty string
-        Iterator<Address> iterator = addressBook.iterator();
         addressBook.add(iterator.next().copySetMemo(""));
-        addressBook.add(iterator.next().copySetMemo("has a memo"));
+
+        // make another memo field a custom string for easy verification later
+        final String customMemo = "my.custom.memo";
+        addressBook.add(iterator.next().copySetMemo(customMemo));
+
         final String addressBookText = addressBook.toConfigText();
         final Map<Long, Long> posToId = new HashMap<>();
         long pos = 0;
@@ -470,9 +475,12 @@ class AddressBookTests {
                 parseAddressBookConfigText(addressBookText, posToId::get, ip -> false, id -> "");
         // Equality done on toConfigText() strings since the randomly generated address book has public key data.
         assertEquals(addressBookText, parsedAddressBook.toConfigText(), "The AddressBooks are not equal.");
-        Iterator<Address> parsedIterator = parsedAddressBook.iterator();
+        final Iterator<Address> parsedIterator = parsedAddressBook.iterator();
+
+        // Verify the empty memo
         assertTrue(parsedIterator.next().getMemo().isEmpty(), "a memo appeared where no memo was expected.");
-        assertEquals("has a memo", parsedIterator.next().getMemo(), "memo did not survive round trip");
+        // Verify the custom memo
+        assertEquals(customMemo, parsedIterator.next().getMemo(), "memo did not survive round trip");
     }
 
     @Test
@@ -489,6 +497,9 @@ class AddressBookTests {
 
         // Too many parts
         validateParseException("address, nickname, selfname, 10, 192.168.0.1, 5000, 8.8.8.8, 5000, memo, extra", 10);
+        validateParseException("address, nickname, selfname, 10, 192.168.0.1, 5000, 8.8.8.8, 5000, memo.with,comma,", 10);
+        validateParseException("address, nickname, selfname, 10, 192.168.0.1, 5000, 8.8.8.8, 5000, 'memo.with,comma',", 10);
+        validateParseException("address, nickname, selfname, 10, 192.168.0.1, 5000, 8.8.8.8, 5000, \"memo.with,comma\",", 10);
 
         // bad parsing of parts.
         validateParseException("not an address, nickname, selfname, 10, 192.168.0.1, 5000, 8.8.8.8, 5000", 0);
