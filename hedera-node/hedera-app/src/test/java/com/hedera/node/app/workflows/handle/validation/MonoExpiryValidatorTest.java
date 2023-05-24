@@ -32,18 +32,24 @@ import static org.mockito.BDDMockito.willThrow;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.store.AccountStore;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.spi.validation.AttributeValidator;
+import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.VersionedConfiguration;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.util.function.LongSupplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mock.Strictness;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -54,6 +60,7 @@ class MonoExpiryValidatorTest {
     private static final long aPeriod = 666_666L;
     private static final long bPeriod = 777_777L;
     private static final long anAutoRenewNum = 888;
+    private static final long DEFAULT_CONFIG_VERSION = 1;
 
     @Mock
     private AttributeValidator attributeValidator;
@@ -70,11 +77,20 @@ class MonoExpiryValidatorTest {
     @Mock
     private Account account;
 
+    @Mock(strictness = Strictness.LENIENT)
+    private ConfigProvider configProvider;
+
+    private VersionedConfiguration configuration;
+
     private MonoExpiryValidator subject;
 
     @BeforeEach
     void setUp() {
-        subject = new MonoExpiryValidator(accountStore, attributeValidator, consensusSecondNow, numbers);
+        subject =
+                new MonoExpiryValidator(accountStore, attributeValidator, consensusSecondNow, numbers, configProvider);
+        configuration =
+                new VersionedConfigImpl(new HederaTestConfigBuilder().getOrCreateConfig(), DEFAULT_CONFIG_VERSION);
+        given(configProvider.getConfiguration()).willReturn(configuration);
     }
 
     @Test
@@ -290,36 +306,29 @@ class MonoExpiryValidatorTest {
 
     @Test
     void checksIfAccountIsDetachedIfBalanceZero() {
-        given(account.tinybarBalance()).willReturn(0L);
-
-        assertEquals(OK, subject.expirationStatus(account, true, true, true));
-        assertFalse(subject.isDetached(account, true, true, true));
+        assertEquals(OK, subject.expirationStatus(EntityType.ACCOUNT, false, 0));
+        assertFalse(subject.isDetached(EntityType.ACCOUNT, false, 0));
     }
 
     @Test
     void failsIfAccountExpiredAndPendingRemoval() {
-        given(account.expiredAndPendingRemoval()).willReturn(true);
+        assertEquals(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL, subject.expirationStatus(EntityType.ACCOUNT, true, 0L));
+        assertTrue(subject.isDetached(EntityType.ACCOUNT, true, 0));
 
-        assertEquals(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL, subject.expirationStatus(account, true, true, true));
-        assertTrue(subject.isDetached(account, true, true, true));
-
-        given(account.smartContract()).willReturn(true);
-        assertEquals(CONTRACT_EXPIRED_AND_PENDING_REMOVAL, subject.expirationStatus(account, true, true, true));
-        assertTrue(subject.isDetached(account, true, true, true));
+        assertEquals(CONTRACT_EXPIRED_AND_PENDING_REMOVAL, subject.expirationStatus(EntityType.CONTRACT, true, 0L));
+        assertTrue(subject.isDetached(EntityType.CONTRACT, true, 0));
     }
 
     @Test
     void notDetachedIfAccountNotExpired() {
-        given(account.expiredAndPendingRemoval()).willReturn(false);
-
-        assertEquals(OK, subject.expirationStatus(account, true, true, true));
-        assertFalse(subject.isDetached(account, true, true, true));
+        assertEquals(OK, subject.expirationStatus(EntityType.ACCOUNT, true, 0L));
+        assertFalse(subject.isDetached(EntityType.ACCOUNT, true, 10));
     }
 
     @Test
     void notDetachedIfAutoRenewDisabled() {
-        assertEquals(OK, subject.expirationStatus(account, false, false, false));
-        assertFalse(subject.isDetached(account, false, false, false));
+        assertEquals(OK, subject.expirationStatus(EntityType.ACCOUNT, false, 0L));
+        assertFalse(subject.isDetached(EntityType.ACCOUNT, false, 0));
     }
 
     private static void assertFailsWith(final ResponseCodeEnum expected, final Runnable runnable) {
