@@ -14,5 +14,7 @@
 # limitations under the License.
 #
 #
+# This file is needed for unit tests of the configuration and should not be deleted!
+
 foo.test=123Test
 bar.test=456Test
