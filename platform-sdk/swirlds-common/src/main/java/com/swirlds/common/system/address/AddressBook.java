@@ -218,8 +218,8 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
     }
 
     /**
-     * Get the total weight of all members added together, where each member has nonnegative weight. This is zero if there
-     * are no members.
+     * Get the total weight of all members added together, where each member has nonnegative weight. This is zero if
+     * there are no members.
      *
      * @return the total weight
      */
@@ -348,11 +348,11 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
 
     /**
      * Updates the weight on the address with the given ID. If the address does not exist, a NoSuchElementException is
-     * thrown. If the weight value is negative, an IllegalArgumentException is thrown.  If the address book is immutable,
-     * a MutabilityException is thrown. This method does not validate the address book after updating the address.  When
-     * the user is finished with making incremental changes, the final address book should be validated.
+     * thrown. If the weight value is negative, an IllegalArgumentException is thrown.  If the address book is
+     * immutable, a MutabilityException is thrown. This method does not validate the address book after updating the
+     * address.  When the user is finished with making incremental changes, the final address book should be validated.
      *
-     * @param id    the ID of the address to update.
+     * @param id     the ID of the address to update.
      * @param weight the new weight value.  The weight must be nonnegative.
      * @throws NoSuchElementException   if the address does not exist.
      * @throws IllegalArgumentException if the weight is negative.
@@ -560,15 +560,20 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
     public String toConfigText() {
         final TextTable table = new TextTable().setBordersEnabled(false);
         for (final Address address : this) {
+            final String memo = address.getMemo();
+            final boolean hasMemo = !memo.trim().isEmpty();
+            final boolean hasInternalIpv4 = address.getAddressInternalIpv4() != null;
+            final boolean hasExternalIpv4 = address.getAddressExternalIpv4() != null;
             table.addRow(
                     "address,",
                     address.getNickname() + ",",
                     address.getSelfName() + ",",
                     address.getWeight() + ",",
-                    ipString(address.getAddressInternalIpv4()) + ",",
+                    (hasInternalIpv4 ? ipString(address.getAddressInternalIpv4()) : "") + ",",
                     address.getPortInternalIpv4() + ",",
-                    ipString(address.getAddressExternalIpv4()) + ",",
-                    address.getPortExternalIpv4());
+                    (hasExternalIpv4 ? ipString(address.getAddressExternalIpv4()) : "") + ",",
+                    address.getPortExternalIpv4() + (hasMemo ? "," : ""),
+                    memo);
         }
         return table.render();
     }

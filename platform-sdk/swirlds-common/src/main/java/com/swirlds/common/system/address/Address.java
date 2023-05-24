@@ -671,6 +671,20 @@ public class Address implements SelfSerializable {
     }
 
     /**
+     * Create a new Address object based this one with different memo.
+     *
+     * @param memo New memo for the created Address.
+     * @return The new Address.
+     */
+    @NonNull
+    public Address copySetMemo(@NonNull final String memo) {
+        Objects.requireNonNull(memo, "memo must not be null");
+        final Address a = copy();
+        a.memo = memo;
+        return a;
+    }
+
+    /**
      * Create a new Address object based on this one.
      *
      * @return A duplication of current Address object.
