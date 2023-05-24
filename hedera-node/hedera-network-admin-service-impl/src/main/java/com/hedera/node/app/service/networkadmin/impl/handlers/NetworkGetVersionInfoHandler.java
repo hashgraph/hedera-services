@@ -27,6 +27,7 @@ import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.config.data.LedgerConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -46,6 +47,7 @@ public class NetworkGetVersionInfoHandler extends PaidQueryHandler {
     public QueryHeader extractHeader(@NonNull final Query query) {
         requireNonNull(query);
         return query.networkGetVersionInfoOrThrow().header();
+
     }
 
     @Override
@@ -58,6 +60,8 @@ public class NetworkGetVersionInfoHandler extends PaidQueryHandler {
     @Override
     public void validate(@NonNull final QueryContext context) throws PreCheckException {
         requireNonNull(context);
+        LedgerConfig ledgerConfig = context.getConfiguration().getConfigData(LedgerConfig.class);
+        ledgerConfig.getVersionInfo();
         throw new UnsupportedOperationException("Not implemented");
     }
 
