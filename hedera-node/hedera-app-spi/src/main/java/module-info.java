@@ -2,6 +2,7 @@ module com.hedera.node.app.spi {
     requires transitive com.hedera.node.hapi;
     requires transitive com.hedera.pbj.runtime;
     requires transitive com.swirlds.common;
+	requires com.google.protobuf;
     requires transitive com.swirlds.config;
     requires com.github.spotbugs.annotations;
 
