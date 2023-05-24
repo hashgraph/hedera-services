@@ -726,12 +726,10 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
             @Override
             @SuppressWarnings("unchecked")
             public AccountStorageAdapter accounts() {
-                return AccountStorageAdapter.fromOnDisk(
-                        mapLikePayerRecords(),
-                        VirtualMapLikeAdapter.unwrapping(
-                                (StateMetadata<EntityNumVirtualKey, OnDiskAccount>)
-                                        services.get(TokenService.NAME).get("ACCOUNTS"),
-                                getChild(findNodeIndex(TokenService.NAME, "ACCOUNTS"))));
+                return AccountStorageAdapter.fromOnDisk(VirtualMapLikeAdapter.unwrapping(
+                        (StateMetadata<EntityNumVirtualKey, OnDiskAccount>)
+                                services.get(TokenService.NAME).get("ACCOUNTS"),
+                        getChild(findNodeIndex(TokenService.NAME, "ACCOUNTS"))));
             }
 
             @SuppressWarnings("unchecked")

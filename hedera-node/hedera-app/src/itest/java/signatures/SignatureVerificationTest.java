@@ -69,6 +69,8 @@ import org.junit.jupiter.params.provider.MethodSource;
  */
 class SignatureVerificationTest implements Scenarios {
 
+    private static final long DEFAULT_CONFIG_VERSION = 1L;
+
     @Test
     @DisplayName("Verify Hollow Account")
     void verifyHollowAccount() {
@@ -88,7 +90,14 @@ class SignatureVerificationTest implements Scenarios {
 
         // Finally, assert that the verification results are as expected
         final var result = new PreHandleResult(
-                AccountID.DEFAULT, testCase.keyToVerify, SO_FAR_SO_GOOD, OK, null, verificationResults, null);
+                AccountID.DEFAULT,
+                testCase.keyToVerify,
+                SO_FAR_SO_GOOD,
+                OK,
+                null,
+                verificationResults,
+                null,
+                DEFAULT_CONFIG_VERSION);
         assertThat(result.verificationFor(ERIN.account().alias()))
                 .isNotNull()
                 .succeedsWithin(1, TimeUnit.MINUTES)
@@ -117,7 +126,14 @@ class SignatureVerificationTest implements Scenarios {
 
         // Finally, assert that the verification results are as expected
         final var result = new PreHandleResult(
-                AccountID.DEFAULT, keyToVerify, SO_FAR_SO_GOOD, OK, null, verificationResults, null);
+                AccountID.DEFAULT,
+                keyToVerify,
+                SO_FAR_SO_GOOD,
+                OK,
+                null,
+                verificationResults,
+                null,
+                DEFAULT_CONFIG_VERSION);
         assertThat(result.verificationFor(keyToVerify))
                 .isNotNull()
                 .succeedsWithin(1, TimeUnit.MINUTES)

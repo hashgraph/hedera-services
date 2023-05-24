@@ -16,29 +16,64 @@
 
 package com.hedera.node.app.service.file.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_CONTENT_EMPTY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_DELETED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
+import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.preValidate;
+import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateAndAddRequiredKeys;
+import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateContent;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.file.FileAppendTransactionBody;
+import com.hedera.hapi.node.state.file.File;
+import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
+import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
+import com.hedera.node.app.service.file.impl.records.UpdateFileRecordBuilder;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
+import com.hedera.node.app.spi.meta.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.config.data.FilesConfig;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#FILE_APPEND}.
  */
 @Singleton
 public class FileAppendHandler implements TransactionHandler {
+    private static final Logger logger = LogManager.getLogger(FileAppendHandler.class);
+
     @Inject
     public FileAppendHandler() {
         // Exists for injection
     }
 
+    /**
+     * This method is called during the pre-handle workflow.
+     *
+     * <p>Determines signatures needed for append a file
+     *
+     * @param context the {@link PreHandleContext} which collects all information
+     * @throws PreCheckException if any issue happens on the pre handle level
+     */
     @Override
-    public void preHandle(@NonNull final PreHandleContext context) {
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
-        throw new UnsupportedOperationException("Not implemented");
+
+        final var transactionBody = context.body().fileAppendOrThrow();
+        final var fileStore = context.createStore(ReadableFileStoreImpl.class);
+        final var fileMeta = preValidate(transactionBody.fileID(), fileStore);
+
+        validateAndAddRequiredKeys(fileMeta.keys(), context, true);
     }
 
     /**
@@ -49,7 +84,61 @@ public class FileAppendHandler implements TransactionHandler {
      *
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void handle() {
-        throw new UnsupportedOperationException("Not implemented");
+    public void handle(
+            @NonNull final FileAppendTransactionBody op,
+            @NonNull final WritableFileStoreImpl fileStore,
+            @NonNull HandleContext context) {
+        requireNonNull(op);
+        requireNonNull(fileStore);
+        requireNonNull(context);
+
+        final var target = op.fileID();
+        final var data = op.contents();
+        final var fileServiceConfig = context.getConfiguration().getConfigData(FilesConfig.class);
+        if (data == null || data.length() <= 0) {
+            logger.debug("FileAppend: No data to append");
+        }
+
+        if (target == null) {
+            throw new HandleException(INVALID_FILE_ID);
+        }
+        final var optionalFile = fileStore.get(target.fileNum());
+
+        if (optionalFile.isEmpty()) {
+            throw new HandleException(INVALID_FILE_ID);
+        }
+        final var file = optionalFile.get();
+
+        if (file.deleted()) {
+            throw new HandleException(FILE_DELETED);
+        }
+
+        var contents = PbjConverter.asBytes(file.contents());
+
+        if (data == null) {
+            throw new HandleException(FILE_CONTENT_EMPTY);
+        }
+        var newContents = ArrayUtils.addAll(contents, PbjConverter.asBytes(data));
+        validateContent(newContents, fileServiceConfig);
+        /* Copy all the fields from existing file and change deleted flag */
+        final var fileBuilder = new File.Builder()
+                .fileNumber(file.fileNumber())
+                .expirationTime(file.expirationTime())
+                .keys(file.keys())
+                .contents(Bytes.wrap(newContents))
+                .memo(file.memo())
+                .deleted(file.deleted());
+
+        /* --- Put the modified file. It will be in underlying state's modifications map.
+        It will not be committed to state until commit is called on the state.--- */
+        fileStore.put(fileBuilder.build());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public UpdateFileRecordBuilder newRecordBuilder() {
+        return new UpdateFileRecordBuilder();
     }
 }

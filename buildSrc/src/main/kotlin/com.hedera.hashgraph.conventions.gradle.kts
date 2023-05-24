@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
 
 plugins {
     `java-library`
@@ -31,11 +31,8 @@ group = "com.hedera.hashgraph"
 java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(17))
-        @Suppress("UnstableApiUsage")
         vendor.set(JvmVendorSpec.ADOPTIUM)
     }
-
-    modularity.inferModulePath.set(true)
 }
 
 // Define the repositories from which we will pull dependencies
@@ -75,19 +72,18 @@ repositories {
     maven {
         url = uri("https://oss.sonatype.org/content/repositories/comhederahashgraph-1531")
     }
-    mavenLocal()
 }
 
 // Make sure we use UTF-8 encoding when compiling
-tasks.withType<JavaCompile> {
+tasks.withType<JavaCompile>().configureEach {
     options.encoding = "UTF-8"
 }
 
-tasks.withType<Javadoc> {
+tasks.withType<Javadoc>().configureEach {
     options.encoding = "UTF-8"
 }
 
-tasks.withType<Jar> {
+tasks.withType<Jar>().configureEach {
     isReproducibleFileOrder = true
     isPreserveFileTimestamps = false
     fileMode = 664
@@ -97,15 +93,21 @@ tasks.withType<Jar> {
 testing {
     suites {
         // Configure the normal unit test suite to use JUnit Jupiter.
-        @Suppress("UnstableApiUsage")
-        val test by getting(JvmTestSuite::class) {
+        named("test", JvmTestSuite::class) {
             // Enable JUnit as our test engine
             useJUnitJupiter()
+            targets.all {
+                testTask {
+                    // Increase the heap size for the unit tests
+                    maxHeapSize = "4096m"
+                    // Can be useful to set in some cases
+                    // testLogging.showStandardStreams = true
+                }
+            }
         }
 
         // Configure the integration test suite
-        @Suppress("UNUSED_VARIABLE", "UnstableApiUsage")
-        val itest by registering(JvmTestSuite::class) {
+        register<JvmTestSuite>("itest") {
             testType.set(TestSuiteType.INTEGRATION_TEST)
             dependencies {
                 implementation(project())
@@ -113,80 +115,59 @@ testing {
 
             // "shouldRunAfter" will only make sure if both test and itest are run concurrently,
             // that "test" completes first. If you run "itest" directly, it doesn't force "test" to run.
-            targets {
-                all {
-                    testTask.configure {
-                        shouldRunAfter(test)
-                    }
+            targets.all {
+                testTask {
+                    shouldRunAfter(tasks.test)
+
+                    addTestListener(object : TestListener {
+                        override fun beforeSuite(suite: TestDescriptor) {
+                            logger.lifecycle("=====> Starting Suite: " + suite.displayName + " <=====")
+                        }
+
+                        override fun beforeTest(testDescriptor: TestDescriptor) {}
+                        override fun afterTest(testDescriptor: TestDescriptor, result: TestResult) {
+                            logger.lifecycle(
+                                SimpleDateFormat.getDateTimeInstance()
+                                    .format(Date()) + ": " + testDescriptor.displayName + " " + result.resultType.name
+                            )
+                        }
+
+                        override fun afterSuite(suite: TestDescriptor, result: TestResult) {}
+                    })
                 }
             }
         }
 
         // Configure the hammer test suite
-        @Suppress("UNUSED_VARIABLE", "UnstableApiUsage")
-        val hammer by registering(JvmTestSuite::class) {
+        register<JvmTestSuite>("hammer") {
             testType.set("hammer-test")
             dependencies {
                 implementation(project())
             }
 
-            targets {
-                all {
-                    testTask.configure {
-                        shouldRunAfter(test)
-                    }
+            targets.all {
+                testTask {
+                    shouldRunAfter(tasks.test)
                 }
             }
         }
 
         // Add the EET task for executing end-to-end tests
-        testing {
-            suites {
-                @Suppress("UnstableApiUsage", "UNUSED_VARIABLE")
-                val eet by registering(JvmTestSuite::class) {
-                    testType.set("end-to-end-test")
-                    dependencies {
-                        implementation(project())
-                    }
+        register<JvmTestSuite>("eet") {
+            testType.set("end-to-end-test")
+            dependencies {
+                implementation(project())
+            }
 
-                    // "shouldRunAfter" will only make sure if both test and eet are run concurrently,
-                    // that "test" completes first. If you run "eet" directly, it doesn't force "test" to run.
-                    targets {
-                        all {
-                            testTask.configure {
-                                shouldRunAfter(tasks.test)
-                            }
-                        }
-                    }
+            // "shouldRunAfter" will only make sure if both test and eet are run concurrently,
+            // that "test" completes first. If you run "eet" directly, it doesn't force "test" to run.
+            targets.all {
+                testTask {
+                    shouldRunAfter(tasks.test)
                 }
             }
         }
     }
-}
-
-// Increase the heap size for the unit tests
-tasks.test {
-    maxHeapSize = "4096m"
-    // Can be useful to set in some cases
-    // testLogging.showStandardStreams = true
-}
-
-tasks.getByName<Test>("itest") {
-    addTestListener(object : TestListener {
-        override fun beforeSuite(suite: TestDescriptor) {
-            logger.lifecycle("=====> Starting Suite: " + suite.displayName + " <=====")
-        }
-
-        override fun beforeTest(testDescriptor: TestDescriptor) {}
-        override fun afterTest(testDescriptor: TestDescriptor, result: TestResult) {
-            logger.lifecycle(
-                SimpleDateFormat.getDateTimeInstance()
-                    .format(Date()) + ": " + testDescriptor.displayName + " " + result.resultType.name
-            )
-        }
-
-        override fun afterSuite(suite: TestDescriptor, result: TestResult) {}
-    })
 }
 
 // Configure Jacoco so it outputs XML reports (needed by SonarCloud), and so that it combines the code
@@ -210,7 +191,7 @@ tasks.check {
 
 tasks.assemble {
     dependsOn(tasks.testClasses)
-    if (tasks.findByName("jmhClasses") != null) {
+    if (tasks.names.contains("jmhClasses")) {
         dependsOn(tasks.named("jmhClasses"))
     }
 }

@@ -41,6 +41,8 @@ import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.Transaction;
@@ -71,6 +73,8 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     private final SignatureExpander signatureExpander;
     /** Verifies signatures */
     private final SignatureVerifier signatureVerifier;
+    /** Provides the latest versioned configuration */
+    private final ConfigProvider configProvider;
     /** Used for registering notice of transactionIDs seen by this node */
     private final DeduplicationCache deduplicationCache;
 
@@ -89,11 +93,13 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             @NonNull final TransactionChecker transactionChecker,
             @NonNull final SignatureVerifier signatureVerifier,
             @NonNull final SignatureExpander signatureExpander,
+            @NonNull final ConfigProvider configProvider,
             @NonNull final DeduplicationCache deduplicationCache) {
         this.dispatcher = requireNonNull(dispatcher);
         this.transactionChecker = requireNonNull(transactionChecker);
         this.signatureVerifier = requireNonNull(signatureVerifier);
         this.signatureExpander = requireNonNull(signatureExpander);
+        this.configProvider = requireNonNull(configProvider);
         this.deduplicationCache = requireNonNull(deduplicationCache);
     }
 
@@ -183,12 +189,13 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
 
         // 4a. Create the PreHandleContext. This will get reused across several calls to the transaction handlers
         final PreHandleContext context;
+        final VersionedConfiguration configuration = configProvider.getConfiguration();
         try {
             // NOTE: Once PreHandleContext is moved from being a concrete implementation in SPI, to being an Interface/
             // implementation pair, with the implementation in `hedera-app`, then we will change the constructor,
             // so I can pass the payer account in directly, since I've already looked it up. But I don't really want
             // that as a public API in the SPI, so for now, we do a double lookup. Boo.
-            context = new PreHandleContextImpl(storeFactory, txInfo.txBody());
+            context = new PreHandleContextImpl(storeFactory, txInfo.txBody(), configuration);
         } catch (PreCheckException preCheck) {
             // This should NEVER happen. The only way an exception is thrown from the PreHandleContext constructor
             // is if the payer account doesn't exist, but by the time we reach this line of code, we already know
@@ -222,6 +229,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         final var results = signatureVerifier.verify(txInfo.signedBytes(), expanded);
 
         // 7. Create and return TransactionMetadata
-        return new PreHandleResult(payer, payerKey, SO_FAR_SO_GOOD, OK, txInfo, results, null);
+        return new PreHandleResult(
+                payer, payerKey, SO_FAR_SO_GOOD, OK, txInfo, results, null, configuration.getVersion());
     }
 }

@@ -41,6 +41,14 @@ class GasLimitBucketThrottleTest {
     }
 
     @Test
+    void hasExpectedInstantaneousPercentUsed() {
+        final var capacity = 1_000_000;
+        var subject = new GasLimitBucketThrottle(capacity);
+        subject.bucket().useCapacity(capacity / 2);
+        assertEquals(50.0, subject.instantaneousPercentUsed());
+    }
+
+    @Test
     void hasExpectedUsageRatio() {
         final var capacity = 1_000_000;
         var subject = new GasLimitBucketThrottle(capacity);
