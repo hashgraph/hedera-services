@@ -73,8 +73,8 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
     private static final long CLASS_ID = 0xf059378c7764ef47L;
 
     /**
-     * Only trigger an ISS if consensus time is within this time window of a scheduled ISS incident.
-     * If consensus time "skips" forward longer than this window then the scheduled ISS will be ignored.
+     * Only trigger an ISS if consensus time is within this time window of a scheduled ISS incident. If consensus time
+     * "skips" forward longer than this window then the scheduled ISS will be ignored.
      */
     private static final Duration ISS_WINDOW = Duration.ofSeconds(10);
 
@@ -174,8 +174,7 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
     /**
      * Apply a transaction to the state.
      *
-     * @param transaction
-     * 		the transaction to apply
+     * @param transaction the transaction to apply
      */
     private void handleTransaction(final ConsensusTransaction transaction) {
         final int delta = ByteUtils.byteArrayToInt(transaction.getContents(), 0);
@@ -185,11 +184,12 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
     /**
      * Check if it's time to trigger an ISS. If it is, then mutate the state as needed.
      *
-     * @param currentTimestamp
-     * 		the current consensus time
+     * @param currentTimestamp the current consensus time
      */
     private void maybeTriggerIss(final Instant currentTimestamp) {
         if (currentTimestamp == null) {
+            logger.info(STARTUP.getMarker(), "currentTimestamp is null when checking whether to trigger ISS");
+
             return;
         }
 
@@ -232,10 +232,13 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
 
             logger.info(
                     STARTUP.getMarker(),
-                    "ISS intentionally provoked at {}. This node ({}) is in partition {} and will agree "
-                            + "with the hashes of all other nodes in partition {}. Nodes in other partitions "
+                    "ISS intentionally provoked at {}. This ISS was planned to occur at time after genesis {}, "
+                            + "and actually occurred at time after genesis {}. This node ({}) is in partition {} and will"
+                            + "agree with the hashes of all other nodes in partition {}. Nodes in other partitions "
                             + "are expected to have divergent hashes.",
                     currentTimestamp,
+                    plannedIss.getTimeAfterGenesis(),
+                    elapsedSinceGenesis,
                     selfId,
                     hashPartitionIndex,
                     hashPartitionIndex);
