@@ -111,6 +111,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -319,9 +320,18 @@ public class ServicesState extends PartialNaryMerkleInternal
     @Override
     public AddressBook updateWeight(@NonNull AddressBook configAddressBook, @NonNull PlatformContext context) {
         throwIfImmutable();
-        stakingInfo()
-                .forEach((nodeNum, stakingInfo) ->
-                        configAddressBook.updateWeight(new NodeId(nodeNum.longValue()), stakingInfo.getWeight()));
+        // Get all nodeIds added in the config.txt
+        Set<NodeId> configNodeIds = configAddressBook.getNodeIdSet();
+        stakingInfo().forEach((nodeNum, stakingInfo) -> {
+            NodeId nodeId = new NodeId(nodeNum.longValue());
+            // ste weight for the nodes that exist in state and remove from
+            // nodes given in config.txt. This is needed to recognize newly added nodes
+            configAddressBook.updateWeight(nodeId, stakingInfo.getWeight());
+            configNodeIds.remove(nodeId);
+        });
+        // for any newly added nodes that doesn't exist in state, weight should be set to 0
+        // irrespective of the weight provided in config.txt
+        configNodeIds.forEach(nodeId -> configAddressBook.updateWeight(nodeId, 0));
         return configAddressBook;
     }
 
