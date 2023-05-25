@@ -98,6 +98,7 @@ public class ContractCreateSuite extends HapiSuite {
 
     public static final String EMPTY_CONSTRUCTOR_CONTRACT = "EmptyConstructor";
     public static final String PARENT_INFO = "parentInfo";
+    private static final long GAS_TO_OFFER = 300_000L;
 
     public static void main(String... args) {
         new ContractCreateSuite().runSuiteAsync();
@@ -124,12 +125,42 @@ public class ContractCreateSuite extends HapiSuite {
                 vanillaSuccess(),
                 blockTimestampChangesWithinFewSeconds(),
                 contractWithAutoRenewNeedSignatures(),
-                createContractWithStakingFields());
+                createContractWithStakingFields(),
+                contractCreateNoncesExternalization());
     }
 
     @Override
     public boolean canRunConcurrent() {
         return true;
+    }
+
+    private HapiSpec contractCreateNoncesExternalization() {
+        final var contract = "NoncesExternalization";
+        final var payer = "payer";
+        final var deployParentContract = "deployParentContract";
+        final var deployContractTxn = "deployContractTxn";
+        final var deployContractTxnTwo = "deployContractTxnTwo";
+
+        return defaultHapiSpec("ContractCreateNoncesExternalization")
+                .given(
+                        cryptoCreate(payer).balance(10 * ONE_HUNDRED_HBARS),
+                        uploadInitCode(contract),
+                        contractCreate(contract).payingWith(payer))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(contract, deployParentContract)
+                                .payingWith(payer)
+                                .via(deployContractTxn)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(SUCCESS),
+                        contractCall(contract, deployParentContract)
+                                .payingWith(payer)
+                                .via(deployContractTxnTwo)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(SUCCESS))))
+                .then(
+                        getTxnRecord(deployContractTxn).andAllChildRecords().logged(),
+                        getTxnRecord(deployContractTxnTwo).andAllChildRecords().logged());
     }
 
     HapiSpec createContractWithStakingFields() {
