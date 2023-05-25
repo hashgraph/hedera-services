@@ -52,7 +52,6 @@ class EntitiesInitializationFlowTest {
 
         // then:
         verify(expiryManager).reviewExistingPayerRecords();
-        verify(expiryManager).reviewExistingShortLivedEntities();
         verify(sigImpactHistorian).invalidateCurrentWindow();
         verify(networkCtxManager).setObservableFilesNotLoaded();
         verify(networkCtxManager).loadObservableSysFilesIfNeeded();

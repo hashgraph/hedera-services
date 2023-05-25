@@ -74,7 +74,7 @@ public class MonoFeeAccumulator implements FeeAccumulator {
         // states will have PBJ Topic's as keys, not MerkleTopic's; so the mono-service
         // resource estimator would hit a ClassCastException
         if (functionality == HederaFunctionality.CONSENSUS_GET_TOPIC_INFO) {
-            final var topicStore = readableStoreFactory.createStore(ReadableTopicStore.class);
+            final var topicStore = readableStoreFactory.getStore(ReadableTopicStore.class);
             final var usage = getTopicInfoUsage.computeUsage(monoQuery, topicStore);
             return feeCalculator.computeFromQueryResourceUsage(usage, usagePrices, monoNow);
         }

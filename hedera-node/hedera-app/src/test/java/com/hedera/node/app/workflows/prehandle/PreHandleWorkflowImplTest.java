@@ -35,6 +35,7 @@ import static org.mockito.Mockito.when;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.AppTestBase;
+import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.token.TokenService;
@@ -49,9 +50,11 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.config.ConfigProvider;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -64,10 +67,14 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mock.Strictness;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
+
+    private static final long DEFAULT_CONFIG_VERSION = 1L;
+
     /**
      * We use a mocked dispatcher, so it is easy to fake out interaction between the workflow and some
      * "hypothetical" transaction handlers.
@@ -95,6 +102,12 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
     @Mock
     private SignatureExpander signatureExpander;
 
+    /**
+     * We use a mocked {@link ConfigProvider}, so it is easy to provide specific configurations.
+     */
+    @Mock(strictness = Strictness.LENIENT)
+    private ConfigProvider configProvider;
+
     /** We use a real functional store factory with our standard test data set. Needed by the workflow. */
     private ReadableStoreFactory storeFactory;
 
@@ -117,7 +130,13 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
                                         STAKING_REWARD_ACCOUNT.account())),
                 new MapReadableKVState<String, Long>("ALIASES", Collections.emptyMap()));
         storeFactory = new ReadableStoreFactory(fakeHederaState);
-        workflow = new PreHandleWorkflowImpl(dispatcher, transactionChecker, signatureVerifier, signatureExpander);
+
+        final var config =
+                new VersionedConfigImpl(new TestConfigBuilder(false).getOrCreateConfig(), DEFAULT_CONFIG_VERSION);
+        when(configProvider.getConfiguration()).thenReturn(config);
+
+        workflow = new PreHandleWorkflowImpl(
+                dispatcher, transactionChecker, signatureVerifier, signatureExpander, configProvider);
     }
 
     /** Null arguments are not permitted to the constructor. */
@@ -125,14 +144,20 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
     @DisplayName("Null constructor args throw NPE")
     @SuppressWarnings("DataFlowIssue") // Suppress the warning about null args
     void nullConstructorArgsTest() {
-        assertThatThrownBy(
-                        () -> new PreHandleWorkflowImpl(null, transactionChecker, signatureVerifier, signatureExpander))
+        assertThatThrownBy(() -> new PreHandleWorkflowImpl(
+                        null, transactionChecker, signatureVerifier, signatureExpander, configProvider))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new PreHandleWorkflowImpl(dispatcher, null, signatureVerifier, signatureExpander))
+        assertThatThrownBy(() -> new PreHandleWorkflowImpl(
+                        dispatcher, null, signatureVerifier, signatureExpander, configProvider))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new PreHandleWorkflowImpl(dispatcher, transactionChecker, null, signatureExpander))
+        assertThatThrownBy(() -> new PreHandleWorkflowImpl(
+                        dispatcher, transactionChecker, null, signatureExpander, configProvider))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new PreHandleWorkflowImpl(dispatcher, transactionChecker, signatureVerifier, null))
+        assertThatThrownBy(() -> new PreHandleWorkflowImpl(
+                        dispatcher, transactionChecker, signatureVerifier, null, configProvider))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new PreHandleWorkflowImpl(
+                        dispatcher, transactionChecker, signatureVerifier, signatureExpander, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -486,6 +511,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             assertThat(payerFutureResult.passed()).isTrue();
             assertThat(result.txInfo()).isNotNull();
             assertThat(result.txInfo()).isSameAs(txInfo);
+            assertThat(result.configVersion()).isEqualTo(DEFAULT_CONFIG_VERSION);
         }
 
         @Test
@@ -520,6 +546,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             assertThat(payerFutureResult.key()).isEqualTo(finalizedKey);
             assertThat(result.txInfo()).isNotNull();
             assertThat(result.txInfo()).isSameAs(txInfo);
+            assertThat(result.configVersion()).isEqualTo(DEFAULT_CONFIG_VERSION);
         }
 
         @Test
@@ -572,6 +599,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             assertThat(nonPayerResult.key()).isEqualTo(finalizedKey);
             assertThat(result.txInfo()).isNotNull();
             assertThat(result.txInfo()).isSameAs(txInfo);
+            assertThat(result.configVersion()).isEqualTo(DEFAULT_CONFIG_VERSION);
         }
     }
 }

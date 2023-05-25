@@ -23,12 +23,10 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TopicID;
-import com.hedera.hapi.node.consensus.ConsensusDeleteTopicTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
-import com.hedera.node.app.service.consensus.impl.records.ConsensusDeleteTopicRecordBuilder;
-import com.hedera.node.app.service.consensus.impl.records.DeleteTopicRecordBuilder;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -64,12 +62,16 @@ public class ConsensusDeleteTopicHandler implements TransactionHandler {
     /**
      * Given the appropriate context, deletes a topic.
      *
-     * @param op the {@link ConsensusDeleteTopicTransactionBody} of the active transaction
-     * @param topicStore the {@link WritableTopicStore} to use to delete the topic
+     * @param context the {@link HandleContext} of the active transaction
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void handle(
-            @NonNull final ConsensusDeleteTopicTransactionBody op, @NonNull final WritableTopicStore topicStore) {
+    @Override
+    public void handle(@NonNull final HandleContext context) {
+        requireNonNull(context, "The argument 'context' must not be null");
+
+        final var op = context.body().consensusDeleteTopicOrThrow();
+        final var topicStore = context.writableStore(WritableTopicStore.class);
+
         var topicId = op.topicIDOrElse(TopicID.DEFAULT);
 
         var optionalTopic = topicStore.get(topicId.topicNum());
@@ -101,13 +103,5 @@ public class ConsensusDeleteTopicHandler implements TransactionHandler {
         /* --- Put the modified topic. It will be in underlying state's modifications map.
         It will not be committed to state until commit is called on the state.--- */
         topicStore.put(topicBuilder.build());
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public ConsensusDeleteTopicRecordBuilder newRecordBuilder() {
-        return new DeleteTopicRecordBuilder();
     }
 }

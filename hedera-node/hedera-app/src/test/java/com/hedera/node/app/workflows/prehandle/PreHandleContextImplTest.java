@@ -32,9 +32,9 @@ import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -68,19 +68,21 @@ class PreHandleContextImplTest {
     @Mock
     Account account;
 
-    private PreHandleContext subject;
+    @Mock
+    Configuration configuration;
 
     @Test
     void gettersWork() throws PreCheckException {
-        given(storeFactory.createStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(storeFactory.getStore(ReadableAccountStore.class)).willReturn(accountStore);
         given(accountStore.getAccountById(PAYER)).willReturn(account);
         given(account.key()).willReturn(payerKey);
         final var txn = createAccountTransaction();
-        subject = new PreHandleContextImpl(storeFactory, txn).requireKey(otherKey);
+        final var subject = new PreHandleContextImpl(storeFactory, txn, configuration).requireKey(otherKey);
 
         assertEquals(txn, subject.body());
         assertEquals(payerKey, subject.payerKey());
         assertEquals(Set.of(otherKey), subject.requiredNonPayerKeys());
+        assertEquals(configuration, subject.configuration());
     }
 
     private TransactionBody createAccountTransaction() {

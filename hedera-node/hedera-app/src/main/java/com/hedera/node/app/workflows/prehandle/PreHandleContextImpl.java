@@ -33,6 +33,7 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
@@ -73,22 +74,35 @@ public class PreHandleContextImpl implements PreHandleContext {
 
     private final ReadableStoreFactory storeFactory;
 
-    public PreHandleContextImpl(@NonNull final ReadableStoreFactory storeFactory, @NonNull final TransactionBody txn)
+    /** Configuration to be used during pre-handle */
+    private final Configuration configuration;
+
+    public PreHandleContextImpl(
+            @NonNull final ReadableStoreFactory storeFactory,
+            @NonNull final TransactionBody txn,
+            @NonNull final Configuration configuration)
             throws PreCheckException {
-        this(storeFactory, txn, txn.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT));
+        this(
+                storeFactory,
+                txn,
+                txn.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT),
+                configuration);
     }
 
     /** Create a new instance */
     private PreHandleContextImpl(
             @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final TransactionBody txn,
-            @NonNull final AccountID payer)
+            @NonNull final AccountID payer,
+            @NonNull final Configuration configuration)
             throws PreCheckException {
         this.storeFactory = requireNonNull(storeFactory, "The supplied argument 'storeFactory' must not be null.");
         this.txn = requireNonNull(txn, "The supplied argument 'txn' cannot be null!");
         this.payer = requireNonNull(payer, "The supplied argument 'payer' cannot be null!");
+        this.configuration = requireNonNull(configuration, "The supplied argument 'configuration' cannot be null!");
 
-        accountStore = storeFactory.createStore(ReadableAccountStore.class);
+        this.accountStore = storeFactory.getStore(ReadableAccountStore.class);
+
         // Find the account, which must exist or throw a PreCheckException with the given response code.
         final var account = accountStore.getAccountById(payer);
         mustExist(account, ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID);
@@ -101,7 +115,7 @@ public class PreHandleContextImpl implements PreHandleContext {
     @Override
     @NonNull
     public <C> C createStore(@NonNull Class<C> storeInterface) {
-        return storeFactory.createStore(storeInterface);
+        return storeFactory.getStore(storeInterface);
     }
 
     @Override
@@ -114,6 +128,12 @@ public class PreHandleContextImpl implements PreHandleContext {
     @NonNull
     public AccountID payer() {
         return payer;
+    }
+
+    @Override
+    @NonNull
+    public Configuration configuration() {
+        return configuration;
     }
 
     @NonNull
@@ -331,7 +351,7 @@ public class PreHandleContextImpl implements PreHandleContext {
     public PreHandleContext createNestedContext(
             @NonNull final TransactionBody nestedTxn, @NonNull final AccountID payerForNested)
             throws PreCheckException {
-        this.innerContext = new PreHandleContextImpl(storeFactory, nestedTxn, payerForNested);
+        this.innerContext = new PreHandleContextImpl(storeFactory, nestedTxn, payerForNested, configuration);
         return this.innerContext;
     }
 

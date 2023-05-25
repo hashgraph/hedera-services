@@ -274,6 +274,7 @@ dependencyResolutionManagement {
       version("testcontainers-version", "1.17.2")
       version("classgraph-version", "4.8.65")
       version("assertj-version", "3.23.1")
+      version("system-stubs-version", "2.0.2")
 
       bundle("junit5", listOf("junit-jupiter-api", "junit-jupiter-params", "junit-jupiter"))
       bundle("mockito", listOf("mockito-inline", "mockito-jupiter"))
@@ -319,6 +320,10 @@ dependencyResolutionManagement {
           .versionRef("testcontainers-version")
       library("classgraph", "io.github.classgraph", "classgraph").versionRef("classgraph-version")
       library("assertj-core", "org.assertj", "assertj-core").versionRef("assertj-version")
+      library("system-stubs-jupiter", "uk.org.webcompere", "system-stubs-jupiter")
+          .versionRef("system-stubs-version")
+      library("system-stubs-core", "uk.org.webcompere", "system-stubs-core")
+          .versionRef("system-stubs-version")
     }
   }
 }

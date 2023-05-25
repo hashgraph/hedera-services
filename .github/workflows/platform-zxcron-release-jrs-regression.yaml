@@ -46,7 +46,14 @@ jobs:
           BRANCH_LIST="$(git branch --list --remotes --format='%(refname:strip=3)' | cat)"
 
           while IFS= read -r line; do
-            [[ "${line}" =~ ^release-[0-9]+.[0-9]+.[0-9]+ ]] || continue
+            [[ "${line}" =~ ^release/([0-9]+).([0-9]+) ]] || continue
+            
+            major="${BASH_REMATCH[1]}"
+            minor="${BASH_REMATCH[2]}"
+          
+            if [[ "${major}" -eq 0 && "${minor}" -lt 38 ]]; then
+              continue
+            fi
 
             echo "::group::Identified Branch: ${line}"
             echo "${line}" | tee -a "${BRANCH_LIST_FILE}"

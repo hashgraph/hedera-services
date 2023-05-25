@@ -29,9 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyShort;
-import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
@@ -42,8 +40,6 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
 import com.hedera.node.app.service.mono.state.expiry.ExpiringCreations;
-import com.hedera.node.app.service.mono.state.expiry.ExpiringEntity;
-import com.hedera.node.app.service.mono.state.expiry.ExpiryManager;
 import com.hedera.node.app.service.mono.state.submerkle.CurrencyAdjustments;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
@@ -62,10 +58,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.crypto.RunningHash;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.List;
-import java.util.function.Consumer;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -109,13 +102,7 @@ class TxnAwareRecordsHistorianTest {
     private RecordCache recordCache;
 
     @Mock
-    private ExpiryManager expiries;
-
-    @Mock
     private ExpiringCreations creator;
-
-    @Mock
-    private ExpiringEntity expiringEntity;
 
     @Mock
     private TransactionContext txnCtx;
@@ -136,7 +123,7 @@ class TxnAwareRecordsHistorianTest {
 
     @BeforeEach
     void setUp() {
-        subject = new TxnAwareRecordsHistorian(recordCache, txnCtx, expiries, consensusTimeTracker);
+        subject = new TxnAwareRecordsHistorian(recordCache, txnCtx, consensusTimeTracker);
         subject.setCreator(creator);
     }
 
@@ -460,43 +447,6 @@ class TxnAwareRecordsHistorianTest {
         subject.clearHistory();
 
         assertEquals(1, subject.nextChildRecordSourceId());
-    }
-
-    @Test
-    @SuppressWarnings("unchecked")
-    void tracksExpiringEntities() {
-        final Consumer<EntityId> mockConsumer = mock(Consumer.class);
-        given(expiringEntity.id()).willReturn(aEntity);
-        given(expiringEntity.consumer()).willReturn(mockConsumer);
-        given(expiringEntity.expiry()).willReturn(nows);
-        given(txnCtx.expiringEntities()).willReturn(Collections.singletonList(expiringEntity));
-
-        // when:
-        subject.noteNewExpirationEvents();
-
-        // then:
-        verify(txnCtx).expiringEntities();
-        verify(expiringEntity).id();
-        verify(expiringEntity).consumer();
-        verify(expiringEntity).expiry();
-        // and:
-        verify(expiries).trackExpirationEvent(Pair.of(aEntity.num(), mockConsumer), nows);
-    }
-
-    @Test
-    void doesNotTrackExpiringEntity() {
-        given(txnCtx.expiringEntities()).willReturn(Collections.emptyList());
-
-        // when:
-        subject.noteNewExpirationEvents();
-
-        // then:
-        verify(txnCtx).expiringEntities();
-        verify(expiringEntity, never()).id();
-        verify(expiringEntity, never()).consumer();
-        verify(expiringEntity, never()).expiry();
-        // and:
-        verify(expiries, never()).trackExpirationEvent(any(), anyLong());
     }
 
     @Test

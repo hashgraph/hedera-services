@@ -18,13 +18,13 @@ package com.hedera.node.app.service.mono.state.expiry;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.startsWith;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.hedera.node.app.service.mono.config.HederaNumbers;
-import com.hedera.node.app.service.mono.config.MockHederaNumbers;
-import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
 import com.hedera.node.app.service.mono.records.TxnIdRecentHistory;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
@@ -34,20 +34,28 @@ import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.submerkle.TxnId;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.test.extensions.LogCaptor;
+import com.hedera.test.extensions.LogCaptureExtension;
+import com.hedera.test.extensions.LoggingSubject;
+import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkle.map.MerkleMap;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class ExpiryManagerTest {
     private final long now = 1_234_567L;
     private final long start = now - 180L;
@@ -56,48 +64,24 @@ class ExpiryManagerTest {
     private final AccountID aGrpcId = IdUtils.asAccount("0.0.2");
     private final AccountID bGrpcId = IdUtils.asAccount("0.0.4");
     private final EntityNum aKey = EntityNum.fromAccountId(aGrpcId);
-    private final EntityNum bKey = EntityNum.fromAccountId(bGrpcId);
     private final MerkleAccount anAccount = new MerkleAccount();
 
-    private MerkleMap<EntityNum, MerkleAccount> liveAccounts = new MerkleMap<>();
-    private Map<TransactionID, TxnIdRecentHistory> liveTxnHistories = new HashMap<>();
+    private final MerkleMap<EntityNum, MerkleAccount> liveAccounts = new MerkleMap<>();
+    private final Map<TransactionID, TxnIdRecentHistory> liveTxnHistories = new HashMap<>();
 
-    private final HederaNumbers nums = new MockHederaNumbers();
+    private final FCQueue<ExpirableTxnRecord> liveRecords = new FCQueue<>();
+    private final Map<EntityNum, Queue<ExpirableTxnRecord>> liveQueryableRecords = new HashMap<>();
 
-    @Mock
-    private SigImpactHistorian sigImpactHistorian;
+    @LoggingTarget
+    private LogCaptor logCaptor;
 
-    @Mock
-    private Map<TransactionID, TxnIdRecentHistory> mockTxnHistories;
-
-    @Mock
-    private MerkleMap<EntityNum, MerkleAccount> mockAccounts;
-
+    @LoggingSubject
     private ExpiryManager subject;
 
     @Test
-    void rebuildsExpectedSchedulesFromState() {
+    void rebuildsExpectedRecordsFromStateWithoutConsolidatedFcq() {
         subject = new ExpiryManager(
-                nums,
-                sigImpactHistorian,
-                mockTxnHistories,
-                () -> RecordsStorageAdapter.fromLegacy(MerkleMapLike.from(mockAccounts)));
-
-        subject.reviewExistingShortLivedEntities();
-        final var resultingExpiries = subject.getShortLivedEntityExpiries();
-        assertThrows(IllegalStateException.class, () -> resultingExpiries.expireNextAt(now));
-
-        // then:
-        assertEquals(0, resultingExpiries.getAllExpiries().size());
-    }
-
-    @Test
-    void rebuildsExpectedRecordsFromState() {
-        subject = new ExpiryManager(
-                nums,
-                sigImpactHistorian,
-                liveTxnHistories,
-                () -> RecordsStorageAdapter.fromLegacy(MerkleMapLike.from(liveAccounts)));
+                liveTxnHistories, () -> RecordsStorageAdapter.fromLegacy(MerkleMapLike.from(liveAccounts)));
         final var newTxnId = recordWith(aGrpcId, start).getTxnId().toGrpc();
         final var leftoverTxnId = recordWith(bGrpcId, now).getTxnId().toGrpc();
         liveTxnHistories.put(leftoverTxnId, new TxnIdRecentHistory());
@@ -116,12 +100,33 @@ class ExpiryManagerTest {
     }
 
     @Test
-    void expiresRecordsAsExpected() {
+    void rebuildsExpectedRecordsFromStateWithConsolidatedFcq() {
         subject = new ExpiryManager(
-                nums,
-                sigImpactHistorian,
-                liveTxnHistories,
-                () -> RecordsStorageAdapter.fromLegacy(MerkleMapLike.from(liveAccounts)));
+                liveTxnHistories, () -> RecordsStorageAdapter.fromConsolidated(liveRecords, liveQueryableRecords));
+        final var newTxnId = recordWith(aGrpcId, start).getTxnId().toGrpc();
+        final var leftoverTxnId = recordWith(bGrpcId, now).getTxnId().toGrpc();
+        liveTxnHistories.put(leftoverTxnId, new TxnIdRecentHistory());
+        liveQueryableRecords.put(aKey, new LinkedList<>(List.of(expiring(recordWith(bGrpcId, now), firstThen))));
+        final var priorityExpiring = expiring(recordWith(aGrpcId, start), firstThen);
+        final var duplicateExpiring = expiring(recordWith(aGrpcId, start), secondThen);
+        liveRecords.offer(priorityExpiring);
+        liveRecords.offer(duplicateExpiring);
+
+        subject.reviewExistingPayerRecords();
+
+        // then:
+        assertFalse(liveTxnHistories.containsKey(leftoverTxnId));
+        assertEquals(firstThen, liveTxnHistories.get(newTxnId).priorityRecord().getExpiry());
+        assertEquals(
+                secondThen,
+                liveTxnHistories.get(newTxnId).allDuplicateRecords().get(0).getExpiry());
+        assertEquals(liveQueryableRecords.get(aKey), new LinkedList<>(List.of(priorityExpiring, duplicateExpiring)));
+    }
+
+    @Test
+    void expiresRecordsAsExpectedWithoutConsolidatedFcq() {
+        subject = new ExpiryManager(
+                liveTxnHistories, () -> RecordsStorageAdapter.fromLegacy(MerkleMapLike.from(liveAccounts)));
         final var newTxnId = recordWith(aGrpcId, start).getTxnId().toGrpc();
         liveAccounts.put(aKey, anAccount);
 
@@ -146,12 +151,76 @@ class ExpiryManagerTest {
     }
 
     @Test
+    void expiresRecordsAsExpectedWithConsolidatedFcq() {
+        subject = new ExpiryManager(
+                liveTxnHistories, () -> RecordsStorageAdapter.fromConsolidated(liveRecords, liveQueryableRecords));
+        final var newTxnId = recordWith(aGrpcId, start).getTxnId().toGrpc();
+
+        final var firstRecord = expiring(recordWith(aGrpcId, start), firstThen);
+        addConsolidatedLiveRecord(firstRecord);
+        liveTxnHistories
+                .computeIfAbsent(newTxnId, ignore -> new TxnIdRecentHistory())
+                .observe(firstRecord, OK);
+        subject.trackRecordInState(aGrpcId, firstThen);
+
+        final var secondRecord = expiring(recordWith(aGrpcId, start), secondThen);
+        addConsolidatedLiveRecord(secondRecord);
+        liveTxnHistories
+                .computeIfAbsent(newTxnId, ignore -> new TxnIdRecentHistory())
+                .observe(secondRecord, OK);
+        subject.trackRecordInState(aGrpcId, secondThen);
+
+        subject.purge(now);
+
+        assertEquals(1, liveRecords.size());
+        assertEquals(secondThen, liveTxnHistories.get(newTxnId).priorityRecord().getExpiry());
+        assertEquals(liveQueryableRecords.get(aKey), new LinkedList<>(List.of(secondRecord)));
+    }
+
+    @Test
+    void justLogsGivenMissingQueryableRecords() {
+        subject = new ExpiryManager(
+                liveTxnHistories, () -> RecordsStorageAdapter.fromConsolidated(liveRecords, liveQueryableRecords));
+        final var newTxnId = recordWith(aGrpcId, start).getTxnId().toGrpc();
+
+        final var firstRecord = expiring(recordWith(aGrpcId, start), firstThen);
+        addConsolidatedLiveRecord(firstRecord);
+        liveTxnHistories
+                .computeIfAbsent(newTxnId, ignore -> new TxnIdRecentHistory())
+                .observe(firstRecord, OK);
+        liveQueryableRecords.clear();
+
+        assertDoesNotThrow(() -> subject.purge(now));
+
+        assertThat(
+                logCaptor.errorLogs(), contains(startsWith("No queryable records found for payer EntityNum{value=2}")));
+    }
+
+    @Test
+    void justLogsGivenMismatchedQueryableRecords() {
+        subject = new ExpiryManager(
+                liveTxnHistories, () -> RecordsStorageAdapter.fromConsolidated(liveRecords, liveQueryableRecords));
+        final var newTxnId = recordWith(aGrpcId, start).getTxnId().toGrpc();
+
+        final var firstRecord = expiring(recordWith(aGrpcId, start), firstThen);
+        addConsolidatedLiveRecord(firstRecord);
+        liveTxnHistories
+                .computeIfAbsent(newTxnId, ignore -> new TxnIdRecentHistory())
+                .observe(firstRecord, OK);
+        liveQueryableRecords.clear();
+        liveQueryableRecords
+                .computeIfAbsent(aKey, ignore -> new LinkedList<>())
+                .add(expiring(recordWith(bGrpcId, start), firstThen));
+
+        assertDoesNotThrow(() -> subject.purge(now));
+
+        assertThat(logCaptor.errorLogs(), contains(startsWith("Inconsistent queryable record")));
+    }
+
+    @Test
     void expiresLoneRecordAsExpected() {
         subject = new ExpiryManager(
-                nums,
-                sigImpactHistorian,
-                liveTxnHistories,
-                () -> RecordsStorageAdapter.fromLegacy(MerkleMapLike.from(liveAccounts)));
+                liveTxnHistories, () -> RecordsStorageAdapter.fromLegacy(MerkleMapLike.from(liveAccounts)));
         final var newTxnId = recordWith(aGrpcId, start).getTxnId().toGrpc();
         liveAccounts.put(aKey, anAccount);
 
@@ -174,6 +243,14 @@ class ExpiryManagerTest {
         liveAccounts.replace(aKey, mutableAccount);
     }
 
+    private void addConsolidatedLiveRecord(@NonNull final ExpirableTxnRecord expirableTxnRecord) {
+        liveRecords.add(expirableTxnRecord);
+        final var payerNum = expirableTxnRecord.getTxnId().getPayerAccount().asNum();
+        liveQueryableRecords
+                .computeIfAbsent(payerNum, ignore -> new LinkedList<>())
+                .add(expirableTxnRecord);
+    }
+
     private ExpirableTxnRecord expiring(final ExpirableTxnRecord expirableTxnRecord, final long at) {
         final var ans = expirableTxnRecord;
         ans.setExpiry(at);
@@ -181,7 +258,7 @@ class ExpiryManagerTest {
         return ans;
     }
 
-    private static final ExpirableTxnRecord recordWith(final AccountID payer, final long validStartSecs) {
+    private static ExpirableTxnRecord recordWith(final AccountID payer, final long validStartSecs) {
         return ExpirableTxnRecord.newBuilder()
                 .setTxnId(TxnId.fromGrpc(TransactionID.newBuilder()
                         .setAccountID(payer)

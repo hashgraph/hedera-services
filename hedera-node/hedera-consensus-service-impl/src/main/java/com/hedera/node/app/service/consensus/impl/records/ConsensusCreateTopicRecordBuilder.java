@@ -16,29 +16,20 @@
 
 package com.hedera.node.app.service.consensus.impl.records;
 
-import com.hedera.node.app.spi.records.RecordBuilder;
+import com.hedera.hapi.node.base.TopicID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A {@code RecordBuilder} specialization for tracking the side-effects of a
- * {@code ConsensusCreateTopic} transaction.
+ * A {@code RecordBuilder} specialization for tracking the side-effects of a {@code ConsensusCreateTopic} transaction.
  */
-public interface ConsensusCreateTopicRecordBuilder extends RecordBuilder<ConsensusCreateTopicRecordBuilder> {
+public interface ConsensusCreateTopicRecordBuilder {
     /**
-     * Tracks creation of a new topic by number. Even if someday we support creating
-     * multiple topics within a smart contract call, we will still only need to track
-     * one created topic per child record.
+     * Tracks creation of a new topic by {@link TopicID}. Even if someday we support creating multiple topics within a
+     * smart contract call, we will still only need to track one created topic per child record.
      *
-     * @param num the number of the new topic
+     * @param topicID the {@link TopicID} the new topic
      * @return this builder
      */
     @NonNull
-    ConsensusCreateTopicRecordBuilder setCreatedTopic(long num);
-
-    /**
-     * Returns the number of the created topic.
-     *
-     * @return the number of the created topic
-     */
-    long getCreatedTopic();
+    ConsensusCreateTopicRecordBuilder topicID(@NonNull TopicID topicID);
 }
