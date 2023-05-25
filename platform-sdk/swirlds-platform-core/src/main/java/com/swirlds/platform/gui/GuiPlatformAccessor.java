@@ -18,6 +18,7 @@ package com.swirlds.platform.gui;
 
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.PlatformEvent;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.components.state.StateManagementComponent;
@@ -44,13 +45,13 @@ public final class GuiPlatformAccessor {
 
     private static final Logger logger = LogManager.getLogger(GuiPlatformAccessor.class);
 
-    private final Map<Long, String> aboutStrings = new ConcurrentHashMap<>();
-    private final Map<Long, String> platformNames = new ConcurrentHashMap<>();
-    private final Map<Long, byte[]> swirldIds = new ConcurrentHashMap<>();
-    private final Map<Long, Integer> instanceNumbers = new ConcurrentHashMap<>();
-    private final Map<Long, ShadowGraph> shadowGraphs = new ConcurrentHashMap<>();
-    private final Map<Long, StateManagementComponent> stateManagementComponents = new ConcurrentHashMap<>();
-    private final Map<Long, AtomicReference<Consensus>> consensusReferences = new ConcurrentHashMap<>();
+    private final Map<NodeId, String> aboutStrings = new ConcurrentHashMap<>();
+    private final Map<NodeId, String> platformNames = new ConcurrentHashMap<>();
+    private final Map<NodeId, byte[]> swirldIds = new ConcurrentHashMap<>();
+    private final Map<NodeId, Integer> instanceNumbers = new ConcurrentHashMap<>();
+    private final Map<NodeId, ShadowGraph> shadowGraphs = new ConcurrentHashMap<>();
+    private final Map<NodeId, StateManagementComponent> stateManagementComponents = new ConcurrentHashMap<>();
+    private final Map<NodeId, AtomicReference<Consensus>> consensusReferences = new ConcurrentHashMap<>();
 
     private static final GuiPlatformAccessor INSTANCE = new GuiPlatformAccessor();
 
@@ -73,8 +74,9 @@ public final class GuiPlatformAccessor {
      * @param nodeId the ID of the node
      * @param about  wha should show in the "about" window from the menu
      */
-    public void setAbout(final long nodeId, final String about) {
-        Objects.requireNonNull(about);
+    public void setAbout(@NonNull final NodeId nodeId, @NonNull final String about) {
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
+        Objects.requireNonNull(about, "about must not be null");
         aboutStrings.put(nodeId, about);
     }
 
@@ -84,7 +86,8 @@ public final class GuiPlatformAccessor {
      * @param nodeId the ID of the node
      * @return an "about" string
      */
-    public String getAbout(final long nodeId) {
+    public String getAbout(@NonNull final NodeId nodeId) {
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
         return aboutStrings.getOrDefault(nodeId, "");
     }
 
@@ -94,8 +97,9 @@ public final class GuiPlatformAccessor {
      * @param nodeId       the ID of the node
      * @param platformName a platform name
      */
-    public void setPlatformName(final long nodeId, @NonNull final String platformName) {
-        Objects.requireNonNull(platformName);
+    public void setPlatformName(@NonNull final NodeId nodeId, @NonNull final String platformName) {
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
+        Objects.requireNonNull(platformName, "platformName must not be null");
         platformNames.put(nodeId, platformName);
     }
 
@@ -106,7 +110,8 @@ public final class GuiPlatformAccessor {
      * @return a platform name
      */
     @NonNull
-    public String getPlatformName(final long nodeId) {
+    public String getPlatformName(@NonNull final NodeId nodeId) {
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
         return platformNames.getOrDefault(nodeId, "");
     }
 
@@ -116,8 +121,9 @@ public final class GuiPlatformAccessor {
      * @param nodeId   the ID of the node
      * @param swirldId the swirld ID
      */
-    public void setSwirldId(final long nodeId, @NonNull final byte[] swirldId) {
-        Objects.requireNonNull(swirldId);
+    public void setSwirldId(@NonNull final NodeId nodeId, @NonNull final byte[] swirldId) {
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
+        Objects.requireNonNull(swirldId, "swirldId must not be null");
         swirldIds.put(nodeId, swirldId);
     }
 
@@ -128,7 +134,8 @@ public final class GuiPlatformAccessor {
      * @return the swirld ID
      */
     @Nullable
-    public byte[] getSwirldId(final long nodeId) {
+    public byte[] getSwirldId(@NonNull final NodeId nodeId) {
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
         return swirldIds.getOrDefault(nodeId, null);
     }
 
@@ -138,7 +145,8 @@ public final class GuiPlatformAccessor {
      * @param nodeId         the ID of the node
      * @param instanceNumber the instance number
      */
-    public void setInstanceNumber(final long nodeId, final int instanceNumber) {
+    public void setInstanceNumber(@NonNull final NodeId nodeId, final int instanceNumber) {
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
         instanceNumbers.put(nodeId, instanceNumber);
     }
 
@@ -148,7 +156,8 @@ public final class GuiPlatformAccessor {
      * @param nodeId the ID of the node
      * @return the instance number
      */
-    public int getInstanceNumber(final long nodeId) {
+    public int getInstanceNumber(@NonNull final NodeId nodeId) {
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
         return instanceNumbers.getOrDefault(nodeId, -1);
     }
 
@@ -158,8 +167,9 @@ public final class GuiPlatformAccessor {
      * @param nodeId      the ID of the node
      * @param shadowGraph the shadow graph
      */
-    public void setShadowGraph(final long nodeId, @NonNull final ShadowGraph shadowGraph) {
-        Objects.requireNonNull(shadowGraph);
+    public void setShadowGraph(@NonNull final NodeId nodeId, @NonNull final ShadowGraph shadowGraph) {
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
+        Objects.requireNonNull(shadowGraph, "shadowGraph must not be null");
         shadowGraphs.put(nodeId, shadowGraph);
     }
 
@@ -170,14 +180,16 @@ public final class GuiPlatformAccessor {
      * @return the shadow graph
      */
     @Nullable
-    public ShadowGraph getShadowGraph(final long nodeId) {
+    public ShadowGraph getShadowGraph(@NonNull NodeId nodeId) {
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
         return shadowGraphs.getOrDefault(nodeId, null);
     }
 
     /**
      * Get a sorted list of events.
      */
-    public PlatformEvent[] getAllEvents(final long nodeId) {
+    public PlatformEvent[] getAllEvents(@NonNull NodeId nodeId) {
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
         // There is currently a race condition that can cause an exception if event order changes at
         // just the right moment. Since this is just a testing utility method and not used in production
         // environments, we can just retry until we succeed.
@@ -216,8 +228,9 @@ public final class GuiPlatformAccessor {
      * @param stateManagementComponent the state management component
      */
     public void setStateManagementComponent(
-            final long nodeId, @NonNull final StateManagementComponent stateManagementComponent) {
-        Objects.requireNonNull(stateManagementComponent);
+            @NonNull final NodeId nodeId, @NonNull final StateManagementComponent stateManagementComponent) {
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
+        Objects.requireNonNull(stateManagementComponent, "stateManagementComponent must not be null");
         stateManagementComponents.put(nodeId, stateManagementComponent);
     }
 
@@ -228,7 +241,8 @@ public final class GuiPlatformAccessor {
      * @return the state management component
      */
     @Nullable
-    public StateManagementComponent getStateManagementComponent(final long nodeId) {
+    public StateManagementComponent getStateManagementComponent(@NonNull final NodeId nodeId) {
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
         return stateManagementComponents.getOrDefault(nodeId, null);
     }
 
@@ -238,8 +252,10 @@ public final class GuiPlatformAccessor {
      * @param nodeId    the ID of the node
      * @param consensus the consensus
      */
-    public void setConsensusReference(final long nodeId, @NonNull final AtomicReference<Consensus> consensus) {
-        Objects.requireNonNull(consensus);
+    public void setConsensusReference(
+            @NonNull final NodeId nodeId, @NonNull final AtomicReference<Consensus> consensus) {
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
+        Objects.requireNonNull(consensus, "consensus must not be null");
         consensusReferences.put(nodeId, consensus);
     }
 
@@ -250,7 +266,8 @@ public final class GuiPlatformAccessor {
      * @return the consensus
      */
     @Nullable
-    public Consensus getConsensus(final long nodeId) {
+    public Consensus getConsensus(@NonNull final NodeId nodeId) {
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
         final AtomicReference<Consensus> consensusReference = consensusReferences.getOrDefault(nodeId, null);
         if (consensusReference == null) {
             return null;

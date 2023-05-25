@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.test.eventflow;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState;
@@ -52,7 +53,7 @@ public class SwirldStateTracker extends DummySwirldState implements TransactionT
     private final HashSet<ConsensusTransaction> consensusOtherTxns = new HashSet<>();
     private final List<HandledTransaction> allTxns = new ArrayList<>();
 
-    private final long selfId;
+    private final NodeId selfId;
 
     private StringBuilder failure = new StringBuilder();
 
@@ -65,10 +66,10 @@ public class SwirldStateTracker extends DummySwirldState implements TransactionT
     // needed for constructable registry
     public SwirldStateTracker() {
         super();
-        selfId = 0L;
+        selfId = new NodeId(0L);
     }
 
-    public SwirldStateTracker(final long selfId) {
+    public SwirldStateTracker(final NodeId selfId) {
         this.selfId = selfId;
     }
 
@@ -121,7 +122,7 @@ public class SwirldStateTracker extends DummySwirldState implements TransactionT
 
                 addHandledTransaction(trans, trans.getConsensusTimestamp());
                 final long creatorId = event.getCreatorId();
-                if (creatorId == selfId) {
+                if (creatorId == selfId.id()) {
                     if (!consensusSelfTxns.add(trans)) {
                         addFailure(String.format("Encountered duplicate self consensus transaction %s", trans));
                     }
