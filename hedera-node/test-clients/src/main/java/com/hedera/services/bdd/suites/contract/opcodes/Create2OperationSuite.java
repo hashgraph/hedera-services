@@ -60,6 +60,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
@@ -148,6 +149,8 @@ public class Create2OperationSuite extends HapiSuite {
     private static final String RETURNER = "Returner";
     private static final String CALL_RETURNER = "callReturner";
     private static final String ADMIN_KEY = "adminKey";
+    private static final String CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS = "contracts.maxNumWithHapiSigsAccess";
+    private static final String CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS = "contracts.allowSystemUseOfHapiSigs";
     private static final String ENTITY_MEMO = "JUST DO IT";
     private static final String DELETED_CREATE_2_LOG = "Deleted the deployed CREATE2 contract using HAPI";
 
@@ -790,9 +793,13 @@ public class Create2OperationSuite extends HapiSuite {
         final AtomicReference<String> childMirrorAddr = new AtomicReference<>();
 
         return propertyPreservingHapiSpec("childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor")
-                .preserving("contracts.maxNumWithHapiSigsAccess")
+                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
-                        overriding("contracts.maxNumWithHapiSigsAccess", "10_000_000"),
+                        overridingTwo(
+                                CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS,
+                                "TokenAssociateToAccount",
+                                CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS,
+                                "10_000_000"),
                         newKeyNamed(multiKey),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(ft)
