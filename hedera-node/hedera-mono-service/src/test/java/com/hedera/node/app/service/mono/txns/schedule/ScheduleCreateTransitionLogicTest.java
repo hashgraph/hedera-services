@@ -187,7 +187,6 @@ class ScheduleCreateTransitionLogicTest {
         verify(store).createProvisionally(scheduleValue, RichInstant.fromJava(now));
         verify(replSigningWitness).observeInScope(schedule, store, validScheduleKeys, activationHelper, false);
         verify(store).commitCreation();
-        verify(txnCtx, never()).addExpiringEntities(any());
         verify(txnCtx).setStatus(SUCCESS);
         verify(txnCtx).setScheduledTxnId(scheduledTxnId);
         verify(sigImpactHistorian).markEntityChanged(schedule.getScheduleNum());
@@ -210,7 +209,6 @@ class ScheduleCreateTransitionLogicTest {
         subject.doStateTransition();
 
         verify(store).commitCreation();
-        verify(txnCtx, never()).addExpiringEntities(any());
         verify(txnCtx).setStatus(SUCCESS);
         verify(txnCtx).setScheduledTxnId(scheduledTxnId);
         verify(executor, never()).processImmediateExecution(schedule, store, txnCtx);
@@ -237,7 +235,6 @@ class ScheduleCreateTransitionLogicTest {
         verify(replSigningWitness).observeInScope(schedule, store, validScheduleKeys, activationHelper, true);
         verify(replSigningWitness, never()).observeInScope(any(), any(), any(), any(), eq(false));
         verify(store).commitCreation();
-        verify(txnCtx, never()).addExpiringEntities(any());
         verify(txnCtx).setStatus(SUCCESS);
         verify(txnCtx).setScheduledTxnId(scheduledTxnId);
         verify(sigImpactHistorian).markEntityChanged(schedule.getScheduleNum());
@@ -262,7 +259,6 @@ class ScheduleCreateTransitionLogicTest {
         verify(replSigningWitness).observeInScope(schedule, store, validScheduleKeys, activationHelper, false);
         verify(replSigningWitness, never()).observeInScope(any(), any(), any(), any(), eq(true));
         verify(store).commitCreation();
-        verify(txnCtx, never()).addExpiringEntities(any());
         verify(txnCtx).setStatus(SUCCESS);
         verify(txnCtx).setScheduledTxnId(scheduledTxnId);
         verify(sigImpactHistorian).markEntityChanged(schedule.getScheduleNum());
@@ -276,7 +272,6 @@ class ScheduleCreateTransitionLogicTest {
         subject.doStateTransition();
 
         verify(store).lookupSchedule(bodyBytes);
-        verify(txnCtx, never()).addExpiringEntities(any());
         verify(txnCtx).setStatus(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
     }
 
@@ -290,7 +285,6 @@ class ScheduleCreateTransitionLogicTest {
 
         verify(store, never()).createProvisionally(any(), any());
         verify(store, never()).commitCreation();
-        verify(txnCtx, never()).addExpiringEntities(any());
         verify(txnCtx).setStatus(IDENTICAL_SCHEDULE_ALREADY_CREATED);
         verify(txnCtx).setCreated(schedule);
         verify(txnCtx).setScheduledTxnId(scheduledTxnId);

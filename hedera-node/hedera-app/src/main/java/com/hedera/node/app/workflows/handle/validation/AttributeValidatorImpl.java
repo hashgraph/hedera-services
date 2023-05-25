@@ -18,6 +18,7 @@ package com.hedera.node.app.workflows.handle.validation;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.node.app.spi.validation.AttributeValidator;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 public class AttributeValidatorImpl implements AttributeValidator {
     @Override
@@ -41,6 +42,11 @@ public class AttributeValidatorImpl implements AttributeValidator {
     @Override
     public void validateAutoRenewPeriod(long autoRenewPeriod) {
         // TODO: Implement AttributeValidatorImpl.validateAutoRenewPeriod()
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    @Override
+    public boolean isImmutableKey(@NonNull Key key) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 }

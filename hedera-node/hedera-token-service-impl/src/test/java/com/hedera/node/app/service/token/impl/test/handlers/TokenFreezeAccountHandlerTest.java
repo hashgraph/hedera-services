@@ -34,6 +34,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -226,7 +227,7 @@ class TokenFreezeAccountHandlerTest {
             given(readableAccountStore.getAccountById(ACCOUNT_13257))
                     .willReturn(
                             Account.newBuilder().accountNumber(accountNumber).build());
-            given(tokenRelStore.getForModify(accountNumber, token.tokenNum())).willReturn(Optional.empty());
+            given(tokenRelStore.getForModify(ACCOUNT_13257, token)).willReturn(Optional.empty());
             final var txn = newFreezeTxn(token);
             given(context.body()).willReturn(txn);
 
@@ -244,7 +245,7 @@ class TokenFreezeAccountHandlerTest {
             given(readableAccountStore.getAccountById(ACCOUNT_13257))
                     .willReturn(
                             Account.newBuilder().accountNumber(accountNumber).build());
-            given(tokenRelStore.getForModify(accountNumber, token.tokenNum()))
+            given(tokenRelStore.getForModify(ACCOUNT_13257, token))
                     .willReturn(Optional.of(TokenRelation.newBuilder()
                             .tokenNumber(token.tokenNum())
                             .accountNumber(accountNumber)
@@ -259,6 +260,14 @@ class TokenFreezeAccountHandlerTest {
                             .accountNumber(accountNumber)
                             .frozen(true)
                             .build());
+        }
+
+        private HandleContext mockContext() {
+            final var context = mock(HandleContext.class);
+            given(context.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
+            given(context.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
+
+            return context;
         }
 
         private void verifyNoPut() {

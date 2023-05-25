@@ -26,6 +26,7 @@ import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.consensus.ConsensusUpdateTopicTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
@@ -59,7 +60,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         final var topicStore = context.createStore(ReadableTopicStore.class);
 
         // The topic ID must be present on the transaction and the topic must exist.
-        final var topic = topicStore.getTopicMetadata(op.topicID());
+        final var topic = topicStore.getTopic(op.topicID());
         mustExist(topic, INVALID_TOPIC_ID);
 
         // Extending the expiry is the *only* update operation permitted without an admin key. So if that is the
@@ -123,17 +124,22 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         builder.runningHash(topic.runningHash());
         builder.deleted(topic.deleted());
         // And then resolve mutable attributes, and put the new topic back
-        resolveMutableBuilderAttributes(handleContext.expiryValidator(), topicUpdate, builder, topic);
+        resolveMutableBuilderAttributes(handleContext, topicUpdate, builder, topic);
         topicStore.put(builder.build());
     }
 
     private void resolveMutableBuilderAttributes(
-            @NonNull final ExpiryValidator expiryValidator,
+            @NonNull final HandleContext handleContext,
             @NonNull final ConsensusUpdateTopicTransactionBody op,
             @NonNull final Topic.Builder builder,
             @NonNull final Topic topic) {
         if (op.hasAdminKey()) {
-            builder.adminKey(op.adminKey());
+            var key = op.adminKey();
+            if (handleContext.attributeValidator().isImmutableKey(key)) {
+                builder.adminKey((Key) null);
+            } else {
+                builder.adminKey(key);
+            }
         } else {
             builder.adminKey(topic.adminKey());
         }
@@ -147,7 +153,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         } else {
             builder.memo(topic.memo());
         }
-        final var resolvedExpiryMeta = resolvedUpdateMetaFrom(expiryValidator, op, topic);
+        final var resolvedExpiryMeta = resolvedUpdateMetaFrom(handleContext.expiryValidator(), op, topic);
         builder.expiry(resolvedExpiryMeta.expiry());
         builder.autoRenewPeriod(resolvedExpiryMeta.autoRenewPeriod());
         builder.autoRenewAccountNumber(resolvedExpiryMeta.autoRenewNum());

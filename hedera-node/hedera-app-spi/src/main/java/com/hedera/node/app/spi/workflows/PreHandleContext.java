@@ -32,15 +32,15 @@ import java.util.Set;
  * Represents the context of a single {@code preHandle()}-call.
  *
  * <p>During pre-handle, each transaction handler needs access to the transaction body data (i.e. the "operation"
- * being performed, colloquially also called the "transaction" and "transaction body" although both are more or less
- * technically incorrect). The actual {@link TransactionBody} can be accessed from this context. The body contains the
- * operation, the transaction ID, the originating node, and other information.
+ * being performed, colloquially also called the "transaction" and "transaction body" although both are more
+ * or less technically incorrect). The actual {@link TransactionBody} can be accessed from this context. The body
+ * contains the operation, the transaction ID, the originating node, and other information.
  *
  * <p>The main responsibility for a transaction handler during pre-handle is to semantically validate the operation
- * and to gather all required keys. The handler, when created, is preloaded with the correct payer key (which is almost
- * always the same as the transaction body's {@link TransactionID}, except in the case of a scheduled transaction).
- * {@link TransactionHandler}s must add any additional required signing keys. Several convenience methods have been
- * created for this purpose.
+ * and to gather all required keys. The handler, when created, is preloaded with the correct payer key (which is
+ * almost always the same as the transaction body's {@link TransactionID}, except in the case of a scheduled
+ * transaction). {@link TransactionHandler}s must add any additional required signing keys. Several convenience
+ * methods have been created for this purpose.
  *
  * <p>{@link #requireKey(Key)} is used to add a required non-payer signing key (remember, the payer signing
  * key was added when the context was created). Some basic validation is performed (the key cannot be null or empty).
@@ -73,7 +73,7 @@ public interface PreHandleContext {
     Configuration configuration();
 
     /**
-     * Returns an immutable copy of the list of required non-payer keys.
+     * Returns an immutable copy of the set of required non-payer keys.
      *
      * @return the {@link Set} with the required non-payer keys
      */
@@ -81,12 +81,28 @@ public interface PreHandleContext {
     Set<Key> requiredNonPayerKeys();
 
     /**
-     * Gets an immutable copy of the list of required hollow accounts that need signatures.
+     * Gets an immutable copy of the set of required hollow accounts that need signatures.
      *
      * @return the {@link Set} of hollow accounts required
      */
     @NonNull
     Set<Account> requiredHollowAccounts();
+
+    /**
+     * Returns an immutable copy of the set of optional non-payer keys.
+     *
+     * @return the {@link Set} with the optional non-payer keys.  This set may be empty.
+     */
+    @NonNull
+    Set<Key> optionalNonPayerKeys();
+
+    /**
+     * Gets an immutable copy of the set of optional hollow accounts that may need signatures.
+     *
+     * @return the {@link Set} of hollow accounts possibly required
+     */
+    @NonNull
+    Set<Account> optionalHollowAccounts();
 
     /**
      * Getter for the payer key
@@ -101,7 +117,7 @@ public interface PreHandleContext {
      *
      * @param storeInterface The store interface to find and create a store for
      * @param <C> Interface class for a Store
-     * @return An implementation of the provided store interface
+     * @return An implementation of store interface provided
      * @throws IllegalArgumentException if the storeInterface class provided is unknown to the app
      * @throws NullPointerException if {@code storeInterface} is {@code null}
      */
@@ -120,6 +136,45 @@ public interface PreHandleContext {
     PreHandleContext requireKey(@NonNull final Key key);
 
     /**
+     * Adds the given key to optional non-payer keys.
+     * If the key is invalid, is the same as the payer key, or if the key has already been added, then the call
+     * is a no-op. The key must not be null.
+     *
+     * @param key key to be added
+     * @return {@code this} object
+     * @throws NullPointerException if the key is null
+     */
+    @NonNull
+    PreHandleContext optionalKey(@NonNull final Key key);
+
+    /**
+     * Adds the given set of keys to optional non-payer keys.
+     * If any key is invalid, is the same as the payer key, or if any key has already been added, then the call
+     * ignores that key. The set of keys must not be null, but may be empty.
+     *
+     * @param keys the set of keys to be added
+     * @return {@code this} object
+     * @throws NullPointerException if the set of keys is null
+     */
+    @NonNull
+    PreHandleContext optionalKeys(@NonNull final Set<Key> keys);
+
+    /**
+     * Adds the given hollow account to the optional signing set.
+     * If the account has already been added, then the call is a no-op. The account must not be null.
+     * During signature verification, the app will verify if the transaction was signed by an ECDSA(secp256k1)
+     * key corresponding to the given account's alias. If the verification fails, however, that optional
+     * hollow account will be skipped, rather than failing the overall signature verification.
+     * If the account provided here is not a hollow account, an exception will be thrown.
+     *
+     * @param hollowAccount the EVM address alias
+     * @return {@code this} object
+     * @throws IllegalArgumentException if the account is not a hollow account
+     */
+    @NonNull
+    PreHandleContext optionalSignatureForHollowAccount(@NonNull final Account hollowAccount);
+
+    /**
      * Adds the given key to required non-payer keys. If the key is the same as the payer key, or if the key has
      * already been added, then the call is a no-op. The key must not be null and not empty, otherwise a
      * PreCheckException is thrown with the given {@code responseCode}.
@@ -134,8 +189,8 @@ public interface PreHandleContext {
             throws PreCheckException;
 
     /**
-     * Adds the admin key of the account addressed by the given {@code accountID} to the required non-payer keys. If the
-     * key is the same as the payer key, or if the key has already been added, then the call is a no-op. The
+     * Adds the admin key of the account addressed by the given {@code accountID} to the required non-payer keys. If
+     * the key is the same as the payer key, or if the key has already been added, then the call is a no-op. The
      * {@link AccountID} must not be null, and must refer to an actual account. The admin key on that account must not
      * be null or empty. If any of these conditions are not met, a PreCheckException is thrown with the given
      * {@code responseCode}.
@@ -143,7 +198,8 @@ public interface PreHandleContext {
      * @param accountID The ID of the account whose key is to be added
      * @param responseCode the response code to be used in case the key is null or empty
      * @return {@code this} object
-     * @throws PreCheckException if the key is null or empty or the account is null or the account does not exist.
+     * @throws PreCheckException if the key is null or empty or the account is null or the
+     * account does not exist.
      */
     @NonNull
     PreHandleContext requireKeyOrThrow(
@@ -164,10 +220,10 @@ public interface PreHandleContext {
             throws PreCheckException;
 
     /**
-     * Adds the admin key of the account addressed by the given {@code accountID} to the required non-payer keys if the
-     * {@link AccountID} is not null and if the account has `receiverSigRequired` set to true. If the account does not
-     * exist, or `receiverSigRequired` is true but the key is null or empty, then a {@link PreCheckException} will be
-     * thrown with the supplied {@code responseCode}.
+     * Adds the admin key of the account addressed by the given {@code accountID} to the required non-payer keys if
+     * the {@link AccountID} is not null and if the account has `receiverSigRequired` set to true. If the account
+     * does not exist, or `receiverSigRequired` is true but the key is null or empty, then a
+     * {@link PreCheckException} will be thrown with the supplied {@code responseCode}.
      *
      * @param accountID The ID of the account whose key is to be added
      * @param responseCode the response code to be used if a {@link PreCheckException} is thrown
@@ -205,22 +261,18 @@ public interface PreHandleContext {
     PreHandleContext requireSignatureForHollowAccount(@NonNull final Account hollowAccount);
 
     /**
-     * Creates a new {@link PreHandleContext} for a nested transaction. The nested transaction will be set on this
-     * context as the "inner context". There can only be one such at a time. The inner context is returned for
-     * convenience.
+     * Creates a new {@link PreHandleContext} for a nested transaction. The nested transaction will be set on
+     * this context as the "inner context". There can only be one such at a time. The inner context is returned
+     * for convenience.
      *
      * @param nestedTxn the nested transaction
      * @param payerForNested the payer for the nested transaction
-     * @param responseCode the response code to be used if a {@link PreCheckException} is thrown
      * @return the inner context
      * @throws PreCheckException If the payer is not valid
      */
     @NonNull
     PreHandleContext createNestedContext(
-            @NonNull final TransactionBody nestedTxn,
-            @NonNull final AccountID payerForNested,
-            @NonNull final ResponseCodeEnum responseCode)
-            throws PreCheckException;
+            @NonNull final TransactionBody nestedTxn, @NonNull final AccountID payerForNested) throws PreCheckException;
 
     /**
      * Gets the inner context, if any.

@@ -18,6 +18,7 @@ package com.hedera.node.app.service.consensus.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CHUNK_NUMBER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CHUNK_TRANSACTION_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SUBMIT_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_MESSAGE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
@@ -73,12 +74,12 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         final var op = context.body().consensusSubmitMessageOrThrow();
         final var topicStore = context.createStore(ReadableTopicStore.class);
         // The topic ID must be present on the transaction and the topic must exist.
-        final var topic = topicStore.getTopicMetadata(op.topicID());
+        final var topic = topicStore.getTopic(op.topicID());
         mustExist(topic, INVALID_TOPIC_ID);
         // If a submit key is specified on the topic, then only those transactions signed by that key can be
         // submitted to the topic. If there is no submit key, then it is not required on the transaction.
         final var submitKey = topic.submitKey();
-        if (submitKey != null) context.requireKey(submitKey);
+        if (submitKey != null) context.requireKeyOrThrow(submitKey, INVALID_SUBMIT_KEY);
     }
 
     /**
@@ -197,6 +198,9 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
     public Topic updateRunningHashAndSequenceNumber(
             @NonNull final TransactionBody txn, @NonNull final Topic topic, @Nullable Instant consensusNow)
             throws IOException {
+        requireNonNull(txn);
+        requireNonNull(topic);
+
         final var submitMessage = txn.consensusSubmitMessageOrThrow();
         final var payer = txn.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT);
         final var topicId = submitMessage.topicIDOrElse(TopicID.DEFAULT);

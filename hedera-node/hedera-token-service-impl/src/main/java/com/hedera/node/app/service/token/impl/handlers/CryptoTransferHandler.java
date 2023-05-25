@@ -67,7 +67,7 @@ public class CryptoTransferHandler implements TransactionHandler {
      * @throws PreCheckException if validation fails
      */
     @Override
-    public void validate(@NonNull final TransactionBody txn) throws PreCheckException {
+    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
         requireNonNull(txn);
         // FUTURE: Migrate validation from CryptoTransferTransitionLogic.validateSemantics()
         throw new UnsupportedOperationException("Not implemented");

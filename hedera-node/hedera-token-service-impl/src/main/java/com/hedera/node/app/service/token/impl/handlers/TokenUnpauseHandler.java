@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -24,7 +25,6 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -71,12 +71,10 @@ public class TokenUnpauseHandler implements TransactionHandler {
 
         final var op = handleContext.body().tokenUnpause();
         final var tokenStore = handleContext.writableStore(WritableTokenStore.class);
-        final var token = tokenStore.get(op.token().tokenNum());
-        if (token.isEmpty()) {
-            throw new HandleException(INVALID_TOKEN_ID);
-        }
+        var token = tokenStore.get(op.tokenOrElse(TokenID.DEFAULT));
+        validateTrue(token != null, INVALID_TOKEN_ID);
 
-        final var copyBuilder = token.get().copyBuilder();
+        final var copyBuilder = token.copyBuilder();
         copyBuilder.paused(false);
         tokenStore.put(copyBuilder.build());
     }

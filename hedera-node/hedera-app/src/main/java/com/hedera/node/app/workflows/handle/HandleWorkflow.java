@@ -223,7 +223,7 @@ public class HandleWorkflow {
 
         // extract keys and hollow accounts again
         final var storeFactory = new ReadableStoreFactory(state);
-        final var context = new PreHandleContextImpl(storeFactory, txBody);
+        final var context = new PreHandleContextImpl(storeFactory, txBody, configProvider.getConfiguration());
         dispatcher.dispatchPreHandle(context);
 
         // sort keys

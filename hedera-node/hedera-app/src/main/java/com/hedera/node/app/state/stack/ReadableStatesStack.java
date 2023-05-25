@@ -19,6 +19,7 @@ package com.hedera.node.app.state.stack;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.state.ReadableKVState;
+import com.hedera.node.app.spi.state.ReadableQueueState;
 import com.hedera.node.app.spi.state.ReadableSingletonState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
@@ -54,6 +55,12 @@ public class ReadableStatesStack implements ReadableStates {
     @Override
     public <T> ReadableSingletonState<T> getSingleton(@NonNull String stateKey) {
         return new ReadableSingletonStateStack<>(this, stateKey);
+    }
+
+    @NonNull
+    @Override
+    public <E> ReadableQueueState<E> getQueue(@NonNull String stateKey) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override

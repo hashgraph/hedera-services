@@ -149,6 +149,7 @@ import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -340,6 +341,9 @@ class MonoTransactionDispatcherTest {
     @Mock
     private Account account;
 
+    @Mock
+    Configuration configuration;
+
     private SideEffectsTracker sideEffectsTracker = new SideEffectsTracker();
 
     private TransactionHandlers handlers;
@@ -424,13 +428,15 @@ class MonoTransactionDispatcherTest {
                 readableStoreFactory,
                 TransactionBody.newBuilder()
                         .systemDelete(SystemDeleteTransactionBody.newBuilder().build())
-                        .build());
+                        .build(),
+                configuration);
         final var invalidSystemUndelete = new PreHandleContextImpl(
                 readableStoreFactory,
                 TransactionBody.newBuilder()
                         .systemUndelete(
                                 SystemUndeleteTransactionBody.newBuilder().build())
-                        .build());
+                        .build(),
+                configuration);
 
         // then
         assertThatThrownBy(() -> dispatcher.dispatchPreHandle(null)).isInstanceOf(NullPointerException.class);
@@ -447,7 +453,7 @@ class MonoTransactionDispatcherTest {
     void testDataNotSetFails() throws PreCheckException {
         // given
         final var txBody = TransactionBody.newBuilder().build();
-        final var context = new PreHandleContextImpl(readableStoreFactory, txBody);
+        final var context = new PreHandleContextImpl(readableStoreFactory, txBody, configuration);
 
         // then
         assertThatThrownBy(() -> dispatcher.dispatchPreHandle(context))
@@ -461,7 +467,7 @@ class MonoTransactionDispatcherTest {
         final var txBody = TransactionBody.newBuilder()
                 .nodeStakeUpdate(NodeStakeUpdateTransactionBody.newBuilder())
                 .build();
-        final var context = new PreHandleContextImpl(readableStoreFactory, txBody);
+        final var context = new PreHandleContextImpl(readableStoreFactory, txBody, configuration);
 
         // then
         assertThatThrownBy(() -> dispatcher.dispatchPreHandle(context))
@@ -529,7 +535,6 @@ class MonoTransactionDispatcherTest {
         given(handleContext.recordBuilder(any())).willReturn(recordBuilder);
 
         dispatcher.dispatchHandle(handleContext);
-
         verify(txnCtx).setTopicRunningHash(newRunningHash, 2);
     }
 
@@ -550,6 +555,48 @@ class MonoTransactionDispatcherTest {
     void dispatchesTokenRevokeKycAsExpected() {
         final var txnBody = TransactionBody.newBuilder()
                 .tokenRevokeKyc(TokenRevokeKycTransactionBody.DEFAULT)
+                .build();
+        given(handleContext.body()).willReturn(txnBody);
+        given(handleContext.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
+
+        dispatcher.dispatchHandle(handleContext);
+
+        verify(writableTokenRelStore).commit();
+    }
+
+    @Test
+    void dispatchesTokenAssociateAsExpected() {
+        final var txnBody = TransactionBody.newBuilder()
+                .tokenAssociate(TokenAssociateTransactionBody.DEFAULT)
+                .build();
+        given(handleContext.body()).willReturn(txnBody);
+        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(handleContext.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
+
+        dispatcher.dispatchHandle(handleContext);
+
+        verify(writableAccountStore).commit();
+        // We don't commit anything to the token store, so no verify() here for that mock
+        verify(writableTokenRelStore).commit();
+    }
+
+    @Test
+    void dispatchesTokenFreezeAsExpected() {
+        final var txnBody = TransactionBody.newBuilder()
+                .tokenFreeze(TokenFreezeAccountTransactionBody.DEFAULT)
+                .build();
+        given(handleContext.body()).willReturn(txnBody);
+        given(handleContext.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
+
+        dispatcher.dispatchHandle(handleContext);
+
+        verify(writableTokenRelStore).commit();
+    }
+
+    @Test
+    void dispatchesTokenUnfreezeAsExpected() {
+        final var txnBody = TransactionBody.newBuilder()
+                .tokenUnfreeze(TokenUnfreezeAccountTransactionBody.DEFAULT)
                 .build();
         given(handleContext.body()).willReturn(txnBody);
         given(handleContext.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
@@ -683,7 +730,7 @@ class MonoTransactionDispatcherTest {
             final TransactionBody txBody, final Function<TransactionHandlers, TransactionHandler> handlerProvider)
             throws PreCheckException {
         // given
-        final var context = new PreHandleContextImpl(readableStoreFactory, txBody);
+        final var context = new PreHandleContextImpl(readableStoreFactory, txBody, configuration);
         final var handler = handlerProvider.apply(handlers);
 
         // when

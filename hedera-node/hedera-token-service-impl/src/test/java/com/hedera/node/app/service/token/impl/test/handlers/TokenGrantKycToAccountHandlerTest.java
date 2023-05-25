@@ -27,8 +27,8 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.any;
-import static org.mockito.BDDMockito.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
@@ -203,7 +203,7 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
         @Test
         @DisplayName("When getForModify returns empty, should not put or commit")
         void emptyGetForModifyShouldNotPersist() {
-            given(tokenRelStore.getForModify(anyLong(), anyLong())).willReturn(Optional.empty());
+            given(tokenRelStore.getForModify(notNull(), notNull())).willReturn(Optional.empty());
 
             final var txnBody = newTxnBody(true, true);
             given(handleContext.body()).willReturn(txnBody);
@@ -220,8 +220,7 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
         void kycGrantedAndPersisted() {
             final var stateTokenRel =
                     newTokenRelationBuilder().kycGranted(false).build();
-            given(tokenRelStore.getForModify(payerId.accountNumOrThrow(), tokenId.tokenNum()))
-                    .willReturn(Optional.of(stateTokenRel));
+            given(tokenRelStore.getForModify(payerId, tokenId)).willReturn(Optional.of(stateTokenRel));
 
             final var txnBody = newTxnBody(true, true);
             given(handleContext.body()).willReturn(txnBody);

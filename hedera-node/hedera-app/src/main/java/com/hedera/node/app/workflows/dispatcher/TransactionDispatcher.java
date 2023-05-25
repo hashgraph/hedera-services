@@ -67,7 +67,7 @@ public class TransactionDispatcher {
 
         try {
             final var handler = getHandler(txBody);
-            handler.validate(txBody);
+            handler.pureChecks(txBody);
         } catch (UnsupportedOperationException ex) {
             throw new PreCheckException(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
         }

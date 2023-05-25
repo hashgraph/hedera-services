@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.node.app.spi.state.WrappedWritableKVState;
 import com.hedera.node.app.spi.state.WrappedWritableSingletonState;
 import com.hedera.node.app.spi.state.WritableKVState;
+import com.hedera.node.app.spi.state.WritableQueueState;
 import com.hedera.node.app.spi.state.WritableSingletonState;
 import com.hedera.node.app.spi.state.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -63,6 +64,12 @@ public class WrappedWritableStates implements WritableStates {
     public <T> WritableSingletonState<T> getSingleton(@NonNull String stateKey) {
         return (WritableSingletonState<T>) writableSingletonStateMap.computeIfAbsent(
                 stateKey, s -> new WrappedWritableSingletonState<>(delegate.getSingleton(stateKey)));
+    }
+
+    @NonNull
+    @Override
+    public <E> WritableQueueState<E> getQueue(@NonNull String stateKey) {
+        throw new UnsupportedOperationException("getQueue is not supported yet");
     }
 
     public boolean isModified() {

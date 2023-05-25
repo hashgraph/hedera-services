@@ -85,6 +85,9 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
             case CONSENSUS_DELETE_TOPIC -> dispatchConsensusDeleteTopic(context);
             case CONSENSUS_SUBMIT_MESSAGE -> dispatchConsensusSubmitMessage(context);
             case CRYPTO_CREATE_ACCOUNT -> dispatchCryptoCreate(context);
+            case TOKEN_ASSOCIATE -> dispatchTokenAssociate(context);
+            case TOKEN_FREEZE -> dispatchTokenFreeze(context);
+            case TOKEN_UNFREEZE -> dispatchTokenUnfreeze(context);
             case TOKEN_GRANT_KYC -> dispatchTokenGrantKycToAccount(context);
             case TOKEN_REVOKE_KYC -> dispatchTokenRevokeKycFromAccount(context);
             case TOKEN_PAUSE -> dispatchTokenPause(context);
@@ -188,6 +191,20 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
         tokenRelStore.commit();
     }
 
+    private void dispatchTokenAssociate(@NonNull final HandleContext handleContext) {
+        final var handler = handlers.tokenAssociateToAccountHandler();
+        handler.handle(handleContext);
+        finishTokenAssociateToAccount(handleContext);
+    }
+
+    private void finishTokenAssociateToAccount(@NonNull final HandleContext handleContext) {
+        final var accountStore = handleContext.writableStore(WritableAccountStore.class);
+        accountStore.commit();
+
+        final var tokenRelStore = handleContext.writableStore(WritableTokenRelationStore.class);
+        tokenRelStore.commit();
+    }
+
     private void dispatchTokenPause(@NonNull final HandleContext handleContext) {
         final var handler = handlers.tokenPauseHandler();
         handler.handle(handleContext);
@@ -208,6 +225,26 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
     private void finishTokenUnPause(@NonNull final HandleContext handleContext) {
         final var tokenStore = handleContext.writableStore(WritableTokenStore.class);
         tokenStore.commit();
+    }
+
+    private void dispatchTokenFreeze(@NonNull final HandleContext handleContext) {
+        final var handler = handlers.tokenFreezeAccountHandler();
+        handler.handle(handleContext);
+        finishTokenFreeze(handleContext);
+    }
+
+    private void finishTokenFreeze(@NonNull final HandleContext handleContext) {
+        handleContext.writableStore(WritableTokenRelationStore.class).commit();
+    }
+
+    private void dispatchTokenUnfreeze(@NonNull final HandleContext handleContext) {
+        final var handler = handlers.tokenUnfreezeAccountHandler();
+        handler.handle(handleContext);
+        finishTokenUnfreeze(handleContext);
+    }
+
+    private void finishTokenUnfreeze(@NonNull final HandleContext handleContext) {
+        handleContext.writableStore(WritableTokenRelationStore.class).commit();
     }
 
     private void dispatchPrng(@NonNull final HandleContext handleContext) {
