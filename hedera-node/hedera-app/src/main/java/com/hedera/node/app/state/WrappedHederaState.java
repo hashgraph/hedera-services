@@ -76,12 +76,6 @@ public class WrappedHederaState implements HederaState {
                 serviceName, s -> new WrappedWritableStates(delegate.createWritableStates(s)));
     }
 
-    @Override
-    @NonNull
-    public RecordCache getRecordCache() {
-        throw new UnsupportedOperationException();
-    }
-
     /**
      * Writes all modifications to the underlying {@link HederaState}.
      */

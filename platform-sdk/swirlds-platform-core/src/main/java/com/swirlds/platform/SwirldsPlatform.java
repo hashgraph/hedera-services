@@ -424,7 +424,7 @@ public class SwirldsPlatform implements Platform, Startable {
 
             // Queue thread that stores and handles signed states that need to be hashed and have signatures collected.
             final QueueThread<ReservedSignedState> stateHashSignQueueThread = PlatformConstructor.stateHashSignQueue(
-                    threadManager, selfId.id(), stateManagementComponent::newSignedStateFromTransactions, metrics);
+                    threadManager, selfId, stateManagementComponent::newSignedStateFromTransactions, metrics);
             stateHashSignQueueThread.start();
 
             final State stateToLoad;
@@ -468,7 +468,7 @@ public class SwirldsPlatform implements Platform, Startable {
             consensusRoundHandler = components.add(PlatformConstructor.consensusHandler(
                     platformContext,
                     threadManager,
-                    selfId.id(),
+                    selfId,
                     PlatformConstructor.settingsProvider(),
                     swirldStateManager,
                     new ConsensusHandlingMetrics(metrics, time),
@@ -552,7 +552,7 @@ public class SwirldsPlatform implements Platform, Startable {
                     intakeCycleStats);
 
             intakeQueue = components.add(new QueueThreadConfiguration<EventIntakeTask>(threadManager)
-                    .setNodeId(selfId.id())
+                    .setNodeId(selfId)
                     .setComponent(PLATFORM_THREAD_POOL_NAME)
                     .setThreadName("event-intake")
                     // There is a circular dependency between the intake queue and gossip,
@@ -623,9 +623,9 @@ public class SwirldsPlatform implements Platform, Startable {
                         Pair.of(swirldStateManager, "swirldStateManager")));
 
         // To be removed once the GUI component is better integrated with the platform.
-        GuiPlatformAccessor.getInstance().setShadowGraph(selfId.id(), shadowGraph);
-        GuiPlatformAccessor.getInstance().setStateManagementComponent(selfId.id(), stateManagementComponent);
-        GuiPlatformAccessor.getInstance().setConsensusReference(selfId.id(), consensusRef);
+        GuiPlatformAccessor.getInstance().setShadowGraph(selfId, shadowGraph);
+        GuiPlatformAccessor.getInstance().setStateManagementComponent(selfId, stateManagementComponent);
+        GuiPlatformAccessor.getInstance().setConsensusReference(selfId, consensusRef);
     }
 
     /**

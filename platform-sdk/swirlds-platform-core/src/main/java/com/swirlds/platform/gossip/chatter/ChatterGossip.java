@@ -239,7 +239,7 @@ public class ChatterGossip extends AbstractGossip {
 
             chatterThreads.add(new StoppableThreadConfiguration<>(threadManager)
                     .setPriority(Thread.NORM_PRIORITY)
-                    .setNodeId(selfId.id())
+                    .setNodeId(selfId)
                     .setComponent(PLATFORM_THREAD_POOL_NAME)
                     .setOtherNodeId(otherId.id())
                     .setThreadName("ChatterReader")

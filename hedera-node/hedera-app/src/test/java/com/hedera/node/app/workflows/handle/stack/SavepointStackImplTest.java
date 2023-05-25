@@ -19,43 +19,52 @@ package com.hedera.node.app.workflows.handle.stack;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.when;
 
-import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
+import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.fixtures.state.StateTestBase;
 import com.hedera.node.app.spi.state.ReadableStates;
-import com.hedera.node.app.spi.state.WritableKVState;
+import com.hedera.node.app.state.HederaState;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
 import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class SavepointStackImplTest extends StateTestBase {
 
     private static final Configuration BASE_CONFIGURATION = new HederaTestConfigBuilder(false).getOrCreateConfig();
     private static final String FOOD_SERVICE = "FOOD_SERVICE";
 
-    private FakeHederaState baseState;
+    private static final Map<String, String> BASE_DATA = Map.of(
+            A_KEY, APPLE,
+            B_KEY, BANANA,
+            C_KEY, CHERRY,
+            D_KEY, DATE,
+            E_KEY, EGGPLANT,
+            F_KEY, FIG,
+            G_KEY, GRAPE
+    );
+
+    @Mock(strictness = LENIENT)
+    private HederaState baseState;
 
     @BeforeEach
     void setup() {
-        baseState = new FakeHederaState();
-        baseState.addService(FOOD_SERVICE, writableFruitState());
-    }
-
-    private static MapWritableKVState<String, String> writableFruitState() {
-        return MapWritableKVState.<String, String>builder(FRUIT_STATE_KEY)
-                .value(A_KEY, APPLE)
-                .value(B_KEY, BANANA)
-                .value(C_KEY, CHERRY)
-                .value(D_KEY, DATE)
-                .value(E_KEY, EGGPLANT)
-                .value(F_KEY, FIG)
-                .value(G_KEY, GRAPE)
-                .build();
+        final var baseKVState = new MapWritableKVState<>(FRUIT_STATE_KEY, BASE_DATA);
+        final var writableStates = MapWritableStates.builder().state(baseKVState).build();
+        when(baseState.createReadableStates(FOOD_SERVICE)).thenReturn(writableStates);
+        when(baseState.createWritableStates(FOOD_SERVICE)).thenReturn(writableStates);
     }
 
     @Test
@@ -65,11 +74,10 @@ class SavepointStackImplTest extends StateTestBase {
 
         // then
         assertThat(stack.depth()).isEqualTo(1);
-        final var originalData = writableFruitState();
-        assertThat(stack.createReadableStates(FOOD_SERVICE)).has(content(originalData));
-        assertThat(stack.createWritableStates(FOOD_SERVICE)).has(content(originalData));
-        assertThat(stack.peek().state().createReadableStates(FOOD_SERVICE)).has(content(originalData));
-        assertThat(stack.peek().state().createWritableStates(FOOD_SERVICE)).has(content(originalData));
+        assertThat(stack.createReadableStates(FOOD_SERVICE)).has(content(BASE_DATA));
+        assertThat(stack.createWritableStates(FOOD_SERVICE)).has(content(BASE_DATA));
+        assertThat(stack.peek().state().createReadableStates(FOOD_SERVICE)).has(content(BASE_DATA));
+        assertThat(stack.peek().state().createWritableStates(FOOD_SERVICE)).has(content(BASE_DATA));
         assertThat(stack.peek().configuration()).isEqualTo(BASE_CONFIGURATION);
     }
 
@@ -93,15 +101,14 @@ class SavepointStackImplTest extends StateTestBase {
 
         // then
         assertThat(stack.depth()).isEqualTo(2);
-        final var originalData = writableFruitState();
-        assertThat(baseState.createReadableStates(FOOD_SERVICE)).has(content(originalData));
-        assertThat(baseState.createWritableStates(FOOD_SERVICE)).has(content(originalData));
-        assertThat(stack.createReadableStates(FOOD_SERVICE)).has(content(originalData));
+        assertThat(baseState.createReadableStates(FOOD_SERVICE)).has(content(BASE_DATA));
+        assertThat(baseState.createWritableStates(FOOD_SERVICE)).has(content(BASE_DATA));
+        assertThat(stack.createReadableStates(FOOD_SERVICE)).has(content(BASE_DATA));
         assertThat(stack.createWritableStates(FOOD_SERVICE)).isSameAs(writableStatesStack);
-        assertThat(readableStatesStack).has(content(originalData));
-        assertThat(writableStatesStack).has(content(originalData));
-        assertThat(stack.peek().state().createReadableStates(FOOD_SERVICE)).has(content(originalData));
-        assertThat(stack.peek().state().createWritableStates(FOOD_SERVICE)).has(content(originalData));
+        assertThat(readableStatesStack).has(content(BASE_DATA));
+        assertThat(writableStatesStack).has(content(BASE_DATA));
+        assertThat(stack.peek().state().createReadableStates(FOOD_SERVICE)).has(content(BASE_DATA));
+        assertThat(stack.peek().state().createWritableStates(FOOD_SERVICE)).has(content(BASE_DATA));
         assertThat(stack.peek().configuration()).isEqualTo(BASE_CONFIGURATION);
     }
 
@@ -125,12 +132,11 @@ class SavepointStackImplTest extends StateTestBase {
 
         // then
         assertThat(stack.depth()).isEqualTo(2);
-        final var originalData = writableFruitState();
-        final var newData = writableFruitState();
+        final var newData = new HashMap<>(BASE_DATA);
         newData.put(A_KEY, ACAI);
         newData.put(B_KEY, BLUEBERRY);
-        assertThat(baseState.createReadableStates(FOOD_SERVICE)).has(content(originalData));
-        assertThat(baseState.createWritableStates(FOOD_SERVICE)).has(content(originalData));
+        assertThat(baseState.createReadableStates(FOOD_SERVICE)).has(content(BASE_DATA));
+        assertThat(baseState.createWritableStates(FOOD_SERVICE)).has(content(BASE_DATA));
         assertThat(stack.createReadableStates(FOOD_SERVICE)).has(content(newData));
         assertThat(stack.createWritableStates(FOOD_SERVICE)).isSameAs(writableStatesStack);
         assertThat(readableStatesStack).has(content(newData));
@@ -169,14 +175,13 @@ class SavepointStackImplTest extends StateTestBase {
 
         // then
         assertThat(stack.depth()).isEqualTo(3);
-        final var originalData = writableFruitState();
-        final var newData = writableFruitState();
+        final var newData = new HashMap<>(BASE_DATA);
         newData.put(A_KEY, ACAI);
         newData.put(B_KEY, BLUEBERRY);
         newData.put(C_KEY, CRANBERRY);
         newData.put(D_KEY, DRAGONFRUIT);
-        assertThat(baseState.createReadableStates(FOOD_SERVICE)).has(content(originalData));
-        assertThat(baseState.createWritableStates(FOOD_SERVICE)).has(content(originalData));
+        assertThat(baseState.createReadableStates(FOOD_SERVICE)).has(content(BASE_DATA));
+        assertThat(baseState.createWritableStates(FOOD_SERVICE)).has(content(BASE_DATA));
         assertThat(stack.createReadableStates(FOOD_SERVICE)).has(content(newData));
         assertThat(stack.createWritableStates(FOOD_SERVICE)).isSameAs(writableStatesStack);
         assertThat(readableStatesStack).has(content(newData));
@@ -207,15 +212,14 @@ class SavepointStackImplTest extends StateTestBase {
 
         // then
         assertThat(stack.depth()).isEqualTo(1);
-        final var originalData = writableFruitState();
-        assertThat(baseState.createReadableStates(FOOD_SERVICE)).has(content(originalData));
-        assertThat(baseState.createWritableStates(FOOD_SERVICE)).has(content(originalData));
-        assertThat(stack.createReadableStates(FOOD_SERVICE)).has(content(originalData));
+        assertThat(baseState.createReadableStates(FOOD_SERVICE)).has(content(BASE_DATA));
+        assertThat(baseState.createWritableStates(FOOD_SERVICE)).has(content(BASE_DATA));
+        assertThat(stack.createReadableStates(FOOD_SERVICE)).has(content(BASE_DATA));
         assertThat(stack.createWritableStates(FOOD_SERVICE)).isSameAs(writableStatesStack);
-        assertThat(readableStatesStack).has(content(originalData));
-        assertThat(writableStatesStack).has(content(originalData));
-        assertThat(stack.peek().state().createReadableStates(FOOD_SERVICE)).has(content(originalData));
-        assertThat(stack.peek().state().createWritableStates(FOOD_SERVICE)).has(content(originalData));
+        assertThat(readableStatesStack).has(content(BASE_DATA));
+        assertThat(writableStatesStack).has(content(BASE_DATA));
+        assertThat(stack.peek().state().createReadableStates(FOOD_SERVICE)).has(content(BASE_DATA));
+        assertThat(stack.peek().state().createWritableStates(FOOD_SERVICE)).has(content(BASE_DATA));
         assertThat(stack.peek().configuration()).isEqualTo(BASE_CONFIGURATION);
     }
 
@@ -248,12 +252,11 @@ class SavepointStackImplTest extends StateTestBase {
 
         // then
         assertThat(stack.depth()).isEqualTo(1);
-        final var originalData = writableFruitState();
-        final var newData = writableFruitState();
+        final var newData = new HashMap<>(BASE_DATA);
         newData.put(C_KEY, CRANBERRY);
         newData.put(D_KEY, DRAGONFRUIT);
-        assertThat(baseState.createReadableStates(FOOD_SERVICE)).has(content(originalData));
-        assertThat(baseState.createWritableStates(FOOD_SERVICE)).has(content(originalData));
+        assertThat(baseState.createReadableStates(FOOD_SERVICE)).has(content(BASE_DATA));
+        assertThat(baseState.createWritableStates(FOOD_SERVICE)).has(content(BASE_DATA));
         assertThat(stack.createReadableStates(FOOD_SERVICE)).has(content(newData));
         assertThat(stack.createWritableStates(FOOD_SERVICE)).isSameAs(writableStatesStack);
         assertThat(readableStatesStack).has(content(newData));
@@ -293,12 +296,11 @@ class SavepointStackImplTest extends StateTestBase {
 
         // then
         assertThat(stack.depth()).isEqualTo(2);
-        final var originalData = writableFruitState();
-        final var newData = writableFruitState();
+        final var newData = new HashMap<>(BASE_DATA);
         newData.put(C_KEY, CRANBERRY);
         newData.put(D_KEY, DRAGONFRUIT);
-        assertThat(baseState.createReadableStates(FOOD_SERVICE)).has(content(originalData));
-        assertThat(baseState.createWritableStates(FOOD_SERVICE)).has(content(originalData));
+        assertThat(baseState.createReadableStates(FOOD_SERVICE)).has(content(BASE_DATA));
+        assertThat(baseState.createWritableStates(FOOD_SERVICE)).has(content(BASE_DATA));
         assertThat(stack.createReadableStates(FOOD_SERVICE)).has(content(newData));
         assertThat(stack.createWritableStates(FOOD_SERVICE)).isSameAs(writableStatesStack);
         assertThat(readableStatesStack).has(content(newData));
@@ -347,12 +349,11 @@ class SavepointStackImplTest extends StateTestBase {
 
         // then
         assertThat(stack.depth()).isEqualTo(2);
-        final var originalData = writableFruitState();
-        final var newData = writableFruitState();
+        final var newData = new HashMap<>(BASE_DATA);
         newData.put(A_KEY, ACAI);
         newData.put(B_KEY, BLUEBERRY);
-        assertThat(baseState.createReadableStates(FOOD_SERVICE)).has(content(originalData));
-        assertThat(baseState.createWritableStates(FOOD_SERVICE)).has(content(originalData));
+        assertThat(baseState.createReadableStates(FOOD_SERVICE)).has(content(BASE_DATA));
+        assertThat(baseState.createWritableStates(FOOD_SERVICE)).has(content(BASE_DATA));
         assertThat(stack.createReadableStates(FOOD_SERVICE)).has(content(newData));
         assertThat(stack.createWritableStates(FOOD_SERVICE)).isSameAs(writableStatesStack);
         assertThat(readableStatesStack).has(content(newData));
@@ -386,9 +387,6 @@ class SavepointStackImplTest extends StateTestBase {
     @Test
     void testCommit() {
         // given
-        baseState = new FakeHederaState();
-        final var fruitBasket = writableFruitState();
-        baseState.addService(FOOD_SERVICE, fruitBasket);
         final var stack = new SavepointStackImpl(baseState, BASE_CONFIGURATION);
         final var writableState = stack.createWritableStates(FOOD_SERVICE).get(FRUIT_STATE_KEY);
         writableState.put(A_KEY, ACAI);
@@ -397,23 +395,23 @@ class SavepointStackImplTest extends StateTestBase {
                 .createWritableStates(FOOD_SERVICE)
                 .get(FRUIT_STATE_KEY)
                 .put(B_KEY, BLUEBERRY);
-        assertThat(fruitBasket.get(A_KEY)).isEqualTo(APPLE);
-        assertThat(fruitBasket.get(B_KEY)).isEqualTo(BANANA);
+        assertThat(baseState.createReadableStates(FOOD_SERVICE)).has(content(BASE_DATA));
+        assertThat(baseState.createWritableStates(FOOD_SERVICE)).has(content(BASE_DATA));
 
         // when
         stack.commit();
 
         // then
-        assertThat(fruitBasket.get(A_KEY)).isEqualTo(ACAI);
-        assertThat(fruitBasket.get(B_KEY)).isEqualTo(BLUEBERRY);
+        final var newData = new HashMap<>(BASE_DATA);
+        newData.put(A_KEY, ACAI);
+        newData.put(B_KEY, BLUEBERRY);
+        assertThat(baseState.createReadableStates(FOOD_SERVICE)).has(content(newData));
+        assertThat(baseState.createWritableStates(FOOD_SERVICE)).has(content(newData));
     }
 
     @Test
     void testCommitAfterRollback() {
         // given
-        baseState = new FakeHederaState();
-        final var fruitBasket = writableFruitState();
-        baseState.addService(FOOD_SERVICE, fruitBasket);
         final var stack = new SavepointStackImpl(baseState, BASE_CONFIGURATION);
         stack.createSavepoint();
         final var writableState = stack.createWritableStates(FOOD_SERVICE).get(FRUIT_STATE_KEY);
@@ -423,16 +421,16 @@ class SavepointStackImplTest extends StateTestBase {
                 .createWritableStates(FOOD_SERVICE)
                 .get(FRUIT_STATE_KEY)
                 .put(B_KEY, BLUEBERRY);
-        assertThat(fruitBasket.get(A_KEY)).isEqualTo(APPLE);
-        assertThat(fruitBasket.get(B_KEY)).isEqualTo(BANANA);
+        assertThat(baseState.createReadableStates(FOOD_SERVICE)).has(content(BASE_DATA));
+        assertThat(baseState.createWritableStates(FOOD_SERVICE)).has(content(BASE_DATA));
 
         // when
         stack.rollback();
         stack.commit();
 
         // then
-        assertThat(fruitBasket.get(A_KEY)).isEqualTo(APPLE);
-        assertThat(fruitBasket.get(B_KEY)).isEqualTo(BANANA);
+        assertThat(baseState.createReadableStates(FOOD_SERVICE)).has(content(BASE_DATA));
+        assertThat(baseState.createWritableStates(FOOD_SERVICE)).has(content(BASE_DATA));
     }
 
     @Test
@@ -456,19 +454,18 @@ class SavepointStackImplTest extends StateTestBase {
         assertThatThrownBy(() -> stack.createWritableStates(FOOD_SERVICE)).isInstanceOf(IllegalStateException.class);
     }
 
-    private static Condition<ReadableStates> content(WritableKVState<String, String> expected) {
+    private static Condition<ReadableStates> content(Map<String, String> expected) {
         return new Condition<>(contentCheck(expected), "state " + expected);
     }
 
-    private static Predicate<ReadableStates> contentCheck(WritableKVState<String, String> expected) {
+    private static Predicate<ReadableStates> contentCheck(Map<String, String> expected) {
         return readableStates -> {
-            final var actual = readableStates.get(expected.getStateKey());
+            final var actual = readableStates.get(FRUIT_STATE_KEY);
             if (expected.size() != actual.size()) {
                 return false;
             }
-            for (final var it = expected.keys(); it.hasNext(); ) {
-                final var key = it.next();
-                if (!Objects.equals(expected.get(key), actual.get(key))) {
+            for (final var entry : expected.entrySet()) {
+                if (!Objects.equals(entry.getValue(), actual.get(entry.getKey()))) {
                     return false;
                 }
             }

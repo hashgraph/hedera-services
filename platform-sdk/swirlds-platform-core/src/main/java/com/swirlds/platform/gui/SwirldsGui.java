@@ -20,6 +20,7 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.platform.gui.internal.GuiUtils.winRect;
 
 import com.swirlds.common.Console;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
@@ -56,9 +57,8 @@ public final class SwirldsGui {
         }
 
         final AddressBook addressBook = platform.getAddressBook();
-        final long selfId = platform.getSelfId().id();
-        final int winNum = GuiPlatformAccessor.getInstance()
-                .getInstanceNumber(platform.getSelfId().id());
+        final NodeId selfId = platform.getSelfId();
+        final int winNum = GuiPlatformAccessor.getInstance().getInstanceNumber(selfId);
 
         final Rectangle winRect = winRect(addressBook, winNum);
         // if SwirldMain calls createConsole, this remembers the window created
@@ -83,9 +83,8 @@ public final class SwirldsGui {
         }
 
         final AddressBook addressBook = platform.getAddressBook();
-        final long selfId = platform.getSelfId().id();
-        final int winNum = GuiPlatformAccessor.getInstance()
-                .getInstanceNumber(platform.getSelfId().id());
+        final NodeId selfId = platform.getSelfId();
+        final int winNum = GuiPlatformAccessor.getInstance().getInstanceNumber(selfId);
 
         final Rectangle winRect = winRect(addressBook, winNum);
 
