@@ -209,7 +209,7 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
 
         assertThatThrownBy(() -> subject.validate(context))
                 .isInstanceOf(PreCheckException.class)
-                .has(responseCode(ResponseCodeEnum.INVALID_ACCOUNT_ID));
+                .has(responseCode(ResponseCodeEnum.ACCOUNT_DELETED));
     }
 
     @Test

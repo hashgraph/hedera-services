@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
@@ -83,7 +84,7 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
             final var account = accountStore.getAccountById(requireNonNull(op.accountID()));
             if (account == null) throw new PreCheckException(INVALID_ACCOUNT_ID);
             if (account.deleted()) {
-                throw new PreCheckException(INVALID_ACCOUNT_ID);
+                throw new PreCheckException(ACCOUNT_DELETED);
             }
         } else if (op.hasContractID()) {
             final var contract = accountStore.getContractById(requireNonNull(op.contractID()));
