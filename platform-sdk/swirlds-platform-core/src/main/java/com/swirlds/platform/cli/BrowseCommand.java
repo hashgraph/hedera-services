@@ -47,7 +47,7 @@ public class BrowseCommand extends AbstractCommand {
             names = {"-l", "--local-node"},
             description = "Specify a node that should be run in this JVM. If no nodes are provided, "
                     + "all nodes with local IP addresses are loaded in this JVM. Multiple nodes can be "
-                    + "specified by repeating the parameter `-l #1 -l #2 -l 3`.")
+                    + "specified by repeating the parameter `-l #1 -l #2 -l #3`.")
     private void setLocalNodes(@NonNull final Long... localNodes) {
         for (final Long nodeId : localNodes) {
             this.localNodes.add(new NodeId(nodeId));
