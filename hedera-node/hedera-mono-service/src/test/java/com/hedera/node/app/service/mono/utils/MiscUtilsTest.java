@@ -103,8 +103,6 @@ import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessageV3;
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.TextFormat;
 import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
@@ -238,17 +236,6 @@ class MiscUtilsTest {
         final var actual =
                 MiscUtils.csvList("ACCOUNTS_GET,ACCOUNTS_GET,ACCOUNTS_GET,STORAGE_REMOVE", MapAccessType::valueOf);
         assertEquals(expected, actual);
-    }
-
-    @Test
-    void hmm() throws TextFormat.InvalidEscapeSequenceException, InvalidProtocolBufferException {
-        final var encoded =
-                "\\n\\017\\n\\t\\b\\251\\201\\273\\243\\006\\020\\227\\001\\022\\002\\030\\002\\022\\002\\030\\003\\030\\376\\313\\315,\\\"\\002\\bx2 \\303\\203\\302\\256\\303\\202\\302\\267\\303\\203\\302\\271tF8\\303\\202\\302\\256J\\303\\203\\302\\213\\303\\203\\302\\220\\303\\203\\302\\216\\212\\001\\216\\001\\022\\v\\b\\345\\317\\225\\247\\006\\020\\330\\270\\323o\\032m\\n\\\"\\022 \\357\\226^\\260\\307Ps\\'\\312\\003\\311\\207\\000\\025\\376\\000\\252\\354\\034\\205\\v\\341\\207\\357.\\205\\311\\357Z\\023\\362\\373\\n#:!\\003\\'K\\311\\032\\256\\304g\\233\\223n~\\261\\030\\332/\\243\\333\\342\\220\\\"\\334\\024L\\3750I\\353\\343\\337}\\267\\346\\n\\\"\\022 \\370\\312}\\027|S\\306u\\317\\336\\322\\272\\b2\\235\\342.9)A\\370\\334\\215S\\031\\303\\266\\357\\266<\\320\\342\\\"\\fHello World!*\\0002\\000";
-        final var raw = TextFormat.unescapeBytes(encoded);
-        //        final var signedTxn = SignedTransaction.parseFrom(raw);
-        //        final var txn = TransactionBody.parseFrom(signedTxn.getBodyBytes());
-        final var txn = TransactionBody.parseFrom(raw);
-        System.out.println(txn);
     }
 
     @Test

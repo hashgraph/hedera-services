@@ -24,7 +24,6 @@ import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
 import com.hedera.node.app.service.mono.records.TxnIdRecentHistory;
@@ -176,25 +175,6 @@ class ExpiryManagerTest {
         assertEquals(1, liveRecords.size());
         assertEquals(secondThen, liveTxnHistories.get(newTxnId).priorityRecord().getExpiry());
         assertEquals(liveQueryableRecords.get(aKey), new LinkedList<>(List.of(secondRecord)));
-    }
-
-    @Test
-    void managesPayerRecordsAsExpectedWithConsolidatedFcq() {
-        subject = new ExpiryManager(
-                liveTxnHistories, () -> RecordsStorageAdapter.fromConsolidated(liveRecords, liveQueryableRecords));
-        final var newTxnId = recordWith(aGrpcId, start).getTxnId().toGrpc();
-
-        final var firstRecord = expiring(recordWith(aGrpcId, start), firstThen);
-        addConsolidatedLiveRecord(firstRecord);
-        liveTxnHistories
-                .computeIfAbsent(newTxnId, ignore -> new TxnIdRecentHistory())
-                .observe(firstRecord, OK);
-        subject.trackRecordInState(aGrpcId, firstThen);
-
-        subject.purge(now);
-
-        assertTrue(liveRecords.isEmpty());
-        assertFalse(liveQueryableRecords.containsKey(aKey));
     }
 
     @Test

@@ -155,9 +155,7 @@ public class RecordsStorageAdapter {
             }
             case IN_SINGLE_FCQ -> {
                 requireNonNull(records).offer(payerRecord);
-                requireNonNull(queryableRecords)
-                        .computeIfAbsent(payerNum, ignore -> new LinkedList<>())
-                        .offer(payerRecord);
+                requireNonNull(queryableRecords).get(payerNum).offer(payerRecord);
             }
         }
     }

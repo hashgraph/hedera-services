@@ -140,10 +140,10 @@ class RecordsStorageAdapterTest {
     }
 
     @Test
-    void addingWithConsolidatedFcqWorksWithExistingPayerRecords() {
+    void addingWithConsolidatedFcqWorks() {
         withConsolidatedSubject();
         final Queue<ExpirableTxnRecord> someQueryableRecords = new LinkedList<>();
-        given(queryableRecords.computeIfAbsent(eq(SOME_NUM), any())).willReturn(someQueryableRecords);
+        given(queryableRecords.get(SOME_NUM)).willReturn(someQueryableRecords);
 
         final var aRecord = SeededPropertySource.forSerdeTest(11, 1).nextRecord();
         subject.addPayerRecord(SOME_NUM, aRecord);
