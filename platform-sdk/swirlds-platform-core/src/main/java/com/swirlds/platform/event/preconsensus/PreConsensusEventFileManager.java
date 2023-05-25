@@ -78,6 +78,12 @@ public class PreConsensusEventFileManager {
     private final Path databaseDirectory;
 
     /**
+     * The location where we will move files that are invalid due to a discontinuity. Better than deleting the files,
+     * in case the files end up being useful for debugging.
+     */
+    private final Path recycleBinDirectory;
+
+    /**
      * Tracks all files currently on disk.
      */
     private final RandomAccessDeque<PreConsensusEventFile> files;
@@ -115,10 +121,13 @@ public class PreConsensusEventFileManager {
 
         minimumRetentionPeriod = preConsensusEventStreamConfig.minimumRetentionPeriod();
 
-        this.databaseDirectory = stateConfig
-                .savedStateDirectory()
+        final Path savedStateDirectory = stateConfig.savedStateDirectory();
+
+        this.databaseDirectory = savedStateDirectory
                 .resolve(preConsensusEventStreamConfig.databaseDirectory())
                 .resolve(Long.toString(selfId));
+
+        this.recycleBinDirectory = savedStateDirectory.resolve(preConsensusEventStreamConfig.recycleBinDirectory());
 
         if (!Files.exists(databaseDirectory)) {
             Files.createDirectories(databaseDirectory);
@@ -389,8 +398,8 @@ public class PreConsensusEventFileManager {
         // the stream does not have gaps in sequence numbers.
         for (int index = files.size() - 1; index >= indexOfDiscontinuity; index--) {
             try {
-                // TODO perhaps instead move this file
-                files.removeLast().deleteFile(databaseDirectory);
+                Files.createDirectories(recycleBinDirectory);
+                files.removeLast().deleteFile(databaseDirectory, recycleBinDirectory);
             } catch (final IOException e) {
                 throw new UncheckedIOException("unable to delete file after discontinuity", e);
             }

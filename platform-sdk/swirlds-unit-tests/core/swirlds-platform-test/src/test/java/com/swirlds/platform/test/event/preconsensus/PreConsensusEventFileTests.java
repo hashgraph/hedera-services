@@ -274,6 +274,76 @@ class PreConsensusEventFileTests {
         assertEquals(0, Files.list(testDirectory).count());
     }
 
+    @SuppressWarnings("resource")
+    @Test
+    @DisplayName("Recycle Test")
+    void recycleTest() throws IOException {
+        final Random random = getRandomPrintSeed();
+        final Instant now = Instant.now();
+
+        final Path streamDirectory = testDirectory.resolve("data");
+        final Path recycleDirectory = testDirectory.resolve("recycle");
+        Files.createDirectories(streamDirectory);
+        Files.createDirectories(recycleDirectory);
+
+        // When we start out, the test directory should be empty.
+        assertEquals(0, Files.list(streamDirectory).count());
+
+        final List<Instant> times = new ArrayList<>();
+        times.add(now);
+        times.add(now.plus(Duration.ofMinutes(1)));
+        times.add(now.plus(Duration.ofMinutes(2)));
+        times.add(now.plus(Duration.ofMinutes(3)));
+        times.add(now.plus(Duration.ofMinutes(4)));
+        times.add(now.plus(Duration.ofMinutes(5)));
+        times.add(now.plus(Duration.ofHours(1)));
+        times.add(now.plus(Duration.ofDays(1)));
+        times.add(now.plus(Duration.ofDays(40)));
+        times.add(now.plus(Duration.ofDays(400)));
+
+        final List<PreConsensusEventFile> files = new ArrayList<>();
+        for (int index = 0; index < times.size(); index++) {
+            final Instant timestamp = times.get(index);
+            // We don't care about generations for this test
+            final PreConsensusEventFile file =
+                    PreConsensusEventFile.of(index, 0, 0, timestamp, streamDirectory, random.nextBoolean());
+
+            writeRandomBytes(random, file.getPath(), 100);
+            files.add(file);
+        }
+
+        // Delete the files in a random order.
+        Collections.shuffle(files, random);
+        final Set<PreConsensusEventFile> deletedFiles = new HashSet<>();
+        for (final PreConsensusEventFile file : files) {
+
+            for (final PreConsensusEventFile fileToCheck : files) {
+                if (deletedFiles.contains(fileToCheck)) {
+                    assertFalse(Files.exists(fileToCheck.getPath()));
+                } else {
+                    assertTrue(Files.exists(fileToCheck.getPath()));
+                }
+            }
+
+            file.deleteFile(streamDirectory, recycleDirectory);
+
+            if (random.nextBoolean()) {
+                // Deleting twice shouldn't have any ill effects
+                file.deleteFile(streamDirectory, recycleDirectory);
+            }
+
+            deletedFiles.add(file);
+        }
+
+        // After all files have been deleted, the test directory should be empty again.
+        assertEquals(0, Files.list(streamDirectory).count());
+
+        // All files should have been moved to the recycle directory
+        for (final PreConsensusEventFile file : files) {
+            assertTrue(Files.exists(recycleDirectory.resolve(file.getPath().getFileName())));
+        }
+    }
+
     @Test
     @DisplayName("compareTo() Test")
     void compareToTest() {

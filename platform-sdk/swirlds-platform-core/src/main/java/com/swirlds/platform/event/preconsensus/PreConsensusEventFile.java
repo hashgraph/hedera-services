@@ -18,6 +18,7 @@ package com.swirlds.platform.event.preconsensus;
 
 import static com.swirlds.common.formatting.StringFormattingUtils.parseSanitizedTimestamp;
 import static com.swirlds.common.formatting.StringFormattingUtils.sanitizeTimestamp;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 import com.swirlds.common.utility.NonCryptographicHashing;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -297,12 +298,27 @@ public final class PreConsensusEventFile implements Comparable<PreConsensusEvent
      * @param rootDirectory the root directory where event files are stored
      */
     public void deleteFile(@NonNull final Path rootDirectory) throws IOException {
+        deleteFile(rootDirectory, null);
+    }
+
+    /**
+     * Delete a file. Automatically deletes parent directories if empty up until the root directory is reached, which is
+     * never deleted.
+     *
+     * @param rootDirectory the root directory where event files are stored
+     * @param recycleBin    if not null, then move the file to this location instead of actually deleting it
+     */
+    public void deleteFile(@NonNull final Path rootDirectory, @Nullable final Path recycleBin) throws IOException {
         if (!Files.exists(path)) {
             // Nothing to delete.
             return;
         }
 
-        Files.delete(path);
+        if (recycleBin == null) {
+            Files.delete(path);
+        } else {
+            Files.move(path, recycleBin.resolve(path.getFileName()), REPLACE_EXISTING);
+        }
 
         // Delete parent directories if they are empty
         Path target = path.getParent();

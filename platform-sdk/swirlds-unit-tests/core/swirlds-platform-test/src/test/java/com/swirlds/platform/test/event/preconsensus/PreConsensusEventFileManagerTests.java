@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -36,6 +37,7 @@ import com.swirlds.common.utility.CompareTo;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventFile;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventFileManager;
+import com.swirlds.platform.event.preconsensus.PreConsensusEventStreamConfig;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -45,9 +47,13 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
+import java.util.stream.Stream;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -70,7 +76,7 @@ class PreConsensusEventFileManagerTests {
     @BeforeEach
     void beforeEach() throws IOException {
         FileUtils.deleteDirectory(testDirectory);
-        fileDirectory = testDirectory.resolve("0");
+        fileDirectory = testDirectory.resolve("data").resolve("0");
     }
 
     @AfterEach
@@ -84,7 +90,8 @@ class PreConsensusEventFileManagerTests {
 
     private PlatformContext buildContext(final boolean permitGaps) {
         final Configuration configuration = new TestConfigBuilder()
-                .withValue("event.preconsensus.databaseDirectory", testDirectory)
+                .withValue("event.preconsensus.databaseDirectory", testDirectory.resolve("data"))
+                .withValue("event.preconsensus.recycleBinDirectory", testDirectory.resolve("recycle"))
                 .withValue("event.preconsensus.preferredFileSizeMegabytes", 5)
                 .withValue("event.preconsensus.permitGaps", permitGaps)
                 .getOrCreateConfig();
@@ -773,6 +780,35 @@ class PreConsensusEventFileManagerTests {
     }
 
     /**
+     * When fixing a discontinuity, invalid files are moved to a "recycle bin" directory. This method validates that
+     * behavior.
+     */
+    private void validateRecycledFiles(
+            @NonNull final List<PreConsensusEventFile> preDiscontinuityFiles,
+            @NonNull final List<PreConsensusEventFile> allFiles,
+            @NonNull final PlatformContext platformContext)
+            throws IOException {
+
+        final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
+        final PreConsensusEventStreamConfig streamConfig =
+                platformContext.getConfiguration().getConfigData(PreConsensusEventStreamConfig.class);
+        final Path recycleBinDirectory = stateConfig.savedStateDirectory().resolve(streamConfig.recycleBinDirectory());
+
+        final Set<Path> recycledFiles = new HashSet<>();
+        try (final Stream<Path> stream = Files.walk(recycleBinDirectory)) {
+            stream.forEach(file -> recycledFiles.add(file.getFileName()));
+        }
+
+        final Set<PreConsensusEventFile> preDiscontinuitySet = new HashSet<>(preDiscontinuityFiles);
+
+        for (final PreConsensusEventFile file : allFiles) {
+            if (!preDiscontinuitySet.contains(file)) {
+                assertTrue(recycledFiles.contains(file.getPath().getFileName()));
+            }
+        }
+    }
+
+    /**
      * In this test, a discontinuity is placed in the middle of the stream. We begin iterating at the first
      * file in the stream.
      */
@@ -852,6 +888,8 @@ class PreConsensusEventFileManagerTests {
         assertIteratorEquality(
                 filesBeforeDiscontinuity.iterator(),
                 manager.getFileIterator(files.get(0).getMinimumGeneration(), false));
+
+        validateRecycledFiles(filesBeforeDiscontinuity, files, platformContext);
     }
 
     /**
@@ -927,6 +965,8 @@ class PreConsensusEventFileManagerTests {
         assertIteratorEquality(
                 Collections.emptyIterator(),
                 manager.getFileIterator(files.get(0).getMinimumGeneration(), false));
+
+        validateRecycledFiles(List.of(), files, platformContext);
     }
 
     /**
@@ -1000,6 +1040,8 @@ class PreConsensusEventFileManagerTests {
 
         // Future requests for files should not return files after the discontinuity
         assertIteratorEquality(filesBeforeDiscontinuity.iterator(), manager.getFileIterator(startGeneration, false));
+
+        validateRecycledFiles(filesBeforeDiscontinuity, files, platformContext);
     }
 
     /**
@@ -1013,6 +1055,8 @@ class PreConsensusEventFileManagerTests {
         final int fileCount = 100;
 
         final List<PreConsensusEventFile> files = new ArrayList<>();
+        final List<PreConsensusEventFile> preDiscontinuityFiles = new ArrayList<>();
+        final List<PreConsensusEventFile> postDiscontinuityFiles = new ArrayList<>();
 
         // Intentionally pick values close to wrapping around the 3 digit to 4 digit sequence number.
         // This will cause the files not to line up alphabetically, and this is a scenario that the
@@ -1043,15 +1087,18 @@ class PreConsensusEventFileManagerTests {
             maximumGeneration = random.nextLong(maximumGeneration + 1, maximumGeneration + maxDelta);
             timestamp = timestamp.plusMillis(random.nextInt(1, 100_000));
 
-            if (sequenceNumber >= discontinuitySequenceNumber) {
-                files.add(file);
+            files.add(file);
+            if (sequenceNumber < discontinuitySequenceNumber) {
+                preDiscontinuityFiles.add(file);
+            } else {
+                postDiscontinuityFiles.add(file);
             }
             createDummyFile(file);
         }
 
         // Note that the file at index 0 is not the first file in the stream,
         // but it is the first file we want to iterate
-        final long startGeneration = files.get(0).getMaximumGeneration();
+        final long startGeneration = postDiscontinuityFiles.get(0).getMaximumGeneration();
 
         final PlatformContext platformContext = buildContext();
 
@@ -1059,13 +1106,15 @@ class PreConsensusEventFileManagerTests {
                 new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), 0);
 
         // Don't try to fix discontinuities, we should see all files starting with the one we request
-        assertIteratorEquality(files.iterator(), manager.getFileIterator(startGeneration, false));
+        assertIteratorEquality(postDiscontinuityFiles.iterator(), manager.getFileIterator(startGeneration, false));
 
         // Now, request that the discontinuity be fixed
         assertIteratorEquality(Collections.emptyIterator(), manager.getFileIterator(startGeneration, true));
 
         // Future requests for files should not return files after the discontinuity
         assertIteratorEquality(Collections.emptyIterator(), manager.getFileIterator(startGeneration, false));
+
+        validateRecycledFiles(preDiscontinuityFiles, files, platformContext);
     }
 
     /**
