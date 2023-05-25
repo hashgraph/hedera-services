@@ -1183,10 +1183,10 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
                 pathToHashDisk.startWriting();
             }
 
-            final Stream<VirtualHashRecord> sorted =
+            final Stream<VirtualHashRecord> sortedDirtyHashes =
                     dirtyHashes.sorted(Comparator.comparingLong(VirtualHashRecord::path));
             final AtomicLong lastPath = new AtomicLong(INVALID_PATH);
-            sorted.forEach(rec -> {
+            sortedDirtyHashes.forEach(rec -> {
                 assert rec.path() > lastPath.getAndSet(rec.path()) : "Path should be in ascending order!";
                 statistics.cycleInternalNodeWritesPerSecond();
 
@@ -1252,9 +1252,9 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
 
             // iterate over leaf records
             final AtomicLong lastPath = new AtomicLong(INVALID_PATH);
-            final Stream<VirtualLeafRecord<K, V>> sorderDirtyLeaves =
+            final Stream<VirtualLeafRecord<K, V>> sortedDirtyLeaves =
                     dirtyLeaves.sorted(Comparator.comparingLong(VirtualLeafRecord::getPath));
-            sorderDirtyLeaves.forEach(leafRecord -> {
+            sortedDirtyLeaves.forEach(leafRecord -> {
                 assert leafRecord.getPath() > lastPath.getAndSet(leafRecord.getPath())
                         : "Path should be in ascending order!";
                 statistics.cycleLeafWritesPerSecond();
