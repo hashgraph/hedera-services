@@ -205,7 +205,7 @@ public class LegacySyncGossip extends AbstractGossip {
             // create and start new threads to listen for incoming sync requests
             thingsToStart.add(new StoppableThreadConfiguration<>(threadManager)
                     .setPriority(Thread.NORM_PRIORITY)
-                    .setNodeId(selfId.id())
+                    .setNodeId(selfId)
                     .setComponent(PLATFORM_THREAD_POOL_NAME)
                     .setOtherNodeId(otherId.id())
                     .setThreadName("listener")
@@ -215,7 +215,7 @@ public class LegacySyncGossip extends AbstractGossip {
             // create and start new thread to send heartbeats on the SyncCaller channels
             thingsToStart.add(new StoppableThreadConfiguration<>(threadManager)
                     .setPriority(settings.getThreadPrioritySync())
-                    .setNodeId(selfId.id())
+                    .setNodeId(selfId)
                     .setComponent(PLATFORM_THREAD_POOL_NAME)
                     .setThreadName("heartbeat")
                     .setOtherNodeId(otherId.id())
@@ -252,7 +252,7 @@ public class LegacySyncGossip extends AbstractGossip {
         /* the thread that repeatedly initiates syncs with other members */
         final Thread syncCallerThread = new ThreadConfiguration(threadManager)
                 .setPriority(settings.getThreadPrioritySync())
-                .setNodeId(selfId.id())
+                .setNodeId(selfId)
                 .setComponent(PLATFORM_THREAD_POOL_NAME)
                 .setThreadName("syncCaller-" + callerNumber)
                 .setRunnable(syncCaller)

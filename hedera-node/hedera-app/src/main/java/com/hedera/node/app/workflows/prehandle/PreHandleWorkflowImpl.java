@@ -36,6 +36,7 @@ import com.hedera.node.app.signature.SignatureVerifier;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
@@ -74,6 +75,8 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     private final SignatureVerifier signatureVerifier;
     /** Provides the latest versioned configuration */
     private final ConfigProvider configProvider;
+    /** Used for registering notice of transactionIDs seen by this node */
+    private final DeduplicationCache deduplicationCache;
 
     /**
      * Creates a new instance of {@code PreHandleWorkflowImpl}.
@@ -90,12 +93,14 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             @NonNull final TransactionChecker transactionChecker,
             @NonNull final SignatureVerifier signatureVerifier,
             @NonNull final SignatureExpander signatureExpander,
-            @NonNull final ConfigProvider configProvider) {
+            @NonNull final ConfigProvider configProvider,
+            @NonNull final DeduplicationCache deduplicationCache) {
         this.dispatcher = requireNonNull(dispatcher);
         this.transactionChecker = requireNonNull(transactionChecker);
         this.signatureVerifier = requireNonNull(signatureVerifier);
         this.signatureExpander = requireNonNull(signatureExpander);
         this.configProvider = requireNonNull(configProvider);
+        this.deduplicationCache = requireNonNull(deduplicationCache);
     }
 
     /** {@inheritDoc} */
@@ -149,9 +154,14 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             return nodeDueDiligenceFailure(creator, preCheck.responseCode(), null);
         }
 
-        // 2. Get Payer Account
+        // Also register this txID as having been seen (we don't actually do deduplication in the pre-handle because
+        // deduplication needs to be done deterministically, but we will keep track of the fact that we have seen this
+        // transaction ID, so we can give proper results in the different receipt queries)
         final var txId = txInfo.txBody().transactionID();
         assert txId != null : "TransactionID should never be null, transactionChecker forbids it";
+        deduplicationCache.add(txId);
+
+        // 2. Get Payer Account
         final var payer = txId.accountID();
         assert payer != null : "Payer account cannot be null, transactionChecker forbids it";
         final var payerAccount = accountStore.getAccountById(payer);

@@ -16,18 +16,19 @@
 
 package com.swirlds.demo.platform;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.demo.merkle.map.internal.ExpectedFCMFamily;
 
 /*
  * Simulate Hedera Client to access file or map without going through
- * consensue
+ * consensus
  */
 public class AppClient extends Thread {
 
     Platform platform;
-    long selfId;
+    NodeId selfId;
     String myName;
     byte[] submittedBytes = null;
     PayloadCfgSimple config;
@@ -37,7 +38,7 @@ public class AppClient extends Thread {
     private TransactionSubmitter submitter;
     private ExpectedFCMFamily expectedFCMFamily;
 
-    AppClient(Platform platform, long selfId, SuperConfig currentConfig, String myName) {
+    AppClient(Platform platform, NodeId selfId, SuperConfig currentConfig, String myName) {
         this.platform = platform;
         this.myName = myName;
         this.selfId = selfId;
