@@ -19,6 +19,7 @@ package com.swirlds.common.test;
 import static com.swirlds.common.system.address.AddressBookUtils.parseAddressBookConfigText;
 import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -464,6 +465,8 @@ class AddressBookTests {
         // make one of the memo fields an empty string
         final NodeId firstNode = addressBook.getNodeId(0);
         addressBook.add(addressBook.getAddress(firstNode).copySetMemo(""));
+        final NodeId secondNode = addressBook.getNodeId(1);
+        addressBook.add(addressBook.getAddress(secondNode).copySetMemo("has a memo"));
 
         final String addressBookText = addressBook.toConfigText();
         final Map<Long, NodeId> posToId = new HashMap<>();
@@ -476,6 +479,27 @@ class AddressBookTests {
                 parseAddressBookConfigText(addressBookText, posToId::get, ip -> false, id -> "");
         // Equality done on toConfigText() strings since the randomly generated address book has public key data.
         assertEquals(addressBookText, parsedAddressBook.toConfigText(), "The AddressBooks are not equal.");
+        assertTrue(parsedAddressBook.getAddress(firstNode).getMemo().isEmpty(), "memo is empty");
+        assertEquals(parsedAddressBook.getAddress(secondNode).getMemo(), "has a memo", "memo matches");
+
+        for (int i = 0; i < addressBook.getSize(); i++) {
+            final Address address = addressBook.getAddress(addressBook.getNodeId(i));
+            final Address parsedAddress = parsedAddressBook.getAddress(parsedAddressBook.getNodeId(i));
+            assert address != null;
+            assert parsedAddress != null;
+            assertEquals(address.getNodeId(), parsedAddress.getNodeId(), "node id matches");
+            // these are the 8 fields of the config.txt address book.
+            assertEquals(address.getSelfName(), parsedAddress.getSelfName(), "self name matches");
+            assertEquals(address.getNickname(), parsedAddress.getNickname(), "nickname matches");
+            assertEquals(address.getWeight(), parsedAddress.getWeight(), "weight matches");
+            assertArrayEquals(
+                    address.getAddressInternalIpv4(), parsedAddress.getAddressInternalIpv4(), "internal ipv4 matches");
+            assertEquals(address.getPortInternalIpv4(), parsedAddress.getPortInternalIpv4(), "internal port matches");
+            assertArrayEquals(
+                    address.getAddressExternalIpv4(), parsedAddress.getAddressExternalIpv4(), "external ipv4 matches");
+            assertEquals(address.getPortExternalIpv4(), parsedAddress.getPortExternalIpv4(), "external port matches");
+            assertEquals(address.getMemo(), parsedAddress.getMemo(), "memo matches");
+        }
     }
 
     @Test
