@@ -17,7 +17,6 @@
 package com.hedera.node.app.spi.workflows;
 
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.spi.records.RecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -29,7 +28,7 @@ public interface TransactionHandler {
      * Pre-handles a transaction, extracting all non-payer keys, which signatures need to be validated
      *
      * @param context the {@link PreHandleContext} which collects all information
-     * @throws NullPointerException if one of the arguments is {@code null}
+     * @throws NullPointerException if {@code context} is {@code null}
      * @throws PreCheckException if the transaction is invalid
      */
     void preHandle(@NonNull final PreHandleContext context) throws PreCheckException;
@@ -38,10 +37,13 @@ public interface TransactionHandler {
      * Validate the transaction body, without involving state or dynamic properties.
      * This method is called as first step of preHandle. If there is any failure,
      * throws a {@link PreCheckException}.
-     * Since these checks are pure, they need not be repeated in handle workflow.
+     *
+     * <p>Since these checks are pure, they need not be repeated in handle workflow.
      * The result of these checks is cached in the {@link PreHandleContext} for use
      * in handle workflow.
+     *
      * @param txn the transaction body
+     * @throws NullPointerException if {@code txBody} is {@code null}
      * @throws PreCheckException if the transaction is invalid
      */
     // NOTE: FUTURE: This method should not be default, but should be implemented by all
@@ -49,12 +51,11 @@ public interface TransactionHandler {
     default void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {}
 
     /**
-     * Returns an instance of the transaction-specific {@link RecordBuilder}.
+     * Handles a transaction
      *
-     * @return an instance of the transaction-specific {@link RecordBuilder}
-     * @param <R> the type of the transaction-specific {@link RecordBuilder}
+     * @param context the {@link HandleContext} which collects all information
+     * @throws NullPointerException if {@code context} is {@code null}
+     * @throws HandleException if an expected failure occurred
      */
-    default <R extends RecordBuilder<R>> R newRecordBuilder() {
-        throw new UnsupportedOperationException("Not implemented");
-    }
+    void handle(@NonNull final HandleContext context) throws HandleException;
 }

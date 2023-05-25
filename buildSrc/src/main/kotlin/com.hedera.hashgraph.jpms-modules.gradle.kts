@@ -284,6 +284,9 @@ extraJavaModuleInfo {
     automaticModule("org.openjdk.jmh:jmh-generator-bytecode", "jmh.generator.bytecode")
     automaticModule("org.openjdk.jmh:jmh-generator-reflection", "jmh.generator.reflection")
     automaticModule("net.sf.jopt-simple:jopt-simple", "jopt.simple")
+
+    automaticModule("uk.org.webcompere:system-stubs-jupiter", "uk.org.webcompere.systemstubs.jupiter")
+    automaticModule("uk.org.webcompere:system-stubs-core", "uk.org.webcompere.systemstubs.core")
 }
 
 configurations.all {

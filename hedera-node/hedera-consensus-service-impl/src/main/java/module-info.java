@@ -8,6 +8,7 @@ module com.hedera.node.app.service.consensus.impl {
     requires transitive com.hedera.pbj.runtime;
     requires transitive dagger;
     requires transitive javax.inject;
+    requires com.hedera.node.config;
     requires com.github.spotbugs.annotations;
     requires com.swirlds.config;
 
@@ -15,13 +16,8 @@ module com.hedera.node.app.service.consensus.impl {
             ConsensusServiceImpl;
 
     exports com.hedera.node.app.service.consensus.impl to
-            com.hedera.node.app.service.consensus.impl.test,
             com.hedera.node.app;
     exports com.hedera.node.app.service.consensus.impl.handlers;
     exports com.hedera.node.app.service.consensus.impl.codecs;
-    exports com.hedera.node.app.service.consensus.impl.config;
     exports com.hedera.node.app.service.consensus.impl.records;
-
-    opens com.hedera.node.app.service.consensus.impl.handlers to
-            com.hedera.node.app.service.consensus.impl.test;
 }

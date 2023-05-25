@@ -17,19 +17,32 @@
 package com.hedera.node.app.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hedera.node.config.VersionedConfiguration;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
+import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith(SystemStubsExtension.class)
 class ConfigProviderImplTest {
 
     @Test
-    void testInitialConfig() {
+    void testNullConfig() {
+        // then
+        assertThatThrownBy(() -> new ConfigProviderImpl(null)).isInstanceOf(NullPointerException.class);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void testInitialConfig(final boolean isGenesis) {
         // given
-        final var configProvider = new ConfigProviderImpl();
+        final var configProvider = new ConfigProviderImpl(isGenesis);
 
         // when
         final var configuration = configProvider.getConfiguration();
@@ -40,39 +53,188 @@ class ConfigProviderImplTest {
     }
 
     @Test
-    void testUpdateCreatesNewConfig() {
+    void testApplicationPropertiesLoaded() {
         // given
-        final var configProvider = new ConfigProviderImpl();
+        final var configProvider = new ConfigProviderImpl(false);
 
         // when
-        final var configuration1 = configProvider.getConfiguration();
-        configProvider.update("name", "value");
-        final var configuration2 = configProvider.getConfiguration();
+        final var configuration = configProvider.getConfiguration();
+        final String value = configuration.getValue("foo.test");
 
         // then
-        assertThat(configuration1).isNotSameAs(configuration2);
-        assertThat(configuration1).returns(0L, VersionedConfiguration::getVersion);
-        assertThat(configuration2).returns(1L, VersionedConfiguration::getVersion);
+        assertThat(value).isEqualTo("123");
     }
 
     @Test
-    void testUpdatedValue() {
+    void testGenesisNotAlwaysUsed() {
         // given
-        final var configProvider = new ConfigProviderImpl();
-        final var configuration1 = configProvider.getConfiguration();
-        final boolean existsInitially = configuration1.exists("port");
+        final var configProvider = new ConfigProviderImpl(false);
 
         // when
-        configProvider.update("port", "8080");
-        final var configuration2 = configProvider.getConfiguration();
-        final String value2 = configuration2.getValue("port");
-        configProvider.update("port", "9090");
-        final var configuration3 = configProvider.getConfiguration();
-        final String value3 = configuration3.getValue("port");
+        final var configuration = configProvider.getConfiguration();
+        final String value = configuration.getValue("bar.test");
 
         // then
-        assertThat(existsInitially).isFalse();
-        assertThat(value2).isEqualTo("8080");
-        assertThat(value3).isEqualTo("9090");
+        assertThat(value).isEqualTo("456");
+    }
+
+    @Test
+    void testGenesisOverwritesApplication() {
+        // given
+        final var configProvider = new ConfigProviderImpl(true);
+
+        // when
+        final var configuration = configProvider.getConfiguration();
+        final String value = configuration.getValue("bar.test");
+
+        // then
+        assertThat(value).isEqualTo("genesis");
+    }
+
+    @Test
+    void testDifferentApplicationPropertiesFile(final EnvironmentVariables environment) {
+        // given
+        environment.set(ConfigProviderImpl.APPLICATION_PROPERTIES_PATH_ENV, "for-test/application.properties.test");
+        final var configProvider = new ConfigProviderImpl(false);
+
+        // when
+        final var configuration = configProvider.getConfiguration();
+        final String bar = configuration.getValue("bar.test");
+
+        // then
+        assertThat(bar).isEqualTo("456Test");
+    }
+
+    @Test
+    void testDifferentGenesisPropertiesFile(final EnvironmentVariables environment) {
+        // given
+        environment.set(ConfigProviderImpl.GENESIS_PROPERTIES_PATH_ENV, "for-test/genesis.properties.test");
+        final var configProvider = new ConfigProviderImpl(true);
+
+        // when
+        final var configuration = configProvider.getConfiguration();
+        final String bar = configuration.getValue("bar.test");
+
+        // then
+        assertThat(bar).isEqualTo("genesisTest");
+    }
+
+    @Test
+    void testApplicationPropertiesFileIsOptional(final EnvironmentVariables environment) {
+        // given
+        environment.set(ConfigProviderImpl.APPLICATION_PROPERTIES_PATH_ENV, "does-not-exist");
+        final var configProvider = new ConfigProviderImpl(true);
+
+        // when
+        final var configuration = configProvider.getConfiguration();
+        final String bar = configuration.getValue("bar.test");
+
+        // then
+        assertThat(configuration.exists("foo.test")).isFalse();
+        assertThat(bar).isEqualTo("genesis");
+    }
+
+    @Test
+    void testGenesisPropertiesFileIsOptional(final EnvironmentVariables environment) {
+        // given
+        environment.set(ConfigProviderImpl.GENESIS_PROPERTIES_PATH_ENV, "does-not-exist");
+        final var configProvider = new ConfigProviderImpl(true);
+
+        // when
+        final var configuration = configProvider.getConfiguration();
+        final String bar = configuration.getValue("bar.test");
+
+        // then
+        assertThat(bar).isEqualTo("456");
+    }
+
+    @Test
+    void testUpdateDoesNotUseApplicationProperties() {
+        // given
+        final var configProvider = new ConfigProviderImpl(false);
+        final Bytes bytes = Bytes.wrap(new byte[] {});
+
+        // when
+        configProvider.update(bytes);
+        final VersionedConfiguration configuration = configProvider.getConfiguration();
+
+        // then
+        assertThat(configuration.getVersion()).isEqualTo(1);
+        assertThat(configuration.getPropertyNames().count()).isEqualTo(0);
+    }
+
+    @Test
+    void testUpdateDoesNotUseGenesisProperties() {
+        // given
+        final var configProvider = new ConfigProviderImpl(true);
+        final Bytes bytes = Bytes.wrap(new byte[] {});
+
+        // when
+        configProvider.update(bytes);
+        final VersionedConfiguration configuration = configProvider.getConfiguration();
+
+        // then
+        assertThat(configuration.getVersion()).isEqualTo(1);
+        assertThat(configuration.getPropertyNames().count()).isEqualTo(0);
+    }
+
+    @Test
+    void testUpdateProvidesConfigProperty() {
+        // given
+        final var configProvider = new ConfigProviderImpl(true);
+        final Bytes bytes = Bytes.wrap("update.test=789".getBytes(StandardCharsets.UTF_8));
+
+        // when
+        configProvider.update(bytes);
+        final VersionedConfiguration configuration = configProvider.getConfiguration();
+        final String value = configuration.getValue("update.test");
+
+        // then
+        assertThat(configuration.getVersion()).isEqualTo(1);
+        assertThat(configuration.getPropertyNames().count()).isEqualTo(1);
+        assertThat(value).isEqualTo("789");
+    }
+
+    @Test
+    void testUpdateProvidesConfigProperties() {
+        // given
+        final var configProvider = new ConfigProviderImpl(true);
+        final StringBuilder sb = new StringBuilder("update.test1=789")
+                .append(System.lineSeparator())
+                .append("update.test2=abc")
+                .append(System.lineSeparator())
+                .append("# update.test3=COMMENT");
+        final Bytes bytes = Bytes.wrap(sb.toString().getBytes(StandardCharsets.UTF_8));
+
+        // when
+        configProvider.update(bytes);
+        VersionedConfiguration configuration = configProvider.getConfiguration();
+        final String value1 = configuration.getValue("update.test1");
+        final String value2 = configuration.getValue("update.test2");
+
+        // then
+        assertThat(configuration.getVersion()).isEqualTo(1);
+        assertThat(configuration.getPropertyNames().count()).isEqualTo(2);
+        assertThat(value1).isEqualTo("789");
+        assertThat(value2).isEqualTo("abc");
+    }
+
+    @Test
+    void testUpdateWithNullBytes() {
+        // given
+        final var configProvider = new ConfigProviderImpl(true);
+
+        // then
+        assertThatThrownBy(() -> configProvider.update(null)).isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void testUpdateWithInvalidBytes() {
+        // given
+        final var configProvider = new ConfigProviderImpl(true);
+        final Bytes bytes = Bytes.wrap("\\uxxxx".getBytes(StandardCharsets.UTF_8));
+
+        // then
+        assertThatThrownBy(() -> configProvider.update(bytes)).isInstanceOf(IllegalArgumentException.class);
     }
 }

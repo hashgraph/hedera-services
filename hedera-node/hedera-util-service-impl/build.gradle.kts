@@ -18,13 +18,15 @@ plugins { id("com.hedera.hashgraph.conventions") }
 
 description = "Default Hedera Util Service Implementation"
 
-dependencies { javaModuleDependencies { annotationProcessor(gav("dagger.compiler")) } }
+dependencies {
+    javaModuleDependencies {
+        annotationProcessor(gav("dagger.compiler"))
 
-// TODO module-info.java in 'test'
-// https://github.com/autonomousapps/dependency-analysis-android-gradle-plugin/issues/900
-dependencyAnalysis.issues {
-  onUnusedDependencies {
-    exclude(":hedera-node:node-app-service-networkadmin")
-    exclude("com.swirlds:swirlds-common")
-  }
+        testImplementation(testFixtures(project(":hedera-node:node-app-spi")))
+        testImplementation(testFixtures(project(":hedera-node:node-config")))
+        testImplementation(gav("org.assertj.core"))
+        testImplementation(gav("org.junit.jupiter.api"))
+        testImplementation(gav("org.mockito"))
+        testImplementation(gav("org.mockito.junit.jupiter"))
+    }
 }

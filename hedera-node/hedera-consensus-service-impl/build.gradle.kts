@@ -18,12 +18,23 @@ plugins { id("com.hedera.hashgraph.conventions") }
 
 description = "Default Hedera Consensus Service Implementation"
 
-dependencies { javaModuleDependencies { annotationProcessor(gav("dagger.compiler")) } }
+dependencies {
+  javaModuleDependencies {
+    annotationProcessor(gav("dagger.compiler"))
 
-// TODO module-info.java in 'test'
-// https://github.com/autonomousapps/dependency-analysis-android-gradle-plugin/issues/900
-dependencyAnalysis.issues {
-  onUnusedDependencies {
-    exclude(javaModuleDependencies.ga("com.github.spotbugs.annotations").get())
+    testImplementation(testFixtures(project(":hedera-node:node-app-service-mono")))
+    testImplementation(testFixtures(project(":hedera-node:node-app-spi")))
+    testImplementation(testFixtures(project(":hedera-node:node-config")))
+    testImplementation(project(":hedera-node:node-app"))
+    testImplementation(project(":hedera-node:node-app-service-consensus-impl"))
+    testImplementation(project(":hedera-node:node-app-service-token"))
+    testImplementation(gav("com.google.protobuf"))
+    testImplementation(gav("com.hedera.hashgraph.protobuf.java.api"))
+    testImplementation(gav("com.swirlds.common"))
+    testImplementation(gav("org.assertj.core"))
+    testImplementation(gav("org.junit.jupiter.api"))
+    testImplementation(gav("org.mockito"))
+    testImplementation(gav("org.mockito.junit.jupiter"))
+
   }
 }

@@ -26,6 +26,7 @@ import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.transaction.CustomFee;
@@ -99,7 +100,8 @@ public class CustomFeesValidator {
 
         final var tokenType = token.tokenType();
         for (final var fee : customFees) {
-            final var collector = accountStore.getAccountById(fee.feeCollectorAccountIdOrElse(AccountID.DEFAULT));
+            final var collectorId = fee.feeCollectorAccountIdOrElse(AccountID.DEFAULT);
+            final var collector = accountStore.getAccountById(collectorId);
             validateTrue(collector != null, INVALID_CUSTOM_FEE_COLLECTOR);
 
             switch (fee.fee().kind()) {
@@ -108,16 +110,15 @@ public class CustomFeesValidator {
                     // validate any explicit token denomination set
                     if (fixedFee.hasDenominatingTokenId()) {
                         validateExplicitTokenDenomination(
-                                collector.accountNumber(),
-                                fixedFee.denominatingTokenId().tokenNum(),
-                                tokenRelationStore,
-                                tokenStore);
+                                collectorId, fixedFee.denominatingTokenId(), tokenRelationStore, tokenStore);
                     }
                 }
                 case FRACTIONAL_FEE -> {
                     // fractional fee can be only applied to fungible common tokens
                     validateTrue(isFungibleCommon(tokenType), CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON);
-                    final var relation = tokenRelationStore.get(collector.accountNumber(), token.tokenNumber());
+                    final var tokenId =
+                            TokenID.newBuilder().tokenNum(token.tokenNumber()).build();
+                    final var relation = tokenRelationStore.get(collectorId, tokenId);
                     validateTrue(relation.isPresent(), TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
                 }
                 case ROYALTY_FEE -> {
@@ -130,8 +131,9 @@ public class CustomFeesValidator {
                                 .fallbackFee()
                                 .denominatingTokenId()
                                 .tokenNum();
-                        validateExplicitTokenDenomination(
-                                collector.accountNumber(), tokenNum, tokenRelationStore, tokenStore);
+                        final var tokenId =
+                                TokenID.newBuilder().tokenNum(tokenNum).build();
+                        validateExplicitTokenDenomination(collectorId, tokenId, tokenRelationStore, tokenStore);
                     }
                 }
                 default -> throw new IllegalArgumentException(
@@ -148,13 +150,13 @@ public class CustomFeesValidator {
      * @param tokenStore The token store.
      */
     private void validateExplicitTokenDenomination(
-            final long feeCollectorNum,
-            final long tokenNum,
+            final AccountID feeCollectorNum,
+            final TokenID tokenNum,
             final ReadableTokenRelationStore tokenRelationStore,
             final WritableTokenStore tokenStore) {
         final var denomToken = tokenStore.get(tokenNum);
-        validateTrue(denomToken.isPresent(), INVALID_TOKEN_ID_IN_CUSTOM_FEES);
-        validateTrue(isFungibleCommon(denomToken.get().tokenType()), CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON);
+        validateTrue(denomToken != null, INVALID_TOKEN_ID_IN_CUSTOM_FEES);
+        validateTrue(isFungibleCommon(denomToken.tokenType()), CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON);
         validateTrue(
                 tokenRelationStore.get(feeCollectorNum, tokenNum).isPresent(), TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
     }

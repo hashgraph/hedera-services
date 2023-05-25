@@ -10,7 +10,6 @@ module com.hedera.node.app {
     requires transitive com.hedera.node.app.service.schedule.impl;
     requires transitive com.hedera.node.app.service.token.impl;
     requires transitive com.hedera.node.app.service.util.impl;
-    requires transitive com.hedera.node.app.service.util;
     requires transitive com.hedera.node.app.spi;
     requires transitive com.hedera.node.config;
     requires transitive com.hedera.node.hapi;
@@ -29,6 +28,7 @@ module com.hedera.node.app {
     requires com.hedera.node.app.service.networkadmin;
     requires com.hedera.node.app.service.schedule;
     requires com.hedera.node.app.service.token;
+    requires com.hedera.node.app.service.util;
     requires com.github.spotbugs.annotations;
     requires com.google.common;
     requires com.google.protobuf;

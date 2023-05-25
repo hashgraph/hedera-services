@@ -141,7 +141,7 @@ class QueryCheckerTest {
                 transaction, txBody, signatureMap, transaction.signedTransactionBytes(), CRYPTO_TRANSFER);
         doThrow(new PreCheckException(INVALID_ACCOUNT_AMOUNTS))
                 .when(cryptoTransferHandler)
-                .validate(txBody);
+                .pureChecks(txBody);
 
         // then
         assertThatThrownBy(() -> checker.validateCryptoTransfer(transactionInfo))

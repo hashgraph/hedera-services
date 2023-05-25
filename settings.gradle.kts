@@ -136,6 +136,7 @@ dependencyResolutionManagement {
       val mockitoVersion = "4.6.1"
       val nettyVersion = "4.1.66.Final"
       val swirldsVersion = "0.39.0-adhoc.xa9477c7f"
+      val systemStubsVersion = "2.0.2"
       val testContainersVersion = "1.17.2"
       val tuweniVersion = "2.2.0"
 
@@ -202,6 +203,8 @@ dependencyResolutionManagement {
       version("org.testcontainers.junit.jupiter", testContainersVersion)
       version("tuweni.bytes", tuweniVersion)
       version("tuweni.units", tuweniVersion)
+      version("uk.org.webcompere.systemstubs.core", systemStubsVersion)
+      version("uk.org.webcompere.systemstubs.jupiter", systemStubsVersion)
 
       plugin("pbj", "com.hedera.pbj.pbj-compiler").version("0.5.2")
     }
