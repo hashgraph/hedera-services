@@ -22,6 +22,7 @@ import com.swirlds.base.ArgumentUtils;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.components.state.query.LatestSignedStateProvider;
+import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.unidirectional.NetworkProtocolResponder;
@@ -47,6 +48,9 @@ public class ReconnectProtocolResponder implements NetworkProtocolResponder {
     private final ReconnectMetrics stats;
     private final ThreadManager threadManager;
 
+    @NonNull
+    private final FallenBehindManager fallenBehindManager;
+
     /**
      * @param threadManager             responsible for managing thread lifecycles
      * @param latestSignedStateProvider a function that provides the latest signed state, either strongly or weakly
@@ -61,11 +65,13 @@ public class ReconnectProtocolResponder implements NetworkProtocolResponder {
             @NonNull final LatestSignedStateProvider latestSignedStateProvider,
             @NonNull final ReconnectConfig config,
             @NonNull final ReconnectThrottle reconnectThrottle,
+            @NonNull final FallenBehindManager fallenBehindManager,
             @NonNull final ReconnectMetrics stats) {
         this.threadManager = ArgumentUtils.throwArgNull(threadManager, "threadManager");
         this.latestSignedStateProvider =
                 ArgumentUtils.throwArgNull(latestSignedStateProvider, "latestSignedStateProvider");
         this.config = ArgumentUtils.throwArgNull(config, "config");
+        this.fallenBehindManager = ArgumentUtils.throwArgNull(fallenBehindManager, "fallenBehindManager");
         this.reconnectThrottle = ArgumentUtils.throwArgNull(reconnectThrottle, "reconnectThrottle");
         this.stats = ArgumentUtils.throwArgNull(stats, "stats");
     }
@@ -124,6 +130,7 @@ public class ReconnectProtocolResponder implements NetworkProtocolResponder {
                                 connection.getSelfId().id(),
                                 connection.getOtherId().id(),
                                 state.get().getRound(),
+                                fallenBehindManager::hasFallenBehind,
                                 stats)
                         .execute(state.get());
             } finally {
