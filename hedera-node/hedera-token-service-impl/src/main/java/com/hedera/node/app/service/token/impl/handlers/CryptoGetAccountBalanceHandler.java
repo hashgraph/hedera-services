@@ -134,7 +134,8 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
         TokenID tokenID;
         AccountID accountID;
         while (tokenNum != 0 && count <= tokenConfig.maxRelsPerInfoQuery()) {
-            accountID = AccountID.newBuilder().accountNum(account.accountNumber()).build();
+            accountID =
+                    AccountID.newBuilder().accountNum(account.accountNumber()).build();
             tokenID = TokenID.newBuilder().tokenNum(tokenNum).build();
             tokenRelation = tokenRelationStore.get(accountID, tokenID);
             if (tokenRelation.isPresent()) {
