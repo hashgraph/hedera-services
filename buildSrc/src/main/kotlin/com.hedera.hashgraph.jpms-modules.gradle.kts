@@ -265,7 +265,6 @@ extraJavaModuleInfo {
     automaticModule("io.opencensus:opencensus-api", "io.opencensus.api")
     automaticModule("org.hyperledger.besu.internal:util", "org.hyperledger.besu.internal.util")
     automaticModule("org.testcontainers:junit-jupiter", "org.testcontainers.junit.jupiter")
-    automaticModule("org.mockito:mockito-inline", "org.mockito.inline")
 
     // Test Related Modules
     automaticModule("org.mockito:mockito-inline", "org.mockito.inline")

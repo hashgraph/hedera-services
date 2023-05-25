@@ -197,6 +197,7 @@ dependencyResolutionManagement {
       version("org.junit.jupiter.api", "5.9.0")
       version("org.junitpioneer", "2.0.1")
       version("org.mockito", mockitoVersion)
+      version("org.mockito.inline", mockitoVersion)
       version("org.mockito.junit.jupiter", mockitoVersion)
       version("org.slf4j", "2.0.3")
       version("org.testcontainers", testContainersVersion)
