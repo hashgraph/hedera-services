@@ -213,6 +213,26 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
     }
 
     @Test
+    @DisplayName("deleted contract is not valid")
+    void validatesQueryIfDeletedContract() throws Throwable {
+        given(deleteAccount.deleted()).willReturn(true);
+        given(deleteAccount.smartContract()).willReturn(true);
+        readableAccounts = emptyReadableAccountStateBuilder()
+                .value(EntityNumVirtualKey.fromLong(deleteAccountNum), deleteAccount)
+                .build();
+        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        readableStore = new ReadableAccountStoreImpl(readableStates);
+
+        final var query = createGetAccountBalanceQueryWithContract(deleteAccountNum);
+        when(context.query()).thenReturn(query);
+        when(context.createStore(ReadableAccountStore.class)).thenReturn(readableStore);
+
+        assertThatThrownBy(() -> subject.validate(context))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(ResponseCodeEnum.CONTRACT_DELETED));
+    }
+
+    @Test
     @DisplayName("failed response is correctly handled in findResponse")
     void getsResponseIfFailedResponse() {
         final var responseHeader = ResponseHeader.newBuilder()
