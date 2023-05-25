@@ -21,20 +21,24 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
+import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
-import static java.lang.System.arraycopy;
 import static java.util.Objects.requireNonNull;
 
-import com.google.common.primitives.Longs;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.base.ResponseType;
+import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.TokenFreezeStatus;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TokenKycStatus;
+import com.hedera.hapi.node.base.TokenRelationship;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.AccountDetails;
 import com.hedera.hapi.node.token.GetAccountDetailsQuery;
 import com.hedera.hapi.node.token.GetAccountDetailsResponse;
@@ -43,14 +47,16 @@ import com.hedera.hapi.node.token.GrantedNftAllowance;
 import com.hedera.hapi.node.token.GrantedTokenAllowance;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
+import com.hedera.node.app.service.networkadmin.impl.config.NetworkAdminServiceConfig;
 import com.hedera.node.app.service.networkadmin.impl.utils.NetworkAdminServiceUtil;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableTokenRelationStore;
+import com.hedera.node.app.service.token.ReadableTokenStore;
+import com.hedera.node.app.service.token.ReadableTokenStore.TokenMetadata;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
-import com.hedera.hapi.node.base.Timestamp;
-import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -71,7 +77,6 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
     public NetworkGetAccountDetailsHandler() {
         // Exists for injection
         this.networkInfo = null;
-
     }
 
     @Override
@@ -86,7 +91,6 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
         final var response = GetAccountDetailsResponse.newBuilder().header(header);
         return Response.newBuilder().accountDetails(response).build();
     }
-
 
     @Override
     public boolean requiresNodePayment(@NonNull ResponseType responseType) {
@@ -126,7 +130,11 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
         final var responseType = op.headerOrElse(QueryHeader.DEFAULT).responseType();
         responseBuilder.header(header);
         if (header.nodeTransactionPrecheckCode() == OK && responseType != COST_ANSWER) {
-            final var optionalInfo = infoForAccount(account, accountStore);
+            final var networkAdminConfig = context.configuration().getConfigData(NetworkAdminServiceConfig.class);
+            final var readableTokenStore = context.createStore(ReadableTokenStore.class);
+            final var tokenRelationStore = context.createStore(ReadableTokenRelationStore.class);
+            final var optionalInfo =
+                    infoForAccount(account, accountStore, networkAdminConfig, readableTokenStore, tokenRelationStore);
             optionalInfo.ifPresent(responseBuilder::accountDetails);
         }
 
@@ -139,20 +147,27 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
      * @param accountStore the account store
      * @return the information about the account
      */
-    private Optional<AccountDetails> infoForAccount(@NonNull final AccountID accountID, @NonNull final ReadableAccountStore accountStore) {
+    private Optional<AccountDetails> infoForAccount(
+            @NonNull final AccountID accountID,
+            @NonNull final ReadableAccountStore accountStore,
+            @NonNull final NetworkAdminServiceConfig networkAdminConfig,
+            @NonNull final ReadableTokenStore readableTokenStore,
+            @NonNull final ReadableTokenRelationStore tokenRelationStore) {
         final var account = accountStore.getAccountById(accountID);
         if (account == null) {
             return Optional.empty();
         } else {
             final var info = AccountDetails.newBuilder();
-            info.accountId(AccountID.newBuilder().accountNum(account.accountNumber()).build());
+            info.accountId(
+                    AccountID.newBuilder().accountNum(account.accountNumber()).build());
             info.contractAccountId(NetworkAdminServiceUtil.asHexedEvmAddress(accountID));
             info.deleted(account.deleted());
             if (!isEmpty(account.key())) info.key(account.key());
             info.balance(account.tinybarBalance());
             info.receiverSigRequired(account.receiverSigRequired());
             info.expirationTime(Timestamp.newBuilder().seconds(account.expiry()).build());
-            info.autoRenewPeriod(Duration.newBuilder().seconds(account.autoRenewSecs()).build());
+            info.autoRenewPeriod(
+                    Duration.newBuilder().seconds(account.autoRenewSecs()).build());
             info.memo(account.memo());
             info.ownedNfts(account.numberOwnedNfts());
             info.maxAutomaticTokenAssociations(account.maxAutoAssociations());
@@ -161,7 +176,9 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
             info.grantedCryptoAllowances(getCryptoGrantedAllowancesList(account));
             info.grantedNftAllowances(getNftGrantedAllowancesList(account));
             info.grantedTokenAllowances(getFungibleGrantedTokenAllowancesList(account));
-            final var tokenRels = tokenRels(this, account, maxTokensForAccountInfo);
+
+            final var tokenRels = getTokenRelationships(
+                    networkAdminConfig.maxTokensForAccountInfo(), account, readableTokenStore, tokenRelationStore);
             if (!tokenRels.isEmpty()) {
                 info.tokenRelationships(tokenRels);
             }
@@ -169,13 +186,60 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
         }
     }
 
+    private List<TokenRelationship> getTokenRelationships(
+            final int maxRelationships,
+            Account account,
+            ReadableTokenStore readableTokenStore,
+            ReadableTokenRelationStore tokenRelationStore) {
+        final var tokenRelationshipList = new ArrayList<TokenRelationship>();
+        var tokenNum = account.headTokenNumber();
+        int count = 0;
+
+        while (tokenNum != 0 && count <= maxRelationships) {
+            final Optional<TokenRelation> optionalTokenRelation =
+                    tokenRelationStore.get(account.accountNumber(), tokenNum);
+            if (optionalTokenRelation.isPresent()) {
+                final var tokenId = TokenID.newBuilder()
+                        .shardNum(STATIC_PROPERTIES.getShard())
+                        .realmNum(STATIC_PROPERTIES.getRealm())
+                        .tokenNum(tokenNum)
+                        .build();
+                final TokenMetadata token = readableTokenStore.getTokenMeta(tokenId);
+                final var tokenRelation = optionalTokenRelation.get();
+                if (token != null) {
+                    final TokenRelationship tokenRelationship = TokenRelationship.newBuilder()
+                            .tokenId(tokenId)
+                            .balance(tokenRelation.balance())
+                            .decimals(token.decimals())
+                            .symbol(token.symbol())
+                            .kycStatus(
+                                    tokenRelation.kycGranted()
+                                            ? TokenKycStatus.GRANTED
+                                            : TokenKycStatus.KYC_NOT_APPLICABLE)
+                            .freezeStatus(
+                                    tokenRelation.frozen() ? TokenFreezeStatus.FROZEN : TokenFreezeStatus.UNFROZEN)
+                            .automaticAssociation(tokenRelation.automaticAssociation())
+                            .build();
+                    tokenRelationshipList.add(tokenRelationship);
+                }
+                tokenNum = tokenRelation.nextToken();
+            } else {
+                break;
+            }
+            count++;
+        }
+        return tokenRelationshipList;
+    }
+
     private List<GrantedNftAllowance> getNftGrantedAllowancesList(final Account account) {
         if (!account.approveForAllNftAllowances().isEmpty()) {
             List<GrantedNftAllowance> nftAllowances = new ArrayList<>();
             for (var a : account.approveForAllNftAllowances()) {
                 final var approveForAllNftsAllowance = GrantedNftAllowance.newBuilder();
-                approveForAllNftsAllowance.tokenId(TokenID.newBuilder().tokenNum(a.tokenNum()).build());
-                approveForAllNftsAllowance.spender(AccountID.newBuilder().accountNum(a.spenderNum()).build());
+                approveForAllNftsAllowance.tokenId(
+                        TokenID.newBuilder().tokenNum(a.tokenNum()).build());
+                approveForAllNftsAllowance.spender(
+                        AccountID.newBuilder().accountNum(a.spenderNum()).build());
                 nftAllowances.add(approveForAllNftsAllowance.build());
             }
             return nftAllowances;
@@ -188,8 +252,10 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
             List<GrantedTokenAllowance> tokenAllowances = new ArrayList<>();
             final var tokenAllowance = GrantedTokenAllowance.newBuilder();
             for (var a : account.tokenAllowances()) {
-                tokenAllowance.tokenId(TokenID.newBuilder().tokenNum(a.tokenNum()).build());
-                tokenAllowance.spender(AccountID.newBuilder().accountNum(a.spenderNum()).build());
+                tokenAllowance.tokenId(
+                        TokenID.newBuilder().tokenNum(a.tokenNum()).build());
+                tokenAllowance.spender(
+                        AccountID.newBuilder().accountNum(a.spenderNum()).build());
                 tokenAllowance.amount(a.amount());
                 tokenAllowances.add(tokenAllowance.build());
             }
@@ -203,7 +269,8 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
             List<GrantedCryptoAllowance> cryptoAllowances = new ArrayList<>();
             final var cryptoAllowance = GrantedCryptoAllowance.newBuilder();
             for (var a : account.cryptoAllowances()) {
-                cryptoAllowance.spender(AccountID.newBuilder().accountNum(a.spenderNum()).build());
+                cryptoAllowance.spender(
+                        AccountID.newBuilder().accountNum(a.spenderNum()).build());
                 cryptoAllowance.amount(a.amount());
                 cryptoAllowances.add(cryptoAllowance.build());
             }
@@ -211,6 +278,4 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
         }
         return Collections.emptyList();
     }
-
-
 }

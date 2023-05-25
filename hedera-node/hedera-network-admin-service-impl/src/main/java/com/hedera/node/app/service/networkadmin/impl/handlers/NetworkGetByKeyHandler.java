@@ -34,7 +34,7 @@ import javax.inject.Singleton;
 /**
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#GET_BY_KEY}.
  */
-//not supported
+// not supported
 @Singleton
 public class NetworkGetByKeyHandler extends PaidQueryHandler {
     @Inject

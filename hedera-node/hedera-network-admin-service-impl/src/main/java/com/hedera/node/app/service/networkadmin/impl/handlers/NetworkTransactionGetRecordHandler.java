@@ -34,7 +34,7 @@ import javax.inject.Singleton;
 /**
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#TRANSACTION_GET_RECORD}.
  */
-//use RecordCache for this
+// use RecordCache for this
 @Singleton
 public class NetworkTransactionGetRecordHandler extends PaidQueryHandler {
     @Inject

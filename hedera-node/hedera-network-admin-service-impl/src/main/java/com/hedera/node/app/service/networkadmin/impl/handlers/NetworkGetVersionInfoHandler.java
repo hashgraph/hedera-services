@@ -35,7 +35,7 @@ import javax.inject.Singleton;
 /**
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#GET_VERSION_INFO}.
  */
-//to read from property files or from jar file to get version info
+// to read from property files or from jar file to get version info
 @Singleton
 public class NetworkGetVersionInfoHandler extends PaidQueryHandler {
     @Inject
@@ -47,7 +47,6 @@ public class NetworkGetVersionInfoHandler extends PaidQueryHandler {
     public QueryHeader extractHeader(@NonNull final Query query) {
         requireNonNull(query);
         return query.networkGetVersionInfoOrThrow().header();
-
     }
 
     @Override
