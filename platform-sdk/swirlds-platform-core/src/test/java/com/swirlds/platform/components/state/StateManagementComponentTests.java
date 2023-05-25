@@ -41,6 +41,7 @@ import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.RandomAddressBookGenerator.WeightDistributionStrategy;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
+import com.swirlds.platform.Settings;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
@@ -640,7 +641,9 @@ class StateManagementComponentTests {
         final TestConfigBuilder configBuilder = new TestConfigBuilder()
                 .withValue("state.roundsToKeepForSigning", roundsToKeepForSigning)
                 .withValue("state.saveStatePeriod", 1)
+                .withValue("state.saveReconnectStateToDisk", true)
                 .withValue("state.savedStateDirectory", tmpDir.toFile().toString());
+        Settings.getInstance().getState().savedStateDirectory = tmpDir.toFile().toString();
 
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withMetrics(new NoOpMetrics())
