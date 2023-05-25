@@ -211,12 +211,7 @@ public final class StringFormattingUtils {
      * @return the sanitized timestamp
      */
     public static String sanitizeTimestamp(final Instant timestamp) {
-        try {
-            return timestamp.toString().replace(":", "+");
-        } catch (final Exception e) {
-            e.printStackTrace();
-            throw e;
-        }
+        return timestamp.toString().replace(":", "+");
     }
 
     /**
