@@ -85,26 +85,6 @@ class WritableTokenStoreTest extends TokenHandlerTestBase {
     }
 
     @Test
-    void commitsTokenChangesToState() {
-        token = createToken();
-        assertFalse(writableTokenState.contains(tokenEntityNum));
-        // put, keeps the token in the modifications.
-        // Size of state includes modifications and size of backing state.
-        writableTokenStore.put(token);
-
-        assertTrue(writableTokenState.contains(tokenEntityNum));
-        final var writtenToken = writableTokenState.get(tokenEntityNum);
-        assertEquals(1, writableTokenStore.sizeOfState());
-        assertTrue(writableTokenStore.modifiedTokens().contains(tokenEntityNum));
-        assertEquals(token, writtenToken);
-
-        // commit, pushes modifications to backing store. But the size of state is still 1
-        writableTokenStore.commit();
-        assertEquals(1, writableTokenStore.sizeOfState());
-        assertTrue(writableTokenStore.modifiedTokens().contains(tokenEntityNum));
-    }
-
-    @Test
     void getsSizeOfState() {
         token = createToken();
         assertEquals(0, writableTokenStore.sizeOfState());

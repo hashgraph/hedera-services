@@ -22,13 +22,11 @@ import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.valid
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.file.SystemUndeleteTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
-import com.hedera.node.app.service.file.impl.records.DeleteFileRecordBuilder;
 import com.hedera.node.app.service.file.impl.utils.FileServiceUtils;
-import com.hedera.node.app.spi.meta.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -69,28 +67,18 @@ public class FileSystemUndeleteHandler implements TransactionHandler {
         validateAndAddRequiredKeys(fileMeta.keys(), context, true);
     }
 
-    /**
-     * Given the appropriate context, undelete system file.
-     *
-     * @param systemUndeleteTransactionBody the {@link SystemUndeleteTransactionBody} of the active
-     *     system file undelete transaction
-     * @param fileStore the {@link WritableFileStoreImpl} to use to delete the file
-     * @throws NullPointerException if one of the arguments is {@code null}
-     */
-    public void handle(
-            @NonNull final HandleContext handleContext,
-            @NonNull final SystemUndeleteTransactionBody systemUndeleteTransactionBody,
-            @NonNull final WritableFileStoreImpl fileStore) {
+    @Override
+    public void handle(@NonNull final HandleContext handleContext) throws HandleException {
         requireNonNull(handleContext);
-        requireNonNull(systemUndeleteTransactionBody);
-        requireNonNull(fileStore);
 
+        final var systemUndeleteTransactionBody = handleContext.body().systemUndeleteOrThrow();
         if (!systemUndeleteTransactionBody.hasFileID()) {
             throw new HandleException(INVALID_FILE_ID);
         }
         var fileId = systemUndeleteTransactionBody.fileIDOrThrow();
-        final var ledgerConfig = handleContext.getConfiguration().getConfigData(LedgerConfig.class);
+        final var ledgerConfig = handleContext.configuration().getConfigData(LedgerConfig.class);
 
+        final var fileStore = handleContext.writableStore(WritableFileStoreImpl.class);
         final File file = FileServiceUtils.verifySystemFile(ledgerConfig, fileStore, fileId, true);
 
         final var oldExpiry = file.expirationTime();
@@ -111,11 +99,5 @@ public class FileSystemUndeleteHandler implements TransactionHandler {
             It will not be committed to state until commit is called on the state.--- */
             fileStore.put(fileBuilder.build());
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public DeleteFileRecordBuilder newRecordBuilder() {
-        return new DeleteFileRecordBuilder();
     }
 }

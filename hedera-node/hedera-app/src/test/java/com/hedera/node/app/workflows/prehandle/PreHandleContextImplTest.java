@@ -73,7 +73,7 @@ class PreHandleContextImplTest {
 
     @Test
     void gettersWork() throws PreCheckException {
-        given(storeFactory.createStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(storeFactory.getStore(ReadableAccountStore.class)).willReturn(accountStore);
         given(accountStore.getAccountById(PAYER)).willReturn(account);
         given(account.key()).willReturn(payerKey);
         final var txn = createAccountTransaction();

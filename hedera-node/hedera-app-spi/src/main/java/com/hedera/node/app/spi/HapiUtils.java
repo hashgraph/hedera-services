@@ -68,6 +68,11 @@ public class HapiUtils {
                 .build();
     }
 
+    /** Converts the given {@link Timestamp} into an {@link Instant}. */
+    public static Instant asInstant(@NonNull final Timestamp timestamp) {
+        return Instant.ofEpochSecond(timestamp.seconds(), timestamp.nanos());
+    }
+
     /** Subtracts the given number of seconds from the given {@link Timestamp}, returning a new {@link Timestamp}. */
     public static Timestamp minus(@NonNull final Timestamp ts, @NonNull final long seconds) {
         return Timestamp.newBuilder()

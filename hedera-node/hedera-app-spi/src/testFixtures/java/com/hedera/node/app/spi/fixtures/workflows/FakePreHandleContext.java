@@ -141,6 +141,12 @@ public class FakePreHandleContext implements PreHandleContext {
         return payer;
     }
 
+    @Override
+    @NonNull
+    public Configuration configuration() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
     @NonNull
     @Override
     public Set<Key> requiredNonPayerKeys() {
@@ -364,12 +370,6 @@ public class FakePreHandleContext implements PreHandleContext {
     @Nullable
     public PreHandleContext innerContext() {
         return innerContext;
-    }
-
-    @Override
-    @NonNull
-    public Configuration configuration() {
-        throw new UnsupportedOperationException("This class is deprecated. New functionality will not be added.");
     }
 
     @Override

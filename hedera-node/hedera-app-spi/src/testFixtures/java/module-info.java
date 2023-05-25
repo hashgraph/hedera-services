@@ -11,4 +11,5 @@ module com.hedera.node.app.spi.fixtures {
 
     // Temporarily needed until FakePreHandleContext can be removed
     requires com.hedera.node.app.service.token;
+    requires com.swirlds.config;
 }

@@ -42,7 +42,6 @@ import com.hedera.node.app.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 import java.util.function.Function;
-import javax.inject.Inject;
 
 /**
  * Factory for all readable stores. It creates new readable stores based on the {@link HederaState}.
@@ -71,7 +70,6 @@ public class ReadableStoreFactory {
      *
      * @param state the {@link HederaState} to use
      */
-    @Inject
     public ReadableStoreFactory(@NonNull final HederaState state) {
         this.state = requireNonNull(state, "The supplied argument 'state' cannot be null!");
     }
@@ -86,7 +84,7 @@ public class ReadableStoreFactory {
      * @throws NullPointerException if {@code storeInterface} is {@code null}
      */
     @NonNull
-    public <C> C createStore(@NonNull final Class<C> storeInterface) throws IllegalArgumentException {
+    public <C> C getStore(@NonNull final Class<C> storeInterface) throws IllegalArgumentException {
         requireNonNull(storeInterface, "The supplied argument 'storeInterface' cannot be null!");
         final var entry = STORE_FACTORY.get(storeInterface);
         if (entry != null) {
