@@ -1539,7 +1539,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
         }
 
         boolean getFlag(int bit) {
-            return (flags & (1 << bit)) != 0;
+            return ((0xFF & flags) & (1 << bit)) != 0;
         }
 
         @SuppressWarnings("NonAtomicOperationOnVolatileField")

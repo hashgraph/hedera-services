@@ -289,7 +289,7 @@ final class ConcurrentArray<T> {
         // A quick exit: if there are no elements, then return an empty stream
         final int numberOfElements = this.elementCount.get();
         if (numberOfElements == 0) {
-            return Stream.of();
+            return Stream.empty();
         }
 
         return StreamSupport.stream(new ConcurrentArraySpliterator<>(numberOfElements, head), false);
