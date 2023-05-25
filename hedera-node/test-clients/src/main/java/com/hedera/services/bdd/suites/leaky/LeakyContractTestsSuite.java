@@ -235,6 +235,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
     private static final String CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY = "contracts.allowAutoAssociations";
     public static final String FALSE = "false";
     private static final String TRANSFER_CONTRACT = "NonDelegateCryptoTransfer";
+    private static final String CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS = "contracts.maxNumWithHapiSigsAccess";
     private static final String CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS = "contracts.allowSystemUseOfHapiSigs";
     private static final String CRYPTO_TRANSFER = "CryptoTransfer";
     private static final String TOKEN_TRANSFER_CONTRACT = "TokenTransferContract";
@@ -601,11 +602,15 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaNftID = new AtomicReference<>();
         return propertyPreservingHapiSpec(TRANSFER_WORKS_WITH_TOP_LEVEL_SIGNATURES)
-                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS)
+                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
                         // enable top level signatures for
                         // transferToken/transferTokens/transferNft/transferNfts
-                        overriding(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CRYPTO_TRANSFER),
+                        overridingTwo(
+                                CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS,
+                                CRYPTO_TRANSFER,
+                                CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS,
+                                "10_000_000"),
                         newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY),
@@ -831,9 +836,10 @@ public class LeakyContractTestsSuite extends HapiSuite {
 
     private HapiSpec createTokenWithInvalidFeeCollector() {
         return propertyPreservingHapiSpec("createTokenWithInvalidFeeCollector")
-                .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED)
+                .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
                         overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE_VALUE),
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, "10_000_000"),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(ECDSA_KEY),
                         uploadInitCode(TOKEN_CREATE_CONTRACT),
@@ -879,9 +885,10 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final String feeCollector = ACCOUNT_2;
         final String someARAccount = "someARAccount";
         return propertyPreservingHapiSpec("createTokenWithInvalidFixedFeeWithERC721Denomination")
-                .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED)
+                .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
                         overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE_VALUE),
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, "10_000_000"),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(ECDSA_KEY),
                         cryptoCreate(feeCollector).keyShape(ED25519_ON).balance(ONE_HUNDRED_HBARS),
@@ -934,9 +941,10 @@ public class LeakyContractTestsSuite extends HapiSuite {
         AtomicReference<String> existingToken = new AtomicReference<>();
         final String treasuryAndFeeCollectorKey = "treasuryAndFeeCollectorKey";
         return propertyPreservingHapiSpec("createTokenWithInvalidRoyaltyFee")
-                .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED)
+                .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
                         overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE_VALUE),
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, "10_000_000"),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         newKeyNamed(ED25519KEY).shape(ED25519),
                         newKeyNamed(CONTRACT_ADMIN_KEY),
@@ -992,9 +1000,10 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var feeCollector = ACCOUNT_2;
         final var treasuryAndFeeCollectorKey = "treasuryAndFeeCollectorKey";
         return propertyPreservingHapiSpec("nonFungibleTokenCreateWithFeesHappyPath")
-                .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED)
+                .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
                         overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE_VALUE),
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, "10_000_000"),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         newKeyNamed(ED25519KEY).shape(ED25519),
                         newKeyNamed(treasuryAndFeeCollectorKey),
@@ -1078,9 +1087,10 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var arEd25519Key = "arEd25519Key";
         final var initialAutoRenewAccount = "initialAutoRenewAccount";
         return propertyPreservingHapiSpec("fungibleTokenCreateWithFeesHappyPath")
-                .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED)
+                .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
                         overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE_VALUE),
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, "10_000_000"),
                         newKeyNamed(arEd25519Key).shape(ED25519),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         cryptoCreate(initialAutoRenewAccount).key(arEd25519Key),
@@ -1154,11 +1164,13 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         }));
     }
 
-    HapiSpec accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation() {
+    private HapiSpec accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation() {
         final String ACCOUNT = "account";
-        return defaultHapiSpec("ETX_026_accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation")
+        return propertyPreservingHapiSpec("ETX_026_accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation")
+                .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
                         overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE_VALUE),
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, "10_000_000"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(ACCOUNT).key(SECP_256K1_SOURCE_KEY).balance(ONE_HUNDRED_HBARS))
                 .when(ethereumContractCreate(PAY_RECEIVABLE_CONTRACT)
@@ -1742,7 +1754,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final AtomicReference<Address> tokenAddress = new AtomicReference<>();
         final var amountPerTransfer = 50L;
         return propertyPreservingHapiSpec("RequiresTopLevelSignatureOrApprovalDependingOnControllingProperty")
-                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS)
+                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
                         cryptoCreate(SENDER)
                                 .keyShape(SECP256K1_ON)
@@ -1763,7 +1775,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         uploadInitCode(TRANSFER_CONTRACT),
                         contractCreate(TRANSFER_CONTRACT),
                         // First revoke use of top-level signatures from all precompiles
-                        overriding(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, ""))
+                        overriding(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, ""),
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, "10_000_000"))
                 .when(
                         // Then, try to transfer tokens using a top-level signature
                         sourcing(() -> contractCall(TRANSFER_CONTRACT, TRANSFER_MULTIPLE_TOKENS, (Object) new Tuple[] {

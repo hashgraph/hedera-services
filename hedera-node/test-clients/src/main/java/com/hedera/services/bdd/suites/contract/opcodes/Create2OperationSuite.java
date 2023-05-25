@@ -59,6 +59,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
@@ -143,6 +144,8 @@ public class Create2OperationSuite extends HapiSuite {
     public static final String EXPECTED_CREATE2_ADDRESS_MESSAGE = "  --> Expected CREATE2 address is {}";
     private static final String ADMIN_KEY = "adminKey";
     public static final String GET_ADDRESS = "getAddress";
+    private static final String CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS = "contracts.maxNumWithHapiSigsAccess";
+    private static final String CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS = "contracts.allowSystemUseOfHapiSigs";
 
     public static void main(String... args) {
         new Create2OperationSuite().runSuiteSync();
@@ -726,8 +729,14 @@ public class Create2OperationSuite extends HapiSuite {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> childMirrorAddr = new AtomicReference<>();
 
-        return defaultHapiSpec("childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor")
+        return propertyPreservingHapiSpec("childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor")
+                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
+                        overridingTwo(
+                                CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS,
+                                "TokenAssociateToAccount",
+                                CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS,
+                                "10_000_000"),
                         newKeyNamed(multiKey),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(ft)
