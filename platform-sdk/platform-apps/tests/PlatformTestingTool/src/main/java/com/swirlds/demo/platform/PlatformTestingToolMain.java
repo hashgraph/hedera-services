@@ -538,7 +538,7 @@ public class PlatformTestingToolMain implements SwirldMain {
         platform.getNotificationEngine().register(PlatformStatusChangeListener.class, this::platformStatusChange);
         registerReconnectCompleteListener();
 
-        GuiPlatformAccessor.getInstance().setAbout(selfId.id(), "Platform Testing Demo");
+        GuiPlatformAccessor.getInstance().setAbout(selfId, "Platform Testing Demo");
         try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper = UnsafeMutablePTTStateAccessor.getInstance()
                 .getUnsafeMutableState(platform.getSelfId().id())) {
             final PlatformTestingToolState state = wrapper.get();
@@ -719,9 +719,9 @@ public class PlatformTestingToolMain implements SwirldMain {
         for (int k = 0; k < CLIENT_AMOUNT; k++) {
             appClient[k] = new AppClient(
                     this.platform,
-                    this.selfId.id(),
+                    this.selfId,
                     clientConfig,
-                    platform.getAddressBook().getAddress(selfId.id()).getNickname());
+                    platform.getAddressBook().getAddress(selfId).getNickname());
             appClient[k].start();
         }
     }
@@ -1121,7 +1121,7 @@ public class PlatformTestingToolMain implements SwirldMain {
         };
 
         new ThreadConfiguration(getStaticThreadManager())
-                .setNodeId(platform.getSelfId().id())
+                .setNodeId(platform.getSelfId())
                 .setComponent(PTT_COMPONENT)
                 .setThreadName(ENTER_VALIDATION_THREAD_NAME)
                 .setRunnable(fn)
@@ -1152,7 +1152,7 @@ public class PlatformTestingToolMain implements SwirldMain {
         };
 
         new ThreadConfiguration(getStaticThreadManager())
-                .setNodeId(platform.getSelfId().id())
+                .setNodeId(platform.getSelfId())
                 .setComponent(PTT_COMPONENT)
                 .setThreadName(EXIT_VALIDATION_THREAD_NAME)
                 .setRunnable(fn)

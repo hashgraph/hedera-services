@@ -114,7 +114,7 @@ dependencyResolutionManagement {
     // runtime.
     create("libs") {
       // The HAPI API version to use, this need to match the tag set on gitRepositories above
-      version("hapi-version", "0.38.1-allowance-SNAPSHOT")
+      version("hapi-version", "0.39.0-SNAPSHOT")
 
       // Definition of version numbers for all libraries
       version("pbj-version", "0.5.2")
