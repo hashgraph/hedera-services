@@ -207,7 +207,16 @@ public class PreConsensusEventFileManager {
     }
 
     /**
-     * TODO
+     * Perform sanity checks on the properties of the next file in the sequence, to ensure that we maintain various
+     * invariants.
+     *
+     * @param permitGaps                if gaps are permitted in sequence number
+     * @param previousSequenceNumber    the sequence number of the previous file
+     * @param previousMinimumGeneration the minimum generation of the previous file
+     * @param previousMaximumGeneration the maximum generation of the previous file
+     * @param previousTimestamp         the timestamp of the previous file
+     * @param descriptor                the descriptor of the next file
+     * @throws IllegalStateException if any of the required invariants are violated by the next file
      */
     private static void fileSanityChecks(
             final boolean permitGaps,
@@ -256,12 +265,12 @@ public class PreConsensusEventFileManager {
      * thread safe. Until then, don't use this iterator while events are being written.
      * </p>
      *
-     * @param minimumGeneration        the desired minimum generation, iterator is guaranteed to walk over all files
-     *                                 that may contain events with a generation greater or equal to this value. A value
-     *                                 of {@link #NO_MINIMUM_GENERATION} will cause the returned iterator to walk over
-     *                                 all available event files.
-     * @param fixDiscontinuities       if true, any discontinuities after the requested minimum generation will be
-     *                                 "fixed" by deleting all data following the first discontinuity.
+     * @param minimumGeneration  the desired minimum generation, iterator is guaranteed to walk over all files that may
+     *                           contain events with a generation greater or equal to this value. A value of
+     *                           {@link #NO_MINIMUM_GENERATION} will cause the returned iterator to walk over all
+     *                           available event files.
+     * @param fixDiscontinuities if true, any discontinuities after the requested minimum generation will be "fixed" by
+     *                           deleting all data following the first discontinuity.
      * @return an iterator that walks over event files in order
      */
     public @NonNull Iterator<PreConsensusEventFile> getFileIterator(
@@ -407,12 +416,12 @@ public class PreConsensusEventFileManager {
      * thread safe. Until then, don't use this iterator while events are being written.
      * </p>
      *
-     * @param minimumGeneration        the desired minimum generation, iterator is guaranteed to return all available
-     *                                 events with a generation greater or equal to this value. No events with a smaller
-     *                                 generation will be returned. A value of {@link #NO_MINIMUM_GENERATION} will cause
-     *                                 the returned iterator to walk over all available events.
-     * @param fixDiscontinuities       if true, any discontinuities after the requested minimum generation will be
-     *                                 "fixed" by deleting all data following the first discontinuity.
+     * @param minimumGeneration  the desired minimum generation, iterator is guaranteed to return all available events
+     *                           with a generation greater or equal to this value. No events with a smaller generation
+     *                           will be returned. A value of {@link #NO_MINIMUM_GENERATION} will cause the returned
+     *                           iterator to walk over all available events.
+     * @param fixDiscontinuities if true, any discontinuities after the requested minimum generation will be "fixed" by
+     *                           deleting all data following the first discontinuity.
      * @return an iterator that walks over events
      */
     public @NonNull PreConsensusEventMultiFileIterator getEventIterator(
