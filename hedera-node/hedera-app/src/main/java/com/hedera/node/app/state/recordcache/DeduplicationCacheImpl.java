@@ -23,8 +23,9 @@ import static com.hedera.node.app.spi.HapiUtils.minus;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.TransactionID;
-import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.state.DeduplicationCache;
+import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.data.HederaConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Comparator;
@@ -43,13 +44,13 @@ public final class DeduplicationCacheImpl implements DeduplicationCache {
                     .thenComparing(TransactionID::accountID, ACCOUNT_ID_COMPARATOR)
                     .compare(t1, t2));
 
-    /** Used for looking up the max transaction duration window. To be replaced by some new config object */
-    private final GlobalDynamicProperties props;
+    /** Used for looking up the max transaction duration window. */
+    private final ConfigProvider configProvider;
 
     /** Constructs a new {@link DeduplicationCacheImpl}. */
     @Inject
-    public DeduplicationCacheImpl(@NonNull final GlobalDynamicProperties props) {
-        this.props = requireNonNull(props);
+    public DeduplicationCacheImpl(@NonNull final ConfigProvider configProvider) {
+        this.configProvider = requireNonNull(configProvider);
     }
 
     /** {@inheritDoc} */
@@ -90,7 +91,8 @@ public final class DeduplicationCacheImpl implements DeduplicationCache {
     private long earliestEpicSecond() {
         // Compute the earliest valid start timestamp that is still within the max transaction duration window.
         final var now = asTimestamp(Instant.now());
-        final var earliestValidState = minus(now, props.maxTxnDuration());
+        final var config = configProvider.getConfiguration().getConfigData(HederaConfig.class);
+        final var earliestValidState = minus(now, config.transactionMaxValidDuration());
         return earliestValidState.seconds();
     }
 

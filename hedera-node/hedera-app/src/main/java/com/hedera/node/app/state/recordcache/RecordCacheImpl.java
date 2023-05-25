@@ -21,7 +21,7 @@ import static com.hedera.node.app.spi.HapiUtils.asTimestamp;
 import static com.hedera.node.app.spi.HapiUtils.isBefore;
 import static com.hedera.node.app.spi.HapiUtils.minus;
 import static com.hedera.node.app.state.recordcache.RecordCacheService.NAME;
-import static com.hedera.node.app.state.recordcache.RecordCacheService.QUEUE_NAME;
+import static com.hedera.node.app.state.recordcache.RecordCacheService.TXN_RECORD_QUEUE;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
@@ -30,11 +30,13 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.recordcache.TransactionRecordEntry;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
-import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.spi.state.WritableQueueState;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.WorkingStateAccessor;
+import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.data.HederaConfig;
+import com.hedera.node.config.data.LedgerConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -81,8 +83,8 @@ public class RecordCacheImpl implements HederaRecordCache {
 
     /** Gives access to the current working state. */
     private final WorkingStateAccessor workingStateAccessor;
-    /** Used for looking up the max transaction duration window. To be replaced by some new config object */
-    private final GlobalDynamicProperties props;
+    /** Used for looking up the max transaction duration window. */
+    private final ConfigProvider configProvider;
     /** Used for answering queries about receipts to include those that have not been handled but are known */
     private final DeduplicationCache deduplicationCache;
     /**
@@ -101,10 +103,10 @@ public class RecordCacheImpl implements HederaRecordCache {
     public RecordCacheImpl(
             @NonNull final DeduplicationCache deduplicationCache,
             @NonNull final WorkingStateAccessor workingStateAccessor,
-            @NonNull final GlobalDynamicProperties props) {
+            @NonNull final ConfigProvider configProvider) {
         this.deduplicationCache = requireNonNull(deduplicationCache);
         this.workingStateAccessor = requireNonNull(workingStateAccessor);
-        this.props = requireNonNull(props);
+        this.configProvider = requireNonNull(configProvider);
         this.histories = new ConcurrentHashMap<>();
 
         rebuild();
@@ -178,7 +180,8 @@ public class RecordCacheImpl implements HederaRecordCache {
             @NonNull final Instant consensusTimestamp) {
         // Compute the earliest valid start timestamp that is still within the max transaction duration window.
         final var now = asTimestamp(consensusTimestamp);
-        final var earliestValidState = minus(now, props.maxTxnDuration());
+        final var config = configProvider.getConfiguration().getConfigData(HederaConfig.class);
+        final var earliestValidState = minus(now, config.transactionMaxValidDuration());
 
         // Loop in order and expunge every entry where the timestamp is before the current time. Also remove from the
         // in memory data structures.
@@ -224,15 +227,22 @@ public class RecordCacheImpl implements HederaRecordCache {
             return emptyList();
         }
 
-        // NOTE: We should add to our queries an upper limit in terms of the number of items to return in response.
-        // Since we have a limit of the total number of items that can be in memory (whatever the max throttle can do
-        // in `maxTxnDuration` seconds), there is a practical upper limit. That being said, it would be even better to
-        // limit this to a small number of transactions -- say, 50 -- and then have the client page through the results.
-        final var records = new ArrayList<TransactionRecord>();
+        // Note that at **most** LedgerConfig#recordsMaxQueryableByAccount() records will be available, even if the
+        // given account has paid for more than this number of transactions in the last 180 seconds.
+        var maxRemaining = configProvider
+                .getConfiguration()
+                .getConfigData(LedgerConfig.class)
+                .recordsMaxQueryableByAccount();
+
+        // While we still need to gather more records, collect them from the different histories.
+        final var records = new ArrayList<TransactionRecord>(maxRemaining);
         for (final var transactionID : transactionIDs) {
             final var history = histories.get(transactionID);
             if (history != null) {
-                records.addAll(history.records());
+                final var recs = history.records();
+                records.addAll(recs.size() > maxRemaining ? recs.subList(0, maxRemaining) : recs);
+                maxRemaining -= recs.size();
+                if (maxRemaining <= 0) break;
             }
         }
 
@@ -255,6 +265,6 @@ public class RecordCacheImpl implements HederaRecordCache {
             throw new RuntimeException("HederaState is null. This can only happen very early during bootstrapping");
         }
         final var states = hederaState.createWritableStates(NAME);
-        return states.getQueue(QUEUE_NAME);
+        return states.getQueue(TXN_RECORD_QUEUE);
     }
 }

@@ -34,7 +34,7 @@ public class RecordCacheService implements Service {
     /** The record cache service name */
     public static final String NAME = "RecordCache";
     /** The name of the queue that stores the transaction records */
-    static final String QUEUE_NAME = "TransactionRecordQueue";
+    static final String TXN_RECORD_QUEUE = "TransactionRecordQueue";
 
     /** {@inheritDoc} */
     @NonNull
@@ -65,7 +65,7 @@ public class RecordCacheService implements Service {
             @Override
             @SuppressWarnings("rawtypes")
             public Set<StateDefinition> statesToCreate() {
-                return Set.of(StateDefinition.queue(QUEUE_NAME, TransactionRecordEntry.PROTOBUF));
+                return Set.of(StateDefinition.queue(TXN_RECORD_QUEUE, TransactionRecordEntry.PROTOBUF));
             }
         });
     }

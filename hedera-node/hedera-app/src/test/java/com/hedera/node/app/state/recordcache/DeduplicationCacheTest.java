@@ -22,8 +22,10 @@ import static org.mockito.Mockito.lenient;
 
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
-import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.state.DeduplicationCache;
+import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.VersionedConfiguration;
+import com.hedera.node.config.data.HederaConfig;
 import java.time.Instant;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -41,12 +43,14 @@ final class DeduplicationCacheTest {
     private DeduplicationCache cache;
 
     @Mock
-    private GlobalDynamicProperties props;
+    private ConfigProvider props;
 
     @BeforeEach
-    void setUp() {
+    void setUp(@Mock final VersionedConfiguration versionedConfig, @Mock final HederaConfig hederaConfig) {
         cache = new DeduplicationCacheImpl(props);
-        lenient().when(props.maxTxnDuration()).thenReturn(MAX_TXN_DURATION);
+        lenient().when(props.getConfiguration()).thenReturn(versionedConfig);
+        lenient().when(versionedConfig.getConfigData(HederaConfig.class)).thenReturn(hederaConfig);
+        lenient().when(hederaConfig.transactionMaxValidDuration()).thenReturn(MAX_TXN_DURATION);
     }
 
     @Test

@@ -18,6 +18,7 @@ package com.hedera.node.app.state.recordcache;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_IS_IMMUTABLE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNKNOWN;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -33,13 +34,17 @@ import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.fixtures.state.FakeSchemaRegistry;
-import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.spi.fixtures.state.ListWritableQueueState;
 import com.hedera.node.app.spi.state.WritableQueueState;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.state.WorkingStateAccessor;
+import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.VersionedConfiguration;
+import com.hedera.node.config.data.HederaConfig;
+import com.hedera.node.config.data.LedgerConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -52,11 +57,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 final class RecordCacheImplTest {
+    private static final int MAX_QUERYABLE_PER_ACCOUNT = 10;
     private static final TransactionReceipt UNHANDLED_RECEIPT =
             TransactionReceipt.newBuilder().status(UNKNOWN).build();
     private static final AccountID PAYER_ACCOUNT_ID =
@@ -68,10 +75,13 @@ final class RecordCacheImplTest {
     WorkingStateAccessor wsa;
 
     @Mock
-    GlobalDynamicProperties props;
+    private ConfigProvider props;
 
     @BeforeEach
-    void setUp() {
+    void setUp(
+            @Mock final VersionedConfiguration versionedConfig,
+            @Mock final HederaConfig hederaConfig,
+            @Mock final LedgerConfig ledgerConfig) {
         dedupeCache = new DeduplicationCacheImpl(props);
         final var registry = new FakeSchemaRegistry();
         final var state = new FakeHederaState();
@@ -79,13 +89,22 @@ final class RecordCacheImplTest {
         svc.registerSchemas(registry);
         registry.migrate(svc.getServiceName(), state);
         lenient().when(wsa.getHederaState()).thenReturn(state);
-        lenient().when(props.maxTxnDuration()).thenReturn(180L);
+        lenient().when(props.getConfiguration()).thenReturn(versionedConfig);
+        lenient().when(versionedConfig.getConfigData(HederaConfig.class)).thenReturn(hederaConfig);
+        lenient().when(hederaConfig.transactionMaxValidDuration()).thenReturn(180L);
+        lenient().when(versionedConfig.getConfigData(LedgerConfig.class)).thenReturn(ledgerConfig);
+        lenient().when(ledgerConfig.recordsMaxQueryableByAccount()).thenReturn(MAX_QUERYABLE_PER_ACCOUNT);
     }
 
     private TransactionID transactionID() {
+        return transactionID(0);
+    }
+
+    private TransactionID transactionID(int nanos) {
         final var now = Instant.now();
         return TransactionID.newBuilder()
-                .transactionValidStart(Timestamp.newBuilder().seconds(now.getEpochSecond()))
+                .transactionValidStart(
+                        Timestamp.newBuilder().seconds(now.getEpochSecond()).nanos(nanos))
                 .accountID(PAYER_ACCOUNT_ID)
                 .build();
     }
@@ -122,7 +141,8 @@ final class RecordCacheImplTest {
             final var state = wsa.getHederaState();
             assertThat(state).isNotNull();
             final var services = state.createWritableStates(RecordCacheService.NAME);
-            final WritableQueueState<TransactionRecordEntry> queue = services.getQueue(RecordCacheService.QUEUE_NAME);
+            final WritableQueueState<TransactionRecordEntry> queue =
+                    services.getQueue(RecordCacheService.TXN_RECORD_QUEUE);
             assertThat(queue).isNotNull();
             entries.forEach(queue::add);
             ((ListWritableQueueState<?>) queue).commit();
@@ -180,7 +200,8 @@ final class RecordCacheImplTest {
             final var state = wsa.getHederaState();
             assertThat(state).isNotNull();
             final var services = state.createWritableStates(RecordCacheService.NAME);
-            final WritableQueueState<TransactionRecordEntry> queue = services.getQueue(RecordCacheService.QUEUE_NAME);
+            final WritableQueueState<TransactionRecordEntry> queue =
+                    services.getQueue(RecordCacheService.TXN_RECORD_QUEUE);
             assertThat(queue).isNotNull();
             queue.add(oldEntry);
             ((ListWritableQueueState<?>) queue).commit();
@@ -395,6 +416,37 @@ final class RecordCacheImplTest {
 
             // Then we can query for the receipt by transaction ID
             assertThat(cache.getReceipts(PAYER_ACCOUNT_ID)).containsExactly(receipt);
+        }
+
+        @ParameterizedTest
+        @ValueSource(ints = {20, 30, 40})
+        @DisplayName(
+                "Only up to recordsMaxQueryableByAccount receipts are returned for an account ID with multiple records")
+        void queryForManyReceiptsForAccountID(final int numRecords) {
+            // Given a number of transactions with several records each, all for the same payer
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
+            // Normally consensus time is AFTER the transaction ID time by a couple of seconds
+            var consensusTime = Instant.now().plusSeconds(2);
+            for (int i = 0; i < numRecords; i++) {
+                final var txId = transactionID(i);
+                for (int j = 0; j < 3; j++) {
+                    consensusTime = consensusTime.plus(1, ChronoUnit.NANOS);
+                    final var status = j == 0 ? OK : DUPLICATE_TRANSACTION;
+                    final var receipt =
+                            TransactionReceipt.newBuilder().status(status).build();
+                    final var record = TransactionRecord.newBuilder()
+                            .transactionID(txId)
+                            .receipt(receipt)
+                            .build();
+                    cache.add(0, PAYER_ACCOUNT_ID, record, consensusTime);
+                }
+            }
+
+            // When we query for the receipts for the payer account ID
+            final var receipts = cache.getReceipts(PAYER_ACCOUNT_ID);
+
+            // Then we get back the most recent recordsMaxQueryableByAccount receipts
+            assertThat(receipts).hasSize(MAX_QUERYABLE_PER_ACCOUNT);
         }
 
         static Stream<Arguments> receiptStatusCodes() {
