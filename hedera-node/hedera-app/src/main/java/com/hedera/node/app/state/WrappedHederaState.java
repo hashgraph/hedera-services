@@ -60,7 +60,7 @@ public class WrappedHederaState implements HederaState {
     @Override
     @NonNull
     public ReadableStates createReadableStates(@NonNull String serviceName) {
-        return delegate.createReadableStates(serviceName);
+        return new ReadonlyStatesWrapper(createWritableStates(serviceName));
     }
 
     /**

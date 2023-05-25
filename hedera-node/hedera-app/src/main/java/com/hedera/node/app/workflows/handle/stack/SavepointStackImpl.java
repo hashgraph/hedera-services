@@ -22,6 +22,7 @@ import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.spi.workflows.HandleContext.SavepointStack;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.state.ReadonlyStatesWrapper;
 import com.hedera.node.app.state.RecordCache;
 import com.hedera.node.app.state.WrappedHederaState;
 import com.swirlds.config.api.Configuration;
@@ -113,12 +114,15 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
     @Override
     @NonNull
     public ReadableStates createReadableStates(@NonNull final String serviceName) {
-        return new ReadableStatesStack(this, serviceName);
+        return new ReadonlyStatesWrapper(createWritableStates(serviceName));
     }
 
     @Override
     @NonNull
     public WritableStates createWritableStates(@NonNull final String serviceName) {
+        if (stack.isEmpty()) {
+            throw new IllegalStateException("The stack has already been committed");
+        }
         return writableStatesMap.computeIfAbsent(serviceName, s -> new WritableStatesStack(this, s));
     }
 
