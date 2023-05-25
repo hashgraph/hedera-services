@@ -16,18 +16,21 @@
 
 package com.hedera.node.app.state;
 
-import com.hedera.node.app.state.merkle.MerkleRecordCache;
+import com.hedera.node.app.spi.records.RecordCache;
+import com.hedera.node.app.state.recordcache.DeduplicationCacheImpl;
+import com.hedera.node.app.state.recordcache.RecordCacheImpl;
+import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import javax.inject.Singleton;
 
 @Module
 public interface HederaStateInjectionModule {
-    @Provides
-    @Singleton
-    static RecordCache provideRecordCache() {
-        return new MerkleRecordCache();
-    }
+    @Binds
+    abstract RecordCache provideRecordCache(RecordCacheImpl cache);
+
+    @Binds
+    abstract DeduplicationCache provideDeduplicationCache(DeduplicationCacheImpl cache);
 
     @Provides
     @Singleton
