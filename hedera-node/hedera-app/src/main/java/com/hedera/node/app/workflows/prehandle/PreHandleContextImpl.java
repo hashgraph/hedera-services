@@ -101,7 +101,8 @@ public class PreHandleContextImpl implements PreHandleContext {
         this.payer = requireNonNull(payer, "The supplied argument 'payer' cannot be null!");
         this.configuration = requireNonNull(configuration, "The supplied argument 'configuration' cannot be null!");
 
-        accountStore = storeFactory.createStore(ReadableAccountStore.class);
+        this.accountStore = storeFactory.getStore(ReadableAccountStore.class);
+
         // Find the account, which must exist or throw a PreCheckException with the given response code.
         final var account = accountStore.getAccountById(payer);
         mustExist(account, ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID);
@@ -114,7 +115,7 @@ public class PreHandleContextImpl implements PreHandleContext {
     @Override
     @NonNull
     public <C> C createStore(@NonNull Class<C> storeInterface) {
-        return storeFactory.createStore(storeInterface);
+        return storeFactory.getStore(storeInterface);
     }
 
     @Override
@@ -127,6 +128,12 @@ public class PreHandleContextImpl implements PreHandleContext {
     @NonNull
     public AccountID payer() {
         return payer;
+    }
+
+    @Override
+    @NonNull
+    public Configuration configuration() {
+        return configuration;
     }
 
     @NonNull
@@ -352,12 +359,6 @@ public class PreHandleContextImpl implements PreHandleContext {
     @Nullable
     public PreHandleContext innerContext() {
         return innerContext;
-    }
-
-    @Override
-    @NonNull
-    public Configuration configuration() {
-        return configuration;
     }
 
     @Override

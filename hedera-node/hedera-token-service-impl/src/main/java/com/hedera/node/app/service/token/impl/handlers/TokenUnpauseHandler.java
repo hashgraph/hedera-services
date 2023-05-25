@@ -22,11 +22,9 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TokenID;
-import com.hedera.hapi.node.token.TokenPauseTransactionBody;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
-import com.hedera.node.app.spi.records.BaseRecordBuilder;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -64,15 +62,15 @@ public class TokenUnpauseHandler implements TransactionHandler {
     /**
      * This method is called during the handle workflow. It executes the actual transaction.
      *
-     * @param txn the {@link TokenPauseTransactionBody} of the active transaction
-     * @param tokenStore the {@link WritableTokenStore} for the active transaction
+     * @param handleContext the {@link HandleContext} for the active transaction
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void handle(@NonNull final TransactionBody txn, @NonNull final WritableTokenStore tokenStore) {
-        requireNonNull(txn);
-        requireNonNull(tokenStore);
+    @Override
+    public void handle(@NonNull final HandleContext handleContext) {
+        requireNonNull(handleContext);
 
-        var op = txn.tokenUnpause();
+        final var op = handleContext.body().tokenUnpause();
+        final var tokenStore = handleContext.writableStore(WritableTokenStore.class);
         var token = tokenStore.get(op.tokenOrElse(TokenID.DEFAULT));
         validateTrue(token != null, INVALID_TOKEN_ID);
 
@@ -93,10 +91,5 @@ public class TokenUnpauseHandler implements TransactionHandler {
         if (!op.hasToken()) {
             throw new PreCheckException(INVALID_TOKEN_ID);
         }
-    }
-
-    @Override
-    public BaseRecordBuilder newRecordBuilder() {
-        return new BaseRecordBuilder<>();
     }
 }

@@ -32,6 +32,8 @@ import com.hedera.hapi.node.freeze.FreezeTransactionBody;
 import com.hedera.hapi.node.freeze.FreezeType;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.networkadmin.ReadableSpecialFileStore;
+import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.service.networkadmin.impl.config.NetworkAdminServiceConfig;
 import com.hedera.node.app.spi.state.WritableFreezeStore;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -127,6 +129,10 @@ public class FreezeHandler implements TransactionHandler {
                 // do nothing
             }
         }
+    }
+    @Override
+    public void handle(@NonNull final HandleContext context) throws HandleException {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     public void handle(

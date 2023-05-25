@@ -46,7 +46,7 @@ class ReadableStoreFactoryTest {
     @Test
     void returnsTopicStore() {
         given(state.createReadableStates("ConsensusService")).willReturn(readableStates);
-        final var store = subject.createStore(ReadableTopicStore.class);
+        final var store = subject.getStore(ReadableTopicStore.class);
         assertNotNull(store);
     }
 }

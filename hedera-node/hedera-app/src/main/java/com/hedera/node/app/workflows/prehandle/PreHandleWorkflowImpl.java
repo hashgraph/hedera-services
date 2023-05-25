@@ -110,7 +110,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         requireNonNull(transactions);
 
         // Used for looking up payer account information.
-        final var accountStore = readableStoreFactory.createStore(ReadableAccountStore.class);
+        final var accountStore = readableStoreFactory.getStore(ReadableAccountStore.class);
 
         // In parallel, we will pre-handle each transaction.
         transactions.parallel().forEach(tx -> {
@@ -130,7 +130,9 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     // For each transaction, we will use a background thread to parse the transaction, validate it, lookup the
     // payer, collect non-payer keys, and warm up the cache. Then, once all the keys have been collected, we will
     // pass the keys and signatures to the platform for verification.
-    private PreHandleResult preHandleTransaction(
+    @Override
+    @NonNull
+    public PreHandleResult preHandleTransaction(
             @NonNull final AccountID creator,
             @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final ReadableAccountStore accountStore,

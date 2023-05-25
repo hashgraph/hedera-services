@@ -23,7 +23,6 @@ import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -32,8 +31,10 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -49,10 +50,10 @@ import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
-import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.data.FilesConfig;
@@ -92,7 +93,9 @@ class FileCreateHandlerTest extends FileHandlerTestBase {
     //    @Mock
     //    private GlobalDynamicProperties dynamicProperties;
 
+    @Mock
     private CreateFileRecordBuilder recordBuilder;
+
     private FilesConfig config;
 
     private WritableFileStoreImpl fileStore;
@@ -122,9 +125,9 @@ class FileCreateHandlerTest extends FileHandlerTestBase {
         subject = new FileCreateHandler();
         fileStore = new WritableFileStoreImpl(writableStates);
         config = new FilesConfig(101L, 121L, 112L, 111L, 122L, 102L, 123L, 1000000L, 1024);
-        recordBuilder = new CreateFileRecordBuilder();
-        lenient().when(handleContext.getConfiguration()).thenReturn(configuration);
+        lenient().when(handleContext.configuration()).thenReturn(configuration);
         lenient().when(configuration.getConfigData(FilesConfig.class)).thenReturn(config);
+        lenient().when(handleContext.writableStore(WritableFileStoreImpl.class)).thenReturn(fileStore);
     }
 
     @Test
@@ -191,15 +194,18 @@ class FileCreateHandlerTest extends FileHandlerTestBase {
     @DisplayName("Handle works as expected")
     void handleWorksAsExpected() {
         final var keys = anotherKeys;
-        final var op = newCreateTxn(keys, expirationTime).fileCreateOrThrow();
+        final var txBody = newCreateTxn(keys, expirationTime);
 
+        given(handleContext.body()).willReturn(txBody);
         given(handleContext.attributeValidator()).willReturn(validator);
+        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any()))
                 .willReturn(new ExpiryMeta(expirationTime, NA, NA));
-        given(handleContext.newEntityNumSupplier()).willReturn(() -> 1_234L);
+        given(handleContext.newEntityNum()).willReturn(1_234L);
+        given(handleContext.recordBuilder(CreateFileRecordBuilder.class)).willReturn(recordBuilder);
 
-        subject.handle(handleContext, op, recordBuilder, fileStore);
+        subject.handle(handleContext);
 
         final var createdFile = fileStore.get(1_234L);
         assertTrue(createdFile.isPresent());
@@ -211,22 +217,25 @@ class FileCreateHandlerTest extends FileHandlerTestBase {
         assertEquals(contentsBytes, actualFile.contents());
         assertEquals(fileEntityNum.longValue(), actualFile.fileNumber());
         assertFalse(actualFile.deleted());
-        assertEquals(1_234L, recordBuilder.getCreatedFile());
+        verify(recordBuilder).fileID(FileID.newBuilder().fileNum(1_234L).build());
         assertTrue(fileStore.get(1234L).isPresent());
     }
 
     @Test
     @DisplayName("Handle works as expected without keys")
     void handleDoesntRequireKeys() {
-        final var op = newCreateTxn(keys, expirationTime).fileCreateOrThrow();
+        final var txBody = newCreateTxn(keys, expirationTime);
 
+        given(handleContext.body()).willReturn(txBody);
         given(handleContext.attributeValidator()).willReturn(validator);
+        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any()))
                 .willReturn(new ExpiryMeta(1_234_567L, NA, NA));
-        given(handleContext.newEntityNumSupplier()).willReturn(() -> 1_234L);
+        given(handleContext.newEntityNum()).willReturn(1_234L);
+        given(handleContext.recordBuilder(CreateFileRecordBuilder.class)).willReturn(recordBuilder);
 
-        subject.handle(handleContext, op, recordBuilder, fileStore);
+        subject.handle(handleContext);
 
         final var createdFile = fileStore.get(1_234L);
         assertTrue(createdFile.isPresent());
@@ -238,21 +247,22 @@ class FileCreateHandlerTest extends FileHandlerTestBase {
         assertEquals(contentsBytes, actualFile.contents());
         assertEquals(fileEntityNum.longValue(), actualFile.fileNumber());
         assertFalse(actualFile.deleted());
-        assertEquals(1_234L, recordBuilder.getCreatedFile());
+        verify(recordBuilder).fileID(FileID.newBuilder().fileNum(1_234L).build());
         assertTrue(fileStore.get(1234L).isPresent());
     }
 
     @Test
     @DisplayName("Translates INVALID_EXPIRATION_TIME to AUTO_RENEW_DURATION_NOT_IN_RANGE")
     void translatesInvalidExpiryException() {
-        final var op = newCreateTxn(keys, expirationTime).fileCreateOrThrow();
+        final var txBody = newCreateTxn(keys, expirationTime);
 
+        given(handleContext.body()).willReturn(txBody);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
+        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any()))
                 .willThrow(new HandleException(ResponseCodeEnum.INVALID_EXPIRATION_TIME));
 
-        final var failure =
-                assertThrows(HandleException.class, () -> subject.handle(handleContext, op, recordBuilder, fileStore));
+        final var failure = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE, failure.getStatus());
     }
 
@@ -260,18 +270,20 @@ class FileCreateHandlerTest extends FileHandlerTestBase {
     @DisplayName("Memo Validation Failure will throw")
     void handleThrowsIfAttributeValidatorFails() {
         final var keys = anotherKeys;
-        final var op = newCreateTxn(keys, expirationTime).fileCreateOrThrow();
+        final var txBody = newCreateTxn(keys, expirationTime);
 
+        given(handleContext.body()).willReturn(txBody);
         given(handleContext.attributeValidator()).willReturn(validator);
+        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any()))
                 .willReturn(new ExpiryMeta(1_234_567L, NA, NA));
 
         doThrow(new HandleException(ResponseCodeEnum.MEMO_TOO_LONG))
                 .when(validator)
-                .validateMemo(op.memo());
+                .validateMemo(txBody.fileCreate().memo());
 
-        assertThrows(HandleException.class, () -> subject.handle(handleContext, op, recordBuilder, fileStore));
+        assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertTrue(fileStore.get(1234L).isEmpty());
     }
 
@@ -279,19 +291,20 @@ class FileCreateHandlerTest extends FileHandlerTestBase {
     @DisplayName("Fails when the file are already created")
     void failsWhenMaxRegimeExceeds() {
         final var keys = anotherKeys;
-        final var op = newCreateTxn(keys, expirationTime).fileCreateOrThrow();
+        final var txBody = newCreateTxn(keys, expirationTime);
+        given(handleContext.body()).willReturn(txBody);
         final var writableState = writableFileStateWithOneKey();
 
         given(writableStates.<EntityNum, File>get(FILES)).willReturn(writableState);
         final var fileStore = new WritableFileStoreImpl(writableStates);
+        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(fileStore);
 
         assertEquals(2, fileStore.sizeOfState());
 
         config = new FilesConfig(1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1);
         given(configuration.getConfigData(any())).willReturn(config);
 
-        final var msg =
-                assertThrows(HandleException.class, () -> subject.handle(handleContext, op, recordBuilder, fileStore));
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED, msg.getStatus());
         assertEquals(0, this.fileStore.modifiedFiles().size());
     }
@@ -299,11 +312,6 @@ class FileCreateHandlerTest extends FileHandlerTestBase {
     public static void assertFailsWith(final ResponseCodeEnum status, final Runnable something) {
         final var ex = assertThrows(PreCheckException.class, something::run);
         assertEquals(status, ex.responseCode());
-    }
-
-    @Test
-    void returnsExpectedRecordBuilderType() {
-        assertInstanceOf(CreateFileRecordBuilder.class, subject.newRecordBuilder());
     }
 
     private Key mockPayerLookup() throws PreCheckException {
