@@ -138,8 +138,12 @@ public class ContractCreateSuite extends HapiSuite {
         final var contract = "NoncesExternalization";
         final var payer = "payer";
         final var deployParentContract = "deployParentContract";
+        final var deployChildFromParentFn = "deployChildFromParentContract";
+
         final var deployContractTxn = "deployContractTxn";
         final var deployContractTxnTwo = "deployContractTxnTwo";
+        final var deployChildFromParentTxn = "deployChildFromParentContractTx";
+        final var deployChildFromParentTxn2 = "deployChildFromParentContractTxTwo";
 
         return defaultHapiSpec("ContractCreateNoncesExternalization")
                 .given(
@@ -156,6 +160,16 @@ public class ContractCreateSuite extends HapiSuite {
                         contractCall(contract, deployParentContract)
                                 .payingWith(payer)
                                 .via(deployContractTxnTwo)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(SUCCESS),
+                        contractCall(contract, deployChildFromParentFn, BigInteger.valueOf(0))
+                                .payingWith(payer)
+                                .via(deployChildFromParentTxn)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(SUCCESS),
+                        contractCall(contract, deployChildFromParentFn, BigInteger.valueOf(0))
+                                .payingWith(payer)
+                                .via(deployChildFromParentTxn2)
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(SUCCESS))))
                 .then(
