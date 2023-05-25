@@ -321,8 +321,8 @@ class MonoExpiryValidatorTest {
 
     @Test
     void notDetachedIfAccountNotExpired() {
-        assertEquals(OK, subject.expirationStatus(EntityType.ACCOUNT, true, 0L));
-        assertFalse(subject.isDetached(EntityType.ACCOUNT, true, 10));
+        assertEquals(OK, subject.expirationStatus(EntityType.ACCOUNT, false, 0L));
+        assertFalse(subject.isDetached(EntityType.ACCOUNT, false, 10));
     }
 
     @Test
