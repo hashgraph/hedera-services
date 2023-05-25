@@ -246,6 +246,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
         given(writableStore.get(deleteAccountId)).willReturn(null);
         given(handleContext.body()).willReturn(txn);
+        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableStore);
 
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
@@ -263,6 +264,8 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
         given(writableStore.get(deleteAccountId)).willReturn(null);
+        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableStore);
+        given(handleContext.body()).willReturn(txn);
 
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
@@ -287,6 +290,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         given(expiryValidator.isDetached(eq(EntityType.ACCOUNT), anyBoolean(), anyLong()))
                 .willReturn(false);
         given(handleContext.body()).willReturn(txn);
+        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableStore);
 
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
@@ -309,6 +313,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         given(expiryValidator.isDetached(eq(EntityType.ACCOUNT), anyBoolean(), anyLong()))
                 .willReturn(false);
         given(handleContext.body()).willReturn(txn);
+        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableStore);
 
         subject.handle(handleContext);
 
@@ -325,9 +330,9 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
                 .build();
         given(writableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(writableAccounts);
         writableStore = new WritableAccountStore(writableStates);
+        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableStore);
 
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
-        given(writableStore.get(deleteAccountId)).willReturn(null);
 
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.isDetached(eq(EntityType.ACCOUNT), anyBoolean(), anyLong()))
@@ -356,6 +361,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         given(expiryValidator.isDetached(eq(EntityType.ACCOUNT), anyBoolean(), anyLong()))
                 .willReturn(true);
         given(handleContext.body()).willReturn(txn);
+        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableStore);
 
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
@@ -378,6 +384,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(handleContext.body()).willReturn(txn);
+        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableStore);
 
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
@@ -395,6 +402,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
                 .build();
         given(writableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(writableAccounts);
         writableStore = new WritableAccountStore(writableStates);
+        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableStore);
 
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
 
