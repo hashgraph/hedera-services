@@ -386,7 +386,6 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
     private void givenTxnWith(AccountID deleteAccountId, AccountID transferAccountId) {
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
-        given(writableStore.get(deleteAccountId)).willReturn(null);
         given(handleContext.body()).willReturn(txn);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableStore);
