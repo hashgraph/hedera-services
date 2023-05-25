@@ -47,6 +47,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -744,16 +745,12 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
         if (!dirtyLeaves.isImmutable()) {
             throw new MutabilityException("Cannot call on a cache that is still mutable for dirty leaves");
         }
+        // Mark obsolete mutations to filter later
+        filterMutations(dirtyLeaves);
         final Stream<VirtualLeafRecord<K, V>> result = dirtyLeaves.stream()
                 .filter(mutation -> {
                     final long path = mutation.value.getPath();
                     return path >= firstLeafPath && path <= lastLeafPath;
-                })
-                .filter(mutation -> {
-                    if (mutation.next != null) {
-                        mutation.next.setFiltered();
-                    }
-                    return true;
                 })
                 .filter(mutation -> !mutation.isFiltered())
                 .filter(mutation -> !mutation.isDeleted())
@@ -935,14 +932,10 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
         if (!dirtyHashes.isImmutable()) {
             throw new MutabilityException("Cannot get the dirty internal records for a non-sealed cache.");
         }
+        // Mark obsolete mutations to filter later
+        filterMutations(dirtyHashes);
         return dirtyHashes.stream()
                 .filter(mutation -> mutation.key <= lastLeafPath)
-                .filter(mutation -> {
-                    if (mutation.next != null) {
-                        mutation.next.setFiltered();
-                    }
-                    return true;
-                })
                 .filter(mutation -> !mutation.isFiltered())
                 .map(mutation ->
                         new VirtualHashRecord(mutation.key, mutation.value != NULL_HASH ? mutation.value : null));
@@ -1254,6 +1247,36 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
                     }
                     return mutation;
                 }));
+    }
+
+    /**
+     * Node cache contains lists of hash and leaf mutations for every cache version. When caches
+     * are merged, the lists are merged, too. To make merges very fast, duplicates aren't removed
+     * from the lists on merge. On flush / hash, no duplicates are allowed, so duplicated entries
+     * need to be removed.
+     *
+     * This method iterates over the given list of mutations and marks all obsolete mutations as
+     * filtered. Later all marked mutations can be easily removed. A mutation is considered
+     * obsolete, if there is a newer mutation for the same key.
+     *
+     * @param array
+     * @param <K>
+     * 		The key type used in the index
+     * @param <V>
+     * 		The value type referenced by the mutation list
+     */
+    private static <K, V> void filterMutations(final ConcurrentArray<Mutation<K, V>> array) {
+        final Consumer<Mutation<K, V>> action = mutation -> {
+            if (mutation.next != null) {
+                mutation.next.setFiltered();
+            }
+        };
+        try {
+            array.parallelTraverse(CLEANING_POOL, action).getAndRethrow();
+        } catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(e);
+        }
     }
 
     /**

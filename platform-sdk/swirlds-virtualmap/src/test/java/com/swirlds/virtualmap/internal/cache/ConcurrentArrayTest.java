@@ -172,7 +172,7 @@ class ConcurrentArrayTest {
         b.merge(a);
         assertEquals(14, b.size(), "Wrong value");
 
-        final List<String> elements = b.stream(null).toList();
+        final List<String> elements = b.stream().sorted().toList();
 
         assertEquals("Element 1", elements.get(0), "Wrong value");
         assertEquals("Element 2", elements.get(1), "Wrong value");
@@ -241,7 +241,7 @@ class ConcurrentArrayTest {
         // Merge a and b together and validate the result
         b.merge(a);
         assertEquals(8, b.size(), "Wrong value");
-        List<String> elements = b.stream(null).toList();
+        List<String> elements = b.stream().sorted().toList();
 
         assertEquals(8, elements.size(), "Wrong value");
         assertEquals("Element 1", elements.get(0), "Wrong value");
@@ -256,7 +256,7 @@ class ConcurrentArrayTest {
         // Merge a and c and validate the result.
         c.merge(a);
         assertEquals(9, c.size(), "Wrong value");
-        elements = c.stream(null).toList();
+        elements = c.stream().sorted().toList();
 
         assertEquals(9, elements.size(), "Wrong value");
         assertEquals("Element 1", elements.get(0), "Wrong value");
@@ -317,15 +317,18 @@ class ConcurrentArrayTest {
         a.merge(c);
         assertEquals(6, a.size(), "Wrong size");
 
-        List<String> elements = a.stream(null).toList();
+        List<String> elements = a.stream().toList();
+        assertEquals(6, elements.size(), "Wrong stream size");
 
-        assertEquals(a.size(), elements.size(), "Wrong value");
-        assertEquals("Element 1", elements.get(0), "Wrong value");
-        assertEquals("Element 2", elements.get(1), "Wrong value");
-        assertEquals("Element 3", elements.get(2), "Wrong value");
-        assertEquals("Element 4", elements.get(3), "Wrong value");
-        assertEquals("Element 5", elements.get(4), "Wrong value");
-        assertEquals("Element 6", elements.get(5), "Wrong value");
+        List<String> sorted = a.stream().sorted().toList();
+
+        assertEquals(a.size(), sorted.size(), "Wrong value");
+        assertEquals("Element 1", sorted.get(0), "Wrong value");
+        assertEquals("Element 2", sorted.get(1), "Wrong value");
+        assertEquals("Element 3", sorted.get(2), "Wrong value");
+        assertEquals("Element 4", sorted.get(3), "Wrong value");
+        assertEquals("Element 5", sorted.get(4), "Wrong value");
+        assertEquals("Element 6", sorted.get(5), "Wrong value");
     }
 
     /**
@@ -434,7 +437,7 @@ class ConcurrentArrayTest {
 
         // Check that every element is there, and in order.
         final AtomicInteger expected = new AtomicInteger(0);
-        arr.seal().stream(null).forEach(value -> assertEquals(expected.getAndIncrement(), value, "Wrong value"));
+        arr.seal().stream().sorted().forEach(value -> assertEquals(expected.getAndIncrement(), value, "Wrong value"));
         assertEquals(numElements, expected.get(), "Wrong value");
     }
 
@@ -448,17 +451,13 @@ class ConcurrentArrayTest {
     void callingSortedStreamOnMutableArrayThrows() {
         final ConcurrentArray<String> arr = new ConcurrentArray<>();
         assertThrows(
-                IllegalStateException.class,
-                () -> arr.stream(null),
-                "Expected IAE when sorting a mutable array with no elements");
+                IllegalStateException.class, arr::stream, "Expected IAE when sorting a mutable array with no elements");
 
         arr.add("Element 5");
         arr.add("Element 2");
         arr.add("Element 8");
         assertThrows(
-                IllegalStateException.class,
-                () -> arr.stream(null),
-                "Expected IAE when sorting a mutable array with elements");
+                IllegalStateException.class, arr::stream, "Expected IAE when sorting a mutable array with elements");
     }
 
     /**
@@ -471,7 +470,7 @@ class ConcurrentArrayTest {
         final ConcurrentArray<String> arr = new ConcurrentArray<>();
         arr.seal();
 
-        final Stream<String> stream = arr.stream(null);
+        final Stream<String> stream = arr.stream();
         assertEquals(0, stream.count(), "Stream count should have been 0");
     }
 
@@ -502,7 +501,7 @@ class ConcurrentArrayTest {
             final int ii = i + 1;
             futures[i] = e.submit(() -> {
                 Comparator<Integer> comparator = Comparator.comparingInt(a -> (a * 997 * ii) % numElements);
-                final List<Integer> elements = arr.stream(comparator).toList();
+                final List<Integer> elements = arr.stream().sorted(comparator).toList();
                 assertEquals(numElements, elements.size(), "Wrong value");
                 for (int j = 0; j < numElements - 1; j++) {
                     assertTrue(comparator.compare(elements.get(j), elements.get(j + 1)) <= 0, "Wrong value");

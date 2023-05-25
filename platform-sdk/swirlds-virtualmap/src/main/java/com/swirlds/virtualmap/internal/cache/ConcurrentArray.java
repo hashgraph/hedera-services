@@ -17,23 +17,23 @@
 package com.swirlds.virtualmap.internal.cache;
 
 import com.swirlds.common.threading.futures.StandardFuture;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Arrays;
-import java.util.Comparator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Spliterator;
+import java.util.Spliterators.AbstractSpliterator;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * An array-backed concurrent data structure optimized for use by the {@link VirtualNodeCache}.
  * <p>
  * This class has been carefully designed to enable a high rate of concurrency (mostly lock-free)
  * with a minimum of array copying overhead. We were not able to avoid all array copies (see the
- * implementation of {@link #stream(Comparator)}. If we could have found a better way to do
+ * implementation of {@link #stream()}. If we could have found a better way to do
  * concurrent sorting without needing to rewrite a pile of highly optimized sort code from the JDK
  * or an array copy, we would have done it). This class has been very careful to be defensive and
  * assert which operations are safe to execute concurrently on mutable instances and which require
@@ -49,7 +49,7 @@ import java.util.stream.Stream;
  * Both arrays for this operation <strong>must</strong> be immutable. An array is made immutable
  * by calling {@link #seal()}.
  * <p>
- * After all elements have been added, the {@link #stream(Comparator)} method can be called to get
+ * After all elements have been added, the {@link #stream()} method can be called to get
  * a sorted stream of all array elements. Since this operation is incompatible with concurrent calls to
  * {@link #add(Object)}, the instance must first be sealed {@link #seal()} before calling {@code sortedStream}.
  * This is a safety precaution to guard against accidental sorting of a mutable {@link ConcurrentArray}.
@@ -282,63 +282,17 @@ final class ConcurrentArray<T> {
      * 		If this instance is not immutable
      */
     Stream<T> stream() {
-        return stream(false, null);
-    }
-
-    /**
-     * Get a stream of all elements in this concurrent array. The elements will be sorted using the
-     * provided comparator, if not null, or in natural order.
-     *
-     * <p>This method can only be called on immutable instances. It may be called concurrently.
-     *
-     * @return A non-null sorted stream over all elements
-     * @throws IllegalStateException
-     * 		If this instance is not immutable
-     */
-    Stream<T> stream(@Nullable final Comparator<T> comparator) {
-        return stream(true, comparator);
-    }
-
-    /**
-     * Get a stream of all elements in this concurrent array. If requested, the elements will be sorted
-     * using the provided comparator, if not null, or in natural order. If sorting is not requested,
-     * the comparator is ignored.
-     *
-     * <p>This method can only be called on immutable instances. It may be called concurrently.
-     *
-     * @param comparator
-     * 		The comparator to use to sort the elements. May be null, in which
-     * 		case natural ordering is used.
-     * @return A non-null Stream over all elements.
-     * @throws IllegalStateException
-     * 		If this instance is not immutable.
-     */
-    @SuppressWarnings("unchecked")
-    Stream<T> stream(final boolean sort, @Nullable final Comparator<T> comparator) {
         if (!immutable.get()) {
-            throw new IllegalStateException("You can not call toArray on a mutable ConcurrentArray");
+            throw new IllegalStateException("You can not call stream() on a mutable ConcurrentArray");
         }
 
-        // A quick exit: if there are no elements, then return an empty array
+        // A quick exit: if there are no elements, then return an empty stream
         final int numberOfElements = this.elementCount.get();
         if (numberOfElements == 0) {
             return Stream.of();
         }
 
-        // Copy the sub-arrays into a single array
-        T[] result = (T[]) new Object[numberOfElements];
-        int nextIndex = 0;
-        for (SubArray<T> array = head; array != null && nextIndex < numberOfElements; array = array.next) {
-            final int arraySize = array.size.get();
-            System.arraycopy(array.array, 0, result, nextIndex, arraySize);
-            nextIndex += arraySize;
-        }
-
-        if (sort) {
-            Arrays.parallelSort(result, 0, numberOfElements, comparator);
-        }
-
-        return Arrays.stream(result);
+        return StreamSupport.stream(new ConcurrentArraySpliterator<>(numberOfElements, head), false);
     }
 
     public StandardFuture<Void> parallelTraverse(Executor executor, Consumer<T> action) {
@@ -420,6 +374,42 @@ final class ConcurrentArray<T> {
             // values.
             array[index] = element;
             return true;
+        }
+    }
+
+    /**
+     * Utility class to provide Stream support on top of concurrent arrays.
+     *
+     * @param <T>
+     */
+    private static class ConcurrentArraySpliterator<T> extends AbstractSpliterator<T> {
+        private SubArray<T> arr;
+        private int arrIndex = 0;
+
+        ConcurrentArraySpliterator(final int size, final SubArray<T> head) {
+            super(size, Spliterator.SIZED | Spliterator.NONNULL | Spliterator.IMMUTABLE);
+            arr = head;
+            skipEmpty();
+        }
+
+        @Override
+        public boolean tryAdvance(Consumer<? super T> action) {
+            if (arr == null) {
+                return false;
+            }
+            action.accept(arr.array[arrIndex++]);
+            if (arrIndex == arr.size.get()) {
+                arr = arr.next;
+                skipEmpty();
+            }
+            return true;
+        }
+
+        private void skipEmpty() {
+            while ((arr != null) && arr.size.get() == 0) {
+                arr = arr.next;
+            }
+            arrIndex = 0;
         }
     }
 }
