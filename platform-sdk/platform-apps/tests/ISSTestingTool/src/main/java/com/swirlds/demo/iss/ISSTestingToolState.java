@@ -29,7 +29,6 @@ package com.swirlds.demo.iss;
 import static com.swirlds.common.utility.CompareTo.isGreaterThan;
 import static com.swirlds.common.utility.CompareTo.isLessThan;
 import static com.swirlds.common.utility.NonCryptographicHashing.hash64;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -45,17 +44,15 @@ import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.utility.ByteUtils;
-import com.swirlds.platform.ParameterProvider;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
-import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -90,7 +87,15 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
      */
     private Instant genesisTimestamp;
 
+    /**
+     * A list of ISS incidents that will be triggered at a predetermined consensus time
+     */
     private List<PlannedIss> plannedIssList = new LinkedList<>();
+
+    /**
+     * An error that will be logged at a predetermined consensus time
+     */
+    private PlannedLogError plannedLogError;
 
     private boolean immutable;
 
@@ -103,6 +108,7 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
         super(that);
         this.runningSum = that.runningSum;
         this.plannedIssList = new LinkedList<>(that.plannedIssList);
+        this.plannedLogError = that.plannedLogError;
         this.genesisTimestamp = that.genesisTimestamp;
         this.selfId = that.selfId;
         that.immutable = true;
@@ -137,8 +143,13 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
 
         throwIfImmutable();
 
+        // since the test occurrences are relative to the genesis timestamp, the data only needs to be parsed at genesis
         if (trigger == InitTrigger.GENESIS) {
-            parseArguments(ParameterProvider.getInstance().getParameters());
+            final ISSTestingToolConfig testingToolConfig =
+                    platform.getContext().getConfiguration().getConfigData(ISSTestingToolConfig.class);
+
+            this.plannedIssList = testingToolConfig.getPlannedISSs();
+            this.plannedLogError = testingToolConfig.getPlannedLogError();
         }
 
         this.selfId = platform.getSelfId().id();
@@ -157,7 +168,7 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
             captureTimestamp(event);
             event.consensusTransactionIterator().forEachRemaining(this::handleTransaction);
             if (!eventIterator.hasNext()) {
-                maybeTriggerIss(event.getConsensusTimestamp());
+                maybeTriggerIncidents(event.getConsensusTimestamp());
             }
         }
     }
@@ -182,18 +193,26 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
     }
 
     /**
-     * Check if it's time to trigger an ISS. If it is, then mutate the state as needed.
+     * Trigger any ISSs or log errors that are scheduled to occur
      *
-     * @param currentTimestamp the current consensus time
+     * @param currentTimestamp the current consensus timestamp
      */
-    private void maybeTriggerIss(final Instant currentTimestamp) {
-        if (currentTimestamp == null) {
-            logger.info(STARTUP.getMarker(), "currentTimestamp is null when checking whether to trigger ISS");
-
-            return;
-        }
+    private void maybeTriggerIncidents(@NonNull final Instant currentTimestamp) {
+        Objects.requireNonNull(currentTimestamp);
 
         final Duration elapsedSinceGenesis = Duration.between(genesisTimestamp, currentTimestamp);
+
+        maybeTriggerIss(elapsedSinceGenesis, currentTimestamp);
+        maybeLogError(elapsedSinceGenesis);
+    }
+
+    /**
+     * Check if it's time to trigger an ISS. If it is, then mutate the state as needed.
+     *
+     * @param elapsedSinceGenesis the duration that has elapsed since genesis
+     */
+    private void maybeTriggerIss(@NonNull final Duration elapsedSinceGenesis, @NonNull final Instant currentTimestamp) {
+        Objects.requireNonNull(elapsedSinceGenesis);
 
         final Iterator<PlannedIss> plannedIssIterator = plannedIssList.listIterator();
         while (plannedIssIterator.hasNext()) {
@@ -232,17 +251,37 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
 
             logger.info(
                     STARTUP.getMarker(),
-                    "ISS intentionally provoked at {}. This ISS was planned to occur at time after genesis {}, "
+                    "ISS intentionally provoked. This ISS was planned to occur at time after genesis {}, "
                             + "and actually occurred at time after genesis {}. This node ({}) is in partition {} and will"
                             + "agree with the hashes of all other nodes in partition {}. Nodes in other partitions "
                             + "are expected to have divergent hashes.",
-                    currentTimestamp,
                     plannedIss.getTimeAfterGenesis(),
                     elapsedSinceGenesis,
                     selfId,
                     hashPartitionIndex,
                     hashPartitionIndex);
         }
+    }
+
+    /**
+     * Log an error if it's time to do so
+     *
+     * @param elapsedSinceGenesis the duration that has elapsed since genesis
+     */
+    private void maybeLogError(@NonNull final Duration elapsedSinceGenesis) {
+        Objects.requireNonNull(elapsedSinceGenesis);
+
+        if (plannedLogError == null || plannedLogError.getTimeAfterGenesis().compareTo(elapsedSinceGenesis) > 0) {
+            return;
+        }
+
+        logger.error(
+                STARTUP.getMarker(),
+                "This error was scheduled to be logged at time after genesis {}, and actually was logged at time after genesis {}.",
+                plannedLogError.getTimeAfterGenesis(),
+                elapsedSinceGenesis);
+
+        plannedLogError = null;
     }
 
     /**
@@ -253,6 +292,7 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
         out.writeLong(runningSum);
         out.writeInstant(genesisTimestamp);
         out.writeSerializableList(plannedIssList, false, true);
+        out.writeSerializable(plannedLogError, false);
     }
 
     /**
@@ -263,42 +303,7 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
         runningSum = in.readLong();
         genesisTimestamp = in.readInstant();
         plannedIssList = in.readSerializableList(1024, false, PlannedIss::new);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    private void parseArguments(final String[] args) {
-        if (args.length == 0) {
-            throw new IllegalArgumentException("Expected 1 or more arguments. See javadocs for details.");
-        }
-
-        plannedIssList = new ArrayList<>();
-        for (int argIndex = 1; argIndex < args.length; argIndex++) {
-            final String issEvent = args[argIndex];
-            final Set<Long> uniqueNodeIds = new HashSet<>();
-
-            final String[] timestampAndPartitionsStrings = issEvent.split(":");
-            final int elapsedTime = Integer.parseInt(timestampAndPartitionsStrings[0]);
-            final String partitionsArg = timestampAndPartitionsStrings[1];
-            final String[] partitionStrings = partitionsArg.split("-");
-            final List<List<Long>> partitions = new ArrayList<>(partitionStrings.length);
-            for (final String partitionString : partitionStrings) {
-                final List<Long> nodes = new ArrayList<>();
-                final String[] nodeStrings = partitionString.split("\\+");
-                for (final String nodeString : nodeStrings) {
-                    final long nodeId = Long.parseLong(nodeString);
-                    nodes.add(nodeId);
-                    if (!uniqueNodeIds.add(nodeId)) {
-                        logger.error(
-                                EXCEPTION.getMarker(), "Node {} appears more than once in ISS description!", nodeId);
-                    }
-                }
-                partitions.add(nodes);
-            }
-
-            plannedIssList.add(new PlannedIss(Duration.ofSeconds(elapsedTime), partitions));
-        }
+        plannedLogError = in.readSerializable(false, PlannedLogError::new);
     }
 
     /**

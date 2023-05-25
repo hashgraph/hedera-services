@@ -23,4 +23,5 @@ dependencies {
   // Individual Dependencies
   implementation(project(":swirlds-platform-core"))
   implementation(libs.bundles.logging.impl)
+  compileOnly(libs.spotbugs.annotations)
 }
