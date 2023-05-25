@@ -44,13 +44,11 @@ import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hedera.node.config.data.AutoRenewConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Collections;
-import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -106,8 +104,6 @@ public class CryptoHandlerTestBase {
             .build();
     protected static final long defaultAutoRenewPeriod = 720000L;
     protected static final long payerBalance = 10_000L;
-    protected AutoRenewConfig config = new AutoRenewConfig(Set.of("CONTRACT"));
-
     protected MapReadableKVState<String, EntityNumValue> readableAliases;
 
     protected MapReadableKVState<EntityNumVirtualKey, Account> readableAccounts;

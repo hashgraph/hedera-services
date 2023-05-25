@@ -25,17 +25,20 @@ import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.spi.validation.AttributeValidator;
+import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.data.AutoRenewConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
+import javax.inject.Inject;
 
 /**
  * An implementation of {@link ExpiryValidator} that encapsulates the current policies
@@ -47,16 +50,20 @@ public class StandardizedExpiryValidator implements ExpiryValidator {
     private final LongSupplier consensusSecondNow;
     private final AttributeValidator attributeValidator;
     private final HederaNumbers numbers;
+    private final ConfigProvider configProvider;
 
+    @Inject
     public StandardizedExpiryValidator(
             @NonNull final Consumer<Id> idValidator,
             @NonNull final AttributeValidator attributeValidator,
             @NonNull final LongSupplier consensusSecondNow,
-            @NonNull final HederaNumbers numbers) {
+            @NonNull final HederaNumbers numbers,
+            @NonNull final ConfigProvider configProvider) {
         this.attributeValidator = Objects.requireNonNull(attributeValidator);
         this.consensusSecondNow = Objects.requireNonNull(consensusSecondNow);
         this.numbers = Objects.requireNonNull(numbers);
         this.idValidator = Objects.requireNonNull(idValidator);
+        this.configProvider = Objects.requireNonNull(configProvider);
     }
 
     /**
@@ -125,23 +132,20 @@ public class StandardizedExpiryValidator implements ExpiryValidator {
      */
     @Override
     public ResponseCodeEnum expirationStatus(
-            @NonNull final Account account,
-            final boolean isAutoRenewEnabled,
-            final boolean expireAccounts,
-            final boolean expireContracts) {
-        if (!isAutoRenewEnabled) {
+            @NonNull final EntityType entityType,
+            final boolean isMarkedExpired,
+            final long balanceAvailableForSelfRenewal) {
+        final var isSmartContract = entityType.equals(EntityType.CONTRACT);
+        final var autoRenewConfig = configProvider.getConfiguration().getConfigData(AutoRenewConfig.class);
+        if (!autoRenewConfig.isAutoRenewEnabled()
+                || balanceAvailableForSelfRenewal > 0
+                || !isMarkedExpired
+                || isExpiryDisabled(
+                        isSmartContract, autoRenewConfig.expireAccounts(), autoRenewConfig.expireContracts())) {
             return OK;
         }
-        if (account.tinybarBalance() > 0) {
-            return OK;
-        }
-        if (!account.expiredAndPendingRemoval()) {
-            return OK;
-        }
-        if (isExpiryDisabled(account.smartContract(), expireAccounts, expireContracts)) {
-            return OK;
-        }
-        return account.smartContract() ? CONTRACT_EXPIRED_AND_PENDING_REMOVAL : ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+
+        return isSmartContract ? CONTRACT_EXPIRED_AND_PENDING_REMOVAL : ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
     }
 
     /**
