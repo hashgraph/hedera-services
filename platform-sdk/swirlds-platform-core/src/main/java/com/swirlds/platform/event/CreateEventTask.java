@@ -16,17 +16,21 @@
 
 package com.swirlds.platform.event;
 
+import com.swirlds.common.system.NodeId;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+
 /**
  * An intake task requesting the creation of a new event.
  */
 public class CreateEventTask implements EventIntakeTask {
 
     /**
-     * member whose event should be the other-parent (or -1 if none)
+     * member whose event should be the other-parent (or null if none)
      */
-    private final long otherId;
+    private final NodeId otherId;
 
-    public CreateEventTask(final long otherId) {
+    public CreateEventTask(@Nullable final NodeId otherId) {
         super();
         this.otherId = otherId;
     }
@@ -36,11 +40,13 @@ public class CreateEventTask implements EventIntakeTask {
      *
      * @return the other-parent event/task ID
      */
-    public long getOtherId() {
+    @Nullable
+    public NodeId getOtherId() {
         return otherId;
     }
 
     @Override
+    @NonNull
     public String toString() {
         return "(new)(otherId:" + otherId + ")objHash:" + hashCode();
     }

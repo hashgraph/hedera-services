@@ -96,7 +96,7 @@ class EventCreatorTests {
 
         if (recentEvents != null) {
             for (final Long nodeId : recentEvents.keySet()) {
-                Mockito.when(mapper.getMostRecentEvent(nodeId)).thenReturn(recentEvents.get(nodeId));
+                Mockito.when(mapper.getMostRecentEvent(new NodeId(nodeId))).thenReturn(recentEvents.get(nodeId));
                 Mockito.when(mapper.getMostRecentSelfEvent()).thenReturn(recentSelfEvent);
             }
         }
@@ -269,7 +269,7 @@ class EventCreatorTests {
                 "null event should have creator ID = CREATOR_ID_UNDEFINED");
 
         final BaseEventHashedData hashedData = mock(BaseEventHashedData.class);
-        Mockito.when(hashedData.getCreatorId()).thenReturn(4321L);
+        Mockito.when(hashedData.getCreatorId()).thenReturn(new NodeId(4321L));
 
         assertEquals(
                 hashedData.getCreatorId(),
@@ -305,7 +305,7 @@ class EventCreatorTests {
                 () -> false,
                 defaultThrottles);
 
-        eventCreator.createEvent(0);
+        eventCreator.createEvent(new NodeId(0));
 
         assertEquals(1, events.size(), "expected for exactly 1 event to have been created");
         final Transaction[] transactionsInEvent = events.remove().getTransactions();
@@ -359,7 +359,7 @@ class EventCreatorTests {
                 () -> false,
                 defaultThrottles);
 
-        eventCreator.createEvent(1);
+        eventCreator.createEvent(new NodeId(1));
 
         assertEquals(1, events.size(), "expected an event to have been created");
         final EventImpl event = events.remove();
@@ -408,7 +408,7 @@ class EventCreatorTests {
 
         final EventMapper mapper = mock(EventMapper.class);
         Mockito.when(mapper.getMostRecentSelfEvent()).thenReturn(selfParent);
-        Mockito.when(mapper.getMostRecentEvent(0L)).thenReturn(otherParent);
+        Mockito.when(mapper.getMostRecentEvent(new NodeId(0L))).thenReturn(otherParent);
 
         final AccessibleEventCreator eventCreator = new AccessibleEventCreator(
                 selfId,
@@ -425,7 +425,7 @@ class EventCreatorTests {
                 defaultThrottles);
 
         for (int index = 0; index < 100; index++) {
-            eventCreator.createEvent(0);
+            eventCreator.createEvent(new NodeId(0));
         }
 
         assertEquals(100, events.size(), "expected 100 events");
@@ -463,11 +463,12 @@ class EventCreatorTests {
                 () -> false,
                 new EventCreationRules(List.of(mockRule)));
 
-        eventCreator.createEvent(0);
+        eventCreator.createEvent(new NodeId(0));
+
         assertEquals(0, events.size(), "throttle should stop event creation");
 
         when(mockRule.shouldCreateEvent()).thenReturn(PASS);
-        eventCreator.createEvent(0);
+        eventCreator.createEvent(new NodeId(0));
         assertEquals(1, events.size(), "throttle should not stop event creation");
     }
 }

@@ -34,6 +34,7 @@ import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.BaseEvent;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.components.EventCreationRules;
@@ -53,8 +54,8 @@ import org.junit.jupiter.api.TestMethodOrder;
 // Tests utilize static Settings configuration and must not be run in parallel
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class SyncManagerTest {
-    private static final long ID = 0L;
-    private static final NodeId OTHER_ID = new NodeId(1L);
+    private static final int NODE_INDEX = 0;
+    private static final int OTHER_NODE_INDEX = 1;
 
     /**
      * A helper class that contains dummy data to feed into SyncManager lambdas.
@@ -72,18 +73,18 @@ public class SyncManagerTest {
         public DummyEventQueue eventQueue;
 
         public SyncManagerTestData() {
-            this(new NodeId(ID), spy(SwirldStateManager.class));
+            this(NODE_INDEX, spy(SwirldStateManager.class));
         }
 
         public SyncManagerTestData(final SwirldStateManager swirldStateManager) {
-            this(new NodeId(ID), swirldStateManager);
+            this(NODE_INDEX, swirldStateManager);
         }
 
-        public SyncManagerTestData(final NodeId nodeId) {
-            this(nodeId, spy(SwirldStateManager.class));
+        public SyncManagerTestData(final int nodeIndex) {
+            this(nodeIndex, spy(SwirldStateManager.class));
         }
 
-        public SyncManagerTestData(final NodeId nodeId, final SwirldStateManager swirldStateManager) {
+        public SyncManagerTestData(final int nodeIndex, final SwirldStateManager swirldStateManager) {
             freezeManager = mock(FreezeManager.class);
             startUpEventFrozenManager = mock(StartUpEventFrozenManager.class);
             hashgraph = new DummyHashgraph();
@@ -97,7 +98,7 @@ public class SyncManagerTest {
             connectionGraph = new RandomGraph(100, 40, 0);
             criticalQuorum = new CriticalQuorum() {
                 @Override
-                public boolean isInCriticalQuorum(final long nodeId) {
+                public boolean isInCriticalQuorum(final NodeId nodeId) {
                     if (hashgraph.isInCriticalQuorum.containsKey(nodeId)) {
                         return hashgraph.isInCriticalQuorum.get(nodeId);
                     } else {
@@ -117,8 +118,8 @@ public class SyncManagerTest {
                     .withValue("reconnect.fallenBehindThreshold", "0.25")
                     .getOrCreateConfig()
                     .getConfigData(ReconnectConfig.class);
-
             eventQueue = new DummyEventQueue(hashgraph);
+            final NodeId nodeId = hashgraph.addressBook.getNodeId(nodeIndex);
             syncManager = new SyncManagerImpl(
                     new NoOpMetrics(),
                     eventQueue,
@@ -245,8 +246,8 @@ public class SyncManagerTest {
         // Test of the current algorithm
         for (int i = 0; i < 10; i++) {
             final List<Long> next = test.syncManager.getNeighborsToCall();
-            assertNotEquals(next, null);
-            assertEquals(next.size(), 1);
+            assertNotEquals(null, next);
+            assertEquals(1, next.size());
             assertTrue(next.get(0) > 0 && next.get(0) <= 100);
         }
     }
@@ -259,6 +260,9 @@ public class SyncManagerTest {
     void shouldCreateEventTest() {
         final SyncManagerTestData test = new SyncManagerTestData();
         resetTestSettings();
+        final AddressBook addressBook = test.hashgraph.getAddressBook();
+        final NodeId ID = addressBook.getNodeId(NODE_INDEX);
+        final NodeId OTHER_ID = addressBook.getNodeId(OTHER_NODE_INDEX);
 
         // The first time this is called it should return false.
         // This is because the dummy hashgraph always returns false for isStrongMinorityInMaxRound by default
@@ -274,16 +278,16 @@ public class SyncManagerTest {
                 "if neither node is part of the superMinority in the latest round, don't create an event");
 
         // If the other node is in the critical quorum then an event should be created.
-        test.hashgraph.isInCriticalQuorum.put(OTHER_ID.id(), true);
+        test.hashgraph.isInCriticalQuorum.put(OTHER_ID, true);
         assertTrue(test.syncManager.shouldCreateEvent(OTHER_ID, false, 0, 0));
-        test.hashgraph.isInCriticalQuorum.put(OTHER_ID.id(), false);
+        test.hashgraph.isInCriticalQuorum.put(OTHER_ID, false);
         assertFalse(
                 test.syncManager.shouldCreateEvent(OTHER_ID, false, 0, 0),
                 "if neither node is part of the superMinority in the latest round, don't create an event");
 
         // If both are in the critical quorum then an event should be created.
         test.hashgraph.isInCriticalQuorum.put(ID, true);
-        test.hashgraph.isInCriticalQuorum.put(OTHER_ID.id(), true);
+        test.hashgraph.isInCriticalQuorum.put(OTHER_ID, true);
         assertTrue(test.syncManager.shouldCreateEvent(OTHER_ID, false, 0, 0));
     }
 
@@ -297,6 +301,10 @@ public class SyncManagerTest {
 
         final SyncManagerTestData test = new SyncManagerTestData();
         resetTestSettings();
+        final AddressBook addressBook = test.hashgraph.getAddressBook();
+        final NodeId ID = addressBook.getNodeId(NODE_INDEX);
+        final NodeId OTHER_ID = addressBook.getNodeId(OTHER_NODE_INDEX);
+
         test.hashgraph.isInCriticalQuorum.put(ID, true);
 
         when(test.startUpEventFrozenManager.shouldCreateEvent()).thenReturn(PASS);
@@ -324,6 +332,9 @@ public class SyncManagerTest {
     void shouldCreateEventFallenBehind() {
         final SyncManagerTestData test = new SyncManagerTestData();
         resetTestSettings();
+
+        final AddressBook addressBook = test.hashgraph.getAddressBook();
+        final NodeId OTHER_ID = addressBook.getNodeId(OTHER_NODE_INDEX);
         // If one node has fallen behind then do not create new events.
         assertFalse(
                 test.syncManager.shouldCreateEvent(OTHER_ID, true, 0, 0),
@@ -340,8 +351,11 @@ public class SyncManagerTest {
         final int eventsRead = 0;
         final int eventsWritten = 0;
 
-        final NodeId mainNodeId = new NodeId(ID);
-        final SyncManagerTestData test = new SyncManagerTestData(mainNodeId);
+        final SyncManagerTestData test = new SyncManagerTestData(NODE_INDEX);
+
+        final AddressBook addressBook = test.hashgraph.getAddressBook();
+        final NodeId ID = addressBook.getNodeId(NODE_INDEX);
+        final NodeId OTHER_ID = addressBook.getNodeId(OTHER_NODE_INDEX);
         test.hashgraph.isInCriticalQuorum.put(ID, true);
 
         when(test.startUpEventFrozenManager.shouldCreateEvent()).thenReturn(DONT_CREATE);
@@ -369,6 +383,10 @@ public class SyncManagerTest {
     void shouldCreateEventLargeRead() {
         final SyncManagerTestData test = new SyncManagerTestData();
         resetTestSettings();
+
+        final AddressBook addressBook = test.hashgraph.getAddressBook();
+        final NodeId ID = addressBook.getNodeId(NODE_INDEX);
+        final NodeId OTHER_ID = addressBook.getNodeId(OTHER_NODE_INDEX);
 
         // If events read is too large then do not create an event
         test.hashgraph.isInCriticalQuorum.put(ID, true);

@@ -330,17 +330,6 @@ public class Address implements SelfSerializable {
     }
 
     /**
-     * Get the Id of this member.
-     *
-     * @return The Id of this member.
-     * @deprecated Use {@link #getNodeId()} instead.
-     */
-    @Deprecated(since = "0.39.0", forRemoval = true)
-    public long getId() {
-        return id.id();
-    }
-
-    /**
      * Get name this member uses to refer to that member.
      *
      * @return The nickname of this member.

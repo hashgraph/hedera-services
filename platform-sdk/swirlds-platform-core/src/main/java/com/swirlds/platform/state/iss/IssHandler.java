@@ -20,6 +20,7 @@ import static com.swirlds.base.ArgumentUtils.throwArgNull;
 
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.state.notifications.IssNotification;
 import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.throttle.RateLimiter;
@@ -52,7 +53,7 @@ public class IssHandler {
 
     private boolean halted;
 
-    private final long selfId;
+    private final NodeId selfId;
 
     /**
      * Create an object responsible for handling ISS events.
@@ -68,7 +69,7 @@ public class IssHandler {
             @NonNull final Time time,
             @NonNull final DispatchBuilder dispatchBuilder,
             @NonNull final StateConfig stateConfig,
-            final long selfId,
+            @NonNull final NodeId selfId,
             @NonNull final HaltRequestedConsumer haltRequestedConsumer,
             @NonNull final FatalErrorConsumer fatalErrorConsumer,
             @NonNull final IssConsumer issConsumer) {
@@ -96,7 +97,7 @@ public class IssHandler {
     @Observer(StateHashValidityTrigger.class)
     public void stateHashValidityObserver(
             @NonNull final Long round,
-            @NonNull final Long nodeId,
+            @NonNull final NodeId nodeId,
             @NonNull final Hash nodeHash,
             @NonNull final Hash consensusHash) {
 

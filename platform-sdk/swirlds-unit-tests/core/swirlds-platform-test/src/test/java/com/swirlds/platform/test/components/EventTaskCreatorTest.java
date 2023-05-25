@@ -97,7 +97,7 @@ class EventTaskCreatorTest {
         final int otherId = 7;
 
         // regular call
-        taskCreator.createEvent(otherId);
+        taskCreator.createEvent(new NodeId(otherId));
         ArgumentCaptor<CreateEventTask> captor = ArgumentCaptor.forClass(CreateEventTask.class);
         verify(eventQueueThread).put(captor.capture());
         assertEquals(
@@ -107,7 +107,7 @@ class EventTaskCreatorTest {
 
         // with zero weight node
         when(address.isZeroWeight()).thenReturn(true);
-        taskCreator.createEvent(otherId);
+        taskCreator.createEvent(new NodeId(otherId));
         verify(eventQueueThread, times(1)).put(any());
     }
 
@@ -129,7 +129,7 @@ class EventTaskCreatorTest {
         when(setting.getRescueChildlessInverseProbability()).thenReturn(5);
         when(addressBook.getSize()).thenReturn(5);
         EventImpl eventToRescue = mock(EventImpl.class);
-        when(eventToRescue.getCreatorId()).thenReturn(2L);
+        when(eventToRescue.getCreatorId()).thenReturn(new NodeId(2L));
         when(eventMapper.getMostRecentEvent(eventToRescue.getCreatorId())).thenReturn(eventToRescue);
 
         taskCreator.rescueChildlessEvents();

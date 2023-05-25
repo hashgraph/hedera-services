@@ -172,7 +172,7 @@ public class GraphGeneratorTests {
 
         int count = 0;
         for (final IndexedEvent event : events) {
-            if (event.getOtherId() == nodeId) {
+            if (event.getOtherId().id() == nodeId) {
                 count++;
             }
         }
@@ -201,7 +201,7 @@ public class GraphGeneratorTests {
 
         int count = 0;
         for (final IndexedEvent event : events) {
-            if (event.getCreatorId() == nodeId) {
+            if (event.getCreatorId().id() == nodeId) {
                 count++;
             }
         }
@@ -452,7 +452,7 @@ public class GraphGeneratorTests {
         // validate only the last event to keep the validation simple
         assertEquals(
                 lastEvent.getGeneration(),
-                generator.getMaxGeneration(lastEvent.getCreatorId()),
+                generator.getMaxGeneration(lastEvent.getCreatorId().id()),
                 "last event should have the max generation");
         generator.reset();
     }

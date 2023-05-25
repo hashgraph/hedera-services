@@ -31,11 +31,13 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.system.InitTrigger;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.Utilities;
@@ -220,7 +222,7 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
      * {ASK,s,p} = ask to sell 1 share of stock s at p cents (where 1 &lt;= p &lt;= 127)
      * </pre>
      */
-    private void handleTransaction(final long id, final boolean isConsensus, final Transaction transaction) {
+    private void handleTransaction(final NodeId id, final boolean isConsensus, final Transaction transaction) {
         if (transaction == null || transaction.getContents().length == 0) {
             return;
         }
@@ -230,7 +232,8 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
         } else if (!isConsensus || transaction.getContents().length < 3) {
             return; // ignore any bid/ask that doesn't have consensus yet
         }
-        final int selfId = (int) id;
+        final AddressBook addressBook = platform.getAddressBook();
+        final int selfIdIndex = addressBook.getIndexOfNodeId(id);
         final int askBid = transaction.getContents()[0];
         final int tradeStock = transaction.getContents()[1];
         int tradePrice = transaction.getContents()[2];
@@ -241,7 +244,7 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
 
         if (askBid == TransType.ask.ordinal()) { // it is an ask
             // if they're trying to sell something they don't have, then ignore it
-            if (shares[selfId][tradeStock] == 0) {
+            if (shares[selfIdIndex][tradeStock] == 0) {
                 return;
             }
             // if previous member with bid no longer has enough money, then forget them
@@ -250,12 +253,12 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
             }
             // if this is the lowest ask for this stock since its last trade, then remember it
             if (askId[tradeStock] == -1 || tradePrice < ask[tradeStock]) {
-                askId[tradeStock] = (long) selfId;
+                askId[tradeStock] = (long) selfIdIndex;
                 ask[tradeStock] = (byte) tradePrice;
             }
         } else { // it is a bid
             // if they're trying to buy but don't have enough money, then ignore it
-            if (shares[selfId][tradeStock] == 0) {
+            if (shares[selfIdIndex][tradeStock] == 0) {
                 return;
             }
             // if previous member with ask no longer has the share, then forget them
@@ -264,7 +267,7 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
             }
             // if this is the highest bid for this stock since its last trade, then remember it
             if (bidId[tradeStock] == -1 || tradePrice > bid[tradeStock]) {
-                bidId[tradeStock] = (long) selfId;
+                bidId[tradeStock] = (long) selfIdIndex;
                 bid[tradeStock] = (byte) tradePrice;
             }
         }
@@ -309,8 +312,8 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
                 sellerNickname,
                 buyerNickname,
                 selfName,
-                wallet[(int) id] / 100.,
-                Arrays.toString(shares[(int) id]));
+                wallet[selfIdIndex] / 100.,
+                Arrays.toString(shares[selfIdIndex]));
 
         // record the trade, and say there are now no pending asks or bids
         trades[lastTradeIndex] = tradeDescription;

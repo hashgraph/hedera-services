@@ -17,11 +17,15 @@
 package com.swirlds.platform.event;
 
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEvent;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.internal.EventImpl;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Objects;
 
 /**
  * A class used to convert an event into a string
@@ -113,7 +117,8 @@ public final class EventStringBuilder {
      * @param hash
      * 		the hash of the event
      */
-    private void appendShortEvent(final long creatorId, final long generation, final Hash hash) {
+    private void appendShortEvent(@NonNull final NodeId creatorId, final long generation, @Nullable final Hash hash) {
+        Objects.requireNonNull(creatorId, "creatorId must not be null");
         sb.append('(');
         if (creatorId == EventConstants.CREATOR_ID_UNDEFINED || generation == EventConstants.GENERATION_UNDEFINED) {
             sb.append("none)");

@@ -25,6 +25,7 @@ import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.io.OptionalSelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
@@ -75,7 +76,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
     /** the software version of the node that created this event. */
     private SoftwareVersion softwareVersion;
     /** ID of this event's creator (translate before sending) */
-    private long creatorId;
+    private NodeId creatorId;
     /** the generation for the self parent */
     private long selfParentGen;
     /** the generation for the other parent */
@@ -116,7 +117,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
      */
     public BaseEventHashedData(
             @NonNull SoftwareVersion softwareVersion,
-            final long creatorId,
+            @NonNull final NodeId creatorId,
             final long selfParentGen,
             final long otherParentGen,
             @Nullable final Hash selfParentHash,
@@ -124,7 +125,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
             @NonNull final Instant timeCreated,
             @Nullable final ConsensusTransactionImpl[] transactions) {
         this.softwareVersion = Objects.requireNonNull(softwareVersion, "The softwareVersion must not be null");
-        this.creatorId = creatorId;
+        this.creatorId = Objects.requireNonNull(creatorId, "The creatorId must not be null");
         this.selfParentGen = selfParentGen;
         this.otherParentGen = otherParentGen;
         this.selfParentHash = selfParentHash;
@@ -155,8 +156,8 @@ public class BaseEventHashedData extends AbstractSerializableHashable
      * 		the payload: an array of transactions included in this event instance
      */
     public BaseEventHashedData(
-            @NonNull SoftwareVersion softwareVersion,
-            final long creatorId,
+            @NonNull final SoftwareVersion softwareVersion,
+            @NonNull final NodeId creatorId,
             final long selfParentGen,
             final long otherParentGen,
             @Nullable final byte[] selfParentHash,
@@ -180,10 +181,13 @@ public class BaseEventHashedData extends AbstractSerializableHashable
     }
 
     @Override
-    public void serialize(final SerializableDataOutputStream out, final EventSerializationOptions option)
+    public void serialize(
+            @NonNull final SerializableDataOutputStream out, @NonNull final EventSerializationOptions option)
             throws IOException {
         out.writeSerializable(softwareVersion, true);
-        out.writeLong(creatorId);
+        // FUTURE WORK: The creatorId should be a selfSerializable NodeId at some point.
+        // Changing the event format may require a HIP.  The old format is preserved for now.
+        out.writeLong(creatorId.id());
         out.writeLong(selfParentGen);
         out.writeLong(otherParentGen);
         out.writeSerializable(selfParentHash, false);
@@ -222,7 +226,14 @@ public class BaseEventHashedData extends AbstractSerializableHashable
         } else {
             softwareVersion = SoftwareVersion.NO_VERSION;
         }
-        creatorId = in.readLong();
+        // FUTURE WORK: The creatorId should be a selfSerializable NodeId at some point.
+        // Changing the event format may require a HIP.  The old format is preserved for now.
+        final long serializedCreatorId = in.readLong();
+        if (serializedCreatorId < NodeId.LOWEST_NODE_NUMBER) {
+            throw new IOException("Invalid negative creatorId: %d".formatted(serializedCreatorId));
+        } else {
+            creatorId = new NodeId(serializedCreatorId);
+        }
         selfParentGen = in.readLong();
         otherParentGen = in.readLong();
         selfParentHash = in.readSerializable(false, Hash::new);
@@ -326,7 +337,13 @@ public class BaseEventHashedData extends AbstractSerializableHashable
         return softwareVersion;
     }
 
-    public long getCreatorId() {
+    /**
+     * The ID of the node that created this event.
+     *
+     * @return the ID of the node that created this event
+     */
+    @NonNull
+    public NodeId getCreatorId() {
         return creatorId;
     }
 

@@ -40,6 +40,9 @@ public class NodeId implements Comparable<NodeId>, SelfSerializable {
         public static final int ORIGINAL = 1;
     }
 
+    /** The undefined NodeId. */
+    public static final NodeId UNDEFINED_NODE_ID = null;
+
     /** The first allowed Node ID. */
     public static final long LOWEST_NODE_NUMBER = 0L;
 

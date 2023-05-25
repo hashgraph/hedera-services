@@ -17,6 +17,8 @@
 package com.swirlds.common.system.events;
 
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.system.NodeId;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 
 /**
@@ -62,11 +64,12 @@ public interface PlatformEvent extends ConsensusEvent {
     Instant getConsensusTimestamp();
 
     /**
-     * ID of otherParent. -1 if otherParent doesn't exist.
+     * Node ID of the otherParent. null if otherParent doesn't exist.
      *
      * @return Other parent event's ID
      */
-    long getOtherId();
+    @Nullable
+    NodeId getOtherId();
 
     /**
      * This event's parent event. null if none exists.
@@ -101,7 +104,7 @@ public interface PlatformEvent extends ConsensusEvent {
      *
      * @return ID of this event's creator
      */
-    long getCreatorId();
+    NodeId getCreatorId();
 
     /**
      * If isConsensus is true, the round where all unique famous witnesses see this event.
