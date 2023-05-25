@@ -55,6 +55,22 @@ public class HapiThrottling implements FunctionalityThrottling {
         return delegate.allActiveThrottles();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<DeterministicThrottle.UsageSnapshot> takeSnapshots() {
+        return delegate.takeSnapshots();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void resetTo(List<DeterministicThrottle.UsageSnapshot> snapshots) {
+        delegate.resetTo(snapshots);
+    }
+
     @Override
     public GasLimitDeterministicThrottle gasLimitThrottle() {
         return delegate.gasLimitThrottle();

@@ -69,6 +69,16 @@ class TxnAwareHandleThrottlingTest {
     }
 
     @Test
+    void delegatesSnapshotActions() {
+        final List<DeterministicThrottle.UsageSnapshot> pretend = List.of();
+        given(delegate.takeSnapshots()).willReturn(pretend);
+        assertSame(pretend, subject.takeSnapshots());
+
+        subject.resetTo(pretend);
+        verify(delegate).resetTo(pretend);
+    }
+
+    @Test
     void delegatesWasLastTxnGasThrottled() {
         given(delegate.wasLastTxnGasThrottled()).willReturn(true);
 

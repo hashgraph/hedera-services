@@ -80,6 +80,11 @@ public class MockRecordsHistorian implements RecordsHistorian {
     }
 
     @Override
+    public boolean throttleAllowsChildTransactions() {
+        return true;
+    }
+
+    @Override
     public int nextChildRecordSourceId() {
         throw new UnsupportedOperationException();
     }
