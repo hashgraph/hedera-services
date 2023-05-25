@@ -65,6 +65,14 @@ public interface PreHandleContext {
     AccountID payer();
 
     /**
+     * Returns the current {@link Configuration}.
+     *
+     * @return the {@link Configuration}
+     */
+    @NonNull
+    Configuration configuration();
+
+    /**
      * Returns an immutable copy of the set of required non-payer keys.
      *
      * @return the {@link Set} with the required non-payer keys
@@ -108,8 +116,8 @@ public interface PreHandleContext {
      * Create a new store given the store's interface. This gives read-only access to the store.
      *
      * @param storeInterface The store interface to find and create a store for
-     * @return An implementation of store interface provided, or null if the store
      * @param <C> Interface class for a Store
+     * @return An implementation of store interface provided, or null if the store
      * @throws IllegalArgumentException if the storeInterface class provided is unknown to the app
      * @throws NullPointerException if {@code storeInterface} is {@code null}
      */
@@ -167,9 +175,9 @@ public interface PreHandleContext {
     PreHandleContext optionalSignatureForHollowAccount(@NonNull final Account hollowAccount);
 
     /**
-     * Adds the given key to required non-payer keys. If the key is the same as the payer key, or if the key has already
-     * been added, then the call is a no-op. The key must not be null and not empty, otherwise a PreCheckException is
-     * thrown with the given {@code responseCode}.
+     * Adds the given key to required non-payer keys. If the key is the same as the payer key, or if the key has
+     * already been added, then the call is a no-op. The key must not be null and not empty, otherwise a
+     * PreCheckException is thrown with the given {@code responseCode}.
      *
      * @param key key to be added
      * @param responseCode the response code to be used in case the key is null or empty
@@ -273,14 +281,4 @@ public interface PreHandleContext {
      */
     @Nullable
     PreHandleContext innerContext();
-
-    /**
-     * Returns the current {@link Configuration}.
-     *
-     * @return the {@link Configuration}
-     */
-    @NonNull
-    default Configuration getConfiguration() {
-        throw new UnsupportedOperationException("getConfiguration() not implemented, will be done by next PR");
-    }
 }

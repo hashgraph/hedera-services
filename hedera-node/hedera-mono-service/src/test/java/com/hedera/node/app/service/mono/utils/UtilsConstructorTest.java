@@ -54,6 +54,7 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils;
 import com.hedera.node.app.service.mono.state.merkle.internals.ByteUtils;
 import com.hedera.node.app.service.mono.state.migration.MapMigrationToDisk;
+import com.hedera.node.app.service.mono.state.migration.RecordConsolidation;
 import com.hedera.node.app.service.mono.state.migration.StakingInfoMapBuilder;
 import com.hedera.node.app.service.mono.state.migration.StateChildIndices;
 import com.hedera.node.app.service.mono.state.migration.StateVersions;
@@ -127,6 +128,7 @@ class UtilsConstructorTest {
             MerkleAccount.ChildIndices.class,
             BitPackUtils.class,
             MapMigrationToDisk.class,
+            RecordConsolidation.class,
             StateChildIndices.class,
             StateVersions.class,
             ExpiryStats.Names.class,

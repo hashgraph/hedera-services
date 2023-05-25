@@ -22,6 +22,8 @@ import com.hedera.node.app.annotations.NodeSelfId;
 import com.hedera.node.app.authorization.AuthorizerInjectionModule;
 import com.hedera.node.app.components.IngestInjectionComponent;
 import com.hedera.node.app.components.QueryInjectionComponent;
+import com.hedera.node.app.config.ConfigModule;
+import com.hedera.node.app.config.GenesisUsage;
 import com.hedera.node.app.fees.FeesInjectionModule;
 import com.hedera.node.app.info.InfoInjectionModule;
 import com.hedera.node.app.metrics.MetricsInjectionModule;
@@ -67,7 +69,8 @@ import javax.inject.Singleton;
             AuthorizerInjectionModule.class,
             InfoInjectionModule.class,
             ThrottleInjectionModule.class,
-            SolvencyInjectionModule.class
+            SolvencyInjectionModule.class,
+            ConfigModule.class
         })
 public interface HederaInjectionComponent extends ServicesApp {
     /* Needed by ServicesState */
@@ -109,6 +112,13 @@ public interface HederaInjectionComponent extends ServicesApp {
 
         @BindsInstance
         Builder maxSignedTxnSize(@MaxSignedTxnSize final int maxSignedTxnSize);
+
+        /**
+         * @deprecated we need to define the correct workflow to define that genesis is used
+         */
+        @Deprecated
+        @BindsInstance
+        Builder genesisUsage(@GenesisUsage final boolean genesisUsage);
 
         HederaInjectionComponent build();
     }

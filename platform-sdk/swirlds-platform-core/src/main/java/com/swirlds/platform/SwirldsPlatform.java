@@ -599,7 +599,8 @@ public class SwirldsPlatform implements Platform, Startable {
                     eventIntakeMetrics,
                     eventLinker,
                     this::checkPlatformStatus,
-                    this::loadReconnectState);
+                    this::loadReconnectState,
+                    this::clearAllPipelines);
 
             if (signedStateFromDisk != null) {
                 loadIntoConsensusAndEventMapper(signedStateFromDisk);
@@ -625,6 +626,13 @@ public class SwirldsPlatform implements Platform, Startable {
         GuiPlatformAccessor.getInstance().setShadowGraph(selfId, shadowGraph);
         GuiPlatformAccessor.getInstance().setStateManagementComponent(selfId, stateManagementComponent);
         GuiPlatformAccessor.getInstance().setConsensusReference(selfId, consensusRef);
+    }
+
+    /**
+     * Clears all pipelines in preparation for a reconnect. This method is needed to break a circular dependency.
+     */
+    private void clearAllPipelines() {
+        clearAllPipelines.clear();
     }
 
     /**
@@ -857,7 +865,7 @@ public class SwirldsPlatform implements Platform, Startable {
         } catch (final RuntimeException e) {
             logger.debug(RECONNECT.getMarker(), "`loadReconnectState` : FAILED, reason: {}", e.getMessage());
             // if the loading fails for whatever reason, we clear all data again in case some of it has been loaded
-            clearAllPipelines.clear();
+            clearAllPipelines();
             throw e;
         }
 

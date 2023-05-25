@@ -158,6 +158,7 @@ public class PropertyNames {
     public static final String LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS = "ledger.schedule.txExpiryTimeSecs";
     public static final String RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT = "rates.intradayChangeLimitPercent";
     public static final String RATES_MIDNIGHT_CHECK_INTERVAL = "rates.midnightCheckInterval";
+    public static final String RECORDS_USE_CONSOLIDATED_FCQ = "records.useConsolidatedFcq";
     public static final String SCHEDULING_LONG_TERM_ENABLED = "scheduling.longTermEnabled";
     public static final String SCHEDULING_MAX_TXN_PER_SEC = "scheduling.maxTxnPerSecond";
     public static final String SCHEDULING_MAX_NUM = "scheduling.maxNumber";

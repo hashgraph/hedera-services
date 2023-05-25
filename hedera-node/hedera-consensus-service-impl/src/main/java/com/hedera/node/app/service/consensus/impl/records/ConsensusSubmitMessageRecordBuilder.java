@@ -16,46 +16,38 @@
 
 package com.hedera.node.app.service.consensus.impl.records;
 
-import com.hedera.node.app.spi.records.RecordBuilder;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A {@code RecordBuilder} specialization for tracking the side-effects of a
- * {@code ConsensusSubmitMessage} transaction.
+ * A {@code RecordBuilder} specialization for tracking the side-effects of a {@code ConsensusSubmitMessage}
+ * transaction.
  */
-public interface ConsensusSubmitMessageRecordBuilder extends RecordBuilder<ConsensusSubmitMessageRecordBuilder> {
+public interface ConsensusSubmitMessageRecordBuilder {
     /**
-     * Tracks the new topic metadata for the topic receiving the submitted message
-     * in the associated transaction.
+     * Tracks the sequence number for the topic receiving the submitted message in the associated transaction.
      *
-     * @param topicRunningHash the new running hash of the topic
-     * @param sequenceNumber the new sequence number of the topic
-     * @param runningHashVersion the running hash version used to compute the new running hash
+     * @param topicSequenceNumber the new sequence number of the topic
      * @return this builder
      */
     @NonNull
-    ConsensusSubmitMessageRecordBuilder setNewTopic(
-            @NonNull byte[] topicRunningHash, long sequenceNumber, long runningHashVersion);
+    ConsensusSubmitMessageRecordBuilder topicSequenceNumber(long topicSequenceNumber);
 
     /**
-     * Returns the new running hash of the topic receiving the submitted message.
+     * Tracks the running hash for the topic receiving the submitted message in the associated transaction.
      *
-     * @return the new running hash of the topic receiving the submitted message
+     * @param topicRunningHash the new running hash of the topic
+     * @return this builder
      */
     @NonNull
-    byte[] getNewTopicRunningHash();
+    ConsensusSubmitMessageRecordBuilder topicRunningHash(@NonNull final Bytes topicRunningHash);
 
     /**
-     * Returns the new sequence number of the topic receiving the submitted message.
+     * Tracks the running hash version for the topic receiving the submitted message in the associated transaction.
      *
-     * @return the new sequence number of the topic receiving the submitted message
+     * @param topicRunningHashVersion the running hash version used to compute the new running hash
+     * @return this builder
      */
-    long getNewTopicSequenceNumber();
-
-    /**
-     * Returns the running hash version used to compute the new running hash.
-     *
-     * @return the running hash version used to compute the new running hash
-     */
-    long getUsedRunningHashVersion();
+    @NonNull
+    ConsensusSubmitMessageRecordBuilder topicRunningHashVersion(long topicRunningHashVersion);
 }

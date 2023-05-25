@@ -77,32 +77,37 @@ public class LegacySyncGossip extends AbstractGossip {
     private final SimultaneousSyncThrottle simultaneousSyncThrottle;
     private final ShadowGraphSynchronizer syncShadowgraphSynchronizer;
     private final InterruptableConsumer<EventIntakeTask> eventIntakeLambda;
-    private final Clearable clearAllPipelines;
     private final ThreadManager threadManager;
+
+    /**
+     * Holds a list of objects that need to be cleared when {@link #clear()} is called on this object.
+     */
+    private final Clearable clearAllInternalPipelines;
 
     /**
      * Builds the gossip engine, depending on which flavor is requested in the configuration.
      *
-     * @param platformContext           the platform context
-     * @param threadManager             the thread manager
-     * @param crypto                    can be used to sign things
-     * @param addressBook               the current address book
-     * @param selfId                    this node's ID
-     * @param appVersion                the version of the app
-     * @param shadowGraph               contains non-ancient events
-     * @param consensusRef              a pointer to consensus
-     * @param intakeQueue               the event intake queue
-     * @param freezeManager             handles freezes
-     * @param startUpEventFrozenManager prevents event creation during startup
-     * @param swirldStateManager        manages the mutable state
-     * @param stateManagementComponent  manages the lifecycle of the state
-     * @param eventIntakeLambda         a method that is called when something needs to be added to the event intake
-     *                                  queue
-     * @param eventObserverDispatcher   the object used to wire event intake
-     * @param eventMapper               a data structure used to track the most recent event from each node
-     * @param eventIntakeMetrics        metrics for event intake
-     * @param updatePlatformStatus      a method that updates the platform status, when called
-     * @param loadReconnectState        a method that should be called when a state from reconnect is obtained
+     * @param platformContext               the platform context
+     * @param threadManager                 the thread manager
+     * @param crypto                        can be used to sign things
+     * @param addressBook                   the current address book
+     * @param selfId                        this node's ID
+     * @param appVersion                    the version of the app
+     * @param shadowGraph                   contains non-ancient events
+     * @param consensusRef                  a pointer to consensus
+     * @param intakeQueue                   the event intake queue
+     * @param freezeManager                 handles freezes
+     * @param startUpEventFrozenManager     prevents event creation during startup
+     * @param swirldStateManager            manages the mutable state
+     * @param stateManagementComponent      manages the lifecycle of the state
+     * @param eventIntakeLambda             a method that is called when something needs to be added to the event intake
+     *                                      queue
+     * @param eventObserverDispatcher       the object used to wire event intake
+     * @param eventMapper                   a data structure used to track the most recent event from each node
+     * @param eventIntakeMetrics            metrics for event intake
+     * @param updatePlatformStatus          a method that updates the platform status, when called
+     * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
+     * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
      */
     public LegacySyncGossip(
             @NonNull final PlatformContext platformContext,
@@ -123,7 +128,8 @@ public class LegacySyncGossip extends AbstractGossip {
             @NonNull final EventMapper eventMapper,
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
             @NonNull final Runnable updatePlatformStatus,
-            @NonNull final Consumer<SignedState> loadReconnectState) {
+            @NonNull final Consumer<SignedState> loadReconnectState,
+            @NonNull final Runnable clearAllPipelinesForReconnect) {
         super(
                 platformContext,
                 threadManager,
@@ -140,7 +146,8 @@ public class LegacySyncGossip extends AbstractGossip {
                 eventIntakeMetrics,
                 eventObserverDispatcher,
                 updatePlatformStatus,
-                loadReconnectState);
+                loadReconnectState,
+                clearAllPipelinesForReconnect);
 
         this.threadManager = Objects.requireNonNull(threadManager);
         this.eventIntakeLambda = Objects.requireNonNull(eventIntakeLambda);
@@ -159,7 +166,7 @@ public class LegacySyncGossip extends AbstractGossip {
                 true,
                 () -> {});
 
-        clearAllPipelines = new LoggingClearables(
+        clearAllInternalPipelines = new LoggingClearables(
                 RECONNECT.getMarker(),
                 List.of(
                         Pair.of(intakeQueue, "intakeQueue"),
@@ -319,7 +326,7 @@ public class LegacySyncGossip extends AbstractGossip {
      */
     @Override
     public void clear() {
-        clearAllPipelines.clear();
+        clearAllInternalPipelines.clear();
     }
 
     /**

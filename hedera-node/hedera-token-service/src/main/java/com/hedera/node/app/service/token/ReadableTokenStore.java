@@ -19,6 +19,7 @@ package com.hedera.node.app.service.token;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.Key.KeyOneOfType;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.state.token.Token;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -75,4 +76,12 @@ public interface ReadableTokenStore {
             return pauseKey != null && !pauseKey.key().kind().equals(KeyOneOfType.UNSET);
         }
     }
+
+    /**
+     * Returns all the data for a token
+     *
+     * @param id the token id to look up
+     */
+    @Nullable
+    Token get(@NonNull TokenID id);
 }

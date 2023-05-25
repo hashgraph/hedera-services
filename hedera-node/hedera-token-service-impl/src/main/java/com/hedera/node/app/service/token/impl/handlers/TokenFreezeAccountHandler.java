@@ -32,6 +32,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -68,27 +69,14 @@ public class TokenFreezeAccountHandler implements TransactionHandler {
         }
     }
 
-    /**
-     * This method is called during the handle workflow. It executes the actual transaction.
-     *
-     * @param txn the {@link TokenFreezeAccountTransactionBody} of the active transaction
-     * @param accountStore the {@link ReadableAccountStore} for the active transaction
-     * @param tokenStore the {@link ReadableTokenStore} for the active transaction
-     * @param tokenRelStore the {@link WritableTokenRelationStore} for the active transaction
-     * @throws NullPointerException if one of the arguments is {@code null}
-     */
-    public void handle(
-            @NonNull final TransactionBody txn,
-            @NonNull final ReadableAccountStore accountStore,
-            @NonNull final ReadableTokenStore tokenStore,
-            @NonNull final WritableTokenRelationStore tokenRelStore)
-            throws HandleException {
-        requireNonNull(txn);
-        requireNonNull(accountStore);
-        requireNonNull(tokenStore);
-        requireNonNull(tokenRelStore);
+    @Override
+    public void handle(@NonNull final HandleContext context) throws HandleException {
+        requireNonNull(context);
 
-        final var op = txn.tokenFreezeOrThrow();
+        final var op = context.body().tokenFreezeOrThrow();
+        final var accountStore = context.readableStore(ReadableAccountStore.class);
+        final var tokenStore = context.readableStore(ReadableTokenStore.class);
+        final var tokenRelStore = context.writableStore(WritableTokenRelationStore.class);
         final var tokenRel = validateSemantics(op, accountStore, tokenStore, tokenRelStore);
 
         final var copyBuilder = tokenRel.copyBuilder();
@@ -132,11 +120,12 @@ public class TokenFreezeAccountHandler implements TransactionHandler {
         validateTrue(tokenMeta.hasFreezeKey(), TOKEN_HAS_NO_FREEZE_KEY);
 
         // Check that the account exists
-        final var account = accountStore.getAccountById(op.accountOrElse(AccountID.DEFAULT));
+        final var accountId = op.accountOrElse(AccountID.DEFAULT);
+        final var account = accountStore.getAccountById(accountId);
         validateTrue(account != null, INVALID_ACCOUNT_ID);
 
         // Check that the token is associated to the account
-        final var tokenRel = tokenRelStore.getForModify(account.accountNumber(), tokenId.tokenNum());
+        final var tokenRel = tokenRelStore.getForModify(accountId, tokenId);
         validateTrue(tokenRel.isPresent(), TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
 
         // Return the token relation
