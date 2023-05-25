@@ -416,15 +416,12 @@ class StateManagementComponentTests {
                 .setSigningNodeIds(majorityWeightNodes)
                 .build();
         component.stateToLoad(signedState, SourceOfSignedState.RECONNECT);
-        final StateToDiskAttempt attempt = stateToDiskAttemptConsumer.getAttemptQueue().poll(5, TimeUnit.SECONDS);
+        final StateToDiskAttempt attempt =
+                stateToDiskAttemptConsumer.getAttemptQueue().poll(5, TimeUnit.SECONDS);
         assertNotNull(attempt, "The state should be saved to disk.");
         assertEquals(
-                attempt.signedState(),
-                signedState,
-                "The state saved to disk should be the same as the state loaded.");
-        assertTrue(
-                attempt.success(),
-                "The state saved to disk should be marked as a success.");
+                attempt.signedState(), signedState, "The state saved to disk should be the same as the state loaded.");
+        assertTrue(attempt.success(), "The state saved to disk should be marked as a success.");
 
         component.stop();
     }

@@ -358,8 +358,7 @@ public class SignedStateFileManager implements Startable {
      * @param source     the source of the signed state
      */
     public synchronized void determineIfStateShouldBeSaved(
-            @NonNull final SignedState signedState,
-            @NonNull final SourceOfSignedState source) {
+            @NonNull final SignedState signedState, @NonNull final SourceOfSignedState source) {
         if (shouldSaveToDisk(signedState, previousSavedStateTimestamp, source)) {
 
             logger.info(
