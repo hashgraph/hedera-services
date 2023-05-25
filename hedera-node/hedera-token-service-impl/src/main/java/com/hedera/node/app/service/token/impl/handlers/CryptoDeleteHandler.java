@@ -57,6 +57,7 @@ public class CryptoDeleteHandler implements TransactionHandler {
         // Exists for injection
     }
 
+    @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
         final var op = txn.cryptoDeleteOrThrow();
 
