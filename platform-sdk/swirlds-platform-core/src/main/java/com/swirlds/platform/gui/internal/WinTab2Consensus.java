@@ -55,15 +55,13 @@ class WinTab2Consensus extends PrePaintableJPanel {
             }
             SwirldsPlatform platform = WinBrowser.memberDisplayed.platform;
             String s = "";
-            s += GuiPlatformAccessor.getInstance()
-                    .getPlatformName(platform.getSelfId().id());
-            final Consensus consensus = GuiPlatformAccessor.getInstance()
-                    .getConsensus(platform.getSelfId().id());
+            s += GuiPlatformAccessor.getInstance().getPlatformName(platform.getSelfId());
+            final Consensus consensus = GuiPlatformAccessor.getInstance().getConsensus(platform.getSelfId());
             long r1 = consensus.getDeleteRound();
             long r2 = consensus.getFameDecidedBelow();
             long r3 = consensus.getMaxRound();
-            final StateManagementComponent stateManagementComponent = GuiPlatformAccessor.getInstance()
-                    .getStateManagementComponent(platform.getSelfId().id());
+            final StateManagementComponent stateManagementComponent =
+                    GuiPlatformAccessor.getInstance().getStateManagementComponent(platform.getSelfId());
             long r0 = stateManagementComponent.getLastCompleteRound();
 
             if (r1 == -1) {
