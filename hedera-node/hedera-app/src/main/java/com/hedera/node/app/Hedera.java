@@ -61,6 +61,7 @@ import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.merkle.MerkleHederaState.MerkleWritableStates;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
+import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -223,7 +224,8 @@ public final class Hedera implements SwirldMain {
                 NetworkService.NAME, new NetworkServiceImpl(),
                 ScheduleService.NAME, new ScheduleServiceImpl(),
                 TokenService.NAME, new TokenServiceImpl(),
-                UtilService.NAME, new UtilServiceImpl());
+                UtilService.NAME, new UtilServiceImpl(),
+                RecordCacheService.NAME, new RecordCacheService());
 
         final var map = new HashMap<String, ServiceRegistration>();
         for (final var entry : services.entrySet()) {

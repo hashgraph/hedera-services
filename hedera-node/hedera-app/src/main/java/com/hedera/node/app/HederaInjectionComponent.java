@@ -36,6 +36,7 @@ import com.hedera.node.app.service.mono.state.StateModule;
 import com.hedera.node.app.service.mono.utils.NonAtomicReference;
 import com.hedera.node.app.services.ServicesInjectionModule;
 import com.hedera.node.app.solvency.SolvencyInjectionModule;
+import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.HederaStateInjectionModule;
 import com.hedera.node.app.state.WorkingStateAccessor;
@@ -83,6 +84,8 @@ public interface HederaInjectionComponent extends ServicesApp {
     AdaptedMonoEventExpansion adaptedMonoEventExpansion();
 
     NonAtomicReference<HederaState> mutableState();
+
+    RecordCache recordCache();
 
     @Component.Builder
     interface Builder {
