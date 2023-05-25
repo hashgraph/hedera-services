@@ -173,6 +173,10 @@ public class HandleWorkflow {
             recordFailedTransaction(e.responseCode(), recordBuilder, recordListBuilder);
         } catch (HandleException e) {
             recordFailedTransaction(e.getStatus(), recordBuilder, recordListBuilder);
+        } catch (InterruptedException e) {
+            LOG.error("Interrupted while waiting for signature verification", e);
+            Thread.currentThread().interrupt();
+            recordBuilder.status(ResponseCodeEnum.UNKNOWN);
         } catch (Throwable e) {
             LOG.error("An unexpected exception was thrown during handle", e);
             recordBuilder.status(ResponseCodeEnum.UNKNOWN);
@@ -229,7 +233,7 @@ public class HandleWorkflow {
         }
 
         // If we reach this point, either pre-handle was not run or it failed but may succeed now.
-        // Therefore we simply rerun pre-handle.
+        // Therefore, we simply rerun pre-handle.
         final var storeFactory = new ReadableStoreFactory(state);
         final var accountStore = storeFactory.getStore(ReadableAccountStore.class);
         final var creator = nodeInfo.accountOf(platformEvent.getCreatorId());
