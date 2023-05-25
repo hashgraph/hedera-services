@@ -25,6 +25,7 @@ import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.platform.state.GenesisStateBuilder.buildGenesisState;
 import static com.swirlds.platform.state.address.AddressBookMetrics.registerAddressBookMetrics;
 import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.common.config.ConsensusConfig;
@@ -32,6 +33,7 @@ import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.route.MerkleRouteIterator;
@@ -88,6 +90,7 @@ import com.swirlds.platform.dispatch.triggers.flow.ReconnectStateLoadedTrigger;
 import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.EventIntakeTask;
 import com.swirlds.platform.event.EventUtils;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.linking.OrphanBufferingLinker;
@@ -205,6 +208,15 @@ public class SwirldsPlatform implements Platform, Startable {
      */
     private final long diskStateRound;
     /**
+     * If a state was loaded from disk, this is the minimum generation non-ancient for that round. If starting from
+     * a genesis state, this is 0.
+     */
+    private final long initialMinimumGenerationNonAncient;
+    /**
+     * Events from gossip and/or the preconsensus event stream are processed by this class.
+     */
+    private final EventIntake eventIntake;
+    /**
      * If a state was loaded from disk, this will have the hash of that state.
      */
     private final Hash diskStateHash;
@@ -253,6 +265,11 @@ public class SwirldsPlatform implements Platform, Startable {
      * The platform context for this platform. Should be used to access basic services
      */
     private final PlatformContext platformContext;
+
+    /**
+     * Can be used to read preconsensus event files from disk.
+     */
+    private final PreConsensusEventFileManager preConsensusEventFileManager;
 
     /**
      * Writes pre-consensus events to disk.
@@ -349,7 +366,8 @@ public class SwirldsPlatform implements Platform, Startable {
         final AppCommunicationComponent appCommunicationComponent =
                 wiring.wireAppCommunicationComponent(notificationEngine);
 
-        preConsensusEventWriter = components.add(buildPreConsensusEventWriter());
+        preConsensusEventFileManager = buildPreConsensusEventFileManager();
+        preConsensusEventWriter = components.add(buildPreConsensusEventWriter(preConsensusEventFileManager));
 
         stateManagementComponent = wiring.wireStateManagementComponent(
                 PlatformConstructor.platformSigner(crypto.getKeysAndCerts()),
@@ -410,10 +428,17 @@ public class SwirldsPlatform implements Platform, Startable {
         if (loadedSignedState.isNotNull()) {
             diskStateHash = loadedSignedState.get().getState().getHash();
             diskStateRound = loadedSignedState.get().getRound();
+            initialMinimumGenerationNonAncient = loadedSignedState
+                    .get()
+                    .getState()
+                    .getPlatformState()
+                    .getPlatformData()
+                    .getMinimumGenerationNonAncient();
             startedFromGenesis = false;
         } else {
             diskStateHash = null;
             diskStateRound = -1;
+            initialMinimumGenerationNonAncient = 0;
             startedFromGenesis = true;
         }
 
@@ -517,7 +542,7 @@ public class SwirldsPlatform implements Platform, Startable {
             eventLinker = buildEventLinker(isDuplicateChecks);
 
             final IntakeCycleStats intakeCycleStats = new IntakeCycleStats(time, metrics);
-            final EventIntake eventIntake = new EventIntake(
+            eventIntake = new EventIntake(
                     selfId,
                     eventLinker,
                     consensusRef::get,
@@ -944,22 +969,26 @@ public class SwirldsPlatform implements Platform, Startable {
     }
 
     /**
-     * Build the pre-consensus event writer.
+     * Build the preconsensus event file manager.
+     */
+    private PreConsensusEventFileManager buildPreConsensusEventFileManager() {
+        try {
+            return new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), selfId.id());
+        } catch (final IOException e) {
+            throw new UncheckedIOException("unable load preconsensus files", e);
+        }
+    }
+
+    /**
+     * Build the preconsensus event writer.
      */
     @NonNull
-    private PreConsensusEventWriter buildPreConsensusEventWriter() {
+    private PreConsensusEventWriter buildPreConsensusEventWriter(final PreConsensusEventFileManager fileManager) {
         final PreConsensusEventStreamConfig preConsensusEventStreamConfig =
                 platformContext.getConfiguration().getConfigData(PreConsensusEventStreamConfig.class);
 
         if (!preConsensusEventStreamConfig.enableStorage()) {
             return new NoOpPreConsensusEventWriter();
-        }
-
-        final PreConsensusEventFileManager fileManager;
-        try {
-            fileManager = new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), selfId.id());
-        } catch (final IOException e) {
-            throw new UncheckedIOException("unable load preconsensus files", e);
         }
 
         final PreConsensusEventWriter syncWriter = new SyncPreConsensusEventWriter(platformContext, fileManager);
@@ -987,20 +1016,77 @@ public class SwirldsPlatform implements Platform, Startable {
 
         metrics.start();
 
-        // FUTURE WORK: validate that status is still STARTING_UP (sanity check until we refactor platform status)
-        // FUTURE WORK: set platform status REPLAYING_EVENTS
-        // FUTURE WORK: replay the preconsensus event stream
-        // FUTURE WORK: validate that status is still REPLAYING_EVENTS (sanity check until we refactor platform status)
-        abortAndThrowIfInterrupted(
-                preConsensusEventWriter::beginStreamingNewEvents,
-                "interrupted while attempting to begin streaming new preconsensus events");
-        // FUTURE WORK: set platform status READY
+        final boolean enableReplay = platformContext
+                .getConfiguration()
+                .getConfigData(PreConsensusEventStreamConfig.class)
+                .enableReplay();
+        if (!enableReplay) {
+            currentPlatformStatus.set(PlatformStatus.READY);
+        } else {
+            replayPreconsensusEventStream();
+        }
 
         gossip.start();
 
         // in case of a single node network, the platform status update will not be triggered by connections, so it
         // needs to be triggered now
         checkPlatformStatus();
+    }
+
+    /**
+     * Replay events from the preconsensus event stream.
+     */
+    private void replayPreconsensusEventStream() {
+        // Sanity check for platform status can be removed after we clean up platform status management
+        if (currentPlatformStatus.get() != PlatformStatus.STARTING_UP) {
+            throw new IllegalStateException(
+                    "Platform status should be STARTING_UP, current status is " + currentPlatformStatus.get());
+        }
+
+        currentPlatformStatus.set(PlatformStatus.REPLAYING_EVENTS);
+
+        logger.info(
+                STARTUP.getMarker(),
+                "replaying preconsensus event stream starting at generation {}",
+                initialMinimumGenerationNonAncient);
+
+        try {
+
+            // TODO fix discontinuities
+            final IOIterator<EventImpl> iterator =
+                    preConsensusEventFileManager.getEventIterator(initialMinimumGenerationNonAncient);
+
+            long count = 0;
+            while (iterator.hasNext()) {
+                final EventImpl event = iterator.next();
+
+                final GossipEvent gossipEvent = new GossipEvent(event.getHashedData(), event.getUnhashedData());
+                eventIntake.addUnlinkedEvent(gossipEvent);
+
+                count++;
+            }
+
+            // TODO should we flush event intake here?
+            SECONDS.sleep(1); // TODO poor man's flush
+            // FUTURE WORK flush event creator (to prevent unintentional branching)
+
+            logger.info(STARTUP.getMarker(), "replayed {} preconsensus events", count);
+
+            preConsensusEventWriter.beginStreamingNewEvents();
+
+        } catch (final IOException e) {
+            throw new UncheckedIOException("unable to replay preconsensus event stream", e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("interrupted while replaying preconsensus event stream", e);
+        }
+
+        // Sanity check for platform status can be removed after we clean up platform status management
+        if (currentPlatformStatus.get() != PlatformStatus.REPLAYING_EVENTS) {
+            throw new IllegalStateException(
+                    "Platform status should be REPLAYING_EVENTS, current status is " + currentPlatformStatus.get());
+        }
+        currentPlatformStatus.set(PlatformStatus.READY);
     }
 
     /**
