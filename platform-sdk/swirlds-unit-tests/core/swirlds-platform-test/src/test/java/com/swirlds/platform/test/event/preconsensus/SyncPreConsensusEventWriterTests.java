@@ -379,21 +379,10 @@ class SyncPreConsensusEventWriterTests {
         writer.stop();
     }
 
-    // TODO delete this after making it pass
-    @Test
-    void foo() throws IOException, InterruptedException {
-        int x = 1000;
-        while (x-- > 0) {
-            beforeEach();
-            discontinuityTest();
-            afterEach();
-        }
-    }
-
     @Test
     @DisplayName("Discontinuity Test")
     void discontinuityTest() throws IOException, InterruptedException {
-        final Random random = RandomUtils.getRandomPrintSeed(); // TODO
+        final Random random = RandomUtils.getRandomPrintSeed();
 
         final int numEvents = 1_000;
         final int generationsUntilAncient = random.nextInt(50, 100);

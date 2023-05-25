@@ -186,7 +186,6 @@ public class PreConsensusEventFileManager {
         final ValueReference<Instant> previousTimestamp = new ValueReference<>();
 
         return descriptor -> {
-
             if (previousSequenceNumber.getValue() != -1) {
                 fileSanityChecks(
                         permitGaps,
@@ -490,8 +489,13 @@ public class PreConsensusEventFileManager {
             // There are never enough sanity checks. This is the same sanity check that is run when we parse
             // the files from disk, so if it doesn't pass now it's not going to pass when we read the files.
             final PreConsensusEventFile previousFile = files.getLast();
-            fileSanityChecks(false, previousFile.getSequenceNumber(), previousFile.getMinimumGeneration(),
-                    previousFile.getMaximumGeneration(), previousFile.getTimestamp(), descriptor);
+            fileSanityChecks(
+                    false,
+                    previousFile.getSequenceNumber(),
+                    previousFile.getMinimumGeneration(),
+                    previousFile.getMaximumGeneration(),
+                    previousFile.getTimestamp(),
+                    descriptor);
         }
 
         files.addLast(descriptor);

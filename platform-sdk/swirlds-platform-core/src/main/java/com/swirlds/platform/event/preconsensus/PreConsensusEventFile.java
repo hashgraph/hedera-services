@@ -161,12 +161,7 @@ public final class PreConsensusEventFile implements Comparable<PreConsensusEvent
         final Path path = parentDirectory.resolve(fileName);
 
         return new PreConsensusEventFile(
-                sequenceNumber,
-                minimumGeneration,
-                maximumGeneration,
-                Instant.ofEpochMilli(timestamp.toEpochMilli()),
-                path,
-                discontinuity);
+                sequenceNumber, minimumGeneration, maximumGeneration, timestamp, path, discontinuity);
     }
 
     /**
