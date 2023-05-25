@@ -25,7 +25,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.exceptions.ResourceLimitException;
 import com.hedera.node.app.service.mono.state.EntityCreator;
-import com.hedera.node.app.service.mono.state.expiry.ExpiryManager;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.submerkle.TxnId;
@@ -41,7 +40,6 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -52,7 +50,6 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
     public static final int DEFAULT_SOURCE_ID = 0;
 
     private final RecordCache recordCache;
-    private final ExpiryManager expiries;
     private final TransactionContext txnCtx;
     private final ConsensusTimeTracker consensusTimeTracker;
     private final List<RecordStreamObject> precedingChildStreamObjs = new ArrayList<>();
@@ -68,11 +65,7 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
 
     @Inject
     public TxnAwareRecordsHistorian(
-            RecordCache recordCache,
-            TransactionContext txnCtx,
-            ExpiryManager expiries,
-            ConsensusTimeTracker consensusTimeTracker) {
-        this.expiries = expiries;
+            RecordCache recordCache, TransactionContext txnCtx, ConsensusTimeTracker consensusTimeTracker) {
         this.txnCtx = txnCtx;
         this.recordCache = recordCache;
         this.consensusTimeTracker = consensusTimeTracker;
@@ -142,14 +135,6 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
         save(followingChildStreamObjs, effPayer, submittingMember);
 
         consensusTimeTracker.setActualFollowingRecordsCount(followingChildStreamObjs.size());
-    }
-
-    @Override
-    public void noteNewExpirationEvents() {
-        for (final var expiringEntity : txnCtx.expiringEntities()) {
-            expiries.trackExpirationEvent(
-                    Pair.of(expiringEntity.id().num(), expiringEntity.consumer()), expiringEntity.expiry());
-        }
     }
 
     @Override

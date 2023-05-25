@@ -576,6 +576,37 @@ class MonoTransactionDispatcherTest {
     }
 
     @Test
+    void dispatchesTokenAssociateAsExpected() {
+        given(writableStoreFactory.createAccountStore()).willReturn(writableAccountStore);
+        given(writableStoreFactory.createTokenRelStore()).willReturn(writableTokenRelStore);
+
+        dispatcher.dispatchHandle(
+                HederaFunctionality.TOKEN_ASSOCIATE_TO_ACCOUNT, transactionBody, writableStoreFactory);
+
+        verify(writableAccountStore).commit();
+        // We don't commit anything to the token store, so no verify() here for that mock
+        verify(writableTokenRelStore).commit();
+    }
+
+    @Test
+    void dispatchesTokenFreezeAsExpected() {
+        given(writableStoreFactory.createTokenRelStore()).willReturn(writableTokenRelStore);
+
+        dispatcher.dispatchHandle(HederaFunctionality.TOKEN_FREEZE_ACCOUNT, transactionBody, writableStoreFactory);
+
+        verify(writableTokenRelStore).commit();
+    }
+
+    @Test
+    void dispatchesTokenUnfreezeAsExpected() {
+        given(writableStoreFactory.createTokenRelStore()).willReturn(writableTokenRelStore);
+
+        dispatcher.dispatchHandle(HederaFunctionality.TOKEN_UNFREEZE_ACCOUNT, transactionBody, writableStoreFactory);
+
+        verify(writableTokenRelStore).commit();
+    }
+
+    @Test
     void dispatchesTokenFeeScheduleUpdateAsExpected() {
         given(writableStoreFactory.createTokenStore()).willReturn(writableTokenStore);
 

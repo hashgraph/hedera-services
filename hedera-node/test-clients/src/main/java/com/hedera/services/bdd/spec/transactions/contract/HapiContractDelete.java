@@ -38,6 +38,7 @@ import java.util.function.Function;
 
 public class HapiContractDelete extends HapiTxnOp<HapiContractDelete> {
     private boolean shouldPurge = false;
+    private boolean claimingPermanentRemoval = false;
     private final String contract;
     private Optional<String> transferAccount = Optional.empty();
     private Optional<String> transferContract = Optional.empty();
@@ -54,6 +55,11 @@ public class HapiContractDelete extends HapiTxnOp<HapiContractDelete> {
 
     public HapiContractDelete(String contract) {
         this.contract = contract;
+    }
+
+    public HapiContractDelete claimingPermanentRemoval() {
+        claimingPermanentRemoval = true;
+        return this;
     }
 
     public HapiContractDelete transferAccount(String to) {
@@ -88,6 +94,9 @@ public class HapiContractDelete extends HapiTxnOp<HapiContractDelete> {
                                     c -> builder.setTransferContractID(TxnUtils.asContractId(c, spec)));
                             transferAccount.ifPresent(a ->
                                     builder.setTransferAccountID(spec.registry().getAccountID(a)));
+                            if (claimingPermanentRemoval) {
+                                builder.setPermanentRemoval(true);
+                            }
                         });
         return builder -> builder.setContractDeleteInstance(opBody);
     }

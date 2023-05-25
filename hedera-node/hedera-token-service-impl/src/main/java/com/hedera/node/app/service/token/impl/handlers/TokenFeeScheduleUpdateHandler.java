@@ -129,11 +129,11 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
             @NonNull final TokenFeeScheduleUpdateTransactionBody op,
             @NonNull final WritableTokenStore tokenStore,
             @NonNull final TokensConfig config) {
-        var token = tokenStore.get(op.tokenIdOrElse(TokenID.DEFAULT).tokenNum());
-        validateTrue(token.isPresent(), INVALID_TOKEN_ID);
-        validateTrue(token.get().hasFeeScheduleKey(), TOKEN_HAS_NO_FEE_SCHEDULE_KEY);
+        var token = tokenStore.get(op.tokenIdOrElse(TokenID.DEFAULT));
+        validateTrue(token != null, INVALID_TOKEN_ID);
+        validateTrue(token.hasFeeScheduleKey(), TOKEN_HAS_NO_FEE_SCHEDULE_KEY);
         validateTrue(op.customFees().size() <= config.maxCustomFeesAllowed(), CUSTOM_FEES_LIST_TOO_LONG);
-        return token.get();
+        return token;
     }
 
     @Override

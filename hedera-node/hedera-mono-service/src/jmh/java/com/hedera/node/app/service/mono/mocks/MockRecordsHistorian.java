@@ -105,11 +105,6 @@ public class MockRecordsHistorian implements RecordsHistorian {
     }
 
     @Override
-    public void noteNewExpirationEvents() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public Instant nextFollowingChildConsensusTime() {
         throw new UnsupportedOperationException();
     }

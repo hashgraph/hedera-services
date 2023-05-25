@@ -143,7 +143,11 @@ public class CryptoTokenHandlerTestBase {
     protected final HederaKey feeScheduleHederaKey = asHederaKey(feeScheduleKey).get();
     protected final HederaKey pauseHederaKey = asHederaKey(A_COMPLEX_KEY).get();
     protected final EntityNum fungibleTokenNum = EntityNum.fromLong(1L);
+    protected final TokenID fungibleTokenId =
+            TokenID.newBuilder().tokenNum(fungibleTokenNum.longValue()).build();
     protected final EntityNum nonFungibleTokenNum = EntityNum.fromLong(2L);
+    protected final TokenID nonFungibleTokenId =
+            TokenID.newBuilder().tokenNum(nonFungibleTokenNum.longValue()).build();
     protected final EntityNumPair fungiblePair =
             EntityNumPair.fromLongs(accountNum.longValue(), fungibleTokenNum.longValue());
     protected final EntityNumPair nonFungiblePair =
