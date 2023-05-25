@@ -16,6 +16,7 @@ module com.hedera.node.app.service.token.impl {
     requires org.apache.logging.log4j;
     requires com.swirlds.config;
     requires com.hedera.node.config;
+    requires org.slf4j;
 
     provides com.hedera.node.app.service.token.TokenService with
             com.hedera.node.app.service.token.impl.TokenServiceImpl;

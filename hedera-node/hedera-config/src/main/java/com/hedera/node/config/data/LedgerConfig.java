@@ -19,6 +19,10 @@ package com.hedera.node.config.data;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
+/**
+ * Ledger configuration properties.
+ * @param numReservedSystemEntities the max file number of reserved system special files.
+ */
 @ConfigData("ledger")
 public record LedgerConfig(
         @ConfigProperty(defaultValue = "5000") int maxAutoAssociations,
@@ -36,4 +40,5 @@ public record LedgerConfig(
         @ConfigProperty(value = "tokenTransfers.maxLen", defaultValue = "10") int tokenTransfersMaxLen,
         @ConfigProperty(value = "nftTransfers.maxLen", defaultValue = "10") int nftTransfersMaxLen,
         @ConfigProperty(value = "records.maxQueryableByAccount", defaultValue = "180") int recordsMaxQueryableByAccount,
-        @ConfigProperty(value = "schedule.txExpiryTimeSecs", defaultValue = "1800") int scheduleTxExpiryTimeSecs) {}
+        @ConfigProperty(value = "schedule.txExpiryTimeSecs", defaultValue = "1800") int scheduleTxExpiryTimeSecs,
+        @ConfigProperty(defaultValue = "750") long numReservedSystemEntities) {}

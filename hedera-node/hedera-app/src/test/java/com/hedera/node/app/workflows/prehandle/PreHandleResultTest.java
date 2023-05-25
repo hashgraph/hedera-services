@@ -69,6 +69,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 final class PreHandleResultTest implements Scenarios {
 
+    private static final long DEFAULT_CONFIG_VERSION = 1L;
+
     /**
      * Tests to verify the creation of the object. Simple null checks, and verifying that the different static
      * construction methods all creation proper objects.
@@ -84,8 +86,15 @@ final class PreHandleResultTest implements Scenarios {
         void statusMustNotBeNull(
                 @Mock AccountID payer, @Mock TransactionInfo txInfo, @Mock PreHandleResult innerResult) {
             final Map<Key, SignatureVerificationFuture> verificationResults = Map.of();
-            assertThatThrownBy(() ->
-                            new PreHandleResult(payer, Key.DEFAULT, null, OK, txInfo, verificationResults, innerResult))
+            assertThatThrownBy(() -> new PreHandleResult(
+                            payer,
+                            Key.DEFAULT,
+                            null,
+                            OK,
+                            txInfo,
+                            verificationResults,
+                            innerResult,
+                            DEFAULT_CONFIG_VERSION))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -97,7 +106,14 @@ final class PreHandleResultTest implements Scenarios {
                 @Mock AccountID payer, @Mock TransactionInfo txInfo, @Mock PreHandleResult innerResult) {
             final Map<Key, SignatureVerificationFuture> verificationResults = Map.of();
             assertThatThrownBy(() -> new PreHandleResult(
-                            payer, Key.DEFAULT, SO_FAR_SO_GOOD, null, txInfo, verificationResults, innerResult))
+                            payer,
+                            Key.DEFAULT,
+                            SO_FAR_SO_GOOD,
+                            null,
+                            txInfo,
+                            verificationResults,
+                            innerResult,
+                            DEFAULT_CONFIG_VERSION))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -1227,7 +1243,8 @@ final class PreHandleResultTest implements Scenarios {
 
     /** A simple utility method for creating a "SO_FAR_SO_GOOD" PreHandleResult */
     private PreHandleResult preHandle(@NonNull final Map<Key, SignatureVerificationFuture> map) {
-        return new PreHandleResult(ALICE.accountID(), ALICE.account().key(), SO_FAR_SO_GOOD, OK, null, map, null);
+        return new PreHandleResult(
+                ALICE.accountID(), ALICE.account().key(), SO_FAR_SO_GOOD, OK, null, map, null, DEFAULT_CONFIG_VERSION);
     }
 
     /** Convenience method for creating a key list */

@@ -30,12 +30,17 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
 import java.util.Objects;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Provides some implementation support needed for both the {@link ScheduleCreateHandler} and {@link
  * ScheduleSignHandler}.
  */
 abstract class AbstractScheduleHandler {
+    private static final Logger logger = LogManager.getLogger(AbstractScheduleHandler.class);
+    public static final String IGNORED_EXCEPTION_MESSAGE =
+            "Ignored inner context pre check exception and replaced with UNRESOLVABLE_REQUIRED_SIGNERS.";
 
     private final PreHandleDispatcher dispatcher;
 
@@ -46,8 +51,6 @@ abstract class AbstractScheduleHandler {
     protected void preHandleScheduledTxn(
             final PreHandleContext context, final TransactionBody scheduledTxn, final AccountID payerForNested)
             throws PreCheckException {
-        final var innerContext =
-                context.createNestedContext(scheduledTxn, payerForNested, UNRESOLVABLE_REQUIRED_SIGNERS);
         final HederaFunctionality scheduledFunction;
         try {
             scheduledFunction = functionOf(scheduledTxn);
@@ -60,8 +63,10 @@ abstract class AbstractScheduleHandler {
         }
 
         try {
+            final PreHandleContext innerContext = context.createNestedContext(scheduledTxn, payerForNested);
             dispatcher.dispatch(innerContext);
-        } catch (PreCheckException ignored) {
+        } catch (final PreCheckException ignored) {
+            logger.debug(IGNORED_EXCEPTION_MESSAGE, ignored);
             throw new PreCheckException(UNRESOLVABLE_REQUIRED_SIGNERS);
         }
     }

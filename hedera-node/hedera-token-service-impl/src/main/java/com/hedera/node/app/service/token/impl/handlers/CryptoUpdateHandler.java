@@ -25,7 +25,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
-
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -45,9 +44,7 @@ import com.hedera.node.config.data.AutoRenewConfig;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.TokensConfig;
-
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -99,7 +96,8 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
      *
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void handle(@NonNull final HandleContext context,
+    public void handle(
+            @NonNull final HandleContext context,
             @NonNull final TransactionBody txn,
             @NonNull final WritableAccountStore accountStore) {
         final var op = txn.cryptoUpdateAccount();
@@ -146,13 +144,13 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
             builder.declineReward(op.declineReward().booleanValue());
         }
         if (op.hasStakedAccountId() || op.hasStakedNodeId()) {
-            builder.stakedNumber(getStakedId(op.stakedId().kind().toString(),
-                    op.stakedNodeId(), op.stakedAccountId()));
+            builder.stakedNumber(getStakedId(op.stakedId().kind().toString(), op.stakedNodeId(), op.stakedAccountId()));
         }
         return builder;
     }
 
-    private void validateSemantics(@NonNull final HandleContext context,
+    private void validateSemantics(
+            @NonNull final HandleContext context,
             @NonNull final WritableAccountStore accountStore,
             @NonNull final CryptoUpdateTransactionBody op,
             @NonNull Builder builder) {
@@ -162,7 +160,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
         final var target = op.accountIDToUpdateOrThrow();
         final var optionalAccount = accountStore.get(target);
         validateTrue(optionalAccount.isPresent(), INVALID_ACCOUNT_ID);
-        
+
         final var updateAccount = optionalAccount.get();
         validateTrue(!updateAccount.smartContract(), INVALID_ACCOUNT_ID);
 
@@ -170,13 +168,21 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
         final var autoRenewConfig = context.getConfiguration().getConfigData(AutoRenewConfig.class);
         final var ledgerConfig = context.getConfiguration().getConfigData(LedgerConfig.class);
         final var entitiesConfig = context.getConfiguration().getConfigData(EntitiesConfig.class);
-        
-        final var currentMetadata = new ExpiryMeta(updateAccount.expiry(), updateAccount.autoRenewSecs(), updateAccount.autoRenewAccountNumber());
-        final var updateMeta = new ExpiryMeta(op.expirationTime().seconds(), op.autoRenewPeriod().seconds(), NA);
+
+        final var currentMetadata = new ExpiryMeta(
+                updateAccount.expiry(), updateAccount.autoRenewSecs(), updateAccount.autoRenewAccountNumber());
+        final var updateMeta = new ExpiryMeta(
+                op.expirationTime().seconds(), op.autoRenewPeriod().seconds(), NA);
         final var resolvedMeta = context.expiryValidator().resolveUpdateAttempt(currentMetadata, updateMeta);
 
-        validateTrue(expiryValidator.isDetached(updateAccount, autoRenewConfig.isAutoRenewEnabled(), autoRenewConfig.expireContracts(), autoRenewConfig.expireAccounts()) 
-                        && builderAccount.expiry() != 0, ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+        validateTrue(
+                expiryValidator.isDetached(
+                                updateAccount,
+                                autoRenewConfig.isAutoRenewEnabled(),
+                                autoRenewConfig.expireContracts(),
+                                autoRenewConfig.expireAccounts())
+                        && builderAccount.expiry() != 0,
+                ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 
         if (builderAccount.expiry() != 0) {
             validateFalse(op.expirationTime().seconds() < updateAccount.expiry(), EXPIRATION_REDUCTION_NOT_ALLOWED);
@@ -184,9 +190,14 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
 
         if (builderAccount.maxAutoAssociations() != 0) {
             final long newMax = builderAccount.maxAutoAssociations();
-            validateFalse(newMax < optionalAccount.get().usedAutoAssociations(), EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT);
-            validateFalse(newMax > ledgerConfig.maxAutoAssociations(), REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
-            validateFalse(entitiesConfig.limitTokenAssociations() && newMax > tokensConfig.maxPerAccount(),
+            validateFalse(
+                    newMax < optionalAccount.get().usedAutoAssociations(),
+                    EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT);
+            validateFalse(
+                    newMax > ledgerConfig.maxAutoAssociations(),
+                    REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
+            validateFalse(
+                    entitiesConfig.limitTokenAssociations() && newMax > tokensConfig.maxPerAccount(),
                     REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
         }
     }

@@ -84,8 +84,8 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     @DisplayName("fee schedule update works as expected for fungible token")
     void handleWorksAsExpectedForFungibleToken() {
         // before fee schedule update, validate no custom fees on the token
-        final var originalToken = writableTokenStore.get(fungibleTokenNum.longValue());
-        assertThat(originalToken.get().customFees()).isEmpty();
+        final var originalToken = writableTokenStore.get(fungibleTokenId);
+        assertThat(originalToken.customFees()).isEmpty();
         assertThat(writableTokenStore.modifiedTokens()).isEmpty();
 
         subject.handle(context, txn, writableTokenStore);
@@ -94,27 +94,27 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(writableTokenStore.modifiedTokens()).hasSize(1);
         assertThat(writableTokenStore.modifiedTokens()).hasSameElementsAs(Set.of(fungibleTokenNum));
 
-        final var expectedToken = writableTokenStore.get(fungibleTokenNum.longValue());
-        assertThat(expectedToken.get().customFees()).hasSize(2);
-        assertThat(expectedToken.get().customFees())
+        final var expectedToken = writableTokenStore.get(fungibleTokenId);
+        assertThat(expectedToken.customFees()).hasSize(2);
+        assertThat(expectedToken.customFees())
                 .hasSameElementsAs(List.of(withFractionalFee(fractionalFee), withFixedFee(fixedFee)));
     }
 
     @Test
     @DisplayName("fee schedule update works as expected for non-fungible token")
     void handleWorksAsExpectedForNonFungibleToken() {
+        final var tokenId =
+                TokenID.newBuilder().tokenNum(nonFungibleTokenNum.longValue()).build();
         txn = TransactionBody.newBuilder()
                 .tokenFeeScheduleUpdate(TokenFeeScheduleUpdateTransactionBody.newBuilder()
-                        .tokenId(TokenID.newBuilder()
-                                .tokenNum(nonFungibleTokenNum.longValue())
-                                .build())
+                        .tokenId(tokenId)
                         .customFees(List.of(withRoyaltyFee(royaltyFee)))
                         .build())
                 .build();
 
         // before fee schedule update, validate no custom fees on the token
-        final var originalToken = writableTokenStore.get(nonFungibleTokenNum.longValue());
-        assertThat(originalToken.get().customFees()).isEmpty();
+        final var originalToken = writableTokenStore.get(tokenId);
+        assertThat(originalToken.customFees()).isEmpty();
         assertThat(writableTokenStore.modifiedTokens()).isEmpty();
 
         subject.handle(context, txn, writableTokenStore);
@@ -123,9 +123,9 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(writableTokenStore.modifiedTokens()).hasSize(1);
         assertThat(writableTokenStore.modifiedTokens()).hasSameElementsAs(Set.of(nonFungibleTokenNum));
 
-        final var expectedToken = writableTokenStore.get(nonFungibleTokenNum.longValue());
-        assertThat(expectedToken.get().customFees()).hasSize(1);
-        assertThat(expectedToken.get().customFees()).hasSameElementsAs(List.of(withRoyaltyFee(royaltyFee)));
+        final var expectedToken = writableTokenStore.get(nonFungibleTokenId);
+        assertThat(expectedToken.customFees()).hasSize(1);
+        assertThat(expectedToken.customFees()).hasSameElementsAs(List.of(withRoyaltyFee(royaltyFee)));
     }
 
     @Test

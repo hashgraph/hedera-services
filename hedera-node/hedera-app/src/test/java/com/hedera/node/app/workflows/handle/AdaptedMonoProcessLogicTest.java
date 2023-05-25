@@ -18,6 +18,7 @@ package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.node.app.service.mono.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -42,6 +43,7 @@ import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult.Status;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.TransactionSignature;
+import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import java.util.List;
 import java.util.Map;
@@ -55,6 +57,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class AdaptedMonoProcessLogicTest extends AppTestBase implements Scenarios {
+
+    private static final long DEFAULT_CONFIG_VERSION = 1L;
+
     @Mock
     private StandardProcessLogic monoProcessLogic;
 
@@ -68,6 +73,7 @@ class AdaptedMonoProcessLogicTest extends AppTestBase implements Scenarios {
     private TransactionSignature signature;
 
     private AdaptedMonoProcessLogic subject;
+    private final SoftwareVersion eventVersion = SEMANTIC_VERSIONS.deployedSoftwareVersion();
 
     @BeforeEach
     void setUp() {
@@ -78,9 +84,9 @@ class AdaptedMonoProcessLogicTest extends AppTestBase implements Scenarios {
     void passesThroughNonPreHandleResult() {
         given(platformTxn.getMetadata()).willReturn(accessor);
 
-        subject.incorporateConsensusTxn(platformTxn, 1L);
+        subject.incorporateConsensusTxn(platformTxn, 1L, eventVersion);
 
-        verify(monoProcessLogic).incorporateConsensusTxn(platformTxn, 1L);
+        verify(monoProcessLogic).incorporateConsensusTxn(platformTxn, 1L, eventVersion);
     }
 
     @Test
@@ -96,12 +102,13 @@ class AdaptedMonoProcessLogicTest extends AppTestBase implements Scenarios {
                 OK,
                 null,
                 verificationResults(PAYER_KEY_PBJ),
-                null);
+                null,
+                DEFAULT_CONFIG_VERSION);
 
         given(platformTxn.getMetadata()).willReturn(meta);
         given(platformTxn.getContents()).willReturn(asByteArray(noopTxn));
 
-        subject.incorporateConsensusTxn(platformTxn, 1L);
+        subject.incorporateConsensusTxn(platformTxn, 1L, eventVersion);
 
         verify(platformTxn).setMetadata(captor.capture());
         final var accessor = captor.getValue();
@@ -126,12 +133,13 @@ class AdaptedMonoProcessLogicTest extends AppTestBase implements Scenarios {
                 INVALID_ACCOUNT_ID,
                 null,
                 verificationResults(PAYER_KEY_PBJ),
-                null);
+                null,
+                DEFAULT_CONFIG_VERSION);
 
         given(platformTxn.getMetadata()).willReturn(meta);
         given(platformTxn.getContents()).willReturn(asByteArray(noopTxn));
 
-        subject.incorporateConsensusTxn(platformTxn, 1L);
+        subject.incorporateConsensusTxn(platformTxn, 1L, eventVersion);
 
         verify(platformTxn).setMetadata(captor.capture());
         final var accessor = captor.getValue();
@@ -156,12 +164,13 @@ class AdaptedMonoProcessLogicTest extends AppTestBase implements Scenarios {
                 INVALID_ACCOUNT_ID,
                 null,
                 verificationResults(PAYER_KEY_PBJ),
-                null);
+                null,
+                DEFAULT_CONFIG_VERSION);
 
         given(platformTxn.getMetadata()).willReturn(meta);
         given(platformTxn.getContents()).willReturn(asByteArray(noopTxn));
 
-        subject.incorporateConsensusTxn(platformTxn, 1L);
+        subject.incorporateConsensusTxn(platformTxn, 1L, eventVersion);
 
         verify(platformTxn).setMetadata(captor.capture());
         final var accessor = captor.getValue();
@@ -182,12 +191,19 @@ class AdaptedMonoProcessLogicTest extends AppTestBase implements Scenarios {
                 .signedTransactionBytes(Bytes.wrap("NONSENSE"))
                 .build();
         final var meta = new PreHandleResult(
-                ALICE.accountID(), null, Status.NODE_DUE_DILIGENCE_FAILURE, INVALID_ACCOUNT_ID, null, Map.of(), null);
+                ALICE.accountID(),
+                null,
+                Status.NODE_DUE_DILIGENCE_FAILURE,
+                INVALID_ACCOUNT_ID,
+                null,
+                Map.of(),
+                null,
+                DEFAULT_CONFIG_VERSION);
 
         given(platformTxn.getMetadata()).willReturn(meta);
         given(platformTxn.getContents()).willReturn(asByteArray(nonsenseTxn));
 
-        assertThrows(IllegalStateException.class, () -> subject.incorporateConsensusTxn(platformTxn, 1L));
+        assertThrows(IllegalStateException.class, () -> subject.incorporateConsensusTxn(platformTxn, 1L, eventVersion));
     }
 
     private static final JKey PAYER_KEY = new JEd25519Key("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes());

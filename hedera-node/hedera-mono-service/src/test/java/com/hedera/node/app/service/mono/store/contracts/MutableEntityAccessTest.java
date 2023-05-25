@@ -121,7 +121,13 @@ class MutableEntityAccessTest {
         given(ledger.getAccountsLedger()).willReturn(accountsLedger);
         given(ledger.getNftsLedger()).willReturn(nftsLedger);
 
-        subject = new MutableEntityAccess(ledger, aliasManager, txnCtx, storage, tokensLedger, supplierBytecode);
+        final var worldLedgers = new WorldLedgers(
+                aliasManager,
+                ledger.getTokenRelsLedger(),
+                ledger.getAccountsLedger(),
+                ledger.getNftsLedger(),
+                tokensLedger);
+        subject = new MutableEntityAccess(ledger, worldLedgers, txnCtx, storage, tokensLedger, supplierBytecode);
     }
 
     @Test
