@@ -397,6 +397,7 @@ class StateManagementComponentTests {
     }
 
     @Test
+    @DisplayName("Test that the state is saved to disk when it is received via reconnect")
     void testReconnectStateSaved() throws InterruptedException {
         final Random random = RandomUtils.getRandomPrintSeed();
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
