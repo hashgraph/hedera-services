@@ -171,10 +171,23 @@ final class RecordCacheImplTest {
         @Test
         @DisplayName("Rebuild replaces all entries in the in memory data structures")
         void reloadsIntoCache() {
-            // Given a state without entries and a cache created with that state
+            // Given a state with some entries and a cache created with that state
+            final var oldPayer = accountId(1003);
+            final var oldTxId =
+                    transactionID().copyBuilder().accountID(oldPayer).build();
+            final var oldEntry = new TransactionRecordEntry(0, oldPayer, transactionRecord(SUCCESS, oldTxId));
+
+            final var state = wsa.getHederaState();
+            assertThat(state).isNotNull();
+            final var services = state.createWritableStates(RecordCacheService.NAME);
+            final WritableQueueState<TransactionRecordEntry> queue = services.getQueue(RecordCacheService.QUEUE_NAME);
+            assertThat(queue).isNotNull();
+            queue.add(oldEntry);
+            ((ListWritableQueueState<?>) queue).commit();
+
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props);
 
-            // When we insert new entries "behind the scenes" (emulating a reconnect) and call rebuild
+            // When we replace the data "behind the scenes" (emulating a reconnect) and call rebuild
             final var payer1 = accountId(1001);
             final var payer2 = accountId(1002);
 
@@ -187,11 +200,7 @@ final class RecordCacheImplTest {
                     new TransactionRecordEntry(2, payer2, transactionRecord(DUPLICATE_TRANSACTION, txId2)),
                     new TransactionRecordEntry(3, payer1, transactionRecord(DUPLICATE_TRANSACTION, txId1)));
 
-            final var state = wsa.getHederaState();
-            assertThat(state).isNotNull();
-            final var services = state.createWritableStates(RecordCacheService.NAME);
-            final WritableQueueState<TransactionRecordEntry> queue = services.getQueue(RecordCacheService.QUEUE_NAME);
-            assertThat(queue).isNotNull();
+            assertThat(queue.poll()).isEqualTo(oldEntry);
             entries.forEach(queue::add);
             ((ListWritableQueueState<?>) queue).commit();
 
@@ -233,6 +242,13 @@ final class RecordCacheImplTest {
                     .containsExactly(
                             entries.get(1).transactionRecordOrThrow().receipt(),
                             entries.get(2).transactionRecordOrThrow().receipt());
+            // And the old state is not in the cache
+            assertThat(cache.getRecord(oldTxId)).isNull();
+            assertThat(cache.getReceipt(oldTxId)).isNull();
+            assertThat(cache.getRecords(oldTxId)).isEmpty();
+            assertThat(cache.getReceipts(oldTxId)).isEmpty();
+            assertThat(cache.getRecords(oldPayer)).isEmpty();
+            assertThat(cache.getReceipts(oldPayer)).isEmpty();
         }
 
         private AccountID accountId(final int num) {
@@ -335,7 +351,7 @@ final class RecordCacheImplTest {
                     .build();
 
             // When the record is added to the cache
-            cache.add(0, PAYER_ACCOUNT_ID, record);
+            cache.add(0, PAYER_ACCOUNT_ID, record, Instant.now());
 
             // Then we can query for the receipt by transaction ID
             assertThat(cache.getReceipt(txId)).isEqualTo(receipt);
@@ -355,7 +371,7 @@ final class RecordCacheImplTest {
                     .build();
 
             // When the record is added to the cache
-            cache.add(0, PAYER_ACCOUNT_ID, record);
+            cache.add(0, PAYER_ACCOUNT_ID, record, Instant.now());
 
             // Then we can query for the receipt by transaction ID
             assertThat(cache.getReceipts(txId)).containsExactly(receipt);
@@ -375,7 +391,7 @@ final class RecordCacheImplTest {
                     .build();
 
             // When the record is added to the cache
-            cache.add(0, PAYER_ACCOUNT_ID, record);
+            cache.add(0, PAYER_ACCOUNT_ID, record, Instant.now());
 
             // Then we can query for the receipt by transaction ID
             assertThat(cache.getReceipts(PAYER_ACCOUNT_ID)).containsExactly(receipt);
@@ -461,7 +477,7 @@ final class RecordCacheImplTest {
                     .build();
 
             // When the record is added to the cache
-            cache.add(0, PAYER_ACCOUNT_ID, record);
+            cache.add(0, PAYER_ACCOUNT_ID, record, Instant.now());
 
             // Then we can query for the receipt by transaction ID
             assertThat(cache.getRecord(txId)).isEqualTo(record);
@@ -481,7 +497,7 @@ final class RecordCacheImplTest {
                     .build();
 
             // When the record is added to the cache
-            cache.add(0, PAYER_ACCOUNT_ID, record);
+            cache.add(0, PAYER_ACCOUNT_ID, record, Instant.now());
 
             // Then we can query for the receipt by transaction ID
             assertThat(cache.getRecords(txId)).containsExactly(record);
@@ -501,7 +517,7 @@ final class RecordCacheImplTest {
                     .build();
 
             // When the record is added to the cache
-            cache.add(0, PAYER_ACCOUNT_ID, record);
+            cache.add(0, PAYER_ACCOUNT_ID, record, Instant.now());
 
             // Then we can query for the receipt by transaction ID
             assertThat(cache.getRecords(PAYER_ACCOUNT_ID)).containsExactly(record);

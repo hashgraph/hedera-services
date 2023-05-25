@@ -115,11 +115,16 @@ public class RecordCacheImpl implements HederaRecordCache {
      * reconnect.
      */
     public void rebuild() {
+        histories.clear();
+        payerToTransactionIndex.clear();
+        deduplicationCache.clear();
+
         final var queue = getQueue();
         final var itr = queue.iterator();
         while (itr.hasNext()) {
             final var entry = itr.next();
             addToInMemoryCache(entry.nodeId(), entry.payerAccountIdOrThrow(), entry.transactionRecordOrThrow());
+            deduplicationCache.add(entry.transactionRecordOrThrow().transactionIDOrThrow());
         }
     }
 
@@ -132,17 +137,21 @@ public class RecordCacheImpl implements HederaRecordCache {
     public void add(
             final long nodeId,
             @NonNull final AccountID payerAccountId,
-            @NonNull final TransactionRecord transactionRecord) {
+            @NonNull final TransactionRecord transactionRecord,
+            @NonNull final Instant consensusTimestamp) {
+        requireNonNull(payerAccountId);
+        requireNonNull(transactionRecord);
+        requireNonNull(consensusTimestamp);
         addToInMemoryCache(nodeId, payerAccountId, transactionRecord);
 
         final var queue = getQueue();
-        removeExpiredTransactions(queue);
+        removeExpiredTransactions(queue, consensusTimestamp);
         queue.add(new TransactionRecordEntry(nodeId, payerAccountId, transactionRecord));
     }
 
     /**
-     * Called during {@link #rebuild()} or {@link #add(long, AccountID, TransactionRecord)}, this method adds the given
-     * {@link TransactionRecord} to the internal lookup data structures.
+     * Called during {@link #rebuild()} or {@link #add(long, AccountID, TransactionRecord, Instant)}, this method adds
+     * the given {@link TransactionRecord} to the internal lookup data structures.
      *
      * @param nodeId The ID of the node that submitted the transaction.
      * @param transactionRecord The record to add.
@@ -164,9 +173,11 @@ public class RecordCacheImpl implements HederaRecordCache {
     /**
      * Removes all expired {@link TransactionID}s from the cache.
      */
-    private void removeExpiredTransactions(@NonNull final WritableQueueState<TransactionRecordEntry> queue) {
+    private void removeExpiredTransactions(
+            @NonNull final WritableQueueState<TransactionRecordEntry> queue,
+            @NonNull final Instant consensusTimestamp) {
         // Compute the earliest valid start timestamp that is still within the max transaction duration window.
-        final var now = asTimestamp(Instant.now());
+        final var now = asTimestamp(consensusTimestamp);
         final var earliestValidState = minus(now, props.maxTxnDuration());
 
         // Loop in order and expunge every entry where the timestamp is before the current time. Also remove from the

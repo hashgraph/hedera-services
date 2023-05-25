@@ -21,6 +21,7 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.spi.records.RecordCache;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
 
 /**
  * A time-limited cache of transaction records and receipts.
@@ -51,5 +52,9 @@ public interface HederaRecordCache extends RecordCache {
      * @param transactionRecord The transaction to track
      */
     /*HANDLE THREAD ONLY*/
-    void add(long nodeId, @NonNull AccountID payerAccountId, @NonNull TransactionRecord transactionRecord);
+    void add(
+            long nodeId,
+            @NonNull AccountID payerAccountId,
+            @NonNull TransactionRecord transactionRecord,
+            @NonNull Instant consensusTimestamp);
 }

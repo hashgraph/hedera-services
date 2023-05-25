@@ -47,4 +47,7 @@ public interface DeduplicationCache {
      * @return {@code true} if the transaction ID is in the cache
      */
     boolean contains(@NonNull TransactionID transactionID);
+
+    /** Clear everything from the cache. Used during reconnect */
+    void clear();
 }

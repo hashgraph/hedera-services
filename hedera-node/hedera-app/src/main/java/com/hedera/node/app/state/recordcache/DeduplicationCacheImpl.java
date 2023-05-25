@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.state.recordcache;
 
+import static com.hedera.node.app.spi.HapiUtils.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.node.app.spi.HapiUtils.TIMESTAMP_COMPARATOR;
 import static com.hedera.node.app.spi.HapiUtils.asTimestamp;
 import static com.hedera.node.app.spi.HapiUtils.minus;
@@ -26,6 +27,7 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.state.DeduplicationCache;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 import javax.inject.Inject;
@@ -36,8 +38,10 @@ public final class DeduplicationCacheImpl implements DeduplicationCache {
      * The {@link TransactionID}s that this node has already submitted to the platform, sorted by transaction start
      * time, such that earlier start times come first. We guard this data structure within a synchronized block.
      */
-    private final Set<TransactionID> submittedTxns = new ConcurrentSkipListSet<>((t1, t2) ->
-            TIMESTAMP_COMPARATOR.compare(t1.transactionValidStartOrThrow(), t2.transactionValidStartOrThrow()));
+    private final Set<TransactionID> submittedTxns = new ConcurrentSkipListSet<>(
+            (t1, t2) -> Comparator.comparing(TransactionID::transactionValidStartOrThrow, TIMESTAMP_COMPARATOR)
+                    .thenComparing(TransactionID::accountID, ACCOUNT_ID_COMPARATOR)
+                    .compare(t1, t2));
 
     /** Used for looking up the max transaction duration window. To be replaced by some new config object */
     private final GlobalDynamicProperties props;
@@ -71,6 +75,12 @@ public final class DeduplicationCacheImpl implements DeduplicationCache {
         final var epochSeconds = earliestEpicSecond();
         removeTransactionsOlderThan(epochSeconds);
         return submittedTxns.contains(transactionID);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void clear() {
+        submittedTxns.clear();
     }
 
     /**
