@@ -16,14 +16,21 @@
 
 package com.swirlds.common.merkle.utility;
 
+import static com.swirlds.logging.LogMarker.EXCEPTION;
+
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
+import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public final class MerkleUtils {
+
+    private static final Logger logger = LogManager.getLogger(MerkleUtils.class);
 
     private MerkleUtils() {}
 
@@ -58,8 +65,12 @@ public final class MerkleUtils {
             final Future<Hash> future = MerkleCryptoFactory.getInstance().digestTreeAsync(root);
             try {
                 return future.get();
-            } catch (InterruptedException | ExecutionException e) {
+            } catch (InterruptedException e) {
+                logger.error(EXCEPTION.getMarker(), "Interrupted while waiting for tree hashing to complete", e);
                 Thread.currentThread().interrupt();
+            } catch (ExecutionException e) {
+                logger.error(EXCEPTION.getMarker(), "Async tree hashing failed", e);
+                throw new MerkleSynchronizationException(e);
             }
         }
 
