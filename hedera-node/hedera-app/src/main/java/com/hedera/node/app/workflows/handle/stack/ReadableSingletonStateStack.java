@@ -14,19 +14,40 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.state.stack;
+package com.hedera.node.app.workflows.handle.stack;
 
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.state.ReadableSingletonState;
+import com.hedera.node.app.spi.state.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
+/**
+ * An implementation of {@link ReadableSingletonState} that delegates to the current {@link ReadableSingletonState} in a
+ * {@link com.hedera.node.app.spi.workflows.HandleContext.SavepointStack}.
+ *
+ * <p>A {@link com.hedera.node.app.spi.workflows.HandleContext.SavepointStack} consists of a stack of frames, each of
+ * which contains a set of modifications in regard to the state of the underlying frame. On the top of the stack is the
+ * most recent state. This class delegates to the current {@link ReadableSingletonState} on top of such a stack.
+ *
+ * @param <T> the type of the singleton state
+ */
 public class ReadableSingletonStateStack<T> implements ReadableSingletonState<T> {
 
     private final ReadableStatesStack readableStatesStack;
     private final String stateKey;
 
+    /**
+     * Constructs a {@link ReadableSingletonStateStack} that delegates to the current {@link ReadableSingletonState} in
+     * the given {@link ReadableStatesStack} for the given state key. A {@link ReadableStatesStack} is an implementation
+     * of {@link ReadableStates} that delegates to the most recent version in a
+     * {@link com.hedera.node.app.spi.workflows.HandleContext.SavepointStack}
+     *
+     * @param readableStatesStack the {@link ReadableStatesStack}
+     * @param stateKey the state key
+     * @throws NullPointerException if one of the arguments is {@code null}
+     */
     public ReadableSingletonStateStack(
             @NonNull final ReadableStatesStack readableStatesStack, @NonNull final String stateKey) {
         this.readableStatesStack = requireNonNull(readableStatesStack, "readableStates must not be null");

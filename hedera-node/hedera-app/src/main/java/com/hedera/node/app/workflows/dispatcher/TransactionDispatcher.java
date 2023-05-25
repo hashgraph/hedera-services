@@ -56,13 +56,13 @@ public class TransactionDispatcher {
     }
 
     /**
-     * Dispatch a {@code validate()} request. It is forwarded to the correct handler, which takes care of the specific
+     * Dispatch a {@code pureChecks()} request. It is forwarded to the correct handler, which takes care of the specific
      * functionality
      *
      * @param txBody the {@link TransactionBody} to be validated
      * @throws NullPointerException if {@code txBody} is {@code null}
      */
-    public void dispatchValidate(@NonNull final TransactionBody txBody) throws PreCheckException {
+    public void dispatchPureChecks(@NonNull final TransactionBody txBody) throws PreCheckException {
         requireNonNull(txBody, "The supplied argument 'txBody' cannot be null!");
 
         try {

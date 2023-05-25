@@ -54,7 +54,7 @@ public class WritableStoreFactory {
     private final WritableStates states;
 
     /**
-     * Constructor of {@code ReadableStoreFactory}
+     * Constructor of {@code WritableStoreFactory}
      *
      * @param stack the {@link HederaState} to use
      * @param serviceName the name of the service to create stores for

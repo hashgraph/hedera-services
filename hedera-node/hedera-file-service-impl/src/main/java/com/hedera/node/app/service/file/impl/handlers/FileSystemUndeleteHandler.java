@@ -71,7 +71,6 @@ public class FileSystemUndeleteHandler implements TransactionHandler {
     public void handle(@NonNull final HandleContext handleContext) throws HandleException {
         requireNonNull(handleContext);
 
-        final var fileStore = handleContext.writableStore(WritableFileStoreImpl.class);
         final var systemUndeleteTransactionBody = handleContext.body().systemUndeleteOrThrow();
         if (!systemUndeleteTransactionBody.hasFileID()) {
             throw new HandleException(INVALID_FILE_ID);
@@ -79,6 +78,7 @@ public class FileSystemUndeleteHandler implements TransactionHandler {
         var fileId = systemUndeleteTransactionBody.fileIDOrThrow();
         final var ledgerConfig = handleContext.configuration().getConfigData(LedgerConfig.class);
 
+        final var fileStore = handleContext.writableStore(WritableFileStoreImpl.class);
         final File file = FileServiceUtils.verifySystemFile(ledgerConfig, fileStore, fileId, true);
 
         final var oldExpiry = file.expirationTime();

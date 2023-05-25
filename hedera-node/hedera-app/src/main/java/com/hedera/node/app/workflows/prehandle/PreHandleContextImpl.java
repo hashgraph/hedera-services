@@ -130,8 +130,8 @@ public class PreHandleContextImpl implements PreHandleContext {
         return payer;
     }
 
-    @NonNull
     @Override
+    @NonNull
     public Configuration configuration() {
         return configuration;
     }

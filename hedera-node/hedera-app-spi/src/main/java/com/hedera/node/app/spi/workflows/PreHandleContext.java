@@ -117,7 +117,7 @@ public interface PreHandleContext {
      *
      * @param storeInterface The store interface to find and create a store for
      * @param <C> Interface class for a Store
-     * @return An implementation of store interface provided
+     * @return An implementation of store interface provided, or null if the store
      * @throws IllegalArgumentException if the storeInterface class provided is unknown to the app
      * @throws NullPointerException if {@code storeInterface} is {@code null}
      */
@@ -211,8 +211,8 @@ public interface PreHandleContext {
      * @param accountID The ID of the contract account whose key is to be added
      * @param responseCode the response code to be used in case the key is null or empty
      * @return {@code this} object
-     * @throws PreCheckException if the key is null or empty or the account is null or the contract account does not
-     * exist or the account is not a contract account.
+     * @throws PreCheckException if the key is null or empty or the account is null or the
+     * contract account does not exist or the account is not a contract account.
      */
     @NonNull
     PreHandleContext requireKeyOrThrow(

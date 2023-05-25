@@ -46,7 +46,7 @@ public class MonoNodeInfo implements NodeInfo {
     }
 
     @Override
-    public AccountID accountOf(long nodeId) {
+    public AccountID accountOf(final long nodeId) {
         return PbjConverter.toPbj(delegate.accountOf(nodeId));
     }
 }

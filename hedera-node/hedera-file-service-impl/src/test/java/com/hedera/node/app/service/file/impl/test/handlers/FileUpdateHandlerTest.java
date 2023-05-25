@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -40,7 +41,6 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
-import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -59,9 +59,6 @@ class FileUpdateHandlerTest extends FileHandlerTestBase {
     private final FileUpdateTransactionBody.Builder OP_BUILDER = FileUpdateTransactionBody.newBuilder();
 
     private final ExpiryMeta currentExpiryMeta = new ExpiryMeta(expirationTime, NA, NA);
-
-    @Mock
-    private HandleContext handleContext;
 
     @Mock
     private ReadableAccountStore accountStore;
@@ -95,9 +92,8 @@ class FileUpdateHandlerTest extends FileHandlerTestBase {
     @Test
     void rejectsMissingFile() {
         final var op = OP_BUILDER.build();
-        given(handleContext.body())
-                .willReturn(TransactionBody.newBuilder().fileUpdate(op).build());
-        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
+        final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
+        when(handleContext.body()).thenReturn(txBody);
 
         // expect:
         assertFailsWith(INVALID_FILE_ID, () -> subject.handle(handleContext));
@@ -109,9 +105,8 @@ class FileUpdateHandlerTest extends FileHandlerTestBase {
         refreshStoresWithCurrentFileInBothReadableAndWritable();
 
         final var op = OP_BUILDER.fileID(wellKnownId()).build();
-        given(handleContext.body())
-                .willReturn(TransactionBody.newBuilder().fileUpdate(op).build());
-        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
+        final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
+        when(handleContext.body()).thenReturn(txBody);
 
         // expect:
         assertFailsWith(FILE_DELETED, () -> subject.handle(handleContext));
@@ -124,9 +119,8 @@ class FileUpdateHandlerTest extends FileHandlerTestBase {
 
         final var op =
                 OP_BUILDER.fileID(wellKnownId()).memo("Please mind the vase").build();
-        given(handleContext.body())
-                .willReturn(TransactionBody.newBuilder().fileUpdate(op).build());
-        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
+        final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
+        when(handleContext.body()).thenReturn(txBody);
 
         // expect:
         assertFailsWith(ResponseCodeEnum.UNAUTHORIZED, () -> subject.handle(handleContext));
@@ -138,6 +132,8 @@ class FileUpdateHandlerTest extends FileHandlerTestBase {
         refreshStoresWithCurrentFileInBothReadableAndWritable();
 
         final var op = OP_BUILDER.fileID(wellKnownId()).keys(anotherKeys).build();
+        final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
+        when(handleContext.body()).thenReturn(txBody);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
         given(handleContext.body())
                 .willReturn(TransactionBody.newBuilder().fileUpdate(op).build());
@@ -157,13 +153,12 @@ class FileUpdateHandlerTest extends FileHandlerTestBase {
 
         final var op =
                 OP_BUILDER.fileID(wellKnownId()).memo("Please mind the vase").build();
-        given(handleContext.body())
-                .willReturn(TransactionBody.newBuilder().fileUpdate(op).build());
-        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
+        final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
+        when(handleContext.body()).thenReturn(txBody);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
         willThrow(new HandleException(ResponseCodeEnum.MEMO_TOO_LONG))
                 .given(attributeValidator)
-                .validateMemo(op.memo());
+                .validateMemo(txBody.fileUpdate().memo());
 
         // expect:
         assertFailsWith(ResponseCodeEnum.MEMO_TOO_LONG, () -> subject.handle(handleContext));
@@ -176,9 +171,8 @@ class FileUpdateHandlerTest extends FileHandlerTestBase {
         refreshStoresWithCurrentFileInBothReadableAndWritable();
 
         final var op = OP_BUILDER.fileID(wellKnownId()).memo(newMemo).build();
-        given(handleContext.body())
-                .willReturn(TransactionBody.newBuilder().fileUpdate(op).build());
-        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
+        final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
+        when(handleContext.body()).thenReturn(txBody);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
         subject.handle(handleContext);
 
@@ -195,9 +189,8 @@ class FileUpdateHandlerTest extends FileHandlerTestBase {
                 .fileID(wellKnownId())
                 .contents(Bytes.wrap(new byte[1048577]))
                 .build();
-        given(handleContext.body())
-                .willReturn(TransactionBody.newBuilder().fileUpdate(op).build());
-        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
+        final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
+        when(handleContext.body()).thenReturn(txBody);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
 
         // expect:
@@ -213,11 +206,10 @@ class FileUpdateHandlerTest extends FileHandlerTestBase {
                 .fileID(wellKnownId())
                 .contents(Bytes.wrap(new byte[0]))
                 .build();
+        final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
+        when(handleContext.body()).thenReturn(txBody);
 
         // expect:
-        given(handleContext.body())
-                .willReturn(TransactionBody.newBuilder().fileUpdate(op).build());
-        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
         subject.handle(handleContext);
 
         final var updatedFile = writableFileState.get(fileEntityNum);
@@ -231,10 +223,9 @@ class FileUpdateHandlerTest extends FileHandlerTestBase {
         refreshStoresWithCurrentFileInBothReadableAndWritable();
 
         final var op = OP_BUILDER.fileID(wellKnownId()).contents(newContent).build();
+        final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
+        when(handleContext.body()).thenReturn(txBody);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
-        given(handleContext.body())
-                .willReturn(TransactionBody.newBuilder().fileUpdate(op).build());
-        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
         subject.handle(handleContext);
 
         final var newFile = writableFileState.get(fileEntityNum);
@@ -247,9 +238,8 @@ class FileUpdateHandlerTest extends FileHandlerTestBase {
 
         final var expiry = Timestamp.newBuilder().seconds(1_234_568L).build();
         final var op = OP_BUILDER.fileID(wellKnownId()).expirationTime(expiry).build();
-        given(handleContext.body())
-                .willReturn(TransactionBody.newBuilder().fileUpdate(op).build());
-        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
+        final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
+        when(handleContext.body()).thenReturn(txBody);
         subject.handle(handleContext);
 
         final var newFile = writableFileState.get(fileEntityNum);
@@ -262,9 +252,8 @@ class FileUpdateHandlerTest extends FileHandlerTestBase {
 
         final var expiry = Timestamp.newBuilder().seconds(1_234_566L).build();
         final var op = OP_BUILDER.fileID(wellKnownId()).expirationTime(expiry).build();
-        given(handleContext.body())
-                .willReturn(TransactionBody.newBuilder().fileUpdate(op).build());
-        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
+        final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
+        when(handleContext.body()).thenReturn(txBody);
         subject.handle(handleContext);
 
         final var newFile = writableFileState.get(fileEntityNum);
@@ -277,9 +266,8 @@ class FileUpdateHandlerTest extends FileHandlerTestBase {
 
         // No-op
         final var op = OP_BUILDER.fileID(wellKnownId()).build();
-        given(handleContext.body())
-                .willReturn(TransactionBody.newBuilder().fileUpdate(op).build());
-        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
+        final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
+        when(handleContext.body()).thenReturn(txBody);
 
         subject.handle(handleContext);
 

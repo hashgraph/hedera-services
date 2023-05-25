@@ -24,6 +24,7 @@ import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.valid
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
@@ -116,8 +117,8 @@ public class FileCreateHandler implements TransactionHandler {
             final var file = builder.build();
             fileStore.put(file);
 
-            final var recordBuilder = handleContext.recordBuilder(CreateFileRecordBuilder.class);
-            recordBuilder.createdFile(file.fileNumber());
+            final var fileID = FileID.newBuilder().fileNum(file.fileNumber()).build();
+            handleContext.recordBuilder(CreateFileRecordBuilder.class).fileID(fileID);
         } catch (final HandleException e) {
             if (e.getStatus() == INVALID_EXPIRATION_TIME) {
                 // Since for some reason CreateTransactionBody does not have an expiration time,

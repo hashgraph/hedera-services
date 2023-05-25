@@ -22,13 +22,13 @@ import com.google.common.math.IntMath;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.networkadmin.ReadableRunningHashLeafStore;
-import com.hedera.node.app.service.util.impl.config.PrngConfig;
 import com.hedera.node.app.service.util.impl.records.PrngRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.config.data.UtilPrngConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
@@ -78,8 +78,8 @@ public class UtilPrngHandler implements TransactionHandler {
         final var range = op.range();
 
         // TODO: This check should probably be moved into app
-        final var config = context.configuration().getConfigData(PrngConfig.class);
-        if (!config.prngEnabled()) {
+        final var config = context.configuration().getConfigData(UtilPrngConfig.class);
+        if (!config.isEnabled()) {
             return;
         }
         // get the n-3 running hash. If the running hash is not available, will throw a

@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.file.impl.records;
 
+import com.hedera.hapi.node.base.FileID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -24,11 +25,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public interface CreateFileRecordBuilder {
 
     /**
-     * Tracks creation of a new file by number.
+     * Tracks creation of a new file by {@link FileID}
      *
-     * @param num the number of the new file
+     * @param fileID the {@link FileID} of the new file
      * @return this builder
      */
     @NonNull
-    CreateFileRecordBuilder createdFile(final long num);
+    CreateFileRecordBuilder fileID(@NonNull FileID fileID);
 }

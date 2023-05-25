@@ -12,15 +12,14 @@ module com.hedera.node.app.service.util.impl {
     requires com.google.common;
     requires com.hedera.node.app.service.networkadmin;
     requires com.swirlds.config;
+    requires com.hedera.node.config;
 
     provides com.hedera.node.app.service.util.UtilService with
             UtilServiceImpl;
 
     exports com.hedera.node.app.service.util.impl to
-            com.hedera.node.app,
-            com.hedera.node.app.service.util.impl.test;
+            com.hedera.node.app;
     exports com.hedera.node.app.service.util.impl.handlers;
     exports com.hedera.node.app.service.util.impl.components;
-    exports com.hedera.node.app.service.util.impl.config;
     exports com.hedera.node.app.service.util.impl.records;
 }

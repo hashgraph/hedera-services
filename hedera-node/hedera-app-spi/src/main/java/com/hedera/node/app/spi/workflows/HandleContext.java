@@ -74,12 +74,6 @@ public interface HandleContext {
     TransactionBody body();
 
     /**
-     * Returns the category of the current transaction.
-     */
-    @NonNull
-    TransactionCategory category();
-
-    /**
      * Returns the current {@link Configuration} for the node.
      *
      * @return the {@code Configuration}
@@ -157,7 +151,6 @@ public interface HandleContext {
      * @param <T> Interface class for a Store
      * @return An implementation of the provided store interface
      * @throws IllegalArgumentException if the storeInterface class provided is unknown to the app
-     * @throws IllegalStateException if the store is not accessible from the current transaction
      * @throws NullPointerException if {@code storeInterface} is {@code null}
      */
     @NonNull
@@ -169,7 +162,7 @@ public interface HandleContext {
      * @param recordBuilderClass the record type
      * @param <T> the record type
      * @return a builder for the given record type
-     * @throws NullPointerException if {@code singleTransactionRecordBuilderClass} is {@code null}
+     * @throws NullPointerException if {@code recordBuilderClass} is {@code null}
      * @throws IllegalArgumentException if the record builder type is unknown to the app
      */
     @NonNull
@@ -220,6 +213,50 @@ public interface HandleContext {
      */
     @NonNull
     <T> T dispatchChildTransaction(@NonNull TransactionBody txBody, @NonNull Class<T> recordBuilderClass);
+
+    /**
+     * Dispatches a removable child transaction.
+     *
+     * <p>A removable child transaction depends on the current transaction. It behaves in almost all aspects like a
+     * regular child transaction (see {@link #dispatchChildTransaction(TransactionBody, Class)}. But unlike regular
+     * child transactions, the records of removable child transactions are removed and not reverted.
+     *
+     * @param txBody the {@link TransactionBody} of the child transaction to dispatch
+     * @param recordBuilderClass the record builder class of the child transaction
+     * @return the record builder of the child transaction
+     * @throws NullPointerException if {@code txBody} is {@code null}
+     * @throws IllegalArgumentException if the current transaction is a
+     * {@link TransactionCategory#PRECEDING}-transaction or if the record builder type is unknown to the app
+     */
+    @NonNull
+    <T> T dispatchRemovableChildTransaction(@NonNull TransactionBody txBody, @NonNull Class<T> recordBuilderClass);
+
+    /**
+     * Adds a child record builder to the list of record builders. If the current {@link HandleContext} (or any parent
+     * context) is rolled back, all child record builders will be reverted.
+     *
+     * @param recordBuilderClass the record type
+     * @return the new child record builder
+     * @param <T> the record type
+     * @throws NullPointerException if {@code recordBuilderClass} is {@code null}
+     * @throws IllegalArgumentException if the record builder type is unknown to the app
+     */
+    @NonNull
+    <T> T addChildRecordBuilder(@NonNull Class<T> recordBuilderClass);
+
+    /**
+     * Adds a removable child record builder to the list of record builders. Unlike a regular child record builder,
+     * a removable child record builder is removed, if the current {@link HandleContext} (or any parent context) is
+     * rolled back.
+     *
+     * @param recordBuilderClass the record type
+     * @return the new child record builder
+     * @param <T> the record type
+     * @throws NullPointerException if {@code recordBuilderClass} is {@code null}
+     * @throws IllegalArgumentException if the record builder type is unknown to the app
+     */
+    @NonNull
+    <T> T addRemovableChildRecordBuilder(@NonNull Class<T> recordBuilderClass);
 
     /**
      * Returns the current {@link SavepointStack}.

@@ -73,7 +73,6 @@ public class FileSystemDeleteHandler implements TransactionHandler {
         requireNonNull(handleContext);
 
         final var systemDeleteTransactionBody = handleContext.body().systemDeleteOrThrow();
-        final var fileStore = handleContext.writableStore(WritableFileStoreImpl.class);
         if (!systemDeleteTransactionBody.hasFileID()) {
             throw new HandleException(INVALID_FILE_ID);
         }
@@ -81,6 +80,7 @@ public class FileSystemDeleteHandler implements TransactionHandler {
 
         final var ledgerConfig = handleContext.configuration().getConfigData(LedgerConfig.class);
 
+        final var fileStore = handleContext.writableStore(WritableFileStoreImpl.class);
         final File file = verifySystemFile(ledgerConfig, fileStore, fileId);
 
         final var newExpiry = systemDeleteTransactionBody

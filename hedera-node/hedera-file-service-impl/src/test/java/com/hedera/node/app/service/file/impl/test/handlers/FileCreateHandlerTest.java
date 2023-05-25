@@ -31,8 +31,10 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -125,6 +127,7 @@ class FileCreateHandlerTest extends FileHandlerTestBase {
         config = new FilesConfig(101L, 121L, 112L, 111L, 122L, 102L, 123L, 1000000L, 1024);
         lenient().when(handleContext.configuration()).thenReturn(configuration);
         lenient().when(configuration.getConfigData(FilesConfig.class)).thenReturn(config);
+        lenient().when(handleContext.writableStore(WritableFileStoreImpl.class)).thenReturn(fileStore);
     }
 
     @Test
@@ -191,11 +194,10 @@ class FileCreateHandlerTest extends FileHandlerTestBase {
     @DisplayName("Handle works as expected")
     void handleWorksAsExpected() {
         final var keys = anotherKeys;
-        final var op = newCreateTxn(keys, expirationTime).fileCreateOrThrow();
+        final var txBody = newCreateTxn(keys, expirationTime);
 
+        given(handleContext.body()).willReturn(txBody);
         given(handleContext.attributeValidator()).willReturn(validator);
-        given(handleContext.body())
-                .willReturn(TransactionBody.newBuilder().fileCreate(op).build());
         given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any()))
@@ -215,17 +217,17 @@ class FileCreateHandlerTest extends FileHandlerTestBase {
         assertEquals(contentsBytes, actualFile.contents());
         assertEquals(fileEntityNum.longValue(), actualFile.fileNumber());
         assertFalse(actualFile.deleted());
+        verify(recordBuilder).fileID(FileID.newBuilder().fileNum(1_234L).build());
         assertTrue(fileStore.get(1234L).isPresent());
     }
 
     @Test
     @DisplayName("Handle works as expected without keys")
     void handleDoesntRequireKeys() {
-        final var op = newCreateTxn(keys, expirationTime).fileCreateOrThrow();
+        final var txBody = newCreateTxn(keys, expirationTime);
 
+        given(handleContext.body()).willReturn(txBody);
         given(handleContext.attributeValidator()).willReturn(validator);
-        given(handleContext.body())
-                .willReturn(TransactionBody.newBuilder().fileCreate(op).build());
         given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any()))
@@ -245,17 +247,17 @@ class FileCreateHandlerTest extends FileHandlerTestBase {
         assertEquals(contentsBytes, actualFile.contents());
         assertEquals(fileEntityNum.longValue(), actualFile.fileNumber());
         assertFalse(actualFile.deleted());
+        verify(recordBuilder).fileID(FileID.newBuilder().fileNum(1_234L).build());
         assertTrue(fileStore.get(1234L).isPresent());
     }
 
     @Test
     @DisplayName("Translates INVALID_EXPIRATION_TIME to AUTO_RENEW_DURATION_NOT_IN_RANGE")
     void translatesInvalidExpiryException() {
-        final var op = newCreateTxn(keys, expirationTime).fileCreateOrThrow();
+        final var txBody = newCreateTxn(keys, expirationTime);
 
+        given(handleContext.body()).willReturn(txBody);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
-        given(handleContext.body())
-                .willReturn(TransactionBody.newBuilder().fileCreate(op).build());
         given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any()))
                 .willThrow(new HandleException(ResponseCodeEnum.INVALID_EXPIRATION_TIME));
@@ -268,11 +270,10 @@ class FileCreateHandlerTest extends FileHandlerTestBase {
     @DisplayName("Memo Validation Failure will throw")
     void handleThrowsIfAttributeValidatorFails() {
         final var keys = anotherKeys;
-        final var op = newCreateTxn(keys, expirationTime).fileCreateOrThrow();
+        final var txBody = newCreateTxn(keys, expirationTime);
 
+        given(handleContext.body()).willReturn(txBody);
         given(handleContext.attributeValidator()).willReturn(validator);
-        given(handleContext.body())
-                .willReturn(TransactionBody.newBuilder().fileCreate(op).build());
         given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any()))
@@ -280,7 +281,7 @@ class FileCreateHandlerTest extends FileHandlerTestBase {
 
         doThrow(new HandleException(ResponseCodeEnum.MEMO_TOO_LONG))
                 .when(validator)
-                .validateMemo(op.memo());
+                .validateMemo(txBody.fileCreate().memo());
 
         assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertTrue(fileStore.get(1234L).isEmpty());
@@ -290,11 +291,10 @@ class FileCreateHandlerTest extends FileHandlerTestBase {
     @DisplayName("Fails when the file are already created")
     void failsWhenMaxRegimeExceeds() {
         final var keys = anotherKeys;
-        final var op = newCreateTxn(keys, expirationTime).fileCreateOrThrow();
+        final var txBody = newCreateTxn(keys, expirationTime);
+        given(handleContext.body()).willReturn(txBody);
         final var writableState = writableFileStateWithOneKey();
 
-        given(handleContext.body())
-                .willReturn(TransactionBody.newBuilder().fileCreate(op).build());
         given(writableStates.<EntityNum, File>get(FILES)).willReturn(writableState);
         final var fileStore = new WritableFileStoreImpl(writableStates);
         given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(fileStore);

@@ -26,7 +26,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.state.file.File;
-import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
+import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -69,7 +69,7 @@ public class FileAppendHandler implements TransactionHandler {
         requireNonNull(context);
 
         final var transactionBody = context.body().fileAppendOrThrow();
-        final var fileStore = context.createStore(ReadableFileStoreImpl.class);
+        final var fileStore = context.createStore(ReadableFileStore.class);
         final var fileMeta = preValidate(transactionBody.fileID(), fileStore, context, false);
 
         validateAndAddRequiredKeys(fileMeta.keys(), context, true);
@@ -90,7 +90,6 @@ public class FileAppendHandler implements TransactionHandler {
         if (target == null) {
             throw new HandleException(INVALID_FILE_ID);
         }
-
         final var fileStore = context.writableStore(WritableFileStoreImpl.class);
         final var optionalFile = fileStore.get(target.fileNum());
 

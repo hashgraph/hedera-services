@@ -50,12 +50,12 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.config.api.Configuration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mock.Strictness;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -67,13 +67,14 @@ class FileDeleteHandlerTest extends FileHandlerTestBase {
     @Mock
     private ReadableFileStoreImpl mockStore;
 
+    @Mock(strictness = Strictness.LENIENT)
+    private HandleContext handleContext;
+
     @Mock
     private FileDeleteHandler subject;
 
     @Mock(strictness = LENIENT)
     private PreHandleContext preHandleContext;
-
-    private Configuration configuration;
 
     @BeforeEach
     void setUp() {
@@ -83,7 +84,7 @@ class FileDeleteHandlerTest extends FileHandlerTestBase {
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<EntityNum, File>get(FILES)).willReturn(writableFileState);
         writableStore = new WritableFileStoreImpl(writableStates);
-        configuration = new HederaTestConfigBuilder().getOrCreateConfig();
+        final var configuration = new HederaTestConfigBuilder().getOrCreateConfig();
         lenient().when(preHandleContext.configuration()).thenReturn(configuration);
     }
 
@@ -117,12 +118,13 @@ class FileDeleteHandlerTest extends FileHandlerTestBase {
 
     @Test
     @DisplayName("Fails handle if file doesn't exist")
-    void fileDoesntExist(@Mock final HandleContext handleContext) {
+    void fileDoesntExist() {
         final var txn = newDeleteTxn().fileDeleteOrThrow();
 
         writableFileState = emptyWritableFileState();
         given(writableStates.<EntityNum, File>get(FILES)).willReturn(writableFileState);
         writableStore = new WritableFileStoreImpl(writableStates);
+        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
 
         given(handleContext.body())
                 .willReturn(TransactionBody.newBuilder().fileDelete(txn).build());
@@ -133,7 +135,7 @@ class FileDeleteHandlerTest extends FileHandlerTestBase {
 
     @Test
     @DisplayName("Fails handle if keys doesn't exist on file to be deleted")
-    void keysDoesntExist(@Mock final HandleContext handleContext) {
+    void keysDoesntExist() {
         final var txn = newDeleteTxn().fileDeleteOrThrow();
 
         file = new File(fileId.fileNum(), expirationTime, null, Bytes.wrap(contents), memo, false);
@@ -141,6 +143,7 @@ class FileDeleteHandlerTest extends FileHandlerTestBase {
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<EntityNum, File>get(FILES)).willReturn(writableFileState);
         writableStore = new WritableFileStoreImpl(writableStates);
+        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
 
         given(handleContext.body())
                 .willReturn(TransactionBody.newBuilder().fileDelete(txn).build());
@@ -152,7 +155,7 @@ class FileDeleteHandlerTest extends FileHandlerTestBase {
 
     @Test
     @DisplayName("Handle works as expected")
-    void handleWorksAsExpected(@Mock final HandleContext handleContext) {
+    void handleWorksAsExpected() {
         final var txn = newDeleteTxn().fileDeleteOrThrow();
 
         final var existingFile = writableStore.get(fileEntityNum.longValue());

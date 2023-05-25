@@ -37,13 +37,13 @@ import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
-import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -98,7 +98,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         final var topic =
                 topicStore.getForModify(op.topicIDOrElse(TopicID.DEFAULT).topicNum());
         /* Validate all needed fields in the transaction */
-        final var config = handleContext.configuration().getConfigData(ConsensusServiceConfig.class);
+        final var config = handleContext.configuration().getConfigData(ConsensusConfig.class);
         validateTransaction(txn, config, topic);
 
         /* since we have validated topic exists, topic.get() is safe to be called */
@@ -122,11 +122,11 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
     /**
      * Validates te transaction body. Throws {@link HandleException} if any of the validations fail.
      * @param txn the {@link TransactionBody} of the active transaction
-     * @param config the {@link ConsensusServiceConfig}
+     * @param config the {@link ConsensusConfig}
      * @param topic the topic to which the message is being submitted
      */
     private void validateTransaction(
-            final TransactionBody txn, final ConsensusServiceConfig config, final Optional<Topic> topic) {
+            final TransactionBody txn, final ConsensusConfig config, final Optional<Topic> topic) {
         final var txnId = txn.transactionID();
         final var payer = txn.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT);
         final var op = txn.consensusSubmitMessageOrThrow();
@@ -139,7 +139,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         }
 
         /* Check if the message submitted is greater than acceptable size */
-        if (msgLen > config.maxMessageSize()) {
+        if (msgLen > config.messageMaxBytesAllowed()) {
             throw new HandleException(MESSAGE_SIZE_TOO_LARGE);
         }
 

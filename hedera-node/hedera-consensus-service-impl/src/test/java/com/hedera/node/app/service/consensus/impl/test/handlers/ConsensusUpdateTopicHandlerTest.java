@@ -198,6 +198,8 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
         refreshStoresWithCurrentTopicInBothReadableAndWritable();
 
         final var op = OP_BUILDER.topicID(topicId).adminKey(A_NONNULL_KEY).build();
+        final var txn = TransactionBody.newBuilder().consensusUpdateTopic(op).build();
+        given(handleContext.body()).willReturn(txn);
         given(handleContext.attributeValidator()).willReturn(standardizedAttributeValidator);
         given(handleContext.body())
                 .willReturn(
@@ -216,6 +218,8 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
         refreshStoresWithCurrentTopicInBothReadableAndWritable();
 
         final var op = OP_BUILDER.topicID(topicId).adminKey(EMPTY_KEYLIST).build();
+        final var txn = TransactionBody.newBuilder().consensusUpdateTopic(op).build();
+        given(handleContext.body()).willReturn(txn);
         given(handleContext.attributeValidator()).willReturn(standardizedAttributeValidator);
         given(handleContext.body())
                 .willReturn(
@@ -234,6 +238,8 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
         refreshStoresWithCurrentTopicInBothReadableAndWritable();
 
         final var op = OP_BUILDER.topicID(topicId).adminKey(EMPTY_THRESHOLD_KEY).build();
+        final var txn = TransactionBody.newBuilder().consensusUpdateTopic(op).build();
+        given(handleContext.body()).willReturn(txn);
         given(handleContext.attributeValidator()).willReturn(standardizedAttributeValidator);
         given(handleContext.body())
                 .willReturn(

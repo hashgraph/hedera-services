@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -35,7 +36,6 @@ import com.hedera.node.app.service.file.impl.handlers.FileAppendHandler;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
-import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -55,9 +55,6 @@ class FileAppendHandlerTest extends FileHandlerTestBase {
     private final FileAppendTransactionBody.Builder OP_BUILDER = FileAppendTransactionBody.newBuilder();
 
     private final ExpiryMeta currentExpiryMeta = new ExpiryMeta(expirationTime, NA, NA);
-
-    @Mock
-    private HandleContext handleContext;
 
     @Mock
     private Account account;
@@ -87,9 +84,8 @@ class FileAppendHandlerTest extends FileHandlerTestBase {
 
     @Test
     void rejectsMissingFile() {
-        final var op = OP_BUILDER.build();
-        given(handleContext.body())
-                .willReturn(TransactionBody.newBuilder().fileAppend(op).build());
+        final var txBody = TransactionBody.newBuilder().fileAppend(OP_BUILDER).build();
+        when(handleContext.body()).thenReturn(txBody);
 
         // expect:
         assertFailsWith(INVALID_FILE_ID, () -> subject.handle(handleContext));
@@ -100,10 +96,10 @@ class FileAppendHandlerTest extends FileHandlerTestBase {
         givenValidFile(true);
         refreshStoresWithCurrentFileInBothReadableAndWritable();
 
-        final var op = OP_BUILDER.fileID(wellKnownId()).build();
-        given(handleContext.body())
-                .willReturn(TransactionBody.newBuilder().fileAppend(op).build());
-        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
+        final var txBody = TransactionBody.newBuilder()
+                .fileAppend(OP_BUILDER.fileID(wellKnownId()))
+                .build();
+        when(handleContext.body()).thenReturn(txBody);
 
         // expect:
         assertFailsWith(FILE_DELETED, () -> subject.handle(handleContext));
@@ -114,14 +110,11 @@ class FileAppendHandlerTest extends FileHandlerTestBase {
         givenValidFile(false);
         refreshStoresWithCurrentFileInBothReadableAndWritable();
 
-        final var op = OP_BUILDER
-                .fileID(wellKnownId())
-                .contents(Bytes.wrap(new byte[1048577]))
+        final var txBody = TransactionBody.newBuilder()
+                .fileAppend(OP_BUILDER.fileID(wellKnownId()).contents(Bytes.wrap(new byte[1048577])))
                 .build();
-        given(handleContext.body())
-                .willReturn(TransactionBody.newBuilder().fileAppend(op).build());
+        given(handleContext.body()).willReturn(txBody);
         given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
-
         // expect:
         assertFailsWith(ResponseCodeEnum.MAX_FILE_SIZE_EXCEEDED, () -> subject.handle(handleContext));
     }
@@ -131,12 +124,10 @@ class FileAppendHandlerTest extends FileHandlerTestBase {
         givenValidFile(false);
         refreshStoresWithCurrentFileInBothReadableAndWritable();
 
-        final var op = OP_BUILDER
-                .fileID(wellKnownId())
-                .contents(Bytes.wrap(new byte[0]))
+        final var txBody = TransactionBody.newBuilder()
+                .fileAppend(OP_BUILDER.fileID(wellKnownId()).contents(Bytes.wrap(new byte[0])))
                 .build();
-        given(handleContext.body())
-                .willReturn(TransactionBody.newBuilder().fileAppend(op).build());
+        given(handleContext.body()).willReturn(txBody);
         given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
 
         // expect:
@@ -155,10 +146,10 @@ class FileAppendHandlerTest extends FileHandlerTestBase {
 
         var newContent = ArrayUtils.addAll(contents, additionalContent);
         var bytesNewContentExpected = Bytes.wrap(newContent);
-        final var op =
-                OP_BUILDER.fileID(wellKnownId()).contents(bytesNewContent).build();
-        given(handleContext.body())
-                .willReturn(TransactionBody.newBuilder().fileAppend(op).build());
+        final var txBody = TransactionBody.newBuilder()
+                .fileAppend(OP_BUILDER.fileID(wellKnownId()).contents(bytesNewContent))
+                .build();
+        given(handleContext.body()).willReturn(txBody);
         given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
 
         subject.handle(handleContext);
@@ -172,9 +163,10 @@ class FileAppendHandlerTest extends FileHandlerTestBase {
         refreshStoresWithCurrentFileInBothReadableAndWritable();
 
         // No-op
-        final var op = OP_BUILDER.fileID(wellKnownId()).build();
-        given(handleContext.body())
-                .willReturn(TransactionBody.newBuilder().fileAppend(op).build());
+        final var txBody = TransactionBody.newBuilder()
+                .fileAppend(OP_BUILDER.fileID(wellKnownId()))
+                .build();
+        given(handleContext.body()).willReturn(txBody);
         given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
 
         subject.handle(handleContext);

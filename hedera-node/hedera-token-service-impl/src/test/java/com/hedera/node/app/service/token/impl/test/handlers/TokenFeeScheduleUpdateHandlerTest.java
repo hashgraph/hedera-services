@@ -34,7 +34,6 @@ import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
-import com.hedera.node.app.service.token.impl.config.TokenServiceConfig;
 import com.hedera.node.app.service.token.impl.handlers.TokenFeeScheduleUpdateHandler;
 import com.hedera.node.app.service.token.impl.validators.CustomFeesValidator;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
@@ -42,7 +41,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.swirlds.config.api.Configuration;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -57,16 +56,12 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     private TokenFeeScheduleUpdateHandler subject;
     private CustomFeesValidator validator;
     private TransactionBody txn;
-    private TokenServiceConfig config = new TokenServiceConfig(1000);
 
     @Mock(strictness = LENIENT)
     private HandleContext context;
 
     @Mock
     private PreHandleContext preHandleContext;
-
-    @Mock(strictness = LENIENT)
-    private Configuration tokenServiceConfig;
 
     @BeforeEach
     void setup() {
@@ -75,8 +70,10 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         validator = new CustomFeesValidator();
         subject = new TokenFeeScheduleUpdateHandler(validator);
         givenTxn();
-        given(context.configuration()).willReturn(tokenServiceConfig);
-        given(tokenServiceConfig.getConfigData(TokenServiceConfig.class)).willReturn(config);
+        final var config = new HederaTestConfigBuilder()
+                .withValue("tokens.maxCustomFeesAllowed", 1000)
+                .getOrCreateConfig();
+        given(context.configuration()).willReturn(config);
         given(context.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
         given(context.readableStore(ReadableTokenRelationStore.class)).willReturn(readableTokenRelStore);
         given(context.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
@@ -164,7 +161,10 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     @DisplayName("fee schedule update fails if custom fees list is too long")
     void failsIfTooManyCustomFees() {
-        given(tokenServiceConfig.getConfigData(TokenServiceConfig.class)).willReturn(new TokenServiceConfig(1));
+        final var config = new HederaTestConfigBuilder()
+                .withValue("tokens.maxCustomFeesAllowed", 1)
+                .getOrCreateConfig();
+        given(context.configuration()).willReturn(config);
         assertThatThrownBy(() -> subject.handle(context))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(CUSTOM_FEES_LIST_TOO_LONG));

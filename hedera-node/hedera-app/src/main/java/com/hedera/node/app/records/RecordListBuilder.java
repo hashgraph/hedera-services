@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.spi.records.SingleTransactionRecord;
 import com.hedera.node.config.data.ConsensusConfig;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -49,36 +50,36 @@ public class RecordListBuilder {
     /**
      * Creates a new instance with a single record builder for the user transaction.
      *
-     * @param baseConsensusTime the consensus time of the user transaction
      * @param recordBuilder the record builder for the user transaction
      * @throws NullPointerException if {@code recordBuilder} is {@code null}
      */
-    public RecordListBuilder(
-            @NonNull final Instant baseConsensusTime, @NonNull final SingleTransactionRecordBuilder recordBuilder) {
-        this.baseConsensusTime = requireNonNull(baseConsensusTime, "baseConsensusTime must not be null");
+    public RecordListBuilder(@NonNull final SingleTransactionRecordBuilder recordBuilder) {
         requireNonNull(recordBuilder, "recordBuilder must not be null");
+        this.baseConsensusTime = recordBuilder.consensusNow();
         recordBuilders.add(recordBuilder);
     }
 
     /**
      * Adds a record builder for a preceding transaction.
      *
-     * @param consensusConfig the consensus configuration
+     * @param configuration the current configuration
      * @return the record builder for the preceding transaction
      * @throws NullPointerException if {@code consensusConfig} is {@code null}
      * @throws IndexOutOfBoundsException if no more preceding slots are available
      */
-    public SingleTransactionRecordBuilder addPreceding(@NonNull final ConsensusConfig consensusConfig) {
-        requireNonNull(consensusConfig, "consensusConfig must not be null");
+    public SingleTransactionRecordBuilder addPreceding(@NonNull final Configuration configuration) {
+        requireNonNull(configuration, "configuration must not be null");
         if (precedingRecordBuilders == null) {
             precedingRecordBuilders = new ArrayList<>();
         }
         final int precedingCount = precedingRecordBuilders.size();
-        if (precedingCount >= consensusConfig.handleMaxPrecedingRecords()) {
+        final var consensusConfig = configuration.getConfigData(ConsensusConfig.class);
+        final long maxRecords = consensusConfig.handleMaxPrecedingRecords();
+        if (precedingCount >= maxRecords) {
             throw new IndexOutOfBoundsException("No more preceding slots available");
         }
 
-        final var consensusNow = baseConsensusTime.minusNanos(3L - precedingCount);
+        final var consensusNow = baseConsensusTime.minusNanos(maxRecords - precedingCount);
         final var recordBuilder = new SingleTransactionRecordBuilder(consensusNow);
 
         precedingRecordBuilders.add(recordBuilder);
@@ -91,15 +92,15 @@ public class RecordListBuilder {
      * If a parent transaction of this child transaction is rolled back and the child transaction was successful, the
      * status is set to {@link com.hedera.hapi.node.base.ResponseCodeEnum#REVERTED_SUCCESS}.
      *
-     * @param consensusConfig the consensus configuration
+     * @param configuration the current configuration
      * @return the record builder for the child transaction
      * @throws NullPointerException if {@code consensusConfig} is {@code null}
      * @throws IndexOutOfBoundsException if no more child slots are available
      */
-    public SingleTransactionRecordBuilder addChild(@NonNull final ConsensusConfig consensusConfig) {
-        requireNonNull(consensusConfig, "consensusConfig must not be null");
+    public SingleTransactionRecordBuilder addChild(@NonNull final Configuration configuration) {
+        requireNonNull(configuration, "configuration must not be null");
 
-        return doAddChild(consensusConfig);
+        return doAddChild(configuration);
     }
 
     /**
@@ -107,17 +108,17 @@ public class RecordListBuilder {
      * <p>
      * If a parent transaction of this child transaction is rolled back, the record builder is removed entirely. This is
      * only needed in a very few special cases. Under normal circumstances,
-     * {@link #addChild(ConsensusConfig)} should be used.
+     * {@link #addChild(Configuration)} should be used.
      *
-     * @param consensusConfig the consensus configuration
+     * @param configuration the current configuration
      * @return the record builder for the child transaction
      * @throws NullPointerException if {@code consensusConfig} is {@code null}
      * @throws IndexOutOfBoundsException if no more child slots are available
      */
-    public SingleTransactionRecordBuilder addRemovableChild(@NonNull final ConsensusConfig consensusConfig) {
-        requireNonNull(consensusConfig, "consensusConfig must not be null");
+    public SingleTransactionRecordBuilder addRemovableChild(@NonNull final Configuration configuration) {
+        requireNonNull(configuration, "configuration must not be null");
 
-        final var recordBuilder = doAddChild(consensusConfig);
+        final var recordBuilder = doAddChild(configuration);
 
         if (removableChildRecordBuilders == null) {
             removableChildRecordBuilders = new HashSet<>();
@@ -126,8 +127,9 @@ public class RecordListBuilder {
         return recordBuilder;
     }
 
-    private SingleTransactionRecordBuilder doAddChild(@NonNull final ConsensusConfig consensusConfig) {
+    private SingleTransactionRecordBuilder doAddChild(@NonNull final Configuration configuration) {
         final int childCount = recordBuilders.size();
+        final var consensusConfig = configuration.getConfigData(ConsensusConfig.class);
         if (childCount > consensusConfig.handleMaxFollowingRecords()) {
             throw new IndexOutOfBoundsException("No more child slots available");
         }
@@ -141,7 +143,7 @@ public class RecordListBuilder {
 
     /**
      * Reverts all child record builders of the given record builder. Child record builders that have been added
-     * with {@link #addRemovableChild(ConsensusConfig)} will be removed.
+     * with {@link #addRemovableChild(Configuration)} will be removed.
      *
      * @param recordBuilder the record builder which children need to be reverted
      */
@@ -171,7 +173,9 @@ public class RecordListBuilder {
      * @return the stream of all records
      */
     public Stream<SingleTransactionRecord> build() {
-        return Stream.concat(precedingRecordBuilders.stream(), recordBuilders.stream())
-                .map(SingleTransactionRecordBuilder::build);
+        final var stream = precedingRecordBuilders == null
+                ? recordBuilders.stream()
+                : Stream.concat(precedingRecordBuilders.stream(), recordBuilders.stream());
+        return stream.map(SingleTransactionRecordBuilder::build);
     }
 }
