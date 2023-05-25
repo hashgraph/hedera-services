@@ -39,5 +39,6 @@ dependencies {
   testImplementation(testLibs.bundles.testing)
   testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
   testImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
+  testImplementation(testFixtures(project(":hedera-node:hedera-config")))
   testImplementation(testLibs.mockito.inline)
 }

@@ -31,9 +31,8 @@ import com.hedera.hapi.node.file.FileUpdateTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
-import com.hedera.node.app.service.file.impl.records.UpdateFileRecordBuilder;
-import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.validation.AttributeValidator;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -60,7 +59,7 @@ public class FileUpdateHandler implements TransactionHandler {
      *
      * @param context the {@link PreHandleContext} which collects all information that will be
      *                passed to {@code #handle()}
-     * @throws NullPointerException if one of the arguments is {@code null}
+     * @throws PreCheckException if any issue happens on the pre handle level
      */
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
@@ -68,31 +67,20 @@ public class FileUpdateHandler implements TransactionHandler {
         final var transactionBody = context.body().fileUpdateOrThrow();
         final var fileStore = context.createStore(ReadableFileStoreImpl.class);
 
-        preValidate(transactionBody.fileID(), fileStore);
+        preValidate(transactionBody.fileID(), fileStore, context, false);
         validateAndAddRequiredKeys(transactionBody.keys(), context, true);
     }
 
-    /**
-     * This method is called during the handle workflow. It executes the actual transaction.
-     *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
-     *
-     * @throws NullPointerException if one of the arguments is {@code null}
-     */
-    public void handle(
-            @NonNull final HandleContext handleContext,
-            @NonNull final FileUpdateTransactionBody fileUpdate,
-            @NonNull final WritableFileStoreImpl fileStore) {
-
+    @Override
+    public void handle(@NonNull final HandleContext handleContext) throws HandleException {
         requireNonNull(handleContext);
-        requireNonNull(fileUpdate);
-        requireNonNull(fileStore);
 
+        final var fileStore = handleContext.writableStore(WritableFileStoreImpl.class);
+        final var fileUpdate = handleContext.body().fileUpdateOrThrow();
         final var maybeFile = requireNonNull(fileStore)
                 .get(fileUpdate.fileIDOrElse(FileID.DEFAULT).fileNum());
 
-        final var fileServiceConfig = handleContext.getConfiguration().getConfigData(FilesConfig.class);
+        final var fileServiceConfig = handleContext.configuration().getConfigData(FilesConfig.class);
 
         if (maybeFile.isEmpty()) throw new HandleException(INVALID_FILE_ID);
 
@@ -113,11 +101,6 @@ public class FileUpdateHandler implements TransactionHandler {
         // And then resolve mutable attributes, and put the new topic back
         resolveMutableBuilderAttributes(fileUpdate, builder, fileServiceConfig, file);
         fileStore.put(builder.build());
-    }
-
-    @Override
-    public UpdateFileRecordBuilder newRecordBuilder() {
-        return new UpdateFileRecordBuilder();
     }
 
     private void resolveMutableBuilderAttributes(

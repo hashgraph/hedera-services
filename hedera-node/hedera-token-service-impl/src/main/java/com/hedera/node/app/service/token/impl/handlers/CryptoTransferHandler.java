@@ -34,11 +34,11 @@ import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
-import com.hedera.hapi.node.transaction.Query;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.ReadableTokenStore.TokenMetadata;
+import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -58,18 +58,6 @@ public class CryptoTransferHandler implements TransactionHandler {
         // Exists for injection
     }
 
-    /**
-     * Validates a {@link HederaFunctionality#CRYPTO_TRANSFER} that is part of a {@link Query}.
-     *
-     * @param txn the {@link TransactionBody} of the {@code CryptoTransfer}
-     * @throws PreCheckException if validation fails
-     */
-    public void validate(@NonNull final TransactionBody txn) throws PreCheckException {
-        requireNonNull(txn);
-        // FUTURE: Migrate validation from CryptoTransferTransitionLogic.validateSemantics()
-        throw new UnsupportedOperationException("Not implemented");
-    }
-
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
@@ -87,15 +75,8 @@ public class CryptoTransferHandler implements TransactionHandler {
         checkFungibleTokenTransfers(hbarTransfers, context, accountStore, true);
     }
 
-    /**
-     * This method is called during the handle workflow. It executes the actual transaction.
-     *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
-     *
-     * @throws NullPointerException if one of the arguments is {@code null}
-     */
-    public void handle() {
+    @Override
+    public void handle(@NonNull final HandleContext context) throws HandleException {
         throw new UnsupportedOperationException("Not implemented");
     }
 

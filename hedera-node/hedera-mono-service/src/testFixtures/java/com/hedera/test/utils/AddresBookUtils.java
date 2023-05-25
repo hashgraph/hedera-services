@@ -20,8 +20,8 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import com.google.common.primitives.Ints;
-import com.google.common.primitives.Longs;
 import com.swirlds.common.crypto.SerializablePublicKey;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
@@ -36,15 +36,11 @@ public class AddresBookUtils {
     public static AddressBook createPretendBookFrom(final Platform platform, final boolean withKeyDetails) {
         final var pubKey = mock(PublicKey.class);
         given(pubKey.getAlgorithm()).willReturn("EC");
-        if (withKeyDetails) {
-            given(pubKey.getEncoded()).willReturn(Longs.toByteArray(Long.MAX_VALUE));
-        }
-        final var node = platform.getSelfId();
-        final var address = new Address(
-                node,
+        final var address1 = new Address(
+                platform.getSelfId(),
                 "",
                 "",
-                1L,
+                10L,
                 false,
                 null,
                 -1,
@@ -58,6 +54,24 @@ public class AddresBookUtils {
                 null,
                 new SerializablePublicKey(pubKey),
                 "");
-        return new AddressBook(List.of(address));
+        final var address2 = new Address(
+                new NodeId(1),
+                "",
+                "",
+                10L,
+                false,
+                null,
+                -1,
+                Ints.toByteArray(123456789),
+                -1,
+                null,
+                -1,
+                null,
+                -1,
+                new SerializablePublicKey(pubKey),
+                null,
+                new SerializablePublicKey(pubKey),
+                "");
+        return new AddressBook(List.of(address1, address2));
     }
 }

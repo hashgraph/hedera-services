@@ -25,13 +25,11 @@ import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.valid
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.file.FileAppendTransactionBody;
 import com.hedera.hapi.node.state.file.File;
-import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
+import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
-import com.hedera.node.app.service.file.impl.records.UpdateFileRecordBuilder;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
-import com.hedera.node.app.spi.meta.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -46,7 +44,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * This class contains all workflow-related functionality regarding {@link HederaFunctionality#FILE_APPEND}.
+ * This class contains all workflow-related functionality regarding {@link
+ * HederaFunctionality#FILE_APPEND}.
  */
 @Singleton
 public class FileAppendHandler implements TransactionHandler {
@@ -70,31 +69,20 @@ public class FileAppendHandler implements TransactionHandler {
         requireNonNull(context);
 
         final var transactionBody = context.body().fileAppendOrThrow();
-        final var fileStore = context.createStore(ReadableFileStoreImpl.class);
-        final var fileMeta = preValidate(transactionBody.fileID(), fileStore);
+        final var fileStore = context.createStore(ReadableFileStore.class);
+        final var fileMeta = preValidate(transactionBody.fileID(), fileStore, context, false);
 
         validateAndAddRequiredKeys(fileMeta.keys(), context, true);
     }
 
-    /**
-     * This method is called during the handle workflow. It executes the actual transaction.
-     *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
-     *
-     * @throws NullPointerException if one of the arguments is {@code null}
-     */
-    public void handle(
-            @NonNull final FileAppendTransactionBody op,
-            @NonNull final WritableFileStoreImpl fileStore,
-            @NonNull HandleContext context) {
-        requireNonNull(op);
-        requireNonNull(fileStore);
+    @Override
+    public void handle(@NonNull final HandleContext context) throws HandleException {
         requireNonNull(context);
 
+        final var op = context.body().fileAppendOrThrow();
         final var target = op.fileID();
         final var data = op.contents();
-        final var fileServiceConfig = context.getConfiguration().getConfigData(FilesConfig.class);
+        final var fileServiceConfig = context.configuration().getConfigData(FilesConfig.class);
         if (data == null || data.length() <= 0) {
             logger.debug("FileAppend: No data to append");
         }
@@ -102,6 +90,7 @@ public class FileAppendHandler implements TransactionHandler {
         if (target == null) {
             throw new HandleException(INVALID_FILE_ID);
         }
+        final var fileStore = context.writableStore(WritableFileStoreImpl.class);
         final var optionalFile = fileStore.get(target.fileNum());
 
         if (optionalFile.isEmpty()) {
@@ -132,13 +121,5 @@ public class FileAppendHandler implements TransactionHandler {
         /* --- Put the modified file. It will be in underlying state's modifications map.
         It will not be committed to state until commit is called on the state.--- */
         fileStore.put(fileBuilder.build());
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public UpdateFileRecordBuilder newRecordBuilder() {
-        return new UpdateFileRecordBuilder();
     }
 }

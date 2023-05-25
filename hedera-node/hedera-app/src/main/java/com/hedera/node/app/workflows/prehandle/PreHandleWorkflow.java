@@ -17,6 +17,7 @@
 package com.hedera.node.app.workflows.prehandle;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.Transaction;
@@ -38,4 +39,22 @@ public interface PreHandleWorkflow {
             @NonNull final ReadableStoreFactory readableStoreFactory,
             @NonNull final AccountID creator,
             @NonNull final Stream<Transaction> transactions);
+
+    /**
+     * Starts the pre-handle transaction workflow for a single event.
+     *
+     * <p>If this method is called directly, pre-handle is done on the current thread.
+     *
+     * @param creator The {@link AccountID} of the node that created these transactions
+     * @param storeFactory The {@link ReadableStoreFactory} based on the current state
+     * @param accountStore The {@link ReadableAccountStore} based on the current state
+     * @param platformTx The {@link Transaction} to pre-handle
+     * @return The {@link PreHandleResult} of running pre-handle
+     */
+    @NonNull
+    PreHandleResult preHandleTransaction(
+            @NonNull AccountID creator,
+            @NonNull ReadableStoreFactory storeFactory,
+            @NonNull ReadableAccountStore accountStore,
+            @NonNull Transaction platformTx);
 }

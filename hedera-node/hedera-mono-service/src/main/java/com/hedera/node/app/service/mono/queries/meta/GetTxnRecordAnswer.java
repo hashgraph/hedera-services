@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.mono.queries.meta;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetRecord;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
@@ -165,7 +166,8 @@ public class GetTxnRecordAnswer implements AnswerService {
             return INVALID_ACCOUNT_ID;
         }
 
-        return optionValidator.queryableAccountStatus(fallbackId, view.accounts());
+        final var payerIdStatus = optionValidator.queryableAccountStatus(fallbackId, view.accounts());
+        return payerIdStatus == ACCOUNT_DELETED ? OK : payerIdStatus;
     }
 
     @Override

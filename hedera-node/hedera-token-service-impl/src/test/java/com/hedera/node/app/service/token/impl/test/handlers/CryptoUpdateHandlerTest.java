@@ -22,7 +22,6 @@ import static com.hedera.test.utils.KeyUtils.B_COMPLEX_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
@@ -120,11 +119,6 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
 
         final var context = new FakePreHandleContext(readableStore, txn);
         assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ACCOUNT_ID);
-    }
-
-    @Test
-    void handleNotImplemented() {
-        assertThrows(UnsupportedOperationException.class, () -> subject.handle());
     }
 
     private TransactionBody cryptoUpdateTransaction(final AccountID payerId, final AccountID accountToUpdate) {

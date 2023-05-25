@@ -21,7 +21,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_DELEGATING_SPEN
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -136,11 +135,6 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
         final var txn = cryptoApproveAllowanceTransaction(id, true);
         final var context = new FakePreHandleContext(readableStore, txn);
         assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_DELEGATING_SPENDER);
-    }
-
-    @Test
-    void handleNotImplemented() {
-        assertThrows(UnsupportedOperationException.class, () -> subject.handle());
     }
 
     private TransactionBody cryptoApproveAllowanceTransaction(

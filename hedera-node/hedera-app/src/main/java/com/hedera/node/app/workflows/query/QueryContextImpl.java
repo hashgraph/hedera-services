@@ -59,7 +59,7 @@ public class QueryContextImpl implements QueryContext {
     @Override
     @NonNull
     public <C> C createStore(@NonNull Class<C> storeInterface) {
-        return storeFactory.createStore(storeInterface);
+        return storeFactory.getStore(storeInterface);
     }
 
     @NonNull

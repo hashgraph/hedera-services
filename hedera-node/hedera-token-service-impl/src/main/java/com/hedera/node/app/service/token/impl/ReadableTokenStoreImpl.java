@@ -43,10 +43,11 @@ public class ReadableTokenStoreImpl implements ReadableTokenStore {
      * @param states The state to use.
      */
     public ReadableTokenStoreImpl(@NonNull final ReadableStates states) {
-        this.tokenState = states.get("TOKENS");
+        requireNonNull(states);
+        this.tokenState = states.get(TokenServiceImpl.TOKENS_KEY);
     }
 
-    // FUTURE : Use Token instead
+    // FUTURE: remove this method and the TokenMetadata object entirely
     @Override
     @Nullable
     public TokenMetadata getTokenMeta(@NonNull final TokenID id) {
@@ -56,6 +57,13 @@ public class ReadableTokenStoreImpl implements ReadableTokenStore {
             return null;
         }
         return tokenMetaFrom(token.get());
+    }
+
+    @Override
+    @Nullable
+    public Token get(@NonNull final TokenID id) {
+        requireNonNull(id);
+        return getTokenLeaf(id.tokenNum()).orElse(null);
     }
 
     private TokenMetadata tokenMetaFrom(final Token token) {
