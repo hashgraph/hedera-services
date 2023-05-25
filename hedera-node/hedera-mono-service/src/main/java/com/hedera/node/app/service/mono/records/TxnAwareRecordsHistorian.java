@@ -175,6 +175,12 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
             final var childRecord = followingChildRecords.get(i);
             if (childRecord.recordBuilder().isPendingSuccess()) {
                 final var synthChild = childRecord.syntheticBody();
+                // We want to skip any synthetic contract creations or calls, since they don't
+                // make sense to throttle here:
+                //   (1) A synthetic ContractCreateInstance is already throttled by gas and,
+                //   optionally, the CryptoCreate throttle, if contracts.enforceCreationThrottle=true
+                //   (2) A synthetic ContractCall represents a read-only precompile, which
+                //   again is not relevant for the consensus transaction throttles
                 if (synthChild.hasContractCreateInstance() || synthChild.hasContractCall()) {
                     continue;
                 }
