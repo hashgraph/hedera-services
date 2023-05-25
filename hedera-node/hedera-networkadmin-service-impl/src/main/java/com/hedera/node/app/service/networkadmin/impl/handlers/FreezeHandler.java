@@ -34,6 +34,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.networkadmin.ReadableSpecialFileStore;
 import com.hedera.node.app.service.networkadmin.impl.config.NetworkAdminServiceConfig;
 import com.hedera.node.app.spi.state.WritableFreezeStore;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -149,23 +150,25 @@ public class FreezeHandler implements TransactionHandler {
                 ? null
                 : Instant.ofEpochSecond(freezeStartTime.seconds(), freezeStartTime.nanos());
 
+        // @todo('Issue #6761') - the below switch returns a CompletableFuture, need to feed this to ExecutorService
         switch (freezeTxn.freezeType()) {
             case PREPARE_UPGRADE ->
-            // by the time we get here, we've already checked that updateFileNum is non-null in validateSemantics()
-            upgradeActions.extractSoftwareUpgrade(specialFileStore
-                    .get(requireNonNull(updateFileNum).fileNum())
-                    .orElseThrow(() -> new IllegalStateException("Update file not found")));
-                // @todo('Issue #6201'): call networkCtx.recordPreparedUpgrade(freezeTxn);
+                // by the time we get here, we've already checked that updateFileNum is non-null in validateSemantics()
+                    upgradeActions.extractSoftwareUpgrade(specialFileStore
+                            .get(requireNonNull(updateFileNum).fileNum())
+                            .orElseThrow(() -> new IllegalStateException("Update file not found")));
+            // @todo('Issue #6201'): call networkCtx.recordPreparedUpgrade(freezeTxn);
             case FREEZE_UPGRADE -> upgradeActions.scheduleFreezeUpgradeAt(requireNonNull(freezeStartTimeInstant));
             case FREEZE_ABORT -> upgradeActions.abortScheduledFreeze();
-                // @todo('Issue #6201'): call networkCtx.discardPreparedUpgradeMeta();
+            // @todo('Issue #6201'): call networkCtx.discardPreparedUpgradeMeta();
             case TELEMETRY_UPGRADE -> upgradeActions.extractTelemetryUpgrade(
                     specialFileStore
                             .get(requireNonNull(updateFileNum).fileNum())
                             .orElseThrow(() -> new IllegalStateException("Telemetry update file not found")),
                     requireNonNull(freezeStartTimeInstant));
-                // case FREEZE_ONLY is default
-            default -> upgradeActions.scheduleFreezeOnlyAt(requireNonNull(freezeStartTimeInstant));
+            case FREEZE_ONLY -> upgradeActions.scheduleFreezeOnlyAt(requireNonNull(freezeStartTimeInstant));
+            // UNKNOWN_FREEZE_TYPE should fail at preHandle, this code should never get called
+            case UNKNOWN_FREEZE_TYPE -> throw new HandleException(INVALID_FREEZE_TRANSACTION_BODY);
         }
     }
 
