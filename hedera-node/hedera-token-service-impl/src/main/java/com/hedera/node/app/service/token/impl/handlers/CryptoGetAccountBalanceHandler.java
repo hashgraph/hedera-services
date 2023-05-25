@@ -38,10 +38,10 @@ import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
-import com.hedera.node.app.service.token.impl.config.TokenServiceConfig;
 import com.hedera.node.app.spi.workflows.FreeQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
@@ -101,7 +101,7 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
         requireNonNull(context);
         requireNonNull(header);
         final var query = context.query();
-        final var config = context.configuration().getConfigData(TokenServiceConfig.class);
+        final var config = context.configuration().getConfigData(TokensConfig.class);
         final var accountStore = context.createStore(ReadableAccountStore.class);
         final var tokenRelationStore = context.createStore(ReadableTokenRelationStore.class);
         final var tokenStore = context.createStore(ReadableTokenStore.class);
@@ -121,7 +121,7 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
     }
 
     private List<TokenBalance> getTokenBalances(
-            TokenServiceConfig tokenServiceConfig,
+            TokensConfig tokenConfig,
             Account account,
             ReadableTokenStore readableTokenStore,
             ReadableTokenRelationStore tokenRelationStore) {
@@ -131,10 +131,14 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
         Optional<TokenRelation> tokenRelation;
         Token token;
         TokenBalance tokenBalance;
-        while (tokenNum != 0 && count <= tokenServiceConfig.maxTokenRelsPerInfoQuery()) {
-            tokenRelation = tokenRelationStore.get(account.accountNumber(), tokenNum);
+        TokenID tokenID;
+        AccountID accountID;
+        while (tokenNum != 0 && count <= tokenConfig.maxRelsPerInfoQuery()) {
+            accountID = AccountID.newBuilder().accountNum(account.accountNumber()).build();
+            tokenID = TokenID.newBuilder().tokenNum(tokenNum).build();
+            tokenRelation = tokenRelationStore.get(accountID, tokenID);
             if (tokenRelation.isPresent()) {
-                token = readableTokenStore.getToken(tokenNum);
+                token = readableTokenStore.get(tokenID);
                 if (token != null) {
                     tokenBalance = TokenBalance.newBuilder()
                             .tokenId(TokenID.newBuilder().tokenNum(tokenNum).build())

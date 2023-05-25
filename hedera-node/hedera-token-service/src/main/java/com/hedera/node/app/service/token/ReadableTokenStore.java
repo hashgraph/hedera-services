@@ -38,15 +38,6 @@ public interface ReadableTokenStore {
     @Nullable
     TokenMetadata getTokenMeta(@NonNull TokenID id);
 
-    /**
-     * Returns the token needed for signing requirements.
-     *
-     * @param tokenNum, the unique entity number of this token
-     * @return token's metadata
-     */
-    @Nullable
-    Token getToken(final long tokenNum);
-
     record TokenMetadata(
             @Nullable Key adminKey,
             @Nullable Key kycKey,

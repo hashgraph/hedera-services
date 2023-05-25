@@ -25,7 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -51,13 +50,12 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
-import com.hedera.node.app.service.token.impl.config.TokenServiceConfig;
 import com.hedera.node.app.service.token.impl.handlers.CryptoGetAccountBalanceHandler;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
-import com.swirlds.config.api.Configuration;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -79,11 +77,7 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
     @Mock
     private ReadableStates readableStates1, readableStates2, readableStates3;
 
-    @Mock(strictness = LENIENT)
-    private Configuration tokenServiceConfig;
-
     private CryptoGetAccountBalanceHandler subject;
-    private final TokenServiceConfig config = new TokenServiceConfig(1000, 1000);
 
     @BeforeEach
     public void setUp() {
@@ -228,8 +222,11 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
         final var query = createGetAccountBalanceQuery(accountNum);
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableAccountStore.class)).thenReturn(readableStore);
-        when(context.configuration()).thenReturn(tokenServiceConfig);
-        when(context.configuration().getConfigData(TokenServiceConfig.class)).thenReturn(config);
+
+        final var config = new HederaTestConfigBuilder()
+                .withValue("tokens.maxRelsPerInfoQuery", 1000)
+                .getOrCreateConfig();
+        given(context.configuration()).willReturn(config);
 
         final var response = subject.findResponse(context, responseHeader);
         final var op = response.cryptogetAccountBalance();
@@ -281,8 +278,11 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
         when(context.createStore(ReadableAccountStore.class)).thenReturn(ReadableAccountStore);
         when(context.createStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
         when(context.createStore(ReadableTokenRelationStore.class)).thenReturn(readableTokenRelStore);
-        when(context.configuration()).thenReturn(tokenServiceConfig);
-        when(context.configuration().getConfigData(TokenServiceConfig.class)).thenReturn(config);
+
+        final var config = new HederaTestConfigBuilder()
+                .withValue("tokens.maxRelsPerInfoQuery", 1000)
+                .getOrCreateConfig();
+        given(context.configuration()).willReturn(config);
 
         final var response = subject.findResponse(context, responseHeader);
         final var accountBalanceResponse = response.cryptogetAccountBalance();

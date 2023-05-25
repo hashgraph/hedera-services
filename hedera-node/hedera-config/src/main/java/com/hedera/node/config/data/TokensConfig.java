@@ -24,7 +24,6 @@ public record TokensConfig(
         @ConfigProperty(defaultValue = "10000000") long maxAggregateRels,
         @ConfigProperty(defaultValue = "false") boolean storeRelsOnDisk,
         @ConfigProperty(defaultValue = "1000000") long maxNumber,
-        @ConfigProperty(defaultValue = "1000") int maxRelsPerInfoQuery,
         @ConfigProperty(defaultValue = "1000") int maxPerAccount,
         @ConfigProperty(defaultValue = "100") int maxSymbolUtf8Bytes,
         @ConfigProperty(defaultValue = "100") int maxTokenNameUtf8Bytes,
@@ -41,4 +40,5 @@ public record TokensConfig(
         // @ConfigProperty(value = "nfts.mintThrottleScaleFactor", defaultValue = "5:2") ScaleFactor
         // nftsMintThrottleScaleFactor,
         @ConfigProperty(value = "nfts.useVirtualMerkle", defaultValue = "false") boolean nftsUseVirtualMerkle,
-        @ConfigProperty(value = "autoCreations.isEnabled", defaultValue = "true") boolean autoCreationsIsEnabled) {}
+        @ConfigProperty(value = "autoCreations.isEnabled", defaultValue = "true") boolean autoCreationsIsEnabled,
+        @ConfigProperty(value = "tokens.maxRelsPerInfoQuery", defaultValue = "1000") long maxRelsPerInfoQuery) {}
