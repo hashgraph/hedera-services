@@ -85,4 +85,12 @@ public interface ReadableTokenStore {
             return pauseKey != null && !pauseKey.key().kind().equals(KeyOneOfType.UNSET);
         }
     }
+
+    /**
+     * Returns all the data for a token
+     *
+     * @param id the token id to look up
+     */
+    @Nullable
+    Token get(@NonNull TokenID id);
 }
