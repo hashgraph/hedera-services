@@ -36,6 +36,7 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TransactionID;
@@ -47,9 +48,9 @@ import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoDeleteHandler;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
-import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -84,6 +85,9 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
                 .build();
         given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
         readableStore = new ReadableAccountStoreImpl(readableStates);
+
+        lenient().when(handleContext.configuration()).thenReturn(configuration);
+        lenient().when(handleContext.writableStore(WritableAccountStore.class)).thenReturn(writableStore);
     }
 
     @Test
@@ -241,8 +245,9 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
         given(writableStore.get(deleteAccountId)).willReturn(null);
+        given(handleContext.body()).willReturn(txn);
 
-        assertThatThrownBy(() -> subject.handle(handleContext, txn, writableStore))
+        assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(INVALID_ACCOUNT_ID));
     }
@@ -259,7 +264,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
         given(writableStore.get(deleteAccountId)).willReturn(null);
 
-        assertThatThrownBy(() -> subject.handle(handleContext, txn, writableStore))
+        assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(INVALID_TRANSFER_ACCOUNT_ID));
     }
@@ -281,8 +286,9 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.isDetached(eq(EntityType.ACCOUNT), anyBoolean(), anyLong()))
                 .willReturn(false);
+        given(handleContext.body()).willReturn(txn);
 
-        assertThatThrownBy(() -> subject.handle(handleContext, txn, writableStore))
+        assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(ACCOUNT_DELETED));
     }
@@ -302,8 +308,9 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.isDetached(eq(EntityType.ACCOUNT), anyBoolean(), anyLong()))
                 .willReturn(false);
+        given(handleContext.body()).willReturn(txn);
 
-        subject.handle(handleContext, txn, writableStore);
+        subject.handle(handleContext);
 
         // When an account is deleted, marks the value of the account deleted flag to true
         assertThat(writableStore.get(deleteAccountId).get().deleted()).isTrue();
@@ -325,8 +332,9 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.isDetached(eq(EntityType.ACCOUNT), anyBoolean(), anyLong()))
                 .willReturn(true);
+        given(handleContext.body()).willReturn(txn);
 
-        assertThatThrownBy(() -> subject.handle(handleContext, txn, writableStore))
+        assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
     }
@@ -347,8 +355,9 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.isDetached(eq(EntityType.ACCOUNT), anyBoolean(), anyLong()))
                 .willReturn(true);
+        given(handleContext.body()).willReturn(txn);
 
-        assertThatThrownBy(() -> subject.handle(handleContext, txn, writableStore))
+        assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
     }
@@ -368,8 +377,9 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
 
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
+        given(handleContext.body()).willReturn(txn);
 
-        assertThatThrownBy(() -> subject.handle(handleContext, txn, writableStore))
+        assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(ACCOUNT_IS_TREASURY));
     }
@@ -389,8 +399,9 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
 
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
+        given(handleContext.body()).willReturn(txn);
 
-        assertThatThrownBy(() -> subject.handle(handleContext, txn, writableStore))
+        assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES));
     }

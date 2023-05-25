@@ -24,14 +24,14 @@ import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.valid
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.file.FileCreateTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
-import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -72,32 +72,20 @@ public class FileCreateHandler implements TransactionHandler {
         }
     }
 
-    /**
-     * This method is called during the handle workflow. It executes the actual transaction.
-     *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
-     *
-     * @throws NullPointerException if one of the arguments is {@code null}
-     */
-    public void handle(
-            @NonNull final HandleContext handleContext,
-            @NonNull final FileCreateTransactionBody fileCreateTransactionBody,
-            @NonNull final CreateFileRecordBuilder recordBuilder,
-            @NonNull final WritableFileStoreImpl fileStore) {
+    @Override
+    public void handle(@NonNull final HandleContext handleContext) throws HandleException {
         requireNonNull(handleContext);
-        requireNonNull(fileCreateTransactionBody);
-        requireNonNull(recordBuilder);
-        requireNonNull(fileStore);
 
         final var builder = new File.Builder();
-        final var fileServiceConfig = handleContext.getConfiguration().getConfigData(FilesConfig.class);
+        final var fileServiceConfig = handleContext.configuration().getConfigData(FilesConfig.class);
 
+        final var fileCreateTransactionBody = handleContext.body().fileCreateOrThrow();
         if (fileCreateTransactionBody.hasKeys()) {
             builder.keys(fileCreateTransactionBody.keys());
         }
 
         /* Validate if the current file can be created */
+        final var fileStore = handleContext.writableStore(WritableFileStoreImpl.class);
         if (fileStore.sizeOfState() >= fileServiceConfig.maxNumber()) {
             throw new HandleException(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
         }
@@ -122,14 +110,15 @@ public class FileCreateHandler implements TransactionHandler {
             builder.memo(fileCreateTransactionBody.memo());
 
             builder.keys(fileCreateTransactionBody.keys());
-            builder.fileNumber(handleContext.newEntityNumSupplier().getAsLong());
+            builder.fileNumber(handleContext.newEntityNum());
             validateContent(PbjConverter.asBytes(fileCreateTransactionBody.contents()), fileServiceConfig);
             builder.contents(fileCreateTransactionBody.contents());
 
             final var file = builder.build();
             fileStore.put(file);
 
-            recordBuilder.setCreatedFile(file.fileNumber());
+            final var fileID = FileID.newBuilder().fileNum(file.fileNumber()).build();
+            handleContext.recordBuilder(CreateFileRecordBuilder.class).fileID(fileID);
         } catch (final HandleException e) {
             if (e.getStatus() == INVALID_EXPIRATION_TIME) {
                 // Since for some reason CreateTransactionBody does not have an expiration time,
@@ -138,10 +127,5 @@ public class FileCreateHandler implements TransactionHandler {
             }
             throw e;
         }
-    }
-
-    @Override
-    public CreateFileRecordBuilder newRecordBuilder() {
-        return new CreateFileRecordBuilder();
     }
 }

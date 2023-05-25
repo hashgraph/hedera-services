@@ -112,25 +112,6 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
     }
 
     @Test
-    void commitsAccountChangesToState() {
-        assertFalse(writableAccounts.contains(accountEntityNumVirtualKey));
-        // put, keeps the account in the modifications.
-        // Size of state includes modifications and size of backing state.
-        writableStore.put(account);
-
-        assertTrue(writableAccounts.contains(accountEntityNumVirtualKey));
-        final var writtenaccount = writableAccounts.get(accountEntityNumVirtualKey);
-        assertEquals(1, writableStore.sizeOfAccountState());
-        assertTrue(writableStore.modifiedAccountsInState().contains(accountEntityNumVirtualKey));
-        assertEquals(account, writtenaccount);
-
-        // commit, pushes modifications to backing store. But the size of state is still 1
-        writableStore.commit();
-        assertEquals(1, writableStore.sizeOfAccountState());
-        assertTrue(writableStore.modifiedAccountsInState().contains(accountEntityNumVirtualKey));
-    }
-
-    @Test
     void getsSizeOfState() {
         assertEquals(0, writableStore.sizeOfAccountState());
         assertEquals(Collections.EMPTY_SET, writableStore.modifiedAccountsInState());

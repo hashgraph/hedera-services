@@ -32,12 +32,12 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenAssociateTransactionBody;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.validators.TokenListChecks;
-import com.hedera.node.app.spi.meta.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -76,33 +76,16 @@ public class TokenAssociateToAccountHandler implements TransactionHandler {
         context.requireKeyOrThrow(target, INVALID_ACCOUNT_ID);
     }
 
-    /**
-     * This method is called during the handle workflow. It executes the actual transaction.
-     *
-     * <p>
-     * Associates a token with an account, making various token operations possible with the account
-     *
-     * @param txn           the {@link TokenAssociateTransactionBody} for the active transaction
-     * @param context       the {@link HandleContext} for the active transaction
-     * @param accountStore  the {@link WritableAccountStore} for the active transaction
-     * @param tokenRelStore the {@link WritableTokenRelationStore} for the active transaction
-     * @throws NullPointerException if one of the arguments is {@code null}
-     */
-    public void handle(
-            @NonNull final TransactionBody txn,
-            @NonNull final HandleContext context,
-            @NonNull final WritableAccountStore accountStore,
-            @NonNull final WritableTokenRelationStore tokenRelStore) {
-        requireNonNull(txn);
+    @Override
+    public void handle(@NonNull final HandleContext context) throws HandleException {
         requireNonNull(context);
-        requireNonNull(accountStore);
-        requireNonNull(tokenRelStore);
-        final var tokenStore = requireNonNull(context.createReadableStore(ReadableTokenStore.class));
-
-        final var op = txn.tokenAssociateOrThrow();
+        final var tokenStore = requireNonNull(context.readableStore(ReadableTokenStore.class));
+        final var op = context.body().tokenAssociateOrThrow();
         final var tokenIds = op.tokensOrElse(Collections.emptyList());
-        final var tokensConfig = context.getConfiguration().getConfigData(TokensConfig.class);
-        final var entitiesConfig = context.getConfiguration().getConfigData(EntitiesConfig.class);
+        final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
+        final var entitiesConfig = context.configuration().getConfigData(EntitiesConfig.class);
+        final var accountStore = context.writableStore(WritableAccountStore.class);
+        final var tokenRelStore = context.writableStore(WritableTokenRelationStore.class);
         final var validated = validateSemantics(
                 tokenIds, op.accountOrThrow(), tokensConfig, entitiesConfig, accountStore, tokenStore, tokenRelStore);
 
