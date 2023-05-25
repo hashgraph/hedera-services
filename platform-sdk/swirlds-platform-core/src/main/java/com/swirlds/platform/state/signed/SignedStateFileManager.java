@@ -318,9 +318,10 @@ public class SignedStateFileManager implements Startable {
      * @param signedState       the state in question
      * @param previousTimestamp the timestamp of the previous state that was saved to disk, or null if no previous state
      *                          was saved to disk
+     * @param source            the source of the signed state
      * @return true if the state should be written to disk
      */
-    private boolean shouldSaveToDisk(final SignedState signedState, final Instant previousTimestamp) {
+    private boolean shouldSaveToDisk(final SignedState signedState, final Instant previousTimestamp, final SourceOfSignedState source) {
         if (signedState.isFreezeState()) {
             // the state right before a freeze should be written to disk
             return true;
@@ -330,6 +331,11 @@ public class SignedStateFileManager implements Startable {
         if (saveStatePeriod <= 0) {
             // state saving is disabled
             return false;
+        }
+
+        if (source == SourceOfSignedState.RECONNECT) {
+            // states received via reconnect should be written to disk
+            return true;
         }
 
         if (previousTimestamp == null) {
@@ -346,9 +352,10 @@ public class SignedStateFileManager implements Startable {
      * state's {@link SignedState#isStateToSave()} flag will be set to true.
      *
      * @param signedState the signed state in question
+     * @param source     the source of the signed state
      */
-    public synchronized void determineIfStateShouldBeSaved(final SignedState signedState) {
-        if (shouldSaveToDisk(signedState, previousSavedStateTimestamp)) {
+    public synchronized void determineIfStateShouldBeSaved(final SignedState signedState, final SourceOfSignedState source) {
+        if (shouldSaveToDisk(signedState, previousSavedStateTimestamp, source)) {
 
             logger.info(
                     STATE_TO_DISK.getMarker(),

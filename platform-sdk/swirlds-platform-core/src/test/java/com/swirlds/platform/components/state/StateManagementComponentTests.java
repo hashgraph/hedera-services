@@ -56,6 +56,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -84,6 +85,7 @@ class StateManagementComponentTests {
             new TestSignedStateWrapperConsumer();
     private final TestSignedStateWrapperConsumer stateLacksSignaturesConsumer = new TestSignedStateWrapperConsumer();
     private final TestIssConsumer issConsumer = new TestIssConsumer();
+    private final TestStateToDiskAttemptConsumer stateToDiskAttemptConsumer = new TestStateToDiskAttemptConsumer();
 
     @TempDir
     private Path tmpDir;
@@ -393,6 +395,38 @@ class StateManagementComponentTests {
         component.stop();
     }
 
+    @Test
+    void testReconnectStateSaved() throws InterruptedException {
+        final Random random = RandomUtils.getRandomPrintSeed();
+        final AddressBook addressBook = new RandomAddressBookGenerator(random)
+                .setSize(NUM_NODES)
+                .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
+                .setSequentialIds(false)
+                .build();
+        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook);
+
+        component.start();
+
+        final List<NodeId> majorityWeightNodes =
+                IntStream.range(0, NUM_NODES - 1).mapToObj(NodeId::new).toList();
+        final SignedState signedState = new RandomSignedStateGenerator(random)
+                .setRound(10)
+                .setSigningNodeIds(majorityWeightNodes)
+                .build();
+        component.stateToLoad(signedState, SourceOfSignedState.RECONNECT);
+        final StateToDiskAttempt attempt = stateToDiskAttemptConsumer.getAttemptQueue().poll(5, TimeUnit.SECONDS);
+        assertNotNull(attempt, "The state should be saved to disk.");
+        assertEquals(
+                attempt.signedState(),
+                signedState,
+                "The state saved to disk should be the same as the state loaded.");
+        assertTrue(
+                attempt.success(),
+                "The state saved to disk should be marked as a success.");
+
+        component.stop();
+    }
+
     private void testCatastrophicIss(
             final Random random,
             final DefaultStateManagementComponent component,
@@ -625,7 +659,7 @@ class StateManagementComponentTests {
                 NODE_ID,
                 SWIRLD,
                 systemTransactionConsumer::consume,
-                (ss, dir, success) -> {},
+                stateToDiskAttemptConsumer,
                 newLatestCompleteStateConsumer::consume,
                 stateLacksSignaturesConsumer::consume,
                 stateHasEnoughSignaturesConsumer::consume,
