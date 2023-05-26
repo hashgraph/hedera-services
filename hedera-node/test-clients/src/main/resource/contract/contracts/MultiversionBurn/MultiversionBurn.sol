@@ -2,9 +2,7 @@
 pragma solidity ^0.8.9;
 pragma experimental ABIEncoderV2;
 
-import "./hts-precompile/IHederaTokenService.sol";
-
-contract BurnV1andV2 {
+contract MultiversionBurn {
     address precompileAddress;
 
     constructor(){
@@ -20,7 +18,10 @@ contract BurnV1andV2 {
         (responseCode, newTotalSupply) =
             success
                 ? abi.decode(result, (int32, uint64))
-                : (int32(99), 0);
+                : (int32(0), 0);
+        if(responseCode != 22) {
+            revert();
+        }
     }
 
     function burnTokenV1(address _token, uint64 _amount, int64[] memory _serialNumbers) external
@@ -32,7 +33,10 @@ contract BurnV1andV2 {
         (responseCode, newTotalSupply) =
             success
                 ? abi.decode(result, (int32, uint64))
-                : (int32(99), 0);
+                : (int32(0), 0);
+        if(responseCode != 22) {
+            revert();
+        }
     }
 
 }
