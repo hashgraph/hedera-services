@@ -225,17 +225,6 @@ public final class VirtualMap<K extends VirtualKey, V extends VirtualValue> exte
     }
 
     /**
-     * Does a full rehash of the persisted leaves of the map.
-     * Delegates the call to {@link VirtualRootNode#fullLeafRehashIfNecessary()} which does the actual work.
-     *
-     * This method is going to be removed after 0.39.0 release because it shouldn't be called explicitly.
-     */
-    @Deprecated(forRemoval = true)
-    public void fullLeafRehash() {
-        root.fullLeafRehashIfNecessary();
-    }
-
-    /**
      * Register all statistics with a registry. If not called then no statistics will be captured for this map.
      *
      * @param metrics
@@ -352,7 +341,7 @@ public final class VirtualMap<K extends VirtualKey, V extends VirtualValue> exte
         final String inputFileName = in.readNormalisedString(fileNameLengthInBytes);
         final Path inputFile = inputDirectory.resolve(inputFileName);
         loadFromFile(inputFile);
-        if(version < ClassVersion.REHASH_LEAVES) {
+        if (version < ClassVersion.REHASH_LEAVES) {
             root.fullLeafRehashIfNecessary();
         }
     }
