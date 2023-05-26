@@ -18,8 +18,8 @@ package com.swirlds.common.threading.framework.config;
 
 import com.swirlds.common.threading.framework.MultiQueueThread;
 import com.swirlds.common.threading.framework.internal.AbstractMultiQueueThreadConfiguration;
+import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.ThreadManager;
-import java.util.function.Consumer;
 
 /**
  * Configures and builds a {@link MultiQueueThread}.
@@ -78,7 +78,7 @@ public class MultiQueueThreadConfiguration
      * {@inheritDoc}
      */
     @Override
-    public <T> MultiQueueThreadConfiguration addHandler(final Class<T> clazz, final Consumer<T> handler) {
+    public <T> MultiQueueThreadConfiguration addHandler(final Class<T> clazz, final InterruptableConsumer<T> handler) {
         return super.addHandler(clazz, handler);
     }
 }

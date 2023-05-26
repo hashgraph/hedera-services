@@ -6,7 +6,7 @@ import java.util.Map;
 
 public interface TaskProcessor extends Component {
 
-	Map<Class<?>, InterruptableConsumer<Object>> getProcessingMethods();
+	Map<Class<?>, InterruptableConsumer<?>> getProcessingMethods();
 
 
 }

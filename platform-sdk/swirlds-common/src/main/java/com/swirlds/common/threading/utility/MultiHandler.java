@@ -15,17 +15,9 @@ public class MultiHandler {
 	/**
 	 * A map of data type to handler for that type.
 	 */
-	private final Map<Class<?>, InterruptableConsumer<Object>> subHandlers;
+	private final Map<Class<?>, InterruptableConsumer<?>> subHandlers;
 
-	@SuppressWarnings("unchecked")
-	public MultiHandler(final List<Pair<Class<?>, InterruptableConsumer<?>>> processingMethods) {
-		this.subHandlers = new HashMap<>();
-		for (Pair<Class<?>, InterruptableConsumer<?>> processingMethod : processingMethods) {
-			subHandlers.put(processingMethod.getLeft(), (InterruptableConsumer<Object>) processingMethod.getRight());
-		}
-	}
-
-	public MultiHandler(final Map<Class<?>, InterruptableConsumer<Object>> subHandlers) {
+	public MultiHandler(final Map<Class<?>, InterruptableConsumer<?>> subHandlers) {
 		this.subHandlers = new HashMap<>(subHandlers);
 	}
 
@@ -39,10 +31,11 @@ public class MultiHandler {
 	 * @param object
 	 * 		the object to be handled
 	 */
+	@SuppressWarnings("unchecked")
 	public void handle(final Object object) throws InterruptedException {
 		Objects.requireNonNull(object, "null objects not supported");
 		final Class<?> clazz = object.getClass();
-		final InterruptableConsumer<Object> handler = subHandlers.get(clazz);
+		final InterruptableConsumer<Object> handler = (InterruptableConsumer<Object>) subHandlers.get(clazz);
 		if (handler == null) {
 			throw new IllegalStateException("no handler for " + clazz);
 		}

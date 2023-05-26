@@ -10,12 +10,12 @@ public interface StringIntProcessor extends TaskProcessor {
 	void number(Integer i) throws InterruptedException;
 
 	@Override
-	default Map<Class<?>, InterruptableConsumer<Object>> getProcessingMethods() {
+	default Map<Class<?>, InterruptableConsumer<?>> getProcessingMethods() {
 		return Map.of(
 				String.class,
-				(InterruptableConsumer<Object>) this::string,
+				(InterruptableConsumer<String>) this::string,
 				Integer.class,
-				(InterruptableConsumer<Object>) this::number
+				(InterruptableConsumer<Integer>) this::number
 		);
 	}
 }

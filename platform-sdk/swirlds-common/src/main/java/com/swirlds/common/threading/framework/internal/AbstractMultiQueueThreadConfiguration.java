@@ -35,7 +35,7 @@ public abstract class AbstractMultiQueueThreadConfiguration<C extends AbstractQu
     /**
      * A map of data type to handler for that type.
      */
-    private final Map<Class<?>, InterruptableConsumer<Object>> subHandlers = new HashMap<>();
+    private final Map<Class<?>, InterruptableConsumer<?>> subHandlers = new HashMap<>();
 
     /**
      * Construct a new instance.
@@ -85,7 +85,7 @@ public abstract class AbstractMultiQueueThreadConfiguration<C extends AbstractQu
      */
     @SuppressWarnings("unchecked")
     protected <T> C addHandler(final Class<T> clazz, final InterruptableConsumer<T> handler) {
-        final InterruptableConsumer<?> prev = subHandlers.put(clazz, (InterruptableConsumer<Object>) handler);
+        final InterruptableConsumer<?> prev = subHandlers.put(clazz, handler);
         if (prev != null) {
             throw new IllegalStateException("Handler already exists for " + clazz);
         }

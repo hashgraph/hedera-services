@@ -68,8 +68,8 @@ public class Components {
 		for (Class<? extends Component> componentsDef : componentsDefs) {
 			if (TaskProcessor.class.isAssignableFrom(componentsDef)) {
 				final TaskProcessor tp = (TaskProcessor) processors.get(componentsDef);
-				final Map<Class<?>, InterruptableConsumer<Object>> processingMethods = tp.getProcessingMethods();
-				final InterruptableConsumer<Object> handler;
+				final Map<Class<?>, InterruptableConsumer<?>> processingMethods = tp.getProcessingMethods();
+				final InterruptableConsumer<?> handler;
 				if (processingMethods.size() == 1) {
 					handler = processingMethods.values().iterator().next();
 				} else {
@@ -78,7 +78,7 @@ public class Components {
 
 				new QueueThreadConfiguration<>(AdHocThreadManager.getStaticThreadManager())
 						.setQueue(Objects.requireNonNull(queues.get(componentsDef)))
-						.setHandler(handler)
+						.setHandler((InterruptableConsumer<Object>) handler)
 						.build(true);
 			}
 		}

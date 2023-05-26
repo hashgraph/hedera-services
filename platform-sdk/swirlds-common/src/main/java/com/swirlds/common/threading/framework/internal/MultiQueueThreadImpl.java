@@ -62,7 +62,7 @@ public class MultiQueueThreadImpl implements MultiQueueThread {
      * 		a function that builds a queue thread
      */
     public MultiQueueThreadImpl(
-            Map<Class<?>, InterruptableConsumer<Object>> subHandlers,
+            Map<Class<?>, InterruptableConsumer<?>> subHandlers,
             final Function<InterruptableConsumer<Object>, QueueThread<Object>> queueThreadBuilder) {
         this.multiHandler = new MultiHandler(subHandlers);
         this.queueThread = queueThreadBuilder.apply(multiHandler::handle);
