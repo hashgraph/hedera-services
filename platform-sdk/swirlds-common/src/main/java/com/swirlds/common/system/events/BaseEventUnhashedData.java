@@ -109,7 +109,7 @@ public class BaseEventUnhashedData implements SelfSerializable {
         final BaseEventUnhashedData that = (BaseEventUnhashedData) o;
 
         return (creatorSeq == that.creatorSeq)
-                && (otherId == that.otherId)
+                && (Objects.equals(otherId, that.otherId))
                 && (otherSeq == that.otherSeq)
                 && Arrays.equals(signature, that.signature);
     }

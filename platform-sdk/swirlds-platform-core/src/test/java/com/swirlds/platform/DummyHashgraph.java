@@ -25,18 +25,18 @@ public class DummyHashgraph {
 
     public int eventIntakeQueueSize;
     public HashMap<NodeId, Boolean> isInCriticalQuorum;
-    public long nodeId;
+    public NodeId selfId;
     public long numUserTransEvents;
     public long lastRoundReceivedAllTransCons;
     public AddressBook addressBook;
 
-    DummyHashgraph() {
+    DummyHashgraph(final NodeId selfId) {
         eventIntakeQueueSize = 0;
         isInCriticalQuorum = new HashMap<>();
-        nodeId = 0;
+        this.selfId = selfId;
         numUserTransEvents = 0;
         lastRoundReceivedAllTransCons = 0;
-        addressBook = new RandomAddressBookGenerator().setSize(5).build();
+        addressBook = new RandomAddressBookGenerator().setSize(100).build();
     }
 
     int getEventIntakeQueueSize() {

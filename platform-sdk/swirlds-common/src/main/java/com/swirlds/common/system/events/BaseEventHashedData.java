@@ -274,7 +274,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
 
         final BaseEventHashedData that = (BaseEventHashedData) o;
 
-        return (creatorId == that.creatorId)
+        return (Objects.equals(creatorId, that.creatorId))
                 && (selfParentGen == that.selfParentGen)
                 && (otherParentGen == that.otherParentGen)
                 && Objects.equals(selfParentHash, that.selfParentHash)

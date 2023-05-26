@@ -41,8 +41,10 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.Utilities;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Random;
 
 /**
@@ -222,7 +224,10 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
      * {ASK,s,p} = ask to sell 1 share of stock s at p cents (where 1 &lt;= p &lt;= 127)
      * </pre>
      */
-    private void handleTransaction(final NodeId id, final boolean isConsensus, final Transaction transaction) {
+    private void handleTransaction(
+            @NonNull final NodeId id, final boolean isConsensus, @NonNull final Transaction transaction) {
+        Objects.requireNonNull(id, "id must not be null");
+        Objects.requireNonNull(transaction, "transaction must not be null");
         if (transaction == null || transaction.getContents().length == 0) {
             return;
         }

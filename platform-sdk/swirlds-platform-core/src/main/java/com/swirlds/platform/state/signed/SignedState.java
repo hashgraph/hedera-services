@@ -617,7 +617,7 @@ public class SignedState implements SignedStateInfo {
 
         final List<NodeId> signaturesToRemove = new ArrayList<>();
         for (final NodeId nodeId : sigSet) {
-            final Address address = trustedAddressBook.getAddress(nodeId);
+            final Address address = trustedAddressBook.contains(nodeId) ? trustedAddressBook.getAddress(nodeId) : null;
             if (!isSignatureValid(address, sigSet.getSignature(nodeId))) {
                 signaturesToRemove.add(nodeId);
             }

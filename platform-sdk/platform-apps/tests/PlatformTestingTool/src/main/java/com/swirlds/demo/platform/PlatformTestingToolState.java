@@ -97,6 +97,7 @@ import com.swirlds.merkle.map.test.pta.MapKey;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.Utilities;
 import com.swirlds.virtualmap.VirtualMap;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.time.Instant;
@@ -768,7 +769,9 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     /**
      * Handle the random bytes transaction type.
      */
-    private void handleBytesTransaction(final TestTransaction testTransaction, final NodeId id) {
+    private void handleBytesTransaction(@NonNull final TestTransaction testTransaction, @NonNull final NodeId id) {
+        Objects.requireNonNull(testTransaction, "testTransaction must not be null");
+        Objects.requireNonNull(id, "id must not be null");
         final int nodeIndex = platform.getAddressBook().getIndexOfNodeId(id);
         final RandomBytesTransaction bytesTransaction = testTransaction.getBytesTransaction();
         if (bytesTransaction.getIsInserSeq()) {
@@ -788,9 +791,12 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
      * Handle the Virtual Merkle transaction type.
      */
     private void handleVirtualMerkleTransaction(
-            final VirtualMerkleTransaction virtualMerkleTransaction,
-            final NodeId id,
-            final Instant consensusTimestamp) {
+            @NonNull final VirtualMerkleTransaction virtualMerkleTransaction,
+            @NonNull final NodeId id,
+            @NonNull final Instant consensusTimestamp) {
+        Objects.requireNonNull(virtualMerkleTransaction, "virtualMerkleTransaction must not be null");
+        Objects.requireNonNull(id, "id must not be null");
+        Objects.requireNonNull(consensusTimestamp, "consensusTimestamp must not be null");
         final int nodeIndex = platform.getAddressBook().getIndexOfNodeId(id);
         VirtualMerkleTransactionHandler.handle(
                 consensusTimestamp,
@@ -817,7 +823,14 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
      * Handle the FCM transaction type.
      */
     private void handleFCMTransaction(
-            final TestTransaction testTransaction, final NodeId id, final Instant timestamp, final boolean invalidSig) {
+            @NonNull final TestTransaction testTransaction,
+            @NonNull final NodeId id,
+            @NonNull final Instant timestamp,
+            final boolean invalidSig) {
+        Objects.requireNonNull(testTransaction, "testTransaction must not be null");
+        Objects.requireNonNull(id, "id must not be null");
+        Objects.requireNonNull(timestamp, "timestamp must not be null");
+
         final int nodeIndex = platform.getAddressBook().getIndexOfNodeId(id);
         final FCMTransaction fcmTransaction = testTransaction.getFcmTransaction();
 
@@ -1019,7 +1032,13 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
      * Handle the control transaction type.
      */
     private void handleControlTransaction(
-            final TestTransaction testTransaction, final NodeId id, final Instant timestamp) {
+            @NonNull final TestTransaction testTransaction,
+            @NonNull final NodeId id,
+            @NonNull final Instant timestamp) {
+        Objects.requireNonNull(testTransaction, "testTransaction must not be null");
+        Objects.requireNonNull(id, "id must not be null");
+        Objects.requireNonNull(timestamp, "timestamp must not be null");
+
         final long nodeIndex = platform.getAddressBook().getIndexOfNodeId(id);
         final ControlTransaction msg = testTransaction.getControlTransaction();
         logger.info(
@@ -1103,11 +1122,11 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     }
 
     private void handleTransaction(
-            final NodeId id,
-            final Instant timeCreated,
-            final Instant timestamp,
-            final ConsensusTransaction trans,
-            final SwirldDualState swirldDualState) {
+            @NonNull final NodeId id,
+            @NonNull final Instant timeCreated,
+            @NonNull final Instant timestamp,
+            @NonNull final ConsensusTransaction trans,
+            @NonNull final SwirldDualState swirldDualState) {
         if (getConfig().isAppendSig()) {
             try {
                 final TestTransactionWrapper testTransactionWrapper =
@@ -1339,9 +1358,9 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
      * If markerPercentage is 15, then should report progress at 15%, 30%, 45%, 60%, 75%, 90% and 100%
      */
     private void logProgress(
-            final NodeId id,
+            @NonNull final NodeId id,
             final int markerPercentage,
-            final PAYLOAD_TYPE type,
+            @NonNull final PAYLOAD_TYPE type,
             final long expectedAmount,
             final long currentAmount) {
         if (markerPercentage != 0 && currentAmount != 0 && expectedAmount != 0) {

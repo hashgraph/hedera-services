@@ -468,7 +468,7 @@ class StateManagementComponentTests {
                 issStateSignatureTransaction(signedState, addressBook.getNodeId(3), otherHash));
 
         assertEquals(signedState.getRound(), issConsumer.getIssRound(), "Incorrect round reported to iss consumer");
-        assertEquals(addressBook.getNodeId(3).id(), issConsumer.getIssNodeId(), "Incorrect other node ISS id reported");
+        assertEquals(addressBook.getNodeId(3), issConsumer.getIssNodeId(), "Incorrect other node ISS id reported");
         assertEquals(
                 IssNotification.IssType.OTHER_ISS,
                 issConsumer.getIssType(),
@@ -505,7 +505,7 @@ class StateManagementComponentTests {
                 issStateSignatureTransaction(signedState, addressBook.getNodeId(3), otherHash));
 
         assertEquals(signedState.getRound(), issConsumer.getIssRound(), "Incorrect round reported to iss consumer");
-        assertEquals(NODE_ID.id(), issConsumer.getIssNodeId(), "ISS should have been reported as self ISS");
+        assertEquals(NODE_ID, issConsumer.getIssNodeId(), "ISS should have been reported as self ISS");
         assertEquals(
                 IssNotification.IssType.SELF_ISS,
                 issConsumer.getIssType(),
