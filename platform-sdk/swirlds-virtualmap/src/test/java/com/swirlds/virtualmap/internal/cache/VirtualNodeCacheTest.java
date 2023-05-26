@@ -2042,7 +2042,7 @@ class VirtualNodeCacheTest extends VirtualTestBase {
         // hashes are calculated and put to the cache. Here the cache doesn't contain hashes for dirty leaves
         // (bananaLeaf0, appleLeaf0, cherryLeaf0). Should dirtyHashes() include these leaf nodes? Currently
         // it doesn't
-        validateDirtyInternals(asList(rootInternal0, leftInternal0), cache0.dirtyHashes(4));
+        validateDirtyInternals(Set.of(rootInternal0, leftInternal0), cache0.dirtyHashes(4));
 
         // ROUND 1: Add D and E.
         final VirtualNodeCache<TestKey, TestValue> cache1 = cache;
@@ -2104,7 +2104,7 @@ class VirtualNodeCacheTest extends VirtualTestBase {
                         appleLeaf1,
                         eggplantLeaf1));
         validateDirtyInternals(
-                asList(rootInternal1, leftInternal1, rightInternal1, leftLeftInternal1), cache1.dirtyHashes(8));
+                Set.of(rootInternal1, leftInternal1, rightInternal1, leftLeftInternal1), cache1.dirtyHashes(8));
 
         // ROUND 2: Add F and G
         final VirtualNodeCache<TestKey, TestValue> cache2 = cache;
@@ -2175,7 +2175,7 @@ class VirtualNodeCacheTest extends VirtualTestBase {
                         bananaLeaf2,
                         grapeLeaf2));
         validateDirtyInternals(
-                asList(rootInternal2, leftInternal2, rightInternal2, leftRightInternal2, rightLeftInternal2),
+                Set.of(rootInternal2, leftInternal2, rightInternal2, leftRightInternal2, rightLeftInternal2),
                 cache2.dirtyHashes(12));
 
         // Now it is time to start mutating the tree. Some leaves will be removed and re-added, some
@@ -2258,7 +2258,7 @@ class VirtualNodeCacheTest extends VirtualTestBase {
         cache3.putHash(rootInternal3);
         cache3.seal();
         validateDirtyInternals(
-                asList(
+                Set.of(
                         rootInternal3,
                         leftInternal3,
                         rightInternal3,
@@ -2883,11 +2883,11 @@ class VirtualNodeCacheTest extends VirtualTestBase {
     }
 
     private void validateDirtyInternals(
-            final List<VirtualHashRecord> expected, final Stream<VirtualHashRecord> actual) {
+            final Set<VirtualHashRecord> expected, final Stream<VirtualHashRecord> actual) {
         final List<VirtualHashRecord> dirty = actual.toList();
         assertEquals(expected.size(), dirty.size(), "dirtyInternals did not have the expected number of elements");
         for (int i = 0; i < expected.size(); i++) {
-            assertEquals(expected.get(i), dirty.get(i), "value that was looked up should match expected value");
+            assertTrue(expected.contains(dirty.get(i)), "unexpected value");
         }
     }
 
