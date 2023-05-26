@@ -21,6 +21,7 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.system.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Duration;
@@ -53,7 +54,7 @@ public class PlannedIss implements SelfSerializable, PlannedIncident {
      * state hash. Any two nodes not in the same partition will disagree on the state hash after the ISS has been
      * triggered.
      */
-    private List<List<Long>> hashPartitions = new ArrayList<>();
+    private List<List<NodeId>> hashPartitions = new ArrayList<>();
 
     /**
      * Zero arg constructor for the constructable registry.
@@ -67,7 +68,7 @@ public class PlannedIss implements SelfSerializable, PlannedIncident {
      * @param hashPartitions   a list of ISS partitions, each partition list should be a list of node IDs that will
      *                         agree with each other on the hash of the post-ISS state
      */
-    public PlannedIss(final Duration timeAfterGenesis, final List<List<Long>> hashPartitions) {
+    public PlannedIss(final Duration timeAfterGenesis, final List<List<NodeId>> hashPartitions) {
         this.timeAfterGenesis = timeAfterGenesis;
         this.hashPartitions = hashPartitions;
     }
@@ -96,8 +97,8 @@ public class PlannedIss implements SelfSerializable, PlannedIncident {
         out.writeLong(timeAfterGenesis.toNanos());
 
         out.writeInt(hashPartitions.size());
-        for (final List<Long> partition : hashPartitions) {
-            out.writeLongList(partition);
+        for (final List<NodeId> partition : hashPartitions) {
+            out.writeSerializableList(partition, false, true);
         }
     }
 
@@ -111,7 +112,7 @@ public class PlannedIss implements SelfSerializable, PlannedIncident {
         hashPartitions.clear();
         final int partitionCount = in.readInt();
         for (int partitionIndex = 0; partitionIndex < partitionCount; partitionIndex++) {
-            hashPartitions.add(in.readLongList(1024));
+            hashPartitions.add(in.readSerializableList(1024, false, NodeId::new));
         }
     }
 
@@ -147,11 +148,11 @@ public class PlannedIss implements SelfSerializable, PlannedIncident {
      * @param nodeId the ID of the node
      * @return the partition of the node
      */
-    public int getPartitionOfNode(final long nodeId) {
+    public int getPartitionOfNode(@NonNull final NodeId nodeId) {
         for (int partitionIndex = 0; partitionIndex < hashPartitions.size(); partitionIndex++) {
-            final List<Long> partition = hashPartitions.get(partitionIndex);
-            for (final Long partitionNode : partition) {
-                if (nodeId == partitionNode) {
+            final List<NodeId> partition = hashPartitions.get(partitionIndex);
+            for (final NodeId partitionNode : partition) {
+                if (nodeId.equals(partitionNode)) {
                     return partitionIndex;
                 }
             }
@@ -207,14 +208,14 @@ public class PlannedIss implements SelfSerializable, PlannedIncident {
         final String partitionsString = timestampAndPartitionsStrings[1];
         final String[] partitionStrings = partitionsString.split("-");
 
-        final Set<Long> uniqueNodeIds = new HashSet<>();
-        final List<List<Long>> partitions = new ArrayList<>(partitionStrings.length);
+        final Set<NodeId> uniqueNodeIds = new HashSet<>();
+        final List<List<NodeId>> partitions = new ArrayList<>(partitionStrings.length);
         for (final String partitionString : partitionStrings) {
             final String[] nodeStrings = partitionString.split("\\+");
 
-            final List<Long> nodes = new ArrayList<>();
+            final List<NodeId> nodes = new ArrayList<>();
             for (final String nodeString : nodeStrings) {
-                final long nodeId = Long.parseLong(nodeString);
+                final NodeId nodeId = new NodeId(Long.parseLong(nodeString));
                 nodes.add(nodeId);
                 if (!uniqueNodeIds.add(nodeId)) {
                     logger.error(EXCEPTION.getMarker(), "Node {} appears more than once in ISS description!", nodeId);

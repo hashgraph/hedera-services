@@ -64,7 +64,7 @@ public record ISSTestingToolConfig(
     public List<PlannedLogError> getPlannedLogErrors() {
         final List<PlannedLogError> parsedPlannedLogErrors = new LinkedList<>();
 
-        for (final String plannedLogErrorString : plannedISSs()) {
+        for (final String plannedLogErrorString : plannedLogErrors()) {
             parsedPlannedLogErrors.add(PlannedLogError.fromString(plannedLogErrorString));
         }
 

@@ -36,6 +36,7 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.system.InitTrigger;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SoftwareVersion;
@@ -76,7 +77,7 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
      */
     private static final Duration INCIDENT_WINDOW = Duration.ofSeconds(10);
 
-    private long selfId;
+    private NodeId selfId;
 
     /**
      * The true "state" of this app. Each transaction is just an integer that gets added to this value.
@@ -153,7 +154,7 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
             this.plannedLogErrorList = testingToolConfig.getPlannedLogErrors();
         }
 
-        this.selfId = platform.getSelfId().id();
+        this.selfId = platform.getSelfId();
     }
 
     /**
@@ -309,6 +310,11 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
 
         Objects.requireNonNull(plannedLogError);
         Objects.requireNonNull(elapsedSinceGenesis);
+
+        if (!plannedLogError.getNodeIds().contains(selfId)) {
+            // don't log if this node isn't in the list of nodes that should log
+            return;
+        }
 
         logger.error(
                 STARTUP.getMarker(),

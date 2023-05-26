@@ -19,9 +19,13 @@ package com.swirlds.demo.iss;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.system.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Describes an error which will be logged at a predetermined consensus time after genesis
@@ -35,6 +39,11 @@ public class PlannedLogError implements SelfSerializable, PlannedIncident {
     private Duration timeAfterGenesis;
 
     /**
+     * The node IDs of the nodes that the error should be logged on
+     */
+    private List<NodeId> nodeIds;
+
+    /**
      * Zero arg constructor for the constructable registry.
      */
     public PlannedLogError() {}
@@ -44,8 +53,9 @@ public class PlannedLogError implements SelfSerializable, PlannedIncident {
      *
      * @param timeAfterGenesis the time after genesis that the error should be written to the log at
      */
-    public PlannedLogError(@NonNull final Duration timeAfterGenesis) {
+    public PlannedLogError(@NonNull final Duration timeAfterGenesis, @NonNull final List<NodeId> nodeIds) {
         this.timeAfterGenesis = timeAfterGenesis;
+        this.nodeIds = nodeIds;
     }
 
     /**
@@ -54,6 +64,7 @@ public class PlannedLogError implements SelfSerializable, PlannedIncident {
     @Override
     public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
         out.writeLong(timeAfterGenesis.toNanos());
+        out.writeSerializableList(nodeIds, false, true);
     }
 
     /**
@@ -62,6 +73,7 @@ public class PlannedLogError implements SelfSerializable, PlannedIncident {
     @Override
     public void deserialize(@NonNull final SerializableDataInputStream in, final int version) throws IOException {
         timeAfterGenesis = Duration.ofNanos(in.readLong());
+        nodeIds = in.readSerializableList(1024, false, NodeId::new);
     }
 
     private static final class ClassVersion {
@@ -85,14 +97,31 @@ public class PlannedLogError implements SelfSerializable, PlannedIncident {
     }
 
     /**
-     * Input string will be of form "secondsAfterGenesis", where secondsAfterGenesis is an int
+     * Create a new PlannedLogError from a string
+     * <p>
+     * String example:
+     * <p>
+     * "100:1-2-3"
+     * <p>
+     * Where the first number is the number of seconds after genesis that the error should be logged at, and the list of
+     * numbers following the ":" are the node IDs of the nodes that the error should be logged on
      *
      * @param plannedLogErrorString the string to parse
      * @return the parsed PlannedLogError
      */
     @NonNull
     public static PlannedLogError fromString(@NonNull final String plannedLogErrorString) {
-        return new PlannedLogError(Duration.ofSeconds(Integer.parseInt(plannedLogErrorString)));
+        final String[] timestampAndNodesStrings = plannedLogErrorString.strip().split(":");
+
+        final int elapsedSeconds = Integer.parseInt(timestampAndNodesStrings[0]);
+        final String[] nodeIdsStrings = timestampAndNodesStrings[1].split("-");
+
+        final List<NodeId> nodeIds = new ArrayList<>();
+        for (final String nodeIdString : nodeIdsStrings) {
+            nodeIds.add(new NodeId(Integer.parseInt(nodeIdString)));
+        }
+
+        return new PlannedLogError(Duration.ofSeconds(elapsedSeconds), nodeIds);
     }
 
     /**
@@ -111,5 +140,15 @@ public class PlannedLogError implements SelfSerializable, PlannedIncident {
     @Override
     public String getDescriptor() {
         return "Log Error";
+    }
+
+    /**
+     * Get the IDs of the nodes that the error should be logged on
+     *
+     * @return the IDs of the nodes that the error should be logged on
+     */
+    @NonNull
+    public List<NodeId> getNodeIds() {
+        return Collections.unmodifiableList(nodeIds);
     }
 }
