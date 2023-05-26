@@ -325,6 +325,10 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
                                     k -> b.setAdminKey(spec.registry().getKey(k)));
                             freezeKey.ifPresent(
                                     k -> b.setFreezeKey(spec.registry().getKey(k)));
+                            // We often want to use an existing contract to control the supply of a token, and
+                            // in this case we need to use a Key{contractID=0.0.X} as the supply key; so for
+                            // convenience we have a special case and allow the user to specify the name of the
+                            // contract it should use from the registry to create this special key.
                             if (supplyKeyIsContractReference) {
                                 final var contractId = spec.registry().getContractId(supplyKey.get());
                                 final var contractKey = Key.newBuilder()

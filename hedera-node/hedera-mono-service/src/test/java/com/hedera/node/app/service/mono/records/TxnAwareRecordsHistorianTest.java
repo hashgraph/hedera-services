@@ -519,7 +519,8 @@ class TxnAwareRecordsHistorianTest {
         verify(handleThrottling).resetUsageThrottlesTo(pretendSnapshots);
     }
 
-    private void doTrack(final ResponseCodeEnum status, @NonNull final Consumer<TransactionBody.Builder> synthSpec) {
+    private void doTrack(
+            @NonNull final ResponseCodeEnum status, @NonNull final Consumer<TransactionBody.Builder> synthSpec) {
         final var body = TransactionBody.newBuilder();
         synthSpec.accept(body);
         final var matchingRecord = ExpirableTxnRecord.newBuilder()

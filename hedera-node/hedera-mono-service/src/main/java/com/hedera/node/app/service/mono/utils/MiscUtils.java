@@ -195,6 +195,7 @@ import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.fcqueue.FCQueue;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -913,7 +914,7 @@ public final class MiscUtils {
      * @param syntheticOp the synthetic op
      * @return an accessor for the synthetic op
      */
-    public static TxnAccessor synthAccessorFor(final TransactionBody.Builder syntheticOp) {
+    public static @NonNull TxnAccessor synthAccessorFor(@NonNull final TransactionBody.Builder syntheticOp) {
         final var signedTxn = SignedTransaction.newBuilder()
                 .setBodyBytes(syntheticOp.build().toByteString())
                 .setSigMap(SignatureMap.getDefaultInstance())

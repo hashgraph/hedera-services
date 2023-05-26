@@ -1295,10 +1295,10 @@ class DeterministicThrottlingTest {
                 DeterministicThrottle.withMtpsAndBurstPeriod(5_000, 2),
                 DeterministicThrottle.withMtpsAndBurstPeriod(50_000, 3),
                 DeterministicThrottle.withMtpsAndBurstPeriod(5000, 4));
-        useSomeFromEach(expected);
+        useDeterministicAmountFromEach(expected);
 
         subject.rebuildFor(defs);
-        useSomeFromEach(subject.allActiveThrottles());
+        useDeterministicAmountFromEach(subject.allActiveThrottles());
 
         final var actual = subject.getUsageSnapshots();
         for (int i = 0; i < 4; i++) {
@@ -1317,14 +1317,14 @@ class DeterministicThrottlingTest {
                 DeterministicThrottle.withMtpsAndBurstPeriod(5_000, 2),
                 DeterministicThrottle.withMtpsAndBurstPeriod(50_000, 3),
                 DeterministicThrottle.withMtpsAndBurstPeriod(5000, 4));
-        useSomeFromEach(expected);
+        useDeterministicAmountFromEach(expected);
 
         subject.rebuildFor(defs);
-        useSomeFromEach(subject.allActiveThrottles());
+        useDeterministicAmountFromEach(subject.allActiveThrottles());
         final var snapshot = subject.getUsageSnapshots();
-        useSomeFromEach(subject.allActiveThrottles());
-        useSomeFromEach(subject.allActiveThrottles());
-        useSomeFromEach(subject.allActiveThrottles());
+        useDeterministicAmountFromEach(subject.allActiveThrottles());
+        useDeterministicAmountFromEach(subject.allActiveThrottles());
+        useDeterministicAmountFromEach(subject.allActiveThrottles());
         subject.resetUsageThrottlesTo(snapshot);
 
         final var actual = subject.getUsageSnapshots();
@@ -1735,7 +1735,7 @@ class DeterministicThrottlingTest {
             .setEd25519(ByteString.copyFromUtf8("01234567890123456789012345678901"))
             .build();
 
-    private void useSomeFromEach(final List<DeterministicThrottle> throttles) {
+    private void useDeterministicAmountFromEach(final List<DeterministicThrottle> throttles) {
         final var now = Instant.ofEpochSecond(1_234_567L);
         for (int i = 0; i < throttles.size(); i++) {
             throttles.get(i).allow(i + 1, now);
