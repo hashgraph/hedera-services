@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
@@ -85,9 +85,13 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
         // update account must exist. Validated in pureChecks
         final var updateAccountId = op.accountIDToUpdateOrThrow();
 
-        // add required keys to sign
-        final var newAccountKeyMustSign = !waivers.isNewKeySignatureWaived(txn, payer);
+        // 1. When updating the treasury account 0.0.2 key, the target account must also sign the transaction
+        // 2. When updating treasury account 0.0.2, even if system admin is the payer for the transaction,
+        // the target account must sign the transaction
+        // 3. If the payer for the transaction is 0.0.2 or system admin, then no signatures are needed for the update
         final var targetAccountKeyMustSign = !waivers.isTargetAccountSignatureWaived(txn, payer);
+        // 4. Including above 3 conditions, if the target account is 0.0.2, new key must sign the transaction
+        final var newAccountKeyMustSign = !waivers.isNewKeySignatureWaived(txn, payer);
         if (targetAccountKeyMustSign) {
             context.requireKeyOrThrow(updateAccountId, INVALID_ACCOUNT_ID);
         }
@@ -188,9 +192,12 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
         final var currentMetadata = new ExpiryMeta(
                 updateAccount.expiry(), updateAccount.autoRenewSecs(), updateAccount.autoRenewAccountNumber());
         final var updateMeta = new ExpiryMeta(
-                op.expirationTime().seconds(), op.autoRenewPeriod().seconds(), NA);
-        final var resolvedMeta = context.expiryValidator().resolveUpdateAttempt(currentMetadata, updateMeta);
+                op.hasExpirationTime() ? op.expirationTime().seconds() : NA,
+                op.hasAutoRenewPeriod() ? op.autoRenewPeriod().seconds() : NA,
+                NA);
+        context.expiryValidator().resolveUpdateAttempt(currentMetadata, updateMeta);
 
+        // check if account is expired and pending removal
         validateTrue(
                 expiryValidator.isDetached(
                                 EntityType.ACCOUNT,
@@ -199,10 +206,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
                         && builderAccount.expiry() != 0,
                 ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 
-        if (builderAccount.expiry() != 0) {
-            validateFalse(op.expirationTime().seconds() < updateAccount.expiry(), EXPIRATION_REDUCTION_NOT_ALLOWED);
-        }
-
+        // validate auto associations
         if (builderAccount.maxAutoAssociations() != 0) {
             final long newMax = builderAccount.maxAutoAssociations();
             validateFalse(
@@ -214,5 +218,8 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
                     entitiesConfig.limitTokenAssociations() && newMax > tokensConfig.maxPerAccount(),
                     REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
         }
+
+        // validate if account is not deleted
+        validateFalse(updateAccount.deleted(), ACCOUNT_DELETED);
     }
 }
