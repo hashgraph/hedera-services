@@ -1,14 +1,23 @@
-package com.swirlds.platform.poc.framework;
+package com.swirlds.platform.componentframework.framework;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.util.concurrent.BlockingQueue;
 
 public class QueueSubmitter implements InvocationHandler {
 	private final BlockingQueue<Object> queue;
 
-	public QueueSubmitter(final BlockingQueue<Object> queue) {
+	private QueueSubmitter(final BlockingQueue<Object> queue) {
 		this.queue = queue;
+	}
+
+	@SuppressWarnings("unchecked")
+	public static <T> T create(final Class<T> clazz, final BlockingQueue<Object> queue) {
+		return (T) Proxy.newProxyInstance(
+				QueueSubmitter.class.getClassLoader(),
+				new Class[] { clazz },
+				new QueueSubmitter(queue));
 	}
 
 	@Override

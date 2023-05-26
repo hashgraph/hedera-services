@@ -1,13 +1,13 @@
-package com.swirlds.platform.poc;
+package com.swirlds.platform.componentframework;
 
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
-import com.swirlds.platform.poc.framework.Component;
+import com.swirlds.platform.componentframework.framework.Component;
 import com.swirlds.common.threading.utility.MultiHandler;
-import com.swirlds.platform.poc.framework.MultiTaskProcessor;
-import com.swirlds.platform.poc.framework.QueueSubmitter;
-import com.swirlds.platform.poc.framework.TaskProcessor;
+import com.swirlds.platform.componentframework.framework.MultiTaskProcessor;
+import com.swirlds.platform.componentframework.framework.QueueSubmitter;
+import com.swirlds.platform.componentframework.framework.TaskProcessor;
 
 import java.lang.reflect.Proxy;
 import java.util.HashMap;
@@ -17,27 +17,22 @@ import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-public class Wiring {
+public class Components {
 	private final List<Class<? extends Component>> componentsDefs;
 	private final Map<Class<? extends Component>, BlockingQueue<Object>> queues;
 	private final Map<Class<? extends Component>, Component> processors;
 	private final Map<Class<? extends Component>, Object> facades;
 
-	public Wiring(final List<Class<? extends Component>> componentsDefs) {
+	public Components(final List<Class<? extends Component>> componentsDefs) {
 		this.componentsDefs = componentsDefs;
 		queues = new HashMap<>();
 		processors = new HashMap<>();
 		facades = new HashMap<>();
 
 		for (Class<? extends Component> component : componentsDefs) {
-			if (TaskProcessor.class.isAssignableFrom(component)
-			|| MultiTaskProcessor.class.isAssignableFrom(component)) {
+			if (TaskProcessor.class.isAssignableFrom(component)) {
 				BlockingQueue<Object> queue = new LinkedBlockingQueue<>();
-				Object proxy = Proxy.newProxyInstance(
-						Wiring.class.getClassLoader(),
-						new Class[] { component },
-						new QueueSubmitter(queue));
-				facades.put(component, proxy);
+				facades.put(component, QueueSubmitter.create(component, queue));
 				queues.put(component, queue);
 			}
 		}
@@ -56,7 +51,7 @@ public class Wiring {
 	}
 
 	public <T extends Component> void addImplementation(T component, Class<T> componentClass){
-		if (component instanceof TaskProcessor || component instanceof MultiTaskProcessor) {
+		if (component instanceof TaskProcessor) {
 			processors.put(componentClass, component);
 		} else {
 			facades.put(componentClass, component);
@@ -72,19 +67,18 @@ public class Wiring {
 	public void start(){
 		for (Class<? extends Component> componentsDef : componentsDefs) {
 			if (TaskProcessor.class.isAssignableFrom(componentsDef)) {
-				TaskProcessor tp = (TaskProcessor) processors.get(componentsDef);
-				new QueueThreadConfiguration<>(AdHocThreadManager.getStaticThreadManager())
-						.setQueue(Objects.requireNonNull(queues.get(componentsDef)))
-						.setHandler((InterruptableConsumer<Object>) tp.getProcessingMethod())
-						.build(true);
-			}
+				final TaskProcessor tp = (TaskProcessor) processors.get(componentsDef);
+				final Map<Class<?>, InterruptableConsumer<Object>> processingMethods = tp.getProcessingMethods();
+				final InterruptableConsumer<Object> handler;
+				if (processingMethods.size() == 1) {
+					handler = processingMethods.values().iterator().next();
+				} else {
+					handler = new MultiHandler(processingMethods)::handle;
+				}
 
-			if (MultiTaskProcessor.class.isAssignableFrom(componentsDef)) {
-				MultiTaskProcessor tp = (MultiTaskProcessor) processors.get(componentsDef);
-				MultiHandler mh = new MultiHandler(tp.getProcessingMethods());
 				new QueueThreadConfiguration<>(AdHocThreadManager.getStaticThreadManager())
 						.setQueue(Objects.requireNonNull(queues.get(componentsDef)))
-						.setHandler(mh::handle)
+						.setHandler(handler)
 						.build(true);
 			}
 		}

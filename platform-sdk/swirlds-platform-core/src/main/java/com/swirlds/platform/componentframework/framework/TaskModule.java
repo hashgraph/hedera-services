@@ -1,4 +1,4 @@
-package com.swirlds.platform.poc.framework;
+package com.swirlds.platform.componentframework.framework;
 
 import java.util.List;
 
