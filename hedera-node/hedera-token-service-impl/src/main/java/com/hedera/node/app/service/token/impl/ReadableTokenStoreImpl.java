@@ -26,7 +26,6 @@ import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Optional;
@@ -44,18 +43,27 @@ public class ReadableTokenStoreImpl implements ReadableTokenStore {
      * @param states The state to use.
      */
     public ReadableTokenStoreImpl(@NonNull final ReadableStates states) {
-        this.tokenState = states.get("TOKENS");
+        requireNonNull(states);
+        this.tokenState = states.get(TokenServiceImpl.TOKENS_KEY);
     }
 
+    // FUTURE: remove this method and the TokenMetadata object entirely
     @Override
     @Nullable
-    public TokenMetadata getTokenMeta(@NonNull final TokenID id) throws PreCheckException {
+    public TokenMetadata getTokenMeta(@NonNull final TokenID id) {
         requireNonNull(id);
         final var token = getTokenLeaf(id.tokenNum());
         if (token.isEmpty()) {
             return null;
         }
         return tokenMetaFrom(token.get());
+    }
+
+    @Override
+    @Nullable
+    public Token get(@NonNull final TokenID id) {
+        requireNonNull(id);
+        return getTokenLeaf(id.tokenNum()).orElse(null);
     }
 
     private TokenMetadata tokenMetaFrom(final Token token) {

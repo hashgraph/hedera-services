@@ -52,8 +52,8 @@ public class TestJasperDbSettings implements JasperDbSettings {
      * {@inheritDoc}
      */
     @Override
-    public long getInternalHashesRamToDiskThreshold() {
-        return defaultSettings.getInternalHashesRamToDiskThreshold();
+    public long getHashesRamToDiskThreshold() {
+        return defaultSettings.getHashesRamToDiskThreshold();
     }
 
     /**

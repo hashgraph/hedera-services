@@ -21,16 +21,14 @@ import static java.util.Objects.requireNonNull;
 import com.google.common.math.IntMath;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.util.UtilPrngTransactionBody;
-import com.hedera.node.app.service.network.ReadableRunningHashLeafStore;
-import com.hedera.node.app.service.util.impl.config.PrngConfig;
-import com.hedera.node.app.service.util.impl.records.UtilPrngRecordBuilder;
-import com.hedera.node.app.service.util.records.PrngRecordBuilder;
-import com.hedera.node.app.spi.meta.HandleContext;
+import com.hedera.node.app.service.networkadmin.ReadableRunningHashLeafStore;
+import com.hedera.node.app.service.util.impl.records.PrngRecordBuilder;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.config.data.UtilPrngConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
@@ -73,20 +71,20 @@ public class UtilPrngHandler implements TransactionHandler {
     /**
      * {@inheritDoc}
      */
-    public void handle(
-            @NonNull final HandleContext context,
-            @NonNull final UtilPrngTransactionBody op,
-            @NonNull final PrngConfig prngConfig,
-            @NonNull final PrngRecordBuilder recordBuilder) {
+    public void handle(@NonNull final HandleContext context) {
+        requireNonNull(context);
+
+        final var op = context.body().utilPrngOrThrow();
         final var range = op.range();
 
         // TODO: This check should probably be moved into app
-        if (!prngConfig.prngEnabled()) {
+        final var config = context.configuration().getConfigData(UtilPrngConfig.class);
+        if (!config.isEnabled()) {
             return;
         }
         // get the n-3 running hash. If the running hash is not available, will throw a
         // HandleException
-        final var runningHashStore = context.createReadableStore(ReadableRunningHashLeafStore.class);
+        final var runningHashStore = context.readableStore(ReadableRunningHashLeafStore.class);
         final var nMinusThreeRunningHash = runningHashStore.getNMinusThreeRunningHash();
         final byte[] pseudoRandomBytes = getNMinus3RunningHashBytes(nMinusThreeRunningHash);
 
@@ -96,20 +94,13 @@ public class UtilPrngHandler implements TransactionHandler {
         }
         // If range is provided then generate a random number in the given range
         // from the pseudoRandomBytes
+        final var recordBuilder = context.recordBuilder(PrngRecordBuilder.class);
         if (range > 0) {
             final int pseudoRandomNumber = randomNumFromBytes(pseudoRandomBytes, range);
-            recordBuilder.setPrngNumber(pseudoRandomNumber);
+            recordBuilder.entropyNumber(pseudoRandomNumber);
         } else {
-            recordBuilder.setPrngBytes(Bytes.wrap(pseudoRandomBytes));
+            recordBuilder.entropyBytes(Bytes.wrap(pseudoRandomBytes));
         }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public PrngRecordBuilder newRecordBuilder() {
-        return new UtilPrngRecordBuilder();
     }
 
     /**

@@ -672,18 +672,6 @@ class BasicTransactionContextTest {
     }
 
     @Test
-    void addsExpiringEntities() {
-        // given:
-        var expected = Collections.singletonList(expiringEntity);
-
-        // when:
-        subject.addExpiringEntities(expected);
-
-        // then:
-        assertEquals(subject.expiringEntities(), expected);
-    }
-
-    @Test
     void throwsIfAccessorIsAlreadyTriggered() {
         given(accessor.isTriggeredTxn()).willReturn(true);
         assertThrows(IllegalStateException.class, () -> subject.trigger(accessor));

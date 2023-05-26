@@ -17,9 +17,8 @@
 package com.swirlds.benchmark;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.common.crypto.DigestType;
 import com.swirlds.jasperdb.JasperDbBuilder;
-import com.swirlds.jasperdb.VirtualInternalRecordSerializer;
+import com.swirlds.jasperdb.VirtualHashRecordSerializer;
 import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
 import com.swirlds.virtualmap.VirtualMap;
 import org.openjdk.jmh.annotations.Setup;
@@ -36,8 +35,6 @@ public class CryptoBenchJPDB extends CryptoBench {
         final VirtualLeafRecordSerializer<BenchmarkKey, BenchmarkValue> virtualLeafRecordSerializer =
                 new VirtualLeafRecordSerializer<>(
                         (short) 1,
-                        DigestType.SHA_384,
-                        (short) 1,
                         BenchmarkKey.getSerializedSize(),
                         new BenchmarkKeySupplier(),
                         (short) 1,
@@ -47,7 +44,7 @@ public class CryptoBenchJPDB extends CryptoBench {
         final JasperDbBuilder<BenchmarkKey, BenchmarkValue> diskDbBuilder = new JasperDbBuilder<>();
         diskDbBuilder
                 .virtualLeafRecordSerializer(virtualLeafRecordSerializer)
-                .virtualInternalRecordSerializer(new VirtualInternalRecordSerializer())
+                .virtualInternalRecordSerializer(new VirtualHashRecordSerializer())
                 .keySerializer(new BenchmarkKeySerializer())
                 .storageDir(getTestDir().resolve("jasperdb"))
                 .preferDiskBasedIndexes(false);

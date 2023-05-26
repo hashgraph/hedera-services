@@ -18,6 +18,7 @@ package com.swirlds.common.system.address;
 
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
+import com.swirlds.common.system.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.stream.IntStream;
@@ -78,7 +79,7 @@ public final class AddressBookValidator {
      */
     public static boolean validNextId(final AddressBook previousAddressBook, final AddressBook addressBook) {
 
-        if (previousAddressBook.getNextNodeId() > addressBook.getNextNodeId()) {
+        if (previousAddressBook.getNextNodeId().compareTo(addressBook.getNextNodeId()) > 0) {
             logger.error(
                     EXCEPTION.getMarker(),
                     "Invalid next node ID. Previous address book has a next node ID of {}, "
@@ -102,10 +103,10 @@ public final class AddressBookValidator {
      */
     public static boolean noAddressReinsertion(final AddressBook previousAddressBook, final AddressBook addressBook) {
 
-        final long previousNextId = previousAddressBook.getNextNodeId();
+        final NodeId previousNextId = previousAddressBook.getNextNodeId();
         for (final Address address : addressBook) {
-            final long nodeId = address.getId();
-            if (nodeId < previousNextId && !previousAddressBook.contains(nodeId)) {
+            final NodeId nodeId = address.getNodeId();
+            if (nodeId.compareTo(previousNextId) < 0 && !previousAddressBook.contains(nodeId)) {
                 logger.error(
                         EXCEPTION.getMarker(),
                         "Once an address is removed or a node ID is skipped, "
@@ -168,8 +169,8 @@ public final class AddressBookValidator {
         }
         return IntStream.range(0, addressBookSize)
                 .mapToObj(i -> {
-                    final long nodeId1 = addressBook1.getId(i);
-                    final long nodeId2 = addressBook2.getId(i);
+                    final NodeId nodeId1 = addressBook1.getNodeId(i);
+                    final NodeId nodeId2 = addressBook2.getNodeId(i);
                     final Address address1 = addressBook1.getAddress(nodeId1);
                     final Address address2 = addressBook2.getAddress(nodeId2);
                     if (address1 == null || address2 == null) {

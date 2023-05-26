@@ -22,10 +22,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.node.app.DaggerHederaApp;
-import com.hedera.node.app.HederaApp;
-import com.hedera.node.app.components.QueryComponent;
+import com.hedera.node.app.DaggerHederaInjectionComponent;
+import com.hedera.node.app.HederaInjectionComponent;
+import com.hedera.node.app.components.QueryInjectionComponent;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -35,7 +36,6 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.gui.SwirldsGui;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -51,34 +51,38 @@ class QueryComponentTest {
     @Mock
     private Platform platform;
 
-    private HederaApp app;
+    private HederaInjectionComponent app;
 
     @BeforeEach
     void setUp() {
-        final var selfNodeId = new NodeId(false, 666L);
-        Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
-        PlatformContext platformContext = mock(PlatformContext.class);
+        final var selfNodeId = new NodeId(666L);
+        final Configuration configuration = new HederaTestConfigBuilder().getOrCreateConfig();
+        final PlatformContext platformContext = mock(PlatformContext.class);
         when(platformContext.getConfiguration()).thenReturn(configuration);
         when(platform.getContext()).thenReturn(platformContext);
         when(platformContext.getCryptography()).thenReturn(cryptography);
-        app = DaggerHederaApp.builder()
+        app = DaggerHederaInjectionComponent.builder()
                 .initTrigger(InitTrigger.GENESIS)
                 .platform(platform)
                 .crypto(CryptographyHolder.get())
                 .consoleCreator(SwirldsGui::createConsole)
                 .staticAccountMemo("memo")
                 .bootstrapProps(new BootstrapProperties())
-                .selfId(AccountID.newBuilder().accountNum(selfNodeId.getId()).build())
+                .selfId(AccountID.newBuilder()
+                        .accountNum(selfNodeId.getIdAsInt())
+                        .build())
                 .initialHash(new Hash())
                 .maxSignedTxnSize(1024)
+                .genesisUsage(false)
                 .build();
     }
 
     @Test
     void objectGraphRootsAreAvailable() {
-        given(platform.getSelfId()).willReturn(new NodeId(false, 0L));
+        given(platform.getSelfId()).willReturn(new NodeId(0L));
 
-        final QueryComponent subject = app.queryComponentFactory().get().create();
+        final QueryInjectionComponent subject =
+                app.queryComponentFactory().get().create();
 
         assertNotNull(subject.queryWorkflow());
     }

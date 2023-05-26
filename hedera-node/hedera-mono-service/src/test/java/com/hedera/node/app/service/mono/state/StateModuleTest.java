@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.service.mono.state;
 
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_GENESIS_PUBLIC_KEY;
 import static com.hedera.node.app.service.mono.state.StateModule.provideStateViews;
-import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_GENESIS_PUBLIC_KEY;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -65,7 +65,7 @@ class StateModuleTest {
     @Mock
     private BalancesExporter balancesExporter;
 
-    private final NodeId nodeId = new NodeId(false, 0);
+    private final NodeId nodeId = new NodeId(0);
 
     @Test
     void providesDefaultCharset() {

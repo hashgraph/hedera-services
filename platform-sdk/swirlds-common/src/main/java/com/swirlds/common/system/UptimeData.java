@@ -40,7 +40,7 @@ public interface UptimeData {
      * consensus event from the given node has ever been received
      */
     @Nullable
-    Instant getLastEventTime(final long id);
+    Instant getLastEventTime(@NonNull final NodeId id);
 
     /**
      * Get the round when the most recent consensus event from the given node was observed, or {@link #NO_ROUND} if no
@@ -50,7 +50,7 @@ public interface UptimeData {
      * @return the round when the most recent consensus event from the given node was observed, or {@link #NO_ROUND} if
      * no consensus event from the given node has ever been observed
      */
-    long getLastEventRound(final long id);
+    long getLastEventRound(@NonNull final NodeId id);
 
     /**
      * Get the consensus time when the most recent judge from the given node was observed, or null if no judge from the
@@ -60,7 +60,7 @@ public interface UptimeData {
      * @return the consensus time when the most recent judge from the given node was observed, or null if no judge
      */
     @Nullable
-    Instant getLastJudgeTime(final long id);
+    Instant getLastJudgeTime(@NonNull final NodeId id);
 
     /**
      * Get the round when the most recent judge from the given node was observed, or {@link #NO_ROUND} if no judge from
@@ -70,7 +70,7 @@ public interface UptimeData {
      * @return the round when the most recent judge from the given node was observed, or {@link #NO_ROUND} if no judge
      * from the given node has ever been observed
      */
-    long getLastJudgeRound(final long id);
+    long getLastJudgeRound(@NonNull final NodeId id);
 
     /**
      * Get the set of node IDs that are currently being tracked.
@@ -78,5 +78,5 @@ public interface UptimeData {
      * @return the set of node IDs that are currently being tracked
      */
     @NonNull
-    Set<Long> getTrackedNodes();
+    Set<NodeId> getTrackedNodes();
 }

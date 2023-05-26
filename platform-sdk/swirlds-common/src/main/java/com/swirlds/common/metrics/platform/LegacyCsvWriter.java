@@ -109,7 +109,7 @@ public class LegacyCsvWriter {
         throwArgNull(folderPath, "folderPath");
         this.metricsConfig = throwArgNull(metricsConfig, "metricsConfig");
 
-        final String fileName = String.format("%s%d.csv", metricsConfig.csvFileName(), selfId.getId());
+        final String fileName = String.format("%s%d.csv", metricsConfig.csvFileName(), selfId.id());
         this.csvFilePath = folderPath.resolve(fileName);
     }
 

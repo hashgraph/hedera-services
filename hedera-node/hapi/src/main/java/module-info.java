@@ -40,4 +40,7 @@ module com.hedera.node.hapi {
     exports com.hedera.hapi.node.state.consensus.codec;
     exports com.hedera.hapi.node.state.consensus;
     exports com.hedera.hapi.node.state.token;
+    exports com.hedera.hapi.node.state.file;
+    exports com.hedera.hapi.node.state.recordcache;
+    exports com.hedera.hapi.node.state.recordcache.codec;
 }

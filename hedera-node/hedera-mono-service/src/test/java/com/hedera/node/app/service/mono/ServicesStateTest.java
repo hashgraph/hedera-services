@@ -18,11 +18,11 @@ package com.hedera.node.app.service.mono;
 
 import static com.hedera.node.app.service.mono.ServicesState.EMPTY_HASH;
 import static com.hedera.node.app.service.mono.context.AppsManager.APPS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
 import static com.hedera.node.app.service.mono.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
 import static com.hedera.node.app.service.mono.context.properties.SerializableSemVers.forHapiAndHedera;
 import static com.hedera.node.app.service.mono.state.migration.MapMigrationToDisk.INSERTIONS_PER_COPY;
-import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
-import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
 import static com.hedera.test.utils.AddresBookUtils.createPretendBookFrom;
 import static com.swirlds.common.system.InitTrigger.RECONNECT;
 import static com.swirlds.common.system.InitTrigger.RESTART;
@@ -50,6 +50,7 @@ import com.hedera.node.app.service.mono.cache.EntityMapWarmer;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.init.ServicesInitFlow;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
+import com.hedera.node.app.service.mono.context.properties.PropertyNames;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.StakeStartupHelper;
 import com.hedera.node.app.service.mono.sigs.EventExpansion;
 import com.hedera.node.app.service.mono.state.DualStateAccessor;
@@ -63,9 +64,11 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.state.migration.MapMigrationToDisk;
+import com.hedera.node.app.service.mono.state.migration.RecordConsolidation;
 import com.hedera.node.app.service.mono.state.migration.StakingInfoMapBuilder;
 import com.hedera.node.app.service.mono.state.migration.StateChildIndices;
 import com.hedera.node.app.service.mono.state.migration.StateVersions;
+import com.hedera.node.app.service.mono.state.migration.StorageStrategy;
 import com.hedera.node.app.service.mono.state.migration.ToDiskMigrations;
 import com.hedera.node.app.service.mono.state.org.StateMetadata;
 import com.hedera.node.app.service.mono.state.virtual.VirtualMapFactory;
@@ -73,7 +76,6 @@ import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.mono.txns.ProcessLogic;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.SystemExits;
-import com.hedera.node.app.spi.config.PropertyNames;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -139,7 +141,8 @@ class ServicesStateTest extends ResponsibleVMapUser {
     private final SoftwareVersion justPriorVersion = forHapiAndHedera("0.29.1", "0.29.2");
     private final SoftwareVersion currentVersion = SEMANTIC_VERSIONS.deployedSoftwareVersion();
     private final SoftwareVersion futureVersion = forHapiAndHedera("1.0.0", "1.0.0");
-    private final NodeId selfId = new NodeId(false, 1L);
+    private final SoftwareVersion configVersion = forHapiAndHedera("0.32.0", "0.32.0");
+    private final NodeId selfId = new NodeId(1L);
     private static final String bookMemo = "0.0.4";
 
     @Mock
@@ -218,6 +221,9 @@ class ServicesStateTest extends ResponsibleVMapUser {
     private ServicesState.MapToDiskMigration mapToDiskMigration;
 
     @Mock
+    private ServicesState.RecordConsolidator recordConsolidator;
+
+    @Mock
     private Supplier<VirtualMapFactory> vmf;
 
     @Mock
@@ -255,8 +261,8 @@ class ServicesStateTest extends ResponsibleVMapUser {
 
     @AfterEach
     void cleanup() {
-        if (APPS.includes(selfId.getId())) {
-            APPS.clear(selfId.getId());
+        if (APPS.includes(selfId.getIdAsInt())) {
+            APPS.clear(selfId.getIdAsInt());
         }
     }
 
@@ -336,7 +342,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         subject.setPlatform(platform);
         given(platform.getAddressBook()).willReturn(addressBook);
 
-        given(addressBook.getAddress(selfId.getId())).willReturn(address);
+        given(addressBook.getAddress(selfId.getIdAsInt())).willReturn(address);
         given(address.getMemo()).willReturn("0.0.3");
 
         // when:
@@ -393,9 +399,9 @@ class ServicesStateTest extends ResponsibleVMapUser {
     }
 
     @Test
-    void minimumVersionIsRelease030() {
+    void minimumVersionIsRelease031() {
         // expect:
-        assertEquals(StateVersions.RELEASE_030X_VERSION, subject.getMinimumSupportedVersion());
+        assertEquals(StateVersions.RELEASE_0310_VERSION, subject.getMinimumSupportedVersion());
     }
 
     @Test
@@ -423,7 +429,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(platform.getSelfId()).willReturn(selfId);
         given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
 
-        APPS.save(selfId.getId(), app);
+        APPS.save(selfId.getIdAsInt(), app);
 
         assertDoesNotThrow(() -> subject.init(platform, null, RESTART, currentVersion));
     }
@@ -482,16 +488,16 @@ class ServicesStateTest extends ResponsibleVMapUser {
         verify(appBuilder).bootstrapProps(any());
         verify(appBuilder).initialHash(EMPTY_HASH);
         verify(appBuilder).platform(platform);
-        verify(appBuilder).selfId(selfId.getId());
+        verify(appBuilder).selfId(selfId.getIdAsInt());
         // and:
-        assertTrue(APPS.includes(selfId.getId()));
+        assertTrue(APPS.includes(selfId.getIdAsInt()));
 
         // cleanup:
         ServicesState.setAppBuilder(DaggerServicesApp::builder);
     }
 
     @Test
-    void genesisWhenVirtualNftsEnabled() {
+    void genesisInitRespectsSelectedOnDiskMapsAndConsolidatedRecords() {
         // setup:
         subject = tracked(new ServicesState(bootstrapProperties));
         given(bootstrapProperties.getBooleanProperty(PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE))
@@ -500,6 +506,8 @@ class ServicesStateTest extends ResponsibleVMapUser {
                 .willReturn(false);
         given(bootstrapProperties.getBooleanProperty(PropertyNames.ACCOUNTS_STORE_ON_DISK))
                 .willReturn(false);
+        given(bootstrapProperties.getBooleanProperty(PropertyNames.RECORDS_USE_CONSOLIDATED_FCQ))
+                .willReturn(true);
         ServicesState.setAppBuilder(() -> appBuilder);
 
         given(addressBook.getSize()).willReturn(3);
@@ -531,6 +539,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
 
         // then:
         assertTrue(subject.uniqueTokens().isVirtual());
+        assertEquals(StorageStrategy.IN_SINGLE_FCQ, subject.payerRecords().storageStrategy());
 
         // cleanup:
         ServicesState.setAppBuilder(DaggerServicesApp::builder);
@@ -550,7 +559,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(app.maybeNewRecoveredStateListener()).willReturn(Optional.of(recoveredStateListener));
         given(platform.getNotificationEngine()).willReturn(notificationEngine);
         // and:
-        APPS.save(selfId.getId(), app);
+        APPS.save(selfId.getIdAsInt(), app);
 
         // when:
         subject.init(platform, dualState, RECONNECT, currentVersion);
@@ -576,7 +585,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(app.systemExits()).willReturn(mockExit);
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         // and:
-        APPS.save(selfId.getId(), app);
+        APPS.save(selfId.getIdAsInt(), app);
 
         // when:
         subject.init(platform, dualState, RESTART, futureVersion);
@@ -601,10 +610,47 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(app.sysFilesManager()).willReturn(systemFilesManager);
         given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
         // and:
-        APPS.save(selfId.getId(), app);
+        APPS.save(selfId.getIdAsInt(), app);
 
         // when:
         subject.init(platform, dualState, RESTART, currentVersion);
+
+        verify(networkContext, never()).discardPreparedUpgradeMeta();
+        verify(dualState, never()).setFreezeTime(null);
+    }
+
+    @Test
+    void nonGenesisInitWithBuildDoesntRunMigrations() {
+        SEMANTIC_VERSIONS
+                .deployedSoftwareVersion()
+                .setProto(SemanticVersion.newBuilder().setMinor(32).build());
+        SEMANTIC_VERSIONS
+                .deployedSoftwareVersion()
+                .setServices(
+                        SemanticVersion.newBuilder().setMinor(32).setBuild("1").build());
+        subject = tracked(new ServicesState());
+        setAllChildren();
+
+        subject.setChild(StateChildIndices.SPECIAL_FILES, specialFiles);
+        subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+        subject.setChild(StateChildIndices.ACCOUNTS, accounts);
+
+        final var when = Instant.ofEpochSecond(1_234_567L, 890);
+        given(dualState.getFreezeTime()).willReturn(when);
+        given(dualState.getLastFrozenTime()).willReturn(when);
+
+        given(app.hashLogger()).willReturn(hashLogger);
+        given(app.initializationFlow()).willReturn(initFlow);
+        given(app.dualStateAccessor()).willReturn(dualStateAccessor);
+        given(platform.getSelfId()).willReturn(selfId);
+        given(app.sysFilesManager()).willReturn(systemFilesManager);
+        given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
+        // and:
+        APPS.save(selfId.getIdAsInt(), app);
+
+        // when:
+
+        subject.init(platform, dualState, RESTART, configVersion);
 
         verify(networkContext, never()).discardPreparedUpgradeMeta();
         verify(dualState, never()).setFreezeTime(null);
@@ -629,7 +675,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(app.sysFilesManager()).willReturn(systemFilesManager);
         given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
         // and:
-        APPS.save(selfId.getId(), app);
+        APPS.save(selfId.getIdAsInt(), app);
 
         // when:
         subject.init(platform, dualState, RESTART, justPriorVersion);
@@ -648,7 +694,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         subject.setChild(StateChildIndices.SPECIAL_FILES, specialFiles);
         subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
         subject.setChild(StateChildIndices.ACCOUNTS, accounts);
-        subject.setDeserializedStateVersion(StateVersions.RELEASE_030X_VERSION);
+        subject.setDeserializedStateVersion(StateVersions.RELEASE_0310_VERSION);
 
         final var when = Instant.ofEpochSecond(1_234_567L, 890);
         given(dualState.getFreezeTime()).willReturn(when);
@@ -661,7 +707,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(app.sysFilesManager()).willReturn(systemFilesManager);
         given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
         // and:
-        APPS.save(selfId.getId(), app);
+        APPS.save(selfId.getIdAsInt(), app);
 
         // when:
         subject.init(platform, dualState, RESTART, justPriorVersion);
@@ -675,7 +721,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
 
     @Test
     void nonGenesisInitThrowsWithUnsupportedStateVersionUsed() {
-        subject.setDeserializedStateVersion(StateVersions.RELEASE_030X_VERSION - 1);
+        subject.setDeserializedStateVersion(StateVersions.RELEASE_0310_VERSION - 1);
 
         assertThrows(IllegalStateException.class, () -> subject.init(platform, dualState, RESTART, null));
     }
@@ -691,12 +737,54 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(platform.getSelfId()).willReturn(selfId);
         // and:
-        APPS.save(selfId.getId(), app);
+        APPS.save(selfId.getIdAsInt(), app);
 
         // when:
         subject.init(platform, dualState, RECONNECT, currentVersion);
 
         verify(networkContext, never()).discardPreparedUpgradeMeta();
+    }
+
+    @Test
+    void nonGenesisInitConsolidatesRecords() {
+        subject = tracked(new ServicesState(bootstrapProperties));
+        given(bootstrapProperties.getBooleanProperty(PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE))
+                .willReturn(false);
+        given(bootstrapProperties.getBooleanProperty(PropertyNames.ACCOUNTS_STORE_ON_DISK))
+                .willReturn(false);
+        given(bootstrapProperties.getBooleanProperty(PropertyNames.TOKENS_STORE_RELS_ON_DISK))
+                .willReturn(false);
+        given(bootstrapProperties.getBooleanProperty(PropertyNames.RECORDS_USE_CONSOLIDATED_FCQ))
+                .willReturn(true);
+        ServicesState.setRecordConsolidator(recordConsolidator);
+
+        final var vmap = mock(VirtualMap.class);
+        final var mmap = mock(MerkleMap.class);
+        mockAllMaps(mmap, vmap);
+        subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+        subject.setChild(StateChildIndices.STORAGE, vmap);
+        subject.setChild(StateChildIndices.CONTRACT_STORAGE, vmap);
+        subject.setChild(StateChildIndices.PAYER_RECORDS_OR_CONSOLIDATED_FCQ, mmap);
+
+        final var when = Instant.ofEpochSecond(1_234_567L, 890);
+        given(dualState.getFreezeTime()).willReturn(when);
+        given(dualState.getLastFrozenTime()).willReturn(when);
+
+        given(app.hashLogger()).willReturn(hashLogger);
+        given(app.initializationFlow()).willReturn(initFlow);
+        given(app.dualStateAccessor()).willReturn(dualStateAccessor);
+        given(platform.getSelfId()).willReturn(selfId);
+        given(platform.getAddressBook()).willReturn(addressBook);
+        given(app.sysFilesManager()).willReturn(systemFilesManager);
+        given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
+        // and:
+        APPS.save(selfId.getIdAsInt(), app);
+
+        // when:
+        subject.init(platform, dualState, RESTART, currentVersion);
+        verify(recordConsolidator).consolidateRecordsToSingleFcq(subject);
+
+        ServicesState.setRecordConsolidator(RecordConsolidation::toSingleFcq);
     }
 
     @Test
@@ -708,12 +796,15 @@ class ServicesStateTest extends ResponsibleVMapUser {
                 .willReturn(true);
         given(bootstrapProperties.getBooleanProperty(PropertyNames.TOKENS_STORE_RELS_ON_DISK))
                 .willReturn(false);
+        given(bootstrapProperties.getBooleanProperty(PropertyNames.RECORDS_USE_CONSOLIDATED_FCQ))
+                .willReturn(false);
         ServicesState.setMapToDiskMigration(mapToDiskMigration);
         ServicesState.setVmFactory(vmf);
         given(vmf.get()).willReturn(virtualMapFactory);
 
         final var vmap = mock(VirtualMap.class);
-        mockAllMaps(mock(MerkleMap.class), vmap);
+        final var mmap = mock(MerkleMap.class);
+        mockAllMaps(mmap, vmap);
         subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
         subject.setChild(StateChildIndices.STORAGE, vmap);
         subject.setChild(StateChildIndices.CONTRACT_STORAGE, vmap);
@@ -730,11 +821,10 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(app.sysFilesManager()).willReturn(systemFilesManager);
         given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
         // and:
-        APPS.save(selfId.getId(), app);
+        APPS.save(selfId.getIdAsInt(), app);
 
         // when:
         subject.init(platform, dualState, RESTART, currentVersion);
-        assertTrue(subject.uniqueTokens().isVirtual());
         verify(mapToDiskMigration)
                 .migrateToDiskAsApropos(
                         INSERTIONS_PER_COPY,
@@ -743,6 +833,8 @@ class ServicesStateTest extends ResponsibleVMapUser {
                         virtualMapFactory,
                         ServicesState.accountMigrator,
                         ServicesState.tokenRelMigrator);
+        subject.setChild(StateChildIndices.PAYER_RECORDS_OR_CONSOLIDATED_FCQ, mmap);
+        assertEquals(StorageStrategy.IN_PAYER_SCOPED_FCQ, subject.payerRecords().storageStrategy());
 
         ServicesState.setMapToDiskMigration(MapMigrationToDisk::migrateToDiskAsApropos);
         ServicesState.setVmFactory(VirtualMapFactory::new);
@@ -757,6 +849,8 @@ class ServicesStateTest extends ResponsibleVMapUser {
                 .willReturn(false);
         given(bootstrapProperties.getBooleanProperty(PropertyNames.TOKENS_STORE_RELS_ON_DISK))
                 .willReturn(true);
+        given(bootstrapProperties.getBooleanProperty(PropertyNames.RECORDS_USE_CONSOLIDATED_FCQ))
+                .willReturn(false);
         ServicesState.setMapToDiskMigration(mapToDiskMigration);
         ServicesState.setVmFactory(vmf);
         given(vmf.get()).willReturn(virtualMapFactory);
@@ -779,7 +873,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(app.sysFilesManager()).willReturn(systemFilesManager);
         given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
         // and:
-        APPS.save(selfId.getId(), app);
+        APPS.save(selfId.getIdAsInt(), app);
 
         // when:
         subject.init(platform, dualState, RESTART, currentVersion);
@@ -853,11 +947,11 @@ class ServicesStateTest extends ResponsibleVMapUser {
     }
 
     @Test
-    // Since 0.30 JDB files include the ':' character which is forbidden by Windows (and may
+    // Since 0.38 JDB files include the ':' character which is forbidden by Windows (and may
     // exceed the maximum path length besides), only run this test on Linux, Mac, or UNIX
     @EnabledOnOs({OS.LINUX, OS.MAC, OS.AIX, OS.SOLARIS})
-    void testLoading0305State() throws IOException {
-        // The saved state used for this test is from 0.30.5, meaning the JDB file names
+    void testLoading038XState() throws IOException {
+        // The saved state used for this test is from 0.38.1, meaning the JDB file names
         // use the ':' character; but Windows prohibits such files, so the repository
         // couldn't be cloned on that OS with the as-is saved state. The solution is to
         // store the JDB files in the repo with ':' replaced by 'cln' (plus other
@@ -870,7 +964,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         ClassLoaderHelper.loadClassPathDependencies();
 
         cpWithDirTransform(
-                Paths.get(statesDir, "0.30.5/").toString(),
+                Paths.get(statesDir, "0.38.1/").toString(),
                 jdbNamedSignedStateDir.getAbsolutePath(),
                 ServicesStateTest::unabbreviate);
         final var relocatedSignedState = Paths.get(jdbNamedSignedStateDir.getAbsolutePath(), "SignedState.swh");
@@ -899,7 +993,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         servicesState.setChild(StateChildIndices.RECORD_STREAM_RUNNING_HASH, recordsRunningHashLeaf);
         final var app = createApp(platform);
 
-        APPS.save(platform.getSelfId().getId(), app);
+        APPS.save(platform.getSelfId().getIdAsInt(), app);
         assertDoesNotThrow(() -> servicesState.init(platform, new DualStateImpl(), InitTrigger.GENESIS, null));
     }
 
@@ -920,16 +1014,35 @@ class ServicesStateTest extends ResponsibleVMapUser {
 
     @Test
     void updatesAddressBookWithZeroWeightOnGenesisStart() {
+        final var node0 = new NodeId(0);
+        final var node1 = new NodeId(1);
+        given(platform.getSelfId()).willReturn(node0);
+
+        final var pretendAddressBook = createPretendBookFrom(platform, true);
+
         final MerkleMap<EntityNum, MerkleStakingInfo> stakingMap = subject.getChild(StateChildIndices.STAKING_INFO);
         assertEquals(1, stakingMap.size());
         assertEquals(0, stakingMap.get(EntityNum.fromLong(0L)).getWeight());
 
-        subject.updateWeight(addressBook, platform.getContext());
-        verify(addressBook).updateWeight(0, 0);
+        assertEquals(10L, pretendAddressBook.getAddress(node0).getWeight());
+        assertEquals(10L, pretendAddressBook.getAddress(node1).getWeight());
+
+        subject.updateWeight(pretendAddressBook, platform.getContext());
+
+        // if staking info map has node with 0 weight and a new node is added,
+        // both gets weight of 0
+        assertEquals(0L, pretendAddressBook.getAddress(node0).getWeight());
+        assertEquals(0L, pretendAddressBook.getAddress(node1).getWeight());
     }
 
     @Test
-    void updatesAddressBookWithNonZeroWeightsOnGenesisStart() {
+    void updatesAddressBookWithZeroWeightForNewNodes() {
+        final var node0 = new NodeId(0);
+        final var node1 = new NodeId(1);
+
+        given(platform.getSelfId()).willReturn(node0);
+
+        final var pretendAddressBook = createPretendBookFrom(platform, true);
         final MerkleMap<EntityNum, MerkleStakingInfo> stakingMap = subject.getChild(StateChildIndices.STAKING_INFO);
         assertEquals(1, stakingMap.size());
         assertEquals(0, stakingMap.get(EntityNum.fromLong(0L)).getWeight());
@@ -941,8 +1054,43 @@ class ServicesStateTest extends ResponsibleVMapUser {
         assertEquals(1000L, stakingMap.get(EntityNum.fromLong(0L)).getStake());
         subject.setChild(StateChildIndices.STAKING_INFO, stakingMap);
 
-        subject.updateWeight(addressBook, platform.getContext());
-        verify(addressBook).updateWeight(0, 500);
+        assertEquals(10L, pretendAddressBook.getAddress(node0).getWeight());
+        assertEquals(10L, pretendAddressBook.getAddress(node1).getWeight());
+
+        subject.updateWeight(pretendAddressBook, platform.getContext());
+
+        // only one node in state and new node added in config.txt gets weight of 0
+        assertEquals(500, pretendAddressBook.getAddress(node0).getWeight());
+        assertEquals(0L, pretendAddressBook.getAddress(node1).getWeight());
+    }
+
+    @Test
+    void updatesAddressBookWithNonZeroWeightsOnGenesisStartIfStakesExist() {
+        final var node0 = new NodeId(0);
+        final var node1 = new NodeId(1);
+        given(platform.getSelfId()).willReturn(node0);
+        final var pretendAddressBook = createPretendBookFrom(platform, true);
+
+        final MerkleMap<EntityNum, MerkleStakingInfo> stakingMap = subject.getChild(StateChildIndices.STAKING_INFO);
+        assertEquals(1, stakingMap.size());
+        assertEquals(0, stakingMap.get(EntityNum.fromLong(0L)).getWeight());
+
+        stakingMap.put(EntityNum.fromLong(1L), new MerkleStakingInfo());
+        stakingMap.forEach((k, v) -> {
+            v.setStake(1000L);
+            v.setWeight(500);
+        });
+        assertEquals(1000L, stakingMap.get(EntityNum.fromLong(0L)).getStake());
+        subject.setChild(StateChildIndices.STAKING_INFO, stakingMap);
+
+        assertEquals(10L, pretendAddressBook.getAddress(node0).getWeight());
+        assertEquals(10L, pretendAddressBook.getAddress(node1).getWeight());
+
+        subject.updateWeight(pretendAddressBook, platform.getContext());
+
+        // both nodes in staking info gets weight as in state
+        assertEquals(500, pretendAddressBook.getAddress(node0).getWeight());
+        assertEquals(500L, pretendAddressBook.getAddress(node1).getWeight());
     }
 
     private static ServicesApp createApp(final Platform platform) {
@@ -952,7 +1100,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
                 .platform(platform)
                 .crypto(CryptographyHolder.get())
                 .consoleCreator((ignore, visible) -> null)
-                .selfId(platform.getSelfId().getId())
+                .selfId(platform.getSelfId().getIdAsInt())
                 .staticAccountMemo("memo")
                 .bootstrapProps(new BootstrapProperties())
                 .build();
@@ -961,7 +1109,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
     private Platform createMockPlatformWithCrypto() {
         final var platform = mock(Platform.class);
         final var platformContext = mock(PlatformContext.class);
-        when(platform.getSelfId()).thenReturn(new NodeId(false, 0));
+        when(platform.getSelfId()).thenReturn(new NodeId(0));
         when(platformContext.getCryptography())
                 .thenReturn(new CryptoEngine(getStaticThreadManager(), CryptoConfigUtils.MINIMAL_CRYPTO_CONFIG));
         assertNotNull(platformContext.getCryptography());

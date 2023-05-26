@@ -140,7 +140,7 @@ public class MerkleDbDataSourceBuilder<K extends VirtualKey, V extends VirtualVa
             // Snapshot all tables. When this snapshot() method is called for other data sources,
             // the database will check if they are already present in the destination path. If so,
             // the snapshot will be a no-op
-            source.getDatabase().snapshot(destination);
+            source.getDatabase().snapshot(destination, source);
         } catch (final IOException z) {
             throw new UncheckedIOException(z);
         }

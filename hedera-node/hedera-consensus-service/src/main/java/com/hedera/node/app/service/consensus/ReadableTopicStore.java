@@ -31,15 +31,14 @@ import java.util.Optional;
 public interface ReadableTopicStore {
 
     /**
-     * Returns the topic metadata needed. If the topic doesn't exist returns failureReason. If the
+     * Returns the topic needed. If the topic doesn't exist returns failureReason. If the
      * topic exists , the failure reason will be null.
      *
      * @param id topic id being looked up
      * @return topic's metadata
      */
-    // TODO : Change to return Topic instead of TopicMetadata
     @Nullable
-    TopicMetadata getTopicMetadata(@Nullable TopicID id);
+    public Topic getTopic(@Nullable final TopicID id);
 
     @NonNull
     Optional<Topic> getTopicLeaf(@NonNull TopicID id);

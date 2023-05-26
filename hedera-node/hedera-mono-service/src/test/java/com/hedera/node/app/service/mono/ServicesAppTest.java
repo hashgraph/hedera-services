@@ -17,8 +17,8 @@
 package com.hedera.node.app.service.mono;
 
 import static com.hedera.node.app.service.mono.ServicesState.EMPTY_HASH;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_LOG_DIR;
 import static com.hedera.node.app.service.mono.utils.SleepingPause.SLEEPING_PAUSE;
-import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_LOG_DIR;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -82,7 +82,7 @@ class ServicesAppTest {
 
     private final long selfId = 123;
     private static final String ACCOUNT_MEMO = "0.0.3";
-    private final NodeId selfNodeId = new NodeId(false, selfId);
+    private final NodeId selfNodeId = new NodeId(selfId);
 
     @Mock
     private Platform platform;

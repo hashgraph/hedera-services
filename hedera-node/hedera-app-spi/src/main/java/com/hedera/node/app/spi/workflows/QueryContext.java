@@ -17,6 +17,7 @@
 package com.hedera.node.app.spi.workflows;
 
 import com.hedera.hapi.node.transaction.Query;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -36,11 +37,19 @@ public interface QueryContext {
      * Create a new store given the store's interface. This gives read-only access to the store.
      *
      * @param storeInterface The store interface to find and create a store for
+     * @param <C>            Interface class for a Store
      * @return An implementation of store interface provided, or null if the store
-     * @param <C> Interface class for a Store
      * @throws IllegalArgumentException if the storeInterface class provided is unknown to the app
-     * @throws NullPointerException if {@code clazz} is {@code null}
+     * @throws NullPointerException     if {@code clazz} is {@code null}
      */
     @NonNull
     <C> C createStore(@NonNull Class<C> storeInterface);
+
+    /**
+     * Returns the current {@link Configuration}.
+     *
+     * @return the {@link Configuration}
+     */
+    @NonNull
+    Configuration configuration();
 }

@@ -86,7 +86,7 @@ public class DistributionAdapter extends AbstractMetricAdapter {
                     };
             final Gauge.Child child = adapterType == GLOBAL
                     ? gauge.labels(valueType)
-                    : gauge.labels(Long.toString(nodeId.getId()), valueType);
+                    : gauge.labels(Long.toString(nodeId.id()), valueType);
             child.set(((Number) entry.value()).doubleValue());
         }
     }

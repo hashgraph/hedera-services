@@ -39,9 +39,14 @@ import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.test.utils.SeededPropertySource;
+import com.swirlds.common.constructable.ClassConstructorPair;
+import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.merkle.utility.MerkleLong;
 import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.merkle.tree.MerkleBinaryTree;
+import com.swirlds.merkle.tree.MerkleTreeInternalNode;
 import com.swirlds.virtualmap.VirtualMap;
 import java.util.List;
 import java.util.function.Function;
@@ -81,7 +86,7 @@ class MapMigrationToDiskTest {
     @Test
     @SuppressWarnings("unchecked")
     void migratesAccountsAsExpected() throws ConstructableRegistryException {
-        ReleaseThirtyMigrationTest.registerForAccountsMerkleMap();
+        registerForAccountsMerkleMap();
 
         final var accountsOnly = new ToDiskMigrations(true, false);
         final var aAccount = nextAccount(false);
@@ -104,7 +109,7 @@ class MapMigrationToDiskTest {
                 1, mutableState, accountsOnly, virtualMapFactory, accountMigrator, tokenRelMigrator);
 
         verify(mutableState).setChild(ACCOUNTS, accountStore);
-        verify(mutableState).setChild(eq(StateChildIndices.PAYER_RECORDS), captor.capture());
+        verify(mutableState).setChild(eq(StateChildIndices.PAYER_RECORDS_OR_CONSOLIDATED_FCQ), captor.capture());
         final var payerRecords = captor.getValue();
         final var aRecords = payerRecords.get(aNum);
         final var bRecords = payerRecords.get(bNum);
@@ -122,7 +127,7 @@ class MapMigrationToDiskTest {
     @Test
     @SuppressWarnings("unchecked")
     void migratesTokenRelsAsExpected() throws ConstructableRegistryException {
-        ReleaseThirtyMigrationTest.registerForTokenRelsMerkleMap();
+        registerForTokenRelsMerkleMap();
 
         final var relsOnly = new ToDiskMigrations(false, true);
         final var aRel = nextRelStats(false);
@@ -171,5 +176,29 @@ class MapMigrationToDiskTest {
         queue.offer(source.nextRecord());
         queue.offer(source.nextRecord());
         return queue;
+    }
+
+    static void registerForAccountsMerkleMap() throws ConstructableRegistryException {
+        registerForMM();
+        ConstructableRegistry.getInstance()
+                .registerConstructable(new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
+    }
+
+    static void registerForTokenRelsMerkleMap() throws ConstructableRegistryException {
+        registerForMM();
+        ConstructableRegistry.getInstance()
+                .registerConstructable(new ClassConstructorPair(MerkleTokenRelStatus.class, MerkleTokenRelStatus::new));
+    }
+
+    private static void registerForMM() throws ConstructableRegistryException {
+        ConstructableRegistry.getInstance()
+                .registerConstructable(new ClassConstructorPair(MerkleMap.class, MerkleMap::new));
+        ConstructableRegistry.getInstance()
+                .registerConstructable(new ClassConstructorPair(MerkleBinaryTree.class, MerkleBinaryTree::new));
+        ConstructableRegistry.getInstance()
+                .registerConstructable(new ClassConstructorPair(MerkleLong.class, MerkleLong::new));
+        ConstructableRegistry.getInstance()
+                .registerConstructable(
+                        new ClassConstructorPair(MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
     }
 }

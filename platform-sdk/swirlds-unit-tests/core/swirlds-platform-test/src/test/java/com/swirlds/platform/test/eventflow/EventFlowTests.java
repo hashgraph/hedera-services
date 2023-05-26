@@ -30,6 +30,7 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Round;
@@ -97,10 +98,8 @@ class EventFlowTests {
     /** The maximum allowed bytes per transaction */
     private static final Integer TX_MAX_BYTES = 10;
 
-    protected static final long selfId = 0L;
+    protected static final NodeId selfId = new NodeId(0L);
     private static final int THROTTLE_TRANSACTION_QUEUE_SIZE = 100_000;
-
-    private final NodeId selfNodeId = new NodeId(false, selfId);
 
     private final SettingsProvider settingsProvider = mock(SettingsProvider.class);
     protected AddressBook addressBook;
@@ -251,11 +250,11 @@ class EventFlowTests {
 
         // Extract the transactions from self events
         final HashSet<Transaction> selfConsensusTransactions =
-                extractTransactions((id) -> id == selfId, consensusRounds);
+                extractTransactions((id) -> id == selfId.id(), consensusRounds);
 
         // Extract the transactions from other events
         final HashSet<Transaction> otherConsensusTransactions =
-                extractTransactions((id) -> id != selfId, consensusRounds);
+                extractTransactions((id) -> id != selfId.id(), consensusRounds);
 
         final TransactionTracker consensusState =
                 (TransactionTracker) swirldStateManager.getConsensusState().getSwirldState();
@@ -610,7 +609,7 @@ class EventFlowTests {
         swirldStateManager = new SwirldStateManagerImpl(
                 TestPlatformContextBuilder.create().build(),
                 addressBook,
-                selfNodeId,
+                selfId,
                 preConsensusSystemTransactionManager,
                 postConsensusSystemTransactionManager,
                 mock(SwirldStateMetrics.class),
@@ -622,7 +621,7 @@ class EventFlowTests {
                 TestPlatformContextBuilder.create().build();
 
         preConsensusEventHandler = new PreConsensusEventHandler(
-                getStaticThreadManager(), selfNodeId, swirldStateManager, consensusMetrics);
+                new NoOpMetrics(), getStaticThreadManager(), selfId, swirldStateManager, consensusMetrics);
         consensusEventHandler = new ConsensusRoundHandler(
                 platformContext,
                 getStaticThreadManager(),

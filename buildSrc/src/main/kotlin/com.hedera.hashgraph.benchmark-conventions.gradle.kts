@@ -19,7 +19,7 @@ plugins {
 
 val includesRegex: String by project
 jmh {
-    jmhVersion.set("1.35")
+    jmhVersion.set("1.36")
     includes.set(listOf(includesRegex))
 }
 

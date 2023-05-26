@@ -40,6 +40,7 @@ public class HapiGetVersionInfo extends HapiQueryOp<HapiGetVersionInfo> {
     private boolean assertNoDegenSemvers = false;
     private Optional<SemanticVersion> expectedProto = Optional.empty();
     private Optional<SemanticVersion> expectedServices = Optional.empty();
+    private String servicesSemVerBuild = "";
 
     @Override
     public HederaFunctionality type() {
@@ -66,6 +67,11 @@ public class HapiGetVersionInfo extends HapiQueryOp<HapiGetVersionInfo> {
         return this;
     }
 
+    public HapiGetVersionInfo hasServicesSemVerBuild(final String build) {
+        servicesSemVerBuild = build;
+        return this;
+    }
+
     @Override
     @SuppressWarnings("java:S5960")
     protected void assertExpectationsGiven(HapiSpec spec) throws Throwable {
@@ -81,6 +87,9 @@ public class HapiGetVersionInfo extends HapiQueryOp<HapiGetVersionInfo> {
             var degenSemver = SemanticVersion.getDefaultInstance();
             Assertions.assertNotEquals(degenSemver, actualProto);
             Assertions.assertNotEquals(degenSemver, actualServices);
+        }
+        if (!servicesSemVerBuild.isEmpty()) {
+            Assertions.assertEquals(servicesSemVerBuild, actualServices.getBuild());
         }
     }
 

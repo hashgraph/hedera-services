@@ -18,29 +18,30 @@ package com.hedera.node.app.workflows.dispatcher;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.service.admin.FreezeService;
-import com.hedera.node.app.service.admin.ReadableSpecialFileStore;
-import com.hedera.node.app.service.admin.impl.ReadableSpecialFileStoreImpl;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
-import com.hedera.node.app.service.network.NetworkService;
-import com.hedera.node.app.service.network.ReadableRunningHashLeafStore;
-import com.hedera.node.app.service.network.impl.ReadableRunningHashLeafStoreImpl;
+import com.hedera.node.app.service.networkadmin.FreezeService;
+import com.hedera.node.app.service.networkadmin.NetworkService;
+import com.hedera.node.app.service.networkadmin.ReadableRunningHashLeafStore;
+import com.hedera.node.app.service.networkadmin.ReadableSpecialFileStore;
+import com.hedera.node.app.service.networkadmin.impl.ReadableRunningHashLeafStoreImpl;
+import com.hedera.node.app.service.networkadmin.impl.ReadableSpecialFileStoreImpl;
 import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStoreImpl;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
+import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 import java.util.function.Function;
-import javax.inject.Inject;
 
 /**
  * Factory for all readable stores. It creates new readable stores based on the {@link HederaState}.
@@ -59,7 +60,8 @@ public class ReadableStoreFactory {
             ReadableScheduleStore.class, new StoreEntry(ScheduleService.NAME, ReadableScheduleStoreImpl::new),
             ReadableSpecialFileStore.class, new StoreEntry(FreezeService.NAME, ReadableSpecialFileStoreImpl::new),
             ReadableRunningHashLeafStore.class,
-                    new StoreEntry(NetworkService.NAME, ReadableRunningHashLeafStoreImpl::new));
+                    new StoreEntry(NetworkService.NAME, ReadableRunningHashLeafStoreImpl::new),
+            ReadableTokenRelationStore.class, new StoreEntry(TokenService.NAME, ReadableTokenRelationStoreImpl::new));
 
     private final HederaState state;
 
@@ -68,7 +70,6 @@ public class ReadableStoreFactory {
      *
      * @param state the {@link HederaState} to use
      */
-    @Inject
     public ReadableStoreFactory(@NonNull final HederaState state) {
         this.state = requireNonNull(state, "The supplied argument 'state' cannot be null!");
     }
@@ -83,7 +84,7 @@ public class ReadableStoreFactory {
      * @throws NullPointerException if {@code storeInterface} is {@code null}
      */
     @NonNull
-    public <C> C createStore(@NonNull final Class<C> storeInterface) throws IllegalArgumentException {
+    public <C> C getStore(@NonNull final Class<C> storeInterface) throws IllegalArgumentException {
         requireNonNull(storeInterface, "The supplied argument 'storeInterface' cannot be null!");
         final var entry = STORE_FACTORY.get(storeInterface);
         if (entry != null) {

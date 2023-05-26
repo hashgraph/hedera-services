@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.components.state;
 
+import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STATE_TO_DISK;
 
@@ -23,6 +24,7 @@ import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.stream.HashSigner;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.PlatformStatus;
@@ -136,8 +138,13 @@ public class DefaultStateManagementComponent implements StateManagementComponent
 
     private final StateConfig stateConfig;
 
+    private static final RunningAverageMetric.Config AVG_ROUND_SUPERMAJORITY_CONFIG = new RunningAverageMetric.Config(
+                    PLATFORM_CATEGORY, "roundSup")
+            .withDescription("latest round with state signed by a supermajority")
+            .withUnit("round");
+
     /**
-     * @param context                            the platform context
+     * @param platformContext                    the platform context
      * @param threadManager                      manages platform thread resources
      * @param addressBook                        the initial address book
      * @param signer                             an object capable of signing with the platform's private key
@@ -156,7 +163,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      * @param getPlatformStatus                  a supplier that returns the current platform status
      */
     public DefaultStateManagementComponent(
-            @NonNull final PlatformContext context,
+            @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
             @NonNull final AddressBook addressBook,
             @NonNull final PlatformSigner signer,
@@ -174,32 +181,33 @@ public class DefaultStateManagementComponent implements StateManagementComponent
             @NonNull final PreConsensusEventWriter preConsensusEventWriter,
             @NonNull final Supplier<PlatformStatus> getPlatformStatus) {
 
-        Objects.requireNonNull(context, "context");
-        Objects.requireNonNull(threadManager, "threadManager");
-        Objects.requireNonNull(addressBook, "addressBook");
-        Objects.requireNonNull(signer, "signer");
-        Objects.requireNonNull(mainClassName, "mainClassName");
-        Objects.requireNonNull(selfId, "selfId");
-        Objects.requireNonNull(swirldName, "swirldName");
-        Objects.requireNonNull(prioritySystemTransactionSubmitter, "prioritySystemTransactionSubmitter");
-        Objects.requireNonNull(stateToDiskEventConsumer, "stateToDiskEventConsumer");
-        Objects.requireNonNull(newLatestCompleteStateConsumer, "newLatestCompleteStateConsumer");
-        Objects.requireNonNull(stateLacksSignaturesConsumer, "stateLacksSignaturesConsumer");
-        Objects.requireNonNull(stateHasEnoughSignaturesConsumer, "stateHasEnoughSignaturesConsumer");
-        Objects.requireNonNull(issConsumer, "issConsumer");
-        Objects.requireNonNull(haltRequestedConsumer, "haltRequestedConsumer");
-        Objects.requireNonNull(fatalErrorConsumer, "fatalErrorConsumer");
-        Objects.requireNonNull(preConsensusEventWriter, "preConsensusEventWriter");
-        Objects.requireNonNull(getPlatformStatus, "getPlatformStatus");
+        Objects.requireNonNull(platformContext);
+        Objects.requireNonNull(threadManager);
+        Objects.requireNonNull(addressBook);
+        Objects.requireNonNull(signer);
+        Objects.requireNonNull(mainClassName);
+        Objects.requireNonNull(selfId);
+        Objects.requireNonNull(swirldName);
+        Objects.requireNonNull(prioritySystemTransactionSubmitter);
+        Objects.requireNonNull(stateToDiskEventConsumer);
+        Objects.requireNonNull(newLatestCompleteStateConsumer);
+        Objects.requireNonNull(stateLacksSignaturesConsumer);
+        Objects.requireNonNull(stateHasEnoughSignaturesConsumer);
+        Objects.requireNonNull(issConsumer);
+        Objects.requireNonNull(haltRequestedConsumer);
+        Objects.requireNonNull(fatalErrorConsumer);
+        Objects.requireNonNull(preConsensusEventWriter);
+        Objects.requireNonNull(getPlatformStatus);
 
         this.signer = signer;
         this.signatureTransmitter = new SignatureTransmitter(prioritySystemTransactionSubmitter, getPlatformStatus);
-        this.signedStateMetrics = new SignedStateMetrics(context.getMetrics());
+        this.signedStateMetrics = new SignedStateMetrics(platformContext.getMetrics());
         this.signedStateGarbageCollector = new SignedStateGarbageCollector(threadManager, signedStateMetrics);
-        this.stateConfig = context.getConfiguration().getConfigData(StateConfig.class);
-        this.signedStateSentinel = new SignedStateSentinel(context, threadManager, OSTime.getInstance());
+        this.stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
+        this.signedStateSentinel = new SignedStateSentinel(platformContext, threadManager, OSTime.getInstance());
 
-        dispatchBuilder = new DispatchBuilder(context.getConfiguration().getConfigData(DispatchConfiguration.class));
+        dispatchBuilder =
+                new DispatchBuilder(platformContext.getConfiguration().getConfigData(DispatchConfiguration.class));
 
         hashLogger = new HashLogger(threadManager, selfId);
 
@@ -208,7 +216,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         signedStateHasher = new SignedStateHasher(signedStateMetrics, stateHashedTrigger, fatalErrorConsumer);
 
         signedStateFileManager = new SignedStateFileManager(
-                context,
+                platformContext,
                 threadManager,
                 signedStateMetrics,
                 OSTime.getInstance(),
@@ -229,7 +237,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         };
 
         signedStateManager = new SignedStateManager(
-                context.getConfiguration().getConfigData(StateConfig.class),
+                platformContext.getConfiguration().getConfigData(StateConfig.class),
                 signedStateMetrics,
                 newLatestCompleteStateConsumer,
                 combinedStateHasEnoughSignaturesConsumer,
@@ -239,25 +247,29 @@ public class DefaultStateManagementComponent implements StateManagementComponent
                 OSTime.getInstance(),
                 dispatchBuilder,
                 addressBook,
-                context.getConfiguration().getConfigData(ConsensusConfig.class),
+                platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
                 stateConfig);
 
         final IssHandler issHandler = new IssHandler(
                 OSTime.getInstance(),
                 dispatchBuilder,
                 stateConfig,
-                selfId.getId(),
+                selfId.id(),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
                 issConsumer);
 
-        final IssMetrics issMetrics = new IssMetrics(context.getMetrics(), addressBook);
+        final IssMetrics issMetrics = new IssMetrics(platformContext.getMetrics(), addressBook);
 
         dispatchBuilder
                 .registerObservers(issHandler)
                 .registerObservers(consensusHashManager)
                 .registerObservers(issMetrics)
                 .registerObservers(this);
+
+        final RunningAverageMetric avgRoundSupermajority =
+                platformContext.getMetrics().getOrCreate(AVG_ROUND_SUPERMAJORITY_CONFIG);
+        platformContext.getMetrics().addUpdater(() -> avgRoundSupermajority.update(getLastCompleteRound()));
     }
 
     /**
@@ -364,9 +376,24 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      *
      * @param creatorId                 the id of the transaction creator
      * @param stateSignatureTransaction the pre-consensus state signature transaction
+     * @deprecated use {@link #handleStateSignatureTransactionPreConsensus(NodeId, StateSignatureTransaction)}
+     */
+    @Deprecated(forRemoval = true, since = "0.39.0")
+    public void handleStateSignatureTransactionPreConsensus(
+            @NonNull final Long creatorId, @NonNull final StateSignatureTransaction stateSignatureTransaction) {
+        handleStateSignatureTransactionPreConsensus(new NodeId(creatorId), stateSignatureTransaction);
+    }
+
+    /**
+     * Do pre consensus handling for a state signature transaction
+     *
+     * @param creatorId                 the id of the transaction creator
+     * @param stateSignatureTransaction the pre-consensus state signature transaction
      */
     public void handleStateSignatureTransactionPreConsensus(
-            final long creatorId, final StateSignatureTransaction stateSignatureTransaction) {
+            @NonNull final NodeId creatorId, @NonNull final StateSignatureTransaction stateSignatureTransaction) {
+        Objects.requireNonNull(creatorId, "creatorId must not be null");
+        Objects.requireNonNull(stateSignatureTransaction, "stateSignatureTransaction must not be null");
 
         signedStateManager.preConsensusSignatureObserver(
                 stateSignatureTransaction.getRound(), creatorId, stateSignatureTransaction.getStateSignature());
@@ -376,12 +403,32 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      * Do post-consensus handling for a state signature transaction
      * <p>
      * The {@code state} parameter isn't used in this function, since a signature transaction doesn't modify the state
+     * @param creatorId                 the id of the transaction creator
+     * @param stateSignatureTransaction the post-consensus state signature transaction
+     * @deprecated use {@link #handleStateSignatureTransactionPostConsensus(State, NodeId, StateSignatureTransaction)}
+     */
+    @Deprecated(forRemoval = true, since = "0.39.0")
+    public void handleStateSignatureTransactionPostConsensus(
+            @NonNull final State state,
+            @NonNull final Long creatorId,
+            @NonNull final StateSignatureTransaction stateSignatureTransaction) {
+        handleStateSignatureTransactionPostConsensus(state, new NodeId(creatorId), stateSignatureTransaction);
+    }
+
+    /**
+     * Do post-consensus handling for a state signature transaction
+     * <p>
+     * The {@code state} parameter isn't used in this function, since a signature transaction doesn't modify the state
      */
     public void handleStateSignatureTransactionPostConsensus(
-            final State state, final long creatorId, final StateSignatureTransaction stateSignatureTransaction) {
+            @Nullable final State state,
+            @NonNull final NodeId creatorId,
+            @NonNull final StateSignatureTransaction stateSignatureTransaction) {
+        Objects.requireNonNull(creatorId, "creatorId must not be null");
+        Objects.requireNonNull(stateSignatureTransaction, "stateSignatureTransaction must not be null");
 
         consensusHashManager.postConsensusSignatureObserver(
-                stateSignatureTransaction.getRound(), creatorId, stateSignatureTransaction.getStateHash());
+                stateSignatureTransaction.getRound(), creatorId.id(), stateSignatureTransaction.getStateHash());
     }
 
     /**

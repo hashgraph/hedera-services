@@ -18,6 +18,8 @@ package com.hedera.node.app.service.token.impl;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.spi.state.WritableKVState;
@@ -35,7 +37,7 @@ import java.util.Set;
  * <p>This class is not exported from the module. It is an internal implementation detail.
  * This class is not complete, it will be extended with other methods like remove, update etc.,
  */
-public class WritableTokenRelationStore {
+public class WritableTokenRelationStore extends ReadableTokenRelationStoreImpl {
     /** The underlying data storage class that holds the token data. */
     private final WritableKVState<EntityNumPair, TokenRelation> tokenRelState;
 
@@ -45,6 +47,7 @@ public class WritableTokenRelationStore {
      * @param states The state to use.
      */
     public WritableTokenRelationStore(@NonNull final WritableStates states) {
+        super(states);
         this.tokenRelState = requireNonNull(states).get(TokenServiceImpl.TOKEN_RELS_KEY);
     }
 
@@ -56,7 +59,7 @@ public class WritableTokenRelationStore {
     public void put(@NonNull final TokenRelation tokenRelation) {
         requireNonNull(tokenRelState)
                 .put(
-                        EntityNumPair.fromLongs(tokenRelation.tokenNumber(), tokenRelation.accountNumber()),
+                        EntityNumPair.fromLongs(tokenRelation.accountNumber(), tokenRelation.tokenNumber()),
                         Objects.requireNonNull(tokenRelation));
     }
 
@@ -69,36 +72,22 @@ public class WritableTokenRelationStore {
     }
 
     /**
-     * Returns the {@link TokenRelation} with the given number. If no such token relation exists, returns {@code Optional.empty()}
-     *
-     * @param tokenNum - the number of the token relation to be retrieved
-     * @param accountNum - the number of the account relation to be retrieved
-     */
-    public Optional<TokenRelation> get(final long tokenNum, final long accountNum) {
-        final var tokenRelation =
-                Objects.requireNonNull(tokenRelState).get(EntityNumPair.fromLongs(tokenNum, accountNum));
-        return Optional.ofNullable(tokenRelation);
-    }
-
-    /**
      * Returns the {@link TokenRelation} with the given token number and account number.
      * If no such token relation exists, returns {@code Optional.empty()}
      *
-     * @param tokenNum - the number of the token to be retrieved
-     * @param accountNum - the number of the account to be retrieved
+     * @param accountId - the number of the account to be retrieved
+     * @param tokenId   - the number of the token to be retrieved
      */
-    public Optional<TokenRelation> getForModify(final long tokenNum, final long accountNum) {
-        final var token =
-                Objects.requireNonNull(tokenRelState).getForModify(EntityNumPair.fromLongs(tokenNum, accountNum));
-        return Optional.ofNullable(token);
-    }
+    @NonNull
+    public Optional<TokenRelation> getForModify(@NonNull final AccountID accountId, @NonNull final TokenID tokenId) {
+        requireNonNull(accountId);
+        requireNonNull(tokenId);
 
-    /**
-     * Returns the number of tokens in the state.
-     * @return the number of tokens in the state.
-     */
-    public long sizeOfState() {
-        return tokenRelState.size();
+        if (AccountID.DEFAULT.equals(accountId) || TokenID.DEFAULT.equals(tokenId)) return Optional.empty();
+
+        final var token = Objects.requireNonNull(tokenRelState)
+                .getForModify(EntityNumPair.fromLongs(accountId.accountNum(), tokenId.tokenNum()));
+        return Optional.ofNullable(token);
     }
 
     /**
