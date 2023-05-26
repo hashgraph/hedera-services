@@ -18,6 +18,7 @@ package com.swirlds.platform;
 
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.units.TimeUnit.UNIT_MILLISECONDS;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.PLATFORM_STATUS;
 import static com.swirlds.logging.LogMarker.RECONNECT;
@@ -33,6 +34,7 @@ import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.common.formatting.UnitFormatter;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
@@ -149,6 +151,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -1046,9 +1049,8 @@ public class SwirldsPlatform implements Platform, Startable {
 
         currentPlatformStatus.set(PlatformStatus.REPLAYING_EVENTS);
 
-        // Get rid of events loaded from the state. TODO should we avoid loading them in the first place?
-//        clearAllPipelines();
-//        shadowGraph.setMinimumGenerationNonAncient(initialMinimumGenerationNonAncient);
+        // TODO use time
+        final Instant start = Instant.now();
 
         logger.info(
                 STARTUP.getMarker(),
@@ -1061,29 +1063,45 @@ public class SwirldsPlatform implements Platform, Startable {
             final IOIterator<EventImpl> iterator =
                     preConsensusEventFileManager.getEventIterator(initialMinimumGenerationNonAncient);
 
-            long count = 0;
+            long eventCount = 0;
+            long transactionCount = 0;
             while (iterator.hasNext()) {
                 final EventImpl event = iterator.next();
 
+                eventCount++;
+                transactionCount += event.getTransactions().length;
+
                 // TODO should we do this on a background thread?
-                platformContext.getCryptography().digestSync(event.getBaseEventHashedData());
+                final Hash eventHash = platformContext.getCryptography().digestSync(event.getBaseEventHashedData());
+
+                if (shadowGraph.isHashInGraph(eventHash)) {
+                    // Hashgraph doesn't deal with duplicate events well, filter them out here
+                    continue;
+                }
 
                 final GossipEvent gossipEvent = new GossipEvent(event.getHashedData(), event.getUnhashedData());
                 eventIntake.addUnlinkedEvent(gossipEvent);
-
-                count++;
             }
 
             // TODO should we flush event intake here?
             SECONDS.sleep(1); // TODO poor man's flush
             // TODO flush event creator (to prevent unintentional branching)
 
+            // TODO use time
+            final Instant finish = Instant.now();
+            final Duration elapsed = Duration.between(start, finish);
+
             // TODO provide other data here:
             //  - number of rounds, and current round number after replay
-            //  - number of transactions
-            //  - elapsed wall clock time
             //  - elapsed consensus time
-            logger.info(STARTUP.getMarker(), "replayed {} preconsensus events", count);
+            logger.info(
+                    STARTUP.getMarker(),
+                    "replayed {} preconsensus events containing {} transactions. Replay took {}.",
+                    eventCount,
+                    transactionCount,
+                    new UnitFormatter(elapsed.toMillis(), UNIT_MILLISECONDS)
+                            .setAbbreviate(false)
+                            .render());
 
             preConsensusEventWriter.beginStreamingNewEvents();
 
