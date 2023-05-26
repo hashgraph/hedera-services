@@ -80,7 +80,7 @@ public class MockRecordsHistorian implements RecordsHistorian {
     }
 
     @Override
-    public boolean throttleAllowsChildTransactions() {
+    public boolean hasThrottleCapacityForChildTransactions() {
         return true;
     }
 

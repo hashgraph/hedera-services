@@ -75,7 +75,6 @@ import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
-import com.hederahashgraph.api.proto.java.EthereumTransaction;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
@@ -1301,7 +1300,7 @@ class DeterministicThrottlingTest {
         subject.rebuildFor(defs);
         useSomeFromEach(subject.allActiveThrottles());
 
-        final var actual = subject.takeSnapshots();
+        final var actual = subject.getUsageSnapshots();
         for (int i = 0; i < 4; i++) {
             assertEquals(expected.get(i).usageSnapshot(), actual.get(i));
         }
@@ -1322,13 +1321,13 @@ class DeterministicThrottlingTest {
 
         subject.rebuildFor(defs);
         useSomeFromEach(subject.allActiveThrottles());
-        final var snapshot = subject.takeSnapshots();
+        final var snapshot = subject.getUsageSnapshots();
         useSomeFromEach(subject.allActiveThrottles());
         useSomeFromEach(subject.allActiveThrottles());
         useSomeFromEach(subject.allActiveThrottles());
-        subject.resetTo(snapshot);
+        subject.resetUsageThrottlesTo(snapshot);
 
-        final var actual = subject.takeSnapshots();
+        final var actual = subject.getUsageSnapshots();
         for (int i = 0; i < 4; i++) {
             assertEquals(expected.get(i).usageSnapshot(), actual.get(i));
         }

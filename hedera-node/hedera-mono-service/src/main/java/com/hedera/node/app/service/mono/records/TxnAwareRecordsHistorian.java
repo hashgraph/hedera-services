@@ -74,7 +74,7 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
             RecordCache recordCache,
             TransactionContext txnCtx,
             ConsensusTimeTracker consensusTimeTracker,
-            final @HandleThrottle FunctionalityThrottling handleThrottling) {
+            @HandleThrottle final FunctionalityThrottling handleThrottling) {
         this.txnCtx = txnCtx;
         this.recordCache = recordCache;
         this.consensusTimeTracker = consensusTimeTracker;
@@ -168,7 +168,7 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
     }
 
     @Override
-    public boolean throttleAllowsChildTransactions() {
+    public boolean hasThrottleCapacityForChildTransactions() {
         @Nullable List<DeterministicThrottle.UsageSnapshot> snapshotsIfNeeded = null;
         var isAllowed = true;
         for (int i = 0, n = followingChildRecords.size(); i < n && isAllowed; i++) {
@@ -185,7 +185,7 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
                     continue;
                 }
                 if (snapshotsIfNeeded == null) {
-                    snapshotsIfNeeded = handleThrottling.takeSnapshots();
+                    snapshotsIfNeeded = handleThrottling.getUsageSnapshots();
                 }
                 final var synthAccessor = synthAccessorFor(synthChild);
                 if (handleThrottling.shouldThrottleTxn(synthAccessor)) {
@@ -194,7 +194,7 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
             }
         }
         if (!isAllowed) {
-            handleThrottling.resetTo(snapshotsIfNeeded);
+            handleThrottling.resetUsageThrottlesTo(snapshotsIfNeeded);
         }
         return isAllowed;
     }

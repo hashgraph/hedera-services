@@ -58,14 +58,14 @@ public interface FunctionalityThrottling {
      * Returns a list of snapshots of the current usage of all active throttles.
      * @return the active snapshots
      */
-    List<DeterministicThrottle.UsageSnapshot> takeSnapshots();
+    List<DeterministicThrottle.UsageSnapshot> getUsageSnapshots();
 
     /**
      * Resets the current usage of all active throttles to the given snapshots.
      *
      * @param snapshots the snapshots to reset to
      */
-    void resetTo(List<DeterministicThrottle.UsageSnapshot> snapshots);
+    void resetUsageThrottlesTo(List<DeterministicThrottle.UsageSnapshot> snapshots);
 
     GasLimitDeterministicThrottle gasLimitThrottle();
 

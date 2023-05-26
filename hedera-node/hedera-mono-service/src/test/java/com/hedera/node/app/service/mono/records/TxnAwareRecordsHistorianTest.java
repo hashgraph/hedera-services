@@ -465,7 +465,7 @@ class TxnAwareRecordsHistorianTest {
 
         final var captor = ArgumentCaptor.forClass(TxnAccessor.class);
         given(consensusTimeTracker.isAllowableFollowingOffset(anyLong())).willReturn(true);
-        given(handleThrottling.takeSnapshots()).willReturn(pretendSnapshots);
+        given(handleThrottling.getUsageSnapshots()).willReturn(pretendSnapshots);
 
         doTrack(SUCCESS, body -> body.setContractCall(ContractCallTransactionBody.getDefaultInstance()));
         doTrack(SUCCESS, body -> body.setContractCreateInstance(ContractCreateTransactionBody.getDefaultInstance()));
@@ -477,7 +477,7 @@ class TxnAwareRecordsHistorianTest {
         doTrack(SUCCESS, body -> body.setTokenMint(TokenMintTransactionBody.getDefaultInstance()));
 
         // No transactions will be throttled, shouldn't need to reset to snapshots
-        assertTrue(subject.throttleAllowsChildTransactions());
+        assertTrue(subject.hasThrottleCapacityForChildTransactions());
 
         verify(handleThrottling, times(2)).shouldThrottleTxn(captor.capture());
 
@@ -485,7 +485,7 @@ class TxnAwareRecordsHistorianTest {
         assertEquals(
                 List.of(HederaFunctionality.CryptoTransfer, HederaFunctionality.TokenMint),
                 allThrottledAccessors.stream().map(TxnAccessor::getFunction).collect(toList()));
-        verify(handleThrottling, never()).resetTo(pretendSnapshots);
+        verify(handleThrottling, never()).resetUsageThrottlesTo(pretendSnapshots);
     }
 
     @Test
@@ -495,7 +495,7 @@ class TxnAwareRecordsHistorianTest {
 
         final var captor = ArgumentCaptor.forClass(TxnAccessor.class);
         given(consensusTimeTracker.isAllowableFollowingOffset(anyLong())).willReturn(true);
-        given(handleThrottling.takeSnapshots()).willReturn(pretendSnapshots);
+        given(handleThrottling.getUsageSnapshots()).willReturn(pretendSnapshots);
         given(handleThrottling.shouldThrottleTxn(any())).willReturn(false).willReturn(true);
 
         doTrack(SUCCESS, body -> body.setContractCall(ContractCallTransactionBody.getDefaultInstance()));
@@ -508,7 +508,7 @@ class TxnAwareRecordsHistorianTest {
         doTrack(SUCCESS, body -> body.setTokenMint(TokenMintTransactionBody.getDefaultInstance()));
 
         // No transactions will be throttled, shouldn't need to reset to snapshots
-        assertFalse(subject.throttleAllowsChildTransactions());
+        assertFalse(subject.hasThrottleCapacityForChildTransactions());
 
         verify(handleThrottling, times(2)).shouldThrottleTxn(captor.capture());
 
@@ -516,7 +516,7 @@ class TxnAwareRecordsHistorianTest {
         assertEquals(
                 List.of(HederaFunctionality.CryptoTransfer, HederaFunctionality.TokenMint),
                 allThrottledAccessors.stream().map(TxnAccessor::getFunction).collect(toList()));
-        verify(handleThrottling).resetTo(pretendSnapshots);
+        verify(handleThrottling).resetUsageThrottlesTo(pretendSnapshots);
     }
 
     private void doTrack(final ResponseCodeEnum status, @NonNull final Consumer<TransactionBody.Builder> synthSpec) {

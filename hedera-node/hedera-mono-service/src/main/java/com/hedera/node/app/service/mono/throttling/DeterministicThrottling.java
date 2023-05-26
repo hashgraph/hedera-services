@@ -161,7 +161,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
      * {@inheritDoc}
      */
     @Override
-    public List<DeterministicThrottle.UsageSnapshot> takeSnapshots() {
+    public List<DeterministicThrottle.UsageSnapshot> getUsageSnapshots() {
         final List<DeterministicThrottle.UsageSnapshot> snapshots = new ArrayList<>();
         for (final var throttle : activeThrottles) {
             snapshots.add(throttle.usageSnapshot());
@@ -173,7 +173,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
      * {@inheritDoc}
      */
     @Override
-    public void resetTo(final List<DeterministicThrottle.UsageSnapshot> snapshots) {
+    public void resetUsageThrottlesTo(final List<DeterministicThrottle.UsageSnapshot> snapshots) {
         for (int i = 0, n = activeThrottles.size(); i < n; i++) {
             activeThrottles.get(i).resetUsageTo(snapshots.get(i));
         }

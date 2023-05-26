@@ -134,7 +134,7 @@ public class PrecompileMintThrottlingCheck extends HapiSuite {
                                 "mintNonFungibleTokenWithAddress",
                                 mintContractAddress.get(),
                                 metadata)
-                        .gas(2 * GAS_TO_OFFER)
+                        .gas(2L * GAS_TO_OFFER)
                         .payingWith(GENESIS)
                         .noLogging()
                         .deferStatusResolution()

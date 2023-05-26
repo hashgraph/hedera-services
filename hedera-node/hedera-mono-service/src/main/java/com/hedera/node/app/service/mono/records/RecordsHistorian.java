@@ -107,11 +107,11 @@ public interface RecordsHistorian {
      * </ul>
      * consumes the capacity required for that child transaction in the consensus throttle buckets.
      *
-     * <p>Returns true if all the child transactions were successfully throttled, false otherwise.
+     * <p>Returns true if all the child transactions were allowed through the throttle consideration, false otherwise.
      *
      * @return whether the consensus throttle has capacity to allow all the successful 0x167 children
      */
-    boolean throttleAllowsChildTransactions();
+    boolean hasThrottleCapacityForChildTransactions();
 
     /**
      * Returns a non-negative "source id" to be used to create a group of in-progress child

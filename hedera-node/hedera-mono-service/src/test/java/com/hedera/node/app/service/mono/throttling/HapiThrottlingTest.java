@@ -86,11 +86,11 @@ class HapiThrottlingTest {
     @Test
     void delegatesSnapshotActions() {
         final List<DeterministicThrottle.UsageSnapshot> pretend = List.of();
-        given(delegate.takeSnapshots()).willReturn(pretend);
-        assertSame(pretend, subject.takeSnapshots());
+        given(delegate.getUsageSnapshots()).willReturn(pretend);
+        assertSame(pretend, subject.getUsageSnapshots());
 
-        subject.resetTo(pretend);
-        verify(delegate).resetTo(pretend);
+        subject.resetUsageThrottlesTo(pretend);
+        verify(delegate).resetUsageThrottlesTo(pretend);
     }
 
     @Test
