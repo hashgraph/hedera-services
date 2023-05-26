@@ -63,7 +63,7 @@ public class EventFactory {
                 null);
 
         final BaseEventUnhashedData unhashedEventData = new BaseEventUnhashedData(
-                new NodeId(otherParent != null ? otherParent.getCreatorId().id() : new Random().nextInt()),
+                otherParent != null ? otherParent.getCreatorId() : new NodeId(Math.abs(new Random().nextLong())),
                 HashGenerator.random().getValue());
 
         final EventImpl e = new EventImpl(hashedEventData, unhashedEventData, selfParent, otherParent);

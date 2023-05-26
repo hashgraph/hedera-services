@@ -36,6 +36,7 @@ import com.swirlds.platform.dispatch.triggers.flow.StateHashValidityTrigger;
 import com.swirlds.platform.system.SystemExitReason;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
+import java.util.Objects;
 
 /**
  * This class is responsible for handling the response to an ISS event.
@@ -106,7 +107,7 @@ public class IssHandler {
             return;
         }
 
-        if (nodeId == selfId) {
+        if (Objects.equals(nodeId, selfId)) {
             // let the logic in selfIssObserver handle self ISS events
             return;
         }

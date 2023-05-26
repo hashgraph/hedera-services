@@ -150,7 +150,7 @@ public class ChatterEventDescriptor implements EventDescriptor {
             return false;
         }
 
-        return creator == that.creator && generation == that.generation && hash.equals(that.hash);
+        return Objects.equals(creator, that.creator) && generation == that.generation && hash.equals(that.hash);
     }
 
     /**

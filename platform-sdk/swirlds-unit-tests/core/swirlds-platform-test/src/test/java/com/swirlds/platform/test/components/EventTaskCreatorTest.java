@@ -129,7 +129,7 @@ class EventTaskCreatorTest {
     void testEventRescue() throws InterruptedException {
         when(setting.getRescueChildlessInverseProbability()).thenReturn(5);
         when(addressBook.getSize()).thenReturn(5);
-        // this is a hack work around instead of refactoring the whole unit test file.
+        // this is a work around instead of refactoring the whole unit test file.
         // the implementation of rescue children now iterates over the addresses in the address book.
         final AddressBook newAddressBook =
                 new RandomAddressBookGenerator().setSize(5).build();
