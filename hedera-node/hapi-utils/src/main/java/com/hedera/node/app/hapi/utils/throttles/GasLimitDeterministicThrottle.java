@@ -45,10 +45,10 @@ public class GasLimitDeterministicThrottle implements CongestibleThrottle {
      * Calculates the amount of nanoseconds that elapsed since the last time the method was called.
      * Verifies whether there is enough capacity to handle a transaction with some gasLimit.
      *
-     * @param now - the instant against which the {@link GasLimitBucketThrottle} is tested.
+     * @param now        - the instant against which the {@link GasLimitBucketThrottle} is tested.
      * @param txGasLimit - the gasLimit extracted from the transaction payload.
      * @return true if there is enough capacity to handle this transaction; false if it should be
-     *     throttled.
+     * throttled.
      */
     public boolean allow(Instant now, long txGasLimit) {
         final var elapsedNanos = DeterministicThrottle.elapsedNanosBetween(lastDecisionTime, now);
@@ -58,15 +58,11 @@ public class GasLimitDeterministicThrottle implements CongestibleThrottle {
     }
 
     /**
-     * Given a time which must not be before the {@code lastDecisionTime} of this throttle, leaks
-     * until that time and returns the resulting free-to-used ratio.
+     * Returns the free-to-used ratio in the bucket at its last decision time.
      *
-     * @param now the time at which the free-to-used ratio must be computed
      * @return the free-to-used ratio at that time
      */
-    public long freeToUsedRatio(final Instant now) {
-        delegate.leakFor(DeterministicThrottle.elapsedNanosBetween(lastDecisionTime, now));
-        lastDecisionTime = now;
+    public long instantaneousFreeToUsedRatio() {
         return delegate.freeToUsedRatio();
     }
 
@@ -84,6 +80,19 @@ public class GasLimitDeterministicThrottle implements CongestibleThrottle {
         final var elapsedNanos =
                 Math.max(0, Duration.between(lastDecisionTime, now).toNanos());
         return delegate.percentUsed(elapsedNanos);
+    }
+
+    /**
+     * Returns the percent usage of this throttle, at a time which may be later than the last
+     * throttling decision (which would imply some capacity has been freed).
+     *
+     * @return the capacity available at this time
+     */
+    public double instantaneousPercentUsed() {
+        if (lastDecisionTime == null) {
+            return 0.0;
+        }
+        return delegate.instantaneousPercentUsed();
     }
 
     /**
