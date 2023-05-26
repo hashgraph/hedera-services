@@ -19,7 +19,6 @@ package com.swirlds.demo.iss;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.LinkedList;
 import java.util.List;
 
