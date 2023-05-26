@@ -31,9 +31,11 @@ import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.state.StateSettings;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.net.SocketException;
 import java.util.Objects;
+import java.util.function.BooleanSupplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -63,6 +65,13 @@ public class ReconnectTeacher {
     private final ThreadManager threadManager;
 
     /**
+     * A function to check periodically if teaching should be stopped, e.g. when the
+     * teacher has fallen behind.
+     */
+    @Nullable
+    private final BooleanSupplier requestToStopTeaching;
+
+    /**
      * @param threadManager          responsible for managing thread lifecycles
      * @param connection             the connection to be used for the reconnect
      * @param reconnectSocketTimeout the socket timeout to use during the reconnect
@@ -78,6 +87,7 @@ public class ReconnectTeacher {
             final long selfId,
             final long otherId,
             final long lastRoundReceived,
+            @Nullable final BooleanSupplier requestToStopTeaching,
             @NonNull final ReconnectMetrics statistics) {
 
         this.threadManager = Objects.requireNonNull(threadManager);
@@ -87,6 +97,7 @@ public class ReconnectTeacher {
         this.selfId = selfId;
         this.otherId = otherId;
         this.lastRoundReceived = lastRoundReceived;
+        this.requestToStopTeaching = requestToStopTeaching;
         this.statistics = Objects.requireNonNull(statistics);
     }
 
@@ -199,7 +210,8 @@ public class ReconnectTeacher {
                 new MerkleDataInputStream(connection.getDis()),
                 new MerkleDataOutputStream(connection.getDos()),
                 signedState.getState(),
-                connection::disconnect);
+                connection::disconnect,
+                requestToStopTeaching);
 
         synchronizer.synchronize();
         connection.getDos().flush();

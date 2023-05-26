@@ -32,6 +32,7 @@ dependencies {
   // we depend on the protoc compiled hapi during test as we test our pbj generated code against it
   // to make sure it is compatible
   testImplementation(libs.hapi)
+  testImplementation(libs.protobuf.java.util)
   testFixturesImplementation(libs.pbj.runtime)
 }
 

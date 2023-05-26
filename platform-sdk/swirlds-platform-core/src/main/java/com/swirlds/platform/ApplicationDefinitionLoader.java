@@ -27,12 +27,14 @@ import com.swirlds.platform.config.legacy.AddressConfig;
 import com.swirlds.platform.config.legacy.JarAppConfig;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.network.Network;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.UncheckedIOException;
 import java.net.SocketException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
@@ -67,10 +69,10 @@ public final class ApplicationDefinitionLoader {
      * 		if the configuration file specified by {@link Settings#getConfigPath()} does not exist
      */
     public static ApplicationDefinition load(
-            final LegacyConfigProperties configurationProperties, final Set<Integer> localNodesToStart)
+            @NonNull final LegacyConfigProperties configurationProperties, @NonNull final Set<NodeId> localNodesToStart)
             throws ConfigurationException {
-        CommonUtils.throwArgNull(configurationProperties, "configurationProperties");
-        CommonUtils.throwArgNull(localNodesToStart, "localNodesToStart");
+        Objects.requireNonNull(configurationProperties, "configurationProperties must not be null");
+        Objects.requireNonNull(localNodesToStart, "localNodesToStart must not be null");
 
         final String swirldName = configurationProperties.swirldName().orElse("");
 
@@ -112,7 +114,15 @@ public final class ApplicationDefinitionLoader {
     }
 
     private static void handleAddressConfig(
-            final Set<Integer> localNodesToStart, final List<Address> bookData, final AddressConfig addressConfig) {
+            @NonNull final Set<NodeId> localNodesToStart,
+            @NonNull final List<Address> bookData,
+            @NonNull final AddressConfig addressConfig) {
+        Objects.requireNonNull(localNodesToStart, "localNodesToStart must not be null");
+        Objects.requireNonNull(bookData, "bookData must not be null");
+        Objects.requireNonNull(addressConfig, "addressConfig must not be null");
+        // FUTURE WORK: This correlation between NodeId and position in bookData will change when the addressBook
+        // text format is updated to include node id and the position becomes arbitrary.
+        final NodeId nodeId = new NodeId(bookData.size());
         // The set localNodesToStart contains the nodes set by the command line to start, if
         // none are passed, then IP addresses will be compared to determine which node to
         // start. If some are passed, then the IP addresses will be ignored. This must be
@@ -120,12 +130,12 @@ public final class ApplicationDefinitionLoader {
         final boolean isOwnHost;
         try {
             isOwnHost = (localNodesToStart.isEmpty() && Network.isOwn(addressConfig.internalInetAddressName()))
-                    || localNodesToStart.contains(bookData.size());
+                    || localNodesToStart.contains(nodeId);
         } catch (SocketException e) {
             throw new UncheckedIOException(e);
         }
         bookData.add(new Address(
-                new NodeId(bookData.size()), // Id
+                nodeId, // Id
                 addressConfig.nickname(), // nickname
                 addressConfig.selfName(), // selfName
                 addressConfig.weight(), // weight
