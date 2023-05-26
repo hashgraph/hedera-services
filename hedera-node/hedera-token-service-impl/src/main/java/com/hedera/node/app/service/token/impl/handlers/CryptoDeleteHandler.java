@@ -35,9 +35,9 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoDeleteTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
-import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -57,6 +57,7 @@ public class CryptoDeleteHandler implements TransactionHandler {
         // Exists for injection
     }
 
+    @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
         final var op = txn.cryptoDeleteOrThrow();
 
@@ -80,21 +81,12 @@ public class CryptoDeleteHandler implements TransactionHandler {
                 .requireKeyIfReceiverSigRequired(transferAccountId, INVALID_TRANSFER_ACCOUNT_ID);
     }
 
-    /**
-     * This method is called during the handle workflow. It executes the actual transaction.
-     *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
-     *
-     * @throws NullPointerException if one of the arguments is {@code null}
-     */
-    public void handle(
-            @NonNull final HandleContext context,
-            @NonNull final TransactionBody txn,
-            @NonNull final WritableAccountStore accountStore) {
+    @Override
+    public void handle(@NonNull final HandleContext context) {
         requireNonNull(context);
-        requireNonNull(txn);
-        requireNonNull(accountStore);
+
+        final var txn = context.body();
+        final var accountStore = context.writableStore(WritableAccountStore.class);
 
         final var op = txn.cryptoDelete();
 
@@ -109,6 +101,7 @@ public class CryptoDeleteHandler implements TransactionHandler {
         accountStore.put(updatedDeleteAccount.copyBuilder().deleted(true).build());
     }
 
+    /* ----------------------------- Helper methods -------------------------------- */
     /**
      * Validate the expiration on delete and transfer accounts. Transfer balance from delete account
      * to transfer account if valid.
@@ -133,11 +126,11 @@ public class CryptoDeleteHandler implements TransactionHandler {
     }
 
     /**
-     *
-     * @param expiryValidator
-     * @param account
-     * @param adjustment
-     * @return
+     * Computes new balance for the account based on adjustment. Also validates expiration checks.
+     * @param expiryValidator expiry validator
+     * @param account account whose balance should be adjusted
+     * @param adjustment adjustment amount
+     * @return new balance
      */
     private long computeNewBalance(
             final ExpiryValidator expiryValidator, final Account account, final long adjustment) {

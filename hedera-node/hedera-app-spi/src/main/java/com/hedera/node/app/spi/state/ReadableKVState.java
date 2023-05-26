@@ -89,6 +89,5 @@ public interface ReadableKVState<K, V> {
      * Gets the number of keys in the {@link ReadableKVState}.
      * @return number of keys in the {@link ReadableKVState}.
      */
-    @NonNull
     long size();
 }

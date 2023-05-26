@@ -114,10 +114,10 @@ dependencyResolutionManagement {
     // runtime.
     create("libs") {
       // The HAPI API version to use, this need to match the tag set on gitRepositories above
-      version("hapi-version", "0.38.1-allowance-SNAPSHOT")
+      version("hapi-version", "0.39.0-SNAPSHOT")
 
       // Definition of version numbers for all libraries
-      version("pbj-version", "0.5.2")
+      version("pbj-version", "0.6.0")
       version("besu-version", "23.1.2")
       version("besu-native-version", "0.6.1")
       version("bouncycastle-version", "1.70")
@@ -235,6 +235,8 @@ dependencyResolutionManagement {
       library("netty-handler", "io.netty", "netty-handler").versionRef("netty-version")
       library("protobuf-java", "com.google.protobuf", "protobuf-java")
           .versionRef("protobuf-java-version")
+      library("protobuf-java-util", "com.google.protobuf", "protobuf-java-util")
+          .versionRef("protobuf-java-version")
       library("swirlds-common", "com.swirlds", "swirlds-common").versionRef("swirlds-version")
       library("swirlds-config", "com.swirlds", "swirlds-config-api").versionRef("swirlds-version")
       library("swirlds-config-impl", "com.swirlds", "swirlds-config-impl")
@@ -274,6 +276,7 @@ dependencyResolutionManagement {
       version("testcontainers-version", "1.17.2")
       version("classgraph-version", "4.8.65")
       version("assertj-version", "3.23.1")
+      version("system-stubs-version", "2.0.2")
 
       bundle("junit5", listOf("junit-jupiter-api", "junit-jupiter-params", "junit-jupiter"))
       bundle("mockito", listOf("mockito-inline", "mockito-jupiter"))
@@ -319,6 +322,10 @@ dependencyResolutionManagement {
           .versionRef("testcontainers-version")
       library("classgraph", "io.github.classgraph", "classgraph").versionRef("classgraph-version")
       library("assertj-core", "org.assertj", "assertj-core").versionRef("assertj-version")
+      library("system-stubs-jupiter", "uk.org.webcompere", "system-stubs-jupiter")
+          .versionRef("system-stubs-version")
+      library("system-stubs-core", "uk.org.webcompere", "system-stubs-core")
+          .versionRef("system-stubs-version")
     }
   }
 }

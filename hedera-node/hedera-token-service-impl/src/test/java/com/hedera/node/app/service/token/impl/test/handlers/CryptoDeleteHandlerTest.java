@@ -36,6 +36,7 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TransactionID;
@@ -47,14 +48,15 @@ import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoDeleteHandler;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
-import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -77,13 +79,13 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
     public void setUp() {
         super.setUp();
         configuration = new HederaTestConfigBuilder().getOrCreateConfig();
-        readableAccounts = emptyReadableAccountStateBuilder()
-                .value(EntityNumVirtualKey.fromLong(accountNum), account)
-                .value(EntityNumVirtualKey.fromLong(deleteAccountNum), deleteAccount)
-                .value(EntityNumVirtualKey.fromLong(transferAccountNum), transferAccount)
-                .build();
-        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        readableStore = new ReadableAccountStoreImpl(readableStates);
+        updateReadableStore(
+                Map.of(accountNum, account, deleteAccountNum, deleteAccount, transferAccountNum, transferAccount));
+        updateWritableStore(
+                Map.of(accountNum, account, deleteAccountNum, deleteAccount, transferAccountNum, transferAccount));
+
+        lenient().when(handleContext.configuration()).thenReturn(configuration);
+        lenient().when(handleContext.writableStore(WritableAccountStore.class)).thenReturn(writableStore);
     }
 
     @Test
@@ -114,15 +116,13 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
     void doesntAddBothKeysAccountsSameAsPayerForCryptoDelete() throws PreCheckException {
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
 
-        readableAccounts = emptyReadableAccountStateBuilder()
-                .value(EntityNumVirtualKey.fromLong(accountNum), account)
-                .value(
-                        EntityNumVirtualKey.fromLong(deleteAccountNum),
-                        deleteAccount.copyBuilder().key(key).build())
-                .value(EntityNumVirtualKey.fromLong(transferAccountNum), transferAccount)
-                .build();
-        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        readableStore = new ReadableAccountStoreImpl(readableStates);
+        updateReadableStore(Map.of(
+                accountNum,
+                account,
+                deleteAccountNum,
+                deleteAccount.copyBuilder().key(key).build(),
+                transferAccountNum,
+                transferAccount));
 
         final var context = new FakePreHandleContext(readableStore, txn);
         subject.preHandle(context);
@@ -137,13 +137,8 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
     void doesntAddTransferKeyIfAccountSameAsPayerForCryptoDelete() throws PreCheckException {
         final var txn = deleteAccountTransaction(deleteAccountId, id);
 
-        readableAccounts = emptyReadableAccountStateBuilder()
-                .value(EntityNumVirtualKey.fromLong(accountNum), account)
-                .value(EntityNumVirtualKey.fromLong(deleteAccountNum), deleteAccount)
-                .value(EntityNumVirtualKey.fromLong(transferAccountNum), transferAccount)
-                .build();
-        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        readableStore = new ReadableAccountStoreImpl(readableStates);
+        updateReadableStore(
+                Map.of(accountNum, account, deleteAccountNum, deleteAccount, transferAccountNum, transferAccount));
 
         final var context = new FakePreHandleContext(readableStore, txn);
         subject.preHandle(context);
@@ -170,30 +165,18 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
     void failsWithResponseCodeIfAnyAccountMissingForCryptoDelete() throws PreCheckException {
         /* ------ payerAccount missing, so deleteAccount and transferAccount will not be added  ------ */
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
-        readableAccounts = emptyReadableAccountStateBuilder().build();
-        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        readableStore = new ReadableAccountStoreImpl(readableStates);
+        updateReadableStore(Map.of());
 
         assertThrowsPreCheck(() -> new FakePreHandleContext(readableStore, txn), INVALID_PAYER_ACCOUNT_ID);
 
         /* ------ deleteAccount missing, so transferAccount will not be added ------ */
-        readableAccounts = emptyReadableAccountStateBuilder()
-                .value(EntityNumVirtualKey.fromLong(accountNum), account)
-                .value(EntityNumVirtualKey.fromLong(transferAccountNum), transferAccount)
-                .build();
-        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        readableStore = new ReadableAccountStoreImpl(readableStates);
+        updateReadableStore(Map.of(accountNum, account, transferAccountNum, transferAccount));
 
         final var context2 = new FakePreHandleContext(readableStore, txn);
         assertThrowsPreCheck(() -> subject.preHandle(context2), INVALID_ACCOUNT_ID);
 
         /* ------ transferAccount missing ------ */
-        readableAccounts = emptyReadableAccountStateBuilder()
-                .value(EntityNumVirtualKey.fromLong(accountNum), account)
-                .value(EntityNumVirtualKey.fromLong(deleteAccountNum), deleteAccount)
-                .build();
-        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        readableStore = new ReadableAccountStoreImpl(readableStates);
+        updateReadableStore(Map.of(accountNum, account, deleteAccountNum, deleteAccount));
 
         final var context3 = new FakePreHandleContext(readableStore, txn);
         assertThrowsPreCheck(() -> subject.preHandle(context3), INVALID_TRANSFER_ACCOUNT_ID);
@@ -232,78 +215,54 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void handleFailsIfDeleteAccountAccountMissing() {
-        writableAccounts = emptyWritableAccountStateBuilder()
-                .value(EntityNumVirtualKey.fromLong(accountNum), account)
-                .value(EntityNumVirtualKey.fromLong(transferAccountNum), transferAccount)
-                .build();
-        given(writableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(writableAccounts);
-        writableStore = new WritableAccountStore(writableStates);
+        updateWritableStore(Map.of(accountNum, account, transferAccountNum, transferAccount));
+        givenTxnWith(deleteAccountId, transferAccountId);
 
-        final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
-        given(writableStore.get(deleteAccountId)).willReturn(null);
-
-        assertThatThrownBy(() -> subject.handle(handleContext, txn, writableStore))
+        assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(INVALID_ACCOUNT_ID));
     }
 
     @Test
     void handleFailsIfTransferAccountAccountMissing() {
-        writableAccounts = emptyWritableAccountStateBuilder()
-                .value(EntityNumVirtualKey.fromLong(accountNum), account)
-                .value(EntityNumVirtualKey.fromLong(deleteAccountNum), deleteAccount)
-                .build();
-        given(writableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(writableAccounts);
-        writableStore = new WritableAccountStore(writableStates);
+        updateWritableStore(Map.of(accountNum, account, deleteAccountNum, deleteAccount));
 
-        final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
-        given(writableStore.get(deleteAccountId)).willReturn(null);
+        givenTxnWith(deleteAccountId, transferAccountId);
 
-        assertThatThrownBy(() -> subject.handle(handleContext, txn, writableStore))
+        assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(INVALID_TRANSFER_ACCOUNT_ID));
     }
 
     @Test
     void failsIfAccountIsAlreadyDeleted() {
-        writableAccounts = emptyWritableAccountStateBuilder()
-                .value(EntityNumVirtualKey.fromLong(accountNum), account)
-                .value(
-                        EntityNumVirtualKey.fromLong(deleteAccountNum),
-                        deleteAccount.copyBuilder().deleted(true).build())
-                .value(EntityNumVirtualKey.fromLong(transferAccountNum), transferAccount)
-                .build();
-        given(writableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(writableAccounts);
-        writableStore = new WritableAccountStore(writableStates);
+        updateWritableStore(Map.of(
+                accountNum,
+                account,
+                deleteAccountNum,
+                deleteAccount.copyBuilder().deleted(true).build(),
+                transferAccountNum,
+                transferAccount));
 
-        final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
-        given(writableStore.get(deleteAccountId)).willReturn(null);
-        given(handleContext.expiryValidator()).willReturn(expiryValidator);
+        givenTxnWith(deleteAccountId, transferAccountId);
         given(expiryValidator.isDetached(eq(EntityType.ACCOUNT), anyBoolean(), anyLong()))
                 .willReturn(false);
 
-        assertThatThrownBy(() -> subject.handle(handleContext, txn, writableStore))
+        assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(ACCOUNT_DELETED));
     }
 
     @Test
     void happyPathWorks() {
-        writableAccounts = emptyWritableAccountStateBuilder()
-                .value(EntityNumVirtualKey.fromLong(accountNum), account)
-                .value(EntityNumVirtualKey.fromLong(deleteAccountNum), deleteAccount)
-                .value(EntityNumVirtualKey.fromLong(transferAccountNum), transferAccount)
-                .build();
-        given(writableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(writableAccounts);
-        writableStore = new WritableAccountStore(writableStates);
+        updateWritableStore(
+                Map.of(accountNum, account, deleteAccountNum, deleteAccount, transferAccountNum, transferAccount));
 
-        final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
-
-        given(handleContext.expiryValidator()).willReturn(expiryValidator);
+        givenTxnWith(deleteAccountId, transferAccountId);
         given(expiryValidator.isDetached(eq(EntityType.ACCOUNT), anyBoolean(), anyLong()))
                 .willReturn(false);
 
-        subject.handle(handleContext, txn, writableStore);
+        subject.handle(handleContext);
 
         // When an account is deleted, marks the value of the account deleted flag to true
         assertThat(writableStore.get(deleteAccountId).get().deleted()).isTrue();
@@ -311,86 +270,62 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void failsIfDeleteAccountIsDetached() {
-        writableAccounts = emptyWritableAccountStateBuilder()
-                .value(EntityNumVirtualKey.fromLong(accountNum), account)
-                .value(EntityNumVirtualKey.fromLong(deleteAccountNum), deleteAccount)
-                .value(EntityNumVirtualKey.fromLong(transferAccountNum), transferAccount)
-                .build();
-        given(writableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(writableAccounts);
-        writableStore = new WritableAccountStore(writableStates);
+        updateWritableStore(
+                Map.of(accountNum, account, deleteAccountNum, deleteAccount, transferAccountNum, transferAccount));
+        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableStore);
 
-        final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
-        given(writableStore.get(deleteAccountId)).willReturn(null);
-
-        given(handleContext.expiryValidator()).willReturn(expiryValidator);
+        givenTxnWith(deleteAccountId, transferAccountId);
         given(expiryValidator.isDetached(eq(EntityType.ACCOUNT), anyBoolean(), anyLong()))
                 .willReturn(true);
 
-        assertThatThrownBy(() -> subject.handle(handleContext, txn, writableStore))
+        assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
     }
 
     @Test
     void failsIfTransferAccountIsDetached() {
-        writableAccounts = emptyWritableAccountStateBuilder()
-                .value(EntityNumVirtualKey.fromLong(accountNum), account)
-                .value(EntityNumVirtualKey.fromLong(deleteAccountNum), deleteAccount)
-                .value(EntityNumVirtualKey.fromLong(transferAccountNum), transferAccount)
-                .build();
-        given(writableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(writableAccounts);
-        writableStore = new WritableAccountStore(writableStates);
+        updateWritableStore(
+                Map.of(accountNum, account, deleteAccountNum, deleteAccount, transferAccountNum, transferAccount));
 
-        final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
-        given(writableStore.get(deleteAccountId)).willReturn(null);
-
-        given(handleContext.expiryValidator()).willReturn(expiryValidator);
+        givenTxnWith(deleteAccountId, transferAccountId);
         given(expiryValidator.isDetached(eq(EntityType.ACCOUNT), anyBoolean(), anyLong()))
                 .willReturn(true);
 
-        assertThatThrownBy(() -> subject.handle(handleContext, txn, writableStore))
+        assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
     }
 
     @Test
     void failsIfDeleteAccountIsTreasury() {
-        writableAccounts = emptyWritableAccountStateBuilder()
-                .value(EntityNumVirtualKey.fromLong(accountNum), account)
-                .value(
-                        EntityNumVirtualKey.fromLong(deleteAccountNum),
-                        deleteAccount.copyBuilder().numberTreasuryTitles(2).build())
-                .value(EntityNumVirtualKey.fromLong(transferAccountNum), transferAccount)
-                .build();
-        given(writableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(writableAccounts);
-        writableStore = new WritableAccountStore(writableStates);
+        updateWritableStore(Map.of(
+                accountNum,
+                account,
+                deleteAccountNum,
+                deleteAccount.copyBuilder().numberTreasuryTitles(2).build(),
+                transferAccountNum,
+                transferAccount));
 
-        final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
+        givenTxnWith(deleteAccountId, transferAccountId);
 
-        given(handleContext.expiryValidator()).willReturn(expiryValidator);
-
-        assertThatThrownBy(() -> subject.handle(handleContext, txn, writableStore))
+        assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(ACCOUNT_IS_TREASURY));
     }
 
     @Test
     void failsIfTargetHasNonZeroBalances() {
-        writableAccounts = emptyWritableAccountStateBuilder()
-                .value(EntityNumVirtualKey.fromLong(accountNum), account)
-                .value(
-                        EntityNumVirtualKey.fromLong(deleteAccountNum),
-                        deleteAccount.copyBuilder().numberPositiveBalances(2).build())
-                .value(EntityNumVirtualKey.fromLong(transferAccountNum), transferAccount)
-                .build();
-        given(writableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(writableAccounts);
-        writableStore = new WritableAccountStore(writableStates);
+        updateWritableStore(Map.of(
+                accountNum,
+                account,
+                deleteAccountNum,
+                deleteAccount.copyBuilder().numberPositiveBalances(2).build(),
+                transferAccountNum,
+                transferAccount));
+        givenTxnWith(deleteAccountId, transferAccountId);
 
-        final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
-
-        given(handleContext.expiryValidator()).willReturn(expiryValidator);
-
-        assertThatThrownBy(() -> subject.handle(handleContext, txn, writableStore))
+        assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES));
     }
@@ -427,5 +362,32 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
                 .transactionID(transactionID)
                 .cryptoDelete(deleteTxBody)
                 .build();
+    }
+
+    private void updateReadableStore(Map<Long, Account> accountsToAdd) {
+        final var emptyStateBuilder = emptyReadableAccountStateBuilder();
+        for (final var entry : accountsToAdd.entrySet()) {
+            emptyStateBuilder.value(EntityNumVirtualKey.fromLong(entry.getKey()), entry.getValue());
+        }
+        readableAccounts = emptyStateBuilder.build();
+        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        readableStore = new ReadableAccountStoreImpl(readableStates);
+    }
+
+    private void updateWritableStore(Map<Long, Account> accountsToAdd) {
+        final var emptyStateBuilder = emptyWritableAccountStateBuilder();
+        for (final var entry : accountsToAdd.entrySet()) {
+            emptyStateBuilder.value(EntityNumVirtualKey.fromLong(entry.getKey()), entry.getValue());
+        }
+        writableAccounts = emptyStateBuilder.build();
+        given(writableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(writableAccounts);
+        writableStore = new WritableAccountStore(writableStates);
+    }
+
+    private void givenTxnWith(AccountID deleteAccountId, AccountID transferAccountId) {
+        final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
+        given(handleContext.body()).willReturn(txn);
+        given(handleContext.expiryValidator()).willReturn(expiryValidator);
+        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableStore);
     }
 }

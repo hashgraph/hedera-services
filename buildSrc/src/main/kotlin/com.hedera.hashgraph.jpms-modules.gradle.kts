@@ -106,6 +106,12 @@ extraJavaModuleInfo {
     automaticModule("org.testcontainers:junit-jupiter", "org.testcontainers.junit.jupiter")
     automaticModule("org.mockito:mockito-inline", "org.mockito.inline")
 
+    // Automatic modules for PBJ dependencies
+    automaticModule("org.antlr:antlr4", "org.antlr.antlr4")
+    automaticModule("org.antlr:antlr-runtime", "org.antlr.antlr4.runtime")
+    automaticModule("org.antlr:ST4", "org.antlr.ST4")
+    automaticModule("org.abego.treelayout:org.abego.treelayout.core", "org.abego.treelayout.core")
+
 
     // Test Related Modules
     automaticModule("com.github.docker-java:docker-java-transport", "com.github.docker.java.transport")
@@ -113,4 +119,8 @@ extraJavaModuleInfo {
     automaticModule("hamcrest-core-1.3.jar", "hamcrest.core")
     automaticModule("org.awaitility:awaitility", "awaitility")
     automaticModule("org.testcontainers:testcontainers", "org.testcontainers")
+
+    automaticModule("uk.org.webcompere:system-stubs-jupiter", "uk.org.webcompere.systemstubs.jupiter")
+    automaticModule("uk.org.webcompere:system-stubs-core", "uk.org.webcompere.systemstubs.core")
+
 }

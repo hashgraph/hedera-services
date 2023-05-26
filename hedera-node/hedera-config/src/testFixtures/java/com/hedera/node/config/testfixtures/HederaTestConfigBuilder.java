@@ -17,6 +17,7 @@
 package com.hedera.node.config.testfixtures;
 
 import com.hedera.node.config.converter.AccountIDConverter;
+import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.converter.CongestionMultipliersConverter;
 import com.hedera.node.config.converter.ContractIDConverter;
 import com.hedera.node.config.converter.EntityScaleFactorsConverter;
@@ -85,6 +86,7 @@ public class HederaTestConfigBuilder {
                 .withConverter(new ProfileConverter())
                 .withConverter(new SidecarTypeConverter())
                 .withConverter(new KeyValuePairConverter())
+                .withConverter(new BytesConverter())
                 .withValidator(new EmulatesMapValidator());
     }
 

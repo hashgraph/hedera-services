@@ -82,9 +82,13 @@ public class PreCheckException extends Exception {
         return "PreCheckException{" + "responseCode=" + responseCode + '}';
     }
 
-    public static void validateTruePreCheck(boolean condition, ResponseCodeEnum errorStatus) throws PreCheckException {
-        if (!condition) {
+    public static void validateTruePreCheck(boolean flag, ResponseCodeEnum errorStatus) throws PreCheckException {
+        if (!flag) {
             throw new PreCheckException(errorStatus);
         }
+    }
+
+    public static void validateFalsePreCheck(boolean flag, ResponseCodeEnum errorStatus) throws PreCheckException {
+        validateTruePreCheck(!flag, errorStatus);
     }
 }

@@ -22,6 +22,7 @@ import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static com.hedera.test.utils.KeyUtils.B_COMPLEX_KEY;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mock.Strictness.LENIENT;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
@@ -37,6 +38,7 @@ import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -82,6 +84,9 @@ public class ConsensusHandlerTestBase {
     @Mock
     protected WritableStates writableStates;
 
+    @Mock(strictness = LENIENT)
+    protected HandleContext handleContext;
+
     protected MapReadableKVState<EntityNum, Topic> readableTopicState;
     protected MapWritableKVState<EntityNum, Topic> writableTopicState;
 
@@ -101,6 +106,7 @@ public class ConsensusHandlerTestBase {
         given(writableStates.<EntityNum, Topic>get(TOPICS_KEY)).willReturn(writableTopicState);
         readableStore = new ReadableTopicStoreImpl(readableStates);
         writableStore = new WritableTopicStore(writableStates);
+        given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableStore);
     }
 
     protected void refreshStoresWithCurrentTopicInBothReadableAndWritable() {
@@ -110,6 +116,7 @@ public class ConsensusHandlerTestBase {
         given(writableStates.<EntityNum, Topic>get(TOPICS_KEY)).willReturn(writableTopicState);
         readableStore = new ReadableTopicStoreImpl(readableStates);
         writableStore = new WritableTopicStore(writableStates);
+        given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableStore);
     }
 
     @NonNull

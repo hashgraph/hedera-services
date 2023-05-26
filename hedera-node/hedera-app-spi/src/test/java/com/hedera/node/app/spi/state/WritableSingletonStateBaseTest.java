@@ -30,6 +30,10 @@ class WritableSingletonStateBaseTest extends SingletonStateTestBase {
         return new WritableSingletonStateBase<>(COUNTRY_STATE_KEY, backingStore::get, backingStore::set);
     }
 
+    protected String getBackingStoreValue() {
+        return backingStore.get();
+    }
+
     @Nested
     @DisplayName("Constructor Tests")
     class ConstructorTest {
@@ -114,7 +118,7 @@ class WritableSingletonStateBaseTest extends SingletonStateTestBase {
         void commitClean() {
             final var state = createState();
             state.commit();
-            assertThat(backingStore.get()).isEqualTo(AUSTRALIA);
+            assertThat(getBackingStoreValue()).isEqualTo(AUSTRALIA);
         }
 
         @Test
@@ -123,7 +127,7 @@ class WritableSingletonStateBaseTest extends SingletonStateTestBase {
             final var state = createState();
             state.put(FRANCE);
             state.commit();
-            assertThat(backingStore.get()).isEqualTo(FRANCE);
+            assertThat(getBackingStoreValue()).isEqualTo(FRANCE);
         }
 
         @Test
@@ -132,7 +136,7 @@ class WritableSingletonStateBaseTest extends SingletonStateTestBase {
             final var state = createState();
             state.put(null);
             state.commit();
-            assertThat(backingStore.get()).isNull();
+            assertThat(getBackingStoreValue()).isNull();
         }
     }
 

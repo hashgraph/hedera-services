@@ -31,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.base.state.MutabilityException;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.framework.Stoppable;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.ThreadSeed;
@@ -561,7 +562,10 @@ class StoppableThreadTests {
         configuration.build();
         assertTrue(configuration.isImmutable(), "configuration should be immutable");
 
-        assertThrows(MutabilityException.class, () -> configuration.setNodeId(0L), "configuration should be immutable");
+        assertThrows(
+                MutabilityException.class,
+                () -> configuration.setNodeId(new NodeId(0L)),
+                "configuration should be immutable");
         assertThrows(
                 MutabilityException.class,
                 () -> configuration.setComponent("asdf"),

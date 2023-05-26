@@ -25,6 +25,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -35,12 +37,12 @@ import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
-import com.hedera.node.app.spi.meta.HandleContext;
+import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hedera.node.config.data.AutoRenewConfig;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.TokensConfig;
@@ -61,11 +63,13 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
         this.waivers = requireNonNull(waivers, "The supplied argument 'waivers' must not be null");
     }
 
+    @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
         final var op = txn.cryptoUpdateAccountOrThrow();
-        if (op.hasProxyAccountID() && !op.proxyAccountID().equals(AccountID.DEFAULT)) {
-            throw new PreCheckException(PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED);
-        }
+        validateTruePreCheck(op.hasAccountIDToUpdate(), INVALID_ACCOUNT_ID);
+        validateFalsePreCheck(
+                op.hasProxyAccountID() && !op.proxyAccountID().equals(AccountID.DEFAULT),
+                PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED);
     }
 
     @Override
@@ -74,10 +78,14 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
         requireNonNull(waivers);
         final var txn = context.body();
         pureChecks(txn);
+
         final var payer = context.payer();
         final var op = txn.cryptoUpdateAccountOrThrow();
-        final var updateAccountId = op.accountIDToUpdateOrElse(AccountID.DEFAULT);
 
+        // update account must exist. Validated in pureChecks
+        final var updateAccountId = op.accountIDToUpdateOrThrow();
+
+        // add required keys to sign
         final var newAccountKeyMustSign = !waivers.isNewKeySignatureWaived(txn, payer);
         final var targetAccountKeyMustSign = !waivers.isTargetAccountSignatureWaived(txn, payer);
         if (targetAccountKeyMustSign) {
@@ -96,20 +104,27 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
      *
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void handle(
-            @NonNull final HandleContext context,
-            @NonNull final TransactionBody txn,
-            @NonNull final WritableAccountStore accountStore) {
+    @Override
+    public void handle(@NonNull final HandleContext context) {
+        final var txn = context.body();
         final var op = txn.cryptoUpdateAccount();
         final var target = op.accountIDToUpdateOrThrow();
 
+        // validate update account exists
+        final var accountStore = context.writableStore(WritableAccountStore.class);
+        final var optionalAccount = accountStore.get(target);
+        validateTrue(optionalAccount.isPresent(), INVALID_ACCOUNT_ID);
+
         // Customize the account based on fields set in transaction body
         final var builder = updateBuilder(op);
+        final var updateAccount = optionalAccount.get();
 
         // validate all checks that involve config and state
-        validateSemantics(context, accountStore, op, builder);
+        validateSemantics(context, updateAccount, op, builder);
 
-        if (context.expiryValidator().isDetached(target)) {
+        if (context.expiryValidator()
+                .isDetached(
+                        EntityType.ACCOUNT, updateAccount.expiredAndPendingRemoval(), updateAccount.tinybarBalance())) {
             builder.expiredAndPendingRemoval(false);
         }
 
@@ -117,6 +132,11 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
         accountStore.put(builder.build());
     }
 
+    /**
+     * Add a builder from {@link CryptoUpdateTransactionBody} to create {@link Account.Builder} object
+     * @param op Crypto update transaction body
+     * @return builder
+     */
     private Account.Builder updateBuilder(@NonNull final CryptoUpdateTransactionBody op) {
         final var builder = Account.newBuilder();
         if (op.hasKey()) {
@@ -151,24 +171,20 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
 
     private void validateSemantics(
             @NonNull final HandleContext context,
-            @NonNull final WritableAccountStore accountStore,
+            @NonNull final Account updateAccount,
             @NonNull final CryptoUpdateTransactionBody op,
             @NonNull Builder builder) {
         final var expiryValidator = context.expiryValidator();
         final var builderAccount = builder.build();
 
-        final var target = op.accountIDToUpdateOrThrow();
-        final var optionalAccount = accountStore.get(target);
-        validateTrue(optionalAccount.isPresent(), INVALID_ACCOUNT_ID);
-
-        final var updateAccount = optionalAccount.get();
         validateTrue(!updateAccount.smartContract(), INVALID_ACCOUNT_ID);
 
-        final var tokensConfig = context.getConfiguration().getConfigData(TokensConfig.class);
-        final var autoRenewConfig = context.getConfiguration().getConfigData(AutoRenewConfig.class);
-        final var ledgerConfig = context.getConfiguration().getConfigData(LedgerConfig.class);
-        final var entitiesConfig = context.getConfiguration().getConfigData(EntitiesConfig.class);
+        // get needed configs for validation
+        final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
+        final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
+        final var entitiesConfig = context.configuration().getConfigData(EntitiesConfig.class);
 
+        // validate expiry metadata
         final var currentMetadata = new ExpiryMeta(
                 updateAccount.expiry(), updateAccount.autoRenewSecs(), updateAccount.autoRenewAccountNumber());
         final var updateMeta = new ExpiryMeta(
@@ -177,10 +193,9 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
 
         validateTrue(
                 expiryValidator.isDetached(
-                                updateAccount,
-                                autoRenewConfig.isAutoRenewEnabled(),
-                                autoRenewConfig.expireContracts(),
-                                autoRenewConfig.expireAccounts())
+                                EntityType.ACCOUNT,
+                                updateAccount.expiredAndPendingRemoval(),
+                                updateAccount.tinybarBalance())
                         && builderAccount.expiry() != 0,
                 ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 
@@ -191,8 +206,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
         if (builderAccount.maxAutoAssociations() != 0) {
             final long newMax = builderAccount.maxAutoAssociations();
             validateFalse(
-                    newMax < optionalAccount.get().usedAutoAssociations(),
-                    EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT);
+                    newMax < updateAccount.usedAutoAssociations(), EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT);
             validateFalse(
                     newMax > ledgerConfig.maxAutoAssociations(),
                     REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
