@@ -32,6 +32,7 @@ import com.swirlds.common.stream.MultiStream;
 import com.swirlds.common.stream.QueueThreadObjectStream;
 import com.swirlds.common.stream.QueueThreadObjectStreamConfiguration;
 import com.swirlds.common.stream.RunningHashCalculatorForStream;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -142,7 +143,7 @@ public class RecordStreamManager {
                     tryDeletion,
                     globalDynamicProperties);
             writeQueueThread = new QueueThreadObjectStreamConfiguration<RecordStreamObject>(getStaticThreadManager())
-                    .setNodeId(platform.getSelfId().getIdAsInt())
+                    .setNodeId(new NodeId(platform.getSelfId().getIdAsInt()))
                     .setCapacity(nodeLocalProperties.recordStreamQueueCapacity())
                     .setForwardTo(protobufStreamFileWriter)
                     .setThreadName("writeQueueThread")
@@ -160,7 +161,7 @@ public class RecordStreamManager {
 
         hashCalculator = new HashCalculatorForStream<>(runningHashCalculator);
         hashQueueThread = new QueueThreadObjectStreamConfiguration<RecordStreamObject>(getStaticThreadManager())
-                .setNodeId(platform.getSelfId().getIdAsInt())
+                .setNodeId(new NodeId(platform.getSelfId().getIdAsInt()))
                 .setCapacity(nodeLocalProperties.recordStreamQueueCapacity())
                 .setForwardTo(hashCalculator)
                 .setThreadName("hashQueueThread")
