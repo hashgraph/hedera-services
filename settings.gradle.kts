@@ -122,7 +122,7 @@ dependencyResolutionManagement {
     // runtime.
     create("libs") {
       // The HAPI API version to use, this need to match the tag set on gitRepositories above
-      val hapiVersion = "0.38.1-allowance-SNAPSHOT"
+      val hapiVersion = "0.39.0-SNAPSHOT"
 
       val besuNativeVersion = "0.6.1"
       val besuVersion = "23.1.2"
@@ -148,8 +148,9 @@ dependencyResolutionManagement {
       version("com.github.spotbugs.annotations", "4.7.3")
       version("com.google.common", "31.1-jre")
       version("com.google.protobuf", "3.19.4")
+      version("com.google.protobuf.util", "3.19.2")
       version("com.hedera.hashgraph.protobuf.java.api", hapiVersion)
-      version("com.hedera.pbj.runtime", "0.5.2")
+      version("com.hedera.pbj.runtime", "0.6.0")
       version("com.sun.jna", "5.12.1")
       version("com.swirlds.base", swirldsVersion)
       version("com.swirlds.cli", swirldsVersion)
@@ -169,6 +170,7 @@ dependencyResolutionManagement {
       version("grpc.stub", grpcVersion)
       version("headlong", "6.1.1")
       version("info.picocli", "4.6.3")
+      version("io.github.classgraph", "4.8.65")
       version("io.grpc", helidonVersion)
       version("io.helidon.grpc.client", helidonVersion)
       version("io.helidon.grpc.core", helidonVersion)
@@ -178,6 +180,7 @@ dependencyResolutionManagement {
       version("io.netty.transport.epoll", nettyVersion)
       version("javax.inject", "1")
       version("net.i2p.crypto.eddsa", "0.3.0")
+      version("org.antlr.antlr4.runtime", "4.11.1")
       version("org.apache.commons.codec", "1.15")
       version("org.apache.commons.collections4", "4.4")
       version("org.apache.commons.io", "2.11.0")
@@ -190,6 +193,7 @@ dependencyResolutionManagement {
       version("org.eclipse.collections.api", eclipseCollectionsVersion)
       version("org.eclipse.collections.impl", eclipseCollectionsVersion)
       version("org.hamcrest", "2.2")
+      version("org.hyperledger.besu.crypto", besuVersion)
       version("org.hyperledger.besu.datatypes", besuVersion)
       version("org.hyperledger.besu.evm", besuVersion)
       version("org.hyperledger.besu.secp256k1", besuNativeVersion)
@@ -199,6 +203,7 @@ dependencyResolutionManagement {
       version("org.mockito", mockitoVersion)
       version("org.mockito.inline", mockitoVersion)
       version("org.mockito.junit.jupiter", mockitoVersion)
+      version("org.opentest4j", "1.2.0")
       version("org.slf4j", "2.0.3")
       version("org.testcontainers", testContainersVersion)
       version("org.testcontainers.junit.jupiter", testContainersVersion)
@@ -207,7 +212,7 @@ dependencyResolutionManagement {
       version("uk.org.webcompere.systemstubs.core", systemStubsVersion)
       version("uk.org.webcompere.systemstubs.jupiter", systemStubsVersion)
 
-      plugin("pbj", "com.hedera.pbj.pbj-compiler").version("0.5.2")
+      plugin("pbj", "com.hedera.pbj.pbj-compiler").version("0.6.0")
     }
   }
 }

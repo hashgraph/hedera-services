@@ -27,6 +27,7 @@ dependencies {
     testImplementation(gav("com.google.protobuf"))
     // we depend on the protoc compiled hapi during test as we test our pbj generated code against
     // it to make sure it is compatible
+    testImplementation(gav("com.google.protobuf.util"))
     testImplementation(gav("com.hedera.hashgraph.protobuf.java.api"))
     testImplementation(gav("org.junit.jupiter.api"))
     testImplementation(gav("org.junit.jupiter.params"))

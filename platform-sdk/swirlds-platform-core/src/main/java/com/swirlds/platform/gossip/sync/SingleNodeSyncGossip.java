@@ -150,7 +150,7 @@ public class SingleNodeSyncGossip extends AbstractGossip {
 
         syncProtocolThread = new StoppableThreadConfiguration<>(threadManager)
                 .setPriority(Thread.NORM_PRIORITY)
-                .setNodeId(selfId.id())
+                .setNodeId(selfId)
                 .setComponent(PLATFORM_THREAD_POOL_NAME)
                 .setOtherNodeId(selfId.id())
                 .setThreadName("SingleNodeNetworkSync")

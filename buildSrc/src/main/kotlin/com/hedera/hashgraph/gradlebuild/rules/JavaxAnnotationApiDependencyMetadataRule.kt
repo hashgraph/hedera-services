@@ -9,7 +9,7 @@ abstract class JavaxAnnotationApiDependencyMetadataRule : ComponentMetadataRule 
         context.details.allVariants {
             withDependencies {
                 removeAll { it.name == "javax.annotation-api" }
-                add("com.github.spotbugs:spotbugs-annotations")
+                add("com.github.spotbugs:spotbugs-annotations:4.7.3")
             }
         }
     }

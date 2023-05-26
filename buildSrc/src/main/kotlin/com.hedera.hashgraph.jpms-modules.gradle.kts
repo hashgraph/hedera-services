@@ -56,6 +56,7 @@ javaModuleDependencies {
     moduleNameToGA.put("org.hyperledger.besu.plugin.api", "org.hyperledger.besu:plugin-api")
     moduleNameToGA.put("org.mockito.junit.jupiter", "org.mockito:mockito-junit-jupiter")
     moduleNameToGA.put("org.objenesis", "org.objenesis:objenesis")
+    moduleNameToGA.put("org.antlr.antlr4.runtime", "org.antlr:antlr4-runtime")
 }
 
 dependencies.components {
@@ -202,7 +203,7 @@ extraJavaModuleInfo {
     }
 
     knownModule("com.github.ben-manes.caffeine:caffeine", "com.github.benmanes.caffeine")
-    knownModule("com.google.code.gson:gson", "com.google.code.gson")
+    knownModule("com.google.code.gson:gson", "com.google.gson")
     knownModule("com.swirlds:swirlds-common", "com.swirlds.common")
     knownModule("com.swirlds:swirlds-fchashmap", "com.swirlds.fchashmap")
     knownModule("com.swirlds:swirlds-fcqueue", "com.swirlds.fcqueue")
@@ -265,6 +266,12 @@ extraJavaModuleInfo {
     automaticModule("io.opencensus:opencensus-api", "io.opencensus.api")
     automaticModule("org.hyperledger.besu.internal:util", "org.hyperledger.besu.internal.util")
     automaticModule("org.testcontainers:junit-jupiter", "org.testcontainers.junit.jupiter")
+
+    // Automatic modules for PBJ dependencies
+    automaticModule("org.antlr:antlr4", "org.antlr.antlr4")
+    automaticModule("org.antlr:antlr-runtime", "org.antlr.antlr.runtime")
+    automaticModule("org.antlr:ST4", "org.antlr.ST4")
+    automaticModule("org.abego.treelayout:org.abego.treelayout.core", "org.abego.treelayout.core")
 
     // Test Related Modules
     automaticModule("org.mockito:mockito-inline", "org.mockito.inline")

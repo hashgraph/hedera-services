@@ -178,7 +178,7 @@ public class StatsSigningTestingToolMain implements SwirldMain {
         }
         GuiPlatformAccessor.getInstance()
                 .setAbout(
-                        platform.getSelfId().id(),
+                        platform.getSelfId(),
                         "Stats Signing Demo v. 1.3\nThis writes statistics to a log file,"
                                 + " such as the number of transactions per second.");
 
@@ -198,7 +198,7 @@ public class StatsSigningTestingToolMain implements SwirldMain {
     public void run() {
         final Thread shutdownHook = new ThreadConfiguration(getStaticThreadManager())
                 .setDaemon(false)
-                .setNodeId(platform.getSelfId().id())
+                .setNodeId(platform.getSelfId())
                 .setComponent("app")
                 .setThreadName("demo_log_time_pulse")
                 .setRunnable(() -> {

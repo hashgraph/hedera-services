@@ -36,7 +36,10 @@ module com.hedera.node.hapi {
     exports com.hedera.hapi.node.state.consensus;
     exports com.hedera.hapi.node.state.token;
     exports com.hedera.hapi.node.state.file;
+    exports com.hedera.hapi.node.state.recordcache;
+    exports com.hedera.hapi.node.state.recordcache.codec;
 
     requires transitive com.hedera.pbj.runtime;
     requires com.github.spotbugs.annotations;
+    requires org.antlr.antlr4.runtime;
 }

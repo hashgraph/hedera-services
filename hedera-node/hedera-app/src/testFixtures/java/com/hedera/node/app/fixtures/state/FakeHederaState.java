@@ -16,46 +16,63 @@
 
 package com.hedera.node.app.fixtures.state;
 
+import com.hedera.node.app.spi.fixtures.state.ListReadableQueueState;
+import com.hedera.node.app.spi.fixtures.state.ListWritableQueueState;
+import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapReadableStates;
+import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.state.RecordCache;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Queue;
 
 /** A useful test double for {@link HederaState}. Works together with {@link MapReadableStates} and other fixtures. */
 public class FakeHederaState implements HederaState {
-    private final RecordCache receiptCache = new FakeRecordCache();
-    // Key is Service, value is Map of state name to ReadableKVState
-    private final Map<String, Map<String, ReadableKVState<?, ?>>> data = new HashMap<>();
+    // Key is Service, value is Map of state name to HashMap or List or Object (depending on state type)
+    private final Map<String, Map<String, Object>> states = new HashMap<>();
 
     /** Adds to the service with the given name the {@link ReadableKVState} {@code states} */
-    public void addService(@NonNull final String serviceName, @NonNull final ReadableKVState<?, ?>... states) {
-        var serviceStates = data.computeIfAbsent(serviceName, k -> new HashMap<>());
-        for (final var state : states) {
-            serviceStates.put(state.getStateKey(), state);
-        }
+    public void addService(@NonNull final String serviceName, @NonNull final Map<String, ?> dataSources) {
+        var serviceStates = this.states.computeIfAbsent(serviceName, k -> new HashMap<>());
+        serviceStates.putAll(dataSources);
     }
 
     @NonNull
     @Override
     public ReadableStates createReadableStates(@NonNull String serviceName) {
-        return new MapReadableStates(data.get(serviceName));
+        final var serviceStates = states.get(serviceName);
+        final var data = new HashMap<String, Object>();
+        for (final var entry : serviceStates.entrySet()) {
+            final var stateName = entry.getKey();
+            final var state = entry.getValue();
+            if (state instanceof Queue) {
+                data.put(stateName, new ListReadableQueueState(stateName, (Queue) state));
+            } else if (state instanceof Map) {
+                data.put(stateName, new MapReadableKVState(stateName, (Map) state));
+            }
+        }
+        return new MapReadableStates(data);
     }
 
     @NonNull
     @Override
     public WritableStates createWritableStates(@NonNull String serviceName) {
-        return new MapWritableStates(data.get(serviceName));
-    }
-
-    @NonNull
-    @Override
-    public RecordCache getRecordCache() {
-        return receiptCache;
+        final var serviceStates = states.get(serviceName);
+        final var data = new HashMap<String, Object>();
+        for (final var entry : serviceStates.entrySet()) {
+            final var stateName = entry.getKey();
+            final var state = entry.getValue();
+            if (state instanceof Queue) {
+                data.put(stateName, new ListWritableQueueState(stateName, (Queue) state));
+            } else if (state instanceof Map) {
+                data.put(stateName, new MapWritableKVState(stateName, (Map) state));
+            }
+        }
+        return new MapWritableStates(data);
     }
 }

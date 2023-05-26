@@ -346,12 +346,15 @@ public final class MerkleDb {
             final MerkleDbDataSource<K, V> dataSource, final boolean makeCopyPrimary) throws IOException {
         final String label = dataSource.getTableName();
         final int tableId = getNextTableId();
-        importDataSource(dataSource, tableId, makeCopyPrimary); // import to itself == copy
+        importDataSource(dataSource, tableId, !makeCopyPrimary, makeCopyPrimary); // import to itself == copy
         return getDataSource(tableId, label, makeCopyPrimary);
     }
 
     private <K extends VirtualKey, V extends VirtualValue> void importDataSource(
-            final MerkleDbDataSource<K, V> dataSource, final int tableId, final boolean makeCopyPrimary)
+            final MerkleDbDataSource<K, V> dataSource,
+            final int tableId,
+            final boolean leaveSourcePrimary,
+            final boolean makeCopyPrimary)
             throws IOException {
         final String label = dataSource.getTableName();
         final MerkleDbTableConfig<K, V> tableConfig =
@@ -366,13 +369,14 @@ public final class MerkleDb {
         } finally {
             dataSource.resumeMerging();
         }
-        if (makeCopyPrimary) {
+        if (!leaveSourcePrimary) {
             dataSource.stopBackgroundCompaction();
             primaryTables.remove(dataSource.getTableId());
-            primaryTables.add(tableId);
-            // Only need to update metadata, if the primary table is changed
-            storeMetadata();
         }
+        if (makeCopyPrimary) {
+            primaryTables.add(tableId);
+        }
+        storeMetadata();
     }
 
     /**
@@ -510,7 +514,7 @@ public final class MerkleDb {
         if (targetDb.tableExists(tableName)) {
             throw new IllegalStateException("Table already exists in the target database, " + tableName);
         }
-        targetDb.importDataSource(dataSource, dataSource.getTableId(), true);
+        targetDb.importDataSource(dataSource, dataSource.getTableId(), true, true);
         targetDb.storeMetadata();
     }
 
