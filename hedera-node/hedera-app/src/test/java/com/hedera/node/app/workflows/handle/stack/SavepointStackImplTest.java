@@ -53,8 +53,7 @@ class SavepointStackImplTest extends StateTestBase {
             D_KEY, DATE,
             E_KEY, EGGPLANT,
             F_KEY, FIG,
-            G_KEY, GRAPE
-    );
+            G_KEY, GRAPE);
 
     @Mock(strictness = LENIENT)
     private HederaState baseState;
@@ -62,7 +61,8 @@ class SavepointStackImplTest extends StateTestBase {
     @BeforeEach
     void setup() {
         final var baseKVState = new MapWritableKVState<>(FRUIT_STATE_KEY, BASE_DATA);
-        final var writableStates = MapWritableStates.builder().state(baseKVState).build();
+        final var writableStates =
+                MapWritableStates.builder().state(baseKVState).build();
         when(baseState.createReadableStates(FOOD_SERVICE)).thenReturn(writableStates);
         when(baseState.createWritableStates(FOOD_SERVICE)).thenReturn(writableStates);
     }
