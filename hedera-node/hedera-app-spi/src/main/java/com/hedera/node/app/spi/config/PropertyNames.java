@@ -101,6 +101,8 @@ public class PropertyNames {
     public static final String CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS = "contracts.maxNumWithHapiSigsAccess";
     public static final String CONTRACTS_WITH_SPECIAL_HAPI_SIGS_ACCESS = "contracts.withSpecialHapiSigsAccess";
     public static final String CONTRACTS_ENFORCE_CREATION_THROTTLE = "contracts.enforceCreationThrottle";
+    public static final String CONTRACTS_ENFORCE_CHILD_TRANSACTION_THROTTLE =
+            "contracts.enforceChildTransactionThrottle";
     public static final String CONTRACTS_MAX_GAS_PER_SEC = "contracts.maxGasPerSec";
     public static final String CONTRACTS_MAX_KV_PAIRS_AGGREGATE = "contracts.maxKvPairs.aggregate";
     public static final String CONTRACTS_MAX_KV_PAIRS_INDIVIDUAL = "contracts.maxKvPairs.individual";
