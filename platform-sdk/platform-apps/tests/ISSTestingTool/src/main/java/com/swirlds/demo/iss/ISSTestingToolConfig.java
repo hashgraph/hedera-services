@@ -56,9 +56,9 @@ public record ISSTestingToolConfig(
     }
 
     /**
-     * Get the {@link PlannedLogError}, if one exists
+     * Get the list of {@link PlannedLogError}s
      *
-     * @return a {@link PlannedLogError}, or null if one doesn't exist
+     * @return a list of {@link PlannedLogError}s
      */
     @NonNull
     public List<PlannedLogError> getPlannedLogErrors() {

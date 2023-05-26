@@ -28,6 +28,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -149,6 +150,8 @@ public class PlannedIss implements SelfSerializable, PlannedIncident {
      * @return the partition of the node
      */
     public int getPartitionOfNode(@NonNull final NodeId nodeId) {
+        Objects.requireNonNull(nodeId);
+
         for (int partitionIndex = 0; partitionIndex < hashPartitions.size(); partitionIndex++) {
             final List<NodeId> partition = hashPartitions.get(partitionIndex);
             for (final NodeId partitionNode : partition) {

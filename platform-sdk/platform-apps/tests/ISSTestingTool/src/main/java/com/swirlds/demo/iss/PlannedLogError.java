@@ -26,6 +26,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Describes an error which will be logged at a predetermined consensus time after genesis
@@ -54,8 +55,8 @@ public class PlannedLogError implements SelfSerializable, PlannedIncident {
      * @param timeAfterGenesis the time after genesis that the error should be written to the log at
      */
     public PlannedLogError(@NonNull final Duration timeAfterGenesis, @NonNull final List<NodeId> nodeIds) {
-        this.timeAfterGenesis = timeAfterGenesis;
-        this.nodeIds = nodeIds;
+        this.timeAfterGenesis = Objects.requireNonNull(timeAfterGenesis);
+        this.nodeIds = Objects.requireNonNull(nodeIds);
     }
 
     /**
