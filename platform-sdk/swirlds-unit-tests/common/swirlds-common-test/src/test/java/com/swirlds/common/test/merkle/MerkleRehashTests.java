@@ -18,10 +18,14 @@ package com.swirlds.common.test.merkle;
 
 import static com.swirlds.common.merkle.utility.MerkleUtils.invalidateTree;
 import static com.swirlds.common.merkle.utility.MerkleUtils.rehashTree;
+import static com.swirlds.common.test.merkle.util.MerkleTestUtils.generateRandomTree;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
 
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
@@ -31,9 +35,11 @@ import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
+import com.swirlds.common.merkle.exceptions.FailedRehashException;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.common.merkle.route.MerkleRoute;
+import com.swirlds.common.test.merkle.dummy.DummyMerkleNode;
 import com.swirlds.common.test.merkle.util.MerkleTestUtils;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
@@ -43,6 +49,8 @@ import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 @DisplayName("Merkle Rehash Tests")
 class MerkleRehashTests {
@@ -147,6 +155,29 @@ class MerkleRehashTests {
                 }
             });
         }
+    }
+
+    @SuppressWarnings("OptionalGetWithoutIsPresent")
+    @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
+    @Tag(TestComponentTags.MERKLE)
+    @DisplayName("Failed Rehash Behavior")
+    public void failedRehash() {
+
+        DummyMerkleNode root = spy(generateRandomTree(0, 2, 1, 1, 0, 3, 1, 0.25));
+        when(root.getHash()).then(new Answer<Hash>() {
+            private int count = 0;
+
+            @Override
+            public Hash answer(final InvocationOnMock invocation) throws Throwable {
+                if (count++ < 2) {
+                    return (Hash) invocation.callRealMethod();
+                } else {
+                    throw new RuntimeException("Test failure");
+                }
+            }
+        });
+        assertThrows(FailedRehashException.class, () -> rehashTree(root));
     }
 
     private static class DummySelfHashingLeaf extends PartialMerkleLeaf implements MerkleLeaf {
