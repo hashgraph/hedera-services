@@ -85,6 +85,7 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
             case CONSENSUS_DELETE_TOPIC -> dispatchConsensusDeleteTopic(context);
             case CONSENSUS_SUBMIT_MESSAGE -> dispatchConsensusSubmitMessage(context);
             case CRYPTO_CREATE_ACCOUNT -> dispatchCryptoCreate(context);
+            case CRYPTO_DELETE -> dispatchCryptoDelete(context);
             case TOKEN_ASSOCIATE -> dispatchTokenAssociate(context);
             case TOKEN_FREEZE -> dispatchTokenFreeze(context);
             case TOKEN_UNFREEZE -> dispatchTokenUnfreeze(context);
@@ -173,6 +174,17 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
         final var handler = handlers.tokenGrantKycToAccountHandler();
         handler.handle(handleContext);
         finishTokenGrantKycToAccount(handleContext);
+    }
+
+    private void dispatchCryptoDelete(@NonNull final HandleContext handleContext) {
+        final var handler = handlers.cryptoDeleteHandler();
+        handler.handle(handleContext);
+        finishCryptoDelete(handleContext);
+    }
+
+    protected void finishCryptoDelete(@NonNull final HandleContext handleContext) {
+        final var accountStore = handleContext.writableStore(WritableAccountStore.class);
+        accountStore.commit();
     }
 
     private void finishTokenGrantKycToAccount(@NonNull final HandleContext handleContext) {

@@ -22,7 +22,6 @@ import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.spi.workflows.HandleContext.SavepointStack;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.state.RecordCache;
 import com.hedera.node.app.state.WrappedHederaState;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -120,11 +119,5 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
     @NonNull
     public WritableStates createWritableStates(@NonNull final String serviceName) {
         return writableStatesMap.computeIfAbsent(serviceName, s -> new WritableStatesStack(this, s));
-    }
-
-    @Override
-    @NonNull
-    public RecordCache getRecordCache() {
-        throw new UnsupportedOperationException();
     }
 }

@@ -67,7 +67,10 @@ public class EthereumTransferToRandomEVMAddress implements OpProvider {
                 .maxGasAllowance(FIVE_HBARS)
                 .gasLimit(2_000_000L)
                 .via(PAY_TXN)
-                .hasKnownStatus(SUCCESS);
+                // Since the receiver _could_ have receiverSigRequired=true (c.f. the
+                // InitialAccountIdentifiers.customize() method), INVALID_SIGNATURE is a valid
+                // response code
+                .hasKnownStatusFrom(SUCCESS, INVALID_SIGNATURE);
 
         incrementNonce();
 
