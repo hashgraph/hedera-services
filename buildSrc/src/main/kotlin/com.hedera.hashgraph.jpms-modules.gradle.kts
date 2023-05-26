@@ -1,7 +1,7 @@
 import com.hedera.hashgraph.gradlebuild.rules.IoGrpcDependencyMetadataRule
 import com.hedera.hashgraph.gradlebuild.rules.IoGrpcMetadataRule
 import com.hedera.hashgraph.gradlebuild.rules.IoNettyNativeEpollMetadataRule
-import com.hedera.hashgraph.gradlebuild.rules.JavaxAnnotationApiDependencyMetadataRule
+import com.hedera.hashgraph.gradlebuild.rules.HederaProtobufJavaApiMetadataRule
 
 /*
  * Copyright 2016-2022 Hedera Hashgraph, LLC
@@ -68,7 +68,7 @@ dependencies.components {
     withModule<IoGrpcDependencyMetadataRule>("io.grpc:grpc-stub")
     withModule<IoGrpcDependencyMetadataRule>("io.grpc:grpc-testing")
 
-    withModule<JavaxAnnotationApiDependencyMetadataRule>("com.hedera.hashgraph:hedera-protobuf-java-api")
+    withModule<HederaProtobufJavaApiMetadataRule>("com.hedera.hashgraph:hedera-protobuf-java-api")
 
     withModule<IoNettyNativeEpollMetadataRule>("io.netty:netty-transport-native-epoll")
 }
@@ -293,10 +293,4 @@ extraJavaModuleInfo {
 
     automaticModule("uk.org.webcompere:system-stubs-jupiter", "uk.org.webcompere.systemstubs.jupiter")
     automaticModule("uk.org.webcompere:system-stubs-core", "uk.org.webcompere.systemstubs.core")
-}
-
-configurations.all {
-    if (name.equals("implementation") || name.endsWith("Implementation")) {
-        project.dependencies.constraints.add(name, "junit:junit:4.13.2")
-    }
 }

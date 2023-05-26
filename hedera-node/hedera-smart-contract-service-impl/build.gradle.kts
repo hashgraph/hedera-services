@@ -18,7 +18,13 @@ plugins { id("com.hedera.hashgraph.conventions") }
 
 description = "Default Hedera Smart Contract Service Implementation"
 
-dependencies { javaModuleDependencies { annotationProcessor(gav("dagger.compiler")) } }
+dependencies {
+  javaModuleDependencies {
+    annotationProcessor(gav("dagger.compiler"))
+
+    testRuntimeOnly(gav("org.mockito.inline"))
+  }
+}
 
 // TODO module-info.java in 'test'
 // https://github.com/autonomousapps/dependency-analysis-android-gradle-plugin/issues/900
