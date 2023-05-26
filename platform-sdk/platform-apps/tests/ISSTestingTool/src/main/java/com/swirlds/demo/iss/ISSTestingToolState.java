@@ -172,7 +172,8 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
                 final Instant currentTimestamp = event.getConsensusTimestamp();
                 final Duration elapsedSinceGenesis = Duration.between(genesisTimestamp, currentTimestamp);
 
-                final PlannedIss plannedIss = shouldTriggerIncident(elapsedSinceGenesis, currentTimestamp, plannedIssList);
+                final PlannedIss plannedIss =
+                        shouldTriggerIncident(elapsedSinceGenesis, currentTimestamp, plannedIssList);
                 if (plannedIss != null) {
                     triggerISS(plannedIss, elapsedSinceGenesis, currentTimestamp);
                 }
