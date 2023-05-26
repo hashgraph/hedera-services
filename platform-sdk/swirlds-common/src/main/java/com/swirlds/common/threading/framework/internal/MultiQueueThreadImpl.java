@@ -21,10 +21,11 @@ import com.swirlds.common.threading.framework.MultiQueueThread;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.ThreadSeed;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
+import com.swirlds.common.threading.utility.MultiHandler;
+
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -39,9 +40,9 @@ public class MultiQueueThreadImpl implements MultiQueueThread {
     private final QueueThread<Object> queueThread;
 
     /**
-     * A map of data type to handler for that type.
+     * The handlers for each data type.
      */
-    private final Map<Class<?>, Consumer<Object>> subHandlers;
+    private final MultiHandler multiHandler;
 
     /**
      * Implements an insertion queue for this multi queue thread. Since insertion queues don't actually
@@ -61,11 +62,10 @@ public class MultiQueueThreadImpl implements MultiQueueThread {
      * 		a function that builds a queue thread
      */
     public MultiQueueThreadImpl(
-            Map<Class<?>, Consumer<Object>> subHandlers,
+            Map<Class<?>, InterruptableConsumer<Object>> subHandlers,
             final Function<InterruptableConsumer<Object>, QueueThread<Object>> queueThreadBuilder) {
-
-        this.subHandlers = Objects.requireNonNull(subHandlers);
-        this.queueThread = queueThreadBuilder.apply(this::handle);
+        this.multiHandler = new MultiHandler(subHandlers);
+        this.queueThread = queueThreadBuilder.apply(multiHandler::handle);
 
         this.blockingQueueInserter = buildQueueInserter();
     }
@@ -77,26 +77,10 @@ public class MultiQueueThreadImpl implements MultiQueueThread {
     @Override
     public <T> BlockingQueueInserter<T> getInserter(final Class<T> clazz) {
         Objects.requireNonNull(clazz, "null classes not supported");
-        if (!subHandlers.containsKey(clazz)) {
+        if (!multiHandler.containsHandlerFor(clazz)) {
             throw new IllegalStateException("no handler for " + clazz);
         }
         return (BlockingQueueInserter<T>) blockingQueueInserter;
-    }
-
-    /**
-     * Handle an object from the queue.
-     *
-     * @param object
-     * 		the object to be handled
-     */
-    private void handle(final Object object) {
-        Objects.requireNonNull(object, "null objects not supported");
-        final Class<?> clazz = object.getClass();
-        final Consumer<Object> handler = subHandlers.get(clazz);
-        if (handler == null) {
-            throw new IllegalStateException("no handler for " + clazz);
-        }
-        handler.accept(object);
     }
 
     /**

@@ -17,6 +17,7 @@
 package com.swirlds.common.threading.framework.internal;
 
 import com.swirlds.common.threading.framework.MultiQueueThread;
+import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.ThreadManager;
 import java.util.HashMap;
 import java.util.Map;
@@ -34,7 +35,7 @@ public abstract class AbstractMultiQueueThreadConfiguration<C extends AbstractQu
     /**
      * A map of data type to handler for that type.
      */
-    private final Map<Class<?>, Consumer<Object>> subHandlers = new HashMap<>();
+    private final Map<Class<?>, InterruptableConsumer<Object>> subHandlers = new HashMap<>();
 
     /**
      * Construct a new instance.
@@ -83,8 +84,8 @@ public abstract class AbstractMultiQueueThreadConfiguration<C extends AbstractQu
      * @return this object
      */
     @SuppressWarnings("unchecked")
-    protected <T> C addHandler(final Class<T> clazz, final Consumer<T> handler) {
-        final Consumer<?> prev = subHandlers.put(clazz, (Consumer<Object>) handler);
+    protected <T> C addHandler(final Class<T> clazz, final InterruptableConsumer<T> handler) {
+        final InterruptableConsumer<?> prev = subHandlers.put(clazz, (InterruptableConsumer<Object>) handler);
         if (prev != null) {
             throw new IllegalStateException("Handler already exists for " + clazz);
         }

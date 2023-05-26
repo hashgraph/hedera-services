@@ -1,11 +1,10 @@
 package com.swirlds.platform.poc;
 
-import com.swirlds.common.threading.framework.config.MultiQueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.platform.poc.framework.Component;
-import com.swirlds.platform.poc.framework.MultiHandler;
+import com.swirlds.common.threading.utility.MultiHandler;
 import com.swirlds.platform.poc.framework.MultiTaskProcessor;
 import com.swirlds.platform.poc.framework.QueueSubmitter;
 import com.swirlds.platform.poc.framework.TaskProcessor;

@@ -5,6 +5,7 @@ import com.swirlds.platform.poc.framework.MultiTaskProcessor;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.List;
+import java.util.Map;
 
 public interface Boss extends MultiTaskProcessor {
 	void requestPto(int days) throws InterruptedException;
@@ -21,6 +22,15 @@ public interface Boss extends MultiTaskProcessor {
 						String.class,
 						(InterruptableConsumer<String>) this::deliverFeature
 				)
+		);
+	}
+
+	default void aaa(){
+		Map.of(
+				Integer.class,
+				(InterruptableConsumer<Integer>) this::requestPto,
+				String.class,
+				(InterruptableConsumer<String>) this::deliverFeature
 		);
 	}
 }

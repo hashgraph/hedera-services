@@ -1,4 +1,4 @@
-package com.swirlds.platform.poc.framework;
+package com.swirlds.common.threading.utility;
 
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import org.apache.commons.lang3.tuple.Pair;
@@ -8,6 +8,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+/**
+ * Invokes different handlers based on the type of the object.
+ */
 public class MultiHandler {
 	/**
 	 * A map of data type to handler for that type.
@@ -20,6 +23,14 @@ public class MultiHandler {
 		for (Pair<Class<?>, InterruptableConsumer<?>> processingMethod : processingMethods) {
 			subHandlers.put(processingMethod.getLeft(), (InterruptableConsumer<Object>) processingMethod.getRight());
 		}
+	}
+
+	public MultiHandler(final Map<Class<?>, InterruptableConsumer<Object>> subHandlers) {
+		this.subHandlers = new HashMap<>(subHandlers);
+	}
+
+	public boolean containsHandlerFor(final Class<?> clazz){
+		return subHandlers.containsKey(clazz);
 	}
 
 	/**
