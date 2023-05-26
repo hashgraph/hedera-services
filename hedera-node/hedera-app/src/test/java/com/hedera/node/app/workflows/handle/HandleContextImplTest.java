@@ -519,12 +519,19 @@ class HandleContextImplTest extends StateTestBase {
             when(baseState.createWritableStates(FOOD_SERVICE)).thenReturn(writableStates);
 
             doAnswer(invocation -> {
-                final var childContext = invocation.getArgument(0, HandleContext.class);
-                final var childStack = (SavepointStackImpl) childContext.savepointStack();
-                childStack.peek().state().createWritableStates(FOOD_SERVICE).get(FRUIT_STATE_KEY).put(A_KEY, ACAI);
-                childStack.configuration(CONFIG_2);
-                return null;
-            }).when(dispatcher).dispatchHandle(any());
+                        final var childContext = invocation.getArgument(0, HandleContext.class);
+                        final var childStack = (SavepointStackImpl) childContext.savepointStack();
+                        childStack
+                                .peek()
+                                .state()
+                                .createWritableStates(FOOD_SERVICE)
+                                .get(FRUIT_STATE_KEY)
+                                .put(A_KEY, ACAI);
+                        childStack.configuration(CONFIG_2);
+                        return null;
+                    })
+                    .when(dispatcher)
+                    .dispatchHandle(any());
 
             when(childRecordBuilder.status()).thenReturn(ResponseCodeEnum.OK);
             when(recordListBuilder.addPreceding(any())).thenReturn(childRecordBuilder);
@@ -547,7 +554,6 @@ class HandleContextImplTest extends StateTestBase {
                     serviceScopeLookup);
         }
 
-
         @SuppressWarnings("ConstantConditions")
         @Test
         void testDispatchWithInvalidArguments() {
@@ -563,7 +569,8 @@ class HandleContextImplTest extends StateTestBase {
                     .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> context.dispatchChildTransaction(TransactionBody.DEFAULT, null))
                     .isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> context.dispatchRemovableChildTransaction(null, SingleTransactionRecordBuilder.class))
+            assertThatThrownBy(
+                            () -> context.dispatchRemovableChildTransaction(null, SingleTransactionRecordBuilder.class))
                     .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> context.dispatchRemovableChildTransaction(TransactionBody.DEFAULT, null))
                     .isInstanceOf(NullPointerException.class);
@@ -592,7 +599,10 @@ class HandleContextImplTest extends StateTestBase {
             // then
             verify(checker).checkTransactionBody(txBody);
             verify(dispatcher).dispatchPureChecks(txBody);
-            assertThat(stack.createReadableStates(FOOD_SERVICE).get(FRUIT_STATE_KEY).get(A_KEY)).isEqualTo(ACAI);
+            assertThat(stack.createReadableStates(FOOD_SERVICE)
+                            .get(FRUIT_STATE_KEY)
+                            .get(A_KEY))
+                    .isEqualTo(ACAI);
             assertThat(context.configuration()).isEqualTo(CONFIG_2);
             verify(childRecordBuilder, never()).status(any());
             // TODO: Check that record was added to recordListBuilder
@@ -604,7 +614,8 @@ class HandleContextImplTest extends StateTestBase {
             // given
             final var txBody = TransactionBody.newBuilder().build();
             doThrow(new PreCheckException(ResponseCodeEnum.INSUFFICIENT_TX_FEE))
-                    .when(checker).checkTransactionBody(txBody);
+                    .when(checker)
+                    .checkTransactionBody(txBody);
             final var context = createContext(txBody, TransactionCategory.USER);
 
             // when
@@ -613,7 +624,9 @@ class HandleContextImplTest extends StateTestBase {
             // then
             verify(childRecordBuilder).status(ResponseCodeEnum.INSUFFICIENT_TX_FEE);
             verify(dispatcher, never()).dispatchHandle(any());
-            assertThat(stack.createReadableStates(FOOD_SERVICE).get(FRUIT_STATE_KEY).get(A_KEY))
+            assertThat(stack.createReadableStates(FOOD_SERVICE)
+                            .get(FRUIT_STATE_KEY)
+                            .get(A_KEY))
                     .isEqualTo(APPLE);
             assertThat(context.configuration()).isEqualTo(CONFIG_1);
             // TODO: Check that record was added to recordListBuilder
@@ -625,7 +638,8 @@ class HandleContextImplTest extends StateTestBase {
             // given
             final var txBody = TransactionBody.newBuilder().build();
             doThrow(new PreCheckException(ResponseCodeEnum.INVALID_TOPIC_ID))
-                    .when(dispatcher).dispatchPureChecks(txBody);
+                    .when(dispatcher)
+                    .dispatchPureChecks(txBody);
             final var context = createContext(txBody, TransactionCategory.USER);
 
             // when
@@ -634,7 +648,9 @@ class HandleContextImplTest extends StateTestBase {
             // then
             verify(childRecordBuilder).status(ResponseCodeEnum.INVALID_TOPIC_ID);
             verify(dispatcher, never()).dispatchHandle(any());
-            assertThat(stack.createReadableStates(FOOD_SERVICE).get(FRUIT_STATE_KEY).get(A_KEY))
+            assertThat(stack.createReadableStates(FOOD_SERVICE)
+                            .get(FRUIT_STATE_KEY)
+                            .get(A_KEY))
                     .isEqualTo(APPLE);
             assertThat(context.configuration()).isEqualTo(CONFIG_1);
             // TODO: Check that record was added to recordListBuilder
@@ -646,7 +662,8 @@ class HandleContextImplTest extends StateTestBase {
             // given
             final var txBody = TransactionBody.newBuilder().build();
             doThrow(new HandleException(ResponseCodeEnum.ACCOUNT_DOES_NOT_OWN_WIPED_NFT))
-                    .when(dispatcher).dispatchHandle(any());
+                    .when(dispatcher)
+                    .dispatchHandle(any());
             final var context = createContext(txBody, TransactionCategory.USER);
 
             // when
@@ -654,7 +671,9 @@ class HandleContextImplTest extends StateTestBase {
 
             // then
             verify(childRecordBuilder).status(ResponseCodeEnum.ACCOUNT_DOES_NOT_OWN_WIPED_NFT);
-            assertThat(stack.createReadableStates(FOOD_SERVICE).get(FRUIT_STATE_KEY).get(A_KEY))
+            assertThat(stack.createReadableStates(FOOD_SERVICE)
+                            .get(FRUIT_STATE_KEY)
+                            .get(A_KEY))
                     .isEqualTo(APPLE);
             assertThat(context.configuration()).isEqualTo(CONFIG_1);
             // TODO: Check that record was added to recordListBuilder
@@ -668,12 +687,14 @@ class HandleContextImplTest extends StateTestBase {
                 final var context = createContext(TransactionBody.DEFAULT, category);
 
                 // then
-                assertThatThrownBy(() -> context.dispatchPrecedingTransaction(TransactionBody.DEFAULT,
-                        SingleTransactionRecordBuilder.class))
+                assertThatThrownBy(() -> context.dispatchPrecedingTransaction(
+                                TransactionBody.DEFAULT, SingleTransactionRecordBuilder.class))
                         .isInstanceOf(IllegalArgumentException.class);
                 verify(recordListBuilder, never()).addPreceding(any());
                 verify(dispatcher, never()).dispatchHandle(any());
-                assertThat(stack.createReadableStates(FOOD_SERVICE).get(FRUIT_STATE_KEY).get(A_KEY))
+                assertThat(stack.createReadableStates(FOOD_SERVICE)
+                                .get(FRUIT_STATE_KEY)
+                                .get(A_KEY))
                         .isEqualTo(APPLE);
                 assertThat(context.configuration()).isEqualTo(CONFIG_1);
             }
@@ -686,12 +707,14 @@ class HandleContextImplTest extends StateTestBase {
             stack.createSavepoint();
 
             // then
-            assertThatThrownBy(() -> context.dispatchPrecedingTransaction(TransactionBody.DEFAULT,
-                    SingleTransactionRecordBuilder.class))
+            assertThatThrownBy(() -> context.dispatchPrecedingTransaction(
+                            TransactionBody.DEFAULT, SingleTransactionRecordBuilder.class))
                     .isInstanceOf(IllegalStateException.class);
             verify(recordListBuilder, never()).addPreceding(any());
             verify(dispatcher, never()).dispatchHandle(any());
-            assertThat(stack.createReadableStates(FOOD_SERVICE).get(FRUIT_STATE_KEY).get(A_KEY))
+            assertThat(stack.createReadableStates(FOOD_SERVICE)
+                            .get(FRUIT_STATE_KEY)
+                            .get(A_KEY))
                     .isEqualTo(APPLE);
             assertThat(context.configuration()).isEqualTo(CONFIG_1);
         }
@@ -700,15 +723,21 @@ class HandleContextImplTest extends StateTestBase {
         void testDispatchPrecedingWithChangedDataFails() {
             // given
             final var context = createContext(TransactionBody.DEFAULT, TransactionCategory.USER);
-            stack.peek().state().createWritableStates(FOOD_SERVICE).get(FRUIT_STATE_KEY).put(B_KEY, BLUEBERRY);
+            stack.peek()
+                    .state()
+                    .createWritableStates(FOOD_SERVICE)
+                    .get(FRUIT_STATE_KEY)
+                    .put(B_KEY, BLUEBERRY);
 
             // then
-            assertThatThrownBy(() -> context.dispatchPrecedingTransaction(TransactionBody.DEFAULT,
-                    SingleTransactionRecordBuilder.class))
+            assertThatThrownBy(() -> context.dispatchPrecedingTransaction(
+                            TransactionBody.DEFAULT, SingleTransactionRecordBuilder.class))
                     .isInstanceOf(IllegalStateException.class);
             verify(recordListBuilder, never()).addPreceding(any());
             verify(dispatcher, never()).dispatchHandle(any());
-            assertThat(stack.createReadableStates(FOOD_SERVICE).get(FRUIT_STATE_KEY).get(A_KEY))
+            assertThat(stack.createReadableStates(FOOD_SERVICE)
+                            .get(FRUIT_STATE_KEY)
+                            .get(A_KEY))
                     .isEqualTo(APPLE);
             assertThat(context.configuration()).isEqualTo(CONFIG_1);
         }
@@ -719,12 +748,14 @@ class HandleContextImplTest extends StateTestBase {
             final var context = createContext(TransactionBody.DEFAULT, TransactionCategory.PRECEDING);
 
             // then
-            assertThatThrownBy(() -> context.dispatchChildTransaction(TransactionBody.DEFAULT,
-                    SingleTransactionRecordBuilder.class))
+            assertThatThrownBy(() -> context.dispatchChildTransaction(
+                            TransactionBody.DEFAULT, SingleTransactionRecordBuilder.class))
                     .isInstanceOf(IllegalArgumentException.class);
             verify(recordListBuilder, never()).addPreceding(any());
             verify(dispatcher, never()).dispatchHandle(any());
-            assertThat(stack.createReadableStates(FOOD_SERVICE).get(FRUIT_STATE_KEY).get(A_KEY))
+            assertThat(stack.createReadableStates(FOOD_SERVICE)
+                            .get(FRUIT_STATE_KEY)
+                            .get(A_KEY))
                     .isEqualTo(APPLE);
             assertThat(context.configuration()).isEqualTo(CONFIG_1);
         }
@@ -735,12 +766,14 @@ class HandleContextImplTest extends StateTestBase {
             final var context = createContext(TransactionBody.DEFAULT, TransactionCategory.PRECEDING);
 
             // then
-            assertThatThrownBy(() -> context.dispatchRemovableChildTransaction(TransactionBody.DEFAULT,
-                    SingleTransactionRecordBuilder.class))
+            assertThatThrownBy(() -> context.dispatchRemovableChildTransaction(
+                            TransactionBody.DEFAULT, SingleTransactionRecordBuilder.class))
                     .isInstanceOf(IllegalArgumentException.class);
             verify(recordListBuilder, never()).addPreceding(any());
             verify(dispatcher, never()).dispatchHandle(any());
-            assertThat(stack.createReadableStates(FOOD_SERVICE).get(FRUIT_STATE_KEY).get(A_KEY))
+            assertThat(stack.createReadableStates(FOOD_SERVICE)
+                            .get(FRUIT_STATE_KEY)
+                            .get(A_KEY))
                     .isEqualTo(APPLE);
             assertThat(context.configuration()).isEqualTo(CONFIG_1);
         }
