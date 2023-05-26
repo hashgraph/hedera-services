@@ -666,6 +666,19 @@ class MonoTransactionDispatcherTest {
     }
 
     @Test
+    void dispatchesCryptoDeleteAsExpected() {
+        final var txnBody = TransactionBody.newBuilder()
+                .cryptoDelete(CryptoDeleteTransactionBody.DEFAULT)
+                .build();
+
+        given(handleContext.body()).willReturn(txnBody);
+        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+
+        dispatcher.dispatchHandle(handleContext);
+        verify(writableAccountStore).commit();
+    }
+
+    @Test
     void doesntCommitWhenUsageLimitsExceeded() {
         final var txnBody = TransactionBody.newBuilder()
                 .cryptoCreateAccount(CryptoCreateTransactionBody.DEFAULT)

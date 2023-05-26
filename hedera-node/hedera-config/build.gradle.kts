@@ -26,6 +26,7 @@ dependencies {
   implementation(project(":hedera-node:hapi-utils"))
   implementation(libs.swirlds.config)
   compileOnlyApi(libs.spotbugs.annotations)
+  implementation(libs.pbj.runtime)
 
   testImplementation(testLibs.bundles.testing)
 
