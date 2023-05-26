@@ -33,5 +33,6 @@ dependencies {
     testImplementation(gav("com.google.protobuf"))
     testImplementation(gav("com.hedera.hashgraph.protobuf.java.api"))
     testImplementation(gav("com.swirlds.common"))
+    testRuntimeOnly(gav("org.mockito.inline"))
   }
 }

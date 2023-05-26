@@ -34,5 +34,6 @@ dependencies {
     testImplementation(gav("org.mockito"))
     testImplementation(gav("org.mockito.junit.jupiter"))
     testImplementation(gav("com.swirlds.merkle"))
+    testRuntimeOnly(gav("org.mockito.inline"))
   }
 }
