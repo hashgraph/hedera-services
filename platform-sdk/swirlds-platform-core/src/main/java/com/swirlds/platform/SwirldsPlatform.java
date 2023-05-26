@@ -16,6 +16,7 @@
 
 package com.swirlds.platform;
 
+import static com.swirlds.common.formatting.StringFormattingUtils.commaSeparatedNumber;
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.common.units.TimeUnit.UNIT_MILLISECONDS;
@@ -26,7 +27,6 @@ import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.platform.state.GenesisStateBuilder.buildGenesisState;
 import static com.swirlds.platform.state.address.AddressBookMetrics.registerAddressBookMetrics;
 import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.common.config.ConsensusConfig;
@@ -212,8 +212,8 @@ public class SwirldsPlatform implements Platform, Startable {
      */
     private final long diskStateRound;
     /**
-     * If a state was loaded from disk, this is the minimum generation non-ancient for that round. If starting from
-     * a genesis state, this is 0.
+     * If a state was loaded from disk, this is the minimum generation non-ancient for that round. If starting from a
+     * genesis state, this is 0.
      */
     private final long initialMinimumGenerationNonAncient;
     /**
@@ -225,6 +225,7 @@ public class SwirldsPlatform implements Platform, Startable {
      */
     private final Hash diskStateHash;
 
+    private final Instant diskStateTimestamp;
     private final StateManagementComponent stateManagementComponent;
     private final QueueThread<EventIntakeTask> intakeQueue;
     private final EventLinker eventLinker;
@@ -438,12 +439,19 @@ public class SwirldsPlatform implements Platform, Startable {
                     .getPlatformState()
                     .getPlatformData()
                     .getMinimumGenerationNonAncient();
+            diskStateTimestamp = loadedSignedState
+                    .get()
+                    .getState()
+                    .getPlatformState()
+                    .getPlatformData()
+                    .getConsensusTimestamp();
             startedFromGenesis = false;
         } else {
             diskStateHash = null;
             diskStateRound = -1;
             initialMinimumGenerationNonAncient = 0;
             startedFromGenesis = true;
+            diskStateTimestamp = null;
         }
 
         final LoadedState loadedState = initializeLoadedStateFromSignedState(loadedSignedState);
@@ -1065,6 +1073,7 @@ public class SwirldsPlatform implements Platform, Startable {
 
             long eventCount = 0;
             long transactionCount = 0;
+
             while (iterator.hasNext()) {
                 final EventImpl event = iterator.next();
 
@@ -1075,7 +1084,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 final Hash eventHash = platformContext.getCryptography().digestSync(event.getBaseEventHashedData());
 
                 if (shadowGraph.isHashInGraph(eventHash)) {
-                    // Hashgraph doesn't deal with duplicate events well, filter them out here
+                    // the shadowgraph doesn't deal with duplicate events well, filter them out here
                     continue;
                 }
 
@@ -1083,25 +1092,49 @@ public class SwirldsPlatform implements Platform, Startable {
                 eventIntake.addUnlinkedEvent(gossipEvent);
             }
 
-            // TODO should we flush event intake here?
-            SECONDS.sleep(1); // TODO poor man's flush
-            // TODO flush event creator (to prevent unintentional branching)
+            // Wait until all events from the preconsensus event stream have been fully ingested.
+            intakeQueue.waitUntilNotBusy();
+
+            // Wait until all rounds from the preconsensus event stream have been fully processed.
+            consensusRoundHandler.waitUntilNotBusy();
+
+            // TODO are there other queues we need to wait on?
 
             // TODO use time
             final Instant finish = Instant.now();
             final Duration elapsed = Duration.between(start, finish);
 
-            // TODO provide other data here:
-            //  - number of rounds, and current round number after replay
-            //  - elapsed consensus time
+            final Duration elapsedConsensusTime;
+            final long elapsedRounds;
+            final long latestRound;
+            try (final ReservedSignedState latestConsensusRound = stateManagementComponent.getLatestImmutableState(
+                    "SwirldsPlatform.replayPreconsensusEventStream()")) {
+
+                latestRound = latestConsensusRound.get().getRound();
+                elapsedRounds = latestRound - this.diskStateRound; // TODO this is wonky for genesis
+
+                // TODO it would be better to use the timestamp of the last transaction in this round
+                final Instant latestRoundTimestamp = latestConsensusRound.get().getConsensusTimestamp();
+
+                if (diskStateTimestamp != null) {
+                    elapsedConsensusTime = Duration.between(this.diskStateTimestamp, latestRoundTimestamp);
+                } else {
+                    elapsedConsensusTime = Duration.ZERO;
+                    // TODO we should compare time between first round and last round
+                }
+            }
+
             logger.info(
                     STARTUP.getMarker(),
-                    "replayed {} preconsensus events containing {} transactions. Replay took {}.",
-                    eventCount,
-                    transactionCount,
-                    new UnitFormatter(elapsed.toMillis(), UNIT_MILLISECONDS)
-                            .setAbbreviate(false)
-                            .render());
+                    "replayed {} preconsensus events. These events contained {} transactions. "
+                            + "{} rounds reached consensus spanning {} of consensus time. The latest "
+                            + "round to reach consensus is round {}. Replay took {}.",
+                    commaSeparatedNumber(eventCount),
+                    commaSeparatedNumber(transactionCount),
+                    commaSeparatedNumber(elapsedRounds),
+                    new UnitFormatter(elapsedConsensusTime.toMillis(), UNIT_MILLISECONDS).setAbbreviate(false),
+                    commaSeparatedNumber(latestRound),
+                    new UnitFormatter(elapsed.toMillis(), UNIT_MILLISECONDS).setAbbreviate(false));
 
             preConsensusEventWriter.beginStreamingNewEvents();
 
@@ -1118,6 +1151,8 @@ public class SwirldsPlatform implements Platform, Startable {
                     "Platform status should be REPLAYING_EVENTS, current status is " + currentPlatformStatus.get());
         }
         currentPlatformStatus.set(PlatformStatus.READY);
+
+        // TODO when does "start up frozen" start measuring time?
     }
 
     /**

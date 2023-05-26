@@ -243,4 +243,9 @@ public class UnitFormatter {
             }
         }
     }
+
+    @Override
+    public String toString() {
+        return render();
+    }
 }
