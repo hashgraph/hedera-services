@@ -45,6 +45,7 @@ import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.utility.ByteUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
@@ -70,10 +71,10 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
     private static final long CLASS_ID = 0xf059378c7764ef47L;
 
     /**
-     * Only trigger an ISS if consensus time is within this time window of a scheduled ISS incident. If consensus time
-     * "skips" forward longer than this window then the scheduled ISS will be ignored.
+     * Only trigger an incident if consensus time is within this time window of the scheduled time. If consensus time
+     * "skips" forward longer than this window then the scheduled incident will be ignored.
      */
-    private static final Duration ISS_WINDOW = Duration.ofSeconds(10);
+    private static final Duration INCIDENT_WINDOW = Duration.ofSeconds(10);
 
     private long selfId;
 
@@ -93,9 +94,9 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
     private List<PlannedIss> plannedIssList = new LinkedList<>();
 
     /**
-     * An error that will be logged at a predetermined consensus time
+     * A list of errors that will be logged at a predetermined consensus time
      */
-    private PlannedLogError plannedLogError;
+    private List<PlannedLogError> plannedLogErrorList = new LinkedList<>();
 
     private boolean immutable;
 
@@ -108,7 +109,7 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
         super(that);
         this.runningSum = that.runningSum;
         this.plannedIssList = new LinkedList<>(that.plannedIssList);
-        this.plannedLogError = that.plannedLogError;
+        this.plannedLogErrorList = new LinkedList<>(that.plannedLogErrorList);
         this.genesisTimestamp = that.genesisTimestamp;
         this.selfId = that.selfId;
         that.immutable = true;
@@ -149,7 +150,7 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
                     platform.getContext().getConfiguration().getConfigData(ISSTestingToolConfig.class);
 
             this.plannedIssList = testingToolConfig.getPlannedISSs();
-            this.plannedLogError = testingToolConfig.getPlannedLogError();
+            this.plannedLogErrorList = testingToolConfig.getPlannedLogErrors();
         }
 
         this.selfId = platform.getSelfId().id();
@@ -202,86 +203,128 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
 
         final Duration elapsedSinceGenesis = Duration.between(genesisTimestamp, currentTimestamp);
 
-        maybeTriggerIss(elapsedSinceGenesis, currentTimestamp);
-        maybeLogError(elapsedSinceGenesis);
+        final PlannedIss plannedIss = shouldTriggerIncident(elapsedSinceGenesis, currentTimestamp, plannedIssList);
+        if (plannedIss != null) {
+            triggerISS(plannedIss, elapsedSinceGenesis, currentTimestamp);
+        }
+
+        final PlannedLogError plannedLogError =
+                shouldTriggerIncident(elapsedSinceGenesis, currentTimestamp, plannedLogErrorList);
+        if (plannedLogError != null) {
+            triggerLogError(plannedLogError, elapsedSinceGenesis);
+        }
     }
 
     /**
-     * Check if it's time to trigger an ISS. If it is, then mutate the state as needed.
+     * Iterate over a list of planned incidents, and return the first one that should be triggered. If no incident from
+     * the list should be triggered, return null
      *
-     * @param elapsedSinceGenesis the duration that has elapsed since genesis
+     * @param elapsedSinceGenesis the amount of time that has elapsed since genesis
+     * @param currentTimestamp    the current consensus timestamp
+     * @param plannedIncidentList the list of planned incidents to iterate over
+     * @param <T>                 the type of incident in the list
+     * @return the first incident that should be triggered, or null if no incident should be triggered
      */
-    private void maybeTriggerIss(@NonNull final Duration elapsedSinceGenesis, @NonNull final Instant currentTimestamp) {
+    @Nullable
+    private static <T extends PlannedIncident> T shouldTriggerIncident(
+            @NonNull final Duration elapsedSinceGenesis,
+            @NonNull final Instant currentTimestamp,
+            @NonNull final List<T> plannedIncidentList) {
+
         Objects.requireNonNull(elapsedSinceGenesis);
+        Objects.requireNonNull(currentTimestamp);
+        Objects.requireNonNull(plannedIncidentList);
 
-        final Iterator<PlannedIss> plannedIssIterator = plannedIssList.listIterator();
-        while (plannedIssIterator.hasNext()) {
-            final PlannedIss plannedIss = plannedIssIterator.next();
+        final Iterator<T> plannedIncidentIterator = plannedIncidentList.listIterator();
+        while (plannedIncidentIterator.hasNext()) {
+            final T plannedIncident = plannedIncidentIterator.next();
 
-            if (isLessThan(elapsedSinceGenesis, plannedIss.getTimeAfterGenesis())) {
-                // This planned ISS is for some time in the future.
-                break;
+            if (isLessThan(elapsedSinceGenesis, plannedIncident.getTimeAfterGenesis())) {
+                // The next planned incident is for some time in the future, so return null
+                return null;
             }
 
-            // If we reach this point then we are ready to trigger the ISS.
-            // Once triggered, the same ISS is not triggered again.
-            plannedIssIterator.remove();
+            // If we reach this point then we are ready to trigger the incident.
+            // Once triggered, the same incident is not triggered again.
+            plannedIncidentIterator.remove();
 
             if (isGreaterThan(
-                    elapsedSinceGenesis, plannedIss.getTimeAfterGenesis().plus(ISS_WINDOW))) {
+                    elapsedSinceGenesis, plannedIncident.getTimeAfterGenesis().plus(INCIDENT_WINDOW))) {
 
                 // Consensus time has skipped forward, possibly because this node was restarted.
-                // We are outside the allowable window for the scheduled ISS, so do not trigger this one.
+                // We are outside the allowable window for the scheduled incident, so do not trigger this one.
                 logger.info(
                         STARTUP.getMarker(),
-                        "Planned ISS skipped at {}. Planned time after genesis: {}. Elapsed time since genesis at skip: {}",
+                        "Planned {} skipped at {}. Planned time after genesis: {}. "
+                                + "Elapsed time since genesis at skip: {}",
+                        plannedIncident.getDescriptor(),
                         currentTimestamp,
-                        plannedIss.getTimeAfterGenesis(),
+                        plannedIncident.getTimeAfterGenesis(),
                         elapsedSinceGenesis);
 
                 continue;
             }
 
-            // Randomly mutate the state. Each node in the same partition will get the same random mutation.
-            // Nodes in different partitions will get a different random mutation with high probability.
-            final int hashPartitionIndex = plannedIss.getPartitionOfNode(selfId);
-            final long hashPartitionSeed = hash64(currentTimestamp.toEpochMilli(), hashPartitionIndex);
-            final Random random = new Random(hashPartitionSeed);
-            runningSum += random.nextInt();
-
-            logger.info(
-                    STARTUP.getMarker(),
-                    "ISS intentionally provoked. This ISS was planned to occur at time after genesis {}, "
-                            + "and actually occurred at time after genesis {}. This node ({}) is in partition {} and will"
-                            + "agree with the hashes of all other nodes in partition {}. Nodes in other partitions "
-                            + "are expected to have divergent hashes.",
-                    plannedIss.getTimeAfterGenesis(),
-                    elapsedSinceGenesis,
-                    selfId,
-                    hashPartitionIndex,
-                    hashPartitionIndex);
+            return plannedIncident;
         }
+
+        return null;
     }
 
     /**
-     * Log an error if it's time to do so
+     * Trigger an ISS
      *
-     * @param elapsedSinceGenesis the duration that has elapsed since genesis
+     * @param plannedIss          the planned ISS to trigger
+     * @param elapsedSinceGenesis the amount of time that has elapsed since genesis
+     * @param currentTimestamp    the current consensus timestamp
      */
-    private void maybeLogError(@NonNull final Duration elapsedSinceGenesis) {
-        Objects.requireNonNull(elapsedSinceGenesis);
+    private void triggerISS(
+            @NonNull final PlannedIss plannedIss,
+            @NonNull final Duration elapsedSinceGenesis,
+            @NonNull final Instant currentTimestamp) {
 
-        if (plannedLogError == null || plannedLogError.getTimeAfterGenesis().compareTo(elapsedSinceGenesis) > 0) {
-            return;
-        }
+        Objects.requireNonNull(plannedIss);
+        Objects.requireNonNull(elapsedSinceGenesis);
+        Objects.requireNonNull(currentTimestamp);
+
+        // Randomly mutate the state. Each node in the same partition will get the same random mutation.
+        // Nodes in different partitions will get a different random mutation with high probability.
+        final int hashPartitionIndex = plannedIss.getPartitionOfNode(selfId);
+        final long hashPartitionSeed = hash64(currentTimestamp.toEpochMilli(), hashPartitionIndex);
+        final Random random = new Random(hashPartitionSeed);
+        runningSum += random.nextInt();
+
+        logger.info(
+                STARTUP.getMarker(),
+                "ISS intentionally provoked. This ISS was planned to occur at time after genesis {}, "
+                        + "and actually occurred at time after genesis {}. This node ({}) is in partition {} and will"
+                        + "agree with the hashes of all other nodes in partition {}. Nodes in other partitions "
+                        + "are expected to have divergent hashes.",
+                plannedIss.getTimeAfterGenesis(),
+                elapsedSinceGenesis,
+                selfId,
+                hashPartitionIndex,
+                hashPartitionIndex);
+    }
+
+    /**
+     * Trigger a log error
+     *
+     * @param plannedLogError     the planned log error to trigger
+     * @param elapsedSinceGenesis the amount of time that has elapsed since genesis
+     */
+    private void triggerLogError(
+            @NonNull final PlannedLogError plannedLogError, @NonNull final Duration elapsedSinceGenesis) {
+
+        Objects.requireNonNull(plannedLogError);
+        Objects.requireNonNull(elapsedSinceGenesis);
 
         logger.error(
                 STARTUP.getMarker(),
-                "This error was scheduled to be logged at time after genesis {}, and actually was logged at time after genesis {}.",
+                "This error was scheduled to be logged at time after genesis {}, and actually was logged "
+                        + "at time after genesis {}.",
                 plannedLogError.getTimeAfterGenesis(),
                 elapsedSinceGenesis);
-
-        plannedLogError = null;
     }
 
     /**
@@ -292,7 +335,7 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
         out.writeLong(runningSum);
         out.writeInstant(genesisTimestamp);
         out.writeSerializableList(plannedIssList, false, true);
-        out.writeSerializable(plannedLogError, false);
+        out.writeSerializableList(plannedLogErrorList, false, true);
     }
 
     /**
@@ -303,7 +346,7 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
         runningSum = in.readLong();
         genesisTimestamp = in.readInstant();
         plannedIssList = in.readSerializableList(1024, false, PlannedIss::new);
-        plannedLogError = in.readSerializable(false, PlannedLogError::new);
+        plannedLogErrorList = in.readSerializableList(1024, false, PlannedLogError::new);
     }
 
     /**

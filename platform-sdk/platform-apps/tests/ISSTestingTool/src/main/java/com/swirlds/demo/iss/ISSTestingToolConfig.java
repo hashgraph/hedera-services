@@ -30,13 +30,15 @@ import java.util.List;
  * @param plannedISSs           a list of {@link PlannedIss}s. If multiple ISS events are scheduled, it's important that
  *                              they be arranged in chronological order. Breaking this rule may cause undefined
  *                              behavior.
- * @param plannedLogError       a {@link PlannedLogError}
+ * @param plannedLogErrors      a list of {@link PlannedLogError}s. If multiple errors are scheduled, it's important that
+ *                              they be arranged in chronological order. Breaking this rule may cause undefined
+ *                              behavior.
  */
 @ConfigData("issTestingTool")
 public record ISSTestingToolConfig(
         @ConfigProperty(defaultValue = "1000") int transactionsPerSecond,
         @ConfigProperty(defaultValue = "[]") List<String> plannedISSs,
-        @ConfigProperty(defaultValue = "") String plannedLogError) {
+        @ConfigProperty(defaultValue = "[]") List<String> plannedLogErrors) {
 
     /**
      * Get the list of {@link PlannedIss}s
@@ -59,12 +61,14 @@ public record ISSTestingToolConfig(
      *
      * @return a {@link PlannedLogError}, or null if one doesn't exist
      */
-    @Nullable
-    public PlannedLogError getPlannedLogError() {
-        if (plannedLogError == null || plannedLogError.isEmpty()) {
-            return null;
+    @NonNull
+    public List<PlannedLogError> getPlannedLogErrors() {
+        final List<PlannedLogError> parsedPlannedLogErrors = new LinkedList<>();
+
+        for (final String plannedLogErrorString : plannedISSs()) {
+            parsedPlannedLogErrors.add(PlannedLogError.fromString(plannedLogErrorString));
         }
 
-        return PlannedLogError.fromString(plannedLogError);
+        return parsedPlannedLogErrors;
     }
 }

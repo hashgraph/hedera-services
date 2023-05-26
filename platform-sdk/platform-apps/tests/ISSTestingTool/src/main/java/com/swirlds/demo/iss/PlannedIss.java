@@ -34,7 +34,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * Describes an intentional ISS that will take place at a given time on a given set of nodes.
  */
-public class PlannedIss implements SelfSerializable {
+public class PlannedIss implements SelfSerializable, PlannedIncident {
     private static final Logger logger = LogManager.getLogger(PlannedIss.class);
 
     private static final long CLASS_ID = 0xb2490d3733e756dL;
@@ -116,10 +116,21 @@ public class PlannedIss implements SelfSerializable {
     }
 
     /**
-     * The amount of time, after genesis, when the ISS should be triggered.
+     * {@inheritDoc}
      */
+    @Override
+    @NonNull
     public Duration getTimeAfterGenesis() {
         return timeAfterGenesis;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public String getDescriptor() {
+        return "ISS";
     }
 
     /**
@@ -190,7 +201,7 @@ public class PlannedIss implements SelfSerializable {
      */
     @NonNull
     public static PlannedIss fromString(@NonNull final String plannedIssString) {
-        final String[] timestampAndPartitionsStrings = plannedIssString.split(":");
+        final String[] timestampAndPartitionsStrings = plannedIssString.strip().split(":");
 
         final int elapsedTime = Integer.parseInt(timestampAndPartitionsStrings[0]);
         final String partitionsString = timestampAndPartitionsStrings[1];
@@ -206,8 +217,7 @@ public class PlannedIss implements SelfSerializable {
                 final long nodeId = Long.parseLong(nodeString);
                 nodes.add(nodeId);
                 if (!uniqueNodeIds.add(nodeId)) {
-                    logger.error(
-                            EXCEPTION.getMarker(), "Node {} appears more than once in ISS description!", nodeId);
+                    logger.error(EXCEPTION.getMarker(), "Node {} appears more than once in ISS description!", nodeId);
                 }
             }
             partitions.add(nodes);

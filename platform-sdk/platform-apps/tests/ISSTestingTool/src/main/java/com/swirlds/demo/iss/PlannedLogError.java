@@ -26,7 +26,7 @@ import java.time.Duration;
 /**
  * Describes an error which will be logged at a predetermined consensus time after genesis
  */
-public class PlannedLogError implements SelfSerializable {
+public class PlannedLogError implements SelfSerializable, PlannedIncident {
     private static final long CLASS_ID = 0xf0c6ba6c5da86ed4L;
 
     /**
@@ -85,7 +85,7 @@ public class PlannedLogError implements SelfSerializable {
     }
 
     /**
-     * Input string will be of form "secondsAfterGenesis:message", where secondsAfterGenesis is an int
+     * Input string will be of form "secondsAfterGenesis", where secondsAfterGenesis is an int
      *
      * @param plannedLogErrorString the string to parse
      * @return the parsed PlannedLogError
@@ -96,12 +96,20 @@ public class PlannedLogError implements SelfSerializable {
     }
 
     /**
-     * Get the time after genesis when the log error is planned
-     *
-     * @return the time after genesis when the log error is planned
+     * {@inheritDoc}
      */
+    @Override
     @NonNull
     public Duration getTimeAfterGenesis() {
         return timeAfterGenesis;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public String getDescriptor() {
+        return "Log Error";
     }
 }
