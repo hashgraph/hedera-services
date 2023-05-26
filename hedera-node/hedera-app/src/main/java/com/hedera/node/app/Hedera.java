@@ -327,7 +327,8 @@ public final class Hedera implements SwirldMain {
      */
     private void onMigrate(
             @NonNull final MerkleHederaState state, @Nullable final SerializableSemVers deserializedVersion) {
-        final var previousVersion = deserializedVersion == null ? null : PbjConverter.toPbj(deserializedVersion.getServices());
+        final var previousVersion =
+                deserializedVersion == null ? null : PbjConverter.toPbj(deserializedVersion.getServices());
         final var currentVersion = PbjConverter.toPbj(version.getServices());
         logger.info("Migrating from version {} to {}", previousVersion, currentVersion);
         for (final var registration : serviceRegistry.values()) {
