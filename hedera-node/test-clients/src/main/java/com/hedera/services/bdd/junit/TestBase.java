@@ -59,7 +59,8 @@ public abstract class TestBase {
 
     @SafeVarargs
     protected final DynamicTest concurrentEthSpecsFrom(final Supplier<HapiSuite>... suiteSuppliers) {
-        return internalSpecsFrom(ETH_SUFFIX, Arrays.asList(suiteSuppliers), this::contextualizedEthSpecsFromConcurrent);
+        return internalSpecsFrom(
+                ETH_SUFFIX, Arrays.asList(suiteSuppliers), TestBase::contextualizedEthSpecsFromConcurrent);
     }
 
     @SuppressWarnings("java:S3864")
@@ -173,7 +174,7 @@ public abstract class TestBase {
         return suffixContextualizedSpecsFromConcurrent(suite, "");
     }
 
-    private Stream<HapiSpec> contextualizedEthSpecsFromConcurrent(final HapiSuite suite) {
+    private static Stream<HapiSpec> contextualizedEthSpecsFromConcurrent(final HapiSuite suite) {
         return suffixContextualizedSpecsFromConcurrent(suite, ETH_SUFFIX);
     }
 
