@@ -49,14 +49,11 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnF
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
+import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.SignatureMap;
-import com.hederahashgraph.api.proto.java.SignedTransaction;
-import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 import java.util.ArrayList;
@@ -254,15 +251,7 @@ public abstract class AbstractAutoCreationLogic {
     }
 
     private long autoCreationFeeFor(final TransactionBody.Builder cryptoCreateTxn) {
-        final var signedTxn = SignedTransaction.newBuilder()
-                .setBodyBytes(cryptoCreateTxn.build().toByteString())
-                .setSigMap(SignatureMap.getDefaultInstance())
-                .build();
-        final var txn = Transaction.newBuilder()
-                .setSignedTransactionBytes(signedTxn.toByteString())
-                .build();
-
-        final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
+        final var accessor = MiscUtils.synthAccessorFor(cryptoCreateTxn);
         final var fees = feeCalculator.computeFee(accessor, EMPTY_KEY, currentView.get(), txnCtx.consensusTime());
         return fees.serviceFee() + fees.networkFee() + fees.nodeFee();
     }

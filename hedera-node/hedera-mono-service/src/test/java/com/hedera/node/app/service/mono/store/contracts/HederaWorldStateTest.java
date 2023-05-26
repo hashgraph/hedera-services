@@ -53,6 +53,7 @@ import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractCustomizer;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
+import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.mono.store.models.Id;
@@ -101,6 +102,9 @@ class HederaWorldStateTest {
     private ContractAliases aliases;
 
     @Mock
+    private RecordsHistorian recordsHistorian;
+
+    @Mock
     private GlobalDynamicProperties dynamicProperties;
 
     @Mock
@@ -133,7 +137,14 @@ class HederaWorldStateTest {
     void setUp() {
         codeCache = new CodeCache(properties, entityAccess);
         subject = new HederaWorldState(
-                usageLimits, ids, entityAccess, codeCache, sigImpactHistorian, dynamicProperties, handleThrottling);
+                usageLimits,
+                ids,
+                entityAccess,
+                codeCache,
+                sigImpactHistorian,
+                dynamicProperties,
+                handleThrottling,
+                recordsHistorian);
     }
 
     @Test
@@ -169,6 +180,8 @@ class HederaWorldStateTest {
     void skipsTokenAccountsInCommit() {
         givenNonNullWorldLedgers();
         given(worldLedgers.aliases()).willReturn(aliases);
+        given(recordsHistorian.hasThrottleCapacityForChildTransactions()).willReturn(true);
+        given(dynamicProperties.shouldEnforceChildTransactionThrottle()).willReturn(true);
         doAnswer(invocationOnMock -> invocationOnMock.getArguments()[0])
                 .when(aliases)
                 .resolveForEvm(any());
@@ -328,6 +341,8 @@ class HederaWorldStateTest {
         given(worldLedgers.accounts()).willReturn(accounts);
         given(accounts.contains(any())).willReturn(true);
         given(accounts.get(any(), eq(AccountProperty.IS_SMART_CONTRACT))).willReturn(true);
+        given(dynamicProperties.shouldEnforceChildTransactionThrottle()).willReturn(true);
+        given(recordsHistorian.hasThrottleCapacityForChildTransactions()).willReturn(true);
 
         /* Please note that the subject of this test is the actual inner updater class */
         var actualSubject = subject.updater();
@@ -481,6 +496,8 @@ class HederaWorldStateTest {
         given(worldLedgers.accounts()).willReturn(accounts);
         given(accounts.get(any(), eq(AccountProperty.IS_SMART_CONTRACT))).willReturn(true);
         given(accounts.contains(any())).willReturn(true);
+        given(dynamicProperties.shouldEnforceChildTransactionThrottle()).willReturn(true);
+        given(recordsHistorian.hasThrottleCapacityForChildTransactions()).willReturn(true);
 
         final var updater = subject.updater();
         updater.deleteAccount(tbdAddress);
@@ -499,6 +516,8 @@ class HederaWorldStateTest {
     void updaterCreatesDeletedAccountUponCommitIfDontNeedToThrottle() {
         givenNonNullWorldLedgers();
         final var tbdAddress = contract.asEvmAddress();
+        given(dynamicProperties.shouldEnforceChildTransactionThrottle()).willReturn(true);
+        given(recordsHistorian.hasThrottleCapacityForChildTransactions()).willReturn(true);
         given(worldLedgers.aliases()).willReturn(aliases);
         given(aliases.resolveForEvm(tbdAddress)).willReturn(tbdAddress);
         given(worldLedgers.accounts()).willReturn(accounts);
@@ -538,6 +557,17 @@ class HederaWorldStateTest {
         updater.deleteAccount(tbdAddress);
 
         assertExhaustsResourceLimit(updater::commit, CONSENSUS_GAS_EXHAUSTED);
+    }
+
+    @Test
+    void updaterThrottlesSynthChildrenOnCommit() {
+        givenNonNullWorldLedgers();
+        given(dynamicProperties.shouldEnforceChildTransactionThrottle()).willReturn(true);
+
+        final var updater = subject.updater();
+
+        assertExhaustsResourceLimit(updater::commit, CONSENSUS_GAS_EXHAUSTED);
+        verify(recordsHistorian).hasThrottleCapacityForChildTransactions();
     }
 
     @Test
@@ -642,6 +672,43 @@ class HederaWorldStateTest {
         given(worldLedgers.accounts()).willReturn(accounts);
         given(accounts.get(any(), eq(AccountProperty.IS_SMART_CONTRACT))).willReturn(true);
         given(accounts.contains(any())).willReturn(true);
+        given(dynamicProperties.shouldEnforceChildTransactionThrottle()).willReturn(true);
+        given(recordsHistorian.hasThrottleCapacityForChildTransactions()).willReturn(true);
+
+        final var actualSubject = subject.updater();
+        final var evmAccount = actualSubject.createAccount(newAddress, 0, Wei.of(balance));
+        final var storageKey = UInt256.ONE;
+        final var storageValue = UInt256.valueOf(9_876);
+        final var secondStorageKey = UInt256.valueOf(2);
+        final var secondStorageValue = UInt256.ZERO;
+        evmAccount.getMutable().setStorageValue(storageKey, storageValue);
+        evmAccount.getMutable().setStorageValue(secondStorageKey, secondStorageValue);
+        evmAccount.getMutable().setCode(code);
+        // and:
+        final var accountID =
+                EntityIdUtils.accountIdFromEvmAddress(contract.asEvmAddress().toArray());
+        given(entityAccess.isExtant(contract.asEvmAddress())).willReturn(true);
+
+        // when:
+        actualSubject.commit();
+
+        // then:
+        verify(entityAccess).isExtant(contract.asEvmAddress());
+        verify(entityAccess).putStorage(accountID, storageKey, storageValue);
+        verify(entityAccess).putStorage(accountID, secondStorageKey, secondStorageValue);
+        // and:
+        verify(entityAccess).storeCode(accountID, code);
+    }
+
+    @Test
+    void updaterDoesNotCheckThrottleIfNotDesired() {
+        givenNonNullWorldLedgers();
+        given(worldLedgers.aliases()).willReturn(aliases);
+        final var newAddress = contract.asEvmAddress();
+        given(aliases.resolveForEvm(newAddress)).willReturn(newAddress);
+        given(worldLedgers.accounts()).willReturn(accounts);
+        given(accounts.get(any(), eq(AccountProperty.IS_SMART_CONTRACT))).willReturn(true);
+        given(accounts.contains(any())).willReturn(true);
 
         final var actualSubject = subject.updater();
         final var evmAccount = actualSubject.createAccount(newAddress, 0, Wei.of(balance));
@@ -677,6 +744,8 @@ class HederaWorldStateTest {
         given(worldLedgers.accounts()).willReturn(accounts);
         given(accounts.get(any(), eq(AccountProperty.IS_SMART_CONTRACT))).willReturn(false);
         given(accounts.contains(any())).willReturn(true);
+        given(dynamicProperties.shouldEnforceChildTransactionThrottle()).willReturn(true);
+        given(recordsHistorian.hasThrottleCapacityForChildTransactions()).willReturn(true);
 
         // when:
         final var actualSubject = subject.updater();
@@ -722,6 +791,8 @@ class HederaWorldStateTest {
         given(worldLedgers.accounts()).willReturn(accounts);
         given(accounts.get(any(), eq(AccountProperty.IS_SMART_CONTRACT))).willReturn(true);
         given(accounts.contains(any())).willReturn(true);
+        given(dynamicProperties.shouldEnforceChildTransactionThrottle()).willReturn(true);
+        given(recordsHistorian.hasThrottleCapacityForChildTransactions()).willReturn(true);
 
         final var actualSubject = subject.updater();
 
@@ -757,6 +828,8 @@ class HederaWorldStateTest {
         given(worldLedgers.accounts()).willReturn(accounts);
         given(accounts.get(any(), eq(AccountProperty.IS_SMART_CONTRACT))).willReturn(true);
         given(accounts.contains(any())).willReturn(true);
+        given(dynamicProperties.shouldEnforceChildTransactionThrottle()).willReturn(true);
+        given(recordsHistorian.hasThrottleCapacityForChildTransactions()).willReturn(true);
 
         final var actualSubject = subject.updater();
         actualSubject.createAccount(newAddress, 0, Wei.of(balance));

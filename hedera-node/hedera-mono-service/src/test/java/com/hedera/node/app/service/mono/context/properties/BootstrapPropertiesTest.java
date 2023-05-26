@@ -74,6 +74,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ALLOW_SYSTE
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_CHAIN_ID;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_DEFAULT_LIFETIME;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_DYNAMIC_EVM_VERSION;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ENFORCE_CHILD_TRANSACTION_THROTTLE;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ENFORCE_CREATION_THROTTLE;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_EVM_VERSION;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_FREE_STORAGE_TIER_LIMIT;
@@ -351,6 +352,7 @@ class BootstrapPropertiesTest {
             entry(CONTRACTS_DEFAULT_LIFETIME, 7890000L),
             entry(CONTRACTS_DYNAMIC_EVM_VERSION, false),
             entry(CONTRACTS_ENFORCE_CREATION_THROTTLE, false),
+            entry(CONTRACTS_ENFORCE_CHILD_TRANSACTION_THROTTLE, true),
             entry(CONTRACTS_EVM_VERSION, EVM_VERSION_0_38),
             entry(CONTRACTS_LOCAL_CALL_EST_RET_BYTES, 32),
             entry(CONTRACTS_MAX_GAS_PER_SEC, 15000000L),

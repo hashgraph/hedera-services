@@ -995,6 +995,10 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
             return onlyExternalizedIfSuccessful && !TxnReceipt.SUCCESS_LITERAL.equals(receiptBuilder.getStatus());
         }
 
+        public boolean isPendingSuccess() {
+            return TxnReceipt.SUCCESS_LITERAL.equals(receiptBuilder.getStatus());
+        }
+
         public long getFee() {
             return fee;
         }

@@ -68,6 +68,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ALLOW_SYSTE
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_CHAIN_ID;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_DEFAULT_LIFETIME;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_DYNAMIC_EVM_VERSION;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ENFORCE_CHILD_TRANSACTION_THROTTLE;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ENFORCE_CREATION_THROTTLE;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_EVM_VERSION;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_FREE_STORAGE_TIER_LIMIT;
@@ -450,6 +451,7 @@ public final class BootstrapProperties implements PropertySource {
             CONTRACTS_PERMITTED_DELEGATE_CALLERS,
             CONTRACTS_KEYS_LEGACY_ACTIVATIONS,
             CONTRACTS_ENFORCE_CREATION_THROTTLE,
+            CONTRACTS_ENFORCE_CHILD_TRANSACTION_THROTTLE,
             CONTRACTS_KNOWN_BLOCK_HASH,
             CONTRACTS_LOCAL_CALL_EST_RET_BYTES,
             CONTRACTS_ALLOW_CREATE2,
@@ -768,6 +770,7 @@ public final class BootstrapProperties implements PropertySource {
             entry(CONTRACTS_MAX_GAS_PER_SEC, AS_LONG),
             entry(CONTRACTS_ITEMIZE_STORAGE_FEES, AS_BOOLEAN),
             entry(CONTRACTS_ENFORCE_CREATION_THROTTLE, AS_BOOLEAN),
+            entry(CONTRACTS_ENFORCE_CHILD_TRANSACTION_THROTTLE, AS_BOOLEAN),
             entry(CONTRACTS_REFERENCE_SLOT_LIFETIME, AS_LONG),
             entry(CONTRACTS_FREE_STORAGE_TIER_LIMIT, AS_INT),
             entry(CONTRACTS_MAX_KV_PAIRS_AGGREGATE, AS_LONG),
