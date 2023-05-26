@@ -11,4 +11,5 @@ module com.hedera.node.config {
     requires com.hedera.node.app.service.mono;
     requires com.hedera.node.hapi;
     requires com.hedera.node.app.hapi.utils;
+    requires com.hedera.pbj.runtime;
 }
