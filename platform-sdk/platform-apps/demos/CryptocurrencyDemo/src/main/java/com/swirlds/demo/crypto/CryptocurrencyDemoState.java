@@ -258,7 +258,7 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
             }
             // if this is the lowest ask for this stock since its last trade, then remember it
             if (askId[tradeStock] == -1 || tradePrice < ask[tradeStock]) {
-                askId[tradeStock] = (long) selfIdIndex;
+                askId[tradeStock] = selfIdIndex;
                 ask[tradeStock] = (byte) tradePrice;
             }
         } else { // it is a bid
@@ -272,7 +272,7 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
             }
             // if this is the highest bid for this stock since its last trade, then remember it
             if (bidId[tradeStock] == -1 || tradePrice > bid[tradeStock]) {
-                bidId[tradeStock] = (long) selfIdIndex;
+                bidId[tradeStock] = selfIdIndex;
                 bid[tradeStock] = (byte) tradePrice;
             }
         }

@@ -394,9 +394,6 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
         Objects.requireNonNull(id, "NodeId is null");
         throwIfImmutable();
         final Address address = getAddress(id);
-        if (address == null) {
-            throw new NoSuchElementException("no address with ID " + id + " exists");
-        }
         if (weight < 0) {
             throw new IllegalArgumentException("weight must be nonnegative");
         }

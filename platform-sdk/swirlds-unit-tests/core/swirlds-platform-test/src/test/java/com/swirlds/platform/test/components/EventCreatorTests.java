@@ -364,7 +364,7 @@ class EventCreatorTests {
         assertEquals(1, events.size(), "expected an event to have been created");
         final EventImpl event = events.remove();
 
-        assertEquals(selfId.id(), event.getCreatorId(), "expected id to match self ID");
+        assertEquals(selfId, event.getCreatorId(), "expected id to match self ID");
         assertTrue(
                 event.getTimeCreated().isAfter(prevEventTime.plusNanos(previousTransactions.length - 1)),
                 "expected timestamp to be greater than previous timestamp");

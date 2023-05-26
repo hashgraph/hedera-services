@@ -560,7 +560,7 @@ public abstract class EventUtils {
      * @return A map: {age : number of events with that age}
      */
     public static Map<Integer, Integer> gatherOtherParentAges(
-            final List<IndexedEvent> events, final Set<Long> excludedNodes) {
+            final List<IndexedEvent> events, final Set<NodeId> excludedNodes) {
         final Map<Integer, Integer> map = new HashMap<>();
         for (int eventIndex = 0; eventIndex < events.size(); eventIndex++) {
 
