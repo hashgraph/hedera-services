@@ -42,6 +42,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ALLOW_SYSTE
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_CHAIN_ID;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_DEFAULT_LIFETIME;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_DYNAMIC_EVM_VERSION;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ENFORCE_CHILD_TRANSACTION_THROTTLE;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ENFORCE_CREATION_THROTTLE;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_EVM_VERSION;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_FREE_STORAGE_TIER_LIMIT;
@@ -290,6 +291,7 @@ public class GlobalDynamicProperties implements EvmProperties {
     private boolean lazyCreationEnabled;
     private boolean cryptoCreateWithAliasEnabled;
     private boolean enforceContractCreationThrottle;
+    private boolean enforceChildTransactionThrottle;
     private Set<Address> permittedDelegateCallers;
     private EntityScaleFactors entityScaleFactors;
     private long maxNumWithHapiSigsAccess;
@@ -442,6 +444,7 @@ public class GlobalDynamicProperties implements EvmProperties {
         lazyCreationEnabled = properties.getBooleanProperty(LAZY_CREATION_ENABLED);
         cryptoCreateWithAliasEnabled = properties.getBooleanProperty(CRYPTO_CREATE_WITH_ALIAS_ENABLED);
         enforceContractCreationThrottle = properties.getBooleanProperty(CONTRACTS_ENFORCE_CREATION_THROTTLE);
+        enforceChildTransactionThrottle = properties.getBooleanProperty(CONTRACTS_ENFORCE_CHILD_TRANSACTION_THROTTLE);
         entityScaleFactors = properties.getEntityScaleFactorsProperty(FEES_PERCENT_UTILIZATION_SCALE_FACTORS);
         permittedDelegateCallers = properties.getEvmAddresses(CONTRACTS_PERMITTED_DELEGATE_CALLERS);
         legacyContractIdActivations = properties.getLegacyActivationsProperty(CONTRACTS_KEYS_LEGACY_ACTIVATIONS);
@@ -963,5 +966,9 @@ public class GlobalDynamicProperties implements EvmProperties {
 
     public int cacheCryptoTransferWarmThreads() {
         return cacheWarmThreads;
+    }
+
+    public boolean shouldEnforceChildTransactionThrottle() {
+        return enforceChildTransactionThrottle;
     }
 }

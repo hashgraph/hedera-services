@@ -41,6 +41,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ALLOW_SYSTE
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_CHAIN_ID;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_DEFAULT_LIFETIME;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_DYNAMIC_EVM_VERSION;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ENFORCE_CHILD_TRANSACTION_THROTTLE;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ENFORCE_CREATION_THROTTLE;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_EVM_VERSION;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_FREE_STORAGE_TIER_LIMIT;
@@ -237,6 +238,7 @@ class GlobalDynamicPropertiesTest {
         assertFalse(subject.isAtomicCryptoTransferEnabled());
         assertTrue(subject.isHRCAssociateEnabled());
         assertFalse(subject.isImplicitCreationEnabled());
+        assertTrue(subject.shouldEnforceChildTransactionThrottle());
     }
 
     @Test
@@ -686,6 +688,8 @@ class GlobalDynamicPropertiesTest {
         given(properties.getEntityScaleFactorsProperty(FEES_PERCENT_UTILIZATION_SCALE_FACTORS))
                 .willReturn(entityScaleFactors);
         given(properties.getBooleanProperty(CONTRACTS_ENFORCE_CREATION_THROTTLE))
+                .willReturn((i + 91) % 2 == 0);
+        given(properties.getBooleanProperty(CONTRACTS_ENFORCE_CHILD_TRANSACTION_THROTTLE))
                 .willReturn((i + 91) % 2 == 0);
         given(properties.getEvmAddresses(CONTRACTS_PERMITTED_DELEGATE_CALLERS)).willReturn(permittedDelegateCallers);
         given(properties.getEvmAddresses(CONTRACTS_WITH_SPECIAL_HAPI_SIGS_ACCESS))

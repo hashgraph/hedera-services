@@ -323,9 +323,11 @@ public class HederaWorldState implements HederaMutableWorldState {
                     validateResourceLimit(creationCapacity, CONSENSUS_GAS_EXHAUSTED);
                 }
             }
-            final var consThrottleCapacityIsAvailable =
-                    Objects.requireNonNull(wrapped.recordsHistorian).hasThrottleCapacityForChildTransactions();
-            validateResourceLimit(consThrottleCapacityIsAvailable, CONSENSUS_GAS_EXHAUSTED);
+            if (dynamicProperties.shouldEnforceChildTransactionThrottle()) {
+                final var consThrottleCapacityIsAvailable =
+                        Objects.requireNonNull(wrapped.recordsHistorian).hasThrottleCapacityForChildTransactions();
+                validateResourceLimit(consThrottleCapacityIsAvailable, CONSENSUS_GAS_EXHAUSTED);
+            }
             // Throws an ITE if any storage limit is exceeded, or if storage fees cannot be paid
             commitSizeLimitedStorageTo(entityAccess, updatedAccounts);
             entityAccess.recordNewKvUsageTo(trackingAccounts());
