@@ -96,6 +96,11 @@ public class MapWritableKVState<K, V> extends WritableKVStateBase<K, V> {
         return backingStore.size();
     }
 
+    @Override
+    public String toString() {
+        return "MapWritableKVState{" + "backingStore=" + backingStore + '}';
+    }
+
     /**
      * Create a new {@link Builder} for building a {@link MapWritableKVState}. The builder has
      * convenience methods for pre-populating the map.

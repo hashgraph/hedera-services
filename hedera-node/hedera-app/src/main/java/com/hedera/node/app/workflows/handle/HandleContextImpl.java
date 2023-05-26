@@ -196,7 +196,7 @@ public class HandleContextImpl implements HandleContext {
         }
         if (stack.depth() > 1) {
             throw new IllegalStateException(
-                    "Cannot dispatch a preceding transaction when child transactions have been dispatched");
+                    "Cannot dispatch a preceding transaction when a savepoint has been created");
         }
 
         if (current().state().isModified()) {
@@ -257,7 +257,7 @@ public class HandleContextImpl implements HandleContext {
             checker.checkTransactionBody(txBody);
             dispatcher.dispatchPureChecks(txBody);
         } catch (PreCheckException e) {
-            recordBuilder.status(e.responseCode());
+            childRecordBuilder.status(e.responseCode());
             return;
         }
 
@@ -275,8 +275,8 @@ public class HandleContextImpl implements HandleContext {
 
         try {
             dispatcher.dispatchHandle(childContext);
-            childStack.commit();
             stack.configuration(childContext.configuration());
+            childStack.commit();
         } catch (HandleException e) {
             childRecordBuilder.status(e.getStatus());
             recordListBuilder.revertChildRecordBuilders(recordBuilder);

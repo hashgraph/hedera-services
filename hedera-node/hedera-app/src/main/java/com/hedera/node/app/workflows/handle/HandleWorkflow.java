@@ -21,7 +21,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.records.RecordListBuilder;
 import com.hedera.node.app.records.RecordManager;
 import com.hedera.node.app.records.SingleTransactionRecordBuilder;
@@ -38,6 +37,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.TransactionChecker;
+import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
@@ -51,6 +51,7 @@ import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -126,11 +127,13 @@ public class HandleWorkflow {
         final var recordBuilder = new SingleTransactionRecordBuilder(consensusNow);
         final var recordListBuilder = new RecordListBuilder(recordBuilder);
 
-        // Setup configuration
-        var configuration = configProvider.getConfiguration();
-
         try {
+            // Setup configuration
+            var configuration = configProvider.getConfiguration();
+
             final var verifications = getVerifications(state, platformEvent, platformTxn, configuration);
+            recordBuilder.transaction(
+                    verifications.txInfo().transaction(), verifications.txInfo().signedBytes());
 
             // Read all signature verifications. This will also wait, if validation is still ongoing.
             final var keyVerifications = new HashMap<Key, SignatureVerification>();
@@ -144,7 +147,7 @@ public class HandleWorkflow {
             }
 
             // Setup context
-            final var txBody = verifications.txBody();
+            final var txBody = verifications.txInfo().txBody();
             final var stack = new SavepointStackImpl(state, configuration);
             final var verifier = new HandleContextVerifier(keyVerifications);
             final var context = new HandleContextImpl(
@@ -160,10 +163,6 @@ public class HandleWorkflow {
 
             // Dispatch the transaction to the handler
             dispatcher.dispatchHandle(context);
-            configuration = configProvider.getConfiguration();
-            stack.configuration(configuration);
-
-            // TODO: Kick off special file handling if needed
 
             // TODO: Finalize transaction with the help of the token service
 
@@ -243,18 +242,19 @@ public class HandleWorkflow {
         return switch (result.status()) {
             case SO_FAR_SO_GOOD -> new VerificationResult(result);
             case NODE_DUE_DILIGENCE_FAILURE -> createPenaltyPayment();
+            case UNKNOWN_FAILURE -> throw new IllegalStateException("Pre-handle failed with unknown failure");
             default -> throw new PreCheckException(result.responseCode());
         };
     }
 
     @NonNull
     private VerificationResult createPenaltyPayment() {
-        // TODO: Implement HandleWorkflow.createPenaltyPayment()
+        // TODO: Implement createPenaltyPayment() - https://github.com/hashgraph/hedera-services/issues/6811
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    private boolean preHandleStillValid(@NonNull final Object metadata) {
-        // TODO: Check config and other preconditions
+    private boolean preHandleStillValid(@Nullable final Object metadata) {
+        // TODO: Check config (https://github.com/hashgraph/hedera-services/issues/6812)
         return metadata instanceof PreHandleResult;
     }
 
@@ -276,9 +276,12 @@ public class HandleWorkflow {
         final var context = new PreHandleContextImpl(storeFactory, txBody, configuration);
         dispatcher.dispatchPreHandle(context);
 
-        // sort keys
-        final var newVerifications = new HashMap<Key, SignatureVerificationFuture>();
+        // setup result with payer key (which has always been verified during preHandle)
         final var previousVerifications = previousResult.verificationResults();
+        final var newVerifications = new HashMap<Key, SignatureVerificationFuture>();
+        newVerifications.put(previousResult.payerKey(), previousVerifications.get(previousResult.payerKey()));
+
+        // add non-payer keys
         final var originals = previousResult.txInfo().signatureMap().sigPairOrElse(emptyList());
         final var expanded = new HashSet<ExpandedSignaturePair>();
         final var nonPayerKeys = context.requiredNonPayerKeys();
@@ -297,20 +300,18 @@ public class HandleWorkflow {
                     signatureVerifier.verify(previousResult.txInfo().signedBytes(), expanded));
         }
 
-        return new VerificationResult(txBody, newVerifications);
+        return new VerificationResult(previousResult.txInfo(), newVerifications);
     }
 
     /**
      * A small data structure to hold the verification data of a transaction
-     * @param txBody
-     * @param keyVerifications
      */
     private record VerificationResult(
-            @NonNull TransactionBody txBody, @NonNull Map<Key, SignatureVerificationFuture> keyVerifications) {
+            @NonNull TransactionInfo txInfo, @NonNull Map<Key, SignatureVerificationFuture> keyVerifications) {
 
         @SuppressWarnings("DataFlowIssue")
         public VerificationResult(PreHandleResult result) {
-            this(result.txInfo().txBody(), result.verificationResults());
+            this(result.txInfo(), result.verificationResults());
         }
     }
 }

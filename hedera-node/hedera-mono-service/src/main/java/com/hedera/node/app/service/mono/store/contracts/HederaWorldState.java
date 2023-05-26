@@ -34,12 +34,14 @@ import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractCustomizer;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
+import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.mono.throttling.FunctionalityThrottling;
 import com.hedera.node.app.service.mono.throttling.annotations.HandleThrottle;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -74,6 +76,7 @@ public class HederaWorldState implements HederaMutableWorldState {
     private final SigImpactHistorian sigImpactHistorian;
     private final List<ContractID> provisionalContractCreations = new LinkedList<>();
     private final GlobalDynamicProperties dynamicProperties;
+    private final RecordsHistorian recordsHistorian;
 
     // If non-null, the new contract customizations requested by the HAPI contractCreate sender
     private ContractCustomizer hapiSenderCustomizer;
@@ -88,7 +91,8 @@ public class HederaWorldState implements HederaMutableWorldState {
             final CodeCache codeCache,
             final SigImpactHistorian sigImpactHistorian,
             final GlobalDynamicProperties dynamicProperties,
-            final @HandleThrottle FunctionalityThrottling handleThrottling) {
+            final @HandleThrottle FunctionalityThrottling handleThrottling,
+            @NonNull final RecordsHistorian recordsHistorian) {
         this.ids = ids;
         this.usageLimits = usageLimits;
         this.entityAccess = entityAccess;
@@ -96,6 +100,7 @@ public class HederaWorldState implements HederaMutableWorldState {
         this.sigImpactHistorian = sigImpactHistorian;
         this.dynamicProperties = dynamicProperties;
         this.handleThrottling = handleThrottling;
+        this.recordsHistorian = recordsHistorian;
     }
 
     /* Used to manage static calls. */
@@ -109,6 +114,7 @@ public class HederaWorldState implements HederaMutableWorldState {
         this.usageLimits = null;
         this.handleThrottling = null;
         this.sigImpactHistorian = null;
+        this.recordsHistorian = null;
         this.codeCache = codeCache;
         this.dynamicProperties = dynamicProperties;
     }
@@ -127,25 +133,33 @@ public class HederaWorldState implements HederaMutableWorldState {
         return new WorldStateAccount(address, Wei.of(balance), codeCache, entityAccess);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public ContractCustomizer hapiSenderCustomizer() {
         return hapiSenderCustomizer;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void clearProvisionalContractCreations() {
         provisionalContractCreations.clear();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void setHapiSenderCustomizer(final ContractCustomizer customizer) {
         hapiSenderCustomizer = customizer;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void resetHapiSenderCustomizer() {
         hapiSenderCustomizer = null;
@@ -309,6 +323,9 @@ public class HederaWorldState implements HederaMutableWorldState {
                     validateResourceLimit(creationCapacity, CONSENSUS_GAS_EXHAUSTED);
                 }
             }
+            final var consThrottleCapacityIsAvailable =
+                    Objects.requireNonNull(wrapped.recordsHistorian).hasThrottleCapacityForChildTransactions();
+            validateResourceLimit(consThrottleCapacityIsAvailable, CONSENSUS_GAS_EXHAUSTED);
             // Throws an ITE if any storage limit is exceeded, or if storage fees cannot be paid
             commitSizeLimitedStorageTo(entityAccess, updatedAccounts);
             entityAccess.recordNewKvUsageTo(trackingAccounts());
