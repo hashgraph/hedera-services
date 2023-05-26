@@ -169,7 +169,19 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
             captureTimestamp(event);
             event.consensusTransactionIterator().forEachRemaining(this::handleTransaction);
             if (!eventIterator.hasNext()) {
-                maybeTriggerIncidents(event.getConsensusTimestamp());
+                final Instant currentTimestamp = event.getConsensusTimestamp();
+                final Duration elapsedSinceGenesis = Duration.between(genesisTimestamp, currentTimestamp);
+
+                final PlannedIss plannedIss = shouldTriggerIncident(elapsedSinceGenesis, currentTimestamp, plannedIssList);
+                if (plannedIss != null) {
+                    triggerISS(plannedIss, elapsedSinceGenesis, currentTimestamp);
+                }
+
+                final PlannedLogError plannedLogError =
+                        shouldTriggerIncident(elapsedSinceGenesis, currentTimestamp, plannedLogErrorList);
+                if (plannedLogError != null) {
+                    triggerLogError(plannedLogError, elapsedSinceGenesis);
+                }
             }
         }
     }
@@ -191,28 +203,6 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
     private void handleTransaction(final ConsensusTransaction transaction) {
         final int delta = ByteUtils.byteArrayToInt(transaction.getContents(), 0);
         runningSum += delta;
-    }
-
-    /**
-     * Trigger any ISSs or log errors that are scheduled to occur
-     *
-     * @param currentTimestamp the current consensus timestamp
-     */
-    private void maybeTriggerIncidents(@NonNull final Instant currentTimestamp) {
-        Objects.requireNonNull(currentTimestamp);
-
-        final Duration elapsedSinceGenesis = Duration.between(genesisTimestamp, currentTimestamp);
-
-        final PlannedIss plannedIss = shouldTriggerIncident(elapsedSinceGenesis, currentTimestamp, plannedIssList);
-        if (plannedIss != null) {
-            triggerISS(plannedIss, elapsedSinceGenesis, currentTimestamp);
-        }
-
-        final PlannedLogError plannedLogError =
-                shouldTriggerIncident(elapsedSinceGenesis, currentTimestamp, plannedLogErrorList);
-        if (plannedLogError != null) {
-            triggerLogError(plannedLogError, elapsedSinceGenesis);
-        }
     }
 
     /**
