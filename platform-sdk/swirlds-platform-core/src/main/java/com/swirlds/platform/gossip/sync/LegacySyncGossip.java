@@ -196,6 +196,7 @@ public class LegacySyncGossip extends AbstractGossip {
                                 stateManagementComponent,
                                 reconnectConfig,
                                 reconnectThrottle,
+                                fallenBehindManager,
                                 reconnectMetrics)),
                 ProtocolMapping.map(
                         UnidirectionalProtocols.HEARTBEAT.getInitialByte(),

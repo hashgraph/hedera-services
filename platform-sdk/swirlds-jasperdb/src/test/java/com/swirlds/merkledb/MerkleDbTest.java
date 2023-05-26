@@ -452,4 +452,41 @@ public class MerkleDbTest {
         Assertions.assertFalse(Files.exists(instance.getTableDir(tableName2, dataSource2.getTableId())));
         Assertions.assertTrue(Files.exists(instance.getTableDir(tableName2, activeCopy2.getTableId())));
     }
+
+    @Test
+    @DisplayName("Compactions after data source copy")
+    public void checkBackgroundCompactionsOnCopy() throws IOException {
+        final MerkleDb instance = MerkleDb.getDefaultInstance();
+        final String tableName = "tablek";
+        final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();
+        final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dataSource =
+                instance.createDataSource(tableName + "1", tableConfig, true);
+        Assertions.assertNotNull(dataSource);
+        final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dataSourceCopy =
+                instance.copyDataSource(dataSource, false);
+        Assertions.assertNotNull(dataSourceCopy);
+
+        Assertions.assertTrue(dataSource.isCompactionEnabled());
+        Assertions.assertFalse(dataSourceCopy.isCompactionEnabled());
+        dataSource.close();
+        dataSourceCopy.close();
+    }
+
+    @Test
+    @DisplayName("Compactions after data source import")
+    public void checkBackgroundCompactionsOnImport() throws IOException {
+        final MerkleDb instance1 = MerkleDb.getDefaultInstance();
+        final String tableName = "tablel";
+        final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();
+        final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dataSource =
+                instance1.createDataSource(tableName + "1", tableConfig, true);
+        Assertions.assertNotNull(dataSource);
+
+        final Path snapshotDir = TemporaryFileBuilder.buildTemporaryFile("checkBackgroundCompactionsOnImport");
+        instance1.snapshot(snapshotDir, dataSource);
+
+        Assertions.assertTrue(dataSource.isCompactionEnabled());
+
+        dataSource.close();
+    }
 }
