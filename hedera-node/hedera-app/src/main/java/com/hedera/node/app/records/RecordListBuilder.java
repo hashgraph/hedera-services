@@ -23,7 +23,6 @@ import com.hedera.node.app.spi.records.SingleTransactionRecord;
 import com.hedera.node.config.data.ConsensusConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -41,7 +40,6 @@ import java.util.stream.Stream;
  */
 public class RecordListBuilder {
 
-    private final Instant baseConsensusTime;
     private final List<SingleTransactionRecordBuilder> recordBuilders = new ArrayList<>();
 
     private List<SingleTransactionRecordBuilder> precedingRecordBuilders;
@@ -55,7 +53,6 @@ public class RecordListBuilder {
      */
     public RecordListBuilder(@NonNull final SingleTransactionRecordBuilder recordBuilder) {
         requireNonNull(recordBuilder, "recordBuilder must not be null");
-        this.baseConsensusTime = recordBuilder.consensusNow();
         recordBuilders.add(recordBuilder);
     }
 
@@ -79,7 +76,9 @@ public class RecordListBuilder {
             throw new IndexOutOfBoundsException("No more preceding slots available");
         }
 
-        final var consensusNow = baseConsensusTime.minusNanos(maxRecords - precedingCount);
+        final var consensusNow = precedingCount == 0
+                ? recordBuilders.get(0).consensusNow().minusNanos(maxRecords)
+                : precedingRecordBuilders.get(precedingCount - 1).consensusNow().plusNanos(1L);
         final var recordBuilder = new SingleTransactionRecordBuilder(consensusNow);
 
         precedingRecordBuilders.add(recordBuilder);
@@ -134,7 +133,8 @@ public class RecordListBuilder {
             throw new IndexOutOfBoundsException("No more child slots available");
         }
 
-        final var consensusNow = baseConsensusTime.plusNanos(childCount);
+        final var consensusNow =
+                recordBuilders.get(childCount - 1).consensusNow().plusNanos(1L);
         final var recordBuilder = new SingleTransactionRecordBuilder(consensusNow);
 
         recordBuilders.add(recordBuilder);
@@ -177,5 +177,15 @@ public class RecordListBuilder {
                 ? recordBuilders.stream()
                 : Stream.concat(precedingRecordBuilders.stream(), recordBuilders.stream());
         return stream.map(SingleTransactionRecordBuilder::build);
+    }
+
+    /*
+     * This method is only used for testing. Unfortunately, building records does not work yet.
+     * Added this method temporarily to check the content of this object.
+     */
+    Stream<SingleTransactionRecordBuilder> builders() {
+        return precedingRecordBuilders == null
+                ? recordBuilders.stream()
+                : Stream.concat(precedingRecordBuilders.stream(), recordBuilders.stream());
     }
 }

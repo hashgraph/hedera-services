@@ -22,13 +22,18 @@ import static com.hedera.test.utils.IdUtils.asContract;
 import static com.hedera.test.utils.TxnUtils.assertExhaustsResourceLimit;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_NUMBER;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyShort;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
@@ -37,6 +42,7 @@ import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.Mockito.never;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
+import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
 import com.hedera.node.app.service.mono.state.expiry.ExpiringCreations;
@@ -46,22 +52,32 @@ import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.submerkle.TxnId;
 import com.hedera.node.app.service.mono.stream.RecordStreamObject;
+import com.hedera.node.app.service.mono.throttling.FunctionalityThrottling;
 import com.hedera.node.app.service.mono.utils.SidecarUtils;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.crypto.RunningHash;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.List;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -119,11 +135,14 @@ class TxnAwareRecordsHistorianTest {
     @Mock
     private ExpirableTxnRecord.Builder mockRecordBuilder;
 
+    @Mock
+    private FunctionalityThrottling handleThrottling;
+
     private TxnAwareRecordsHistorian subject;
 
     @BeforeEach
     void setUp() {
-        subject = new TxnAwareRecordsHistorian(recordCache, txnCtx, consensusTimeTracker);
+        subject = new TxnAwareRecordsHistorian(recordCache, txnCtx, consensusTimeTracker, handleThrottling);
         subject.setCreator(creator);
     }
 
@@ -437,6 +456,76 @@ class TxnAwareRecordsHistorianTest {
 
         assertFalse(subject.hasFollowingChildRecords());
         assertFalse(subject.hasPrecedingChildRecords());
+    }
+
+    @Test
+    void throttlesOnlySuccessfulNonContractFollowingChildren() {
+        final List<DeterministicThrottle.UsageSnapshot> pretendSnapshots =
+                List.of(new DeterministicThrottle.UsageSnapshot(123, Instant.ofEpochSecond(456_789)));
+
+        final var captor = ArgumentCaptor.forClass(TxnAccessor.class);
+        given(consensusTimeTracker.isAllowableFollowingOffset(anyLong())).willReturn(true);
+        given(handleThrottling.getUsageSnapshots()).willReturn(pretendSnapshots);
+
+        doTrack(SUCCESS, body -> body.setContractCall(ContractCallTransactionBody.getDefaultInstance()));
+        doTrack(SUCCESS, body -> body.setContractCreateInstance(ContractCreateTransactionBody.getDefaultInstance()));
+        doTrack(REVERTED_SUCCESS, body -> body.setTokenMint(TokenMintTransactionBody.getDefaultInstance()));
+        // Should be throttled
+        doTrack(SUCCESS, body -> body.setCryptoTransfer(CryptoTransferTransactionBody.getDefaultInstance()));
+        doTrack(INVALID_NFT_ID, body -> body.setTokenBurn(TokenBurnTransactionBody.getDefaultInstance()));
+        // Should be throttled
+        doTrack(SUCCESS, body -> body.setTokenMint(TokenMintTransactionBody.getDefaultInstance()));
+
+        // No transactions will be throttled, shouldn't need to reset to snapshots
+        assertTrue(subject.hasThrottleCapacityForChildTransactions());
+
+        verify(handleThrottling, times(2)).shouldThrottleTxn(captor.capture());
+
+        final var allThrottledAccessors = captor.getAllValues();
+        assertEquals(
+                List.of(HederaFunctionality.CryptoTransfer, HederaFunctionality.TokenMint),
+                allThrottledAccessors.stream().map(TxnAccessor::getFunction).collect(toList()));
+        verify(handleThrottling, never()).resetUsageThrottlesTo(pretendSnapshots);
+    }
+
+    @Test
+    void revertsToPreOperationSnapshotsWhenThrottled() {
+        final List<DeterministicThrottle.UsageSnapshot> pretendSnapshots =
+                List.of(new DeterministicThrottle.UsageSnapshot(123, Instant.ofEpochSecond(456_789)));
+
+        final var captor = ArgumentCaptor.forClass(TxnAccessor.class);
+        given(consensusTimeTracker.isAllowableFollowingOffset(anyLong())).willReturn(true);
+        given(handleThrottling.getUsageSnapshots()).willReturn(pretendSnapshots);
+        given(handleThrottling.shouldThrottleTxn(any())).willReturn(false).willReturn(true);
+
+        doTrack(SUCCESS, body -> body.setContractCall(ContractCallTransactionBody.getDefaultInstance()));
+        doTrack(SUCCESS, body -> body.setContractCreateInstance(ContractCreateTransactionBody.getDefaultInstance()));
+        doTrack(REVERTED_SUCCESS, body -> body.setTokenMint(TokenMintTransactionBody.getDefaultInstance()));
+        // Should be throttled
+        doTrack(SUCCESS, body -> body.setCryptoTransfer(CryptoTransferTransactionBody.getDefaultInstance()));
+        doTrack(INVALID_NFT_ID, body -> body.setTokenBurn(TokenBurnTransactionBody.getDefaultInstance()));
+        // Should be throttled
+        doTrack(SUCCESS, body -> body.setTokenMint(TokenMintTransactionBody.getDefaultInstance()));
+
+        // No transactions will be throttled, shouldn't need to reset to snapshots
+        assertFalse(subject.hasThrottleCapacityForChildTransactions());
+
+        verify(handleThrottling, times(2)).shouldThrottleTxn(captor.capture());
+
+        final var allThrottledAccessors = captor.getAllValues();
+        assertEquals(
+                List.of(HederaFunctionality.CryptoTransfer, HederaFunctionality.TokenMint),
+                allThrottledAccessors.stream().map(TxnAccessor::getFunction).collect(toList()));
+        verify(handleThrottling).resetUsageThrottlesTo(pretendSnapshots);
+    }
+
+    private void doTrack(
+            @NonNull final ResponseCodeEnum status, @NonNull final Consumer<TransactionBody.Builder> synthSpec) {
+        final var body = TransactionBody.newBuilder();
+        synthSpec.accept(body);
+        final var matchingRecord = ExpirableTxnRecord.newBuilder()
+                .setReceiptBuilder(TxnReceipt.newBuilder().setStatus(status.toString()));
+        subject.trackFollowingChildRecord(1, body, matchingRecord, List.of(TransactionSidecarRecord.newBuilder()));
     }
 
     @Test

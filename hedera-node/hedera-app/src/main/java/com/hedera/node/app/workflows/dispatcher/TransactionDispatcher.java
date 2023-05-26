@@ -107,6 +107,9 @@ public class TransactionDispatcher {
         } catch (UnsupportedOperationException ex) {
             throw new HandleException(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
         }
+
+        // TODO: Kick off special file handling if needed
+        // TODO: Also load new config into context if needed
     }
 
     @NonNull

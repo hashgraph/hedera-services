@@ -41,7 +41,6 @@ app,		HederaNode.jar
 # The above addresses assume all are running on the same computer.
 # If multiple computers are being used, then the listed IP addresses should be changed.
 
- TLS, on
 # maxSyncs, 1
 # transactionMaxBytes, 1024
 # ipTos, 123

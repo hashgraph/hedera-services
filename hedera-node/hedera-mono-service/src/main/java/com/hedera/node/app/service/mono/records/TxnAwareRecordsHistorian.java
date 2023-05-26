@@ -18,10 +18,12 @@ package com.hedera.node.app.service.mono.records;
 
 import static com.hedera.node.app.service.mono.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.nonNegativeNanosOffset;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.synthAccessorFor;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.synthWithRecordTxnId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.exceptions.ResourceLimitException;
 import com.hedera.node.app.service.mono.state.EntityCreator;
@@ -29,9 +31,12 @@ import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.submerkle.TxnId;
 import com.hedera.node.app.service.mono.stream.RecordStreamObject;
+import com.hedera.node.app.service.mono.throttling.FunctionalityThrottling;
+import com.hedera.node.app.service.mono.throttling.annotations.HandleThrottle;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.*;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -52,6 +57,7 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
     private final RecordCache recordCache;
     private final TransactionContext txnCtx;
     private final ConsensusTimeTracker consensusTimeTracker;
+    private final FunctionalityThrottling handleThrottling;
     private final List<RecordStreamObject> precedingChildStreamObjs = new ArrayList<>();
     private final List<RecordStreamObject> followingChildStreamObjs = new ArrayList<>();
     private final List<InProgressChildRecord> precedingChildRecords = new ArrayList<>();
@@ -65,10 +71,14 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
 
     @Inject
     public TxnAwareRecordsHistorian(
-            RecordCache recordCache, TransactionContext txnCtx, ConsensusTimeTracker consensusTimeTracker) {
+            RecordCache recordCache,
+            TransactionContext txnCtx,
+            ConsensusTimeTracker consensusTimeTracker,
+            @HandleThrottle final FunctionalityThrottling handleThrottling) {
         this.txnCtx = txnCtx;
         this.recordCache = recordCache;
         this.consensusTimeTracker = consensusTimeTracker;
+        this.handleThrottling = handleThrottling;
     }
 
     @Override
@@ -155,6 +165,38 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
     @Override
     public List<RecordStreamObject> getPrecedingChildRecords() {
         return precedingChildStreamObjs;
+    }
+
+    @Override
+    public boolean hasThrottleCapacityForChildTransactions() {
+        @Nullable List<DeterministicThrottle.UsageSnapshot> snapshotsIfNeeded = null;
+        var isAllowed = true;
+        for (int i = 0, n = followingChildRecords.size(); i < n && isAllowed; i++) {
+            final var childRecord = followingChildRecords.get(i);
+            if (childRecord.recordBuilder().isPendingSuccess()) {
+                final var synthChild = childRecord.syntheticBody();
+                // We want to skip any synthetic contract creations or calls, since they don't
+                // make sense to throttle here:
+                //   (1) A synthetic ContractCreateInstance is already throttled by gas and,
+                //   optionally, the CryptoCreate throttle, if contracts.enforceCreationThrottle=true
+                //   (2) A synthetic ContractCall represents a read-only precompile, which
+                //   again is not relevant for the consensus transaction throttles
+                if (synthChild.hasContractCreateInstance() || synthChild.hasContractCall()) {
+                    continue;
+                }
+                if (snapshotsIfNeeded == null) {
+                    snapshotsIfNeeded = handleThrottling.getUsageSnapshots();
+                }
+                final var synthAccessor = synthAccessorFor(synthChild);
+                if (handleThrottling.shouldThrottleTxn(synthAccessor)) {
+                    isAllowed = false;
+                }
+            }
+        }
+        if (!isAllowed) {
+            handleThrottling.resetUsageThrottlesTo(snapshotsIfNeeded);
+        }
+        return isAllowed;
     }
 
     @Override
