@@ -231,6 +231,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith({MockitoExtension.class})
 class MiscUtilsTest {
     @Test
+    void canGetSynthAccessor() {
+        final var synth = MiscUtils.synthAccessorFor(TransactionBody.newBuilder()
+                .setConsensusCreateTopic(ConsensusCreateTopicTransactionBody.getDefaultInstance()));
+
+        assertEquals(HederaFunctionality.ConsensusCreateTopic, synth.getFunction());
+    }
+
+    @Test
     void canGetListOfAccessTypes() {
         final var expected = List.of(ACCOUNTS_GET, ACCOUNTS_GET, ACCOUNTS_GET, STORAGE_REMOVE);
         final var actual =
