@@ -21,6 +21,7 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_FILE;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -58,8 +59,8 @@ public final class FileTestUtils {
     static Key mockPayerLookup(Key key, AccountID accountId, ReadableAccountStore accountStore)
             throws PreCheckException {
         final var account = mock(Account.class);
-        given(accountStore.getAccountById(accountId)).willReturn(account);
-        given(account.key()).willReturn(key);
+        lenient().when(accountStore.getAccountById(accountId)).thenReturn(account);
+        lenient().when(account.key()).thenReturn(key);
         return key;
     }
 

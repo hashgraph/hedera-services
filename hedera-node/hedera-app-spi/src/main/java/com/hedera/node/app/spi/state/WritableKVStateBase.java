@@ -54,6 +54,7 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
                 putIntoDataSource(key, value);
             }
         }
+        reset();
     }
 
     /**

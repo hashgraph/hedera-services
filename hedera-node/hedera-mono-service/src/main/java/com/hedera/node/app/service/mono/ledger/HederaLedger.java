@@ -212,7 +212,6 @@ public class HederaLedger {
             nftsLedger.commit();
         }
         historian.saveExpirableTransactionRecords();
-        historian.noteNewExpirationEvents();
     }
 
     public String currentChangeSet() {

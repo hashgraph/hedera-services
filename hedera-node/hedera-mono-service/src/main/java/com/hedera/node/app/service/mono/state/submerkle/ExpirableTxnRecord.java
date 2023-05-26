@@ -37,6 +37,7 @@ import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
 import com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils;
 import com.hedera.node.app.service.mono.state.serdes.IoUtils;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -461,6 +462,10 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
 
     public TxnReceipt getReceipt() {
         return receipt;
+    }
+
+    public EntityNum getPayerNum() {
+        return txnId.getPayerAccount().asNum();
     }
 
     public ResponseCodeEnum getEnumStatus() {
@@ -993,6 +998,10 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
 
         public boolean shouldNotBeExternalized() {
             return onlyExternalizedIfSuccessful && !TxnReceipt.SUCCESS_LITERAL.equals(receiptBuilder.getStatus());
+        }
+
+        public boolean isPendingSuccess() {
+            return TxnReceipt.SUCCESS_LITERAL.equals(receiptBuilder.getStatus());
         }
 
         public long getFee() {

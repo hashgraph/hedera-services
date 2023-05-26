@@ -61,6 +61,7 @@ import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.merkle.MerkleHederaState.MerkleWritableStates;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
+import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -223,7 +224,8 @@ public final class Hedera implements SwirldMain {
                 NetworkService.NAME, new NetworkServiceImpl(),
                 ScheduleService.NAME, new ScheduleServiceImpl(),
                 TokenService.NAME, new TokenServiceImpl(),
-                UtilService.NAME, new UtilServiceImpl());
+                UtilService.NAME, new UtilServiceImpl(),
+                RecordCacheService.NAME, new RecordCacheService());
 
         final var map = new HashMap<String, ServiceRegistration>();
         for (final var entry : services.entrySet()) {
@@ -324,8 +326,9 @@ public final class Hedera implements SwirldMain {
      * Called by this class when we detect it is time to do migration.
      */
     private void onMigrate(
-            @NonNull final MerkleHederaState state, @NonNull final SerializableSemVers deserializedVersion) {
-        final var previousVersion = PbjConverter.toPbj(deserializedVersion.getServices());
+            @NonNull final MerkleHederaState state, @Nullable final SerializableSemVers deserializedVersion) {
+        final var previousVersion =
+                deserializedVersion == null ? null : PbjConverter.toPbj(deserializedVersion.getServices());
         final var currentVersion = PbjConverter.toPbj(version.getServices());
         logger.info("Migrating from version {} to {}", previousVersion, currentVersion);
         for (final var registration : serviceRegistry.values()) {
@@ -448,10 +451,7 @@ public final class Hedera implements SwirldMain {
      */
     @Override
     public void run() {
-        // Start the gRPC servers.
-        logger.info("Starting mono gRPC server");
-        daggerApp.grpcStarter().startIfAppropriate();
-
+        // Start the gRPC server.
         logger.info("Starting modular gRPC server");
         final var port = daggerApp.nodeLocalProperties().workflowsPort();
 
@@ -542,7 +542,7 @@ public final class Hedera implements SwirldMain {
         logger.debug("Genesis Initialization");
 
         // Create all the nodes in the merkle tree for all the services
-        onMigrate(state, version);
+        onMigrate(state, null);
 
         // Initialize the tree with all the pre-built state we need for a basic system,
         // such as the accounts for initial users. Some services might populate their data
@@ -594,6 +594,7 @@ public final class Hedera implements SwirldMain {
         // Prepopulate the FreezeService state with default values for genesis
         final var adminStates = state.createWritableStates(FreezeService.NAME);
         adminStates.getSingleton(FreezeServiceImpl.UPGRADE_FILES_KEY).put(new MerkleSpecialFiles());
+        ((MerkleWritableStates) adminStates).commit();
 
         // Prepopulate the NetworkServices state with default values for genesis
         // Can these be moved to Schema version 1 of NetworkServicesImpl?
@@ -728,6 +729,7 @@ public final class Hedera implements SwirldMain {
                     .maxSignedTxnSize(MAX_SIGNED_TXN_SIZE)
                     .crypto(CryptographyHolder.get())
                     .selfId(nodeSelfAccount)
+                    .genesisUsage(trigger == InitTrigger.GENESIS)
                     .build();
         }
     }

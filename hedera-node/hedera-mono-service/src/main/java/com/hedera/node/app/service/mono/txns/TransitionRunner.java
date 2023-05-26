@@ -85,7 +85,7 @@ public class TransitionRunner implements TransactionLastStep {
             CryptoApproveAllowance,
             UtilPrng);
 
-    private final EntityIdSource ids;
+    protected final EntityIdSource ids;
     private final TransitionLogicLookup lookup;
     protected final TransactionContext txnCtx;
 

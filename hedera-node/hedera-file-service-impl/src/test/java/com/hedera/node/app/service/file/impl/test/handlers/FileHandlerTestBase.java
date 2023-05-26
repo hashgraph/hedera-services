@@ -23,6 +23,7 @@ import static com.hedera.test.utils.KeyUtils.A_KEY_LIST;
 import static com.hedera.test.utils.KeyUtils.B_COMPLEX_KEY;
 import static com.hedera.test.utils.KeyUtils.B_KEY_LIST;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mock.Strictness.LENIENT;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
@@ -38,6 +39,7 @@ import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.junit.jupiter.api.BeforeEach;
@@ -60,14 +62,19 @@ public class FileHandlerTestBase {
     protected final KeyList anotherKeys = B_KEY_LIST.keyList();
 
     protected final EntityNum fileEntityNum = EntityNum.fromLong(1_234L);
+    protected final EntityNum fileSystemEntityNum = EntityNum.fromLong(250L);
     protected final FileID fileId =
             FileID.newBuilder().fileNum(fileEntityNum.longValue()).build();
+    protected final FileID fileSystemfileId =
+            FileID.newBuilder().fileNum(fileSystemEntityNum.longValue()).build();
     protected final Duration WELL_KNOWN_AUTO_RENEW_PERIOD =
             Duration.newBuilder().seconds(100).build();
     protected final Timestamp WELL_KNOWN_EXPIRY =
             Timestamp.newBuilder().seconds(1_234_567L).build();
     protected final FileID WELL_KNOWN_FILE_ID =
             FileID.newBuilder().fileNum(fileEntityNum.longValue()).build();
+    protected final FileID WELL_KNOWN_SYSTEM_FILE_ID =
+            FileID.newBuilder().fileNum(fileSystemEntityNum.longValue()).build();
     protected final String beneficiaryIdStr = "0.0.3";
     protected final long paymentAmount = 1_234L;
     protected final Bytes ledgerId = Bytes.wrap("0x03");
@@ -80,11 +87,16 @@ public class FileHandlerTestBase {
 
     protected File file;
 
+    protected File fileSystem;
+
     @Mock
     protected ReadableStates readableStates;
 
     @Mock
     protected WritableStates writableStates;
+
+    @Mock(strictness = LENIENT)
+    protected HandleContext handleContext;
 
     protected MapReadableKVState<EntityNum, File> readableFileState;
     protected MapWritableKVState<EntityNum, File> writableFileState;
@@ -105,6 +117,7 @@ public class FileHandlerTestBase {
         given(writableStates.<EntityNum, File>get(FILES)).willReturn(writableFileState);
         readableStore = new ReadableFileStoreImpl(readableStates);
         writableStore = new WritableFileStoreImpl(writableStates);
+        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
     }
 
     protected void refreshStoresWithCurrentFileInBothReadableAndWritable() {
@@ -114,6 +127,7 @@ public class FileHandlerTestBase {
         given(writableStates.<EntityNum, File>get(FILES)).willReturn(writableFileState);
         readableStore = new ReadableFileStoreImpl(readableStates);
         writableStore = new WritableFileStoreImpl(writableStates);
+        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
     }
 
     @NonNull
@@ -125,6 +139,7 @@ public class FileHandlerTestBase {
     protected MapWritableKVState<EntityNum, File> writableFileStateWithOneKey() {
         return MapWritableKVState.<EntityNum, File>builder(FILES)
                 .value(fileEntityNum, file)
+                .value(fileSystemEntityNum, fileSystem)
                 .build();
     }
 
@@ -150,6 +165,13 @@ public class FileHandlerTestBase {
 
     protected void givenValidFile(boolean deleted, boolean withKeys) {
         file = new File(fileId.fileNum(), expirationTime, withKeys ? keys : null, Bytes.wrap(contents), memo, deleted);
+        fileSystem = new File(
+                fileSystemfileId.fileNum(),
+                expirationTime,
+                withKeys ? keys : null,
+                Bytes.wrap(contents),
+                memo,
+                deleted);
     }
 
     protected File createFile() {

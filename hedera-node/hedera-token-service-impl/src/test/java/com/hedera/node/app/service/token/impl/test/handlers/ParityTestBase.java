@@ -22,19 +22,25 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
+import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import org.junit.jupiter.api.BeforeEach;
 
 public class ParityTestBase {
     protected ReadableAccountStore readableAccountStore;
+    protected WritableAccountStore writableAccountStore;
     protected ReadableTokenStore readableTokenStore;
+    protected WritableTokenRelationStore writableTokenRelStore;
     protected TokenID token = TokenID.newBuilder().tokenNum(1).build();
 
     @BeforeEach
     void setUp() {
         readableAccountStore = SigReqAdapterUtils.wellKnownAccountStoreAt();
+        writableAccountStore = SigReqAdapterUtils.wellKnownWritableAccountStoreAt();
         readableTokenStore = SigReqAdapterUtils.wellKnownTokenStoreAt();
+        writableTokenRelStore = SigReqAdapterUtils.wellKnownTokenRelStoreAt();
     }
 
     protected TransactionBody txnFrom(final TxnHandlingScenario scenario) {

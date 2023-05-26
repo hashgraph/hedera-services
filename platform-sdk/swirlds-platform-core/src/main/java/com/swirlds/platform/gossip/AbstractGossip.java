@@ -107,22 +107,23 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
     /**
      * Builds the gossip engine, depending on which flavor is requested in the configuration.
      *
-     * @param platformContext           the platform context
-     * @param threadManager             the thread manager
-     * @param crypto                    can be used to sign things
-     * @param addressBook               the current address book
-     * @param selfId                    this node's ID
-     * @param appVersion                the version of the app
-     * @param intakeQueue               the event intake queue
-     * @param freezeManager             handles freezes
-     * @param startUpEventFrozenManager prevents event creation during startup
-     * @param swirldStateManager        manages the mutable state
-     * @param stateManagementComponent  manages the lifecycle of the state queue
-     * @param eventObserverDispatcher   the object used to wire event intake
-     * @param eventMapper               a data structure used to track the most recent event from each node
-     * @param eventIntakeMetrics        metrics for event intake
-     * @param updatePlatformStatus      a method that updates the platform status, when called
-     * @param loadReconnectState        a method that should be called when a state from reconnect is obtained
+     * @param platformContext               the platform context
+     * @param threadManager                 the thread manager
+     * @param crypto                        can be used to sign things
+     * @param addressBook                   the current address book
+     * @param selfId                        this node's ID
+     * @param appVersion                    the version of the app
+     * @param intakeQueue                   the event intake queue
+     * @param freezeManager                 handles freezes
+     * @param startUpEventFrozenManager     prevents event creation during startup
+     * @param swirldStateManager            manages the mutable state
+     * @param stateManagementComponent      manages the lifecycle of the state queue
+     * @param eventObserverDispatcher       the object used to wire event intake
+     * @param eventMapper                   a data structure used to track the most recent event from each node
+     * @param eventIntakeMetrics            metrics for event intake
+     * @param updatePlatformStatus          a method that updates the platform status, when called
+     * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
+     * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
      */
     protected AbstractGossip(
             @NonNull final PlatformContext platformContext,
@@ -140,7 +141,8 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
             @NonNull final EventObserverDispatcher eventObserverDispatcher,
             @NonNull final Runnable updatePlatformStatus,
-            @NonNull final Consumer<SignedState> loadReconnectState) {
+            @NonNull final Consumer<SignedState> loadReconnectState,
+            @NonNull final Runnable clearAllPipelinesForReconnect) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
         this.addressBook = Objects.requireNonNull(addressBook);
@@ -183,7 +185,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
                 inboundConnectionHandler::handle);
         thingsToStart.add(new StoppableThreadConfiguration<>(threadManager)
                 .setPriority(settings.getThreadPrioritySync())
-                .setNodeId(selfId.id())
+                .setNodeId(selfId)
                 .setComponent(PLATFORM_THREAD_POOL_NAME)
                 .setThreadName("connectionServer")
                 .setWork(connectionServer)
@@ -224,7 +226,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
 
         reconnectHelper = new ReconnectHelper(
                 this::pause,
-                this::clear,
+                clearAllPipelinesForReconnect::run,
                 swirldStateManager::getConsensusState,
                 stateManagementComponent::getLastCompleteRound,
                 new ReconnectLearnerThrottle(selfId, reconnectConfig),

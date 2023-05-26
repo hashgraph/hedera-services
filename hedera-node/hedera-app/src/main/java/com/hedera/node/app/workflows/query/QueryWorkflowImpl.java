@@ -45,6 +45,7 @@ import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.ingest.IngestChecker;
 import com.hedera.node.app.workflows.ingest.SubmissionManager;
+import com.hedera.node.config.ConfigProvider;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.MalformedProtobufException;
 import com.hedera.pbj.runtime.UnknownFieldException;
@@ -82,6 +83,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
 
     private final FeeAccumulator feeAccumulator;
     private final Codec<Query> queryParser;
+    private final ConfigProvider configProvider;
 
     /**
      * Constructor of {@code QueryWorkflowImpl}
@@ -104,7 +106,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             @NonNull final IngestChecker ingestChecker,
             @NonNull final QueryDispatcher dispatcher,
             @NonNull final FeeAccumulator feeAccumulator,
-            @NonNull final Codec<Query> queryParser) {
+            @NonNull final Codec<Query> queryParser,
+            @NonNull final ConfigProvider configProvider) {
         this.stateAccessor = requireNonNull(stateAccessor);
         this.throttleAccumulator = requireNonNull(throttleAccumulator);
         this.submissionManager = requireNonNull(submissionManager);
@@ -113,6 +116,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         this.dispatcher = requireNonNull(dispatcher);
         this.feeAccumulator = requireNonNull(feeAccumulator);
         this.queryParser = requireNonNull(queryParser);
+        this.configProvider = requireNonNull(configProvider);
     }
 
     @Override
@@ -186,7 +190,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             }
 
             // 5. Check validity of query
-            final var context = new QueryContextImpl(storeFactory, query);
+            final var context = new QueryContextImpl(storeFactory, query, configProvider.getConfiguration());
             handler.validate(context);
 
             if (handler.needsAnswerOnlyCost(responseType)) {

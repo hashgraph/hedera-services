@@ -103,36 +103,41 @@ public class ChatterGossip extends AbstractGossip {
     private final List<StoppableThread> chatterThreads = new LinkedList<>();
     private final ChatterEventMapper chatterEventMapper = new ChatterEventMapper();
     private final SequenceCycle<EventIntakeTask> intakeCycle;
-    private final Clearable clearAllPipelines;
+
+    /**
+     * Holds a list of objects that need to be cleared when {@link #clear()} is called on this object.
+     */
+    private final Clearable clearAllInternalPipelines;
 
     /**
      * Builds the gossip engine that implements the chatter v1 algorithm.
      *
-     * @param platformContext           the platform context
-     * @param threadManager             the thread manager
-     * @param time                      the wall clock time
-     * @param crypto                    can be used to sign things
-     * @param notificationEngine        used to send notifications to the app
-     * @param addressBook               the current address book
-     * @param selfId                    this node's ID
-     * @param appVersion                the version of the app
-     * @param shadowGraph               contains non-ancient events
-     * @param emergencyRecoveryManager  handles emergency recovery
-     * @param consensusRef              a pointer to consensus
-     * @param intakeQueue               the event intake queue
-     * @param freezeManager             handles freezes
-     * @param startUpEventFrozenManager prevents event creation during startup
-     * @param swirldStateManager        manages the mutable state
-     * @param startedFromGenesis        true if this node started from a genesis state
-     * @param stateManagementComponent  manages the lifecycle of the state
-     * @param eventIntakeLambda         a method that is called when something needs to be added to the event intake
-     *                                  queue
-     * @param eventObserverDispatcher   the object used to wire event intake
-     * @param eventMapper               a data structure used to track the most recent event from each node
-     * @param eventIntakeMetrics        metrics for event intake
-     * @param eventLinker               links together events, if chatter is enabled will also buffer orphans
-     * @param updatePlatformStatus      a method that updates the platform status, when called
-     * @param loadReconnectState        a method that should be called when a state from reconnect is obtained
+     * @param platformContext               the platform context
+     * @param threadManager                 the thread manager
+     * @param time                          the wall clock time
+     * @param crypto                        can be used to sign things
+     * @param notificationEngine            used to send notifications to the app
+     * @param addressBook                   the current address book
+     * @param selfId                        this node's ID
+     * @param appVersion                    the version of the app
+     * @param shadowGraph                   contains non-ancient events
+     * @param emergencyRecoveryManager      handles emergency recovery
+     * @param consensusRef                  a pointer to consensus
+     * @param intakeQueue                   the event intake queue
+     * @param freezeManager                 handles freezes
+     * @param startUpEventFrozenManager     prevents event creation during startup
+     * @param swirldStateManager            manages the mutable state
+     * @param startedFromGenesis            true if this node started from a genesis state
+     * @param stateManagementComponent      manages the lifecycle of the state
+     * @param eventIntakeLambda             a method that is called when something needs to be added to the event intake
+     *                                      queue
+     * @param eventObserverDispatcher       the object used to wire event intake
+     * @param eventMapper                   a data structure used to track the most recent event from each node
+     * @param eventIntakeMetrics            metrics for event intake
+     * @param eventLinker                   links together events, if chatter is enabled will also buffer orphans
+     * @param updatePlatformStatus          a method that updates the platform status, when called
+     * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
+     * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
      */
     public ChatterGossip(
             @NonNull final PlatformContext platformContext,
@@ -158,7 +163,8 @@ public class ChatterGossip extends AbstractGossip {
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
             @NonNull final EventLinker eventLinker,
             @NonNull final Runnable updatePlatformStatus,
-            @NonNull final Consumer<SignedState> loadReconnectState) {
+            @NonNull final Consumer<SignedState> loadReconnectState,
+            @NonNull final Runnable clearAllPipelinesForReconnect) {
         super(
                 platformContext,
                 threadManager,
@@ -175,7 +181,8 @@ public class ChatterGossip extends AbstractGossip {
                 eventIntakeMetrics,
                 eventObserverDispatcher,
                 updatePlatformStatus,
-                loadReconnectState);
+                loadReconnectState,
+                clearAllPipelinesForReconnect);
 
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
         final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
@@ -232,7 +239,7 @@ public class ChatterGossip extends AbstractGossip {
 
             chatterThreads.add(new StoppableThreadConfiguration<>(threadManager)
                     .setPriority(Thread.NORM_PRIORITY)
-                    .setNodeId(selfId.id())
+                    .setNodeId(selfId)
                     .setComponent(PLATFORM_THREAD_POOL_NAME)
                     .setOtherNodeId(otherId.id())
                     .setThreadName("ChatterReader")
@@ -255,7 +262,8 @@ public class ChatterGossip extends AbstractGossip {
                                             stateManagementComponent,
                                             reconnectConfig.asyncStreamTimeoutMilliseconds(),
                                             reconnectMetrics,
-                                            reconnectController),
+                                            reconnectController,
+                                            fallenBehindManager),
                                     new ReconnectProtocol(
                                             threadManager,
                                             otherId,
@@ -326,7 +334,7 @@ public class ChatterGossip extends AbstractGossip {
         eventObserverDispatcher.addObserver(new ChatterNotifier(selfId, chatterCore));
         eventObserverDispatcher.addObserver(chatterEventMapper);
 
-        clearAllPipelines = new LoggingClearables(
+        clearAllInternalPipelines = new LoggingClearables(
                 RECONNECT.getMarker(),
                 List.of(
                         // chatter event creator needs to be cleared first, because it sends event to intake
@@ -423,7 +431,7 @@ public class ChatterGossip extends AbstractGossip {
      */
     @Override
     public void clear() {
-        clearAllPipelines.clear();
+        clearAllInternalPipelines.clear();
     }
 
     /**

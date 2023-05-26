@@ -85,7 +85,7 @@ public class QueryChecker {
             throw new PreCheckException(INSUFFICIENT_TX_FEE);
         }
         final var txBody = transactionInfo.txBody();
-        cryptoTransferHandler.validate(txBody);
+        cryptoTransferHandler.pureChecks(txBody);
     }
 
     /**

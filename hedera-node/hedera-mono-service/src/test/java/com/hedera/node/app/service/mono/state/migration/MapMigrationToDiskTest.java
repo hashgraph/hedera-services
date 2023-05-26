@@ -109,7 +109,7 @@ class MapMigrationToDiskTest {
                 1, mutableState, accountsOnly, virtualMapFactory, accountMigrator, tokenRelMigrator);
 
         verify(mutableState).setChild(ACCOUNTS, accountStore);
-        verify(mutableState).setChild(eq(StateChildIndices.PAYER_RECORDS), captor.capture());
+        verify(mutableState).setChild(eq(StateChildIndices.PAYER_RECORDS_OR_CONSOLIDATED_FCQ), captor.capture());
         final var payerRecords = captor.getValue();
         final var aRecords = payerRecords.get(aNum);
         final var bRecords = payerRecords.get(bNum);

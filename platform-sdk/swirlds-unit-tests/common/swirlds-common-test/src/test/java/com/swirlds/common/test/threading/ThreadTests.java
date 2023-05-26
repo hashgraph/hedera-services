@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.base.state.MutabilityException;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.framework.ThreadSeed;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.test.framework.TestComponentTags;
@@ -291,7 +292,7 @@ class ThreadTests {
                 Thread.currentThread().getContextClassLoader().getParent();
 
         final ThreadFactory factory = new ThreadConfiguration(getStaticThreadManager())
-                .setNodeId(1234L)
+                .setNodeId(new NodeId(1234L))
                 .setComponent("pool1")
                 .setThreadName("thread1")
                 .setDaemon(false)
@@ -340,7 +341,7 @@ class ThreadTests {
                 .setRunnable(() -> {})
                 .setComponent("foo")
                 .setThreadName("bar")
-                .setNodeId(1234L)
+                .setNodeId(new NodeId(1234L))
                 .build();
         assertEquals("<foo: bar 1234>", thread3.getName(), "unexpected thread name");
 
@@ -348,7 +349,7 @@ class ThreadTests {
                 .setRunnable(() -> {})
                 .setComponent("foo")
                 .setThreadName("bar")
-                .setNodeId(1234L)
+                .setNodeId(new NodeId(1234L))
                 .setOtherNodeId(4321L)
                 .build();
         assertEquals("<foo: bar 1234 to 4321>", thread4.getName(), "unexpected thread name");
@@ -357,7 +358,7 @@ class ThreadTests {
                 .setRunnable(() -> {})
                 .setComponent("foo")
                 .setThreadName("bar")
-                .setNodeId(1234L)
+                .setNodeId(new NodeId(1234L))
                 .setOtherNodeId(4321L)
                 .buildFactory();
 
@@ -466,7 +467,9 @@ class ThreadTests {
         assertTrue(configuration0.isImmutable(), "configuration should be immutable");
 
         assertThrows(
-                MutabilityException.class, () -> configuration0.setNodeId(0L), "configuration should be immutable");
+                MutabilityException.class,
+                () -> configuration0.setNodeId(new NodeId(0L)),
+                "configuration should be immutable");
         assertThrows(
                 MutabilityException.class,
                 () -> configuration0.setComponent("asdf"),
@@ -514,7 +517,9 @@ class ThreadTests {
         assertTrue(configuration1.isImmutable(), "configuration should be immutable");
 
         assertThrows(
-                MutabilityException.class, () -> configuration1.setNodeId(0L), "configuration should be immutable");
+                MutabilityException.class,
+                () -> configuration1.setNodeId(new NodeId(0L)),
+                "configuration should be immutable");
         assertThrows(
                 MutabilityException.class,
                 () -> configuration1.setComponent("asdf"),
@@ -562,7 +567,9 @@ class ThreadTests {
         assertTrue(configuration2.isImmutable(), "configuration should be immutable");
 
         assertThrows(
-                MutabilityException.class, () -> configuration2.setNodeId(0L), "configuration should be immutable");
+                MutabilityException.class,
+                () -> configuration2.setNodeId(new NodeId(0L)),
+                "configuration should be immutable");
         assertThrows(
                 MutabilityException.class,
                 () -> configuration2.setComponent("asdf"),
@@ -649,7 +656,7 @@ class ThreadTests {
         final Runnable runnable = () -> {};
 
         final ThreadConfiguration configuration = new ThreadConfiguration(getStaticThreadManager())
-                .setNodeId(1234L)
+                .setNodeId(new NodeId(1234L))
                 .setComponent("component")
                 .setThreadName("name")
                 .setThreadGroup(group)

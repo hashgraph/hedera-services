@@ -18,6 +18,8 @@ package com.hedera.node.app.service.token.impl;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.spi.state.WritableKVState;
@@ -73,12 +75,18 @@ public class WritableTokenRelationStore extends ReadableTokenRelationStoreImpl {
      * Returns the {@link TokenRelation} with the given token number and account number.
      * If no such token relation exists, returns {@code Optional.empty()}
      *
-     * @param tokenNum - the number of the token to be retrieved
-     * @param accountNum - the number of the account to be retrieved
+     * @param accountId - the number of the account to be retrieved
+     * @param tokenId   - the number of the token to be retrieved
      */
-    public Optional<TokenRelation> getForModify(final long accountNum, final long tokenNum) {
-        final var token =
-                Objects.requireNonNull(tokenRelState).getForModify(EntityNumPair.fromLongs(accountNum, tokenNum));
+    @NonNull
+    public Optional<TokenRelation> getForModify(@NonNull final AccountID accountId, @NonNull final TokenID tokenId) {
+        requireNonNull(accountId);
+        requireNonNull(tokenId);
+
+        if (AccountID.DEFAULT.equals(accountId) || TokenID.DEFAULT.equals(tokenId)) return Optional.empty();
+
+        final var token = Objects.requireNonNull(tokenRelState)
+                .getForModify(EntityNumPair.fromLongs(accountId.accountNum(), tokenId.tokenNum()));
         return Optional.ofNullable(token);
     }
 

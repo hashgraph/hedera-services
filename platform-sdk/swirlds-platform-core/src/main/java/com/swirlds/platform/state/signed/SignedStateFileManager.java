@@ -143,7 +143,7 @@ public class SignedStateFileManager implements Startable {
                 .setCapacity(stateConfig.stateSavingQueueSize())
                 .setMaxBufferSize(1)
                 .setPriority(basicConfig.threadPriorityNonSync())
-                .setNodeId(selfId.id())
+                .setNodeId(selfId)
                 .setComponent(PLATFORM_THREAD_POOL_NAME)
                 .setThreadName("signed-state-file-manager")
                 .setHandler(Runnable::run)

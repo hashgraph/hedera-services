@@ -23,13 +23,11 @@ import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.preVa
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateAndAddRequiredKeys;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.file.FileDeleteTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
-import com.hedera.node.app.service.file.impl.records.DeleteFileRecordBuilder;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -39,7 +37,8 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link HederaFunctionality#FILE_DELETE}.
+ * This class contains all workflow-related functionality regarding {@link
+ * HederaFunctionality#FILE_DELETE}.
  */
 @Singleton
 public class FileDeleteHandler implements TransactionHandler {
@@ -55,7 +54,7 @@ public class FileDeleteHandler implements TransactionHandler {
      *
      * @param context the {@link PreHandleContext} which collects all information that will be
      *     passed to {@code handle()}
-     * @throws NullPointerException if any of the arguments are {@code null}
+     * @throws PreCheckException if any issue happens on the pre handle level
      */
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
@@ -63,27 +62,22 @@ public class FileDeleteHandler implements TransactionHandler {
 
         final var transactionBody = context.body().fileDeleteOrThrow();
         final var fileStore = context.createStore(ReadableFileStoreImpl.class);
-        final var fileMeta = preValidate(transactionBody.fileID(), fileStore);
+        final var fileMeta = preValidate(transactionBody.fileID(), fileStore, context, false);
 
         validateAndAddRequiredKeys(fileMeta.keys(), context, true);
     }
 
-    /**
-     * Given the appropriate context, deletes a file.
-     *
-     * @param fileDeleteTransactionBody the {@link FileDeleteTransactionBody} of the active file delete transaction
-     * @param fileStore the {@link WritableFileStoreImpl} to use to delete the file
-     * @throws NullPointerException if one of the arguments is {@code null}
-     */
-    public void handle(
-            @NonNull final FileDeleteTransactionBody fileDeleteTransactionBody,
-            @NonNull final WritableFileStoreImpl fileStore) {
+    @Override
+    public void handle(@NonNull final HandleContext handleContext) throws HandleException {
+        requireNonNull(handleContext);
 
-        requireNonNull(fileDeleteTransactionBody);
-        requireNonNull(fileStore);
+        final var fileDeleteTransactionBody = handleContext.body().fileDeleteOrThrow();
+        if (!fileDeleteTransactionBody.hasFileID()) {
+            throw new HandleException(INVALID_FILE_ID);
+        }
+        var fileId = fileDeleteTransactionBody.fileIDOrThrow();
 
-        var fileId = fileDeleteTransactionBody.fileIDOrElse(FileID.DEFAULT);
-
+        final var fileStore = handleContext.writableStore(WritableFileStoreImpl.class);
         var optionalFile = fileStore.get(fileId.fileNum());
 
         if (optionalFile.isEmpty()) {
@@ -101,25 +95,17 @@ public class FileDeleteHandler implements TransactionHandler {
             throw new HandleException(FILE_DELETED);
         }
 
-        /* Copy all the fields from existing topic and change deleted flag */
+        /* Copy part of the fields from existing, delete the file content and set the deleted flag  */
         final var fileBuilder = new File.Builder()
                 .fileNumber(file.fileNumber())
                 .expirationTime(file.expirationTime())
                 .keys(file.keys())
-                .contents(file.contents())
+                .contents(null)
                 .memo(file.memo())
                 .deleted(true);
 
         /* --- Put the modified file. It will be in underlying state's modifications map.
         It will not be committed to state until commit is called on the state.--- */
         fileStore.put(fileBuilder.build());
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public DeleteFileRecordBuilder newRecordBuilder() {
-        return new DeleteFileRecordBuilder();
     }
 }
