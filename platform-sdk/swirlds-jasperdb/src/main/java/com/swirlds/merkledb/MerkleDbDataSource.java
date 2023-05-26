@@ -222,7 +222,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
      */
     private static final AtomicBoolean firstStatRegistration = new AtomicBoolean(true);
 
-    private final boolean compactionEnabled;
+    private final AtomicBoolean compactionEnabled = new AtomicBoolean();
 
     /** When was the last medium-sized merge, only touched from single merge thread. */
     private Instant lastMediumMerge;
@@ -249,7 +249,6 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
         this.tableName = tableName;
         this.tableId = tableId;
         this.tableConfig = tableConfig;
-        this.compactionEnabled = compactionEnabled;
 
         // create thread group with label
         final ThreadGroup threadGroup = new ThreadGroup("MerkleDb-" + tableName);
@@ -413,7 +412,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                 .plus((long) (settings.getFullMergePeriod() * Math.random()), settings.getMergePeriodUnit());
 
         // If merging is enabled start merging service
-        if (this.compactionEnabled) {
+        if (compactionEnabled) {
             startBackgroundCompaction();
         }
 
@@ -437,6 +436,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
      */
     @Override
     public void startBackgroundCompaction() {
+        compactionEnabled.set(true);
         synchronized (mergingExecutor) {
             if (mergingFuture == null || mergingFuture.isCancelled()) {
                 mergingFuture = mergingExecutor.scheduleAtFixedRate(
@@ -457,6 +457,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                 mergingFuture = null;
             }
         }
+        compactionEnabled.set(false);
     }
 
     /** {@inheritDoc} */
@@ -993,7 +994,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
 
     // For testing purpose
     boolean isCompactionEnabled() {
-        return compactionEnabled;
+        return compactionEnabled.get();
     }
 
     private void saveMetadata(final Path targetFile) throws IOException {
