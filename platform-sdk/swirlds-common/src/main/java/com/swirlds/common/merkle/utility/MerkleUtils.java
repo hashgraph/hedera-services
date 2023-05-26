@@ -22,7 +22,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
-import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
+import com.swirlds.common.merkle.exceptions.FailedRehashException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import org.apache.logging.log4j.LogManager;
@@ -70,7 +70,7 @@ public final class MerkleUtils {
                 Thread.currentThread().interrupt();
             } catch (ExecutionException e) {
                 logger.error(EXCEPTION.getMarker(), "Async tree hashing failed", e);
-                throw new MerkleSynchronizationException(e);
+                throw new FailedRehashException(e);
             }
         }
 
