@@ -184,7 +184,8 @@ public class SwirldsPlatform implements Platform, Startable {
      */
     private final ShadowGraph shadowGraph;
     /** The last status of the platform that was determined, is null until the platform starts up */
-    private final AtomicReference<PlatformStatus> currentPlatformStatus = new AtomicReference<>(null);
+    private final AtomicReference<PlatformStatus> currentPlatformStatus =
+            new AtomicReference<>(PlatformStatus.STARTING_UP);
     /**
      * the object used to calculate consensus. it is volatile because the whole object is replaced when reading a state
      * from disk or getting it through reconnect
@@ -1045,6 +1046,10 @@ public class SwirldsPlatform implements Platform, Startable {
 
         currentPlatformStatus.set(PlatformStatus.REPLAYING_EVENTS);
 
+        // Get rid of events loaded from the state. TODO should we avoid loading them in the first place?
+//        clearAllPipelines();
+//        shadowGraph.setMinimumGenerationNonAncient(initialMinimumGenerationNonAncient);
+
         logger.info(
                 STARTUP.getMarker(),
                 "replaying preconsensus event stream starting at generation {}",
@@ -1060,6 +1065,9 @@ public class SwirldsPlatform implements Platform, Startable {
             while (iterator.hasNext()) {
                 final EventImpl event = iterator.next();
 
+                // TODO should we do this on a background thread?
+                platformContext.getCryptography().digestSync(event.getBaseEventHashedData());
+
                 final GossipEvent gossipEvent = new GossipEvent(event.getHashedData(), event.getUnhashedData());
                 eventIntake.addUnlinkedEvent(gossipEvent);
 
@@ -1068,8 +1076,13 @@ public class SwirldsPlatform implements Platform, Startable {
 
             // TODO should we flush event intake here?
             SECONDS.sleep(1); // TODO poor man's flush
-            // FUTURE WORK flush event creator (to prevent unintentional branching)
+            // TODO flush event creator (to prevent unintentional branching)
 
+            // TODO provide other data here:
+            //  - number of rounds, and current round number after replay
+            //  - number of transactions
+            //  - elapsed wall clock time
+            //  - elapsed consensus time
             logger.info(STARTUP.getMarker(), "replayed {} preconsensus events", count);
 
             preConsensusEventWriter.beginStreamingNewEvents();

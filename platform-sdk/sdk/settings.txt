@@ -7,14 +7,16 @@
 #######################################################################################
 
 maxOutgoingSyncs,                 1
-state.saveStatePeriod,            0
+state.saveStatePeriod,            60
 showInternalStats,                true
 doUpnp,                           false
 useLoopbackIp,                    false
 csvFileName,                      PlatformTesting
 checkSignedStateFromDisk,         true
 loadKeysFromPfxFiles,             false
-event.preconsensus.enableStorage, false
+# TODO revert
+event.preconsensus.enableStorage, true
+event.preconsensus.enableReplay,  true
 enableEventStreaming,             false
 reconnect.active,                 true
 chatter.useChatter,               false
