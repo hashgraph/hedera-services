@@ -16,8 +16,11 @@
 
 package com.hedera.node.app.workflows.handle.validation;
 
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Implementation of {@link ExpiryValidator}.
@@ -37,5 +40,13 @@ public class ExpiryValidatorImpl implements ExpiryValidator {
     public ExpiryMeta resolveUpdateAttempt(ExpiryMeta currentMetadata, ExpiryMeta updateMetadata) {
         // TODO: Implement resolveUpdateAttempt
         return updateMetadata;
+    }
+
+    @NonNull
+    @Override
+    public ResponseCodeEnum expirationStatus(
+            @NonNull EntityType entityType, boolean isMarkedExpired, long balanceAvailableForSelfRenewal) {
+        // TODO: Implement expirationStatus
+        return ResponseCodeEnum.OK;
     }
 }
