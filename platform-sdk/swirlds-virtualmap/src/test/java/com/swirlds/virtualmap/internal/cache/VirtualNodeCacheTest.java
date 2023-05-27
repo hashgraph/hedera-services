@@ -2882,8 +2882,7 @@ class VirtualNodeCacheTest extends VirtualTestBase {
         }
     }
 
-    private void validateDirtyInternals(
-            final Set<VirtualHashRecord> expected, final Stream<VirtualHashRecord> actual) {
+    private void validateDirtyInternals(final Set<VirtualHashRecord> expected, final Stream<VirtualHashRecord> actual) {
         final List<VirtualHashRecord> dirty = actual.toList();
         assertEquals(expected.size(), dirty.size(), "dirtyInternals did not have the expected number of elements");
         for (int i = 0; i < expected.size(); i++) {
