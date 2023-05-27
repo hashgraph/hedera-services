@@ -27,11 +27,13 @@ import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
@@ -55,6 +57,10 @@ public abstract class HapiSuite {
 
     @SuppressWarnings("java:S2245")
     private static final Random RANDOM = new Random();
+
+    protected HapiSuite() {
+        bddSuiteRegistrar.ifPresent(r -> r.accept(this));
+    }
 
     protected abstract Logger getResultsLogger();
 
@@ -293,5 +299,11 @@ public abstract class HapiSuite {
 
     public static String salted(String str) {
         return str + RANDOM.nextInt(1_234_567);
+    }
+
+    private static Optional<Consumer<HapiSuite>> bddSuiteRegistrar = Optional.empty();
+
+    public static void setBddSuiteRegistrar(@NonNull final Consumer<HapiSuite> bddSuiteRegistrar) {
+        HapiSuite.bddSuiteRegistrar = Optional.ofNullable(bddSuiteRegistrar);
     }
 }

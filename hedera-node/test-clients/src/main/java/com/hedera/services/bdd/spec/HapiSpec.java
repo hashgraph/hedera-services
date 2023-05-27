@@ -65,6 +65,7 @@ import com.hedera.services.stream.proto.AllAccountBalances;
 import com.hedera.services.stream.proto.SingleAccountBalances;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -896,6 +897,8 @@ public class HapiSpec implements Runnable {
             log.error("Initialization failed for spec '{}'!", name, t);
             status = ERROR;
         }
+
+        bddTestRegistrar.ifPresent(r -> r.accept(this));
     }
 
     interface Def {
@@ -1053,5 +1056,11 @@ public class HapiSpec implements Runnable {
         ratesProvider = null;
         hapiClients = null;
         hapiRegistry = null;
+    }
+
+    private static Optional<Consumer<HapiSpec>> bddTestRegistrar = Optional.empty();
+
+    public static void setBddTestRegistrar(@NonNull final Consumer<HapiSpec> bddTestRegistrar) {
+        HapiSpec.bddTestRegistrar = Optional.ofNullable(bddTestRegistrar);
     }
 }
