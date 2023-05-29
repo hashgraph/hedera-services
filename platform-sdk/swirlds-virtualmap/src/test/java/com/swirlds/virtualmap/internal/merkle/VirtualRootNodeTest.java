@@ -431,7 +431,7 @@ class VirtualRootNodeTest extends VirtualTestBase {
     void testFullRehash() throws InterruptedException {
         final VirtualRootNode<TestKey, TestValue> root = prepareRootForFullRehash();
 
-        root.fullLeafRehash();
+        root.fullLeafRehashIfNecessary();
 
         // make sure that the elements have hashes
         IntStream.range(1, 101).forEach(index -> {
@@ -445,7 +445,7 @@ class VirtualRootNodeTest extends VirtualTestBase {
         final VirtualRootNode<TestKey, TestValue> root = prepareRootForFullRehash();
         ((InMemoryDataSource) root.getDataSource()).setFailureOnSave(true);
 
-        assertThrows(MerkleSynchronizationException.class, () -> root.fullLeafRehash());
+        assertThrows(MerkleSynchronizationException.class, () -> root.fullLeafRehashIfNecessary());
     }
 
     @Test
@@ -454,7 +454,7 @@ class VirtualRootNodeTest extends VirtualTestBase {
         final VirtualRootNode<TestKey, TestValue> root = prepareRootForFullRehash();
         ((InMemoryDataSource) root.getDataSource()).setFailureOnLeafRecordLookup(true);
 
-        assertThrows(MerkleSynchronizationException.class, () -> root.fullLeafRehash());
+        assertThrows(MerkleSynchronizationException.class, () -> root.fullLeafRehashIfNecessary());
     }
 
     @Test
@@ -463,7 +463,7 @@ class VirtualRootNodeTest extends VirtualTestBase {
         final VirtualRootNode<TestKey, TestValue> root = prepareRootForFullRehash();
         ((InMemoryDataSource) root.getDataSource()).setFailureOnHashLookup(true);
 
-        assertThrows(UncheckedIOException.class, () -> root.fullLeafRehash());
+        assertThrows(UncheckedIOException.class, () -> root.fullLeafRehashIfNecessary());
     }
 
     private static VirtualRootNode<TestKey, TestValue> prepareRootForFullRehash() {

@@ -328,8 +328,9 @@ public final class Hedera implements SwirldMain {
      * Called by this class when we detect it is time to do migration.
      */
     private void onMigrate(
-            @NonNull final MerkleHederaState state, @NonNull final SerializableSemVers deserializedVersion) {
-        final var previousVersion = PbjConverter.toPbj(deserializedVersion.getServices());
+            @NonNull final MerkleHederaState state, @Nullable final SerializableSemVers deserializedVersion) {
+        final var previousVersion =
+                deserializedVersion == null ? null : PbjConverter.toPbj(deserializedVersion.getServices());
         final var currentVersion = PbjConverter.toPbj(version.getServices());
         logger.info("Migrating from version {} to {}", previousVersion, currentVersion);
         for (final var registration : serviceRegistry.values()) {
@@ -452,10 +453,7 @@ public final class Hedera implements SwirldMain {
      */
     @Override
     public void run() {
-        // Start the gRPC servers.
-        logger.info("Starting mono gRPC server");
-        daggerApp.grpcStarter().startIfAppropriate();
-
+        // Start the gRPC server.
         logger.info("Starting modular gRPC server");
         final var port = daggerApp.nodeLocalProperties().workflowsPort();
 
@@ -546,7 +544,7 @@ public final class Hedera implements SwirldMain {
         logger.debug("Genesis Initialization");
 
         // Create all the nodes in the merkle tree for all the services
-        onMigrate(state, version);
+        onMigrate(state, null);
 
         // Initialize the tree with all the pre-built state we need for a basic system,
         // such as the accounts for initial users. Some services might populate their data
@@ -602,6 +600,7 @@ public final class Hedera implements SwirldMain {
         final var adminStates = state.createWritableStates(FreezeService.NAME);
         // specialFiles will move to FileService
         adminStates.getSingleton(FreezeServiceImpl.UPGRADE_FILES_KEY).put(new MerkleSpecialFiles());
+        ((MerkleWritableStates) adminStates).commit();
 
         adminStates.getSingleton(FreezeServiceImpl.DUAL_STATE_KEY).put(new WritableFreezeStore(dualState));
 
@@ -738,6 +737,7 @@ public final class Hedera implements SwirldMain {
                     .maxSignedTxnSize(MAX_SIGNED_TXN_SIZE)
                     .crypto(CryptographyHolder.get())
                     .selfId(nodeSelfAccount)
+                    .genesisUsage(trigger == InitTrigger.GENESIS)
                     .build();
         }
     }

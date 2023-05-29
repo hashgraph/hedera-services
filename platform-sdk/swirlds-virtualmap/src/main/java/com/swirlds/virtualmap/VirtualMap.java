@@ -126,6 +126,7 @@ public final class VirtualMap<K extends VirtualKey, V extends VirtualValue> exte
     public static class ClassVersion {
         public static final int ORIGINAL = 1;
         public static final int MERKLE_SERIALIZATION_CLEANUP = 2;
+        public static final int REHASH_LEAVES = 3;
     }
 
     private static final class ChildIndices {
@@ -224,14 +225,6 @@ public final class VirtualMap<K extends VirtualKey, V extends VirtualValue> exte
     }
 
     /**
-     * Does a full rehash of the persisted leaves of the map.
-     * Delegates the call to {@link VirtualRootNode#fullLeafRehash()} which does the actual work.
-     */
-    public void fullLeafRehash() {
-        root.fullLeafRehash();
-    }
-
-    /**
      * Register all statistics with a registry. If not called then no statistics will be captured for this map.
      *
      * @param metrics
@@ -258,7 +251,7 @@ public final class VirtualMap<K extends VirtualKey, V extends VirtualValue> exte
      */
     @Override
     public int getVersion() {
-        return ClassVersion.MERKLE_SERIALIZATION_CLEANUP;
+        return ClassVersion.REHASH_LEAVES;
     }
 
     /**
@@ -348,6 +341,9 @@ public final class VirtualMap<K extends VirtualKey, V extends VirtualValue> exte
         final String inputFileName = in.readNormalisedString(fileNameLengthInBytes);
         final Path inputFile = inputDirectory.resolve(inputFileName);
         loadFromFile(inputFile);
+        if (version < ClassVersion.REHASH_LEAVES) {
+            root.fullLeafRehashIfNecessary();
+        }
     }
 
     /**
