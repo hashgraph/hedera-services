@@ -25,6 +25,13 @@
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "deployParentContractAndRevert",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "uint256",

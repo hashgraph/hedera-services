@@ -126,7 +126,8 @@ public class ContractCreateSuite extends HapiSuite {
                 blockTimestampChangesWithinFewSeconds(),
                 contractWithAutoRenewNeedSignatures(),
                 createContractWithStakingFields(),
-                contractCreateNoncesExternalization());
+                contractCreateNoncesExternalization(),
+                contractCreateNoncesExternalizationAndRevert());
     }
 
     @Override
@@ -149,7 +150,7 @@ public class ContractCreateSuite extends HapiSuite {
                 .given(
                         cryptoCreate(payer).balance(10 * ONE_HUNDRED_HBARS),
                         uploadInitCode(contract),
-                        contractCreate(contract).payingWith(payer))
+                        contractCreate(contract))
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(contract, deployParentContract)
@@ -174,7 +175,33 @@ public class ContractCreateSuite extends HapiSuite {
                                 .hasKnownStatus(SUCCESS))))
                 .then(
                         getTxnRecord(deployContractTxn).andAllChildRecords().logged(),
-                        getTxnRecord(deployContractTxnTwo).andAllChildRecords().logged());
+                        getTxnRecord(deployContractTxnTwo).andAllChildRecords().logged(),
+                        getTxnRecord(deployChildFromParentTxn)
+                                .andAllChildRecords()
+                                .logged(),
+                        getTxnRecord(deployChildFromParentTxn2)
+                                .andAllChildRecords()
+                                .logged());
+    }
+
+    private HapiSpec contractCreateNoncesExternalizationAndRevert() {
+        final var contract = "NoncesExternalization";
+        final var payer = "payer";
+        final var deployParentContractAndRevert = "deployParentContractAndRevert";
+
+        final var deployContractAndRevertTxn = "deployParentContractAndRevertTxn";
+
+        return defaultHapiSpec("ContractCreateNoncesExternalization")
+                .given(
+                        cryptoCreate(payer).balance(10 * ONE_HUNDRED_HBARS),
+                        uploadInitCode(contract),
+                        contractCreate(contract))
+                .when(contractCall(contract, deployParentContractAndRevert)
+                        .payingWith(payer)
+                        .via(deployContractAndRevertTxn)
+                        .gas(GAS_TO_OFFER)
+                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
+                .then(getTxnRecord(deployContractAndRevertTxn).andAllChildRecords().logged());
     }
 
     HapiSpec createContractWithStakingFields() {
