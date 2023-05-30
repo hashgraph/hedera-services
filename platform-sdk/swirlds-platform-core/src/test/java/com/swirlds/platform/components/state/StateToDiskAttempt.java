@@ -17,6 +17,8 @@
 package com.swirlds.platform.components.state;
 
 import com.swirlds.platform.state.signed.SignedState;
+import org.checkerframework.checker.nullness.qual.NonNull;
+
 import java.nio.file.Path;
 
 /**
@@ -25,4 +27,4 @@ import java.nio.file.Path;
  * @param directory the directory where the signed state was written
  * @param success whether the write was successful
  */
-public record StateToDiskAttempt(SignedState signedState, Path directory, boolean success) {}
+public record StateToDiskAttempt(@NonNull SignedState signedState, @NonNull Path directory, boolean success) {}

@@ -403,7 +403,7 @@ class StateManagementComponentTests {
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(NUM_NODES)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
-                .setSequentialIds(false)
+                .setSequentialIds(true)
                 .build();
         final DefaultStateManagementComponent component = newStateManagementComponent(addressBook);
 
