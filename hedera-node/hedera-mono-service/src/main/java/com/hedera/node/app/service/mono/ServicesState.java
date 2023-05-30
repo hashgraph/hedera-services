@@ -292,6 +292,7 @@ public class ServicesState extends PartialNaryMerkleInternal
             if (shouldMigrateSomethingToDisk()) {
                 mapToDiskMigration.migrateToDiskAsApropos(
                         INSERTIONS_PER_COPY,
+                        consolidateRecordStorage,
                         this,
                         new ToDiskMigrations(enableVirtualAccounts, enableVirtualTokenRels),
                         getVirtualMapFactory(),
@@ -832,12 +833,13 @@ public class ServicesState extends PartialNaryMerkleInternal
     interface MapToDiskMigration {
 
         void migrateToDiskAsApropos(
-                final int insertionsPerCopy,
-                final ServicesState mutableState,
-                final ToDiskMigrations toDiskMigrations,
-                final VirtualMapFactory virtualMapFactory,
-                final Function<MerkleAccountState, OnDiskAccount> accountMigrator,
-                final Function<MerkleTokenRelStatus, OnDiskTokenRel> tokenRelMigrator);
+                int insertionsPerCopy,
+                boolean useConsolidatedFcq,
+                ServicesState mutableState,
+                ToDiskMigrations toDiskMigrations,
+                VirtualMapFactory virtualMapFactory,
+                Function<MerkleAccountState, OnDiskAccount> accountMigrator,
+                Function<MerkleTokenRelStatus, OnDiskTokenRel> tokenRelMigrator);
     }
 
     @FunctionalInterface
