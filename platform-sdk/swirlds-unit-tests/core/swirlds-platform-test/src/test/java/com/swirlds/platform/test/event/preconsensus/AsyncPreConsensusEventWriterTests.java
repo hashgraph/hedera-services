@@ -68,6 +68,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.stream.Stream;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -167,8 +168,8 @@ class AsyncPreConsensusEventWriterTests {
      * @param fixDiscontinuities whether to fix discontinuities in the stream
      */
     static void verifyStream(
-            final List<EventImpl> events,
-            final PlatformContext platformContext,
+            @NonNull final List<EventImpl> events,
+            @NonNull final PlatformContext platformContext,
             final int truncatedFileCount,
             final boolean fixDiscontinuities)
             throws IOException {

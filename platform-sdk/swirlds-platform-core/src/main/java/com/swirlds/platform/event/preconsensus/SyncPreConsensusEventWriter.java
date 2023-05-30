@@ -215,7 +215,7 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
         try {
             Files.createFile(file.getPath());
         } catch (final IOException e) {
-            throw new UncheckedIOException("unable create file to mark discontinuity", e);
+            throw new UncheckedIOException("unable to create file to mark discontinuity", e);
         }
     }
 

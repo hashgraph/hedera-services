@@ -85,11 +85,36 @@ public final class PreConsensusEventFile implements Comparable<PreConsensusEvent
      */
     public static final String MAXIMUM_GENERATION_PREFIX = "maxg";
 
+    /**
+     * The sequence number of the file. All file sequence numbers are unique. Sequence numbers are allocated in
+     * monotonically increasing order.
+     */
     private final long sequenceNumber;
+
+    /**
+     * The minimum generation of events that are permitted to be in this file.
+     */
     private final long minimumGeneration;
+
+    /**
+     * The maximum generation of events that are permitted to be in this file.
+     */
     private final long maximumGeneration;
+
+    /**
+     * The timestamp of when the writing of this file began.
+     */
     private final Instant timestamp;
+
+    /**
+     * The on-disk location of the file.
+     */
     private final Path path;
+
+    /**
+     * If true, this file signals a discontinuity in the stream. Files marking a discontinuity will never contain
+     * events.
+     */
     private final boolean discontinuity;
 
     /**
@@ -292,8 +317,8 @@ public final class PreConsensusEventFile implements Comparable<PreConsensusEvent
     }
 
     /**
-     * Delete a file. Automatically deletes parent directories if empty up until the root directory is reached, which is
-     * never deleted.
+     * Delete a file (permanently). Automatically deletes parent directories if empty up until the root directory is
+     * reached, which is never deleted.
      *
      * @param rootDirectory the root directory where event files are stored
      */
@@ -302,8 +327,8 @@ public final class PreConsensusEventFile implements Comparable<PreConsensusEvent
     }
 
     /**
-     * Delete a file. Automatically deletes parent directories if empty up until the root directory is reached, which is
-     * never deleted.
+     * Delete a file (permanently). Automatically deletes parent directories if empty up until the root directory is
+     * reached, which is never deleted.
      *
      * @param rootDirectory the root directory where event files are stored
      * @param recycleBin    if not null, then move the file to this location instead of actually deleting it
@@ -373,6 +398,7 @@ public final class PreConsensusEventFile implements Comparable<PreConsensusEvent
      * @param minimumGeneration the minimum generation of events permitted in this file
      * @param maximumGeneration the maximum generation of events permitted in this file
      * @param timestamp         the timestamp of when the file was created
+     * @param discontinuity     true if this file is a placeholder signaling a discontinuity
      * @return the file name
      */
     @NonNull

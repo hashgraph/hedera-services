@@ -78,8 +78,8 @@ public class PreConsensusEventFileManager {
     private final Path databaseDirectory;
 
     /**
-     * The location where we will move files that are invalid due to a discontinuity. Better than deleting the files,
-     * in case the files end up being useful for debugging.
+     * The location where we will move files that are invalid due to a discontinuity. Better than deleting the files, in
+     * case the files end up being useful for debugging.
      */
     private final Path recycleBinDirectory;
 
@@ -305,8 +305,8 @@ public class PreConsensusEventFileManager {
             // then we can't know for certain that we have all data for the requested minimum generation.
             logger.warn(
                     STARTUP.getMarker(),
-                    "The preconscious event stream has insufficient data to guarantee that all events with the "
-                            + "requested generation of {} are present, the first file has a minimum  generation of {}",
+                    "The preconsensus event stream has insufficient data to guarantee that all events with the "
+                            + "requested generation of {} are present, the first file has a minimum generation of {}",
                     minimumGeneration,
                     files.getFirst().getMinimumGeneration());
 
@@ -320,8 +320,8 @@ public class PreConsensusEventFileManager {
         if (files.getLast().getMaximumGeneration() < minimumGeneration) {
             logger.warn(
                     STARTUP.getMarker(),
-                    "The preconscious event stream has insufficient data to guarantee that "
-                            + "all events with the requested minimum generation of {}, "
+                    "The preconsensus event stream has insufficient data to guarantee that "
+                            + "all events with the requested minimum generation of {} are present, "
                             + "the last file has a maximum generation of {}",
                     minimumGeneration,
                     files.getLast().getMaximumGeneration());
@@ -370,22 +370,26 @@ public class PreConsensusEventFileManager {
      */
     private void resolveDiscontinuity(final int indexOfDiscontinuity) {
 
+        if (files.size() == 0) {
+            throw new IllegalStateException("The preconsensus event stream has no files, "
+                    + "there should not be any detected discontinuities.");
+        }
+
         if (indexOfDiscontinuity == 0) {
             logger.error(
                     EXCEPTION.getMarker(),
-                    "Discontinuity detected at beginning of preconscious event stream, "
+                    "Discontinuity detected at beginning of preconsensus event stream, "
                             + "unable to replay any events in the stream. "
                             + "All events in the stream will be deleted. "
                             + "first deleted file: {}, last file in stream: {}",
                     files.get(indexOfDiscontinuity),
                     files.getLast());
         } else {
-            final PreConsensusEventFile lastUndeletedFile =
-                    files.size() == 0 ? null : files.get(indexOfDiscontinuity - 1);
+            final PreConsensusEventFile lastUndeletedFile = files.get(indexOfDiscontinuity - 1);
 
             logger.error(
                     EXCEPTION.getMarker(),
-                    "Discontinuity detected in preconscious event stream, "
+                    "Discontinuity detected in preconsensus event stream, "
                             + "unable to replay all events in the stream. "
                             + "Events written to the stream after the discontinuity will be deleted. "
                             + "Last undeleted file: {}, first deleted file: {}, last file in stream: {}",
@@ -394,15 +398,16 @@ public class PreConsensusEventFileManager {
                     files.getLast());
         }
 
-        // Delete files in reverse order, so that if we crash prior to finishing at least
-        // the stream does not have gaps in sequence numbers.
-        for (int index = files.size() - 1; index >= indexOfDiscontinuity; index--) {
-            try {
-                Files.createDirectories(recycleBinDirectory);
+        try {
+            Files.createDirectories(recycleBinDirectory);
+
+            // Delete files in reverse order, so that if we crash prior to finishing at least
+            // the stream does not have gaps in sequence numbers.
+            for (int index = files.size() - 1; index >= indexOfDiscontinuity; index--) {
                 files.removeLast().deleteFile(databaseDirectory, recycleBinDirectory);
-            } catch (final IOException e) {
-                throw new UncheckedIOException("unable to delete file after discontinuity", e);
             }
+        } catch (final IOException e) {
+            throw new UncheckedIOException("unable to delete file after discontinuity", e);
         }
 
         if (files.size() > 0) {

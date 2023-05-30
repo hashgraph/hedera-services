@@ -292,7 +292,7 @@ public class AsyncPreConsensusEventWriter implements PreConsensusEventWriter {
     /**
      * Notify the wrapped writer that there is a discontinuity.
      */
-    private void discontinuityHandler(final Discontinuity discontinuity) {
+    private void discontinuityHandler(@NonNull final Discontinuity discontinuity) {
         try {
             writer.registerDiscontinuity();
         } catch (final InterruptedException e) {
