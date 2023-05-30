@@ -56,6 +56,7 @@ import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.util.UtilService;
 import com.hedera.node.app.service.util.impl.UtilServiceImpl;
 import com.hedera.node.app.spi.Service;
+import com.hedera.node.app.spi.state.WritableFreezeStore;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
@@ -70,6 +71,7 @@ import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
+import com.swirlds.common.system.DualState;
 import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
@@ -310,7 +312,7 @@ public final class Hedera implements SwirldMain {
 
         // Different paths for different triggers.
         switch (trigger) {
-            case GENESIS -> genesis(state);
+            case GENESIS -> genesis(state, dualState);
             case RESTART -> restart(state, dualState, deserializedVersion);
             case RECONNECT -> reconnect();
             case EVENT_STREAM_RECOVERY -> eventStreamRecovery();
@@ -538,7 +540,7 @@ public final class Hedera implements SwirldMain {
     =================================================================================================================*/
 
     /** Implements the code flow for initializing the state of a new Hedera node with NO SAVED STATE. */
-    private void genesis(@NonNull final MerkleHederaState state) {
+    private void genesis(@NonNull final MerkleHederaState state, @NonNull final SwirldDualState dualState) {
         logger.debug("Genesis Initialization");
 
         // Create all the nodes in the merkle tree for all the services
@@ -549,7 +551,7 @@ public final class Hedera implements SwirldMain {
         // in their Schema migration handlers.
         final var seqStart = bootstrapProps.getLongProperty(HEDERA_FIRST_USER_ENTITY);
         logger.debug("Creating genesis children at seqStart = {}", seqStart);
-        createSpecialGenesisChildren(state, platform.getAddressBook(), seqStart);
+        createSpecialGenesisChildren(state, dualState, platform.getAddressBook(), seqStart);
 
         // Now that we have the state created, we are ready to create the dependency graph with Dagger
         initializeDagger(state, InitTrigger.GENESIS);
@@ -589,12 +591,18 @@ public final class Hedera implements SwirldMain {
      * services, or we need to have Dagger injection for schemas to provide ad-hoc dependencies.
      */
     private void createSpecialGenesisChildren(
-            @NonNull final MerkleHederaState state, @NonNull final AddressBook addressBook, final long seqStart) {
+            @NonNull final MerkleHederaState state,
+            @NonNull final DualState dualState,
+            @NonNull final AddressBook addressBook,
+            final long seqStart) {
 
         // Prepopulate the FreezeService state with default values for genesis
         final var adminStates = state.createWritableStates(FreezeService.NAME);
+        // specialFiles will move to FileService
         adminStates.getSingleton(FreezeServiceImpl.UPGRADE_FILES_KEY).put(new MerkleSpecialFiles());
         ((MerkleWritableStates) adminStates).commit();
+
+        adminStates.getSingleton(FreezeServiceImpl.DUAL_STATE_KEY).put(new WritableFreezeStore(dualState));
 
         // Prepopulate the NetworkServices state with default values for genesis
         // Can these be moved to Schema version 1 of NetworkServicesImpl?
