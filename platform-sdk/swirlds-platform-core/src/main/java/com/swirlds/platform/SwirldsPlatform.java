@@ -1032,6 +1032,7 @@ public class SwirldsPlatform implements Platform, Startable {
         } else {
             replayPreconsensusEvents(
                     platformContext,
+                    OSTime.getInstance(),
                     preConsensusEventFileManager,
                     preConsensusEventWriter,
                     shadowGraph,
