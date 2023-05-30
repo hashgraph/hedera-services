@@ -119,6 +119,7 @@ import static com.hedera.services.bdd.suites.contract.precompile.ApproveAllowanc
 import static com.hedera.services.bdd.suites.contract.precompile.ApproveAllowanceSuite.DELEGATE_PRECOMPILE_CALLEE;
 import static com.hedera.services.bdd.suites.contract.precompile.ApproveAllowanceSuite.PRETEND_ATTACKER;
 import static com.hedera.services.bdd.suites.contract.precompile.ApproveAllowanceSuite.PRETEND_PAIR;
+import static com.hedera.services.bdd.suites.contract.precompile.ContractKeysStillWorkAsExpectedSuite.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
 import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.ACCOUNT_2;
 import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.AUTO_RENEW_PERIOD;
 import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.CONTRACT_ADMIN_KEY;
@@ -235,7 +236,6 @@ public class LeakyContractTestsSuite extends HapiSuite {
     private static final String CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY = "contracts.allowAutoAssociations";
     public static final String FALSE = "false";
     private static final String TRANSFER_CONTRACT = "NonDelegateCryptoTransfer";
-    private static final String CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS = "contracts.maxNumWithHapiSigsAccess";
     private static final String CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS = "contracts.allowSystemUseOfHapiSigs";
     private static final String CRYPTO_TRANSFER = "CryptoTransfer";
     private static final String TOKEN_TRANSFER_CONTRACT = "TokenTransferContract";
