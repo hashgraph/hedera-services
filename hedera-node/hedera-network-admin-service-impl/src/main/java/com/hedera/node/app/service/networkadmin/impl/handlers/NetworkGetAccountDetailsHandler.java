@@ -66,7 +66,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link HederaFunctionality#GET_ACCOUNT_DETAILS}.
+ * This class contains all query information regarding {@link HederaFunctionality#GET_ACCOUNT_DETAILS}.
  */
 @Singleton
 public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
