@@ -163,7 +163,6 @@ public class FreezeHandler implements TransactionHandler {
     /**
      * Performs checks that the entities related to this transaction exist and are valid
      */
-    //    @NonNull
     private static void validateSemantics(
             @NonNull final FreezeTransactionBody freezeTxn,
             @NonNull final ReadableSpecialFileStore specialFileStore,

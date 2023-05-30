@@ -78,6 +78,11 @@ public final class UnzipUtility {
                 }
                 Path filePath = dstDir.resolve(entry.getName());
                 final File fileOrDir = filePath.toFile();
+                final String canonicalPath = fileOrDir.getCanonicalPath();
+                if (!canonicalPath.startsWith(dstDir.toFile().getCanonicalPath())) {
+                    // prevent Zip Slip attack
+                    throw new IOException("Zip file entry is outside of the destination directory: " + filePath);
+                }
                 final File directory = fileOrDir.getParentFile();
                 if (!directory.exists() && !directory.mkdirs()) {
                     throw new IOException("Unable to create the parent directories for the file: " + fileOrDir);
