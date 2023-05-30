@@ -82,12 +82,12 @@ public class DissociatePrecompileSuite extends HapiSuite {
     private static final String MULTI_KEY = "Multi key";
 
     public static void main(String... args) {
-        new DissociatePrecompileSuite().runSuiteSync();
+        new DissociatePrecompileSuite().runSuiteAsync();
     }
 
     @Override
     public boolean canRunConcurrent() {
-        return false;
+        return true;
     }
 
     @Override
