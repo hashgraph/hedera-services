@@ -16,7 +16,6 @@ module com.hedera.node.app.service.contract.impl {
     requires org.hyperledger.besu.datatypes;
     requires tuweni.bytes;
     requires tuweni.units;
-    requires annotations;
 
     provides com.hedera.node.app.service.contract.ContractService with
             ContractServiceImpl;

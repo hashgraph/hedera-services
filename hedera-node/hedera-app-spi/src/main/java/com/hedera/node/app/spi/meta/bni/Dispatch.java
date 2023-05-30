@@ -199,6 +199,8 @@ public interface Dispatch {
      * Signing requirements are waived, and the record of this deletion should only be externalized if
      * the top-level HAPI transaction succeeds.
      *
+     * <p>The record of this creation should only be externalized if the top-level HAPI transaction succeeds.
+     *
      * @param evmAddress the EVM address of the contract to delete
      */
     void deleteContract(@NonNull Bytes evmAddress);

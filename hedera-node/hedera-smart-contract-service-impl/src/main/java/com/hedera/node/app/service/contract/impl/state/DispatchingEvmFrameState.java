@@ -42,7 +42,6 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.code.CodeFactory;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * An implementation of {@link EvmFrameState} that uses {@link WritableKVState}s to manage
@@ -78,7 +77,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
     }
 
     @Override
-    public void setStorageValue(final long number, @NotNull final UInt256 key, @NotNull final UInt256 value) {
+    public void setStorageValue(final long number, @NonNull final UInt256 key, @NonNull final UInt256 value) {
         final var slotKey = new SlotKey(number, tuweniToPbjBytes(requireNonNull(key)));
         // The previous and next keys in our iterable slot values are managed by logic that
         // runs ONLY when the storage is committed to "base" state; leave them empty here
@@ -97,7 +96,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
     }
 
     @Override
-    public @NonNull UInt256 getOriginalStorageValue(long number, @NotNull UInt256 key) {
+    public @NonNull UInt256 getOriginalStorageValue(long number, @NonNull UInt256 key) {
         // TODO - when WritableKVState supports getting the original value, use that here
         throw new AssertionError("Not implemented");
     }
