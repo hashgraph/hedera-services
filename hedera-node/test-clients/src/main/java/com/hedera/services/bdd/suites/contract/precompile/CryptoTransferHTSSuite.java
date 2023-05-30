@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -28,7 +29,6 @@ import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
@@ -54,12 +54,14 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.accountAmount;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.nftTransfer;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferList;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferLists;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
+import static com.hedera.services.bdd.suites.contract.precompile.ContractKeysStillWorkAsExpectedSuite.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
 import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.TRANSFER_SIGNATURE;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
@@ -76,7 +78,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
 import com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers;
 import com.hedera.services.bdd.spec.keys.KeyShape;
@@ -516,8 +517,10 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     private HapiSpec nonNestedCryptoTransferForFungibleToken() {
         final var cryptoTransferTxn = CRYPTO_TRANSFER_TXN;
 
-        return defaultHapiSpec("NonNestedCryptoTransferForFungibleToken")
+        return propertyPreservingHapiSpec("nonNestedCryptoTransferForFungibleToken")
+                .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, "10_000_000"),
                         cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
                         cryptoCreate(RECEIVER).balance(2 * ONE_HUNDRED_HBARS).receiverSigRequired(true),
                         cryptoCreate(TOKEN_TREASURY),
@@ -529,10 +532,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                         tokenAssociate(RECEIVER, List.of(FUNGIBLE_TOKEN)),
                         cryptoTransfer(moving(200, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, SENDER)),
                         uploadInitCode(CONTRACT),
-                        contractCreate(CONTRACT).maxAutomaticTokenAssociations(1),
-                        getContractInfo(CONTRACT)
-                                .has(ContractInfoAsserts.contractWith().maxAutoAssociations(1))
-                                .logged())
+                        contractCreate(CONTRACT))
                 .when(
                         withOpContext((spec, opLog) -> {
                             final var token = spec.registry().getTokenID(FUNGIBLE_TOKEN);
@@ -1040,8 +1040,10 @@ public class CryptoTransferHTSSuite extends HapiSuite {
         final var senderKey = "senderKey";
         final var contractKey = "contractAdminKey";
 
-        return defaultHapiSpec("ActiveContractIsVerifiedWithoutCheckingSignatures")
+        return propertyPreservingHapiSpec("activeContractInFrameIsVerifiedWithoutNeedForSignature")
+                .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, "10_000_000"),
                         newKeyNamed(multiKey),
                         newKeyNamed(senderKey),
                         newKeyNamed(contractKey),
@@ -1344,8 +1346,10 @@ public class CryptoTransferHTSSuite extends HapiSuite {
 
     private HapiSpec cryptoTransferNFTsWithCustomFeesMixedScenario() {
         final var SPENDER_SIGNATURE = "spenderSignature";
-        return defaultHapiSpec("CryptoTransferNFTsWithCustomFeesMixedScenario")
+        return propertyPreservingHapiSpec("cryptoTransferNFTsWithCustomFeesMixedScenario")
+                .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, "10_000_000"),
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(RECEIVER_SIGNATURE),
                         newKeyNamed(SPENDER_SIGNATURE),
@@ -1483,8 +1487,10 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     private HapiSpec hapiTransferFromForNFTWithCustomFeesWithApproveForAll() {
-        return defaultHapiSpec("HapiTransferFromForNFTWithCustomFeesWithApproveForAll")
+        return propertyPreservingHapiSpec("hapiTransferFromForNFTWithCustomFeesWithApproveForAll")
+                .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, "10_000_000"),
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(RECEIVER_SIGNATURE),
                         cryptoCreate(TOKEN_TREASURY),
@@ -1641,8 +1647,10 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     private HapiSpec hapiTransferFromForNFTWithCustomFeesWithBothApproveForAllAndAssignedSpender() {
-        return defaultHapiSpec("HapiTransferFromForNFTWithCustomFeesWithBothApproveForAllAndAssignedSpender")
+        return propertyPreservingHapiSpec("hapiTransferFromForNFTWithCustomFeesWithBothApproveForAllAndAssignedSpender")
+                .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, "10_000_000"),
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(RECEIVER_SIGNATURE),
                         cryptoCreate(TOKEN_TREASURY),
