@@ -1271,20 +1271,8 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
 
         if (trigger == InitTrigger.GENESIS) {
             genesisInit();
-        } else {
-            logger.info(LOGM_STARTUP, "Doing full rehash for the initialized VirtualMaps");
-            fullLeafRehash(getVirtualMap());
-            fullLeafRehash(getVirtualMapForSmartContracts());
-            fullLeafRehash(getVirtualMapForSmartContractsByteCode());
-            logger.info(LOGM_STARTUP, "Full rehash is complete");
         }
         this.invalidateHash();
-    }
-
-    private void fullLeafRehash(VirtualMap<?, ?> virtualMap) {
-        if (virtualMap != null) {
-            virtualMap.fullLeafRehash();
-        }
     }
 
     private void expandSignatures(final Transaction trans) {

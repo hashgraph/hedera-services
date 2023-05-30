@@ -174,6 +174,8 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
+import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -181,6 +183,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
+import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -192,6 +195,7 @@ import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.fcqueue.FCQueue;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -902,5 +906,22 @@ public final class MiscUtils {
 
     public static boolean hasUnknownFieldsHere(final GeneratedMessageV3 msg) {
         return !msg.getUnknownFields().asMap().isEmpty();
+    }
+
+    /**
+     * Returns a {@link TxnAccessor} for the given in-progress synthetic op.
+     *
+     * @param syntheticOp the synthetic op
+     * @return an accessor for the synthetic op
+     */
+    public static @NonNull TxnAccessor synthAccessorFor(@NonNull final TransactionBody.Builder syntheticOp) {
+        final var signedTxn = SignedTransaction.newBuilder()
+                .setBodyBytes(syntheticOp.build().toByteString())
+                .setSigMap(SignatureMap.getDefaultInstance())
+                .build();
+        final var txn = Transaction.newBuilder()
+                .setSignedTransactionBytes(signedTxn.toByteString())
+                .build();
+        return SignedTxnAccessor.uncheckedFrom(txn);
     }
 }

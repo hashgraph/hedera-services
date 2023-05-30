@@ -75,7 +75,6 @@ import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
-import com.hederahashgraph.api.proto.java.EthereumTransaction;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
@@ -1286,6 +1285,55 @@ class DeterministicThrottlingTest {
     }
 
     @Test
+    void canTakeSnapshots() throws IOException {
+        // setup:
+        var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
+
+        // and:
+        var expected = List.of(
+                DeterministicThrottle.withMtpsAndBurstPeriod(15_000_000, 2),
+                DeterministicThrottle.withMtpsAndBurstPeriod(5_000, 2),
+                DeterministicThrottle.withMtpsAndBurstPeriod(50_000, 3),
+                DeterministicThrottle.withMtpsAndBurstPeriod(5000, 4));
+        useDeterministicAmountFromEach(expected);
+
+        subject.rebuildFor(defs);
+        useDeterministicAmountFromEach(subject.allActiveThrottles());
+
+        final var actual = subject.getUsageSnapshots();
+        for (int i = 0; i < 4; i++) {
+            assertEquals(expected.get(i).usageSnapshot(), actual.get(i));
+        }
+    }
+
+    @Test
+    void canResetToSnapshots() throws IOException {
+        // setup:
+        var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
+
+        // and:
+        var expected = List.of(
+                DeterministicThrottle.withMtpsAndBurstPeriod(15_000_000, 2),
+                DeterministicThrottle.withMtpsAndBurstPeriod(5_000, 2),
+                DeterministicThrottle.withMtpsAndBurstPeriod(50_000, 3),
+                DeterministicThrottle.withMtpsAndBurstPeriod(5000, 4));
+        useDeterministicAmountFromEach(expected);
+
+        subject.rebuildFor(defs);
+        useDeterministicAmountFromEach(subject.allActiveThrottles());
+        final var snapshot = subject.getUsageSnapshots();
+        useDeterministicAmountFromEach(subject.allActiveThrottles());
+        useDeterministicAmountFromEach(subject.allActiveThrottles());
+        useDeterministicAmountFromEach(subject.allActiveThrottles());
+        subject.resetUsageThrottlesTo(snapshot);
+
+        final var actual = subject.getUsageSnapshots();
+        for (int i = 0; i < 4; i++) {
+            assertEquals(expected.get(i).usageSnapshot(), actual.get(i));
+        }
+    }
+
+    @Test
     void alwaysRejectsIfNoThrottle() {
         givenFunction(ContractCall);
 
@@ -1686,4 +1734,11 @@ class DeterministicThrottlingTest {
     private static final Key aPrimitiveKey = Key.newBuilder()
             .setEd25519(ByteString.copyFromUtf8("01234567890123456789012345678901"))
             .build();
+
+    private void useDeterministicAmountFromEach(final List<DeterministicThrottle> throttles) {
+        final var now = Instant.ofEpochSecond(1_234_567L);
+        for (int i = 0; i < throttles.size(); i++) {
+            throttles.get(i).allow(i + 1, now);
+        }
+    }
 }

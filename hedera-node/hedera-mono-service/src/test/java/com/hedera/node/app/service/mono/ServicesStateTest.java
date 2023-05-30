@@ -828,6 +828,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         verify(mapToDiskMigration)
                 .migrateToDiskAsApropos(
                         INSERTIONS_PER_COPY,
+                        false,
                         subject,
                         new ToDiskMigrations(true, false),
                         virtualMapFactory,
@@ -880,6 +881,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         verify(mapToDiskMigration)
                 .migrateToDiskAsApropos(
                         INSERTIONS_PER_COPY,
+                        false,
                         subject,
                         new ToDiskMigrations(false, true),
                         virtualMapFactory,

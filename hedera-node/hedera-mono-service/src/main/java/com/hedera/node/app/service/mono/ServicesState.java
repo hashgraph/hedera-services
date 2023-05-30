@@ -95,7 +95,6 @@ import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.jasperdb.VirtualDataSourceJasperDB;
-import com.swirlds.logging.LogMarker;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.platform.gui.SwirldsGui;
 import com.swirlds.platform.state.DualStateImpl;
@@ -292,6 +291,7 @@ public class ServicesState extends PartialNaryMerkleInternal
             if (shouldMigrateSomethingToDisk()) {
                 mapToDiskMigration.migrateToDiskAsApropos(
                         INSERTIONS_PER_COPY,
+                        consolidateRecordStorage,
                         this,
                         new ToDiskMigrations(enableVirtualAccounts, enableVirtualTokenRels),
                         getVirtualMapFactory(),
@@ -434,25 +434,6 @@ public class ServicesState extends PartialNaryMerkleInternal
             app.initializationFlow().runWith(this, bootstrapProps);
             if (trigger == RESTART && isUpgrade) {
                 app.stakeStartupHelper().doUpgradeHousekeeping(networkCtx(), accounts(), stakingInfo());
-                log.info(
-                        LogMarker.STARTUP.getMarker(),
-                        "Starting leaf rehashing for VirtualMap(s) that have the hashes absent");
-                if (getChild(StateChildIndices.ACCOUNTS) instanceof VirtualMap<?, ?> accounts) {
-                    accounts.fullLeafRehash();
-                }
-                if (getChild(StateChildIndices.TOKEN_ASSOCIATIONS) instanceof VirtualMap<?, ?> tokenAssociations) {
-                    tokenAssociations.fullLeafRehash();
-                }
-                if (getChild(StateChildIndices.CONTRACT_STORAGE) instanceof VirtualMap<?, ?> contractStorage) {
-                    contractStorage.fullLeafRehash();
-                }
-                if (getChild(StateChildIndices.STORAGE) instanceof VirtualMap<?, ?> storage) {
-                    storage.fullLeafRehash();
-                }
-                if (getChild(StateChildIndices.UNIQUE_TOKENS) instanceof VirtualMap<?, ?> storage) {
-                    storage.fullLeafRehash();
-                }
-                log.info(LogMarker.STARTUP.getMarker(), "The leaf rehashing for VirtualMap(s) is completed");
             }
 
             // Ensure the prefetch queue is created and thread pool is active instead of waiting
@@ -832,12 +813,13 @@ public class ServicesState extends PartialNaryMerkleInternal
     interface MapToDiskMigration {
 
         void migrateToDiskAsApropos(
-                final int insertionsPerCopy,
-                final ServicesState mutableState,
-                final ToDiskMigrations toDiskMigrations,
-                final VirtualMapFactory virtualMapFactory,
-                final Function<MerkleAccountState, OnDiskAccount> accountMigrator,
-                final Function<MerkleTokenRelStatus, OnDiskTokenRel> tokenRelMigrator);
+                int insertionsPerCopy,
+                boolean useConsolidatedFcq,
+                ServicesState mutableState,
+                ToDiskMigrations toDiskMigrations,
+                VirtualMapFactory virtualMapFactory,
+                Function<MerkleAccountState, OnDiskAccount> accountMigrator,
+                Function<MerkleTokenRelStatus, OnDiskTokenRel> tokenRelMigrator);
     }
 
     @FunctionalInterface

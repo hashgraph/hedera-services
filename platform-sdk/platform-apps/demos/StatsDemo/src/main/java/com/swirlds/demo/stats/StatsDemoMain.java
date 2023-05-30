@@ -226,7 +226,7 @@ public class StatsDemoMain implements SwirldMain {
         }
         GuiPlatformAccessor.getInstance()
                 .setAbout(
-                        platform.getSelfId().id(),
+                        platform.getSelfId(),
                         "Stats Demo v. 1.2\nThis writes statistics to a log file,"
                                 + " such as the number of transactions per second.");
     }

@@ -60,7 +60,7 @@ public class WrappedHederaState implements HederaState {
     @Override
     @NonNull
     public ReadableStates createReadableStates(@NonNull String serviceName) {
-        return delegate.createReadableStates(serviceName);
+        return new ReadonlyStatesWrapper(createWritableStates(serviceName));
     }
 
     /**
@@ -74,12 +74,6 @@ public class WrappedHederaState implements HederaState {
     public WritableStates createWritableStates(@NonNull String serviceName) {
         return writableStatesMap.computeIfAbsent(
                 serviceName, s -> new WrappedWritableStates(delegate.createWritableStates(s)));
-    }
-
-    @Override
-    @NonNull
-    public RecordCache getRecordCache() {
-        throw new UnsupportedOperationException();
     }
 
     /**

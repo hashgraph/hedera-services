@@ -94,7 +94,7 @@ public class PreConsensusEventHandler implements PreConsensusEventObserver, Clea
                 INITIAL_PRE_CONS_EVENT_QUEUE_CAPACITY, EventUtils::consensusPriorityComparator);
 
         queueThread = new QueueThreadConfiguration<EventImpl>(threadManager)
-                .setNodeId(selfId.id())
+                .setNodeId(selfId)
                 .setQueue(queue)
                 .setComponent(PLATFORM_THREAD_POOL_NAME)
                 .setThreadName("thread-curr")

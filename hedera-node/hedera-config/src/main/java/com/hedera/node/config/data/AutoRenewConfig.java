@@ -16,19 +16,23 @@
 
 package com.hedera.node.config.data;
 
-import com.hedera.node.app.service.mono.context.properties.EntityType;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import java.util.Set;
 
 @ConfigData("autoRenew")
-public record AutoRenewConfig(@ConfigProperty(defaultValue = "") Set<EntityType> targetTypes) {
-
-    public boolean shouldAutoRenewContracts() {
-        return targetTypes.contains(EntityType.CONTRACT);
+public record AutoRenewConfig(
+        //         @ConfigProperty(defaultValue = "") Set<EntityType> targetTypes
+        @ConfigProperty(defaultValue = "CONTRACT,ACCOUNT") Set<String> targetTypes) {
+    public boolean expireContracts() {
+        return targetTypes.contains("CONTRACT");
     }
 
-    public boolean shouldAutoRenewAccounts() {
-        return targetTypes.contains(EntityType.ACCOUNT);
+    public boolean expireAccounts() {
+        return targetTypes.contains("ACCOUNT");
+    }
+
+    public boolean isAutoRenewEnabled() {
+        return !targetTypes.isEmpty();
     }
 }
