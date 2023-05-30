@@ -32,7 +32,7 @@ public final class ExpiryValidator {
      * Calculates the expiry status of an account or contract based on inputs from the account/contract
      *
      * @param balance the current balance of the account or contract
-     * @param isDetached whether the account or contract is detached
+     * @param isExpired whether the account or contract is expired
      * @param isContract true if the entity is a contract, false if the entity is an account
      * @param shouldAutoRenewContracts a config value determining if contracts should auto renew
      * @param shouldAutoRenewAccounts a config value determining if accounts should auto renew
@@ -40,11 +40,11 @@ public final class ExpiryValidator {
      */
     public static ResponseCodeEnum getAccountOrContractExpiryStatus(
             final long balance,
-            final boolean isDetached,
+            final boolean isExpired,
             final boolean isContract,
             final boolean shouldAutoRenewContracts,
             final boolean shouldAutoRenewAccounts) {
-        if (balance > 0 || !isDetached) {
+        if (balance > 0 || !isExpired) {
             return OK;
         }
         return getConfiguredExpiryStatusForAccountOrContract(

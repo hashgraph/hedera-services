@@ -33,7 +33,7 @@ class ExpiryValidatorTest {
     }
 
     @Test
-    void expiryStatus_isNotDetached() {
+    void expiryStatus_isNotExpired() {
         final var result = ExpiryValidator.getAccountOrContractExpiryStatus(0, false, false, false, false);
         Assertions.assertThat(result).isEqualTo(OK);
     }
@@ -60,5 +60,17 @@ class ExpiryValidatorTest {
     void expiryStatus_isAccountAndExpiryEnabled() {
         final var result = ExpiryValidator.getAccountOrContractExpiryStatus(0, true, false, false, true);
         Assertions.assertThat(result).isEqualTo(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+    }
+
+    @Test
+    void expiryStatus_isAccountAndExpiryEnabledAndAccountExpired() {
+        final var result = ExpiryValidator.getAccountOrContractExpiryStatus(0, true, false, true, true);
+        Assertions.assertThat(result).isEqualTo(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+    }
+
+    @Test
+    void expiryStatus_isContractAndExpiryEnabledAndContractExpired() {
+        final var result = ExpiryValidator.getAccountOrContractExpiryStatus(0, true, true, true, true);
+        Assertions.assertThat(result).isEqualTo(CONTRACT_EXPIRED_AND_PENDING_REMOVAL);
     }
 }
