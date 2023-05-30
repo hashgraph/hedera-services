@@ -22,6 +22,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ENTITIES_MAX_LIFETIME;
+import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
@@ -66,6 +67,11 @@ public class StandardizedAttributeValidator implements AttributeValidator {
     @Override
     public void validateKey(@NonNull final Key key) {
         validateKeyAtLevel(key, 1);
+
+        // If key is mappable in all levels, validate the key is valid
+        if (!isValid(key)) {
+            throw new HandleException(BAD_ENCODING);
+        }
     }
 
     /**

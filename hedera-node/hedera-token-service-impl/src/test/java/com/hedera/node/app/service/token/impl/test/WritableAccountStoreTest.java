@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.test;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -55,8 +56,8 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
 
         final var readaccount = writableStore.get(id);
 
-        assertTrue(readaccount != null);
-        assertEquals(account, readaccount);
+        assertThat(readaccount).isNotNull();
+        assertThat(account).isEqualTo(readaccount);
     }
 
     @Test
@@ -67,8 +68,8 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
 
         final var readaccount = writableStore.getForModify(id);
 
-        assertTrue(readaccount != null);
-        assertEquals(account, readaccount);
+        assertThat(readaccount).isNotNull();
+        assertThat(account).isEqualTo(readaccount);
     }
 
     @Test
@@ -80,8 +81,8 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
 
         final var readaccount = writableStore.getForModify(alias);
 
-        assertTrue(readaccount != null);
-        assertEquals(account, readaccount);
+        assertThat(readaccount).isNotNull();
+        assertThat(account).isEqualTo(readaccount);
         assertEquals(1, writableStore.sizeOfAliasesState());
         assertEquals(Set.of(alias.alias().asUtf8String()), writableStore.modifiedAliasesInState());
     }
@@ -92,8 +93,8 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
 
         final var readaccount = writableStore.getForModify(alias);
 
-        assertFalse(readaccount != null);
-        assertEquals(0, writableStore.sizeOfAliasesState());
+        assertThat(readaccount).isNull();
+        assertThat(writableStore.sizeOfAliasesState()).isZero();
     }
 
     @Test
@@ -105,16 +106,16 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
 
         assertTrue(writableAccounts.contains(accountEntityNumVirtualKey));
         final var writtenaccount = writableAccounts.get(accountEntityNumVirtualKey);
-        assertEquals(account, writtenaccount);
+        assertThat(account).isEqualTo(writtenaccount);
     }
 
     @Test
     void getsSizeOfState() {
-        assertEquals(0, writableStore.sizeOfAccountState());
-        assertEquals(Collections.EMPTY_SET, writableStore.modifiedAccountsInState());
-        writableStore.put(account);
+        assertThat(writableStore.sizeOfAliasesState()).isZero();
+        assertThat(writableStore.modifiedAccountsInState()).isEqualTo(Collections.EMPTY_SET);
 
-        assertEquals(1, writableStore.sizeOfAccountState());
-        assertEquals(Set.of(EntityNumVirtualKey.fromLong(3)), writableStore.modifiedAccountsInState());
+        writableStore.put(account);
+        assertThat(writableStore.sizeOfAccountState()).isEqualTo(1);
+        assertThat(writableStore.modifiedAccountsInState()).isEqualTo(Set.of(EntityNumVirtualKey.fromLong(3)));
     }
 }

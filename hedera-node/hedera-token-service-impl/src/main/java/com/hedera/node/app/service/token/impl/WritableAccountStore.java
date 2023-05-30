@@ -93,9 +93,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      */
     @NonNull
     public Account get(final AccountID accountID) {
-        requireNonNull(accountID);
-        final var account = getAccountLeaf(accountID);
-        return account;
+        return getAccountLeaf(requireNonNull(accountID));
     }
 
     /**

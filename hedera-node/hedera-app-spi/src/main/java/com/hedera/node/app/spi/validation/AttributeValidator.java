@@ -27,10 +27,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public interface AttributeValidator {
     /**
-     * Validates the given key.
+     * Validates the given key. If the key is more than allowed depth, throws {@code ResponseCodeEnum.BAD_ENCODING}
+     * Then validates each key in the given structure. If the key is not valid throws {@code ResponseCodeEnum.BAD_ENCODING}
      *
      * @param key the key to validate
-     * @throws HandleException if the key is invalid
+     * @throws HandleException if the key is invalid or more than allowed depth
      */
     void validateKey(Key key);
 

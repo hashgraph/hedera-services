@@ -20,10 +20,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.STAKING_NOT_ENABLED;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -34,14 +32,12 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.hapi.node.state.token.Account.Builder;
 import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
-import com.hedera.hapi.node.token.CryptoUpdateTransactionBody.StakedIdOneOfType;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -50,10 +46,8 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.LedgerConfig;
-import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -64,12 +58,14 @@ import javax.inject.Singleton;
 public class CryptoUpdateHandler extends BaseCryptoHandler implements TransactionHandler {
 
     private final CryptoSignatureWaivers waivers;
-    private NodeInfo nodeInfo;
+    private StakingValidator stakingValidator;
 
     @Inject
-    public CryptoUpdateHandler(@NonNull final CryptoSignatureWaivers waivers, @NonNull final NodeInfo nodeInfo) {
+    public CryptoUpdateHandler(
+            @NonNull final CryptoSignatureWaivers waivers, @NonNull final StakingValidator stakingValidator) {
         this.waivers = requireNonNull(waivers, "The supplied argument 'waivers' must not be null");
-        this.nodeInfo = requireNonNull(nodeInfo, "The supplied argument 'nodeInfo' must not be null");
+        this.stakingValidator =
+                requireNonNull(stakingValidator, "The supplied argument 'stakingValidator' must not be null");
     }
 
     @Override
@@ -119,8 +115,8 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
      */
     @Override
     public void handle(@NonNull final HandleContext context) {
-        final var txn = context.body();
-        final var op = txn.cryptoUpdateAccount();
+        final var txn = requireNonNull(context).body();
+        final var op = txn.cryptoUpdateAccountOrThrow();
         final var target = op.accountIDToUpdateOrThrow();
 
         // validate update account exists
@@ -195,7 +191,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
             @NonNull final HandleContext context,
             @NonNull final Account updateAccount,
             @NonNull final CryptoUpdateTransactionBody op,
-            @NonNull Builder builder,
+            @NonNull Account.Builder builder,
             @NonNull final ReadableAccountStore accountStore) {
         final var expiryValidator = context.expiryValidator();
         final var builderAccount = builder.build();
@@ -264,58 +260,11 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
                     .validateAutoRenewPeriod(op.autoRenewPeriod().seconds());
         }
 
-        validateStakedId(op, accountStore, context);
-    }
-
-    /**
-     * Validates staked id if present
-     * @param op crypto update transaction body
-     * @param accountStore account store
-     * @param context handle context
-     */
-    private void validateStakedId(
-            @NonNull final CryptoUpdateTransactionBody op,
-            @NonNull ReadableAccountStore accountStore,
-            @NonNull HandleContext context) {
-        final var hasDeclineReward = op.hasDeclineReward();
-        final var hasStakingId = op.hasStakedNodeId() || op.hasStakedAccountId();
-        final var stakingConfig = context.configuration().getConfigData(StakingConfig.class);
-
-        validateFalse(!stakingConfig.isEnabled() && (hasStakingId || hasDeclineReward), STAKING_NOT_ENABLED);
-        final var stakedIdKind = op.stakedId().kind();
-        final var stakedAccountId = op.hasStakedAccountId() ? op.stakedAccountIdOrThrow() : null;
-        final var stakedNodeId = op.hasStakedNodeId() ? op.stakedNodeIdOrThrow().longValue() : null;
-
-        if (isValidStakingSentinel(stakedIdKind, stakedAccountId, stakedNodeId)) {
-            return;
-        }
-
-        if (stakedIdKind.equals(StakedIdOneOfType.STAKED_ACCOUNT_ID)) {
-            validateTrue(accountStore.getAccountById(stakedAccountId) != null, INVALID_STAKING_ID);
-        } else if (stakedIdKind.equals(StakedIdOneOfType.STAKED_NODE_ID)) {
-            validateTrue(nodeInfo.isValidId(stakedNodeId), INVALID_STAKING_ID);
-        }
-    }
-
-    /**
-     * Validates if the staked id is a sentinel value. Sentinel values are used to reset staking
-     * on an account. The sentinel values are -1 for stakedNodeId and 0.0.0 for stakedAccountId.
-     * @param stakedIdKind staked id kind
-     * @param stakedAccountId staked account id
-     * @param stakedNodeId staked node id
-     * @return true if staked id is a sentinel value
-     */
-    private boolean isValidStakingSentinel(
-            @NonNull StakedIdOneOfType stakedIdKind, @Nullable AccountID stakedAccountId, @Nullable Long stakedNodeId) {
-        // sentinel values on -1 for stakedNodeId and 0.0.0 for stakedAccountId are used to reset
-        // staking on an account
-        if (stakedIdKind.equals(StakedIdOneOfType.STAKED_ACCOUNT_ID)) {
-            // current checking only account num since shard and realm are 0.0
-            return stakedAccountId.accountNum() == 0;
-        } else if (stakedIdKind.equals(StakedIdOneOfType.STAKED_NODE_ID)) {
-            return stakedNodeId.longValue() == -1;
-        } else {
-            return false;
-        }
+        stakingValidator.validateStakedId(
+                op.hasDeclineReward(),
+                op.stakedId().kind().name(),
+                op.stakedAccountId(),
+                op.stakedNodeId(),
+                accountStore);
     }
 }

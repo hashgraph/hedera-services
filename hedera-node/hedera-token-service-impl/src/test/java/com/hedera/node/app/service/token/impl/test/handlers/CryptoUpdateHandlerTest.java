@@ -62,8 +62,8 @@ import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoUpdateHandler;
+import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
-import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -73,7 +73,6 @@ import com.hedera.node.app.workflows.handle.validation.StandardizedAttributeVali
 import com.hedera.node.app.workflows.handle.validation.StandardizedExpiryValidator;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
-import com.hedera.test.mocks.MockAccountNumbers;
 import com.swirlds.config.api.Configuration;
 import java.util.List;
 import java.util.Map;
@@ -113,6 +112,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
 
     private AttributeValidator attributeValidator;
     private ExpiryValidator expiryValidator;
+    private StakingValidator stakingValidator;
     private final long updateAccountNum = 32132L;
     private final AccountID updateAccountId =
             AccountID.newBuilder().accountNum(updateAccountNum).build();
@@ -120,7 +120,6 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
 
     private Account updateAccount;
     private Configuration configuration;
-    private HederaAccountNumbers accountNums;
     private CryptoUpdateHandler subject;
 
     @BeforeEach
@@ -132,12 +131,12 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         updateReadableAccountStore(Map.of(updateAccountId.accountNum(), updateAccount, accountNum, account));
 
         configuration = new HederaTestConfigBuilder().getOrCreateConfig();
-        accountNums = new MockAccountNumbers();
         given(compositeProps.getLongProperty(ENTITIES_MAX_LIFETIME)).willReturn(72000L);
         attributeValidator = new StandardizedAttributeValidator(consensusSecondNow, compositeProps, dynamicProperties);
         expiryValidator = new StandardizedExpiryValidator(
                 System.out::println, attributeValidator, consensusSecondNow, hederaNumbers, configProvider);
-        subject = new CryptoUpdateHandler(waivers, nodeInfo);
+        stakingValidator = new StakingValidator(nodeInfo, configProvider);
+        subject = new CryptoUpdateHandler(waivers, stakingValidator);
     }
 
     @Test
@@ -335,7 +334,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         final var config = new HederaTestConfigBuilder()
                 .withValue("staking.isEnabled", false)
                 .getOrCreateConfig();
-        given(handleContext.configuration()).willReturn(config);
+        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(config, 1));
 
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
@@ -351,7 +350,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         final var config = new HederaTestConfigBuilder()
                 .withValue("staking.isEnabled", false)
                 .getOrCreateConfig();
-        given(handleContext.configuration()).willReturn(config);
+        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(config, 1));
 
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
@@ -552,19 +551,17 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         assertEquals(otherKey, writableStore.get(updateAccountId).key());
     }
 
-    //        @Test
-    //        void rejectsInvalidKey() {
-    //            final var txn = new CryptoUpdateBuilder()
-    //                    .withKey(emptyKey())
-    //                    .build();
-    //            givenTxnWith(txn);
-    //            assertEquals(key, writableStore.get(updateAccountId).key());
-    //
-    //            assertThatThrownBy(() -> subject.handle(handleContext))
-    //                    .isInstanceOf(HandleException.class)
-    //                    .has(responseCode(BAD_ENCODING));
-    //            assertEquals(key, writableStore.get(updateAccountId).key());
-    //        }
+    @Test
+    void rejectsInvalidKey() {
+        final var txn = new CryptoUpdateBuilder().withKey(emptyKey()).build();
+        givenTxnWith(txn);
+        assertEquals(otherKey, writableStore.get(updateAccountId).key());
+
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(BAD_ENCODING));
+        assertEquals(otherKey, writableStore.get(updateAccountId).key());
+    }
 
     @Test
     void rejectsInvalidMemo() {

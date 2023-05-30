@@ -211,7 +211,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         // Validate created account exists and check record builder has created account recorded
         final var createdAccount =
                 writableStore.get(AccountID.newBuilder().accountNum(1000L).build());
-        assertTrue(createdAccount != null);
+        assertThat(createdAccount).isNotNull();
         final var accountID = AccountID.newBuilder().accountNum(1000L).build();
         verify(recordBuilder).accountID(accountID);
 
@@ -277,7 +277,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         // Validate created account exists and check record builder has created account recorded
         final var createdAccount =
                 writableStore.get(AccountID.newBuilder().accountNum(1000L).build());
-        assertTrue(createdAccount != null);
+        assertThat(createdAccount).isNotNull();
         final var accountID = AccountID.newBuilder().accountNum(1000L).build();
         verify(recordBuilder).accountID(accountID);
 

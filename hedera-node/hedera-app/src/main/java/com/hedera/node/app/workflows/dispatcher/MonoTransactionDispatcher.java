@@ -180,21 +180,16 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
     private void dispatchCryptoDelete(@NonNull final HandleContext handleContext) {
         final var handler = handlers.cryptoDeleteHandler();
         handler.handle(handleContext);
-        finishCryptoDelete(handleContext);
-    }
-
-    protected void finishCryptoDelete(@NonNull final HandleContext handleContext) {
-        final var accountStore = handleContext.writableStore(WritableAccountStore.class);
-        accountStore.commit();
+        finishDefaultForCryptoOps(handleContext);
     }
 
     private void dispatchCryptoUpdate(@NonNull final HandleContext handleContext) {
         final var handler = handlers.cryptoUpdateHandler();
         handler.handle(handleContext);
-        finishCryptoUpdate(handleContext);
+        finishDefaultForCryptoOps(handleContext);
     }
 
-    protected void finishCryptoUpdate(@NonNull final HandleContext handleContext) {
+    protected void finishDefaultForCryptoOps(@NonNull final HandleContext handleContext) {
         final var accountStore = handleContext.writableStore(WritableAccountStore.class);
         accountStore.commit();
     }
