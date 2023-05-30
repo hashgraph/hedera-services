@@ -196,8 +196,9 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
         int count = 0;
 
         while (tokenNum != 0 && count <= maxRelationships) {
-            final Optional<TokenRelation> optionalTokenRelation =
-                    tokenRelationStore.get(account.accountNumber(), tokenNum);
+            final Optional<TokenRelation> optionalTokenRelation = tokenRelationStore.get(
+                    AccountID.newBuilder().accountNum(account.accountNumber()).build(),
+                    TokenID.newBuilder().tokenNum(tokenNum).build());
             if (optionalTokenRelation.isPresent()) {
                 final var tokenId = TokenID.newBuilder()
                         .shardNum(STATIC_PROPERTIES.getShard())
