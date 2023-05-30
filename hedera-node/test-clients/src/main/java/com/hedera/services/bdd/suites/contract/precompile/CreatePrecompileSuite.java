@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
@@ -38,9 +39,11 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.contract.precompile.ContractKeysStillWorkAsExpectedSuite.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
@@ -143,8 +146,10 @@ public class CreatePrecompileSuite extends HapiSuite {
     private HapiSpec fungibleTokenCreateHappyPath() {
         final var tokenCreateContractAsKeyDelegate = "tokenCreateContractAsKeyDelegate";
         final var createTokenNum = new AtomicLong();
-        return defaultHapiSpec("fungibleTokenCreateHappyPath")
+        return propertyPreservingHapiSpec("fungibleTokenCreateHappyPath")
+                .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, "10_000_000"),
                         newKeyNamed(ED25519KEY).shape(ED25519),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         newKeyNamed(ACCOUNT_TO_ASSOCIATE_KEY),
@@ -247,8 +252,10 @@ public class CreatePrecompileSuite extends HapiSuite {
 
     private HapiSpec inheritsSenderAutoRenewAccountIfAnyForNftCreate() {
         final var createdNftTokenNum = new AtomicLong();
-        return defaultHapiSpec("inheritsSenderAutoRenewAccountIfAnyForNftCreate")
+        return propertyPreservingHapiSpec("inheritsSenderAutoRenewAccountIfAnyForNftCreate")
+                .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, "10_000_000"),
                         newKeyNamed(ED25519KEY).shape(ED25519),
                         newKeyNamed(ECDSA_KEY),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(ED25519KEY),
@@ -311,8 +318,10 @@ public class CreatePrecompileSuite extends HapiSuite {
 
     private HapiSpec inheritsSenderAutoRenewAccountForTokenCreate() {
         final var createTokenNum = new AtomicLong();
-        return defaultHapiSpec("inheritsSenderAutoRenewAccountForTokenCreate")
+        return propertyPreservingHapiSpec("inheritsSenderAutoRenewAccountForTokenCreate")
+                .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, "10_000_000"),
                         newKeyNamed(ED25519KEY).shape(ED25519),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         newKeyNamed(ACCOUNT_TO_ASSOCIATE_KEY),
@@ -379,8 +388,10 @@ public class CreatePrecompileSuite extends HapiSuite {
     // TEST-003 & TEST-019
     private HapiSpec nonFungibleTokenCreateHappyPath() {
         final var createdTokenNum = new AtomicLong();
-        return defaultHapiSpec("nonFungibleTokenCreateHappyPath")
+        return propertyPreservingHapiSpec("nonFungibleTokenCreateHappyPath")
+                .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, "10_000_000"),
                         newKeyNamed(ED25519KEY).shape(ED25519),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(ED25519KEY),
                         uploadInitCode(TOKEN_CREATE_CONTRACT),
@@ -469,8 +480,10 @@ public class CreatePrecompileSuite extends HapiSuite {
     // TEST-005
     private HapiSpec fungibleTokenCreateThenQueryAndTransfer() {
         final var createdTokenNum = new AtomicLong();
-        return defaultHapiSpec("fungibleTokenCreateThenQueryAndTransfer")
+        return propertyPreservingHapiSpec("fungibleTokenCreateThenQueryAndTransfer")
+                .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, "10_000_000"),
                         newKeyNamed(ED25519KEY).shape(ED25519),
                         cryptoCreate(ACCOUNT)
                                 .balance(ONE_MILLION_HBARS)
@@ -549,8 +562,10 @@ public class CreatePrecompileSuite extends HapiSuite {
     // TEST-006
     private HapiSpec nonFungibleTokenCreateThenQuery() {
         final var createdTokenNum = new AtomicLong();
-        return defaultHapiSpec("nonFungibleTokenCreateThenQuery")
+        return propertyPreservingHapiSpec("nonFungibleTokenCreateThenQuery")
+                .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, "10_000_000"),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
                         uploadInitCode(TOKEN_CREATE_CONTRACT),
                         contractCreate(TOKEN_CREATE_CONTRACT).gas(GAS_TO_OFFER))
@@ -933,8 +948,10 @@ public class CreatePrecompileSuite extends HapiSuite {
     private HapiSpec createTokenWithDefaultExpiryAndEmptyKeys() {
         final var tokenCreateContractAsKeyDelegate = "createTokenWithDefaultExpiryAndEmptyKeys";
         final var createTokenNum = new AtomicLong();
-        return defaultHapiSpec(tokenCreateContractAsKeyDelegate)
+        return propertyPreservingHapiSpec("createTokenWithDefaultExpiryAndEmptyKeys")
+                .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, "10_000_000"),
                         newKeyNamed(ED25519KEY).shape(ED25519),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         newKeyNamed(ACCOUNT_TO_ASSOCIATE_KEY),
