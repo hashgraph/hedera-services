@@ -87,6 +87,7 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
             case CRYPTO_CREATE_ACCOUNT -> dispatchCryptoCreate(context);
             case CRYPTO_DELETE -> dispatchCryptoDelete(context);
             case CRYPTO_UPDATE_ACCOUNT -> dispatchCryptoUpdate(context);
+            case FREEZE -> dispatchFreeze(context);
             case TOKEN_ASSOCIATE -> dispatchTokenAssociate(context);
             case TOKEN_FREEZE -> dispatchTokenFreeze(context);
             case TOKEN_UNFREEZE -> dispatchTokenUnfreeze(context);
@@ -114,6 +115,20 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
         usageLimits.refreshTopics();
         final var topicStore = handleContext.writableStore(WritableTopicStore.class);
         topicStore.commit();
+    }
+
+    private void dispatchFreeze(@NonNull final HandleContext handleContext) {
+        requireNonNull(handleContext);
+        final var handler = handlers.freezeHandler();
+        handler.handle(handleContext);
+        finishFreeze(handleContext);
+    }
+
+    private void finishFreeze(@NonNull final HandleContext handleContext) {
+        // Nothing to do
+        // The only WritableStore that FreezeService uses is WritableFreezeStore
+        // It is a thin wrapper around SwirldDualState instead of using WritableKVState like the other stores
+        // SwirldDualState commits changes immediately instead of requiring a call to commit()
     }
 
     private void dispatchConsensusUpdateTopic(@NonNull final HandleContext handleContext) {

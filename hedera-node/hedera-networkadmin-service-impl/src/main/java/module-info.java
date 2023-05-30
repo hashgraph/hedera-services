@@ -9,6 +9,8 @@ module com.hedera.node.app.service.networkadmin.impl {
     requires com.hedera.pbj.runtime;
     requires com.hedera.node.app.service.mono;
     requires com.swirlds.common;
+    requires com.swirlds.config;
+    requires org.apache.logging.log4j;
 
     provides com.hedera.node.app.service.networkadmin.FreezeService with
             FreezeServiceImpl;
@@ -22,4 +24,5 @@ module com.hedera.node.app.service.networkadmin.impl {
     exports com.hedera.node.app.service.networkadmin.impl.codec;
     exports com.hedera.node.app.service.networkadmin.impl.serdes to
             com.hedera.node.app.service.networkadmin.impl.test;
+    exports com.hedera.node.app.service.networkadmin.impl.config;
 }
