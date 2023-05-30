@@ -128,6 +128,15 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
     }
 
     /**
+     * Removes the {@link Account} with the given {@link AccountID} from the state.
+     * This will add value of the accountId to num in the modifications in state.
+     * @param accountID - the account id of the account to be removed.
+     */
+    public void remove(@NonNull final AccountID accountID) {
+        accountState.remove(EntityNumVirtualKey.fromLong(accountID.accountNum()));
+    }
+
+    /**
      * Returns the number of accounts in the state. It also includes modifications in the {@link
      * WritableKVState}.
      *

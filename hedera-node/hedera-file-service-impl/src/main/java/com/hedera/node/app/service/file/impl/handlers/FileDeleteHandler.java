@@ -24,11 +24,10 @@ import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.valid
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.file.FileDeleteTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
-import com.hedera.node.app.service.file.impl.records.DeleteFileRecordBuilder;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -68,25 +67,17 @@ public class FileDeleteHandler implements TransactionHandler {
         validateAndAddRequiredKeys(fileMeta.keys(), context, true);
     }
 
-    /**
-     * Given the appropriate context, deletes a file.
-     *
-     * @param fileDeleteTransactionBody the {@link FileDeleteTransactionBody} of the active file
-     *     delete transaction
-     * @param fileStore the {@link WritableFileStoreImpl} to use to delete the file
-     * @throws NullPointerException if one of the arguments is {@code null}
-     */
-    public void handle(
-            @NonNull final FileDeleteTransactionBody fileDeleteTransactionBody,
-            @NonNull final WritableFileStoreImpl fileStore) {
-        requireNonNull(fileDeleteTransactionBody);
-        requireNonNull(fileStore);
+    @Override
+    public void handle(@NonNull final HandleContext handleContext) throws HandleException {
+        requireNonNull(handleContext);
 
+        final var fileDeleteTransactionBody = handleContext.body().fileDeleteOrThrow();
         if (!fileDeleteTransactionBody.hasFileID()) {
             throw new HandleException(INVALID_FILE_ID);
         }
         var fileId = fileDeleteTransactionBody.fileIDOrThrow();
 
+        final var fileStore = handleContext.writableStore(WritableFileStoreImpl.class);
         var optionalFile = fileStore.get(fileId.fileNum());
 
         if (optionalFile.isEmpty()) {
@@ -116,11 +107,5 @@ public class FileDeleteHandler implements TransactionHandler {
         /* --- Put the modified file. It will be in underlying state's modifications map.
         It will not be committed to state until commit is called on the state.--- */
         fileStore.put(fileBuilder.build());
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public DeleteFileRecordBuilder newRecordBuilder() {
-        return new DeleteFileRecordBuilder();
     }
 }

@@ -32,12 +32,10 @@ import com.hedera.hapi.node.consensus.ConsensusUpdateTopicTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
-import com.hedera.node.app.service.consensus.impl.records.ConsensusUpdateTopicRecordBuilder;
-import com.hedera.node.app.service.consensus.impl.records.UpdateTopicRecordBuilder;
-import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -100,14 +98,14 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
      * Given the appropriate context, updates a topic.
      *
      * @param handleContext the {@link HandleContext} for the active transaction
-     * @param topicUpdate   the {@link ConsensusUpdateTopicTransactionBody} of the active transaction
-     * @param topicStore    the {@link WritableTopicStore} for the active transaction
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void handle(
-            @NonNull final HandleContext handleContext,
-            @NonNull final ConsensusUpdateTopicTransactionBody topicUpdate,
-            @NonNull final WritableTopicStore topicStore) {
+    @Override
+    public void handle(@NonNull final HandleContext handleContext) {
+        requireNonNull(handleContext);
+
+        final var topicUpdate = handleContext.body().consensusUpdateTopic();
+        final var topicStore = handleContext.writableStore(WritableTopicStore.class);
         final var maybeTopic = requireNonNull(topicStore)
                 .get(topicUpdate.topicIDOrElse(TopicID.DEFAULT).topicNum());
         validateTrue(maybeTopic.isPresent(), INVALID_TOPIC_ID);
@@ -242,11 +240,6 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         if (op.hasSubmitKey()) {
             attributeValidator.validateKey(op.submitKey());
         }
-    }
-
-    @Override
-    public ConsensusUpdateTopicRecordBuilder newRecordBuilder() {
-        return new UpdateTopicRecordBuilder();
     }
 
     public static boolean wantsToMutateNonExpiryField(@NonNull final ConsensusUpdateTopicTransactionBody op) {

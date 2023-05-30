@@ -165,9 +165,9 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
 
     /**
      * The number of seconds to wait for the full leaf rehash process to finish
-     * (see {@link VirtualRootNode#fullLeafRehash()}) before we fail with an exception.
+     * (see {@link VirtualRootNode#fullLeafRehashIfNecessary()}) before we fail with an exception.
      */
-    private static final int MAX_FULL_REHASHING_TIMEOUT = 21600; // 6 hours
+    private static final int MAX_FULL_REHASHING_TIMEOUT = 3600; // 1 hour
 
     /**
      * Placeholder (since this is such a hotspot) to hold the results from {@link VirtualMapSettingsFactory#get()}
@@ -413,14 +413,16 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
     }
 
     /**
-     * Do a full rehash of the persisted leaves of the map.
-     * This will iterate over all the leaf nodes from the disk and rehash them.
+     * Do a full rehash of the persisted leaves of the map if the leaf hashes are absent. To determine if the leaf hashes
+     * are available it checks tries to load a hash by the last leaf path.
+     *
+     * If the hash is not available, it will iterate over all the leaf nodes from the disk and rehash them.
      * The main difference between this and {@link VirtualRootNode#computeHash()} is that {@code computeHash}
      * update hashes for dirty leaves that are in the cache, while this method will rehash all the leaves from the disk.
      * {@code computeHash} doesn't have to take memory consumption into account because the cache is already in memory and
      * for this method it is critical to not load all the leaves into memory because there are too many of them.
      */
-    public void fullLeafRehash() {
+    public void fullLeafRehashIfNecessary() {
         Objects.requireNonNull(records, "Records must be initialized before rehashing");
 
         final ConcurrentBlockingIterator<VirtualLeafRecord<K, V>> rehashIterator =
@@ -1477,27 +1479,13 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
     }
 
     /**
-     * Loads the leaf, sibling and siblings of parents on the path to root.
+     * Loads the leaf record.
      * Lower level caches (VirtualDataSource, the OS file cache) should make subsequent value retrievals faster.
      * Warming keys can be done in parallel.
      * @param key key to the leaf node
      */
     public void warm(final K key) {
-
-        // Warm the leaf node
-        final VirtualLeafRecord<K, V> leafRecord = records.findLeafRecord(key, false);
-        if (leafRecord == null) {
-            return;
-        }
-
-        // Warm node hashes for all siblings on the path to root.
-        // Those are used when rehashing the tree due to a changed leaf.
-        for (long path = leafRecord.getPath(); path > 0; path = getParentPath(path)) {
-            final long siblingPath = getSiblingPath(path);
-            if (siblingPath != INVALID_PATH) {
-                records.findHash(siblingPath);
-            }
-        }
+        records.findLeafRecord(key, false);
     }
 
     ////////////////////////

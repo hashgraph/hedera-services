@@ -30,6 +30,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -232,10 +233,22 @@ class BurnPrecompilesTest {
             "0xacb9cff90000000000000000000000000000000000000000000000000000000000000498000000000000000000000000000000000000000000000000000000000000002100000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000");
     private static final Bytes FUNGIBLE_BURN_INPUT_V2 = Bytes.fromHexString(
             "0xd6910d060000000000000000000000000000000000000000000000000000000000000498000000000000000000000000000000000000000000000000000000000000002100000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000");
+    private static final Bytes FUNGIBLE_BURN_ZERO_AMOUNT_INPUT_V1 = Bytes.fromHexString(
+            "0xacb9cff90000000000000000000000000000000000000000000000000000000000000498000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000");
+    private static final Bytes FUNGIBLE_BURN_ZERO_AMOUNT_INPUT_V2 = Bytes.fromHexString(
+            "0xd6910d060000000000000000000000000000000000000000000000000000000000000498000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000");
+    private static final Bytes FUNGIBLE_BURN_NEGATIVE_AMOUNT_INPUT_V1 = Bytes.fromHexString(
+            "0xacb9cff90000000000000000000000000000000000000000000000000000000000000498fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff00000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000");
+    private static final Bytes FUNGIBLE_BURN_NEGATIVE_AMOUNT_INPUT_V2 = Bytes.fromHexString(
+            "0xd6910d060000000000000000000000000000000000000000000000000000000000000498fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff00000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000");
     private static final Bytes NON_FUNGIBLE_BURN_INPUT_V1 = Bytes.fromHexString(
             "0xacb9cff9000000000000000000000000000000000000000000000000000000000000049e000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000007b00000000000000000000000000000000000000000000000000000000000000ea");
     private static final Bytes NON_FUNGIBLE_BURN_INPUT_V2 = Bytes.fromHexString(
             "0xd6910d06000000000000000000000000000000000000000000000000000000000000049e000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000007b00000000000000000000000000000000000000000000000000000000000000ea");
+    private static final Bytes NON_FUNGIBLE_NEGATIVE_AMOUNT_BURN_INPUT_V1 = Bytes.fromHexString(
+            "0xacb9cff9000000000000000000000000000000000000000000000000000000000000049efffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff00000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000007b00000000000000000000000000000000000000000000000000000000000000ea");
+    private static final Bytes NON_FUNGIBLE_NEGATIVE_AMOUNT_BURN_INPUT_V2 = Bytes.fromHexString(
+            "0xd6910d06000000000000000000000000000000000000000000000000000000000000049efffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff00000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000007b00000000000000000000000000000000000000000000000000000000000000ea");
 
     private HTSPrecompiledContract subject;
     private MockedStatic<BurnPrecompile> burnPrecompile;
@@ -572,6 +585,42 @@ class BurnPrecompilesTest {
     }
 
     @Test
+    void decodeFungibleBurnZeroInputV1() {
+        burnPrecompile.close();
+        var exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> getBurnWrapper(FUNGIBLE_BURN_ZERO_AMOUNT_INPUT_V1, SystemContractAbis.BURN_TOKEN_V1));
+        assertEquals("Illegal amount of tokens to burn", exception.getMessage());
+    }
+
+    @Test
+    void decodeFungibleBurnZeroInputV2() {
+        burnPrecompile.close();
+        var exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> getBurnWrapper(FUNGIBLE_BURN_ZERO_AMOUNT_INPUT_V2, SystemContractAbis.BURN_TOKEN_V2));
+        assertEquals("Illegal amount of tokens to burn", exception.getMessage());
+    }
+
+    @Test
+    void decodeFungibleBurnNegativeInputV1() {
+        burnPrecompile.close();
+        var exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> getBurnWrapper(FUNGIBLE_BURN_NEGATIVE_AMOUNT_INPUT_V1, SystemContractAbis.BURN_TOKEN_V1));
+        assertEquals("unsigned val exceeds bit limit: 256 > 64", exception.getMessage());
+    }
+
+    @Test
+    void decodeFungibleBurnNegativeInputV2() {
+        burnPrecompile.close();
+        var exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> getBurnWrapper(FUNGIBLE_BURN_NEGATIVE_AMOUNT_INPUT_V2, SystemContractAbis.BURN_TOKEN_V2));
+        assertEquals("Illegal amount of tokens to burn", exception.getMessage());
+    }
+
+    @Test
     void decodeNonFungibleBurnInputV1() {
         burnPrecompile.close();
         final var decodedInput = getBurnWrapper(NON_FUNGIBLE_BURN_INPUT_V1, SystemContractAbis.BURN_TOKEN_V1);
@@ -595,6 +644,24 @@ class BurnPrecompilesTest {
         assertEquals(123, decodedInput.serialNos().get(0));
         assertEquals(234, decodedInput.serialNos().get(1));
         assertEquals(NON_FUNGIBLE_UNIQUE, decodedInput.type());
+    }
+
+    @Test
+    void decodeNonFungibleBurnNegativeInputV1() {
+        burnPrecompile.close();
+        var exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> getBurnWrapper(NON_FUNGIBLE_NEGATIVE_AMOUNT_BURN_INPUT_V1, SystemContractAbis.BURN_TOKEN_V1));
+        assertEquals("unsigned val exceeds bit limit: 256 > 64", exception.getMessage());
+    }
+
+    @Test
+    void decodeNonFungibleBurnNegativeInputV2() {
+        burnPrecompile.close();
+        var exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> getBurnWrapper(NON_FUNGIBLE_NEGATIVE_AMOUNT_BURN_INPUT_V2, SystemContractAbis.BURN_TOKEN_V2));
+        assertEquals("Illegal amount of tokens to burn", exception.getMessage());
     }
 
     private void givenNonfungibleFrameContext() {

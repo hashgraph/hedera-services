@@ -22,7 +22,9 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import com.swirlds.cli.PlatformCli;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.Browser;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -39,14 +41,17 @@ import picocli.CommandLine.Command;
 @SubcommandOf(PlatformCli.class)
 public class BrowseCommand extends AbstractCommand {
 
-    private List<Integer> localNodes = new ArrayList<>();
+    private List<NodeId> localNodes = new ArrayList<>();
 
     @CommandLine.Option(
             names = {"-l", "--local-node"},
             description = "Specify a node that should be run in this JVM. If no nodes are provided, "
-                    + "all nodes with local IP addresses are loaded in this JVM.")
-    private void setLocalNodes(final List<Integer> localNodes) {
-        this.localNodes = localNodes;
+                    + "all nodes with local IP addresses are loaded in this JVM. Multiple nodes can be "
+                    + "specified by repeating the parameter `-l #1 -l #2 -l #3`.")
+    private void setLocalNodes(@NonNull final Long... localNodes) {
+        for (final Long nodeId : localNodes) {
+            this.localNodes.add(new NodeId(nodeId));
+        }
     }
 
     /**

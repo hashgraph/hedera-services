@@ -16,29 +16,22 @@
 
 package com.hedera.node.app.service.token.impl.records;
 
-import com.hedera.node.app.spi.records.RecordBuilder;
+import com.hedera.hapi.node.base.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A {@code RecordBuilder} specialization for tracking the side effects of a {@code CryptoCreate}
  * transaction.
  */
-public interface CryptoCreateRecordBuilder extends RecordBuilder<CryptoCreateRecordBuilder> {
-    /**
-     * Returns the number of the created account.
-     *
-     * @return the number of the created account
-     */
-    long getCreatedAccount();
-
+public interface CryptoCreateRecordBuilder {
     /**
      * Tracks creation of a new account by number. Even if someday we support creating multiple
      * accounts within a smart contract call, we will still only need to track one created account
      * per child record.
      *
-     * @param num the number of the new account
+     * @param accountID the {@link AccountID} of the new account
      * @return this builder
      */
     @NonNull
-    CryptoCreateRecordBuilder setCreatedAccount(long num);
+    CryptoCreateRecordBuilder accountID(@NonNull AccountID accountID);
 }

@@ -353,6 +353,10 @@ public class WorldLedgers {
     }
 
     public Address getAddressOrAlias(final Address address) {
+        // An EIP-1014 address is always canonical
+        if (!aliases.isMirror(address)) {
+            return address;
+        }
         final var sourceId = accountIdFromEvmAddress(address);
         final ByteString alias;
         if (accountsLedger != null) {

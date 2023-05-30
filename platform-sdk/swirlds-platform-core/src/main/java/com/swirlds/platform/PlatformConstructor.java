@@ -124,10 +124,14 @@ public final class PlatformConstructor {
      * @param metrics             the metrics object
      */
     static QueueThread<ReservedSignedState> stateHashSignQueue(
-            final ThreadManager threadManager,
-            final long selfId,
-            final InterruptableConsumer<ReservedSignedState> signedStateConsumer,
-            final Metrics metrics) {
+            @NonNull final ThreadManager threadManager,
+            @NonNull final NodeId selfId,
+            @NonNull final InterruptableConsumer<ReservedSignedState> signedStateConsumer,
+            @NonNull final Metrics metrics) {
+        Objects.requireNonNull(threadManager, "threadManager must not be null");
+        Objects.requireNonNull(selfId, "selfId must not be null");
+        Objects.requireNonNull(signedStateConsumer, "signedStateConsumer must not be null");
+        Objects.requireNonNull(metrics, "metrics must not be null");
 
         return new QueueThreadConfiguration<ReservedSignedState>(threadManager)
                 .setNodeId(selfId)
@@ -204,7 +208,7 @@ public final class PlatformConstructor {
     static ConsensusRoundHandler consensusHandler(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
-            final long selfId,
+            @NonNull final NodeId selfId,
             @NonNull final SettingsProvider settingsProvider,
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final ConsensusHandlingMetrics consensusHandlingMetrics,

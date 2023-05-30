@@ -71,7 +71,7 @@ public class EventCreatorThread implements Clearable {
 
         creatorThread = new StoppableThreadConfiguration<>(threadManager)
                 .setPriority(Thread.NORM_PRIORITY)
-                .setNodeId(selfId.id())
+                .setNodeId(selfId)
                 .setMaximumRate(attemptedChatterEventPerSecond)
                 .setComponent("Chatter")
                 .setThreadName("EventGenerator")

@@ -47,10 +47,10 @@ jobs:
 
           while IFS= read -r line; do
             [[ "${line}" =~ ^release/([0-9]+).([0-9]+) ]] || continue
-            
+
             major="${BASH_REMATCH[1]}"
             minor="${BASH_REMATCH[2]}"
-          
+
             if [[ "${major}" -eq 0 && "${minor}" -lt 38 ]]; then
               continue
             fi
