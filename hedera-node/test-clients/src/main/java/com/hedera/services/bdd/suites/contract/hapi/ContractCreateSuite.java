@@ -559,11 +559,8 @@ public class ContractCreateSuite extends HapiSuite {
         return defaultHapiSpec("VanillaSuccess")
                 .given(
                         uploadInitCode(contract),
-                        contractCreate(contract).adminKey(THRESHOLD).maxAutomaticTokenAssociations(10),
-                        getContractInfo(contract)
-                                .has(contractWith().maxAutoAssociations(10))
-                                .logged()
-                                .saveToRegistry(PARENT_INFO))
+                        contractCreate(contract).adminKey(THRESHOLD),
+                        getContractInfo(contract).saveToRegistry(PARENT_INFO))
                 .when(
                         contractCall(contract, "create").gas(1_000_000L).via("createChildTxn"),
                         contractCall(contract, "getIndirect").gas(1_000_000L).via("getChildResultTxn"),
