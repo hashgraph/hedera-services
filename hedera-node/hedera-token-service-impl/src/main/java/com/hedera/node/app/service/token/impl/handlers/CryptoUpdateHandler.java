@@ -20,8 +20,10 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.STAKING_NOT_ENABLED;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -34,8 +36,11 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Account.Builder;
 import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
+import com.hedera.hapi.node.token.CryptoUpdateTransactionBody.StakedIdOneOfType;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
@@ -45,8 +50,10 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.LedgerConfig;
+import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -57,10 +64,12 @@ import javax.inject.Singleton;
 public class CryptoUpdateHandler extends BaseCryptoHandler implements TransactionHandler {
 
     private final CryptoSignatureWaivers waivers;
+    private NodeInfo nodeInfo;
 
     @Inject
-    public CryptoUpdateHandler(@NonNull final CryptoSignatureWaivers waivers) {
+    public CryptoUpdateHandler(@NonNull final CryptoSignatureWaivers waivers, @NonNull final NodeInfo nodeInfo) {
         this.waivers = requireNonNull(waivers, "The supplied argument 'waivers' must not be null");
+        this.nodeInfo = requireNonNull(nodeInfo, "The supplied argument 'nodeInfo' must not be null");
     }
 
     @Override
@@ -116,19 +125,18 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
 
         // validate update account exists
         final var accountStore = context.writableStore(WritableAccountStore.class);
-        final var optionalAccount = accountStore.get(target);
-        validateTrue(optionalAccount.isPresent(), INVALID_ACCOUNT_ID);
+        final var targetAccount = accountStore.get(target);
+        validateTrue(targetAccount != null, INVALID_ACCOUNT_ID);
 
         // Customize the account based on fields set in transaction body
-        final var builder = updateBuilder(op);
-        final var updateAccount = optionalAccount.get();
+        final var builder = updateBuilder(op, targetAccount);
 
         // validate all checks that involve config and state
-        validateSemantics(context, updateAccount, op, builder);
+        validateSemantics(context, targetAccount, op, builder, accountStore);
 
         if (context.expiryValidator()
                 .isDetached(
-                        EntityType.ACCOUNT, updateAccount.expiredAndPendingRemoval(), updateAccount.tinybarBalance())) {
+                        EntityType.ACCOUNT, targetAccount.expiredAndPendingRemoval(), targetAccount.tinybarBalance())) {
             builder.expiredAndPendingRemoval(false);
         }
 
@@ -141,8 +149,9 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
      * @param op Crypto update transaction body
      * @return builder
      */
-    private Account.Builder updateBuilder(@NonNull final CryptoUpdateTransactionBody op) {
-        final var builder = Account.newBuilder();
+    private Account.Builder updateBuilder(
+            @NonNull final CryptoUpdateTransactionBody op, @NonNull final Account currentAccount) {
+        final var builder = currentAccount.copyBuilder();
         if (op.hasKey()) {
             /* Note that {@code this.validateSemantics} will have rejected any txn with an invalid key. */
             builder.key(op.key());
@@ -151,9 +160,9 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
             builder.expiry(op.expirationTime().seconds());
         }
         if (op.hasReceiverSigRequiredWrapper()) {
-            builder.receiverSigRequired(op.receiverSigRequired().booleanValue());
-        } else if (op.receiverSigRequired()) {
-            builder.receiverSigRequired(true);
+            builder.receiverSigRequired(op.receiverSigRequiredWrapper().booleanValue());
+        } else if (op.hasReceiverSigRequired()) {
+            builder.receiverSigRequired(op.receiverSigRequired());
         }
         if (op.hasAutoRenewPeriod()) {
             builder.autoRenewSecs(op.autoRenewPeriod().seconds());
@@ -173,13 +182,24 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
         return builder;
     }
 
+    /**
+     * Validate semantics of the transaction. This method is called during the handle workflow.
+     * It validates any fields of the transaction that involves state or config.
+     * @param context handle context
+     * @param updateAccount account to be updated
+     * @param op crypto update transaction body
+     * @param builder account update builder
+     * @param accountStore account store
+     */
     private void validateSemantics(
             @NonNull final HandleContext context,
             @NonNull final Account updateAccount,
             @NonNull final CryptoUpdateTransactionBody op,
-            @NonNull Builder builder) {
+            @NonNull Builder builder,
+            @NonNull final ReadableAccountStore accountStore) {
         final var expiryValidator = context.expiryValidator();
         final var builderAccount = builder.build();
+        validateFields(op, context, accountStore);
 
         validateTrue(!updateAccount.smartContract(), INVALID_ACCOUNT_ID);
 
@@ -197,14 +217,12 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
                 NA);
         context.expiryValidator().resolveUpdateAttempt(currentMetadata, updateMeta);
 
-        // check if account is expired and pending removal
-        validateTrue(
-                expiryValidator.isDetached(
-                                EntityType.ACCOUNT,
-                                updateAccount.expiredAndPendingRemoval(),
-                                updateAccount.tinybarBalance())
-                        && builderAccount.expiry() != 0,
-                ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+        // If an account is detached and pending removal, it cannot be updated
+        // It can only be updated to extend expiration time
+        if (expiryValidator.isDetached(
+                EntityType.ACCOUNT, updateAccount.expiredAndPendingRemoval(), updateAccount.tinybarBalance())) {
+            validateTrue(builderAccount.expiry() != 0, ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+        }
 
         // validate auto associations
         if (builderAccount.maxAutoAssociations() != 0) {
@@ -221,5 +239,83 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
 
         // validate if account is not deleted
         validateFalse(updateAccount.deleted(), ACCOUNT_DELETED);
+    }
+
+    /**
+     * Validate basic fields of the transaction that involves state or config.
+     * @param op crypto update transaction body
+     * @param context handle context
+     * @param accountStore account store
+     */
+    private void validateFields(
+            @NonNull final CryptoUpdateTransactionBody op,
+            @NonNull final HandleContext context,
+            @NonNull final ReadableAccountStore accountStore) {
+        if (op.hasMemo()) {
+            context.attributeValidator().validateMemo(op.memo());
+        }
+
+        if (op.hasKey()) {
+            context.attributeValidator().validateKey(op.key());
+        }
+
+        if (op.hasAutoRenewPeriod()) {
+            context.attributeValidator()
+                    .validateAutoRenewPeriod(op.autoRenewPeriod().seconds());
+        }
+
+        validateStakedId(op, accountStore, context);
+    }
+
+    /**
+     * Validates staked id if present
+     * @param op crypto update transaction body
+     * @param accountStore account store
+     * @param context handle context
+     */
+    private void validateStakedId(
+            @NonNull final CryptoUpdateTransactionBody op,
+            @NonNull ReadableAccountStore accountStore,
+            @NonNull HandleContext context) {
+        final var hasDeclineReward = op.hasDeclineReward();
+        final var hasStakingId = op.hasStakedNodeId() || op.hasStakedAccountId();
+        final var stakingConfig = context.configuration().getConfigData(StakingConfig.class);
+
+        validateFalse(!stakingConfig.isEnabled() && (hasStakingId || hasDeclineReward), STAKING_NOT_ENABLED);
+        final var stakedIdKind = op.stakedId().kind();
+        final var stakedAccountId = op.hasStakedAccountId() ? op.stakedAccountIdOrThrow() : null;
+        final var stakedNodeId = op.hasStakedNodeId() ? op.stakedNodeIdOrThrow().longValue() : null;
+
+        if (isValidStakingSentinel(stakedIdKind, stakedAccountId, stakedNodeId)) {
+            return;
+        }
+
+        if (stakedIdKind.equals(StakedIdOneOfType.STAKED_ACCOUNT_ID)) {
+            validateTrue(accountStore.getAccountById(stakedAccountId) != null, INVALID_STAKING_ID);
+        } else if (stakedIdKind.equals(StakedIdOneOfType.STAKED_NODE_ID)) {
+            validateTrue(nodeInfo.isValidId(stakedNodeId), INVALID_STAKING_ID);
+        }
+    }
+
+    /**
+     * Validates if the staked id is a sentinel value. Sentinel values are used to reset staking
+     * on an account. The sentinel values are -1 for stakedNodeId and 0.0.0 for stakedAccountId.
+     * @param stakedIdKind staked id kind
+     * @param stakedAccountId staked account id
+     * @param stakedNodeId staked node id
+     * @return true if staked id is a sentinel value
+     */
+    private boolean isValidStakingSentinel(
+            @NonNull StakedIdOneOfType stakedIdKind, @Nullable AccountID stakedAccountId, @Nullable Long stakedNodeId) {
+        // sentinel values on -1 for stakedNodeId and 0.0.0 for stakedAccountId are used to reset
+        // staking on an account
+        if (stakedIdKind.equals(StakedIdOneOfType.STAKED_ACCOUNT_ID)) {
+            // current checking only account num since shard and realm are 0.0
+            return stakedAccountId.accountNum() == 0;
+        } else if (stakedIdKind.equals(StakedIdOneOfType.STAKED_NODE_ID)) {
+            return stakedNodeId.longValue() == -1;
+        } else {
+            return false;
+        }
     }
 }

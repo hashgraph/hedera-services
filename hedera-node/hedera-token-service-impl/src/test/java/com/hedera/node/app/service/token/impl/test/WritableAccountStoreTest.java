@@ -53,10 +53,9 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
 
         writableStore.put(account);
 
-        final var maybeReadAccount = writableStore.get(id);
+        final var readaccount = writableStore.get(id);
 
-        assertTrue(maybeReadAccount.isPresent());
-        final var readaccount = maybeReadAccount.get();
+        assertTrue(readaccount != null);
         assertEquals(account, readaccount);
     }
 
@@ -66,10 +65,9 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
 
         writableStore.put(account);
 
-        final var maybeReadAccount = writableStore.getForModify(id);
+        final var readaccount = writableStore.getForModify(id);
 
-        assertTrue(maybeReadAccount.isPresent());
-        final var readaccount = maybeReadAccount.get();
+        assertTrue(readaccount != null);
         assertEquals(account, readaccount);
     }
 
@@ -80,10 +78,9 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
         writableStore.put(account);
         writableStore.putAlias(alias.alias().asUtf8String(), accountNum);
 
-        final var maybeReadAccount = writableStore.getForModify(alias);
+        final var readaccount = writableStore.getForModify(alias);
 
-        assertTrue(maybeReadAccount.isPresent());
-        final var readaccount = maybeReadAccount.get();
+        assertTrue(readaccount != null);
         assertEquals(account, readaccount);
         assertEquals(1, writableStore.sizeOfAliasesState());
         assertEquals(Set.of(alias.alias().asUtf8String()), writableStore.modifiedAliasesInState());
@@ -93,15 +90,15 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
     void getForModifyReturnEmptyIfAliasNotPresent() {
         writableStore.put(account);
 
-        final var maybeReadAccount = writableStore.getForModify(alias);
+        final var readaccount = writableStore.getForModify(alias);
 
-        assertFalse(maybeReadAccount.isPresent());
+        assertFalse(readaccount != null);
         assertEquals(0, writableStore.sizeOfAliasesState());
     }
 
     @Test
     void putsAccountChangesToStateInModifications() {
-        assertFalse(writableStore.get(id).isPresent());
+        assertFalse(writableStore.get(id) != null);
 
         // put, keeps the account in the modifications
         writableStore.put(account);

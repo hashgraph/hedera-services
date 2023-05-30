@@ -25,6 +25,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SEND_RECORD_THRESHOLD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
@@ -103,12 +104,10 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
 
         // validate payer account exists and has enough balance
         final var accountStore = handleContext.writableStore(WritableAccountStore.class);
-        final var optionalPayer = accountStore.getForModify(
+        final var payer = accountStore.getForModify(
                 txnBody.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT));
-        if (optionalPayer.isEmpty()) {
-            throw new HandleException(INVALID_PAYER_ACCOUNT_ID);
-        }
-        final var payer = optionalPayer.get();
+
+        validateTrue(payer != null, INVALID_PAYER_ACCOUNT_ID);
         final long newPayerBalance = payer.tinybarBalance() - op.initialBalance();
         validatePayer(payer, newPayerBalance);
 

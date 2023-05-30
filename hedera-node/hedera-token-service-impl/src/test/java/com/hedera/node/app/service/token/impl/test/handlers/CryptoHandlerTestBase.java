@@ -128,15 +128,15 @@ public class CryptoHandlerTestBase {
 
     @BeforeEach
     public void setUp() {
-        account = givenValidAccount();
-        deleteAccount = givenValidAccount()
+        account = givenValidAccount(accountNum);
+        deleteAccount = givenValidAccount(deleteAccountNum)
                 .copyBuilder()
                 .accountNumber(deleteAccountNum)
                 .key(accountKey)
                 .numberPositiveBalances(0)
                 .numberTreasuryTitles(0)
                 .build();
-        transferAccount = givenValidAccount()
+        transferAccount = givenValidAccount(transferAccountNum)
                 .copyBuilder()
                 .accountNumber(transferAccountNum)
                 .key(key)
@@ -239,7 +239,7 @@ public class CryptoHandlerTestBase {
         return MapReadableKVState.builder(ALIASES);
     }
 
-    protected Account givenValidAccount() {
+    protected Account givenValidAccount(final long accountNum) {
         return new Account(
                 accountNum,
                 alias.alias(),
@@ -258,7 +258,7 @@ public class CryptoHandlerTestBase {
                 1,
                 2,
                 10,
-                1,
+                2,
                 3,
                 false,
                 2,

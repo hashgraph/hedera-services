@@ -200,7 +200,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         // newly created account and payer account are not modified. Validate payers balance
         assertFalse(writableStore.modifiedAccountsInState().contains(EntityNumVirtualKey.fromLong(1000L)));
         assertFalse(writableStore.modifiedAccountsInState().contains(EntityNumVirtualKey.fromLong(id.accountNum())));
-        assertEquals(payerBalance, writableStore.get(id).get().tinybarBalance());
+        assertEquals(payerBalance, writableStore.get(id).tinybarBalance());
 
         subject.handle(handleContext);
 
@@ -209,15 +209,13 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertTrue(writableStore.modifiedAccountsInState().contains(EntityNumVirtualKey.fromLong(id.accountNum())));
 
         // Validate created account exists and check record builder has created account recorded
-        final var optionalAccount =
+        final var createdAccount =
                 writableStore.get(AccountID.newBuilder().accountNum(1000L).build());
-        assertTrue(optionalAccount.isPresent());
+        assertTrue(createdAccount != null);
         final var accountID = AccountID.newBuilder().accountNum(1000L).build();
         verify(recordBuilder).accountID(accountID);
 
         // validate fields on created account
-        final var createdAccount = optionalAccount.get();
-
         assertTrue(createdAccount.receiverSigRequired());
         assertEquals(1000L, createdAccount.accountNumber());
         assertEquals(Bytes.EMPTY, createdAccount.alias());
@@ -254,7 +252,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertNull(createdAccount.firstContractStorageKey());
 
         // validate payer balance reduced
-        assertEquals(9_900L, writableStore.get(id).get().tinybarBalance());
+        assertEquals(9_900L, writableStore.get(id).tinybarBalance());
     }
 
     @Test
@@ -268,7 +266,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         // newly created account and payer account are not modified. Validate payers balance
         assertFalse(writableStore.modifiedAccountsInState().contains(EntityNumVirtualKey.fromLong(1000L)));
         assertFalse(writableStore.modifiedAccountsInState().contains(EntityNumVirtualKey.fromLong(id.accountNum())));
-        assertEquals(payerBalance, writableStore.get(id).get().tinybarBalance());
+        assertEquals(payerBalance, writableStore.get(id).tinybarBalance());
 
         subject.handle(handleContext);
 
@@ -277,15 +275,13 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertTrue(writableStore.modifiedAccountsInState().contains(EntityNumVirtualKey.fromLong(id.accountNum())));
 
         // Validate created account exists and check record builder has created account recorded
-        final var optionalAccount =
+        final var createdAccount =
                 writableStore.get(AccountID.newBuilder().accountNum(1000L).build());
-        assertTrue(optionalAccount.isPresent());
+        assertTrue(createdAccount != null);
         final var accountID = AccountID.newBuilder().accountNum(1000L).build();
         verify(recordBuilder).accountID(accountID);
 
         // validate fields on created account
-        final var createdAccount = optionalAccount.get();
-
         assertTrue(createdAccount.receiverSigRequired());
         assertEquals(1000L, createdAccount.accountNumber());
         assertEquals(Bytes.EMPTY, createdAccount.alias());
@@ -322,7 +318,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertNull(createdAccount.firstContractStorageKey());
 
         // validate payer balance reduced
-        assertEquals(9_900L, writableStore.get(id).get().tinybarBalance());
+        assertEquals(9_900L, writableStore.get(id).tinybarBalance());
     }
 
     @Test
@@ -334,7 +330,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         // newly created account and payer account are not modified. Validate payers balance
         assertFalse(writableStore.modifiedAccountsInState().contains(EntityNumVirtualKey.fromLong(1000L)));
         assertFalse(writableStore.modifiedAccountsInState().contains(EntityNumVirtualKey.fromLong(id.accountNum())));
-        assertEquals(payerBalance, writableStore.get(id).get().tinybarBalance());
+        assertEquals(payerBalance, writableStore.get(id).tinybarBalance());
 
         assertThrows(NullPointerException.class, () -> subject.handle(handleContext));
     }
@@ -348,7 +344,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         // newly created account and payer account are not modified. Validate payers balance
         assertFalse(writableStore.modifiedAccountsInState().contains(EntityNumVirtualKey.fromLong(1000L)));
         assertFalse(writableStore.modifiedAccountsInState().contains(EntityNumVirtualKey.fromLong(id.accountNum())));
-        assertEquals(payerBalance, writableStore.get(id).get().tinybarBalance());
+        assertEquals(payerBalance, writableStore.get(id).tinybarBalance());
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(INSUFFICIENT_PAYER_BALANCE, msg.getStatus());
@@ -403,7 +399,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         // newly created account and payer account are not modified. Validate payers balance
         assertFalse(writableStore.modifiedAccountsInState().contains(EntityNumVirtualKey.fromLong(1000L)));
         assertFalse(writableStore.modifiedAccountsInState().contains(EntityNumVirtualKey.fromLong(id.accountNum())));
-        assertEquals(payerBalance, writableStore.get(id).get().tinybarBalance());
+        assertEquals(payerBalance, writableStore.get(id).tinybarBalance());
 
         subject.handle(handleContext);
 
@@ -414,7 +410,6 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
                 Bytes.wrap("alias"),
                 writableStore
                         .get(AccountID.newBuilder().accountNum(1000L).build())
-                        .get()
                         .alias());
     }
 
