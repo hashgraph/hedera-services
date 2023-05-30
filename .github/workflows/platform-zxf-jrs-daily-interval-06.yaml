@@ -41,8 +41,9 @@ concurrency:
 # Panel Definition & Timings:
 #   "configs/suites/daily/4N/GCP-Daily-ISS-4N.json"           ----          90m
 #   "configs/suites/daily/4N/GCP-Daily-AddressBook-4N.json"   ----          30m
-#
-#   TOTAL RUN TIME:             120 minutes, 2.0 hours
+#   "configs/suites/daily/6N/GCP-Daily-Migration-6N.json"     ----          30m
+
+#   TOTAL RUN TIME:             150 minutes, 2.3 hours
 
 jobs:
   iss:
@@ -75,4 +76,21 @@ jobs:
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
     needs:
       - iss
+    if: ${{ !cancelled() && always() }}
+  migration:
+    name: Migration
+    uses: ./.github/workflows/zxc-jrs-regression.yaml
+    with:
+      ref: ${{ github.event.inputs.ref }}
+      branch-name: ${{ github.event.inputs.branch-name }}
+      panel-config: "configs/suites/daily/6N/GCP-Daily-Migration-6N.json"
+    secrets:
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+      jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
+      jrs-ssh-key-file: ${{ secrets.PLATFORM_JRS_SSH_KEY_FILE }}
+      gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
+      gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
+      slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
+    needs:
+      - addressBook
     if: ${{ !cancelled() && always() }}

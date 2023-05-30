@@ -38,6 +38,7 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateReference;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 
 /**
  * A simplified version of the platform to be used during the recovery workflow.
@@ -65,17 +66,18 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
      *                        called
      */
     public RecoveryPlatform(
-            final Configuration configuration,
-            final SignedState initialState,
-            final long selfId,
+            @NonNull final Configuration configuration,
+            @NonNull final SignedState initialState,
+            @NonNull final NodeId selfId,
             final boolean loadSigningKeys) {
-
-        this.selfId = new NodeId(false, selfId);
+        Objects.requireNonNull(configuration, "configuration must not be null");
+        Objects.requireNonNull(initialState, "initialState must not be null");
+        this.selfId = Objects.requireNonNull(selfId, "selfId must not be null");
 
         this.addressBook = initialState.getAddressBook();
 
         if (loadSigningKeys) {
-            crypto = initNodeSecurity(addressBook, configuration)[(int) selfId];
+            crypto = initNodeSecurity(addressBook, configuration).get(selfId);
         } else {
             crypto = null;
         }
@@ -140,15 +142,6 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
     @Override
     public NodeId getSelfId() {
         return selfId;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int getInstanceNumber() {
-        // This never runs in the same JVM with other platform instances, so it's always instance 0.
-        return 0;
     }
 
     /**

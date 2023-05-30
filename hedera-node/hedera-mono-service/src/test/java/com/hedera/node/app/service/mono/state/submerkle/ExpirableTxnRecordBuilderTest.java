@@ -283,4 +283,22 @@ class ExpirableTxnRecordBuilderTest {
         liveReceipt.setStatus(TxnReceipt.REVERTED_SUCCESS_LITERAL);
         assertTrue(subject.shouldNotBeExternalized());
     }
+
+    @Test
+    void detectsPendingSuccess() {
+        final var liveReceipt = TxnReceipt.newBuilder();
+        liveReceipt.setStatus(TxnReceipt.SUCCESS_LITERAL);
+        subject.setReceiptBuilder(liveReceipt);
+
+        assertTrue(subject.isPendingSuccess());
+    }
+
+    @Test
+    void onlyPendingSuccess() {
+        final var liveReceipt = TxnReceipt.newBuilder();
+        liveReceipt.setStatus(TxnReceipt.REVERTED_SUCCESS_LITERAL);
+        subject.setReceiptBuilder(liveReceipt);
+
+        assertFalse(subject.isPendingSuccess());
+    }
 }

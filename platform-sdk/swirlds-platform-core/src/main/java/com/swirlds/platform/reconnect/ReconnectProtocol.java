@@ -57,6 +57,7 @@ public class ReconnectProtocol implements Protocol {
      * @param reconnectSocketTimeout  the socket timeout to use when executing a reconnect
      * @param reconnectMetrics        tracks reconnect metrics
      * @param reconnectController     controls reconnecting as a learner
+     * @param fallenBehindManager     maintains this node's behind status
      */
     public ReconnectProtocol(
             final ThreadManager threadManager,
@@ -83,7 +84,7 @@ public class ReconnectProtocol implements Protocol {
     @Override
     public boolean shouldInitiate() {
         // if this neighbor has not told me I have fallen behind, I will not reconnect with him
-        if (!fallenBehindManager.shouldReconnectFrom(peerId.getId())) {
+        if (!fallenBehindManager.shouldReconnectFrom(peerId.id())) {
             return false;
         }
 
@@ -117,7 +118,7 @@ public class ReconnectProtocol implements Protocol {
             logger.info(
                     RECONNECT.getMarker(),
                     "Rejecting reconnect request from node {} due to lack of a fully signed state",
-                    peerId.getId());
+                    peerId.id());
             return false;
         }
 
@@ -127,7 +128,7 @@ public class ReconnectProtocol implements Protocol {
             logger.warn(
                     RECONNECT.getMarker(),
                     "Rejecting reconnect request from node {} " + "due to lack of an initialized signed state.",
-                    peerId.getId());
+                    peerId.id());
             return false;
         } else if (!teacherState.get().isComplete()) {
             // this is only possible if signed state manager violates its contractual obligations
@@ -138,12 +139,12 @@ public class ReconnectProtocol implements Protocol {
                     "Rejecting reconnect request from node {} due to lack of a fully signed state."
                             + " The signed state manager attempted to provide a state that was not"
                             + " fully signed, which should not be possible.",
-                    peerId.getId());
+                    peerId.id());
             return false;
         }
 
         // Check if a reconnect with the learner is permitted by the throttle.
-        final boolean reconnectPermittedByThrottle = teacherThrottle.initiateReconnect(peerId.getId());
+        final boolean reconnectPermittedByThrottle = teacherThrottle.initiateReconnect(peerId.id());
         if (reconnectPermittedByThrottle) {
             initiatedBy = InitiatedBy.PEER;
             return true;
@@ -179,7 +180,7 @@ public class ReconnectProtocol implements Protocol {
                 case PEER -> teacher(connection);
                 case SELF -> learner(connection);
                 default -> throw new NetworkProtocolException(
-                        "runProtocol() called but it is unclear who the teacher and who the learner" + " is");
+                        "runProtocol() called but it is unclear who the teacher and who the learner is");
             }
         } finally {
             initiatedBy = InitiatedBy.NO_ONE;
@@ -208,13 +209,15 @@ public class ReconnectProtocol implements Protocol {
                             threadManager,
                             connection,
                             reconnectSocketTimeout,
-                            connection.getSelfId().getId(),
-                            connection.getOtherId().getId(),
+                            connection.getSelfId().id(),
+                            connection.getOtherId().id(),
                             state.get().getRound(),
+                            fallenBehindManager::hasFallenBehind,
                             reconnectMetrics)
                     .execute(state.get());
         } finally {
             teacherThrottle.reconnectAttemptFinished();
+            teacherState = null;
         }
     }
 

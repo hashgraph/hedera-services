@@ -49,7 +49,7 @@ public class SequentialSignaturesTest extends AbstractSignedStateManagerTest {
     private final AddressBook addressBook = new RandomAddressBookGenerator(random)
             .setSize(4)
             .setWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
-            .setSequentialIds(true)
+            .setSequentialIds(false)
             .build();
 
     /**
@@ -99,12 +99,12 @@ public class SequentialSignaturesTest extends AbstractSignedStateManagerTest {
 
             // Add some signatures to one of the previous states
             final long roundToSign = round - roundAgeToSign;
-            addSignature(manager, roundToSign, 0);
-            addSignature(manager, roundToSign, 1);
-            addSignature(manager, roundToSign, 2);
+            addSignature(manager, roundToSign, addressBook.getNodeId(0));
+            addSignature(manager, roundToSign, addressBook.getNodeId(1));
+            addSignature(manager, roundToSign, addressBook.getNodeId(2));
             if (random.nextBoolean()) {
-                addSignature(manager, roundToSign, 1);
-                addSignature(manager, roundToSign, 1);
+                addSignature(manager, roundToSign, addressBook.getNodeId(1));
+                addSignature(manager, roundToSign, addressBook.getNodeId(1));
             }
 
             try (final ReservedSignedState lastState = manager.getLatestImmutableState("test")) {

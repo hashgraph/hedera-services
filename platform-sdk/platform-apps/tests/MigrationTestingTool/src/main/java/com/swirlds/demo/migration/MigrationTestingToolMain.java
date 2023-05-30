@@ -21,13 +21,13 @@ import static com.swirlds.common.utility.Units.NANOSECONDS_TO_SECONDS;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.PlatformWithDeprecatedMethods;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.fcqueue.FCQueueStatistics;
 import com.swirlds.logging.payloads.ApplicationFinishedPayload;
 import com.swirlds.merkle.map.MerkleMapMetrics;
-import com.swirlds.platform.gui.SwirldsGui;
+import com.swirlds.platform.ParameterProvider;
+import com.swirlds.platform.gui.GuiPlatformAccessor;
 import java.security.SignatureException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -36,7 +36,7 @@ import org.apache.logging.log4j.MarkerManager;
 
 /**
  * An application designed for testing migration from version to version.
- *
+ * <p>
  * Command line arguments: Seed(long), TransactionsPerNode(int)
  */
 public class MigrationTestingToolMain implements SwirldMain {
@@ -59,7 +59,9 @@ public class MigrationTestingToolMain implements SwirldMain {
     private double toCreate = 0;
     private long lastEventTime = System.nanoTime();
 
-    private static final BasicSoftwareVersion softwareVersion = new BasicSoftwareVersion(1);
+    public static final long SOFTWARE_VERSION = 2L;
+    public static final BasicSoftwareVersion PREVIOUS_SOFTWARE_VERSION = new BasicSoftwareVersion(SOFTWARE_VERSION - 1);
+    private final BasicSoftwareVersion softwareVersion = new BasicSoftwareVersion(SOFTWARE_VERSION);
 
     /**
      * {@inheritDoc}
@@ -68,13 +70,13 @@ public class MigrationTestingToolMain implements SwirldMain {
     public void init(final Platform platform, final NodeId selfId) {
         this.platform = platform;
 
-        final String[] parameters = ((PlatformWithDeprecatedMethods) platform).getParameters();
+        final String[] parameters = ParameterProvider.getInstance().getParameters();
         logger.info(MARKER, "Parsing arguments {}", (Object) parameters);
-        seed = Long.parseLong(parameters[0]) + selfId.getId();
+        seed = Long.parseLong(parameters[0]) + selfId.id();
         maximumTransactionsPerNode = Integer.parseInt(parameters[1]);
 
         generator = new TransactionGenerator(seed);
-        SwirldsGui.setAbout(platform.getSelfId().getId(), "MigrationTestingApp");
+        GuiPlatformAccessor.getInstance().setAbout(platform.getSelfId(), "MigrationTestingApp");
 
         // Initialize application statistics
         initAppStats();

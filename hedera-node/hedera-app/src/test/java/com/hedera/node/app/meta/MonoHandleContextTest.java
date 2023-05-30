@@ -20,17 +20,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.node.app.components.StoreComponent;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.records.SingleTransactionRecordBuilder;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
-import com.hedera.node.app.service.mono.utils.NonAtomicReference;
 import com.hedera.node.app.service.networkadmin.ReadableRunningHashLeafStore;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
-import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import java.time.Instant;
-import javax.inject.Provider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -54,28 +52,23 @@ class MonoHandleContextTest {
     private TransactionContext txnCtx;
 
     @Mock
-    private NonAtomicReference<HederaState> mutableState;
-
-    @Mock
-    private Provider<StoreComponent.Factory> storeFactory;
-
-    @Mock
-    private StoreComponent.Factory storeComponentFactory;
-
-    @Mock
-    private HederaState state;
-
-    @Mock
-    private StoreComponent storeComponent;
-
-    @Mock
     private ReadableStoreFactory readableStoreFactory;
+
+    @Mock
+    private SingleTransactionRecordBuilder recordBuilder;
 
     private MonoHandleContext subject;
 
     @BeforeEach
     void setup() {
-        subject = new MonoHandleContext(ids, expiryValidator, attributeValidator, txnCtx, mutableState, storeFactory);
+        subject = new MonoHandleContext(
+                TransactionBody.DEFAULT,
+                ids,
+                expiryValidator,
+                attributeValidator,
+                txnCtx,
+                readableStoreFactory,
+                recordBuilder);
     }
 
     @Test
@@ -87,12 +80,12 @@ class MonoHandleContextTest {
 
     @Test
     void delegatesIdCreationToEntitySource() {
-        final var nextNum = 666L;
-        given(ids.newAccountNumber()).willReturn(nextNum);
+        final var expectedNum = 666L;
+        given(ids.newAccountNumber()).willReturn(expectedNum);
 
-        final var numSupplier = subject.newEntityNumSupplier();
+        final var actualNum = subject.newEntityNum();
 
-        assertThat(numSupplier.getAsLong()).isEqualTo(nextNum);
+        assertThat(actualNum).isEqualTo(expectedNum);
     }
 
     @Test
@@ -107,13 +100,8 @@ class MonoHandleContextTest {
 
     @Test
     void createsStore() {
-        given(storeFactory.get()).willReturn(storeComponentFactory);
-        given(mutableState.get()).willReturn(state);
-        given(storeComponentFactory.create(state)).willReturn(storeComponent);
-        given(storeComponent.storeFactory()).willReturn(readableStoreFactory);
+        subject.readableStore(ReadableRunningHashLeafStore.class);
 
-        subject.createReadableStore(ReadableRunningHashLeafStore.class);
-
-        verify(storeComponentFactory).create(state);
+        verify(readableStoreFactory).getStore(ReadableRunningHashLeafStore.class);
     }
 }

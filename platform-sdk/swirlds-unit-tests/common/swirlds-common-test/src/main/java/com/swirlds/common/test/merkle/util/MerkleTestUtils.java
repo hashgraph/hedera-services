@@ -40,6 +40,7 @@ import com.swirlds.common.test.merkle.dummy.DummyMerkleLeaf;
 import com.swirlds.common.test.merkle.dummy.DummyMerkleLeaf2;
 import com.swirlds.common.test.merkle.dummy.DummyMerkleNode;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -50,6 +51,7 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BooleanSupplier;
 
 /**
  * Utility methods for testing merkle trees.
@@ -964,7 +966,7 @@ public final class MerkleTestUtils {
 
     public static <T extends MerkleNode> T testSynchronization(
             final MerkleNode startingTree, final MerkleNode desiredTree) throws Exception {
-        return testSynchronization(startingTree, desiredTree, 0);
+        return testSynchronization(startingTree, desiredTree, 0, () -> false);
     }
 
     /**
@@ -974,7 +976,15 @@ public final class MerkleTestUtils {
     public static <T extends MerkleNode> T testSynchronization(
             final MerkleNode startingTree, final MerkleNode desiredTree, final int latencyMilliseconds)
             throws Exception {
+        return testSynchronization(startingTree, desiredTree, latencyMilliseconds, () -> false);
+    }
 
+    public static <T extends MerkleNode> T testSynchronization(
+            final MerkleNode startingTree,
+            final MerkleNode desiredTree,
+            final int latencyMilliseconds,
+            @Nullable final BooleanSupplier requestToStopTeaching)
+            throws Exception {
         try (PairedStreams streams = new PairedStreams()) {
 
             final LearningSynchronizer learner;
@@ -1006,7 +1016,8 @@ public final class MerkleTestUtils {
                                 // test code, no danger
                                 e.printStackTrace();
                             }
-                        });
+                        },
+                        requestToStopTeaching);
             } else {
                 learner = new LaggingLearningSynchronizer(
                         streams.getLearnerInput(),
@@ -1022,7 +1033,12 @@ public final class MerkleTestUtils {
                             }
                         });
                 teacher = new LaggingTeachingSynchronizer(
-                        streams.getTeacherInput(), streams.getTeacherOutput(), desiredTree, latencyMilliseconds, () -> {
+                        streams.getTeacherInput(),
+                        streams.getTeacherOutput(),
+                        desiredTree,
+                        latencyMilliseconds,
+                        requestToStopTeaching,
+                        () -> {
                             try {
                                 streams.disconnect();
                             } catch (IOException e) {
@@ -1155,7 +1171,12 @@ public final class MerkleTestUtils {
 
     public static <T extends MerkleNode> T hashAndTestSynchronization(
             final MerkleNode startingTree, final MerkleNode desiredTree) throws Exception {
+        return hashAndTestSynchronization(startingTree, desiredTree, () -> false);
+    }
 
+    public static <T extends MerkleNode> T hashAndTestSynchronization(
+            final MerkleNode startingTree, final MerkleNode desiredTree, final BooleanSupplier requestTeacherToStop)
+            throws Exception {
         System.out.println("------------");
         System.out.println("starting: " + startingTree);
         System.out.println("desired: " + desiredTree);
@@ -1166,7 +1187,7 @@ public final class MerkleTestUtils {
         if (desiredTree != null && desiredTree.getHash() == null) {
             MerkleCryptoFactory.getInstance().digestTreeSync(desiredTree);
         }
-        return testSynchronization(startingTree, desiredTree);
+        return testSynchronization(startingTree, desiredTree, 0, requestTeacherToStop);
     }
 
     /**

@@ -37,6 +37,7 @@ dependencies {
   implementation(libs.swirlds.virtualmap)
   implementation(libs.swirlds.jasperdb)
   implementation(libs.swirlds.common)
+  api(libs.swirlds.config)
   api(libs.pbj.runtime)
   api(libs.hapi)
   api(libs.jsr305.annotation)
@@ -53,4 +54,6 @@ dependencies {
 
   // Temporarily needed until FakePreHandleContext can be removed
   testFixturesCompileOnly(project(":hedera-node:hedera-token-service"))
+  testFixturesImplementation(testLibs.bundles.testing)
+  testFixturesImplementation(libs.bundles.logging)
 }

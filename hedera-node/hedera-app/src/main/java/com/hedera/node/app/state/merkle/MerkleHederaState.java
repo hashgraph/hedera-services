@@ -65,17 +65,19 @@ import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.spi.state.EmptyReadableStates;
 import com.hedera.node.app.spi.state.EmptyWritableStates;
 import com.hedera.node.app.spi.state.ReadableKVState;
+import com.hedera.node.app.spi.state.ReadableQueueState;
 import com.hedera.node.app.spi.state.ReadableSingletonState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableKVStateBase;
+import com.hedera.node.app.spi.state.WritableQueueState;
+import com.hedera.node.app.spi.state.WritableQueueStateBase;
 import com.hedera.node.app.spi.state.WritableSingletonState;
 import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.state.HandleConsensusRoundListener;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.PreHandleListener;
-import com.hedera.node.app.state.RecordCache;
 import com.hedera.node.app.state.merkle.adapters.MerkleMapLikeAdapter;
 import com.hedera.node.app.state.merkle.adapters.ScheduledTransactionsAdapter;
 import com.hedera.node.app.state.merkle.adapters.VirtualMapLikeAdapter;
@@ -83,6 +85,9 @@ import com.hedera.node.app.state.merkle.disk.OnDiskReadableKVState;
 import com.hedera.node.app.state.merkle.disk.OnDiskWritableKVState;
 import com.hedera.node.app.state.merkle.memory.InMemoryReadableKVState;
 import com.hedera.node.app.state.merkle.memory.InMemoryWritableKVState;
+import com.hedera.node.app.state.merkle.queue.QueueNode;
+import com.hedera.node.app.state.merkle.queue.ReadableQueueStateImpl;
+import com.hedera.node.app.state.merkle.queue.WritableQueueStateImpl;
 import com.hedera.node.app.state.merkle.singleton.ReadableSingletonStateImpl;
 import com.hedera.node.app.state.merkle.singleton.SingletonNode;
 import com.hedera.node.app.state.merkle.singleton.WritableSingletonStateImpl;
@@ -171,9 +176,6 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
      * instance. The key is the "service-name.state-key".
      */
     private final Map<String, Map<String, StateMetadata<?, ?>>> services = new HashMap<>();
-
-    /** The cache used for tracking records in flight */
-    private final RecordCache recordCache = new MerkleRecordCache();
 
     /**
      * A rebuilt-map of all aliases.
@@ -303,12 +305,6 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
         throwIfImmutable();
         final var stateMetadata = services.get(serviceName);
         return stateMetadata == null ? EMPTY_WRITABLE_STATES : new MerkleWritableStates(stateMetadata);
-    }
-
-    @NonNull
-    @Override
-    public RecordCache getRecordCache() {
-        return recordCache;
     }
 
     /** {@inheritDoc} */
@@ -461,6 +457,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
         private final Map<String, StateMetadata<?, ?>> stateMetadata;
         protected final Map<String, ReadableKVState<?, ?>> kvInstances;
         protected final Map<String, ReadableSingletonState<?>> singletonInstances;
+        protected final Map<String, ReadableQueueState<?>> queueInstances;
         private final Set<String> stateKeys;
 
         /**
@@ -473,6 +470,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
             this.stateKeys = Collections.unmodifiableSet(stateMetadata.keySet());
             this.kvInstances = new HashMap<>();
             this.singletonInstances = new HashMap<>();
+            this.queueInstances = new HashMap<>();
         }
 
         @NonNull
@@ -527,6 +525,30 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
             }
         }
 
+        @NonNull
+        @Override
+        public <E> ReadableQueueState<E> getQueue(@NonNull String stateKey) {
+            final ReadableQueueState<E> instance = (ReadableQueueState<E>) queueInstances.get(stateKey);
+            if (instance != null) {
+                return instance;
+            }
+
+            final var md = stateMetadata.get(stateKey);
+            if (md == null || !md.stateDefinition().queue()) {
+                throw new IllegalArgumentException("Unknown queue state key '" + stateKey + "'");
+            }
+
+            final var node = findNode(md);
+            if (node instanceof QueueNode q) {
+                final var ret = createReadableQueueState(md, q);
+                queueInstances.put(stateKey, ret);
+                return ret;
+            } else {
+                // This exception should never be thrown. Only if "findNode" found the wrong node!
+                throw new IllegalStateException("Unexpected type for queue state " + stateKey);
+            }
+        }
+
         @Override
         public boolean contains(@NonNull final String stateKey) {
             return stateMetadata.containsKey(stateKey);
@@ -547,6 +569,10 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
         @NonNull
         protected abstract ReadableSingletonState createReadableSingletonState(
                 @NonNull StateMetadata md, @NonNull SingletonNode<?> s);
+
+        @NonNull
+        protected abstract ReadableQueueState createReadableQueueState(
+                @NonNull StateMetadata md, @NonNull QueueNode<?> q);
 
         /**
          * Utility method for finding and returning the given node. Will throw an ISE if such a node
@@ -606,6 +632,12 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
                 @NonNull final StateMetadata md, @NonNull final SingletonNode<?> s) {
             return new ReadableSingletonStateImpl<>(md, s);
         }
+
+        @NonNull
+        @Override
+        protected ReadableQueueState createReadableQueueState(@NonNull StateMetadata md, @NonNull QueueNode<?> q) {
+            return new ReadableQueueStateImpl(md, q);
+        }
     }
 
     /**
@@ -634,6 +666,12 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
             return (WritableSingletonState<T>) super.getSingleton(stateKey);
         }
 
+        @NonNull
+        @Override
+        public <E> WritableQueueState<E> getQueue(@NonNull String stateKey) {
+            return (WritableQueueState<E>) super.getQueue(stateKey);
+        }
+
         @Override
         @NonNull
         protected WritableKVState<?, ?> createReadableKVState(
@@ -655,12 +693,22 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
             return new WritableSingletonStateImpl<>(md, s);
         }
 
+        @NonNull
+        @Override
+        protected WritableQueueState<?> createReadableQueueState(
+                @NonNull final StateMetadata md, @NonNull final QueueNode<?> q) {
+            return new WritableQueueStateImpl<>(md, q);
+        }
+
         public void commit() {
             for (final ReadableKVState kv : kvInstances.values()) {
                 ((WritableKVStateBase) kv).commit();
             }
             for (final ReadableSingletonState s : singletonInstances.values()) {
                 ((WritableSingletonStateBase) s).commit();
+            }
+            for (final ReadableQueueState s : queueInstances.values()) {
+                ((WritableQueueStateBase) s).commit();
             }
         }
     }
@@ -678,12 +726,10 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
             @Override
             @SuppressWarnings("unchecked")
             public AccountStorageAdapter accounts() {
-                return AccountStorageAdapter.fromOnDisk(
-                        mapLikePayerRecords(),
-                        VirtualMapLikeAdapter.unwrapping(
-                                (StateMetadata<EntityNumVirtualKey, OnDiskAccount>)
-                                        services.get(TokenService.NAME).get("ACCOUNTS"),
-                                getChild(findNodeIndex(TokenService.NAME, "ACCOUNTS"))));
+                return AccountStorageAdapter.fromOnDisk(VirtualMapLikeAdapter.unwrapping(
+                        (StateMetadata<EntityNumVirtualKey, OnDiskAccount>)
+                                services.get(TokenService.NAME).get("ACCOUNTS"),
+                        getChild(findNodeIndex(TokenService.NAME, "ACCOUNTS"))));
             }
 
             @SuppressWarnings("unchecked")
@@ -740,6 +786,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
             }
 
             @Override
+            @SuppressWarnings("unchecked")
             public ScheduledTransactions scheduleTxs() {
                 return new ScheduledTransactionsAdapter(
                         ((SingletonNode<MerkleScheduledTransactionsState>) getChild(
@@ -772,12 +819,12 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
             }
 
             @Override
-            @SuppressWarnings("unchecked")
             public AddressBook addressBook() {
                 return Objects.requireNonNull(platform).getAddressBook();
             }
 
             @Override
+            @SuppressWarnings("unchecked")
             public MerkleSpecialFiles specialFiles() {
                 return ((SingletonNode<MerkleSpecialFiles>)
                                 getChild(findNodeIndex(FreezeService.NAME, FreezeServiceImpl.UPGRADE_FILES_KEY)))
@@ -799,6 +846,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
             }
 
             @Override
+            @SuppressWarnings("unchecked")
             public RecordsRunningHashLeaf runningHashLeaf() {
                 return ((SingletonNode<RecordsRunningHashLeaf>)
                                 getChild(findNodeIndex(NetworkService.NAME, NetworkServiceImpl.RUNNING_HASHES_KEY)))
@@ -812,6 +860,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
             }
 
             @Override
+            @SuppressWarnings("unchecked")
             public MerkleMapLike<EntityNum, MerkleStakingInfo> stakingInfo() {
                 return MerkleMapLikeAdapter.unwrapping(
                         (StateMetadata<EntityNum, MerkleStakingInfo>)

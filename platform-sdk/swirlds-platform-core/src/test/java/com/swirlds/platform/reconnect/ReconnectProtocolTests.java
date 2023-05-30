@@ -28,8 +28,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.utility.ValueReference;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
@@ -37,7 +39,7 @@ import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
-import java.time.Duration;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.LongStream;
@@ -53,7 +55,7 @@ import org.junit.jupiter.params.provider.MethodSource;
  */
 public class ReconnectProtocolTests {
 
-    private static final NodeId PEER_ID = new NodeId(false, 1L);
+    private static final NodeId PEER_ID = new NodeId(1L);
 
     private static Stream<Arguments> initiateParams() {
         return Stream.of(
@@ -121,7 +123,7 @@ public class ReconnectProtocolTests {
         when(reconnectController.acquireLearnerPermit()).thenReturn(params.getsPermit);
 
         final List<Long> neighborsForReconnect = LongStream.range(0L, 10L)
-                .filter(id -> id != PEER_ID.getId() || params.isReconnectNeighbor)
+                .filter(id -> id != PEER_ID.id() || params.isReconnectNeighbor)
                 .boxed()
                 .toList();
 
@@ -227,14 +229,15 @@ public class ReconnectProtocolTests {
     @Test
     void testTeacherThrottleReleased() {
         final FallenBehindManager fallenBehindManager = mock(FallenBehindManager.class);
-        final ReconnectSettingsImpl reconnectSettings = new ReconnectSettingsImpl();
-        // we don't want the time based throttle to interfere
-        reconnectSettings.minimumTimeBetweenReconnects = Duration.ZERO;
-        final ReconnectThrottle reconnectThrottle = new ReconnectThrottle(reconnectSettings);
+        final Configuration config = new TestConfigBuilder()
+                // we don't want the time based throttle to interfere
+                .withValue("reconnect.minimumTimeBetweenReconnects", "0s")
+                .getOrCreateConfig();
+        final ReconnectThrottle reconnectThrottle = new ReconnectThrottle(config.getConfigData(ReconnectConfig.class));
 
-        final NodeId node0 = new NodeId(false, 0L);
-        final NodeId node1 = new NodeId(false, 1L);
-        final NodeId node2 = new NodeId(false, 2L);
+        final NodeId node0 = new NodeId(0L);
+        final NodeId node1 = new NodeId(1L);
+        final NodeId node2 = new NodeId(2L);
         final ReconnectProtocol peer1 = new ReconnectProtocol(
                 getStaticThreadManager(),
                 node1,
@@ -294,7 +297,7 @@ public class ReconnectProtocolTests {
 
         final ReconnectProtocol protocol = new ReconnectProtocol(
                 getStaticThreadManager(),
-                new NodeId(false, 0),
+                new NodeId(0),
                 mock(ReconnectThrottle.class),
                 () -> null,
                 100,
@@ -334,7 +337,7 @@ public class ReconnectProtocolTests {
 
         final ReconnectProtocol protocol = new ReconnectProtocol(
                 getStaticThreadManager(),
-                new NodeId(false, 0),
+                new NodeId(0),
                 reconnectThrottle,
                 () -> reservedSignedState,
                 100,
@@ -366,7 +369,7 @@ public class ReconnectProtocolTests {
 
         final ReconnectProtocol protocol = new ReconnectProtocol(
                 getStaticThreadManager(),
-                new NodeId(false, 0),
+                new NodeId(0),
                 reconnectThrottle,
                 ReservedSignedState::createNullReservation,
                 100,

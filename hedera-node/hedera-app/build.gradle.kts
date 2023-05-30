@@ -14,7 +14,11 @@
  * limitations under the License.
  */
 
-plugins { id("com.hedera.hashgraph.conventions") }
+plugins {
+  id("com.hedera.hashgraph.conventions")
+  id("com.hedera.hashgraph.benchmark-conventions")
+  `java-test-fixtures`
+}
 
 description = "Hedera Application - Implementation"
 
@@ -51,6 +55,11 @@ dependencies {
   implementation(libs.bundles.helidon)
   implementation(libs.helidon.grpc.server)
   implementation(libs.pbj.runtime)
+  implementation(libs.commons.codec) // Temporarily needed for AdaptedMonoProcessLogic
+
+  jmhImplementation(project(":hedera-node:hedera-app"))
+  jmhImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
+  jmhImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
 
   itestImplementation(project(":hedera-node:hapi"))
   itestImplementation(testFixtures(project(":hedera-node:hapi")))
@@ -60,14 +69,24 @@ dependencies {
   itestImplementation(libs.bundles.swirlds)
   itestImplementation(testLibs.helidon.grpc.client)
   itestImplementation(testLibs.bundles.mockito)
+  itestImplementation(testLibs.assertj.core)
   itestCompileOnly(libs.spotbugs.annotations)
 
   testImplementation(testFixtures(project(":hedera-node:hedera-config")))
   testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
   testImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
   testImplementation(testLibs.classgraph)
+  testImplementation(testLibs.system.stubs.core)
+  testImplementation(testLibs.system.stubs.jupiter)
   testImplementation(testLibs.bundles.testing)
   testCompileOnly(libs.spotbugs.annotations)
+
+  testFixturesImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
+  testFixturesImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
+  testFixturesImplementation(project(":hedera-node:hedera-app"))
+  testFixturesImplementation(testLibs.classgraph)
+  testFixturesImplementation(testLibs.bundles.testing)
+  testFixturesCompileOnly(libs.spotbugs.annotations)
 }
 
 tasks.withType<Test> {

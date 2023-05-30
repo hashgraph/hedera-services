@@ -38,15 +38,24 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenFeeScheduleUpdateHandler;
+import com.hedera.node.app.service.token.impl.validators.CustomFeesValidator;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import java.util.Collections;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class TokenFeeScheduleUpdateHandlerParityTest extends ParityTestBase {
+    private TokenFeeScheduleUpdateHandler subject;
+    private CustomFeesValidator customFeeValidator;
 
-    private final TokenFeeScheduleUpdateHandler subject = new TokenFeeScheduleUpdateHandler();
+    @BeforeEach
+    void setUp() {
+        super.setUp();
+        customFeeValidator = new CustomFeesValidator();
+        subject = new TokenFeeScheduleUpdateHandler(customFeeValidator);
+    }
 
     @Test
     void tokenFeeScheduleUpdateNonExistingToken() throws PreCheckException {

@@ -26,13 +26,13 @@ import com.hedera.node.app.state.merkle.disk.OnDiskValue;
 import com.hedera.node.app.state.merkle.disk.OnDiskValueSerializer;
 import com.hedera.node.app.state.merkle.memory.InMemoryKey;
 import com.hedera.node.app.state.merkle.memory.InMemoryValue;
+import com.hedera.node.app.state.merkle.queue.QueueNode;
 import com.hedera.node.app.state.merkle.singleton.SingletonNode;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
@@ -122,10 +122,10 @@ public class MerkleTestBase extends StateTestBase {
     protected StateMetadata<Long, String> spaceMetadata;
     protected MerkleMap<InMemoryKey<Long>, InMemoryValue<Long, Long>> spaceMerkleMap;
 
-    // The "STEAM" map is part of SECOND_SERVICE
+    // The "STEAM" queue is part of FIRST_SERVICE
     protected String steamLabel;
     protected StateMetadata<String, String> steamMetadata;
-    protected MerkleMap<InMemoryKey<String>, InMemoryValue<String, String>> steamMerkleMap;
+    protected QueueNode<String> steamQueue;
 
     // The "COUNTRY" singleton is part of FIRST_SERVICE
     protected String countryLabel;
@@ -172,9 +172,16 @@ public class MerkleTestBase extends StateTestBase {
 
     protected void setupSingletonCountry() {
         countryLabel = StateUtils.computeLabel(FIRST_SERVICE, COUNTRY_STATE_KEY);
-        countryMetadata = new StateMetadata<String, String>(
+        countryMetadata = new StateMetadata<>(
                 FIRST_SERVICE, new TestSchema(1), StateDefinition.singleton(COUNTRY_STATE_KEY, STRING_CODEC));
         countrySingleton = new SingletonNode<>(countryMetadata, AUSTRALIA);
+    }
+
+    protected void setupSteamQueue() {
+        steamLabel = StateUtils.computeLabel(FIRST_SERVICE, STEAM_STATE_KEY);
+        steamMetadata = new StateMetadata<>(
+                FIRST_SERVICE, new TestSchema(1), StateDefinition.queue(STEAM_STATE_KEY, STRING_CODEC));
+        steamQueue = new QueueNode<>(steamMetadata);
     }
 
     /** Sets up the {@link #registry}, ready to be used for serialization tests */
@@ -189,6 +196,7 @@ public class MerkleTestBase extends StateTestBase {
             registry.reset();
             registry.registerConstructables("com.swirlds.merklemap");
             registry.registerConstructables("com.swirlds.jasperdb");
+            registry.registerConstructables("com.swirlds.fcqueue");
             registry.registerConstructables("com.swirlds.virtualmap");
             registry.registerConstructables("com.swirlds.common.merkle");
             registry.registerConstructables("com.swirlds.common");
@@ -213,15 +221,11 @@ public class MerkleTestBase extends StateTestBase {
             String label, StateMetadata<String, String> md) {
         final var keySerializer = new OnDiskKeySerializer<>(md);
         final var builder = new JasperDbBuilder<OnDiskKey<String>, OnDiskValue<String>>()
-                // Force all hashes to disk, to make sure we're going through all the
-                // serialization paths we can
-                .internalHashesRamToDiskThreshold(0)
+                .hashesRamToDiskThreshold(0)
                 .maxNumOfKeys(100)
                 .preferDiskBasedIndexes(true)
                 .keySerializer(keySerializer)
                 .virtualLeafRecordSerializer(new VirtualLeafRecordSerializer<>(
-                        (short) 1,
-                        DigestType.SHA_384,
                         (short) 1,
                         DataFileCommon.VARIABLE_DATA_SIZE,
                         keySerializer,

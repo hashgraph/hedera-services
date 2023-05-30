@@ -35,7 +35,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ServicesSignedStateListenerTest {
     private final Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 890);
-    private final NodeId selfId = new NodeId(false, 123L);
+    private final NodeId selfId = new NodeId(123L);
 
     @Mock
     private NewSignedStateNotification notice;

@@ -45,7 +45,9 @@ module com.hedera.node.app.service.mono {
             com.hedera.node.app.service.networkadmin.impl,
             com.hedera.node.app.service.consensus.impl.test,
             com.hedera.node.app.service.networkadmin.impl.test,
-            com.hedera.services.cli;
+            com.hedera.services.cli,
+            com.hedera.node.app.service.file.impl,
+            com.hedera.node.app.service.file.impl.test;
     exports com.hedera.node.app.service.mono.ledger to
             com.hedera.node.app.service.mono.testFixtures,
             com.hedera.node.app;
@@ -74,7 +76,8 @@ module com.hedera.node.app.service.mono {
     exports com.hedera.node.app.service.mono.sigs.metadata to
             com.hedera.node.app;
     exports com.hedera.node.app.service.mono.sigs.utils to
-            com.hedera.node.app.service.mono.testFixtures;
+            com.hedera.node.app.service.mono.testFixtures,
+            com.hedera.node.app;
     exports com.hedera.node.app.service.mono.sigs.verification to
             com.hedera.node.app.service.mono.testFixtures,
             com.hedera.node.app;

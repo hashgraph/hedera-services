@@ -87,6 +87,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransferList;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -414,6 +415,10 @@ public class TxnVerbs {
 
     public static HapiEthereumCall ethereumCryptoTransferToAlias(ByteString alias, long amount) {
         return new HapiEthereumCall(alias, amount);
+    }
+
+    public static HapiEthereumCall ethereumCryptoTransferToExplicit(@NonNull final byte[] to, final long amount) {
+        return HapiEthereumCall.explicitlyTo(to, amount);
     }
 
     /**

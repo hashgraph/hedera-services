@@ -19,7 +19,6 @@ package com.hedera.node.app.spi.meta.bni;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenRelationship;
 import com.hedera.hapi.node.state.common.EntityNumber;
-import com.hedera.hapi.node.state.common.Int256Value;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Id;
 import com.hedera.hapi.node.state.token.Nft;
@@ -219,7 +218,7 @@ public interface Dispatch {
      * @param firstKey the first key in the storage linked list, or {@code null} if the list is empty
      * @param slotsUsed the number of storage slots used by the contract
      */
-    void updateStorageMetadata(long contractNumber, @Nullable Int256Value firstKey, int slotsUsed);
+    void updateStorageMetadata(long contractNumber, @Nullable Bytes firstKey, int slotsUsed);
 
     /**
      * Attempts to charge the given {@code amount} of rent to the given {@code contractNumber}, with

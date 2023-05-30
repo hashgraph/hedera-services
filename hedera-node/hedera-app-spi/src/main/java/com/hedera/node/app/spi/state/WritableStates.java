@@ -40,4 +40,8 @@ public interface WritableStates extends ReadableStates {
     @Override
     @NonNull
     <T> WritableSingletonState<T> getSingleton(@NonNull String stateKey);
+
+    @Override
+    @NonNull
+    <E> WritableQueueState<E> getQueue(@NonNull String stateKey);
 }

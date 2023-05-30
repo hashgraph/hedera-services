@@ -27,18 +27,17 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.consensus.ConsensusCreateTopicTransactionBody;
+import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
-import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
-import com.hedera.node.app.service.consensus.impl.records.CreateTopicRecordBuilder;
-import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.config.data.TopicsConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
@@ -61,13 +60,13 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
 
         // The transaction cannot set the admin key unless the transaction was signed by that key
         if (op.hasAdminKey()) {
-            context.requireKeyOrThrow(op.adminKeyOrThrow(), INVALID_ADMIN_KEY);
+            context.requireKeyOrThrow(op.adminKey(), INVALID_ADMIN_KEY);
         }
 
         // If an account is to be used for auto-renewal, then the account must exist and the transaction
         // must be signed with that account's key.
         if (op.hasAutoRenewAccount()) {
-            final var autoRenewAccountID = op.autoRenewAccountOrThrow();
+            final var autoRenewAccountID = op.autoRenewAccount();
             context.requireKeyOrThrow(autoRenewAccountID, INVALID_AUTORENEW_ACCOUNT);
         }
     }
@@ -76,17 +75,17 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
      * Given the appropriate context, creates a new topic.
      *
      * @param handleContext the {@link HandleContext} for the active transaction
-     * @param op the {@link ConsensusCreateTopicTransactionBody} of the active transaction
-     * @param consensusServiceConfig the {@link ConsensusServiceConfig} for the active transaction
-     * @param recordBuilder the {@link ConsensusCreateTopicRecordBuilder} for the active transaction
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void handle(
-            @NonNull final HandleContext handleContext,
-            @NonNull final ConsensusCreateTopicTransactionBody op,
-            @NonNull final ConsensusServiceConfig consensusServiceConfig,
-            @NonNull final ConsensusCreateTopicRecordBuilder recordBuilder,
-            @NonNull final WritableTopicStore topicStore) {
+    @Override
+    public void handle(@NonNull final HandleContext handleContext) {
+        requireNonNull(handleContext, "The argument 'context' must not be null");
+
+        final var op = handleContext.body().consensusCreateTopicOrThrow();
+        final var configuration = handleContext.configuration();
+        final var topicConfig = configuration.getConfigData(TopicsConfig.class);
+        final var topicStore = handleContext.writableStore(WritableTopicStore.class);
+
         final var builder = new Topic.Builder();
 
         /* Validate admin and submit keys and set them */
@@ -94,13 +93,15 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
             handleContext.attributeValidator().validateKey(op.adminKey());
             builder.adminKey(op.adminKey());
         }
+
+        // submitKey() is not checked in preCheck()
         if (op.hasSubmitKey()) {
             handleContext.attributeValidator().validateKey(op.submitKey());
             builder.submitKey(op.submitKey());
         }
 
         /* Validate if the current topic can be created */
-        if (topicStore.sizeOfState() >= consensusServiceConfig.maxTopics()) {
+        if (topicStore.sizeOfState() >= topicConfig.maxNumber()) {
             throw new HandleException(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
         }
 
@@ -126,7 +127,7 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
             builder.autoRenewAccountNumber(effectiveExpiryMeta.autoRenewNum());
 
             /* --- Add topic number to topic builder --- */
-            builder.topicNumber(handleContext.newEntityNumSupplier().getAsLong());
+            builder.topicNumber(handleContext.newEntityNum());
 
             builder.runningHash(Bytes.wrap(new byte[RUNNING_HASH_BYTE_ARRAY_SIZE]));
 
@@ -136,7 +137,10 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
             topicStore.put(topic);
 
             /* --- Build the record with newly created topic --- */
-            recordBuilder.setCreatedTopic(topic.topicNumber());
+            final var recordBuilder = handleContext.recordBuilder(ConsensusCreateTopicRecordBuilder.class);
+            final var topicID =
+                    TopicID.newBuilder().topicNum(topic.topicNumber()).build();
+            recordBuilder.topicID(topicID);
         } catch (final HandleException e) {
             if (e.getStatus() == INVALID_EXPIRATION_TIME) {
                 // Since for some reason TopicCreateTransactionBody does not have an expiration time,
@@ -145,10 +149,5 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
             }
             throw e;
         }
-    }
-
-    @Override
-    public ConsensusCreateTopicRecordBuilder newRecordBuilder() {
-        return new CreateTopicRecordBuilder();
     }
 }

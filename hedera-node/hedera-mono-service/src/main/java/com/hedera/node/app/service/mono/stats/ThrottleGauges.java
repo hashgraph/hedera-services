@@ -27,7 +27,6 @@ import com.hedera.node.app.service.mono.throttling.annotations.HandleThrottle;
 import com.hedera.node.app.service.mono.throttling.annotations.HapiThrottle;
 import com.swirlds.common.metrics.DoubleGauge;
 import com.swirlds.common.system.Platform;
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -78,9 +77,9 @@ public class ThrottleGauges {
     }
 
     public void updateAll() {
-        final var now = Instant.now();
-        update(now, handleThrottling.allActiveThrottles(), handleThrottling.gasLimitThrottle(), consNamedMetrics);
-        update(now, hapiThrottling.allActiveThrottles(), hapiThrottling.gasLimitThrottle(), hapiNamedMetrics);
+        // We measure throttle utilization by the capacity used at the time of the last throttling decision
+        update(handleThrottling.allActiveThrottles(), handleThrottling.gasLimitThrottle(), consNamedMetrics);
+        update(hapiThrottling.allActiveThrottles(), hapiThrottling.gasLimitThrottle(), hapiNamedMetrics);
     }
 
     private void registerTypeWith(
@@ -105,18 +104,17 @@ public class ThrottleGauges {
     }
 
     private void update(
-            final Instant now,
             final List<DeterministicThrottle> activeThrottles,
             final GasLimitDeterministicThrottle gasThrottle,
             final Map<String, DoubleGauge> namedMetrics) {
         activeThrottles.forEach(throttle -> {
             final var name = throttle.name();
             if (namedMetrics.containsKey(name)) {
-                namedMetrics.get(name).set(throttle.percentUsed(now));
+                namedMetrics.get(name).set(throttle.instantaneousPercentUsed());
             }
         });
         if (namedMetrics.containsKey(GAS_THROTTLE_NAME)) {
-            namedMetrics.get(GAS_THROTTLE_NAME).set(gasThrottle.percentUsed(now));
+            namedMetrics.get(GAS_THROTTLE_NAME).set(gasThrottle.instantaneousPercentUsed());
         }
     }
 
