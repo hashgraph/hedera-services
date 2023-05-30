@@ -28,6 +28,7 @@ import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import java.util.Set;
 
@@ -91,8 +92,8 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      *
      * @param accountID - the id of the Account to be retrieved.
      */
-    @NonNull
-    public Account get(final AccountID accountID) {
+    @Nullable
+    public Account get(@NonNull final AccountID accountID) {
         return getAccountLeaf(requireNonNull(accountID));
     }
 
@@ -102,8 +103,9 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      *
      * @param id - the number of the account to be retrieved.
      */
-    @NonNull
-    public Account getForModify(final AccountID id) {
+    @Nullable
+    public Account getForModify(@NonNull final AccountID id) {
+        requireNonNull(id);
         // Get the account number based on the account identifier. It may be null.
         final var accountOneOf = id.account();
         final Long accountNum =

@@ -45,8 +45,6 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class StandardizedAttributeValidator implements AttributeValidator {
-    public static final int MAX_NESTED_KEY_LEVELS = 15;
-
     private final long maxEntityLifetime;
     private final LongSupplier consensusSecondNow;
     private final GlobalDynamicProperties dynamicProperties;

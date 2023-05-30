@@ -42,7 +42,6 @@ public class StakingValidator {
     public StakingValidator(NodeInfo nodeInfo, ConfigProvider configProvider) {
         this.nodeInfo = nodeInfo;
         this.configProvider = configProvider;
-        // Needed for Dagger injection
     }
 
     /**

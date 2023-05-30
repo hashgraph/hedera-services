@@ -41,6 +41,7 @@ import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -107,11 +108,9 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
 
     /**
      * This method is called during the handle workflow. It executes the actual transaction.
-     *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
-     *
-     * @throws NullPointerException if one of the arguments is {@code null}
+     * @param context the {@link HandleContext} which collects all information
+     * @throws HandleException if any of the checks fail
+     * @throws NullPointerException if any of the arguments are null
      */
     @Override
     public void handle(@NonNull final HandleContext context) {
