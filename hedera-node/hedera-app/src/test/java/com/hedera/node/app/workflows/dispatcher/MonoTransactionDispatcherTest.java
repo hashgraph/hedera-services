@@ -686,6 +686,23 @@ class MonoTransactionDispatcherTest {
     }
 
     @Test
+    void dispatchesFreezeAsExpected() {
+        final var txnBody = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder()
+                        .transactionValidStart(
+                                Timestamp.newBuilder().seconds(1000).build()))
+                .freeze(FreezeTransactionBody.newBuilder()
+                        .freezeType(FREEZE_ABORT)
+                        .build())
+                .build();
+        given(handleContext.body()).willReturn(txnBody);
+
+        dispatcher.dispatchHandle(handleContext);
+
+        verifyNoInteractions(txnCtx);
+    }
+
+    @Test
     void doesntCommitWhenUsageLimitsExceeded() {
         final var txnBody = TransactionBody.newBuilder()
                 .cryptoCreateAccount(CryptoCreateTransactionBody.DEFAULT)
@@ -733,23 +750,6 @@ class MonoTransactionDispatcherTest {
 
         assertThat(sideEffectsTracker.getPseudorandomNumber()).isEqualTo(123);
         assertThat(sideEffectsTracker.getPseudorandomBytes()).isNull();
-    }
-
-    @Test
-    void dispatchesFreezeAsExpected() {
-        given(writableStoreFactory.createFreezeStore()).willReturn(writableFreezeStore);
-        transactionBody = TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder()
-                        .transactionValidStart(
-                                Timestamp.newBuilder().seconds(1000).build()))
-                .freeze(FreezeTransactionBody.newBuilder()
-                        .freezeType(FREEZE_ABORT)
-                        .build())
-                .build();
-
-        dispatcher.dispatchHandle(HederaFunctionality.FREEZE, transactionBody, writableStoreFactory);
-
-        verifyNoInteractions(txnCtx);
     }
 
     @Test

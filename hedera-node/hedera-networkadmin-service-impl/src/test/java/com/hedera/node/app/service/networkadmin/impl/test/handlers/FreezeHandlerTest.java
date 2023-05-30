@@ -41,10 +41,10 @@ import com.hedera.hapi.node.freeze.FreezeType;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.networkadmin.ReadableSpecialFileStore;
-import com.hedera.node.app.service.networkadmin.impl.config.NetworkAdminServiceConfig;
 import com.hedera.node.app.service.networkadmin.impl.handlers.FreezeHandler;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.state.WritableFreezeStore;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -62,18 +62,20 @@ class FreezeHandlerTest {
     ReadableSpecialFileStore specialFileStore;
 
     @Mock(strictness = LENIENT)
+    private WritableFreezeStore freezeStore;
+
+    @Mock(strictness = LENIENT)
     private ReadableAccountStore accountStore;
 
     @Mock(strictness = LENIENT)
-    private PreHandleContext context;
+    private PreHandleContext preHandleContext;
+
+    @Mock(strictness = LENIENT)
+    private HandleContext handleContext;
 
     @Mock(strictness = LENIENT)
     private Account account;
 
-    @Mock(strictness = LENIENT)
-    private WritableFreezeStore freezeStore;
-
-    private NetworkAdminServiceConfig adminServiceConfig;
     private final Key key = Key.newBuilder()
             .ed25519(Bytes.wrap("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes()))
             .build();
@@ -84,18 +86,21 @@ class FreezeHandlerTest {
     @BeforeEach
     void setUp() {
         Configuration config = new HederaTestConfigBuilder().getOrCreateConfig();
-        given(context.configuration()).willReturn(config);
-        adminServiceConfig = config.getConfigData(NetworkAdminServiceConfig.class);
+        given(preHandleContext.configuration()).willReturn(config);
 
         given(accountStore.getAccountById(nonAdminAccount)).willReturn(account);
         given(account.key()).willReturn(key);
 
-        given(context.createStore(ReadableAccountStore.class)).willReturn(accountStore);
-        given(context.createStore(ReadableSpecialFileStore.class)).willReturn(specialFileStore);
+        given(preHandleContext.createStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(preHandleContext.createStore(ReadableSpecialFileStore.class)).willReturn(specialFileStore);
+
+        given(handleContext.configuration()).willReturn(config);
+        given(handleContext.readableStore(ReadableSpecialFileStore.class)).willReturn(specialFileStore);
+        given(handleContext.writableStore(WritableFreezeStore.class)).willReturn(freezeStore);
     }
 
     @Test
-    void rejectIfUnknownFreezeType() {
+    void pureChecksFailIfUnknownFreezeType() {
         TransactionBody txn = TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder()
                         .accountID(nonAdminAccount)
@@ -105,8 +110,7 @@ class FreezeHandlerTest {
                         .freezeType(UNKNOWN_FREEZE_TYPE)
                         .build())
                 .build();
-        given(context.body()).willReturn(txn);
-        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_FREEZE_TRANSACTION_BODY);
+        assertThrowsPreCheck(() -> subject.pureChecks(txn), INVALID_FREEZE_TRANSACTION_BODY);
     }
 
     @Test
@@ -123,8 +127,8 @@ class FreezeHandlerTest {
                             .freezeType(freezeType)
                             .build())
                     .build();
-            given(context.body()).willReturn(txn);
-            assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_FREEZE_TRANSACTION_BODY);
+            given(preHandleContext.body()).willReturn(txn);
+            assertThrowsPreCheck(() -> subject.preHandle(preHandleContext), INVALID_FREEZE_TRANSACTION_BODY);
         }
     }
 
@@ -144,8 +148,8 @@ class FreezeHandlerTest {
                             .freezeType(freezeType)
                             .startTime(Timestamp.newBuilder().seconds(1000).build()))
                     .build();
-            given(context.body()).willReturn(txn);
-            assertThrowsPreCheck(() -> subject.preHandle(context), FREEZE_START_TIME_MUST_BE_FUTURE);
+            given(preHandleContext.body()).willReturn(txn);
+            assertThrowsPreCheck(() -> subject.preHandle(preHandleContext), FREEZE_START_TIME_MUST_BE_FUTURE);
         }
     }
 
@@ -164,8 +168,8 @@ class FreezeHandlerTest {
                             .freezeType(freezeType)
                             .startTime(Timestamp.newBuilder().seconds(2000).build()))
                     .build();
-            given(context.body()).willReturn(txn);
-            assertThrowsPreCheck(() -> subject.preHandle(context), FREEZE_UPDATE_FILE_DOES_NOT_EXIST);
+            given(preHandleContext.body()).willReturn(txn);
+            assertThrowsPreCheck(() -> subject.preHandle(preHandleContext), FREEZE_UPDATE_FILE_DOES_NOT_EXIST);
         }
     }
 
@@ -190,8 +194,8 @@ class FreezeHandlerTest {
                             .updateFile(fileId)
                             .build())
                     .build();
-            given(context.body()).willReturn(txn);
-            assertThrowsPreCheck(() -> subject.preHandle(context), FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH);
+            given(preHandleContext.body()).willReturn(txn);
+            assertThrowsPreCheck(() -> subject.preHandle(preHandleContext), FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH);
         }
     }
 
@@ -207,9 +211,11 @@ class FreezeHandlerTest {
                         .freezeType(FREEZE_ABORT)
                         .build())
                 .build();
-        given(context.body()).willReturn(txn);
-        assertDoesNotThrow(() -> subject.preHandle(context));
-        assertDoesNotThrow(() -> subject.handle(txn, adminServiceConfig, specialFileStore, freezeStore));
+        given(preHandleContext.body()).willReturn(txn);
+        assertDoesNotThrow(() -> subject.preHandle(preHandleContext));
+
+        given(handleContext.body()).willReturn(txn);
+        assertDoesNotThrow(() -> subject.handle(handleContext));
     }
 
     @Test
@@ -234,9 +240,11 @@ class FreezeHandlerTest {
                             .fileHash(Bytes.wrap(new byte[48]))
                             .build())
                     .build();
-            given(context.body()).willReturn(txn);
-            assertDoesNotThrow(() -> subject.preHandle(context));
-            assertDoesNotThrow(() -> subject.handle(txn, adminServiceConfig, specialFileStore, freezeStore));
+            given(preHandleContext.body()).willReturn(txn);
+            assertDoesNotThrow(() -> subject.preHandle(preHandleContext));
+
+            given(handleContext.body()).willReturn(txn);
+            assertDoesNotThrow(() -> subject.handle(handleContext));
         }
     }
 
@@ -259,9 +267,11 @@ class FreezeHandlerTest {
                         .fileHash(Bytes.wrap(new byte[48]))
                         .build())
                 .build();
-        given(context.body()).willReturn(txn);
-        assertDoesNotThrow(() -> subject.preHandle(context));
-        assertDoesNotThrow(() -> subject.handle(txn, adminServiceConfig, specialFileStore, freezeStore));
+        given(preHandleContext.body()).willReturn(txn);
+        assertDoesNotThrow(() -> subject.preHandle(preHandleContext));
+
+        given(handleContext.body()).willReturn(txn);
+        assertDoesNotThrow(() -> subject.handle(handleContext));
     }
 
     @Test
@@ -279,9 +289,11 @@ class FreezeHandlerTest {
                         .startTime(Timestamp.newBuilder().seconds(2000).build())
                         .build())
                 .build();
-        given(context.body()).willReturn(txn);
-        assertDoesNotThrow(() -> subject.preHandle(context));
-        assertDoesNotThrow(() -> subject.handle(txn, adminServiceConfig, specialFileStore, freezeStore));
+        given(preHandleContext.body()).willReturn(txn);
+        assertDoesNotThrow(() -> subject.preHandle(preHandleContext));
+
+        given(handleContext.body()).willReturn(txn);
+        assertDoesNotThrow(() -> subject.handle(handleContext));
     }
 
     @Test
@@ -294,21 +306,8 @@ class FreezeHandlerTest {
                 .freeze(FreezeTransactionBody.newBuilder().build())
                 // do not set freeze start time
                 .build();
-        given(context.body()).willReturn(txn);
-        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_FREEZE_TRANSACTION_BODY);
-    }
-
-    @Test
-    void rejectIfNoFreezeTxSet() {
-        TransactionBody txn = TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder()
-                        .accountID(nonAdminAccount)
-                        .transactionValidStart(
-                                Timestamp.newBuilder().seconds(1000).build()))
-                .build();
-        // do not set freeze transaction body
-        given(context.body()).willReturn(txn);
-        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_FREEZE_TRANSACTION_BODY);
+        given(preHandleContext.body()).willReturn(txn);
+        assertThrowsPreCheck(() -> subject.preHandle(preHandleContext), INVALID_FREEZE_TRANSACTION_BODY);
     }
 
     @Test
@@ -321,8 +320,7 @@ class FreezeHandlerTest {
                                 Timestamp.newBuilder().seconds(1000).build()))
                 .freeze(FreezeTransactionBody.newBuilder().startHour(3).build())
                 .build();
-        given(context.body()).willReturn(txn);
-        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_FREEZE_TRANSACTION_BODY);
+        assertThrowsPreCheck(() -> subject.pureChecks(txn), INVALID_FREEZE_TRANSACTION_BODY);
     }
 
     @Test
@@ -335,8 +333,7 @@ class FreezeHandlerTest {
                                 Timestamp.newBuilder().seconds(1000).build()))
                 .freeze(FreezeTransactionBody.newBuilder().startMin(31).build())
                 .build();
-        given(context.body()).willReturn(txn);
-        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_FREEZE_TRANSACTION_BODY);
+        assertThrowsPreCheck(() -> subject.pureChecks(txn), INVALID_FREEZE_TRANSACTION_BODY);
     }
 
     @Test
@@ -349,8 +346,7 @@ class FreezeHandlerTest {
                                 Timestamp.newBuilder().seconds(1000).build()))
                 .freeze(FreezeTransactionBody.newBuilder().endHour(3).build())
                 .build();
-        given(context.body()).willReturn(txn);
-        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_FREEZE_TRANSACTION_BODY);
+        assertThrowsPreCheck(() -> subject.pureChecks(txn), INVALID_FREEZE_TRANSACTION_BODY);
     }
 
     @Test
@@ -363,7 +359,6 @@ class FreezeHandlerTest {
                                 Timestamp.newBuilder().seconds(1000).build()))
                 .freeze(FreezeTransactionBody.newBuilder().endMin(16).build())
                 .build();
-        given(context.body()).willReturn(txn);
-        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_FREEZE_TRANSACTION_BODY);
+        assertThrowsPreCheck(() -> subject.pureChecks(txn), INVALID_FREEZE_TRANSACTION_BODY);
     }
 }
