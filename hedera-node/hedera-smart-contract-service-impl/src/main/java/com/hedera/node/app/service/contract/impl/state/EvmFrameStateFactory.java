@@ -21,5 +21,5 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 
 @FunctionalInterface
 public interface EvmFrameStateFactory {
-    EvmFrameState createWithin(@NonNull Scope scope);
+    EvmFrameState createIn(@NonNull Scope scope);
 }

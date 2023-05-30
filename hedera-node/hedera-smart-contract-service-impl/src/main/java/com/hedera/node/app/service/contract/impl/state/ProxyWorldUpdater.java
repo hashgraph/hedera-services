@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.service.contract.impl.state;
 
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.MISSING_ENTITY_NUMBER;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOf;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.meta.bni.Scope;
@@ -30,6 +33,8 @@ import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
 public class ProxyWorldUpdater implements WorldUpdater {
+    private static final String CANNOT_CREATE = "Cannot create ";
+
     /**
      * The scope in which this {@code ProxyWorldUpdater} operates; stored in case we need to
      * create a "stacked" updater in a child scope via {@link #updater()}.
@@ -70,22 +75,66 @@ public class ProxyWorldUpdater implements WorldUpdater {
     public ProxyWorldUpdater(@NonNull final Scope scope, @NonNull final EvmFrameStateFactory evmFrameStateFactory) {
         this.scope = requireNonNull(scope);
         this.evmFrameStateFactory = requireNonNull(evmFrameStateFactory);
-        this.evmFrameState = evmFrameStateFactory.createWithin(scope);
+        this.evmFrameState = evmFrameStateFactory.createIn(scope);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public @Nullable Account get(@NonNull final Address address) {
-        throw new AssertionError("Not implemented");
+        return evmFrameState.getAccount(address);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public EvmAccount getAccount(@NonNull final Address address) {
-        throw new AssertionError("Not implemented");
+        return evmFrameState.getMutableAccount(address);
     }
 
+    /**
+     * Given the possibly zero address of the recipient of a {@code CONTRACT_CREATION} message,
+     * sets up the {@link PendingCreation} this {@link ProxyWorldUpdater} will use to complete
+     * the creation of the new account in {@link ProxyWorldUpdater#createAccount(Address, long, Wei)};
+     * returns the "long-zero" address to be assigned to the new account.
+     *
+     * @param origin the address of the recipient of a {@code CONTRACT_CREATION} message, zero if a top-level message
+     * @return the "long-zero" address to be assigned to the new account
+     */
+    public Address setupCreate(@NonNull final Address origin) {
+        setupPendingCreation(origin, null);
+        return requireNonNull(pendingCreation).address();
+    }
+
+    /**
+     * Given the possibly zero address of the recipient of a {@code CONTRACT_CREATION} message,
+     * and the EIP-1014 address computed by an in-progress {@code CREATE2} operation, sets up the
+     * {@link PendingCreation} this {@link ProxyWorldUpdater} will use to complete the creation of
+     * the new account in {@link ProxyWorldUpdater#createAccount(Address, long, Wei)}.
+     *
+     * <p>Does not return anything, as the {@code CREATE2} address is already known.
+     *
+     * @param origin the address of the recipient of a {@code CONTRACT_CREATION} message, zero if a top-level message
+     * @param alias the EIP-1014 address computed by an in-progress {@code CREATE2} operation
+     */
+    public void setupCreate2(@NonNull final Address origin, @NonNull final Address alias) {
+        setupPendingCreation(origin, alias);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public EvmAccount createAccount(@NonNull final Address address, final long nonce, @NonNull final Wei balance) {
-        throw new AssertionError("Not implemented");
+        if (pendingCreation == null) {
+            throw new IllegalStateException(CANNOT_CREATE + address + " without a pending creation");
+        }
+        final var number = getValidatedCreationNumber(address, balance, pendingCreation);
+        scope.dispatch()
+                .createContract(number, pendingCreation.parentNumber(), nonce, pendingCreation.aliasIfApplicable());
+        return evmFrameState.getMutableAccount(pendingCreation.address());
     }
 
     @Override
@@ -121,5 +170,35 @@ public class ProxyWorldUpdater implements WorldUpdater {
     @Override
     public @NonNull Collection<Address> getDeletedAccountAddresses() {
         throw new AssertionError("Not implemented");
+    }
+
+    private long getValidatedCreationNumber(
+            @NonNull final Address address,
+            @NonNull final Wei balance,
+            @NonNull final PendingCreation knownPendingCreation) {
+        if (!balance.isZero()) {
+            throw new IllegalStateException(CANNOT_CREATE + address + " with non-zero balance " + balance);
+        }
+        final var pendingAddress = knownPendingCreation.address();
+        if (!requireNonNull(address).equals(pendingAddress)) {
+            throw new IllegalStateException(CANNOT_CREATE + address + " with " + pendingAddress + " pending");
+        }
+        final var pendingNumber = scope.dispatch().useNextEntityNumber();
+        if (pendingNumber != knownPendingCreation.number()) {
+            throw new IllegalStateException(CANNOT_CREATE + address + " with number " + pendingNumber + " ("
+                    + knownPendingCreation.number() + ") pending");
+        }
+        return pendingNumber;
+    }
+
+    private void setupPendingCreation(@NonNull final Address origin, @Nullable final Address alias) {
+        final var number = scope.dispatch().peekNextEntityNumber();
+        final long parentNumber = Address.ZERO.equals(requireNonNull(origin))
+                ? scope.payerAccountNumber()
+                : numberOf(origin, scope.dispatch());
+        if (parentNumber == MISSING_ENTITY_NUMBER) {
+            throw new IllegalStateException("Claimed origin " + origin + " has no Hedera account number");
+        }
+        pendingCreation = new PendingCreation(alias == null ? asLongZeroAddress(number) : alias, number, parentNumber);
     }
 }

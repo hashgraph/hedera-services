@@ -73,4 +73,11 @@ public interface Scope {
      * @return a nested {@link Scope}
      */
     Scope begin();
+
+    /**
+     * Returns the account number of the Hedera account that is paying for the transaction.
+     *
+     * @return the payer account number
+     */
+    long payerAccountNumber();
 }

@@ -46,9 +46,9 @@ public interface Dispatch {
      * via a record whose (1) origin is a given contract number and (2) result is derived from the
      * read state via a given {@link ResultTranslator}.
      *
-     * @param id the NFT id
+     * @param id                    the NFT id
      * @param callingContractNumber the number of the contract that is calling this method
-     * @param translator the {@link ResultTranslator} that derives the record result from the read state
+     * @param translator            the {@link ResultTranslator} that derives the record result from the read state
      * @return the NFT, or {@code null} if no such NFT exists
      */
     @Nullable
@@ -59,9 +59,9 @@ public interface Dispatch {
      * via a record whose (1) origin is a given contract number and (2) result is derived from the
      * read state via a given {@link ResultTranslator}.
      *
-     * @param number the token number
+     * @param number                the token number
      * @param callingContractNumber the number of the contract that is calling this method
-     * @param translator the {@link ResultTranslator} that derives the record result from the read state
+     * @param translator            the {@link ResultTranslator} that derives the record result from the read state
      * @return the token, or {@code null} if no such token exists
      */
     @Nullable
@@ -73,9 +73,9 @@ public interface Dispatch {
      * via a record whose (1) origin is a given contract number and (2) result is derived from the
      * read state via a given {@link ResultTranslator}.
      *
-     * @param number the account number
+     * @param number                the account number
      * @param callingContractNumber the number of the contract that is calling this method
-     * @param translator the {@link ResultTranslator} that derives the record result from the read state
+     * @param translator            the {@link ResultTranslator} that derives the record result from the read state
      * @return the account, or {@code null} if no such account exists
      */
     @Nullable
@@ -87,10 +87,10 @@ public interface Dispatch {
      * externalizes the result of the state read via a record whose (1) origin is a given contract number
      * and (2) result is derived from the read state via a given {@link ResultTranslator}.
      *
-     * @param accountNumber the account number in the relationship
-     * @param tokenNumber the token number in the relationship
+     * @param accountNumber         the account number in the relationship
+     * @param tokenNumber           the token number in the relationship
      * @param callingContractNumber the number of the contract that is calling this method
-     * @param translator the {@link ResultTranslator} that derives the record result from the read state
+     * @param translator            the {@link ResultTranslator} that derives the record result from the read state
      * @return the relationship, or {@code null} if no such relationship exists
      */
     @Nullable
@@ -108,7 +108,7 @@ public interface Dispatch {
     /**
      * Creates a new hollow account with the given EVM address. The implementation of this call should
      * consume a new entity number for the created new account.
-     *
+     * <p>
      * If this fails due to some non-EVM resource constraints on number of preceding child records (or even on
      * the total number of accounts in state), should return the appropriate failure code, and
      * {@link ResponseCodeEnum#OK} otherwise.
@@ -133,10 +133,10 @@ public interface Dispatch {
      * performing signature verification for a receiver with {@code receiverSigRequired=true} by giving priority
      * to the included {@code VerificationStrategy}.
      *
-     * @param amount the amount to transfer
+     * @param amount           the amount to transfer
      * @param fromEntityNumber the number of the entity to transfer from
-     * @param toEntityNumber the number of the entity to transfer to
-     * @param strategy the {@link VerificationStrategy} to use
+     * @param toEntityNumber   the number of the entity to transfer to
+     * @param strategy         the {@link VerificationStrategy} to use
      * @return the result of the transfer attempt
      */
     ResponseCodeEnum transferValue(
@@ -149,7 +149,7 @@ public interface Dispatch {
      * flow we "speculatively" create the pending contract's alias to more naturally implement the API
      * assumed by the Besu {@code ContractCreationProcessor}.
      *
-     * @param evmAddress the EVM address to link
+     * @param evmAddress   the EVM address to link
      * @param entityNumber the entity number to link to
      */
     void setAlias(@NonNull Bytes evmAddress, long entityNumber);
@@ -158,40 +158,46 @@ public interface Dispatch {
      * Assigns the given {@code nonce} to the given {@code contractNumber}.
      *
      * @param contractNumber the contract number
-     * @param nonce the new nonce
+     * @param nonce          the new nonce
      * @throws IllegalArgumentException if there is no valid contract with the given {@code contractNumber}
      */
     void setNonce(long contractNumber, long nonce);
 
     /**
-     * Reserves a new entity number for a contract that is about to be created.
+     * Returns what will be the next new entity number.
+     *
+     * @return the next entity number
+     */
+    long peekNextEntityNumber();
+
+    /**
+     * Reserves a new entity number for a contract being created.
      *
      * @return the reserved entity number
      */
-    long reserveEntityNumber();
+    long useNextEntityNumber();
 
     /**
      * Releases the last {@code n} reserved entity numbers.
      *
      * @param n the number of reserved entity numbers to release
      */
-    void releaseLastReserved(int n);
+    void freePrevEntityNumbers(int n);
 
     /**
      * Creates a new contract with the given entity number and EVM address; and also "links" the alias.
-     * (Though this will have been done speculatively during the current {@code CREATE} or {@code CREATE2}
-     * flow to maintain closer parity with the Besu {@code ContractCreationProcessor}.)
      *
      * <p>Any inheritable Hedera-native properties managed by the {@code TokenService} should be set on
      * the new contract based on the given model account.
      *
      * <p>The record of this creation should only be externalized if the top-level HAPI transaction succeeds.
      *
-     * @param contractNumber the number of the contract to create
-     * @param evmAddress the EVM address of the contract to create
-     * @param model the model account to use for setting Hedera-native properties
+     * @param number       the number of the contract to create
+     * @param parentNumber the number of the contract whose properties the new contract should inherit
+     * @param nonce        the nonce of the contract to create
+     * @param evmAddress   if not null, the EVM address to use as an alias of the created contract
      */
-    void createContract(long contractNumber, @NonNull Bytes evmAddress, @NonNull Account model);
+    void createContract(long number, long parentNumber, long nonce, @Nullable Bytes evmAddress);
 
     /**
      * Deletes the contract whose alias is the given {@code evmAddress}, and also "unlinks" the alias.
@@ -215,8 +221,8 @@ public interface Dispatch {
      * Updates the storage metadata for the given contract.
      *
      * @param contractNumber the number of the contract
-     * @param firstKey the first key in the storage linked list, or {@code null} if the list is empty
-     * @param slotsUsed the number of storage slots used by the contract
+     * @param firstKey       the first key in the storage linked list, or {@code null} if the list is empty
+     * @param slotsUsed      the number of storage slots used by the contract
      */
     void updateStorageMetadata(long contractNumber, @Nullable Bytes firstKey, int slotsUsed);
 
@@ -225,8 +231,8 @@ public interface Dispatch {
      * preference to its auto renew account (if any); falling back to charging the contract itself
      * if the auto renew account does not exist or does not have sufficient balance.
      *
-     * @param contractNumber the number of the contract to charge
-     * @param amount the amount to charge
+     * @param contractNumber         the number of the contract to charge
+     * @param amount                 the amount to charge
      * @param itemizeStoragePayments whether to itemize storage payments in the record
      */
     ResponseCodeEnum chargeStorageRent(long contractNumber, long amount, boolean itemizeStoragePayments);
@@ -234,6 +240,7 @@ public interface Dispatch {
     // --- (SECTION III) A state mutation method that dispatches a synthetic {@code TransactionBody} within
     // --- the context of the current {@code Scope}, performing signature verification with priority given to the
     // --- provided {@code VerificationStrategy}.
+
     /**
      * Attempts to dispatch the given {@code syntheticTransaction} in the context of the current
      * {@link Scope}, performing signature verification with priority given to the included
@@ -244,7 +251,7 @@ public interface Dispatch {
      * {@code REVERTED_SUCCESS}.
      *
      * @param syntheticTransaction the synthetic transaction to dispatch
-     * @param strategy the non-cryptographic signature verification to use
+     * @param strategy             the non-cryptographic signature verification to use
      * @return the result of the dispatch
      */
     ResponseCodeEnum dispatch(@NonNull TransactionBody syntheticTransaction, @NonNull VerificationStrategy strategy);

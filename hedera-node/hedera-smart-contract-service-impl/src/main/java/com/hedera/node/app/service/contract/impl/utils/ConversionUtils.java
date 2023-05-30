@@ -18,7 +18,9 @@ package com.hedera.node.app.service.contract.impl.utils;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.spi.meta.bni.Dispatch;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.math.BigInteger;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -27,6 +29,47 @@ import org.hyperledger.besu.datatypes.Hash;
 
 public class ConversionUtils {
     public static final long EVM_ADDRESS_LENGTH = 20L;
+    public static final long MISSING_ENTITY_NUMBER = 0L;
+    public static final BigInteger LAST_LONG_ZERO_ADDRESS = BigInteger.valueOf(Long.MAX_VALUE);
+
+    /**
+     * Given an EVM address (possibly long-zero), returns the number of the corresponding Hedera entity
+     * within the given {@link Dispatch}; or {@link #MISSING_ENTITY_NUMBER} if the address is not long-zero
+     * and does not correspond to a known Hedera entity.
+     *
+     * @param address the EVM address
+     * @param dispatch the dispatch
+     * @return the number of the corresponding Hedera entity, or {@link #MISSING_ENTITY_NUMBER}
+     */
+    public static long numberOf(@NonNull final Address address, @NonNull final Dispatch dispatch) {
+        if (isLongZero(address)) {
+            return address.toBigInteger().longValueExact();
+        } else {
+            final var alias = aliasFrom(address);
+            final var maybeNumber = dispatch.resolveAlias(alias);
+            return (maybeNumber == null) ? MISSING_ENTITY_NUMBER : maybeNumber.number();
+        }
+    }
+
+    /**
+     * Given an EVM address, returns whether it is long-zero.
+     *
+     * @param address the EVM address
+     * @return whether it is long-zero
+     */
+    public static boolean isLongZero(@NonNull final Address address) {
+        return address.toBigInteger().compareTo(LAST_LONG_ZERO_ADDRESS) <= 0;
+    }
+
+    /**
+     * Converts an EVM address to a PBJ {@link com.hedera.pbj.runtime.io.buffer.Bytes} alias.
+     *
+     * @param address the EVM address
+     * @return the PBJ bytes alias
+     */
+    public static com.hedera.pbj.runtime.io.buffer.Bytes aliasFrom(@NonNull final Address address) {
+        return com.hedera.pbj.runtime.io.buffer.Bytes.wrap(address.toArrayUnsafe());
+    }
 
     /**
      * Converts a number to a long zero address.

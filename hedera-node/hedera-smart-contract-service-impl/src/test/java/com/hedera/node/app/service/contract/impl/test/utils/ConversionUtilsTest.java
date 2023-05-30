@@ -17,17 +17,59 @@
 package com.hedera.node.app.service.contract.impl.test.utils;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
+import com.hedera.node.app.spi.meta.bni.Dispatch;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class ConversionUtilsTest {
+    @Mock
+    private Dispatch dispatch;
+
     @Test
     void convertsNumberToLongZeroAddress() {
         final var number = 0x1234L;
         final var expected = Address.fromHexString("0x1234");
         final var actual = ConversionUtils.asLongZeroAddress(number);
         assertEquals(expected, actual);
+    }
+
+    @Test
+    void justReturnsNumberFromSmallLongZeroAddress() {
+        final var smallNumber = 0x1234L;
+        final var address = Address.fromHexString("0x1234");
+        final var actual = ConversionUtils.numberOf(address, dispatch);
+        assertEquals(smallNumber, actual);
+    }
+
+    @Test
+    void justReturnsNumberFromLargeLongZeroAddress() {
+        final var largeNumber = 0x7fffffffffffffffL;
+        final var address = Address.fromHexString("0x7fffffffffffffff");
+        final var actual = ConversionUtils.numberOf(address, dispatch);
+        assertEquals(largeNumber, actual);
+    }
+
+    @Test
+    void returnsZeroIfMissingAlias() {
+        final var address = Address.fromHexString("0x8000000000000000");
+        final var actual = ConversionUtils.numberOf(address, dispatch);
+        assertEquals(0L, actual);
+    }
+
+    @Test
+    void returnsGivenIfPresentAlias() {
+        given(dispatch.resolveAlias(any())).willReturn(new EntityNumber(0x1234L));
+        final var address = Address.fromHexString("0x8000000000000000");
+        final var actual = ConversionUtils.numberOf(address, dispatch);
+        assertEquals(0x1234L, actual);
     }
 }
