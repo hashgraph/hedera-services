@@ -98,7 +98,7 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
 
     @Test
     void putsAccountChangesToStateInModifications() {
-        assertThat(writableStore.get(id)).isNotNull();
+        assertThat(writableStore.get(id)).isNull();
 
         // put, keeps the account in the modifications
         writableStore.put(account);

@@ -132,9 +132,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
         // If an account is detached and expired, validateSemantics would have thrown an exception
         // To reach here, this update transaction has extended the expiration of the account.
         // So, we need to set the expiredAndPendingRemoval flag to false
-        if (context.expiryValidator()
-                .isDetached(
-                        EntityType.ACCOUNT, targetAccount.expiredAndPendingRemoval(), targetAccount.tinybarBalance())) {
+        if (targetAccount.expiredAndPendingRemoval()) {
             builder.expiredAndPendingRemoval(false);
         }
 

@@ -30,10 +30,12 @@ import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * Validations needed for staking related fields in token operations
  */
+@Singleton
 public class StakingValidator {
     private NodeInfo nodeInfo;
     private ConfigProvider configProvider;
