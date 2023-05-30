@@ -405,7 +405,11 @@ class StateManagementComponentTests {
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .setSequentialIds(true)
                 .build();
-        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook);
+        final DefaultStateManagementComponent component = newStateManagementComponent(
+                addressBook,
+                defaultConfigBuilder()
+                        .withValue("state.saveReconnectStateToDisk", true)
+                );
 
         component.start();
 
@@ -635,12 +639,22 @@ class StateManagementComponentTests {
     }
 
     @NonNull
-    private DefaultStateManagementComponent newStateManagementComponent(@NonNull final AddressBook addressBook) {
-        final TestConfigBuilder configBuilder = new TestConfigBuilder()
+    private TestConfigBuilder defaultConfigBuilder() {
+        return new TestConfigBuilder()
                 .withValue("state.roundsToKeepForSigning", roundsToKeepForSigning)
                 .withValue("state.saveStatePeriod", 1)
-                .withValue("state.saveReconnectStateToDisk", true)
                 .withValue("state.savedStateDirectory", tmpDir.toFile().toString());
+    }
+
+    @NonNull
+    private DefaultStateManagementComponent newStateManagementComponent(@NonNull final AddressBook addressBook) {
+        return newStateManagementComponent(addressBook, defaultConfigBuilder());
+    }
+
+    @NonNull
+    private DefaultStateManagementComponent newStateManagementComponent(
+            @NonNull final AddressBook addressBook,
+            @NonNull final TestConfigBuilder configBuilder) {
         Settings.getInstance().getState().savedStateDirectory = tmpDir.toFile().toString();
 
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
