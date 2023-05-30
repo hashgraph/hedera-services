@@ -86,6 +86,7 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
             case CONSENSUS_SUBMIT_MESSAGE -> dispatchConsensusSubmitMessage(context);
             case CRYPTO_CREATE_ACCOUNT -> dispatchCryptoCreate(context);
             case CRYPTO_DELETE -> dispatchCryptoDelete(context);
+            case CRYPTO_UPDATE_ACCOUNT -> dispatchCryptoUpdate(context);
             case FREEZE -> dispatchFreeze(context);
             case TOKEN_ASSOCIATE -> dispatchTokenAssociate(context);
             case TOKEN_FREEZE -> dispatchTokenFreeze(context);
@@ -194,10 +195,16 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
     private void dispatchCryptoDelete(@NonNull final HandleContext handleContext) {
         final var handler = handlers.cryptoDeleteHandler();
         handler.handle(handleContext);
-        finishCryptoDelete(handleContext);
+        finishDefaultForCryptoOps(handleContext);
     }
 
-    protected void finishCryptoDelete(@NonNull final HandleContext handleContext) {
+    private void dispatchCryptoUpdate(@NonNull final HandleContext handleContext) {
+        final var handler = handlers.cryptoUpdateHandler();
+        handler.handle(handleContext);
+        finishDefaultForCryptoOps(handleContext);
+    }
+
+    protected void finishDefaultForCryptoOps(@NonNull final HandleContext handleContext) {
         final var accountStore = handleContext.writableStore(WritableAccountStore.class);
         accountStore.commit();
     }
