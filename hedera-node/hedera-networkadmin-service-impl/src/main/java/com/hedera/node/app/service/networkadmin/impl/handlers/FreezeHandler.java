@@ -138,7 +138,7 @@ public class FreezeHandler implements TransactionHandler {
                 ? null
                 : Instant.ofEpochSecond(freezeStartTime.seconds(), freezeStartTime.nanos());
 
-        // @todo('Issue #6761') - the below switch returns a CompletableFuture, need to feed this to ExecutorService
+        // @todo('Issue #6761') - the below switch returns a CompletableFuture, need to use this with an ExecutorService
         switch (freezeTxn.freezeType()) {
             case PREPARE_UPGRADE ->
             // by the time we get here, we've already checked that updateFileNum is non-null in validateSemantics()
@@ -155,7 +155,7 @@ public class FreezeHandler implements TransactionHandler {
                             .orElseThrow(() -> new IllegalStateException("Telemetry update file not found")),
                     requireNonNull(freezeStartTimeInstant));
             case FREEZE_ONLY -> upgradeActions.scheduleFreezeOnlyAt(requireNonNull(freezeStartTimeInstant));
-                // UNKNOWN_FREEZE_TYPE should fail at preHandle, this code should never get called
+                // UNKNOWN_FREEZE_TYPE will fail at preHandle, this code should never get called
             case UNKNOWN_FREEZE_TYPE -> throw new HandleException(ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY);
         }
     }
@@ -171,7 +171,9 @@ public class FreezeHandler implements TransactionHandler {
         requireNonNull(specialFileStore);
 
         if (freezeTxn.freezeType() == PREPARE_UPGRADE || freezeTxn.freezeType() == TELEMETRY_UPGRADE) {
-            requireNonNull(updateFileNum);
+            if (updateFileNum == null) {
+                throw new HandleException(ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY);
+            }
             final Optional<byte[]> updateFileZip = specialFileStore.get(updateFileNum.fileNum());
             if (updateFileZip.isEmpty()) {
                 throw new IllegalStateException("Update file not found");
