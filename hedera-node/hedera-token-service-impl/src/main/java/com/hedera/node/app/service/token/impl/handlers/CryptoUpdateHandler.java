@@ -253,8 +253,8 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
         if (op.hasMemo()) {
             context.attributeValidator().validateMemo(op.memo());
         }
-
-        if (op.hasKey()) {
+        // Empty key list is allowed and is used for immutable entities (e.g. system accounts)
+        if (op.hasKey() && !context.attributeValidator().isImmutableKey(op.key())) {
             context.attributeValidator().validateKey(op.key());
         }
 
