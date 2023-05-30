@@ -1479,27 +1479,13 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
     }
 
     /**
-     * Loads the leaf, sibling and siblings of parents on the path to root.
+     * Loads the leaf record.
      * Lower level caches (VirtualDataSource, the OS file cache) should make subsequent value retrievals faster.
      * Warming keys can be done in parallel.
      * @param key key to the leaf node
      */
     public void warm(final K key) {
-
-        // Warm the leaf node
-        final VirtualLeafRecord<K, V> leafRecord = records.findLeafRecord(key, false);
-        if (leafRecord == null) {
-            return;
-        }
-
-        // Warm node hashes for all siblings on the path to root.
-        // Those are used when rehashing the tree due to a changed leaf.
-        for (long path = leafRecord.getPath(); path > 0; path = getParentPath(path)) {
-            final long siblingPath = getSiblingPath(path);
-            if (siblingPath != INVALID_PATH) {
-                records.findHash(siblingPath);
-            }
-        }
+        records.findLeafRecord(key, false);
     }
 
     ////////////////////////
