@@ -151,6 +151,15 @@ public class BucketThrottle {
         return 100.0 * (used - Math.min(used, effectiveLeak(givenElapsedNanos))) / bucket.totalCapacity();
     }
 
+    /**
+     * Returns the percent of the throttle bucket's capacity that is used at this instant.
+     *
+     * @return the percent of the bucket that is used
+     */
+    public double instantaneousPercentUsed() {
+        return 100.0 * bucket.capacityUsed() / bucket.totalCapacity();
+    }
+
     private long effectiveLeak(final long elapsedNanos) {
         return productWouldOverflow(elapsedNanos, mtps) ? bucket.totalCapacity() : elapsedNanos * mtps;
     }

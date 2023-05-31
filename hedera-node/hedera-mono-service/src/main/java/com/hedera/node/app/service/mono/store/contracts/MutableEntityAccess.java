@@ -28,7 +28,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.ledger.HederaLedger;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
-import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.ledger.properties.TokenProperty;
@@ -58,7 +57,7 @@ public class MutableEntityAccess implements EntityAccess {
     @Inject
     public MutableEntityAccess(
             final HederaLedger ledger,
-            final AliasManager aliasManager,
+            final WorldLedgers worldLedgers,
             final TransactionContext txnCtx,
             final SizeLimitedStorage sizeLimitedStorage,
             final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger,
@@ -66,15 +65,9 @@ public class MutableEntityAccess implements EntityAccess {
         this.txnCtx = txnCtx;
         this.ledger = ledger;
         this.bytecode = bytecode;
+        this.worldLedgers = worldLedgers;
         this.tokensLedger = tokensLedger;
         this.sizeLimitedStorage = sizeLimitedStorage;
-
-        this.worldLedgers = new WorldLedgers(
-                aliasManager,
-                ledger.getTokenRelsLedger(),
-                ledger.getAccountsLedger(),
-                ledger.getNftsLedger(),
-                tokensLedger);
 
         ledger.setMutableEntityAccess(this);
     }

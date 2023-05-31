@@ -28,7 +28,6 @@ import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
 import com.hedera.node.app.service.mono.state.EntityCreator;
-import com.hedera.node.app.service.mono.state.expiry.ExpiringEntity;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
@@ -50,7 +49,6 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -104,7 +102,6 @@ public class BasicTransactionContext implements TransactionContext {
     private final NarratedCharging narratedCharging;
     private final HbarCentExchange exchange;
     private final SideEffectsTracker sideEffectsTracker;
-    private final List<ExpiringEntity> expiringEntities = new ArrayList<>();
     private final Supplier<AccountStorageAdapter> accounts;
 
     @Inject
@@ -132,7 +129,6 @@ public class BasicTransactionContext implements TransactionContext {
         this.submittingMember = submittingMember;
         this.triggeredTxn = null;
         this.deletedBeneficiaries = null;
-        this.expiringEntities.clear();
 
         otherNonThresholdFees = 0L;
         hash = accessor.getHash();
@@ -358,16 +354,6 @@ public class BasicTransactionContext implements TransactionContext {
     @Override
     public TxnAccessor triggeredTxn() {
         return triggeredTxn;
-    }
-
-    @Override
-    public void addExpiringEntities(final Collection<ExpiringEntity> entities) {
-        expiringEntities.addAll(entities);
-    }
-
-    @Override
-    public List<ExpiringEntity> expiringEntities() {
-        return expiringEntities;
     }
 
     @Override

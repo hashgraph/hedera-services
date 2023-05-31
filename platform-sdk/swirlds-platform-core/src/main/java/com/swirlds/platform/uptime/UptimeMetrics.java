@@ -19,6 +19,7 @@ package com.swirlds.platform.uptime;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -40,22 +41,22 @@ class UptimeMetrics {
     /**
      * A map from node to the time since the last consensus event was observed from that node.
      */
-    private final Map<Long, RunningAverageMetric> timeSinceLastConsensusEvent = new HashMap<>();
+    private final Map<NodeId, RunningAverageMetric> timeSinceLastConsensusEvent = new HashMap<>();
 
     /**
      * A map from node to the number of rounds since the last consensus event was observed from that node.
      */
-    private final Map<Long, RunningAverageMetric> roundsSinceLastConsensusEvent = new HashMap<>();
+    private final Map<NodeId, RunningAverageMetric> roundsSinceLastConsensusEvent = new HashMap<>();
 
     /**
      * A map from node to the time since the last judge was observed from that node.
      */
-    private final Map<Long, RunningAverageMetric> timeSinceLastJudge = new HashMap<>();
+    private final Map<NodeId, RunningAverageMetric> timeSinceLastJudge = new HashMap<>();
 
     /**
      * A map from node to the number of rounds since the last judge was observed from that node.
      */
-    private final Map<Long, RunningAverageMetric> roundsSinceLastJudge = new HashMap<>();
+    private final Map<NodeId, RunningAverageMetric> roundsSinceLastJudge = new HashMap<>();
 
     private static final RunningAverageMetric.Config HEALTHY_NETWORK_FRACTION_CONFIG = new RunningAverageMetric.Config(
                     CATEGORY, "healthyNetworkFraction")
@@ -102,7 +103,7 @@ class UptimeMetrics {
         uptimeComputationTime = metrics.getOrCreate(UPTIME_COMPUTATION_TIME);
 
         for (final Address address : addressBook) {
-            addMetricsForNode(address.getId());
+            addMetricsForNode(address.getNodeId());
         }
     }
 
@@ -111,7 +112,8 @@ class UptimeMetrics {
      *
      * @param nodeId the id of the node
      */
-    public void addMetricsForNode(final long nodeId) {
+    public void addMetricsForNode(@NonNull final NodeId nodeId) {
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
         final RunningAverageMetric.Config timeSinceLastConensusEventConfig = new RunningAverageMetric.Config(
                         CATEGORY, TIME_SINCE_LAST_CONSENSUS_EVENT + nodeId)
                 .withUnit("seconds")
@@ -145,7 +147,8 @@ class UptimeMetrics {
      *
      * @param nodeId the id of the node
      */
-    public void removeMetricsForNode(final long nodeId) {
+    public void removeMetricsForNode(@NonNull final NodeId nodeId) {
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
         timeSinceLastConsensusEvent.remove(nodeId);
         metrics.remove(new RunningAverageMetric.Config(CATEGORY, TIME_SINCE_LAST_CONSENSUS_EVENT + nodeId));
 
@@ -166,7 +169,8 @@ class UptimeMetrics {
      * @return the metric
      * @throws NoSuchElementException if no metric for the node is found
      */
-    public @NonNull RunningAverageMetric getTimeSinceLastConsensusEventMetric(final long id) {
+    public @NonNull RunningAverageMetric getTimeSinceLastConsensusEventMetric(@NonNull final NodeId id) {
+        Objects.requireNonNull(id, "id must not be null");
         final RunningAverageMetric metric = timeSinceLastConsensusEvent.get(id);
         if (metric == null) {
             throw new NoSuchElementException("No metric for node " + id + " found.");
@@ -181,7 +185,8 @@ class UptimeMetrics {
      * @return the metric
      * @throws NoSuchElementException if no metric for the node is found
      */
-    public @NonNull RunningAverageMetric getRoundsSinceLastConsensusEventMetric(final long id) {
+    public @NonNull RunningAverageMetric getRoundsSinceLastConsensusEventMetric(@NonNull final NodeId id) {
+        Objects.requireNonNull(id, "id must not be null");
         final RunningAverageMetric metric = roundsSinceLastConsensusEvent.get(id);
         if (metric == null) {
             throw new NoSuchElementException("No metric for node " + id + " found.");
@@ -196,7 +201,8 @@ class UptimeMetrics {
      * @return the metric
      * @throws NoSuchElementException if no metric for the node is found
      */
-    public @NonNull RunningAverageMetric getTimeSinceLastJudgeMetric(final long id) {
+    public @NonNull RunningAverageMetric getTimeSinceLastJudgeMetric(@NonNull final NodeId id) {
+        Objects.requireNonNull(id, "id must not be null");
         final RunningAverageMetric metric = timeSinceLastJudge.get(id);
         if (metric == null) {
             throw new NoSuchElementException("No metric for node " + id + " found.");
@@ -211,7 +217,8 @@ class UptimeMetrics {
      * @return the metric
      * @throws NoSuchElementException if no metric for the node is found
      */
-    public @NonNull RunningAverageMetric getRoundsSinceLastJudgeMetric(final long id) {
+    public @NonNull RunningAverageMetric getRoundsSinceLastJudgeMetric(@NonNull final NodeId id) {
+        Objects.requireNonNull(id, "id must not be null");
         final RunningAverageMetric metric = roundsSinceLastJudge.get(id);
         if (metric == null) {
             throw new NoSuchElementException("No metric for node " + id + " found.");

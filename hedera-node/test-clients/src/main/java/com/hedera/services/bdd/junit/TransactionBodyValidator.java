@@ -57,7 +57,7 @@ public class TransactionBodyValidator implements RecordStreamValidator {
                     }
                 } catch (InvalidProtocolBufferException e) {
                     log.error(errorMsg, e);
-                    throw new IllegalStateException(e);
+                    throw new IllegalStateException(errorMsg + item, e);
                 }
             }
         }
