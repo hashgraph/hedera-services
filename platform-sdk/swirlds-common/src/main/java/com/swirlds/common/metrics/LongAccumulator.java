@@ -150,7 +150,13 @@ public interface LongAccumulator extends Metric {
         @Override
         public LongAccumulator.Config withDescription(final String description) {
             return new LongAccumulator.Config(
-                    getCategory(), getName(), description, getUnit(), getFormat(), getAccumulator(), getInitializer(),
+                    getCategory(),
+                    getName(),
+                    description,
+                    getUnit(),
+                    getFormat(),
+                    getAccumulator(),
+                    getInitializer(),
                     getInitialValue());
         }
 
@@ -160,7 +166,13 @@ public interface LongAccumulator extends Metric {
         @Override
         public LongAccumulator.Config withUnit(final String unit) {
             return new LongAccumulator.Config(
-                    getCategory(), getName(), getDescription(), unit, getFormat(), getAccumulator(), getInitializer(),
+                    getCategory(),
+                    getName(),
+                    getDescription(),
+                    unit,
+                    getFormat(),
+                    getAccumulator(),
+                    getInitializer(),
                     getInitialValue());
         }
 
@@ -175,7 +187,13 @@ public interface LongAccumulator extends Metric {
          */
         public LongAccumulator.Config withFormat(final String format) {
             return new LongAccumulator.Config(
-                    getCategory(), getName(), getDescription(), getUnit(), format, getAccumulator(), getInitializer(),
+                    getCategory(),
+                    getName(),
+                    getDescription(),
+                    getUnit(),
+                    format,
+                    getAccumulator(),
+                    getInitializer(),
                     getInitialValue());
         }
 
@@ -209,7 +227,13 @@ public interface LongAccumulator extends Metric {
          */
         public LongAccumulator.Config withAccumulator(final LongBinaryOperator accumulator) {
             return new LongAccumulator.Config(
-                    getCategory(), getName(), getDescription(), getUnit(), getFormat(), accumulator, getInitializer(),
+                    getCategory(),
+                    getName(),
+                    getDescription(),
+                    getUnit(),
+                    getFormat(),
+                    accumulator,
+                    getInitializer(),
                     getInitialValue());
         }
 
@@ -252,8 +276,14 @@ public interface LongAccumulator extends Metric {
          */
         public LongAccumulator.Config withInitialValue(final long initialValue) {
             return new LongAccumulator.Config(
-                    getCategory(), getName(), getDescription(), getUnit(), getFormat(), getAccumulator(),
-                    getInitializer(), initialValue);
+                    getCategory(),
+                    getName(),
+                    getDescription(),
+                    getUnit(),
+                    getFormat(),
+                    getAccumulator(),
+                    getInitializer(),
+                    initialValue);
         }
 
         /**

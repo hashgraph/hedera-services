@@ -150,7 +150,13 @@ public interface DoubleAccumulator extends Metric {
         @Override
         public DoubleAccumulator.Config withDescription(final String description) {
             return new DoubleAccumulator.Config(
-                    getCategory(), getName(), description, getUnit(), getFormat(), getAccumulator(), getInitializer(),
+                    getCategory(),
+                    getName(),
+                    description,
+                    getUnit(),
+                    getFormat(),
+                    getAccumulator(),
+                    getInitializer(),
                     getInitialValue());
         }
 
@@ -160,7 +166,13 @@ public interface DoubleAccumulator extends Metric {
         @Override
         public DoubleAccumulator.Config withUnit(final String unit) {
             return new DoubleAccumulator.Config(
-                    getCategory(), getName(), getDescription(), unit, getFormat(), getAccumulator(), getInitializer(),
+                    getCategory(),
+                    getName(),
+                    getDescription(),
+                    unit,
+                    getFormat(),
+                    getAccumulator(),
+                    getInitializer(),
                     getInitialValue());
         }
 
@@ -175,7 +187,13 @@ public interface DoubleAccumulator extends Metric {
          */
         public DoubleAccumulator.Config withFormat(final String format) {
             return new DoubleAccumulator.Config(
-                    getCategory(), getName(), getDescription(), getUnit(), format, getAccumulator(), getInitializer(),
+                    getCategory(),
+                    getName(),
+                    getDescription(),
+                    getUnit(),
+                    format,
+                    getAccumulator(),
+                    getInitializer(),
                     getInitialValue());
         }
 
@@ -209,7 +227,13 @@ public interface DoubleAccumulator extends Metric {
          */
         public DoubleAccumulator.Config withAccumulator(final DoubleBinaryOperator accumulator) {
             return new DoubleAccumulator.Config(
-                    getCategory(), getName(), getDescription(), getUnit(), getFormat(), accumulator, getInitializer(),
+                    getCategory(),
+                    getName(),
+                    getDescription(),
+                    getUnit(),
+                    getFormat(),
+                    accumulator,
+                    getInitializer(),
                     getInitialValue());
         }
 
@@ -231,8 +255,14 @@ public interface DoubleAccumulator extends Metric {
          */
         public DoubleAccumulator.Config withInitialValue(final double initialValue) {
             return new DoubleAccumulator.Config(
-                    getCategory(), getName(), getDescription(), getUnit(), getFormat(), getAccumulator(),
-                    getInitializer(), initialValue);
+                    getCategory(),
+                    getName(),
+                    getDescription(),
+                    getUnit(),
+                    getFormat(),
+                    getAccumulator(),
+                    getInitializer(),
+                    initialValue);
         }
 
         /**
