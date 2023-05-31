@@ -98,22 +98,15 @@ class PreConsensusEventReadWriteTests {
             events.add(generator.generateEvent());
         }
 
-        long minimumGeneration = Long.MAX_VALUE;
         long maximumGeneration = Long.MIN_VALUE;
         for (final EventImpl event : events) {
-            minimumGeneration = Math.min(minimumGeneration, event.getGeneration());
             maximumGeneration = Math.max(maximumGeneration, event.getGeneration());
         }
 
-        minimumGeneration -= random.nextInt(0, 10);
         maximumGeneration += random.nextInt(0, 10);
 
         final PreConsensusEventFile file = PreConsensusEventFile.of(
-                random.nextInt(0, 100),
-                minimumGeneration,
-                maximumGeneration,
-                RandomUtils.randomInstant(random),
-                testDirectory);
+                random.nextInt(0, 100), 0, maximumGeneration, RandomUtils.randomInstant(random), testDirectory, false);
 
         final PreConsensusEventMutableFile mutableFile = file.getMutableFile();
         for (final EventImpl event : events) {
@@ -150,24 +143,17 @@ class PreConsensusEventReadWriteTests {
             events.add(generator.generateEvent());
         }
 
-        long minimumGeneration = Long.MAX_VALUE;
         long maximumGeneration = Long.MIN_VALUE;
         for (final EventImpl event : events) {
-            minimumGeneration = Math.min(minimumGeneration, event.getGeneration());
             maximumGeneration = Math.max(maximumGeneration, event.getGeneration());
         }
 
-        final long middle = (minimumGeneration + maximumGeneration) / 2;
+        final long middle = maximumGeneration / 2;
 
-        minimumGeneration -= random.nextInt(0, 10);
         maximumGeneration += random.nextInt(0, 10);
 
         final PreConsensusEventFile file = PreConsensusEventFile.of(
-                random.nextInt(0, 100),
-                minimumGeneration,
-                maximumGeneration,
-                RandomUtils.randomInstant(random),
-                testDirectory);
+                random.nextInt(0, 100), 0, maximumGeneration, RandomUtils.randomInstant(random), testDirectory, false);
 
         final PreConsensusEventMutableFile mutableFile = file.getMutableFile();
         for (final EventImpl event : events) {
@@ -205,7 +191,8 @@ class PreConsensusEventReadWriteTests {
                 random.nextLong(0, 1000),
                 random.nextLong(1000, 2000),
                 RandomUtils.randomInstant(random),
-                testDirectory);
+                testDirectory,
+                false);
 
         final PreConsensusEventMutableFile mutableFile = file.getMutableFile();
         mutableFile.close();
@@ -234,22 +221,15 @@ class PreConsensusEventReadWriteTests {
             events.add(generator.generateEvent());
         }
 
-        long minimumGeneration = Long.MAX_VALUE;
         long maximumGeneration = Long.MIN_VALUE;
         for (final EventImpl event : events) {
-            minimumGeneration = Math.min(minimumGeneration, event.getGeneration());
             maximumGeneration = Math.max(maximumGeneration, event.getGeneration());
         }
 
-        minimumGeneration -= random.nextInt(0, 10);
         maximumGeneration += random.nextInt(0, 10);
 
         final PreConsensusEventFile file = PreConsensusEventFile.of(
-                random.nextInt(0, 100),
-                minimumGeneration,
-                maximumGeneration,
-                RandomUtils.randomInstant(random),
-                testDirectory);
+                random.nextInt(0, 100), 0, maximumGeneration, RandomUtils.randomInstant(random), testDirectory, false);
 
         final Map<Integer /* event index */, Integer /* last byte position */> byteBoundaries = new HashMap<>();
 
@@ -267,7 +247,7 @@ class PreConsensusEventReadWriteTests {
 
         final int truncationPosition = byteBoundaries.get(lastEventIndex) + (truncateOnBoundary ? 0 : 1);
 
-        truncateFile(file.path(), truncationPosition);
+        truncateFile(file.getPath(), truncationPosition);
 
         final PreConsensusEventFileIterator iterator = file.iterator(Long.MIN_VALUE);
         final List<EventImpl> deserializedEvents = new ArrayList<>();
@@ -301,22 +281,15 @@ class PreConsensusEventReadWriteTests {
             events.add(generator.generateEvent());
         }
 
-        long minimumGeneration = Long.MAX_VALUE;
         long maximumGeneration = Long.MIN_VALUE;
         for (final EventImpl event : events) {
-            minimumGeneration = Math.min(minimumGeneration, event.getGeneration());
             maximumGeneration = Math.max(maximumGeneration, event.getGeneration());
         }
 
-        minimumGeneration -= random.nextInt(0, 10);
         maximumGeneration += random.nextInt(0, 10);
 
         final PreConsensusEventFile file = PreConsensusEventFile.of(
-                random.nextInt(0, 100),
-                minimumGeneration,
-                maximumGeneration,
-                RandomUtils.randomInstant(random),
-                testDirectory);
+                random.nextInt(0, 100), 0, maximumGeneration, RandomUtils.randomInstant(random), testDirectory, false);
 
         final Map<Integer /* event index */, Integer /* last byte position */> byteBoundaries = new HashMap<>();
 
@@ -334,7 +307,7 @@ class PreConsensusEventReadWriteTests {
 
         final int corruptionPosition = byteBoundaries.get(lastEventIndex);
 
-        corruptFile(random, file.path(), corruptionPosition);
+        corruptFile(random, file.getPath(), corruptionPosition);
 
         final PreConsensusEventFileIterator iterator = file.iterator(Long.MIN_VALUE);
 
@@ -380,7 +353,8 @@ class PreConsensusEventReadWriteTests {
                 restrictedMinimumGeneration,
                 restrictedMaximumGeneration,
                 RandomUtils.randomInstant(random),
-                testDirectory);
+                testDirectory,
+                false);
         final PreConsensusEventMutableFile mutableFile = file.getMutableFile();
 
         final List<EventImpl> validEvents = new ArrayList<>();
@@ -437,7 +411,8 @@ class PreConsensusEventReadWriteTests {
                 minimumGeneration,
                 maximumGeneration,
                 RandomUtils.randomInstant(random),
-                testDirectory);
+                testDirectory,
+                false);
 
         final PreConsensusEventMutableFile mutableFile = file.getMutableFile();
         for (final EventImpl event : events) {
@@ -447,17 +422,17 @@ class PreConsensusEventReadWriteTests {
         mutableFile.close();
         final PreConsensusEventFile compressedFile = mutableFile.compressGenerationalSpan(0);
 
-        assertEquals(file.path().getParent(), compressedFile.path().getParent());
-        assertEquals(file.sequenceNumber(), compressedFile.sequenceNumber());
-        assertEquals(file.minimumGeneration(), compressedFile.minimumGeneration());
-        assertTrue(maximumGeneration > compressedFile.maximumGeneration());
+        assertEquals(file.getPath().getParent(), compressedFile.getPath().getParent());
+        assertEquals(file.getSequenceNumber(), compressedFile.getSequenceNumber());
+        assertEquals(file.getMinimumGeneration(), compressedFile.getMinimumGeneration());
+        assertTrue(maximumGeneration > compressedFile.getMaximumGeneration());
         assertEquals(
                 mutableFile.getUtilizedGenerationalSpan(),
-                compressedFile.maximumGeneration() - compressedFile.minimumGeneration());
-        assertNotEquals(file.path(), compressedFile.path());
-        assertNotEquals(file.maximumGeneration(), compressedFile.maximumGeneration());
-        assertTrue(Files.exists(compressedFile.path()));
-        assertFalse(Files.exists(file.path()));
+                compressedFile.getMaximumGeneration() - compressedFile.getMinimumGeneration());
+        assertNotEquals(file.getPath(), compressedFile.getPath());
+        assertNotEquals(file.getMaximumGeneration(), compressedFile.getMaximumGeneration());
+        assertTrue(Files.exists(compressedFile.getPath()));
+        assertFalse(Files.exists(file.getPath()));
 
         final IOIterator<EventImpl> iterator = compressedFile.iterator(Long.MIN_VALUE);
         final List<EventImpl> deserializedEvents = new ArrayList<>();
@@ -502,7 +477,8 @@ class PreConsensusEventReadWriteTests {
                 minimumEventGeneration,
                 maximumFileGeneration,
                 RandomUtils.randomInstant(random),
-                testDirectory);
+                testDirectory,
+                false);
 
         final PreConsensusEventMutableFile mutableFile = file.getMutableFile();
         for (final EventImpl event : events) {
@@ -513,17 +489,17 @@ class PreConsensusEventReadWriteTests {
         final PreConsensusEventFile compressedFile =
                 mutableFile.compressGenerationalSpan(maximumEventGeneration + uncompressedSpan);
 
-        assertEquals(file.path().getParent(), compressedFile.path().getParent());
-        assertEquals(file.sequenceNumber(), compressedFile.sequenceNumber());
-        assertEquals(file.minimumGeneration(), compressedFile.minimumGeneration());
-        assertEquals(maximumEventGeneration + uncompressedSpan, compressedFile.maximumGeneration());
+        assertEquals(file.getPath().getParent(), compressedFile.getPath().getParent());
+        assertEquals(file.getSequenceNumber(), compressedFile.getSequenceNumber());
+        assertEquals(file.getMinimumGeneration(), compressedFile.getMinimumGeneration());
+        assertEquals(maximumEventGeneration + uncompressedSpan, compressedFile.getMaximumGeneration());
         assertEquals(
                 mutableFile.getUtilizedGenerationalSpan(),
-                compressedFile.maximumGeneration() - compressedFile.minimumGeneration() - uncompressedSpan);
-        assertNotEquals(file.path(), compressedFile.path());
-        assertNotEquals(file.maximumGeneration(), compressedFile.maximumGeneration());
-        assertTrue(Files.exists(compressedFile.path()));
-        assertFalse(Files.exists(file.path()));
+                compressedFile.getMaximumGeneration() - compressedFile.getMinimumGeneration() - uncompressedSpan);
+        assertNotEquals(file.getPath(), compressedFile.getPath());
+        assertNotEquals(file.getMaximumGeneration(), compressedFile.getMaximumGeneration());
+        assertTrue(Files.exists(compressedFile.getPath()));
+        assertFalse(Files.exists(file.getPath()));
 
         final IOIterator<EventImpl> iterator = compressedFile.iterator(Long.MIN_VALUE);
         final List<EventImpl> deserializedEvents = new ArrayList<>();

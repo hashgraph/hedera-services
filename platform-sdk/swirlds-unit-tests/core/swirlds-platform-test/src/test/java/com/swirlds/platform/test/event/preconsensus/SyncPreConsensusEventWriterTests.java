@@ -150,7 +150,7 @@ class SyncPreConsensusEventWriterTests {
         assertTrue(writer.waitUntilDurable(events.get(events.size() - 1), Duration.ofSeconds(1)));
         assertTrue(writer.isEventDurable(events.get(events.size() - 1)));
 
-        verifyStream(events, platformContext, 0);
+        verifyStream(events, platformContext, 0, false);
 
         writer.stop();
     }
@@ -205,7 +205,7 @@ class SyncPreConsensusEventWriterTests {
         // Since we are not using threads, the stream should be flushed when we reach this point
         assertTrue(writer.isEventDurable(events.get(events.size() - 1)));
 
-        verifyStream(events, platformContext, 0);
+        verifyStream(events, platformContext, 0, false);
     }
 
     @Test
@@ -276,7 +276,7 @@ class SyncPreConsensusEventWriterTests {
         assertTrue(writer.waitUntilDurable(events.get(events.size() - 1), Duration.ofSeconds(1)));
         assertTrue(writer.isEventDurable(events.get(events.size() - 1)));
 
-        verifyStream(events, platformContext, 0);
+        verifyStream(events, platformContext, 0, false);
 
         writer.stop();
     }
@@ -317,13 +317,13 @@ class SyncPreConsensusEventWriterTests {
 
         writer.stop();
 
-        verifyStream(events, platformContext, 0);
+        verifyStream(events, platformContext, 0, false);
 
         // Without advancing the first non-ancient generation,
         // we should never be able to increase the minimum generation from 0.
-        for (final Iterator<PreConsensusEventFile> it = fileManager.getFileIterator(0); it.hasNext(); ) {
+        for (final Iterator<PreConsensusEventFile> it = fileManager.getFileIterator(0, false); it.hasNext(); ) {
             final PreConsensusEventFile file = it.next();
-            assertEquals(0, file.minimumGeneration());
+            assertEquals(0, file.getMinimumGeneration());
         }
     }
 
@@ -373,8 +373,92 @@ class SyncPreConsensusEventWriterTests {
 
         // We shouldn't find any events in the stream.
         assertFalse(() -> fileManager
-                .getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION)
+                .getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION, false)
                 .hasNext());
+
+        writer.stop();
+    }
+
+    @Test
+    @DisplayName("Discontinuity Test")
+    void discontinuityTest() throws IOException, InterruptedException {
+        final Random random = RandomUtils.getRandomPrintSeed();
+
+        final int numEvents = 1_000;
+        final int generationsUntilAncient = random.nextInt(50, 100);
+
+        final StandardGraphGenerator generator = buildGraphGenerator(random);
+
+        final List<EventImpl> eventsBeforeDiscontinuity = new LinkedList<>();
+        final List<EventImpl> eventsAfterDiscontinuity = new LinkedList<>();
+        for (int i = 0; i < numEvents; i++) {
+            final EventImpl event = generator.generateEvent().convertToEventImpl();
+            if (i < numEvents / 2) {
+                eventsBeforeDiscontinuity.add(event);
+            } else {
+                eventsAfterDiscontinuity.add(event);
+            }
+        }
+
+        final PlatformContext platformContext = buildContext();
+
+        final PreConsensusEventFileManager fileManager =
+                new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), 0);
+
+        final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
+        final PreConsensusEventWriter writer = new SyncPreConsensusEventWriter(platformContext, fileManager);
+
+        writer.start();
+        writer.beginStreamingNewEvents();
+
+        long minimumGenerationNonAncient = 0;
+        final Iterator<EventImpl> iterator1 = eventsBeforeDiscontinuity.iterator();
+        while (iterator1.hasNext()) {
+            final EventImpl event = iterator1.next();
+
+            sequencer.assignStreamSequenceNumber(event);
+
+            minimumGenerationNonAncient =
+                    Math.max(minimumGenerationNonAncient, event.getGeneration() - generationsUntilAncient);
+            writer.setMinimumGenerationNonAncient(minimumGenerationNonAncient);
+
+            if (event.getGeneration() < minimumGenerationNonAncient) {
+                // Although it's not common, it's actually possible that the generator will generate
+                // an event that is ancient (since it isn't aware of what we consider to be ancient)
+                iterator1.remove();
+            }
+
+            writer.writeEvent(event);
+        }
+
+        writer.registerDiscontinuity();
+
+        final Iterator<EventImpl> iterator2 = eventsAfterDiscontinuity.iterator();
+        while (iterator2.hasNext()) {
+            final EventImpl event = iterator2.next();
+
+            sequencer.assignStreamSequenceNumber(event);
+
+            minimumGenerationNonAncient =
+                    Math.max(minimumGenerationNonAncient, event.getGeneration() - generationsUntilAncient);
+            writer.setMinimumGenerationNonAncient(minimumGenerationNonAncient);
+
+            if (event.getGeneration() < minimumGenerationNonAncient) {
+                // Although it's not common, it's actually possible that the generator will generate
+                // an event that is ancient (since it isn't aware of what we consider to be ancient)
+                iterator2.remove();
+            }
+
+            writer.writeEvent(event);
+        }
+
+        writer.requestFlush();
+
+        assertTrue(writer.waitUntilDurable(
+                eventsAfterDiscontinuity.get(eventsAfterDiscontinuity.size() - 1), Duration.ofSeconds(1)));
+        assertTrue(writer.isEventDurable(eventsAfterDiscontinuity.get(eventsAfterDiscontinuity.size() - 1)));
+
+        verifyStream(eventsBeforeDiscontinuity, platformContext, 0, true);
 
         writer.stop();
     }
