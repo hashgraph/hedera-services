@@ -97,7 +97,8 @@ public class CryptoDeleteHandler implements TransactionHandler {
 
         // get the account from account store that has all balance changes
         // commit the account with deleted flag set to true
-        final var updatedDeleteAccount = accountStore.get(op.deleteAccountID()).get();
+        final var updatedDeleteAccount = accountStore.get(op.deleteAccountID());
+        validateTrue(updatedDeleteAccount != null, ACCOUNT_ID_DOES_NOT_EXIST);
         accountStore.put(updatedDeleteAccount.copyBuilder().deleted(true).build());
     }
 
@@ -152,15 +153,13 @@ public class CryptoDeleteHandler implements TransactionHandler {
         final var transferAccountId = op.transferAccountID();
 
         // validate if accounts exist
-        final var optDeleteAccount = accountStore.get(deleteAccountId);
-        validateTrue(optDeleteAccount.isPresent(), INVALID_ACCOUNT_ID);
+        final var deletedAccount = accountStore.get(deleteAccountId);
+        validateTrue(deletedAccount != null, INVALID_ACCOUNT_ID);
 
-        final var optTransferAccount = accountStore.get(transferAccountId);
-        validateTrue(optTransferAccount.isPresent(), INVALID_TRANSFER_ACCOUNT_ID);
+        final var transferAccount = accountStore.get(transferAccountId);
+        validateTrue(transferAccount != null, INVALID_TRANSFER_ACCOUNT_ID);
 
         // if the account is treasury for any other token, it can't be deleted
-        final var deletedAccount = optDeleteAccount.get();
-        final var transferAccount = optTransferAccount.get();
         validateFalse(deletedAccount.numberTreasuryTitles() > 0, ACCOUNT_IS_TREASURY);
 
         // checks if accounts are detached

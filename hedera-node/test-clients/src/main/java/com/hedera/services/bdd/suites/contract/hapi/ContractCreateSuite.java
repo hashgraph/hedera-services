@@ -212,7 +212,7 @@ public class ContractCreateSuite extends HapiSuite {
     }
 
     private HapiSpec createsVanillaContractAsExpectedWithOmittedAdminKey() {
-        return defaultHapiSpec("CreatesVanillaContract")
+        return defaultHapiSpec("createsVanillaContractAsExpectedWithOmittedAdminKey")
                 .given(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
                 .when()
                 .then(
@@ -264,7 +264,7 @@ public class ContractCreateSuite extends HapiSuite {
     }
 
     private HapiSpec createEmptyConstructor() {
-        return defaultHapiSpec("EmptyConstructor")
+        return defaultHapiSpec("createEmptyConstructor")
                 .given(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
                 .when()
                 .then(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).hasKnownStatus(SUCCESS));
@@ -477,7 +477,7 @@ public class ContractCreateSuite extends HapiSuite {
         final var FILE_KEY = "fileKey";
         final var KEY_LIST = "keyList";
         final var ACCOUNT = "acc";
-        return defaultHapiSpec("cannotCreateLargeContract")
+        return defaultHapiSpec("cannotCreateTooLargeContract")
                 .given(
                         newKeyNamed(FILE_KEY),
                         newKeyListNamed(KEY_LIST, List.of(FILE_KEY)),
@@ -499,7 +499,7 @@ public class ContractCreateSuite extends HapiSuite {
         final var firstBlock = "firstBlock";
         final var timeLoggingTxn = "timeLoggingTxn";
 
-        return defaultHapiSpec("BlockTimestampIsConsensusTime")
+        return defaultHapiSpec("blockTimestampChangesWithinFewSeconds")
                 .given(uploadInitCode(contract), contractCreate(contract))
                 .when(
                         contractCall(contract, "logNow").via(firstBlock),

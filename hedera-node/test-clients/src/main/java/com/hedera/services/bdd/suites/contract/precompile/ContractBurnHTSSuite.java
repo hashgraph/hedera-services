@@ -123,7 +123,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
 
     private HapiSpec hscsPrec004TokenBurnOfFungibleTokenUnits() {
         final var gasUsed = 14085L;
-        return defaultHapiSpec("HSCS_PREC_004_token_burn_of_fungible_token_units")
+        return defaultHapiSpec("hscsPrec004TokenBurnOfFungibleTokenUnits")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ALICE).balance(10 * ONE_HUNDRED_HBARS),
@@ -204,7 +204,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
 
     private HapiSpec hscsPrec005TokenBurnOfNft() {
         final var gasUsed = 14085;
-        return defaultHapiSpec("HSCS_PREC_005_token_burn_of_NFT")
+        return defaultHapiSpec("hscsPrec005TokenBurnOfNft")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ALICE).balance(10 * ONE_HUNDRED_HBARS),
@@ -258,7 +258,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
         final var outerContract = "NestedBurn";
         final var revisedKey = KeyShape.threshOf(1, SIMPLE, DELEGATE_CONTRACT, DELEGATE_CONTRACT);
 
-        return defaultHapiSpec("HSCS_PREC_011_burn_after_nested_mint")
+        return defaultHapiSpec("hscsPrec011BurnAfterNestedMint")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ALICE).balance(10 * ONE_HUNDRED_HBARS),
@@ -328,7 +328,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
         final var tokenWithHbarFee = "tokenWithHbarFee";
         final var theContract = "TransferAndBurn";
 
-        return defaultHapiSpec("HSCS_PREC_020_rollback_burn_that_fails_after_a_precompile_transfer")
+        return defaultHapiSpec("hscsPreC020RollbackBurnThatFailsAfterAPrecompileTransfer")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),

@@ -175,7 +175,7 @@ public class CryptoCreateSuite extends HapiSuite {
         final var ecdsaKey = "ecdsaKey";
         final var longZeroAddress = ByteString.copyFrom(CommonUtils.unhex("0000000000000000000000000000000fffffffff"));
         final var creation = "creation";
-        return defaultHapiSpec("CannotCreateAnAccountWithLongZeroKey")
+        return defaultHapiSpec("cannotCreateAnAccountWithLongZeroKeyButCanUseEvmAddress")
                 .given(
                         cryptoCreate(ACCOUNT).evmAddress(longZeroAddress).hasPrecheck(INVALID_ALIAS_KEY),
                         newKeyNamed(ecdsaKey).shape(SECP256K1_ON))
@@ -297,7 +297,7 @@ public class CryptoCreateSuite extends HapiSuite {
         KeyShape shape = threshOf(2, emptyThresholdShape, emptyListShape);
         long initialBalance = 10_000L;
 
-        return defaultHapiSpec("createAnAccountEmptyThresholdKey")
+        return defaultHapiSpec("createAnAccountEmptyNestedKey")
                 .given()
                 .when()
                 .then(cryptoCreate(NO_KEYS)
@@ -409,7 +409,7 @@ public class CryptoCreateSuite extends HapiSuite {
 
         long initialBalance = 10_000L;
 
-        return defaultHapiSpec("createAnAccountInvalidNestedKeyList")
+        return defaultHapiSpec("createAnAccountInvalidNestedThresholdKey")
                 .given()
                 .when()
                 .then(

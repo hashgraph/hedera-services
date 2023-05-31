@@ -277,7 +277,7 @@ public class CryptoTransferSuite extends HapiSuite {
     }
 
     private HapiSpec okToRepeatSerialNumbersInBurnList() {
-        return defaultHapiSpec("CannotRepeatSerialNumbersInBurnList")
+        return defaultHapiSpec("okToRepeatSerialNumbersInBurnList")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         newKeyNamed(WIPE_KEY),
@@ -1207,7 +1207,7 @@ public class CryptoTransferSuite extends HapiSuite {
         final var selfDenominatedCollector = "selfDenominatedCollector";
         final var plentyOfSlots = 10;
 
-        return defaultHapiSpec("RoyaltyCollectorsCanUseAutoAssociation")
+        return defaultHapiSpec("dissociatedRoyaltyCollectorsCanUseAutoAssociation")
                 .given(
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(fractionalCollector).maxAutomaticTokenAssociations(plentyOfSlots),
@@ -1372,7 +1372,7 @@ public class CryptoTransferSuite extends HapiSuite {
         final var multipurpose = MULTI_KEY;
         final var hodlXfer = HODL_XFER;
 
-        return defaultHapiSpec("RoyaltyCollectorsCanUseAutoAssociationWithoutOpenSlots")
+        return defaultHapiSpec("royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots")
                 .given(
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(royaltyCollectorNoSlots),
@@ -1496,7 +1496,7 @@ public class CryptoTransferSuite extends HapiSuite {
         final var nftXferTxn = "nftXferTxn";
         final var nftXferTxnWithCustomFee = "nftXferTxnWithCustomFee";
 
-        return defaultHapiSpec("BaseCryptoTransferIsChargedAsExpected")
+        return defaultHapiSpec("baseCryptoTransferFeeChargedAsExpected")
                 .given(
                         cryptoCreate(nonTreasurySender).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(SENDER).balance(ONE_HUNDRED_HBARS),
@@ -1790,7 +1790,7 @@ public class CryptoTransferSuite extends HapiSuite {
     }
 
     private HapiSpec transferWithMissingAccountGetsInvalidAccountId() {
-        return defaultHapiSpec("TransferWithMissingAccount")
+        return defaultHapiSpec("transferWithMissingAccountGetsInvalidAccountId")
                 .given(cryptoCreate(PAYEE_SIG_REQ).receiverSigRequired(true))
                 .when(cryptoTransfer(tinyBarsFromTo("1.2.3", PAYEE_SIG_REQ, 1_000L))
                         .signedBy(DEFAULT_PAYER, PAYEE_SIG_REQ)
@@ -1835,7 +1835,7 @@ public class CryptoTransferSuite extends HapiSuite {
         final var FUNGIBLE_TOKEN_FEE = "fungibleTokenFee";
         final var RECEIVER_SIGNATURE = "receiverSignature";
         final var SPENDER_SIGNATURE = "spenderSignature";
-        return defaultHapiSpec("HapiTransferFromForNFTWithCustomFees")
+        return defaultHapiSpec("hapiTransferFromForNFTWithCustomFeesWithAllowance")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(RECEIVER_SIGNATURE),
@@ -1983,7 +1983,7 @@ public class CryptoTransferSuite extends HapiSuite {
         final var FUNGIBLE_TOKEN_FEE = "fungibleTokenFee";
         final var RECEIVER_SIGNATURE = "receiverSignature";
         final var SPENDER_SIGNATURE = "spenderSignature";
-        return defaultHapiSpec("HapiTransferFromForNFTWithCustomFees")
+        return defaultHapiSpec("hapiTransferFromForFungibleTokenWithCustomFeesWithAllowance")
                 .given(
                         newKeyNamed(RECEIVER_SIGNATURE),
                         newKeyNamed(SPENDER_SIGNATURE),
