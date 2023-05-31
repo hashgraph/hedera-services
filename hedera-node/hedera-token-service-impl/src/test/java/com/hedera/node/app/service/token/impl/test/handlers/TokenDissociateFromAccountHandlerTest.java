@@ -286,8 +286,8 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
         lenient().when(mockedContext.configuration()).thenReturn(config);
 
         final var autoRenewConfig = mock(AutoRenewConfig.class);
-        lenient().when(autoRenewConfig.shouldAutoRenewAccounts()).thenReturn(renewAccounts);
-        lenient().when(autoRenewConfig.shouldAutoRenewContracts()).thenReturn(renewContracts);
+        lenient().when(autoRenewConfig.expireAccounts()).thenReturn(renewAccounts);
+        lenient().when(autoRenewConfig.expireContracts()).thenReturn(renewContracts);
         lenient().when(config.getConfigData(AutoRenewConfig.class)).thenReturn(autoRenewConfig);
     }
 

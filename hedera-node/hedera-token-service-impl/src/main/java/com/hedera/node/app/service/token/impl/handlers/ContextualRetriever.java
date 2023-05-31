@@ -79,8 +79,8 @@ public class ContextualRetriever {
                 acct.tinybarBalance(),
                 false,
                 isSmartContract,
-                autoRenewConfig.shouldAutoRenewContracts(),
-                autoRenewConfig.shouldAutoRenewAccounts());
+                autoRenewConfig.expireContracts(),
+                autoRenewConfig.expireAccounts());
         validateTrue(expiryStatus == OK, expiryStatus);
 
         return acct;

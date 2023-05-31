@@ -24,7 +24,6 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
-import com.hedera.node.app.service.mono.context.properties.EntityType;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.ContextualRetriever;
@@ -45,9 +44,9 @@ class ContextualRetrieverTest {
     private static final TokenID TOKEN_ID_45 = TokenID.newBuilder().tokenNum(45).build();
 
     private static final AutoRenewConfig ALL_EXPIRY_DISABLED = new AutoRenewConfig(Set.of());
-    private static final AutoRenewConfig CONTRACT_EXPIRY_ENABLED = new AutoRenewConfig(Set.of(EntityType.CONTRACT));
+    private static final AutoRenewConfig CONTRACT_EXPIRY_ENABLED = new AutoRenewConfig(Set.of("CONTRACT"));
 
-    private static final AutoRenewConfig ACCOUNT_EXPIRY_ENABLED = new AutoRenewConfig(Set.of(EntityType.ACCOUNT));
+    private static final AutoRenewConfig ACCOUNT_EXPIRY_ENABLED = new AutoRenewConfig(Set.of("ACCOUNT"));
 
     @Mock
     private ReadableAccountStore accountStore;
