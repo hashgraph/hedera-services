@@ -24,7 +24,6 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.events.EventSerializationOptions;
 import com.swirlds.common.utility.NonCryptographicHashing;
 import com.swirlds.platform.consensus.RoundCalculationUtils;
 import com.swirlds.platform.internal.EventImpl;
@@ -50,6 +49,8 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
         public static final int ORIGINAL = 1;
         public static final int EPOCH_HASH = 2;
         public static final int ROUNDS_NON_ANCIENT = 3;
+        /** events and mingen are no longer part of the state, restart/reconnect now uses a snapshot */
+        public static final int CONSENSUS_SNAPSHOT = 4;
     }
 
     /**
@@ -107,6 +108,8 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
      * and is not serialized.
      */
     private Hash nextEpochHash;
+
+    // TODO add snapshot
 
     /**
      * The number of non-ancient rounds.
@@ -171,18 +174,8 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
         out.writeLong(numEventsCons);
         out.writeSerializable(hashEventsCons, false);
 
-        out.writeInt(events.length);
-        for (EventImpl event : events) {
-            out.writeOptionalSerializable(event, false, EventSerializationOptions.OMIT_TRANSACTIONS);
-            out.writeSerializable(event.getBaseEventHashedData().getHash(), false);
-        }
         out.writeInstant(consensusTimestamp);
 
-        out.writeInt(minGenInfo.size());
-        for (final MinGenInfo info : minGenInfo) {
-            out.writeLong(info.round());
-            out.writeLong(info.minimumGeneration());
-        }
         out.writeInstant(lastTransactionTimestamp);
         out.writeSerializable(creationSoftwareVersion, true);
         out.writeSerializable(epochHash, false);
@@ -199,23 +192,26 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
 
         hashEventsCons = in.readSerializable(false, Hash::new);
 
-        int eventNum = in.readInt();
-        events = new EventImpl[eventNum];
-        for (int i = 0; i < eventNum; i++) {
-            events[i] = in.readSerializable(false, EventImpl::new);
-            events[i].getBaseEventHashedData().setHash(in.readSerializable(false, Hash::new));
-            events[i].markAsSignedStateEvent();
+        if (version < ClassVersion.CONSENSUS_SNAPSHOT) {
+            int eventNum = in.readInt();
+            events = new EventImpl[eventNum];
+            for (int i = 0; i < eventNum; i++) {
+                events[i] = in.readSerializable(false, EventImpl::new);
+                events[i].getBaseEventHashedData().setHash(in.readSerializable(false, Hash::new));
+                events[i].markAsSignedStateEvent();
+            }
+            State.linkParents(events);
         }
 
         consensusTimestamp = in.readInstant();
 
-        final int minGenInfoSize = in.readInt();
-        minGenInfo = new LinkedList<>();
-        for (int i = 0; i < minGenInfoSize; i++) {
-            minGenInfo.add(new MinGenInfo(in.readLong(), in.readLong()));
+        if (version < ClassVersion.CONSENSUS_SNAPSHOT) {
+            final int minGenInfoSize = in.readInt();
+            minGenInfo = new LinkedList<>();
+            for (int i = 0; i < minGenInfoSize; i++) {
+                minGenInfo.add(new MinGenInfo(in.readLong(), in.readLong()));
+            }
         }
-
-        State.linkParents(events);
 
         lastTransactionTimestamp = in.readInstant();
         creationSoftwareVersion = in.readSerializable();
@@ -239,7 +235,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
      */
     @Override
     public int getVersion() {
-        return ClassVersion.ROUNDS_NON_ANCIENT;
+        return ClassVersion.CONSENSUS_SNAPSHOT;
     }
 
     /**
@@ -345,6 +341,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
      * @param events an array of events
      * @return this object
      */
+    @Deprecated
     public PlatformData setEvents(final EventImpl[] events) {
         this.events = events;
         if (events != null && events.length > 0) {
@@ -390,6 +387,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
      * @param minGenInfo minimum generation info list
      * @return this object
      */
+    @Deprecated
     public PlatformData setMinGenInfo(final List<MinGenInfo> minGenInfo) {
         this.minGenInfo = minGenInfo;
         return this;

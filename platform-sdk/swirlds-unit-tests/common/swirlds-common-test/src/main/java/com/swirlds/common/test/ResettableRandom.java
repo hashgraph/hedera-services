@@ -49,4 +49,8 @@ public class ResettableRandom extends Random {
     public void reset() {
         setSeed(initialSeed);
     }
+
+    public long getInitialSeed() {
+        return initialSeed;
+    }
 }

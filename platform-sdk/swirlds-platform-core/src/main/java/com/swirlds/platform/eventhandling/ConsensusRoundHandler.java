@@ -49,7 +49,6 @@ import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusHandlingMetrics;
 import com.swirlds.platform.observers.ConsensusRoundObserver;
-import com.swirlds.platform.state.MinGenInfo;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -59,7 +58,6 @@ import com.swirlds.platform.stats.AverageStat;
 import com.swirlds.platform.stats.CycleTimingStat;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
@@ -80,9 +78,6 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
      * The class responsible for all interactions with the swirld state
      */
     private final SwirldStateManager swirldStateManager;
-
-    /** Stores consensus events and round generations that need to be saved in state */
-    private final SignedStateEventsAndGenerations eventsAndGenerations;
 
     private final SettingsProvider settings;
     private final ConsensusHandlingMetrics consensusHandlingMetrics;
@@ -135,11 +130,6 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
 
     private final PlatformContext platformContext;
 
-    private static final RunningAverageMetric.Config AVG_Q_SIGNED_STATE_EVENTS_CONFIG = new RunningAverageMetric.Config(
-                    INTERNAL_CATEGORY, "queueSignedStateEvents")
-            .withDescription("number of handled consensus events that will be part of the next signed state")
-            .withUnit("count");
-
     private static final RunningAverageMetric.Config AVG_STATE_TO_HASH_SIGN_DEPTH_CONFIG =
             new RunningAverageMetric.Config(INTERNAL_CATEGORY, "stateToHashSignDepth")
                     .withDescription("average depth of the stateToHashSign queue (number of SignedStates)")
@@ -187,10 +177,6 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
         this.softwareVersion = softwareVersion;
         this.enterFreezePeriod = enterFreezePeriod;
 
-        final ConsensusConfig consensusConfig =
-                platformContext.getConfiguration().getConfigData(ConsensusConfig.class);
-
-        eventsAndGenerations = new SignedStateEventsAndGenerations(consensusConfig);
         final ConsensusQueue queue = new ConsensusQueue(consensusHandlingMetrics, settings.getMaxEventQueueForCons());
         queueThread = new QueueThreadConfiguration<ConsensusRound>(threadManager)
                 .setNodeId(selfId)
@@ -221,13 +207,10 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
                 "average number of events in the consensus queue (q2) waiting to be handled",
                 FORMAT_10_3,
                 AverageStat.WEIGHT_VOLATILE);
-        final RunningAverageMetric avgQSignedStateEvents =
-                platformContext.getMetrics().getOrCreate(AVG_Q_SIGNED_STATE_EVENTS_CONFIG);
         final RunningAverageMetric avgStateToHashSignDepth =
                 platformContext.getMetrics().getOrCreate(AVG_STATE_TO_HASH_SIGN_DEPTH_CONFIG);
         platformContext.getMetrics().addUpdater(() -> {
             avgQ2ConsEvents.update(queueThread.size());
-            avgQSignedStateEvents.update(eventsAndGenerations.getNumberOfEvents());
             avgStateToHashSignDepth.update(getStateToHashSignSize());
         });
     }
@@ -259,7 +242,6 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
         eventsConsRunningHash = new RunningHash(new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]));
         numEventsCons.set(0);
 
-        eventsAndGenerations.clear();
         logger.info(RECONNECT.getMarker(), "consensus handler: ready for reconnect");
     }
 
@@ -283,11 +265,6 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
      *                    reservedSignedState is loaded at startup
      */
     public void loadDataFromSignedState(final SignedState signedState, final boolean isReconnect) {
-        eventsAndGenerations.loadDataFromSignedState(signedState);
-        // nodes not reconnecting expired eventsAndGenerations right after creating a signed state
-        // we expire here right after receiving it to align ourselves with other nodes for the next round
-        eventsAndGenerations.expire();
-
         // set initialHash of the RunningHash to be the hash loaded from signed state
         eventsConsRunningHash = new RunningHash(signedState.getHashEventsCons());
 
@@ -384,8 +361,6 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
 
         consensusTimingStat.setTimePoint(3);
 
-        eventsAndGenerations.addEvents(round.getConsensusEvents());
-
         // count events that have had all their transactions handled by stateCons
         numEventsCons.updateAndGet(
                 prevValue -> prevValue + round.getConsensusEvents().size());
@@ -406,8 +381,6 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
         // newSignedStateCycleTiming in Statistics
         consensusTimingStat.setTimePoint(5);
 
-        // remove events and generations that are not needed
-        eventsAndGenerations.expire();
         updatePlatformState(round);
 
         consensusTimingStat.setTimePoint(6);
@@ -424,7 +397,6 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
             }
             createSignedState();
         }
-
         consensusTimingStat.stopCycle();
     }
 
@@ -451,8 +423,6 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
      */
     private void updatePlatformState(final ConsensusRound round) throws InterruptedException {
         final Hash runningHash = eventsConsRunningHash.getFutureHash().getAndRethrow();
-        final EventImpl[] events = eventsAndGenerations.getEventsForSignedState();
-        final List<MinGenInfo> minGen = eventsAndGenerations.getMinGenForSignedState();
 
         swirldStateManager
                 .getConsensusState()
@@ -461,11 +431,10 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
                 .setRound(round.getRoundNum())
                 .setNumEventsCons(numEventsCons.get())
                 .setHashEventsCons(runningHash)
-                .setEvents(events)
                 .setConsensusTimestamp(round.getLastEvent().getLastTransTime())
-                .setMinGenInfo(minGen)
                 .setCreationSoftwareVersion(softwareVersion)
                 .setRoundsNonAncient(roundsNonAncient);
+        // round.getSnapshot(),
     }
 
     private void createSignedState() throws InterruptedException {
@@ -488,16 +457,8 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
         ssTimingStat.stopCycle();
     }
 
-    public void addMinGenInfo(final long round, final long minGeneration) {
-        eventsAndGenerations.addRoundGeneration(round, minGeneration);
-    }
-
     public int getRoundsInQueue() {
         return queueThread.size();
-    }
-
-    public int getSignedStateEventsSize() {
-        return eventsAndGenerations.getNumberOfEvents();
     }
 
     /**

@@ -16,6 +16,7 @@
 
 package com.swirlds.common.utility;
 
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
@@ -267,5 +268,13 @@ public class RandomAccessDeque<T> implements Iterable<T> {
                 return next;
             }
         };
+    }
+
+    /** Clears all data from the deque making it the same as a new instance */
+    public void clear() {
+        Arrays.fill(data, null);
+        size = 0;
+        firstIndex = 0;
+        nextIndex = 0;
     }
 }

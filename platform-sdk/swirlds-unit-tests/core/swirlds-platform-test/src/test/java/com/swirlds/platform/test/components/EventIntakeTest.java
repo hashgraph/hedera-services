@@ -31,6 +31,7 @@ import com.swirlds.platform.Consensus;
 import com.swirlds.platform.components.EventIntake;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;
+import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.intake.IntakeCycleStats;
 import com.swirlds.platform.internal.ConsensusRound;
@@ -79,12 +80,14 @@ class EventIntakeTest {
         final Queue<EventImpl> staleQueue = new LinkedList<>(List.of(stale));
         when(shadowGraph.findByGeneration(anyLong(), anyLong(), any())).thenReturn(staleQueue);
         final AtomicLong minNonAncient = new AtomicLong(10);
+        final Generations generations =
+                new Generations(minNonAncient.get() - 1, minNonAncient.get(), minNonAncient.get() + 1);
         when(consensus.getMinRoundGeneration()).thenAnswer(i -> minNonAncient.get() - 1);
         when(consensus.getMinGenerationNonAncient()).thenAnswer(i -> minNonAncient.get());
         when(consensus.getMaxRoundGeneration()).thenAnswer(i -> minNonAncient.get() + 1);
         when(consensus.addEvent(any(EventImpl.class), any(AddressBook.class))).thenAnswer(i -> {
             minNonAncient.set(20);
-            return List.of(consEvent1, consEvent2);
+            return List.of(new ConsensusRound(List.of(consEvent1, consEvent2), generations));
         });
 
         // add an event

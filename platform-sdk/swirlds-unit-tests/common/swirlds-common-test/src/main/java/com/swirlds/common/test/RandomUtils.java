@@ -106,7 +106,10 @@ public class RandomUtils {
     }
 
     public static ResettableRandom getRandom(final boolean printSeed) {
-        final long seed = RANDOM.nextLong();
+        return createRandom(RANDOM.nextLong(), printSeed);
+    }
+
+    private static ResettableRandom createRandom(final long seed, final boolean printSeed) {
         if (printSeed) {
             System.out.println("Random seed: " + seed + "L");
         }
@@ -114,10 +117,14 @@ public class RandomUtils {
     }
 
     public static ResettableRandom initRandom(final Long seed) {
+        return initRandom(seed, true);
+    }
+
+    public static ResettableRandom initRandom(final Long seed, final boolean printSeed) {
         if (seed == null) {
             return getRandomPrintSeed();
         } else {
-            return new ResettableRandom(seed);
+            return createRandom(seed, printSeed);
         }
     }
 }

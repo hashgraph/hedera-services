@@ -178,8 +178,8 @@ public class ConsensusMetricsImpl implements ConsensusMetrics {
      * {@inheritDoc}
      */
     @Override
-    public void coinRounds(final long numCoinRounds) {
-        this.numCoinRounds.update(numCoinRounds);
+    public void coinRound() {
+        this.numCoinRounds.update(1);
     }
 
     /**
@@ -188,8 +188,8 @@ public class ConsensusMetricsImpl implements ConsensusMetrics {
     @Override
     public void lastFamousInRound(final EventImpl event) {
         if (selfId.id() != event.getCreatorId()) { // record this for events received
-            avgReceivedFamousTime.update(
-                    event.getTimeReceived().until(Instant.now(), ChronoUnit.NANOS) * NANOSECONDS_TO_SECONDS);
+            avgReceivedFamousTime.update(event.getBaseEvent().getTimeReceived().until(Instant.now(), ChronoUnit.NANOS)
+                    * NANOSECONDS_TO_SECONDS);
         }
     }
 
@@ -217,10 +217,12 @@ public class ConsensusMetricsImpl implements ConsensusMetrics {
         if (event.hasUserTransactions()) {
             if (selfId.id() == event.getCreatorId()) { // set either created or received time to now
                 avgCreatedConsensusTime.update(
-                        event.getTimeReceived().until(Instant.now(), ChronoUnit.NANOS) * NANOSECONDS_TO_SECONDS);
+                        event.getBaseEvent().getTimeReceived().until(Instant.now(), ChronoUnit.NANOS)
+                                * NANOSECONDS_TO_SECONDS);
             } else {
                 avgReceivedConsensusTime.update(
-                        event.getTimeReceived().until(Instant.now(), ChronoUnit.NANOS) * NANOSECONDS_TO_SECONDS);
+                        event.getBaseEvent().getTimeReceived().until(Instant.now(), ChronoUnit.NANOS)
+                                * NANOSECONDS_TO_SECONDS);
                 avgCreatedReceivedConsensusTime.update(
                         event.getTimeCreated().until(Instant.now(), ChronoUnit.NANOS) * NANOSECONDS_TO_SECONDS);
             }
@@ -235,7 +237,7 @@ public class ConsensusMetricsImpl implements ConsensusMetrics {
                                 * NANOSECONDS_TO_SECONDS);
             } else {
                 avgOtherReceivedTimestamp.update(
-                        event.getTimeReceived().until(event.getConsensusTimestamp(), ChronoUnit.NANOS)
+                        event.getBaseEvent().getTimeReceived().until(event.getConsensusTimestamp(), ChronoUnit.NANOS)
                                 * NANOSECONDS_TO_SECONDS);
             }
         }

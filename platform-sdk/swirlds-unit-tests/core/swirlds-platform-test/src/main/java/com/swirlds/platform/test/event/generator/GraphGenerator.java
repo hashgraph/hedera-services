@@ -20,6 +20,7 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.test.event.DynamicValue;
 import com.swirlds.platform.test.event.IndexedEvent;
 import com.swirlds.platform.test.event.source.EventSource;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -147,4 +148,11 @@ public interface GraphGenerator<T extends GraphGenerator<T>> {
      * 		Weights of self (i.e. the weights on the diagonal) should be 0.
      */
     void setOtherParentAffinity(final DynamicValue<List<List<Double>>> affinityMatrix);
+
+    /**
+     * Sets the timestamp of the last emitted event
+     *
+     * @param previousTimestamp the timestamp to set
+     */
+    void setPreviousTimestamp(final Instant previousTimestamp);
 }

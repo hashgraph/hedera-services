@@ -164,7 +164,9 @@ public class SyncTestExecutor {
     private void createGraphs() {
         initialGraphCreation.accept(caller, listener);
         graphCustomization.accept(caller, listener);
+        caller.getEmitter().setCheckpoint(params.getNumCallerEvents());
         caller.generateAndAdd(params.getNumCallerEvents(), callerAddToGraphTest);
+        listener.getEmitter().setCheckpoint(params.getNumListenerEvents());
         listener.generateAndAdd(params.getNumListenerEvents(), listenerAddToGraphTest);
         generationDefinitions.accept(caller, listener);
     }

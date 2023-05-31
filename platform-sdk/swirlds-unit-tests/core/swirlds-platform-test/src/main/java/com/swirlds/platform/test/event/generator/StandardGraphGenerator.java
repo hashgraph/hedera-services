@@ -388,4 +388,9 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
 
         return next;
     }
+
+    @Override
+    public void setPreviousTimestamp(final Instant previousTimestamp) {
+        this.previousTimestamp = previousTimestamp;
+    }
 }

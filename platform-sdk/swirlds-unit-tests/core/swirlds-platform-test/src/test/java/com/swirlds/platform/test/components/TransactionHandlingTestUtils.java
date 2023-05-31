@@ -24,6 +24,7 @@ import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.system.transaction.internal.SystemTransaction;
 import com.swirlds.common.test.DummySystemTransaction;
+import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
@@ -74,6 +75,7 @@ public final class TransactionHandlingTestUtils {
             events.add(newDummyEvent(transactionCount));
         }
 
-        return new ConsensusRound(events, mock(EventImpl.class), mock(GraphGenerations.class));
+        return new ConsensusRound(
+                events, mock(EventImpl.class), mock(GraphGenerations.class), mock(ConsensusSnapshot.class));
     }
 }
