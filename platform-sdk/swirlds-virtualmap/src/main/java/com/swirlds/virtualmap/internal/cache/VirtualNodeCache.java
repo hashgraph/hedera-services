@@ -162,8 +162,8 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
     private static final Executor CLEANING_POOL = Boolean.getBoolean("syncCleaningPool")
             ? Runnable::run
             : new ThreadPoolExecutor(
-                    config.getNumCleanerThreads(),
-                    config.getNumCleanerThreads(),
+                    config.numCleanerThreads(),
+                    config.numCleanerThreads(),
                     60L,
                     TimeUnit.SECONDS,
                     new LinkedBlockingQueue<>(),
@@ -662,7 +662,8 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
         // create a new value and a new mutation and return the new mutation.
         if (forModify && mutation.version < fastCopyVersion.get()) {
             assert !leafIndexesAreImmutable.get() : "You cannot create leaf records at this time!";
-            @SuppressWarnings("unchecked") final VirtualLeafRecord<K, V> leaf =
+            @SuppressWarnings("unchecked")
+            final VirtualLeafRecord<K, V> leaf =
                     new VirtualLeafRecord<>(mutation.value.getPath(), mutation.value.getKey(), (V)
                             mutation.value.getValue().copy());
             return putLeaf(leaf);
