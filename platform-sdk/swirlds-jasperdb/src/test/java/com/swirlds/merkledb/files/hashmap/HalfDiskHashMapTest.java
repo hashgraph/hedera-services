@@ -28,7 +28,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.Random;
-import java.util.concurrent.Semaphore;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -37,9 +36,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 @SuppressWarnings({"SameParameterValue", "unchecked"})
 class HalfDiskHashMapTest {
 
-    /**
-     * Temporary directory provided by JUnit
-     */
+    /** Temporary directory provided by JUnit */
     @SuppressWarnings("unused")
     @TempDir
     Path tempDirPath;
@@ -154,7 +151,7 @@ class HalfDiskHashMapTest {
         createSomeData(testType, map, 1111, 10_000, 1);
         checkData(testType, map, 1, 10_000, 1);
         // do a merge
-        map.merge(dataFileReaders -> dataFileReaders, new Semaphore(1), 2);
+        map.merge(dataFileReaders -> dataFileReaders, 2);
         // check all data after
         checkData(testType, map, 1, 10_000, 1);
     }

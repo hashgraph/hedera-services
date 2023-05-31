@@ -27,20 +27,24 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.system.BasicSoftwareVersion;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.RandomUtils;
-import com.swirlds.common.test.state.DummySwirldState2;
+import com.swirlds.common.test.state.DummySwirldState;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
  * A utility for generating random signed states.
@@ -59,10 +63,11 @@ public class RandomSignedStateGenerator {
     private Boolean freezeState = false;
     private List<MinGenInfo> minGenInfo;
     private SoftwareVersion softwareVersion;
-    private List<Long> signingNodeIds;
-    private Map<Long, Signature> signatures;
+    private List<NodeId> signingNodeIds;
+    private Map<NodeId, Signature> signatures;
     private boolean protectionEnabled = false;
     private Hash stateHash = null;
+    private Integer roundsNonAncient = null;
 
     /**
      * Create a new signed state generator with a random seed.
@@ -94,9 +99,9 @@ public class RandomSignedStateGenerator {
         final AddressBook addressBookInstance;
         if (addressBook == null) {
             addressBookInstance = new RandomAddressBookGenerator(random)
-                    .setStakeDistributionStrategy(RandomAddressBookGenerator.StakeDistributionStrategy.BALANCED)
+                    .setWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
                     .setHashStrategy(RandomAddressBookGenerator.HashStrategy.REAL_HASH)
-                    .setSequentialIds(true)
+                    .setSequentialIds(false)
                     .build();
         } else {
             addressBookInstance = addressBook;
@@ -105,7 +110,7 @@ public class RandomSignedStateGenerator {
         final State stateInstance;
         if (state == null) {
             stateInstance = new State();
-            final DummySwirldState2 swirldState = new DummySwirldState2(addressBookInstance);
+            final DummySwirldState swirldState = new DummySwirldState(addressBookInstance);
             stateInstance.setSwirldState(swirldState);
             PlatformState platformState = new PlatformState();
             final PlatformData platformData = new PlatformData();
@@ -159,9 +164,19 @@ public class RandomSignedStateGenerator {
             freezeStateInstance = freezeState;
         }
 
+        final int roundsNonAncientInstance;
+        if (roundsNonAncient == null) {
+            roundsNonAncientInstance = 26;
+        } else {
+            roundsNonAncientInstance = roundsNonAncient;
+        }
+
         final List<MinGenInfo> minGenInfoInstance;
         if (minGenInfo == null) {
-            minGenInfoInstance = List.of();
+            minGenInfoInstance = new ArrayList<>();
+            for (int i = 0; i < roundsNonAncientInstance; i++) {
+                minGenInfoInstance.add(new MinGenInfo(roundInstance - i, 0L));
+            }
         } else {
             minGenInfoInstance = minGenInfo;
         }
@@ -183,23 +198,28 @@ public class RandomSignedStateGenerator {
                 .setEvents(eventsInstance)
                 .setConsensusTimestamp(consensusTimestampInstance)
                 .setMinGenInfo(minGenInfoInstance)
-                .setCreationSoftwareVersion(softwareVersionInstance);
+                .setCreationSoftwareVersion(softwareVersionInstance)
+                .setRoundsNonAncient(roundsNonAncientInstance);
 
-        final SignedState signedState = new SignedState(stateInstance, freezeStateInstance);
+        final SignedState signedState = new SignedState(
+                TestPlatformContextBuilder.create().build(),
+                stateInstance,
+                "RandomSignedStateGenerator.build()",
+                freezeStateInstance);
 
         MerkleCryptoFactory.getInstance().digestTreeSync(stateInstance);
         if (stateHash != null) {
             stateInstance.setHash(stateHash);
         }
 
-        final Map<Long, Signature> signaturesInstance;
+        final Map<NodeId, Signature> signaturesInstance;
         if (signatures == null) {
-            final List<Long> signingNodeIdsInstance;
+            final List<NodeId> signingNodeIdsInstance;
             if (signingNodeIds == null) {
                 signingNodeIdsInstance = new LinkedList<>();
                 if (addressBookInstance.getSize() > 0) {
                     for (int i = 0; i < addressBookInstance.getSize() / 3 + 1; i++) {
-                        signingNodeIdsInstance.add(addressBookInstance.getId(i));
+                        signingNodeIdsInstance.add(addressBookInstance.getNodeId(i));
                     }
                 }
             } else {
@@ -208,7 +228,7 @@ public class RandomSignedStateGenerator {
 
             signaturesInstance = new HashMap<>();
 
-            for (final long nodeID : signingNodeIdsInstance) {
+            for (final NodeId nodeID : signingNodeIdsInstance) {
                 final Signature signature = randomSignature(random);
 
                 final Signature wrappedSignature = spy(signature);
@@ -228,12 +248,12 @@ public class RandomSignedStateGenerator {
             signaturesInstance = signatures;
         }
 
-        for (final long nodeId : signaturesInstance.keySet()) {
+        for (final NodeId nodeId : signaturesInstance.keySet()) {
             signedState.getSigSet().addSignature(nodeId, signaturesInstance.get(nodeId));
         }
 
-        if (protectionEnabled && stateInstance.getSwirldState() instanceof final DummySwirldState2 dummySwirldState2) {
-            dummySwirldState2.disableDeletion();
+        if (protectionEnabled && stateInstance.getSwirldState() instanceof final DummySwirldState dummySwirldState) {
+            dummySwirldState.disableDeletion();
         }
 
         return signedState;
@@ -360,7 +380,9 @@ public class RandomSignedStateGenerator {
      * @param signingNodeIds a list of nodes that have signed this state
      * @return this object
      */
-    public RandomSignedStateGenerator setSigningNodeIds(final List<Long> signingNodeIds) {
+    @NonNull
+    public RandomSignedStateGenerator setSigningNodeIds(@NonNull final List<NodeId> signingNodeIds) {
+        Objects.requireNonNull(signingNodeIds, "signingNodeIds must not be null");
         this.signingNodeIds = signingNodeIds;
         return this;
     }
@@ -370,7 +392,9 @@ public class RandomSignedStateGenerator {
      *
      * @return this object
      */
-    public RandomSignedStateGenerator setSignatures(final Map<Long, Signature> signatures) {
+    @NonNull
+    public RandomSignedStateGenerator setSignatures(@NonNull final Map<NodeId, Signature> signatures) {
+        Objects.requireNonNull(signatures, "signatures must not be null");
         this.signatures = signatures;
         return this;
     }
@@ -380,18 +404,31 @@ public class RandomSignedStateGenerator {
      *
      * @return this object
      */
-    public RandomSignedStateGenerator setStateHash(final Hash stateHash) {
+    @NonNull
+    public RandomSignedStateGenerator setStateHash(@NonNull final Hash stateHash) {
+        Objects.requireNonNull(stateHash, "stateHash must not be null");
         this.stateHash = stateHash;
         return this;
     }
 
     /**
-     * Default false. If true and a {@link DummySwirldState2} is being used, then disable deletion on the state.
+     * Default false. If true and a {@link DummySwirldState} is being used, then disable deletion on the state.
      *
      * @return this object
      */
+    @NonNull
     public RandomSignedStateGenerator setProtectionEnabled(final boolean protectionEnabled) {
         this.protectionEnabled = protectionEnabled;
+        return this;
+    }
+
+    /**
+     * Set the number of non-ancient rounds.
+     *
+     * @return this object
+     */
+    public RandomSignedStateGenerator setRoundsNonAncient(final int roundsNonAncient) {
+        this.roundsNonAncient = roundsNonAncient;
         return this;
     }
 }

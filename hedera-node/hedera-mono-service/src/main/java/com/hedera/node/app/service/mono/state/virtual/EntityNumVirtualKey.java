@@ -19,6 +19,7 @@ package com.hedera.node.app.service.mono.state.virtual;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualLongKey;
@@ -43,8 +44,17 @@ public final class EntityNumVirtualKey implements VirtualLongKey {
         return new EntityNumVirtualKey(num.longValue());
     }
 
+    public static EntityNumVirtualKey fromLong(final long num) {
+        return new EntityNumVirtualKey(num);
+    }
+
     public static EntityNumVirtualKey fromPair(final EntityNumPair num) {
         return new EntityNumVirtualKey(num.value());
+    }
+
+    public static EntityNumVirtualKey fromAccountId(AccountID acct) {
+        final var entityNum = EntityNum.fromAccountId(acct);
+        return EntityNumVirtualKey.from(entityNum);
     }
 
     public EntityNumVirtualKey() {

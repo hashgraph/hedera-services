@@ -16,9 +16,10 @@
 
 package com.swirlds.merkledb.collections;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
-import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.stream.Stream;
@@ -70,8 +71,9 @@ public class ImmutableIndexedObjectListUsingMap<T extends IndexedObject> impleme
     /**
      * {@inheritDoc}
      */
-    public ImmutableIndexedObjectListUsingMap<T> withDeletedObjects(final Set<T> objectsToDelete) {
-        if (objectsToDelete == null || objectsToDelete.isEmpty() || dataMap.isEmpty()) {
+    @Override
+    public ImmutableIndexedObjectListUsingMap<T> withDeletedObjects(@NonNull final Collection<T> objectsToDelete) {
+        if (objectsToDelete.isEmpty() || dataMap.isEmpty()) {
             return this;
         }
 

@@ -18,6 +18,7 @@ package com.hedera.node.app.service.mono.utils.accessors;
 
 import com.hedera.node.app.service.mono.sigs.order.LinkedRefs;
 import com.hedera.node.app.service.mono.sigs.sourcing.PubKeyToSigBytes;
+import com.hedera.node.app.service.mono.utils.PendingCompletion;
 import com.hedera.node.app.service.mono.utils.RationalizedSigMeta;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.common.crypto.TransactionSignature;
@@ -56,4 +57,9 @@ public interface SwirldsTxnAccessor extends TxnAccessor {
     Function<byte[], TransactionSignature> getRationalizedPkToCryptoSigFn();
 
     TxnAccessor getDelegate();
+
+    /* --- Used to track the hollow account finalizations linked to a transaction --- */
+    void setPendingCompletions(List<PendingCompletion> pendingCompletions);
+
+    List<PendingCompletion> getPendingCompletions();
 }

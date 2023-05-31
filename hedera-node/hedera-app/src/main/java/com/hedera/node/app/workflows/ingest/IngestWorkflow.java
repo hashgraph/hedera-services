@@ -16,11 +16,11 @@
 
 package com.hedera.node.app.workflows.ingest;
 
-import com.hedera.node.app.SessionContext;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
+import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.transaction.TransactionResponse;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.nio.ByteBuffer;
 
 /**
  * The {@link IngestWorkflow} represents the workflow used when receiving a {@link Transaction} from
@@ -35,10 +35,8 @@ public interface IngestWorkflow {
      * {@link TransactionResponse} being returned to the client (for both successful and
      * unsuccessful calls). There are no unhandled exceptions (even Throwable is handled).
      *
-     * @param session The per-request {@link SessionContext}.
      * @param requestBuffer The raw protobuf transaction bytes. Must be a transaction object.
      * @param responseBuffer The raw protobuf response bytes.
      */
-    void submitTransaction(
-            @NonNull SessionContext session, @NonNull ByteBuffer requestBuffer, @NonNull ByteBuffer responseBuffer);
+    void submitTransaction(@NonNull Bytes requestBuffer, @NonNull BufferedData responseBuffer);
 }

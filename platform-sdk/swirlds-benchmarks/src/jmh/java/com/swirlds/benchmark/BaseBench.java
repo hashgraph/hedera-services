@@ -46,24 +46,24 @@ public abstract class BaseBench {
 
     protected static final String RUN_DELIMITER = "--------------------------------";
 
-    @Param({"10"})
-    public int numFiles;
+    @Param({"100"})
+    public int numFiles = 100;
 
     @Param({"100000"})
-    public int numRecords;
+    public int numRecords = 100_000;
 
     @Param({"1000000"})
-    public int maxKey;
+    public int maxKey = 1_000_000;
 
     // 8 - VirtualLongKey, 8+ - generic VirtualKey
     @Param({"8"})
-    public int keySize;
+    public int keySize = 8;
 
-    @Param({"24"})
-    public int recordSize;
+    @Param({"128"})
+    public int recordSize = 128;
 
-    @Param({"0"})
-    public int numThreads;
+    @Param({"32"})
+    public int numThreads = 32;
 
     abstract String benchmarkName();
 
@@ -91,6 +91,7 @@ public abstract class BaseBench {
 
         benchmarkConfig = configuration.getConfigData(BenchmarkConfig.class);
         logger.info("Benchmark configuration: {}", benchmarkConfig);
+        logger.info("Build: {}", Utils.buildVersion());
 
         final String data = benchmarkConfig.benchmarkData();
         if (data == null || data.isBlank()) {
@@ -104,6 +105,7 @@ public abstract class BaseBench {
         try {
             final ConstructableRegistry registry = ConstructableRegistry.getInstance();
             registry.registerConstructables("com.swirlds.virtualmap");
+            registry.registerConstructables("com.swirlds.merkledb");
             registry.registerConstructables("com.swirlds.benchmark");
             registry.registerConstructables("com.swirlds.common.crypto");
         } catch (ConstructableRegistryException ex) {

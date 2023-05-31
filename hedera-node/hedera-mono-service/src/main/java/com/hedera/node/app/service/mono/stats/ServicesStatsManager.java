@@ -91,8 +91,8 @@ public class ServicesStatsManager {
         throttleGauges.registerWith(platform);
         opSpeedometers.registerWith(platform);
         entityUtilGauges.registerWith(platform);
-        storage.get().registerMetrics(platform.getMetrics());
-        bytecode.get().registerMetrics(platform.getMetrics());
+        storage.get().registerMetrics(platform.getContext().getMetrics());
+        bytecode.get().registerMetrics(platform.getContext().getMetrics());
 
         final var hapiOpsUpdateIntervalMs =
                 Math.max(MIN_STAT_INTERVAL_UPDATE_MS, localProperties.hapiOpsStatsUpdateIntervalMs());
@@ -120,7 +120,7 @@ public class ServicesStatsManager {
         });
 
         updateThread.setName(
-                String.format(STATS_UPDATE_THREAD_NAME_TPL, platform.getSelfId().getId()));
+                String.format(STATS_UPDATE_THREAD_NAME_TPL, platform.getSelfId().getIdAsInt()));
         updateThread.start();
     }
 

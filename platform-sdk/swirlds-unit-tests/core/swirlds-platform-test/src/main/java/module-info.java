@@ -9,4 +9,5 @@ open module com.swirlds.platform.test {
     requires com.swirlds.common.test;
     requires org.apache.logging.log4j;
     requires java.desktop;
+    requires static com.github.spotbugs.annotations;
 }

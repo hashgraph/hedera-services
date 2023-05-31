@@ -18,16 +18,23 @@ package com.swirlds.platform.state;
 
 import com.swirlds.common.system.DualState;
 import com.swirlds.platform.FreezePeriodChecker;
+import com.swirlds.platform.uptime.MutableUptimeData;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Contains any data that is either read or written by the platform and the application,
- * and contains methods available to the platform
+ * Contains any data that is either read or written by the platform and the application, and contains methods available
+ * to the platform
  */
 public interface PlatformDualState extends DualState, FreezePeriodChecker {
 
     /**
      * Sets the lastFrozenTime to be current freezeTime
-     *
      */
     void setLastFrozenTimeToBeCurrentFreezeTime();
+
+    /**
+     * Get the node uptime data.
+     */
+    @NonNull
+    MutableUptimeData getMutableUptimeData();
 }

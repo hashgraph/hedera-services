@@ -24,10 +24,11 @@ import com.swirlds.common.utility.Clearable;
 import com.swirlds.logging.payloads.ReconnectFinishPayload;
 import com.swirlds.logging.payloads.ReconnectLoadFailurePayload;
 import com.swirlds.logging.payloads.ReconnectStartPayload;
-import com.swirlds.platform.Connection;
 import com.swirlds.platform.event.EventUtils;
+import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.StateSettings;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
 import java.util.function.Consumer;
@@ -47,8 +48,8 @@ import org.apache.logging.log4j.Logger;
 public class ReconnectHelper {
     private static final Logger logger = LogManager.getLogger(ReconnectHelper.class);
 
-    /** stops all gossiping */
-    private final Runnable stopGossip;
+    /** pause gossip for reconnect */
+    private final Runnable pauseGossip;
     /** clears all data that is no longer needed since we fell behind */
     private final Clearable clearAll;
     /** supplier of the initial signed state against which to perform a delta based reconnect */
@@ -63,14 +64,14 @@ public class ReconnectHelper {
     private final ReconnectLearnerFactory reconnectLearnerFactory;
 
     public ReconnectHelper(
-            final Runnable stopGossip,
+            final Runnable pauseGossip,
             final Clearable clearAll,
             final Supplier<State> workingStateSupplier,
             final LongSupplier lastCompleteRoundSupplier,
             final ReconnectLearnerThrottle reconnectLearnerThrottle,
             final Consumer<SignedState> loadSignedState,
             final ReconnectLearnerFactory reconnectLearnerFactory) {
-        this.stopGossip = stopGossip;
+        this.pauseGossip = pauseGossip;
         this.clearAll = clearAll;
         this.workingStateSupplier = workingStateSupplier;
         this.lastCompleteRoundSupplier = lastCompleteRoundSupplier;
@@ -85,7 +86,7 @@ public class ReconnectHelper {
     public void prepareForReconnect() {
         reconnectLearnerThrottle.exitIfReconnectIsDisabled();
         logger.info(RECONNECT.getMarker(), "Preparing for reconnect, stopping gossip");
-        stopGossip.run();
+        pauseGossip.run();
         logger.info(RECONNECT.getMarker(), "Preparing for reconnect, start clearing queues");
         clearAll.clear();
         logger.info(RECONNECT.getMarker(), "Queues have been cleared");
@@ -102,24 +103,20 @@ public class ReconnectHelper {
      * @throws ReconnectException
      * 		if any error occurs during the reconnect attempt
      */
-    public SignedState receiveSignedState(final Connection conn, final SignedStateValidator validator)
+    public ReservedSignedState receiveSignedState(final Connection conn, final SignedStateValidator validator)
             throws ReconnectException {
-        final SignedState signedState;
         try {
-            signedState = reconnectLearner(conn, validator);
+            final ReservedSignedState reservedState = reconnectLearner(conn, validator);
             reconnectLearnerThrottle.successfulReconnect();
-
-            logger.debug(RECONNECT.getMarker(), "`doReconnect` : finished, found peer node {}", conn.getOtherId());
-            return signedState;
+            return reservedState;
         } catch (final RuntimeException e) {
             reconnectLearnerThrottle.handleFailedReconnect(conn, e);
             throw e;
         }
     }
 
-    private SignedState reconnectLearner(final Connection conn, final SignedStateValidator validator)
+    private ReservedSignedState reconnectLearner(final Connection conn, final SignedStateValidator validator)
             throws ReconnectException {
-        final SignedState signedState;
 
         logger.info(RECONNECT.getMarker(), () -> new ReconnectStartPayload(
                         "Starting reconnect in role of the receiver.",
@@ -131,10 +128,9 @@ public class ReconnectHelper {
 
         final ReconnectLearner reconnect = reconnectLearnerFactory.create(conn, workingStateSupplier.get());
 
-        reconnect.execute(validator);
+        final ReservedSignedState reservedState = reconnect.execute(validator);
 
-        signedState = reconnect.getSignedState();
-        final long lastRoundReceived = signedState.getRound();
+        final long lastRoundReceived = reservedState.get().getRound();
 
         logger.info(RECONNECT.getMarker(), () -> new ReconnectFinishPayload(
                         "Finished reconnect in the role of the receiver.",
@@ -147,17 +143,17 @@ public class ReconnectHelper {
         logger.info(
                 RECONNECT.getMarker(),
                 "Information for state received during reconnect:\n{}\n{}",
-                () -> signedState.getState().getPlatformState().getInfoString(),
-                () -> new MerkleTreeVisualizer(signedState.getState())
+                () -> reservedState.get().getState().getPlatformState().getInfoString(),
+                () -> new MerkleTreeVisualizer(reservedState.get().getState())
                         .setDepth(StateSettings.getDebugHashDepth())
                         .render());
 
         logger.info(
                 RECONNECT.getMarker(),
                 "signed state events:\n{}",
-                () -> EventUtils.toShortStrings(signedState.getEvents()));
+                () -> EventUtils.toShortStrings(reservedState.get().getEvents()));
 
-        return signedState;
+        return reservedState;
     }
 
     /**

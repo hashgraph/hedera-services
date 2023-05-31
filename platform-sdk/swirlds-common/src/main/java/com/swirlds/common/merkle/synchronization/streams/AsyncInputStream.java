@@ -20,10 +20,10 @@ import static com.swirlds.logging.LogMarker.RECONNECT;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.swirlds.common.Releasable;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.merkle.synchronization.settings.ReconnectSettings;
-import com.swirlds.common.merkle.synchronization.settings.ReconnectSettingsFactory;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import java.io.IOException;
@@ -41,9 +41,9 @@ import org.apache.logging.log4j.Logger;
  * </p>
  *
  * <p>
- * Only one type of message is allowed to be read using an instance of this class. Originally this class was capable
- * of supporting arbitrary message types, but there was a significant memory footprint optimization that was made
- * possible by switching to single message type.
+ * Only one type of message is allowed to be read using an instance of this class. Originally this class was capable of
+ * supporting arbitrary message types, but there was a significant memory footprint optimization that was made possible
+ * by switching to single message type.
  * </p>
  *
  * <p>
@@ -80,27 +80,24 @@ public class AsyncInputStream<T extends SelfSerializable> implements AutoCloseab
     /**
      * Create a new async input stream.
      *
-     * @param inputStream
-     * 		the base stream to read from
-     * @param workGroup
-     * 		the work group that is managing this stream's thread
-     * @param messageFactory
-     * 		this function constructs new message objects. These messages objects
-     * 		are then used to read data via {@link SelfSerializable#deserialize(SerializableDataInputStream, int)}.
+     * @param inputStream    the base stream to read from
+     * @param workGroup      the work group that is managing this stream's thread
+     * @param messageFactory this function constructs new message objects. These messages objects are then used to read
+     *                       data via {@link SelfSerializable#deserialize(SerializableDataInputStream, int)}.
      */
     public AsyncInputStream(
             final SerializableDataInputStream inputStream,
             final StandardWorkGroup workGroup,
             final Supplier<T> messageFactory) {
 
-        final ReconnectSettings settings = ReconnectSettingsFactory.get();
+        final ReconnectConfig config = ConfigurationHolder.getConfigData(ReconnectConfig.class);
 
         this.inputStream = inputStream;
         this.workGroup = workGroup;
         this.messageFactory = messageFactory;
-        this.pollTimeoutMs = settings.getAsyncStreamTimeoutMilliseconds();
+        this.pollTimeoutMs = config.asyncStreamTimeoutMilliseconds();
         this.anticipatedMessages = new AtomicInteger(0);
-        this.receivedMessages = new LinkedBlockingQueue<>(settings.getAsyncStreamBufferSize());
+        this.receivedMessages = new LinkedBlockingQueue<>(config.asyncStreamBufferSize());
         this.finishedLatch = new CountDownLatch(1);
         this.alive = true;
     }
@@ -129,8 +126,8 @@ public class AsyncInputStream<T extends SelfSerializable> implements AutoCloseab
     }
 
     /**
-     * This method is run on a background thread. Continuously reads things from the stream and puts
-     * them into the queue.
+     * This method is run on a background thread. Continuously reads things from the stream and puts them into the
+     * queue.
      */
     private void run() {
         T message = null;
@@ -172,8 +169,8 @@ public class AsyncInputStream<T extends SelfSerializable> implements AutoCloseab
     }
 
     /**
-     * Get an anticipated message. Blocks until the message is ready. Object returned will be
-     * the same object passed into addAnticipatedMessage, but deserialized from the stream.
+     * Get an anticipated message. Blocks until the message is ready. Object returned will be the same object passed
+     * into addAnticipatedMessage, but deserialized from the stream.
      */
     public T readAnticipatedMessage() throws InterruptedException {
         return asyncRead();
@@ -209,8 +206,8 @@ public class AsyncInputStream<T extends SelfSerializable> implements AutoCloseab
     }
 
     /**
-     * Read a message. Will throw an exception if time equal to {@link #pollTimeoutMs} passes without a
-     * message becoming available.
+     * Read a message. Will throw an exception if time equal to {@link #pollTimeoutMs} passes without a message becoming
+     * available.
      */
     @SuppressWarnings("unchecked")
     private T asyncRead() throws InterruptedException {

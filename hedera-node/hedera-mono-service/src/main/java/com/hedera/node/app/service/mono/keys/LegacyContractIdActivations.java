@@ -83,7 +83,7 @@ public record LegacyContractIdActivations(Map<Address, Set<Address>> privilegedC
                 .collect(toSet());
     }
 
-    private static Address parsedMirrorAddressOf(final String s) {
+    public static Address parsedMirrorAddressOf(final String s) {
         return mirrorAddressOf(Long.parseLong(s));
     }
 

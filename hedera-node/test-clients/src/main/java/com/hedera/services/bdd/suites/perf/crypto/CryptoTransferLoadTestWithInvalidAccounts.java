@@ -52,17 +52,15 @@ public final class CryptoTransferLoadTestWithInvalidAccounts extends LoadTest {
     protected HapiSpec runCryptoTransfers() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
 
-        Supplier<HapiSpecOperation[]> transferBurst = () -> {
-            return new HapiSpecOperation[] {
-                cryptoTransfer(tinyBarsFromTo("0.0.1000000001", "0.0.1000000002", 1L))
-                        .noLogging()
-                        .signedBy(GENESIS)
-                        .suppressStats(true)
-                        .fee(100_000_000L)
-                        .hasKnownStatusFrom(INVALID_ACCOUNT_ID)
-                        .hasRetryPrecheckFrom(BUSY, PLATFORM_TRANSACTION_NOT_CREATED)
-                        .deferStatusResolution()
-            };
+        Supplier<HapiSpecOperation[]> transferBurst = () -> new HapiSpecOperation[] {
+            cryptoTransfer(tinyBarsFromTo("0.0.1000000001", "0.0.1000000002", 1L))
+                    .noLogging()
+                    .signedBy(GENESIS)
+                    .suppressStats(true)
+                    .fee(100_000_000L)
+                    .hasKnownStatusFrom(INVALID_ACCOUNT_ID)
+                    .hasRetryPrecheckFrom(BUSY, PLATFORM_TRANSACTION_NOT_CREATED)
+                    .deferStatusResolution()
         };
 
         return defaultHapiSpec("RunCryptoTransfers")

@@ -23,4 +23,5 @@ plugins {
 dependencies {
   // Test Dependencies
   testImplementation(testLibs.bundles.junit)
+  compileOnly(libs.spotbugs.annotations)
 }

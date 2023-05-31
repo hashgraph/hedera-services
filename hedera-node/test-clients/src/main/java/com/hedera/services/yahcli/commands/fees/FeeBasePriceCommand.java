@@ -44,7 +44,7 @@ public class FeeBasePriceCommand implements Callable<Integer> {
         StringBuilder feeTableSB = new StringBuilder();
         String serviceBorder = "-------------------------------|-----------------|\n";
         feeTableSB.append(serviceBorder);
-        feeTableSB.append(String.format("%30s |  \t\t |\n", "Transaction and Query Fees"));
+        feeTableSB.append(String.format("%30s |  \t\t |%n", "Transaction and Query Fees"));
         feeTableSB.append(serviceBorder);
 
         var delegate = new CostOfEveryThingSuite(config.asSpecConfig(), feeTableSB, serviceBorder, services);

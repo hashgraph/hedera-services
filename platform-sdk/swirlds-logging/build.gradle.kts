@@ -23,6 +23,7 @@ plugins {
 dependencies {
   // Individual Dependencies
   api(libs.commons.lang3)
+  compileOnly(libs.spotbugs.annotations)
 
   // Bundle Dependencies
   api(libs.bundles.logging.api)

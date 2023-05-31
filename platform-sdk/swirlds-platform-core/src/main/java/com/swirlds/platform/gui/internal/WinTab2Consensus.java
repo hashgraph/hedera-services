@@ -18,7 +18,10 @@ package com.swirlds.platform.gui.internal;
 
 import static com.swirlds.platform.gui.internal.GuiUtils.wrap;
 
+import com.swirlds.platform.Consensus;
 import com.swirlds.platform.SwirldsPlatform;
+import com.swirlds.platform.components.state.StateManagementComponent;
+import com.swirlds.platform.gui.GuiPlatformAccessor;
 import com.swirlds.platform.state.signed.SignedStateInfo;
 import java.awt.Font;
 import java.awt.Graphics;
@@ -52,11 +55,14 @@ class WinTab2Consensus extends PrePaintableJPanel {
             }
             SwirldsPlatform platform = WinBrowser.memberDisplayed.platform;
             String s = "";
-            s += platform.getPlatformName();
-            long r1 = platform.getConsensus().getDeleteRound();
-            long r2 = platform.getConsensus().getFameDecidedBelow();
-            long r3 = platform.getConsensus().getMaxRound();
-            long r0 = platform.getStateManagementComponent().getLastCompleteRound();
+            s += GuiPlatformAccessor.getInstance().getPlatformName(platform.getSelfId());
+            final Consensus consensus = GuiPlatformAccessor.getInstance().getConsensus(platform.getSelfId());
+            long r1 = consensus.getDeleteRound();
+            long r2 = consensus.getFameDecidedBelow();
+            long r3 = consensus.getMaxRound();
+            final StateManagementComponent stateManagementComponent =
+                    GuiPlatformAccessor.getInstance().getStateManagementComponent(platform.getSelfId());
+            long r0 = stateManagementComponent.getLastCompleteRound();
 
             if (r1 == -1) {
                 s += "\n           = latest deleted round-created";
@@ -74,8 +80,7 @@ class WinTab2Consensus extends PrePaintableJPanel {
 
             // the hash of a signed state is: Reference.toHex(state.getHash(), 0, 2)
 
-            final List<SignedStateInfo> stateInfo =
-                    platform.getStateManagementComponent().getSignedStateInfo();
+            final List<SignedStateInfo> stateInfo = stateManagementComponent.getSignedStateInfo();
             SignedStateInfo first = null;
             if (!stateInfo.isEmpty()) {
                 first = stateInfo.get(0);
@@ -122,13 +127,13 @@ class WinTab2Consensus extends PrePaintableJPanel {
                             + "those signatures. It shows how many transactions have achieved "
                             + "consensus so far, and the latest round number that has its "
                             + " events discarded, the latest that has collected signatures from members "
-                            + "with at least 1/3 of the total stake, the latest that has its "
+                            + "with at least 1/3 of the total weight, the latest that has its "
                             + "famous witnesses decided (which is the core of the hashgraph consensus "
                             + "algorithm), and the latest that has at least one known event. \n\n"
                             + "For each round, the table shows the round number, then the "
                             + "count of how many signatures are collected so far, then an indication "
                             + "of whether this represents everyone (___), or not everyone but at least "
-                            + "one third of stake (ooo), or even less than that (###).");
+                            + "one third of weight (ooo), or even less than that (###).");
             text.setFont(new Font("monospaced", Font.PLAIN, 14));
 
             text.setText(s);

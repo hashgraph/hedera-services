@@ -28,10 +28,10 @@ import com.swirlds.platform.event.CreateEventTask;
 import com.swirlds.platform.event.EventIntakeTask;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.ValidEvent;
+import com.swirlds.platform.gossip.shadowgraph.SyncResult;
+import com.swirlds.platform.gossip.sync.SyncManager;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
-import com.swirlds.platform.sync.SyncManager;
-import com.swirlds.platform.sync.SyncResult;
 import java.util.Random;
 import java.util.concurrent.BlockingQueue;
 import java.util.function.Supplier;
@@ -127,7 +127,7 @@ public class EventTaskCreator {
             return;
         }
 
-        createEvent(result.getOtherId().getId());
+        createEvent(result.getOtherId().id());
 
         logger.debug(SYNC.getMarker(), "{} created event for sync otherId:{}", selfId, result.getOtherId());
 
@@ -142,7 +142,7 @@ public class EventTaskCreator {
         if (settings.getRandomEventProbability() > 0 && r.nextInt(settings.getRandomEventProbability()) == 0) {
             final long randomOtherId = r.nextInt(addressBook.getSize());
             // we don't want to create an event with selfId==otherId
-            if (!selfId.equalsMain(randomOtherId)) {
+            if (selfId.id() != randomOtherId) {
                 createEvent(randomOtherId);
                 logger.debug(SYNC.getMarker(), "{} created random event otherId:{}", selfId, randomOtherId);
             }
@@ -161,7 +161,7 @@ public class EventTaskCreator {
         }
 
         for (int i = 0; i < addressBook.getSize(); i++) {
-            if (selfId.equalsMain(i)) {
+            if (selfId.id() == i) {
                 // we don't rescue our own event, this might have been the cause of a reconnect issue
                 continue;
             }
@@ -194,11 +194,6 @@ public class EventTaskCreator {
      * 		the ID of the other-parent of the event to be created
      */
     public void createEvent(final long otherId) {
-        // If we have no stake OR the other node has no stake, no point in creating an event
-        if (addressBook.getAddress(selfId.getId()).isZeroStake()
-                || addressBook.getAddress(otherId).isZeroStake()) {
-            return;
-        }
         addEvent(new CreateEventTask(otherId));
     }
 

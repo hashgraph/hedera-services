@@ -65,9 +65,7 @@ public class HapiTokenUnpause extends HapiTxnOp<HapiTokenUnpause> {
         final var tId = TxnUtils.asTokenId(token, spec);
         final TokenUnpauseTransactionBody opBody = spec.txns()
                 .<TokenUnpauseTransactionBody, TokenUnpauseTransactionBody.Builder>body(
-                        TokenUnpauseTransactionBody.class, b -> {
-                            b.setToken(tId);
-                        });
+                        TokenUnpauseTransactionBody.class, b -> b.setToken(tId));
         return b -> b.setTokenUnpause(opBody);
     }
 

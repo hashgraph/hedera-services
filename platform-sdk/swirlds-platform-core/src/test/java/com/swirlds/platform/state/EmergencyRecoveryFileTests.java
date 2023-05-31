@@ -29,6 +29,7 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.stream.Collectors;
@@ -41,6 +42,7 @@ public class EmergencyRecoveryFileTests {
     private static final String FILENAME = "emergencyRecovery.yaml";
     public static final String FIELD_NAME_ROUND = "round";
     public static final String FIELD_NAME_HASH = "hash";
+    public static final String FIELD_NAME_TIMESTAMP = "timestamp";
 
     @TempDir
     Path tmpDir;
@@ -56,6 +58,26 @@ public class EmergencyRecoveryFileTests {
         assertNotNull(readIn, "emergency round data should not be null");
         assertEquals(toWrite.round(), readIn.round(), "round does not match");
         assertEquals(toWrite.hash(), readIn.hash(), "hash does not match");
+        assertEquals(toWrite.timestamp(), readIn.timestamp(), "state timestamp does not match");
+    }
+
+    @Test
+    void testReadWriteWithBootstrap() throws IOException {
+        final Random r = RandomUtils.getRandomPrintSeed();
+        final EmergencyRecoveryFile toWrite = createRecoveryFileWithBootstrap(r);
+        toWrite.write(tmpDir);
+
+        final EmergencyRecoveryFile readIn = EmergencyRecoveryFile.read(tmpDir);
+
+        assertNotNull(readIn, "emergency round data should not be null");
+        assertEquals(toWrite.round(), readIn.round(), "round does not match");
+        assertEquals(toWrite.hash(), readIn.hash(), "hash does not match");
+        assertEquals(toWrite.timestamp(), readIn.timestamp(), "state timestamp does not match");
+        assertNotNull(readIn.recovery().boostrap(), "bootstrap should not be null");
+        assertEquals(
+                toWrite.recovery().boostrap().timestamp(),
+                readIn.recovery().boostrap().timestamp(),
+                "bootstrap timestamp does not match");
     }
 
     @Test
@@ -65,17 +87,42 @@ public class EmergencyRecoveryFileTests {
                 Pair.of("some field", "some value"),
                 Pair.of(FIELD_NAME_ROUND, randomLongString(r)),
                 Pair.of(FIELD_NAME_HASH, randomHashString(r)),
+                Pair.of(FIELD_NAME_TIMESTAMP, randomInstantString(r)),
                 Pair.of("anotherOne", "anotherValue"));
         assertDoesNotThrow(() -> EmergencyRecoveryFile.read(tmpDir), "Additional fields should not cause problems");
+
+        writeFileWithBootstrap(
+                Pair.of("some field", "some value"),
+                Pair.of(FIELD_NAME_ROUND, randomLongString(r)),
+                Pair.of(FIELD_NAME_HASH, randomHashString(r)),
+                Pair.of(FIELD_NAME_TIMESTAMP, randomInstantString(r)),
+                Pair.of("anotherOne", "anotherValue"));
+        assertDoesNotThrow(() -> EmergencyRecoveryFile.read(tmpDir), "Bootstrap field should not cause problems");
     }
 
     @Test
     void testReadFileWithFieldMissing() {
         final Random r = RandomUtils.getRandomPrintSeed();
-        writeFile(Pair.of(FIELD_NAME_ROUND, randomLongString(r)));
+        writeFileWithBootstrap(Pair.of(FIELD_NAME_ROUND, randomLongString(r)));
         assertThrows(
                 IOException.class, () -> EmergencyRecoveryFile.read(tmpDir), "Reading an invalid file should throw");
         writeFile(Pair.of(FIELD_NAME_HASH, randomHashString(r)));
+        assertThrows(
+                IOException.class, () -> EmergencyRecoveryFile.read(tmpDir), "Reading an invalid file should throw");
+        writeFile(Pair.of(FIELD_NAME_TIMESTAMP, randomInstantString(r)));
+        assertThrows(
+                IOException.class, () -> EmergencyRecoveryFile.read(tmpDir), "Reading an invalid file should throw");
+        writeFileWithBootstrap(
+                Pair.of(FIELD_NAME_HASH, randomHashString(r)), Pair.of(FIELD_NAME_TIMESTAMP, randomInstantString(r)));
+        assertThrows(
+                IOException.class, () -> EmergencyRecoveryFile.read(tmpDir), "Reading an invalid file should throw");
+        writeFile(Pair.of(FIELD_NAME_ROUND, randomLongString(r)), Pair.of(FIELD_NAME_HASH, randomHashString(r)));
+        assertDoesNotThrow(() -> EmergencyRecoveryFile.read(tmpDir), "Reading a valid file should not throw");
+        writeFileWithBootstrap(
+                Pair.of(FIELD_NAME_ROUND, randomLongString(r)), Pair.of(FIELD_NAME_HASH, randomHashString(r)));
+        assertDoesNotThrow(() -> EmergencyRecoveryFile.read(tmpDir), "Reading a valid file should not throw");
+        writeFile(
+                Pair.of(FIELD_NAME_ROUND, randomLongString(r)), Pair.of(FIELD_NAME_TIMESTAMP, randomInstantString(r)));
         assertThrows(
                 IOException.class, () -> EmergencyRecoveryFile.read(tmpDir), "Reading an invalid file should throw");
     }
@@ -87,7 +134,8 @@ public class EmergencyRecoveryFileTests {
                 // the hash label is present, but the value is missing
                 Pair.of("extra", "extra"),
                 Pair.of(FIELD_NAME_ROUND, randomLongString(r)),
-                Pair.of(FIELD_NAME_HASH, ""));
+                Pair.of(FIELD_NAME_HASH, ""),
+                Pair.of(FIELD_NAME_TIMESTAMP, randomInstantString(r)));
         assertThrows(IOException.class, () -> EmergencyRecoveryFile.read(tmpDir), "A value missing should throw");
     }
 
@@ -96,8 +144,21 @@ public class EmergencyRecoveryFileTests {
         final Random r = RandomUtils.getRandomPrintSeed();
         writeFile(
                 // the round label is present, but the value is missing
-                Pair.of(FIELD_NAME_ROUND, ""), Pair.of(FIELD_NAME_HASH, randomHashString(r)));
+                Pair.of(FIELD_NAME_ROUND, ""),
+                Pair.of(FIELD_NAME_HASH, randomHashString(r)),
+                Pair.of(FIELD_NAME_TIMESTAMP, randomInstantString(r)));
         assertThrows(IOException.class, () -> EmergencyRecoveryFile.read(tmpDir), "A value missing should throw");
+    }
+
+    @Test
+    void testTimestampValueMissing() {
+        final Random r = RandomUtils.getRandomPrintSeed();
+        writeFile(
+                // the timestamp label is present, but the value is missing
+                Pair.of(FIELD_NAME_ROUND, randomLongString(r)),
+                Pair.of(FIELD_NAME_HASH, randomHashString(r)),
+                Pair.of(FIELD_NAME_TIMESTAMP, ""));
+        assertDoesNotThrow(() -> EmergencyRecoveryFile.read(tmpDir), "An optional value missing should not throw");
     }
 
     @Test
@@ -106,7 +167,13 @@ public class EmergencyRecoveryFileTests {
     }
 
     private EmergencyRecoveryFile createRecoveryFile(final Random r) {
-        return new EmergencyRecoveryFile(r.nextLong(), randomHash(r));
+        return new EmergencyRecoveryFile(r.nextLong(), randomHash(r), Instant.now());
+    }
+
+    private EmergencyRecoveryFile createRecoveryFileWithBootstrap(final Random r) {
+        final EmergencyRecoveryFile orig =
+                new EmergencyRecoveryFile(r.nextLong(), randomHash(r), Instant.ofEpochMilli(r.nextLong()));
+        return new EmergencyRecoveryFile(orig.recovery().state(), Instant.ofEpochMilli(r.nextLong()));
     }
 
     @SafeVarargs
@@ -118,6 +185,21 @@ public class EmergencyRecoveryFileTests {
             file.write(Arrays.stream(values)
                     .map(p -> "    " + p.getLeft() + ": " + p.getRight())
                     .collect(Collectors.joining("\n")));
+        } catch (final IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @SafeVarargs
+    private void writeFileWithBootstrap(final Pair<String, ?>... values) {
+        try (final BufferedWriter file =
+                new BufferedWriter(new FileWriter(tmpDir.resolve(FILENAME).toFile()))) {
+            file.write("recovery:\n");
+            file.write("  state:\n");
+            file.write(Arrays.stream(values)
+                    .map(p -> "    " + p.getLeft() + ": " + p.getRight())
+                    .collect(Collectors.joining("\n")));
+            file.write("\n  bootstrap:\n");
         } catch (final IOException e) {
             throw new RuntimeException(e);
         }
@@ -135,5 +217,9 @@ public class EmergencyRecoveryFileTests {
 
     private static String randomLongString(final Random r) {
         return Long.valueOf(r.nextLong()).toString();
+    }
+
+    private static String randomInstantString(final Random r) {
+        return Instant.ofEpochMilli(r.nextLong()).toString();
     }
 }

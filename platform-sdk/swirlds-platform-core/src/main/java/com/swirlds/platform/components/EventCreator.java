@@ -22,14 +22,19 @@ import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
+import com.swirlds.platform.components.transaction.TransactionPool;
+import com.swirlds.platform.components.transaction.TransactionSupplier;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.event.SelfEventStorage;
 import com.swirlds.platform.event.creation.AncientParentsRule;
 import com.swirlds.platform.internal.EventImpl;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
@@ -40,6 +45,9 @@ import org.apache.logging.log4j.Logger;
  */
 public class EventCreator {
     private static final Logger logger = LogManager.getLogger(EventCreator.class);
+
+    /** The software version of the node. */
+    private final SoftwareVersion softwareVersion;
 
     /** This node's address book ID */
     private final NodeId selfId;
@@ -62,9 +70,6 @@ public class EventCreator {
     /** Stores the most recent event created by me */
     private final SelfEventStorage selfEventStorage;
 
-    /** This hashgraph's {@link TransactionTracker} */
-    private final TransactionTracker transactionTracker;
-
     /** An implementor of {@link TransactionPool} */
     private final TransactionPool transactionPool;
 
@@ -77,6 +82,8 @@ public class EventCreator {
     /**
      * Construct a new EventCreator.
      *
+     * @param softwareVersion
+     *      the software version of the node
      * @param selfId
      * 		the ID of this node
      * @param signer
@@ -91,8 +98,6 @@ public class EventCreator {
      * 		stores the most recent event created by me
      * @param eventMapper
      * 		the object that tracks the most recent events from each node
-     * @param transactionTracker
-     * 		the object that tracks user transactions in the hashgraph
      * @param transactionPool
      * 		the TransactionPool
      * @param inFreeze
@@ -101,28 +106,29 @@ public class EventCreator {
      * 		the object used for checking if we should create an event or not
      */
     public EventCreator(
-            final NodeId selfId,
-            final Signer signer,
-            final Supplier<GraphGenerations> graphGenerationsSupplier,
-            final TransactionSupplier transactionSupplier,
-            final EventHandler newEventHandler,
-            final EventMapper eventMapper,
-            final SelfEventStorage selfEventStorage,
-            final TransactionTracker transactionTracker,
-            final TransactionPool transactionPool,
-            final BooleanSupplier inFreeze,
-            final EventCreationRules eventCreationRules) {
-        this.selfId = selfId;
-        this.signer = signer;
-        this.ancientParentsCheck = new AncientParentsRule(graphGenerationsSupplier);
-        this.transactionSupplier = transactionSupplier;
-        this.newEventHandler = newEventHandler;
-        this.eventMapper = eventMapper;
-        this.selfEventStorage = selfEventStorage;
-        this.transactionTracker = transactionTracker;
-        this.transactionPool = transactionPool;
-        this.inFreeze = inFreeze;
-        this.eventCreationRules = eventCreationRules;
+            @NonNull final SoftwareVersion softwareVersion,
+            @NonNull final NodeId selfId,
+            @NonNull final Signer signer,
+            @NonNull final Supplier<GraphGenerations> graphGenerationsSupplier,
+            @NonNull final TransactionSupplier transactionSupplier,
+            @NonNull final EventHandler newEventHandler,
+            @NonNull final EventMapper eventMapper,
+            @NonNull final SelfEventStorage selfEventStorage,
+            @NonNull final TransactionPool transactionPool,
+            @NonNull final BooleanSupplier inFreeze,
+            @NonNull final EventCreationRules eventCreationRules) {
+        this.softwareVersion = Objects.requireNonNull(softwareVersion, "the software version is null");
+        this.selfId = Objects.requireNonNull(selfId, "the self ID is null");
+        this.signer = Objects.requireNonNull(signer, "the signer is null");
+        this.ancientParentsCheck = new AncientParentsRule(
+                Objects.requireNonNull(graphGenerationsSupplier, "the graph generations supplier is null"));
+        this.transactionSupplier = Objects.requireNonNull(transactionSupplier, "the transaction supplier is null");
+        this.newEventHandler = Objects.requireNonNull(newEventHandler, "the new event handler is null");
+        this.eventMapper = Objects.requireNonNull(eventMapper, "the event mapper is null");
+        this.selfEventStorage = Objects.requireNonNull(selfEventStorage, "the self event storage is null");
+        this.transactionPool = Objects.requireNonNull(transactionPool, "the transaction pool is null");
+        this.inFreeze = Objects.requireNonNull(inFreeze, "the in freeze is null");
+        this.eventCreationRules = Objects.requireNonNull(eventCreationRules, "the event creation rules is null");
     }
 
     /**
@@ -139,12 +145,8 @@ public class EventCreator {
         // We don't want to create multiple events with the same other parent, so we have to check if we
         // already created an event with this particular other parent.
         //
-        // We don't want to create an event if there are no user transactions ready to be put in an event.
-        //
         // We still want to create an event if there are state signature transactions when we are frozen.
-        if (hasOtherParentAlreadyBeenUsed(otherId)
-                && hasNoUserTransactionsReady()
-                && !hasSignatureTransactionsWhileFrozen()) {
+        if (hasOtherParentAlreadyBeenUsed(otherId) && !hasSignatureTransactionsWhileFrozen()) {
             return false;
         }
 
@@ -181,7 +183,8 @@ public class EventCreator {
     protected EventImpl buildEvent(final EventImpl selfParent, final EventImpl otherParent) {
 
         final BaseEventHashedData hashedData = new BaseEventHashedData(
-                selfId.getId(),
+                softwareVersion,
+                selfId.id(),
                 EventUtils.getEventGeneration(selfParent),
                 EventUtils.getEventGeneration(otherParent),
                 EventUtils.getEventHash(selfParent),
@@ -205,7 +208,7 @@ public class EventCreator {
      * 		the ID of the node supplying the other parent
      */
     protected boolean hasOtherParentAlreadyBeenUsed(final long otherId) {
-        return !selfId.equalsMain(otherId) && eventMapper.hasMostRecentEventBeenUsedAsOtherParent(otherId);
+        return selfId.id() != otherId && eventMapper.hasMostRecentEventBeenUsedAsOtherParent(otherId);
     }
 
     /**
@@ -213,23 +216,6 @@ public class EventCreator {
      */
     protected boolean hasSignatureTransactionsWhileFrozen() {
         return transactionPool.numSignatureTransEvent() > 0 && inFreeze.getAsBoolean();
-    }
-
-    /**
-     * Checks if there are no user transactions ready to be included in an event.
-     *
-     * If there are no user transactions waiting to be included in an event, there is no reason to create an event for
-     * the purposes of user transactions.
-     *
-     * If there are user transactions waiting to be included in an event but there are user transactions in the
-     * hashgraph that have not yet reached consensus, we should not create an event in order to slow event creation. We
-     * must receive more events from peers to help the existing user transactions in the hashgraph to reach consensus.
-     * We should not overwhelm the graph with our events.
-     *
-     * @return true if there are no user transactions ready to be put into an event
-     */
-    protected boolean hasNoUserTransactionsReady() {
-        return transactionPool.numTransForEvent() == 0 || transactionTracker.getNumUserTransEvents() > 0;
     }
 
     /**

@@ -29,32 +29,33 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.common.exceptions.ReferenceCountException;
 import com.swirlds.common.system.SwirldState;
-import com.swirlds.common.system.SwirldState2;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateGarbageCollector;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 
 @DisplayName("SignedState Tests")
 class SignedStateTests {
-
     /**
-     * Generate a signed state. FUTURE WORK: replace this with the utility added to 0.29.0
+     * Generate a signed state.
      */
     private SignedState generateSignedState(final Random random, final State state) {
-        return new SignedState(state, random.nextBoolean());
+        return new RandomSignedStateGenerator(random).setState(state).build();
     }
 
     /**
@@ -65,8 +66,8 @@ class SignedStateTests {
      */
     private State buildMockState(final Runnable reserveCallback, final Runnable releaseCallback) {
 
-        final State state = mock(State.class);
-        final SwirldState swirldState = mock(SwirldState2.class);
+        final State state = spy(new State());
+        final SwirldState swirldState = mock(SwirldState.class);
 
         final PlatformData platformData = new PlatformData();
         final PlatformState platformState = new PlatformState();
@@ -97,10 +98,9 @@ class SignedStateTests {
         return state;
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @Test
     @DisplayName("Reservation Test")
-    void reservationTest(final boolean explicit) throws InterruptedException {
+    void reservationTest() throws InterruptedException {
         final Random random = new Random();
         final SignedStateGarbageCollector signedStateGarbageCollector =
                 new SignedStateGarbageCollector(getStaticThreadManager(), null);
@@ -125,8 +125,22 @@ class SignedStateTests {
         final SignedState signedState = generateSignedState(random, state);
         signedState.setGarbageCollector(signedStateGarbageCollector);
 
-        if (explicit) {
-            signedState.reserve();
+        final ReservedSignedState reservedSignedState;
+        reservedSignedState = signedState.reserve("test");
+
+        // Nothing should happen during this sleep, but give the background thread time to misbehave if it wants to
+        MILLISECONDS.sleep(10);
+
+        assertTrue(reserved.get(), "State should have been reserved");
+        assertFalse(released.get(), "state should not be deleted");
+
+        // Taking reservations should have no impact as long as we don't delete all of them
+        final List<ReservedSignedState> reservations = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            reservations.add(signedState.reserve("test"));
+        }
+        for (int i = 0; i < 10; i++) {
+            reservations.get(i).close();
         }
 
         // Nothing should happen during this sleep, but give the background thread time to misbehave if it wants to
@@ -135,29 +149,12 @@ class SignedStateTests {
         assertTrue(reserved.get(), "State should have been reserved");
         assertFalse(released.get(), "state should not be deleted");
 
-        if (explicit) {
-            // Taking reservations should have no impact as long as we don't delete all of them
-            for (int i = 0; i < 10; i++) {
-                signedState.reserve();
-            }
-            for (int i = 0; i < 10; i++) {
-                signedState.release();
-            }
-        }
-
-        // Nothing should happen during this sleep, but give the background thread time to misbehave if it wants to
-        MILLISECONDS.sleep(10);
-
-        assertTrue(reserved.get(), "State should have been reserved");
-        assertFalse(released.get(), "state should not be deleted");
-
-        signedState.release();
+        reservedSignedState.close();
 
         assertThrows(
                 ReferenceCountException.class,
-                signedState::reserve,
+                () -> signedState.reserve("test"),
                 "should not be able to reserve after full release");
-        assertThrows(ReferenceCountException.class, signedState::release, "should not be able to release again");
 
         assertEventuallyTrue(released::get, Duration.ofSeconds(1), "state should eventually be released");
 
@@ -188,7 +185,7 @@ class SignedStateTests {
 
             final SignedState signedState = generateSignedState(random, state);
             signedState.setGarbageCollector(signedStateGarbageCollector);
-            signedState.release();
+            signedState.reserve("test").close();
         }
 
         // At this point in time, the signed state deletion queue should be entirely filled up.
@@ -200,7 +197,7 @@ class SignedStateTests {
         });
 
         final SignedState signedState = generateSignedState(random, state);
-        signedState.release();
+        signedState.reserve("test").close();
 
         assertEquals(1, deletionCount.get());
 
@@ -243,31 +240,31 @@ class SignedStateTests {
 
         final SignedState signedState = generateSignedState(random, state);
 
-        signedState.reserve();
+        final ReservedSignedState reservedSignedState = signedState.reserve("test");
 
         assertTrue(reserved.get(), "State should have been reserved");
         assertFalse(archived.get(), "state should not be archived");
         assertFalse(released.get(), "state should not be deleted");
 
         // Taking reservations should have no impact as long as we don't delete all of them
+        final List<ReservedSignedState> reservations = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
-            signedState.reserve();
+            reservations.add(signedState.reserve("test"));
         }
         for (int i = 0; i < 10; i++) {
-            signedState.release();
+            reservations.get(i).close();
         }
 
         assertTrue(reserved.get(), "State should have been reserved");
         assertFalse(archived.get(), "state should not be archived");
         assertFalse(released.get(), "state should not be deleted");
 
-        signedState.release();
+        reservedSignedState.close();
 
         assertThrows(
                 ReferenceCountException.class,
-                signedState::reserve,
+                () -> signedState.reserve("test"),
                 "should not be able to reserve after full release");
-        assertThrows(ReferenceCountException.class, signedState::release, "should not be able to release again");
 
         assertEventuallyTrue(released::get, Duration.ofSeconds(1), "state should eventually be released");
         assertFalse(archived.get(), "state should not be archived");
@@ -279,14 +276,18 @@ class SignedStateTests {
     @Test
     @DisplayName("Alternate Constructor Reservations Test")
     void alternateConstructorReservationsTest() {
-        final State state = new State();
-        final SignedState signedState = new SignedState(state);
+        final State state = spy(new State());
+        final PlatformState platformState = mock(PlatformState.class);
+        when(state.getPlatformState()).thenReturn(platformState);
+        final PlatformData platformData = mock(PlatformData.class);
+        when(platformState.getPlatformData()).thenReturn(platformData);
+        when(platformData.getRound()).thenReturn(0L);
+        final SignedState signedState =
+                new SignedState(TestPlatformContextBuilder.create().build(), state, "test");
 
         assertFalse(state.isDestroyed(), "state should not yet be destroyed");
 
-        signedState.reserve();
-
-        signedState.release();
+        signedState.reserve("test").close();
 
         assertTrue(state.isDestroyed(), "state should now be destroyed");
     }

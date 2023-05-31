@@ -53,6 +53,11 @@ on:
         type: boolean
         required: false
         default: false
+      enable-network-log-capture:
+        description: "Network Log Capture Enabled"
+        type: boolean
+        required: false
+        default: false
       java-distribution:
         description: "Java JDK Distribution:"
         type: string
@@ -192,6 +197,14 @@ jobs:
           json_thousands_separator: ','
           junit_files: "**/build/test-results/itest/TEST-*.xml"
 
+      - name: Publish Integration Test Network Logs
+        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # pin@v3
+        if: ${{ inputs.enable-integration-tests && inputs.enable-network-log-capture && !cancelled() }}
+        with:
+          name: Integration Test Network Logs
+          path: |
+            hedera-node/test-clients/build/network/itest/output/**
+
       - name: E2E Testing
         id: gradle-eet
         uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
@@ -208,6 +221,14 @@ jobs:
           check_run_disabled: true
           json_thousands_separator: ','
           junit_files: "**/build/test-results/eet/TEST-*.xml"
+
+      - name: Publish E2E Test Network Logs
+        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # pin@v3
+        if: ${{ inputs.enable-e2e-tests && inputs.enable-network-log-capture && !cancelled() }}
+        with:
+          name: E2E Test Network Logs
+          path: |
+            hedera-node/test-clients/build/network/eet/output/**
 
       - name: Jacoco Coverage Report
         uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
@@ -226,15 +247,6 @@ jobs:
         with:
           name: Test Reports
           path: "**/build/reports/tests/**"
-
-      - name: Publish Test Network Logs
-        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # pin@v3
-        if: ${{ (inputs.enable-e2e-tests || inputs.enable-integration-test) && !cancelled() }}
-        with:
-          name: Test Network Logs
-          path: |
-            test-clients/build/network/**/output/**
-            test-clients/output/**
 
       - name: SonarCloud Options
         id: sonar-cloud

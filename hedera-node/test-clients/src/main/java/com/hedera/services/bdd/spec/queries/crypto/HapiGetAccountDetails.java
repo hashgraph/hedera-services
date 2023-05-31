@@ -219,10 +219,9 @@ public class HapiGetAccountDetails extends HapiQueryOp<HapiGetAccountDetails> {
             idObserver.ifPresent(cb -> cb.accept(details.getAccountDetails().getAccountId()));
         }
         if (verboseLoggingOn) {
-            log.info("Details for '"
-                    + repr()
-                    + "': "
-                    + response.getAccountDetails().getAccountDetails());
+            String message = String.format(
+                    "Details for '%s': %s", repr(), response.getAccountDetails().getAccountDetails());
+            log.info(message);
         }
         if (customLog.isPresent()) {
             customLog.get().accept(response.getAccountDetails().getAccountDetails(), log);

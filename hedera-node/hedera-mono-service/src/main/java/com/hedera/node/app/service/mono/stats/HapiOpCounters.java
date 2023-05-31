@@ -108,7 +108,7 @@ public class HapiOpCounters {
         registerCounters(platform, submittedTxns, submittedTxnsConfig);
         registerCounters(platform, handledTxns, handledTxnsConfig);
         registerCounters(platform, answeredQueries, answeredQueriesConfig);
-        deprecatedTxns = platform.getMetrics().getOrCreate(deprecatedTxnsConfig);
+        deprecatedTxns = platform.getContext().getMetrics().getOrCreate(deprecatedTxnsConfig);
 
         receivedOpsConfig = null;
         submittedTxnsConfig = null;
@@ -122,7 +122,7 @@ public class HapiOpCounters {
             final Map<HederaFunctionality, Counter> counters,
             final Map<HederaFunctionality, Counter.Config> configs) {
         configs.forEach((function, config) ->
-                counters.put(function, platform.getMetrics().getOrCreate(config)));
+                counters.put(function, platform.getContext().getMetrics().getOrCreate(config)));
     }
 
     public void countReceived(final HederaFunctionality op) {

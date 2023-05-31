@@ -24,8 +24,8 @@ import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.locks.locked.LockedResource;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.logging.LogMarker;
-import com.swirlds.platform.Connection;
-import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.network.Connection;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
 import com.swirlds.platform.system.SystemExitReason;
 import com.swirlds.platform.system.SystemUtils;
@@ -44,7 +44,7 @@ public class ReconnectController implements Runnable {
     private final ReconnectHelper helper;
     private final Semaphore threadRunning;
     private final BlockingResourceProvider<Connection> connectionProvider;
-    private final Runnable startChatter;
+    private final Runnable resumeGossip;
     private final AtomicReference<SignedStateValidator> validator = new AtomicReference<>();
     private final ThreadManager threadManager;
 
@@ -53,14 +53,14 @@ public class ReconnectController implements Runnable {
      * 		responsible for creating and managing threads
      * @param helper
      * 		executes phases of a reconnect
-     * @param startChatter
-     * 		starts chatter if previously suspended
+     * @param resumeGossip
+     * 		starts gossip if previously suspended
      */
     public ReconnectController(
-            final ThreadManager threadManager, final ReconnectHelper helper, final Runnable startChatter) {
+            final ThreadManager threadManager, final ReconnectHelper helper, final Runnable resumeGossip) {
         this.threadManager = threadManager;
         this.helper = helper;
-        this.startChatter = startChatter;
+        this.resumeGossip = resumeGossip;
         this.threadRunning = new Semaphore(1);
         this.connectionProvider = new BlockingResourceProvider<>();
     }
@@ -101,19 +101,21 @@ public class ReconnectController implements Runnable {
     private boolean executeReconnect() throws InterruptedException {
         helper.prepareForReconnect();
 
-        final SignedState signedState;
         logger.info(RECONNECT.getMarker(), "waiting for reconnect connection");
         try (final LockedResource<Connection> connection = connectionProvider.waitForResource()) {
             logger.info(RECONNECT.getMarker(), "acquired reconnect connection");
-            signedState = helper.receiveSignedState(connection.getResource(), validator.get());
+            try (final ReservedSignedState reservedState =
+                    helper.receiveSignedState(connection.getResource(), validator.get())) {
+
+                if (!helper.loadSignedState(reservedState.get())) {
+                    return false;
+                }
+            }
         } catch (final RuntimeException e) {
             logger.info(RECONNECT.getMarker(), "receiving signed state failed", e);
             return false;
         }
-        if (!helper.loadSignedState(signedState)) {
-            return false;
-        }
-        startChatter.run();
+        resumeGossip.run();
         return true;
     }
 

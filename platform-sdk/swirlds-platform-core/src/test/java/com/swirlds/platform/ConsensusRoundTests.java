@@ -18,7 +18,6 @@ package com.swirlds.platform;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -48,13 +47,12 @@ class ConsensusRoundTests {
 
         final List<EventImpl> events = List.of(e1, e2, e3);
 
-        final ConsensusRound round = new ConsensusRound(events, g);
+        final ConsensusRound round = new ConsensusRound(events, mock(EventImpl.class), g);
 
         assertEquals(events, round.getConsensusEvents(), "consensus event list does not match the provided list.");
         assertEquals(events.size(), round.getNumEvents(), "numEvents does not match the events provided.");
         assertEquals(e3, round.getLastEvent(), "Last event does not match the event provided.");
         assertEquals(1, round.getRoundNum(), "roundNum does not match the events provided.");
-        assertTrue(round.isComplete(), "isComplete does not match the values of the vents provided.");
         assertSame(g, round.getGenerations(), "getGenerations should match the supplied generations");
     }
 
@@ -72,7 +70,7 @@ class ConsensusRoundTests {
             events.add(event);
         }
 
-        final ConsensusRound round = new ConsensusRound(events, mock(GraphGenerations.class));
+        final ConsensusRound round = new ConsensusRound(events, mock(EventImpl.class), mock(GraphGenerations.class));
 
         assertEquals(
                 numActualTransactions, round.getNumAppTransactions(), "Incorrect number of application transactions.");

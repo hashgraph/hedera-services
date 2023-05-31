@@ -21,14 +21,17 @@ import static com.swirlds.common.test.RandomUtils.randomHash;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.KeyType;
 import com.swirlds.common.crypto.SerializablePublicKey;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.crypto.PreGeneratedPublicKeys;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import java.util.function.LongUnaryOperator;
 
@@ -68,53 +71,53 @@ public class RandomAddressBookGenerator {
     private boolean sequentialIds = false;
 
     /**
-     * Describes different ways that the random address book has its stake distributed if the custom strategy
+     * Describes different ways that the random address book has its weight distributed if the custom strategy
      * lambda is unset.
      */
-    public enum StakeDistributionStrategy {
+    public enum WeightDistributionStrategy {
         /**
-         * All nodes have equal stake.
+         * All nodes have equal weight.
          */
         BALANCED,
         /**
-         * Nodes are given stake with a gaussian distribution.
+         * Nodes are given weight with a gaussian distribution.
          */
         GAUSSIAN
     }
 
     /**
-     * The stake distribution strategy.
+     * The weight distribution strategy.
      */
-    private StakeDistributionStrategy stakeDistributionStrategy = StakeDistributionStrategy.GAUSSIAN;
+    private WeightDistributionStrategy weightDistributionStrategy = WeightDistributionStrategy.GAUSSIAN;
 
     /**
-     * The average stake. Used directly if using {@link StakeDistributionStrategy#BALANCED}, used as mean if
-     * using {@link StakeDistributionStrategy#GAUSSIAN}.
+     * The average weight. Used directly if using {@link WeightDistributionStrategy#BALANCED}, used as mean if
+     * using {@link WeightDistributionStrategy#GAUSSIAN}.
      */
-    private long averageStake = 1000;
+    private long averageWeight = 1000;
 
     /**
-     * The standard deviation of the stake, ignored if distribution strategy is not
-     * {@link StakeDistributionStrategy#GAUSSIAN}.
+     * The standard deviation of the weight, ignored if distribution strategy is not
+     * {@link WeightDistributionStrategy#GAUSSIAN}.
      */
-    private long stakeStandardDeviation = 100;
+    private long weightStandardDeviation = 100;
 
     /**
-     * The minimum stake to give to any particular address.
+     * The minimum weight to give to any particular address.
      */
-    private long minimumStake = 1;
+    private long minimumWeight = 1;
 
     /**
-     * The maximum stake to give to any particular address.
+     * The maximum weight to give to any particular address.
      */
-    private long maximumStake = 100_000;
+    private long maximumWeight = 100_000;
 
     /**
-     * Used to determine stake for each node. Overrides all other behaviors if set.
+     * Used to determine weight for each node. Overrides all other behaviors if set.
      */
-    private LongUnaryOperator customStakeGenerator;
+    private LongUnaryOperator customWeightGenerator;
 
-    private long previousNodeId = -1;
+    private NodeId previousNodeId = null;
 
     /**
      * Create a new address book generator.
@@ -150,14 +153,18 @@ public class RandomAddressBookGenerator {
      * 		a source of randomness
      * @param id
      * 		the node ID
-     * @param stake
-     * 		the stake
+     * @param weight
+     * 		the weight
      */
-    public static Address addressWithRandomData(final Random random, final long id, final long stake) {
+    @NonNull
+    public static Address addressWithRandomData(
+            @NonNull final Random random, @NonNull final NodeId id, final long weight) {
+        Objects.requireNonNull(random, "Random must not be null");
+        Objects.requireNonNull(id, "NodeId must not be null");
 
-        final SerializablePublicKey sigPublicKey = PreGeneratedPublicKeys.getPublicKey(KeyType.RSA, id);
-        final SerializablePublicKey encPublicKey = PreGeneratedPublicKeys.getPublicKey(KeyType.EC, id);
-        final SerializablePublicKey agreePublicKey = PreGeneratedPublicKeys.getPublicKey(KeyType.EC, id);
+        final SerializablePublicKey sigPublicKey = PreGeneratedPublicKeys.getPublicKey(KeyType.RSA, id.id());
+        final SerializablePublicKey encPublicKey = PreGeneratedPublicKeys.getPublicKey(KeyType.EC, id.id());
+        final SerializablePublicKey agreePublicKey = PreGeneratedPublicKeys.getPublicKey(KeyType.EC, id.id());
 
         final String nickname = NameUtils.getName(id);
         final String selfName = RandomUtils.randomString(random, 10);
@@ -192,7 +199,7 @@ public class RandomAddressBookGenerator {
                 id,
                 nickname,
                 selfName,
-                stake,
+                weight,
                 ownHost,
                 addressInternalIpv4,
                 portInternalIpv4,
@@ -211,35 +218,37 @@ public class RandomAddressBookGenerator {
     /**
      * Generate the next node ID.
      */
-    private long getNextNodeId() {
-        final long nextId;
+    private NodeId getNextNodeId() {
+        final NodeId nextId;
         if (sequentialIds) {
-            nextId = previousNodeId + 1;
+            nextId = previousNodeId == null ? NodeId.FIRST_NODE_ID : new NodeId(previousNodeId.id() + 1);
         } else {
             // randomly advance between 1 and 3 steps
-            nextId = previousNodeId + random.nextInt(3) + 1;
+            final int offset = random.nextInt(3);
+            nextId = previousNodeId == null ? new NodeId(offset) : new NodeId(previousNodeId.id() + offset + 1L);
         }
         previousNodeId = nextId;
         return nextId;
     }
 
     /**
-     * Generate the next stake for the next address.
+     * Generate the next weight for the next address.
      */
-    private long getNextStake(final long nodeId) {
+    private long getNextWeight(@NonNull final NodeId nodeId) {
+        Objects.requireNonNull(nodeId, "NodeId must not be null");
 
-        if (customStakeGenerator != null) {
-            return customStakeGenerator.applyAsLong(nodeId);
+        if (customWeightGenerator != null) {
+            return customWeightGenerator.applyAsLong(nodeId.id());
         }
 
-        final long unboundedStake;
-        switch (stakeDistributionStrategy) {
-            case BALANCED -> unboundedStake = averageStake;
-            case GAUSSIAN -> unboundedStake = (long) (averageStake + random.nextGaussian() * stakeStandardDeviation);
-            default -> throw new IllegalStateException("Unexpected value: " + stakeDistributionStrategy);
+        final long unboundedWeight;
+        switch (weightDistributionStrategy) {
+            case BALANCED -> unboundedWeight = averageWeight;
+            case GAUSSIAN -> unboundedWeight = (long) (averageWeight + random.nextGaussian() * weightStandardDeviation);
+            default -> throw new IllegalStateException("Unexpected value: " + weightDistributionStrategy);
         }
 
-        return Math.min(maximumStake, Math.max(minimumStake, unboundedStake));
+        return Math.min(maximumWeight, Math.max(minimumWeight, unboundedWeight));
     }
 
     /**
@@ -247,7 +256,11 @@ public class RandomAddressBookGenerator {
      */
     public AddressBook build() {
         final AddressBook addressBook = new AddressBook();
-        addressBook.setNextNodeId(previousNodeId + 1);
+        if (previousNodeId == null) {
+            addressBook.setNextNodeId(0);
+        } else {
+            addressBook.setNextNodeId(previousNodeId.id() + 1);
+        }
         addressBook.setRound(Math.abs(random.nextLong()));
 
         addToAddressBook(addressBook);
@@ -263,7 +276,7 @@ public class RandomAddressBookGenerator {
      * @return the input address book after it has been expanded
      */
     public AddressBook addToAddressBook(final AddressBook addressBook) {
-        setNextPossibleNodeId(addressBook.getNextNodeId());
+        setNextPossibleNodeId(addressBook.getNextNodeId().id());
 
         for (int index = 0; index < size; index++) {
             addressBook.add(buildNextAddress());
@@ -287,9 +300,11 @@ public class RandomAddressBookGenerator {
      * 		the number of addresses to remove, removes all addresses if count exceeds address book size
      * @return the input address book
      */
-    public AddressBook removeFromAddressBook(final AddressBook addressBook, final int count) {
-        final List<Long> nodeIds = new ArrayList<>(addressBook.getSize());
-        addressBook.forEach((final Address address) -> nodeIds.add(address.getId()));
+    @NonNull
+    public AddressBook removeFromAddressBook(@NonNull final AddressBook addressBook, final int count) {
+        Objects.requireNonNull(addressBook, "AddressBook must not be null");
+        final List<NodeId> nodeIds = new ArrayList<>(addressBook.getSize());
+        addressBook.forEach((final Address address) -> nodeIds.add(address.getNodeId()));
         Collections.shuffle(nodeIds, random);
         for (int i = 0; i < count && i < nodeIds.size(); i++) {
             addressBook.remove(nodeIds.get(i));
@@ -302,17 +317,18 @@ public class RandomAddressBookGenerator {
      *
      * @return a random address
      */
+    @NonNull
     public Address buildNextAddress() {
-        final long nodeId = getNextNodeId();
-        return addressWithRandomData(random, nodeId, getNextStake(nodeId));
+        final NodeId nodeId = getNextNodeId();
+        return addressWithRandomData(random, nodeId, getNextWeight(nodeId));
     }
 
     /**
      * Build a random address with a specific node ID and take.
      */
-    public Address buildNextAddress(final long nodeId, final long stake) {
+    public Address buildNextAddress(final NodeId nodeId, final long weight) {
         try {
-            return addressWithRandomData(random, nodeId, stake);
+            return addressWithRandomData(random, nodeId, weight);
         } finally {
             previousNodeId = nodeId;
         }
@@ -358,65 +374,65 @@ public class RandomAddressBookGenerator {
     }
 
     /**
-     * Set the average stake for an address.
+     * Set the average weight for an address.
      *
      * @return this object
      */
-    public RandomAddressBookGenerator setAverageStake(final long averageStake) {
-        this.averageStake = averageStake;
+    public RandomAddressBookGenerator setAverageWeight(final long averageWeight) {
+        this.averageWeight = averageWeight;
         return this;
     }
 
     /**
-     * Set the standard deviation for the stake for an address.
+     * Set the standard deviation for the weight for an address.
      *
      * @return this object
      */
-    public RandomAddressBookGenerator setStakeStandardDeviation(final long stakeStandardDeviation) {
-        this.stakeStandardDeviation = stakeStandardDeviation;
+    public RandomAddressBookGenerator setWeightStandardDeviation(final long weightStandardDeviation) {
+        this.weightStandardDeviation = weightStandardDeviation;
         return this;
     }
 
     /**
-     * Set the minimum stake for an address.
+     * Set the minimum weight for an address.
      *
      * @return this object
      */
-    public RandomAddressBookGenerator setMinimumStake(final long minimumStake) {
-        this.minimumStake = minimumStake;
+    public RandomAddressBookGenerator setMinimumWeight(final long minimumWeight) {
+        this.minimumWeight = minimumWeight;
         return this;
     }
 
     /**
-     * Set the maximum stake for an address.
+     * Set the maximum weight for an address.
      *
      * @return this object
      */
-    public RandomAddressBookGenerator setMaximumStake(final long maximumStake) {
-        this.maximumStake = maximumStake;
+    public RandomAddressBookGenerator setMaximumWeight(final long maximumWeight) {
+        this.maximumWeight = maximumWeight;
         return this;
     }
 
     /**
-     * Provide a method that is used to determine the stake of each node. Overrides all other stake generation
+     * Provide a method that is used to determine the weight of each node. Overrides all other weight generation
      * settings if set.
      *
      * @return this object
      */
-    public RandomAddressBookGenerator setCustomStakeGenerator(final LongUnaryOperator customStakeGenerator) {
-        this.customStakeGenerator = customStakeGenerator;
+    public RandomAddressBookGenerator setCustomWeightGenerator(final LongUnaryOperator customWeightGenerator) {
+        this.customWeightGenerator = customWeightGenerator;
         return this;
     }
 
     /**
-     * Set the strategy used for deciding distribution of stake.
+     * Set the strategy used for deciding distribution of weight.
      *
      * @return this object
      */
-    public RandomAddressBookGenerator setStakeDistributionStrategy(
-            final StakeDistributionStrategy stakeDistributionStrategy) {
+    public RandomAddressBookGenerator setWeightDistributionStrategy(
+            final WeightDistributionStrategy weightDistributionStrategy) {
 
-        this.stakeDistributionStrategy = stakeDistributionStrategy;
+        this.weightDistributionStrategy = weightDistributionStrategy;
         return this;
     }
 
@@ -429,7 +445,11 @@ public class RandomAddressBookGenerator {
      * @return this object
      */
     public RandomAddressBookGenerator setNextPossibleNodeId(final long nodeId) {
-        this.previousNodeId = nodeId - 1;
+        if (nodeId == 0) {
+            this.previousNodeId = null;
+        } else {
+            this.previousNodeId = new NodeId(nodeId - 1);
+        }
         return this;
     }
 }

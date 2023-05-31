@@ -22,7 +22,7 @@ import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.test.io.InputOutputStream;
-import com.swirlds.common.test.state.DummySwirldState1;
+import com.swirlds.common.test.state.DummySwirldState;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
@@ -52,7 +52,7 @@ class StateRegistryTests {
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
         registry.registerConstructable(new ClassConstructorPair(State.class, State::new));
         registry.registerConstructable(new ClassConstructorPair(PlatformState.class, PlatformState::new));
-        registry.registerConstructable(new ClassConstructorPair(DummySwirldState1.class, DummySwirldState1::new));
+        registry.registerConstructable(new ClassConstructorPair(DummySwirldState.class, DummySwirldState::new));
     }
 
     @AfterAll
@@ -97,7 +97,7 @@ class StateRegistryTests {
         // Deserialize a state
         final State stateToSerialize = new State();
         stateToSerialize.setPlatformState(new PlatformState());
-        stateToSerialize.setSwirldState(new DummySwirldState1());
+        stateToSerialize.setSwirldState(new DummySwirldState());
         states.add(stateToSerialize);
         final InputOutputStream io = new InputOutputStream();
         io.getOutput().writeMerkleTree(dir, stateToSerialize);

@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono.state.virtual;
 
+import static com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey.fromLong;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -24,6 +25,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.ByteArrayInputStream;
@@ -42,18 +44,6 @@ class EntityNumVirtualKeyTest {
     @BeforeEach
     void setup() {
         subject = new EntityNumVirtualKey(longKey);
-    }
-
-    @Test
-    void ordersSameAsExpected() {
-        final var sameButDifferent = subject;
-        assertEquals(0, subject.compareTo(sameButDifferent));
-    }
-
-    @Test
-    void orderPrioritizesEntityNum() {
-        final var smallerEntityNum = new EntityNumVirtualKey(longKey - 1);
-        assertEquals(+1, subject.compareTo(smallerEntityNum));
     }
 
     @Test
@@ -217,5 +207,18 @@ class EntityNumVirtualKeyTest {
         subject.serialize(fOut);
 
         verify(fOut).writeLong(longKey);
+    }
+
+    @Test
+    void canGetEntityNumUsingLongValue() {
+        assertEquals(subject, fromLong(longKey));
+    }
+
+    @Test
+    void canGetEntityNumUsingAccountId() {
+        assertEquals(
+                subject,
+                EntityNumVirtualKey.fromAccountId(
+                        AccountID.newBuilder().setAccountNum(longKey).build()));
     }
 }

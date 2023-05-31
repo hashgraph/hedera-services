@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.state.merkle.adapters;
 
+import com.hedera.node.app.HederaInjectionComponent;
 import com.hedera.node.app.service.mono.context.StateChildrenProvider;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
@@ -34,20 +35,20 @@ import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import org.apache.commons.lang3.tuple.Pair;
 
 /**
- * Adapts a {@link VirtualMap} constructed by {@code MerkleHederaState#MerkleStates} by "unwrapping"
- * its {@link OnDiskKey} and {@link OnDiskValue} containers, so that a
- * {@code VirtualMap<OnDiskKey<K>, OnDiskValue<V>>} appears as a {@code VirtualMapLike<K, V>}.
+ * Adapts a {@link VirtualMap} constructed by {@code MerkleHederaState#MerkleStates} by "unwrapping" its
+ * {@link OnDiskKey} and {@link OnDiskValue} containers, so that a {@code VirtualMap<OnDiskKey<K>, OnDiskValue<V>>}
+ * appears as a {@code VirtualMapLike<K, V>}.
  *
  * <p>This allows us to use a {@link MerkleHederaState} as a {@link StateChildrenProvider} binding
- * within a {@link com.hedera.node.app.HederaApp} instance, which is important while we are relying
- * heavily on adapters around {@code mono-service} components.
+ * within a {@link HederaInjectionComponent} instance, which is important while we are relying heavily on adapters
+ * around {@code mono-service} components.
  */
-public class VirtualMapLikeAdapter {
+public final class VirtualMapLikeAdapter {
     private VirtualMapLikeAdapter() {
         throw new UnsupportedOperationException("Utility Class");
     }
 
-    public static <K extends VirtualKey<? super K>, V extends VirtualValue> VirtualMapLike<K, V> unwrapping(
+    public static <K extends VirtualKey, V extends VirtualValue> VirtualMapLike<K, V> unwrapping(
             final StateMetadata<K, V> md, final VirtualMap<OnDiskKey<K>, OnDiskValue<V>> real) {
         return new VirtualMapLike<>() {
             @Override
@@ -94,7 +95,9 @@ public class VirtualMapLikeAdapter {
 
             @Override
             public void put(final K key, final V value) {
-                real.put(new OnDiskKey<>(md, key), new OnDiskValue<>(md, value));
+                final var onDiskKey = new OnDiskKey<>(md, key);
+                final var onDiskValue = new OnDiskValue<>(md, value);
+                real.put(onDiskKey, onDiskValue);
             }
 
             @Override
@@ -123,6 +126,11 @@ public class VirtualMapLikeAdapter {
             public V remove(final K key) {
                 final var removed = real.remove(new OnDiskKey<>(md, key));
                 return removed != null ? removed.getValue() : null;
+            }
+
+            @Override
+            public void warm(final K key) {
+                real.warm(new OnDiskKey<>(md, key));
             }
         };
     }

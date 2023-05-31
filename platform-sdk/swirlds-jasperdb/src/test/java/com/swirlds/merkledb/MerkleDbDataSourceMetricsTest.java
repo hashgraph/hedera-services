@@ -32,7 +32,7 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
 import com.swirlds.virtualmap.VirtualLongKey;
-import com.swirlds.virtualmap.datasource.VirtualInternalRecord;
+import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -151,15 +151,17 @@ class MerkleDbDataSourceMetricsTest {
                 lastLeafIndex + DEFAULT_RESERVED_BUFFER_LENGTH,
                 lastLeafIndex + DEFAULT_RESERVED_BUFFER_LENGTH + 1,
                 Stream.empty(),
-                IntStream.of(42).mapToObj(i -> fixed_fixed.dataType().createVirtualLeafRecord(i)),
+                // valid leaf index
+                IntStream.of(lastLeafIndex + DEFAULT_RESERVED_BUFFER_LENGTH)
+                        .mapToObj(i -> fixed_fixed.dataType().createVirtualLeafRecord(i)),
                 Stream.empty());
 
         // shrink the list by one chunk
         assertMetricValue("offHeapLeafMb", 8);
 
         // longKeyToPath list doesn't shrink
-        assertMetricValue("offHeapKeyToPathMb", 24);
-        assertMetricValue("offHeapDataSourceMb", 32);
+        assertMetricValue("offHeapKeyToPathMb", 16);
+        assertMetricValue("offHeapDataSourceMb", 24);
         assertNoMemoryForInternalList();
     }
 
@@ -199,13 +201,12 @@ class MerkleDbDataSourceMetricsTest {
             final String name,
             final TestType testType,
             final int size,
-            final long internalHashesRamToDiskThreshold)
+            final long hashesRamToDiskThreshold)
             throws IOException {
-        return testType.dataType()
-                .createDataSource(testDirectory, name, size, internalHashesRamToDiskThreshold, false, false);
+        return testType.dataType().createDataSource(testDirectory, name, size, hashesRamToDiskThreshold, false, false);
     }
 
-    public static VirtualInternalRecord createVirtualInternalRecord(final int i) {
-        return new VirtualInternalRecord(i, hash(i));
+    public static VirtualHashRecord createVirtualInternalRecord(final int i) {
+        return new VirtualHashRecord(i, hash(i));
     }
 }

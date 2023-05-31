@@ -67,10 +67,12 @@ public class JutilPropertySource implements HapiPropertySource {
             try (InputStream inputStream = byteSource.openBufferedStream()) {
                 target.load(inputStream);
             } catch (IOException ioE) {
-                log.warn("Unable to load properties from '" + path + "'!", ioE);
+                final String message = String.format("Unable to load properties from '%s'!", path);
+                log.warn(message, ioE);
             }
         } catch (Exception e) {
-            log.warn("Unable to load properties from '" + path + "'!", e);
+            final String message = String.format("Unable to load properties from '%s'!", path);
+            log.warn(message, e);
         }
     }
 }

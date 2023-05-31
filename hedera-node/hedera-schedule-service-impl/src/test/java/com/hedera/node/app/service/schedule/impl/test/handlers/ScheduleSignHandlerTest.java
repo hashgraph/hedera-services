@@ -16,38 +16,41 @@
 
 package com.hedera.node.app.service.schedule.impl.test.handlers;
 
-import static com.hedera.node.app.service.mono.utils.MiscUtils.asOrdinary;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SCHEDULE_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.hapi.node.base.ScheduleID;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.scheduled.ScheduleCreateTransactionBody;
+import com.hedera.hapi.node.scheduled.ScheduleSignTransactionBody;
+import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
-import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
+import com.hedera.node.app.service.schedule.ReadableScheduleStore;
+import com.hedera.node.app.service.schedule.impl.ReadableScheduleStoreImpl;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleSignHandler;
-import com.hedera.node.app.spi.KeyOrLookupFailureReason;
-import com.hedera.node.app.spi.meta.PreHandleContext;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.state.ReadableKVStateBase;
-import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.ScheduleID;
-import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
-import java.util.List;
-import java.util.Optional;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
+import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
 class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
-    private ScheduleID scheduleID = ScheduleID.newBuilder().setScheduleNum(100L).build();
+    private final ScheduleID scheduleID =
+            ScheduleID.newBuilder().scheduleNum(100L).build();
+    private ScheduleSignHandler subject;
 
     @Mock
     protected JKey adminJKey;
@@ -59,128 +62,116 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
     protected ReadableKVStateBase<Long, ScheduleVirtualValue> schedulesById;
 
     protected ReadableScheduleStore scheduleStore;
+    private TransactionBody scheduledTxn;
 
     @BeforeEach
     void setUp() {
         given(states.<Long, ScheduleVirtualValue>get("SCHEDULES_BY_ID")).willReturn(schedulesById);
-        scheduleStore = new ReadableScheduleStore(states);
-    }
+        scheduleStore = new ReadableScheduleStoreImpl(states);
 
-    private ScheduleSignHandler subject = new ScheduleSignHandler();
-
-    @Test
-    void scheduleSignVanillaNoExplicitPayer() {
-        final var txn = scheduleSignTransaction();
-        givenSetupForScheduleSign(txn);
-        given(dispatcher.dispatch(scheduledTxn, scheduler)).willReturn(scheduledMeta);
-        final var context = new PreHandleContext(keyLookup, txn, scheduler);
-        subject.preHandle(context, scheduleStore, dispatcher);
-        assertEquals(scheduler, context.getPayer());
-        assertEquals(schedulerKey, context.getPayerKey());
-        assertEquals(List.of(), context.getRequiredNonPayerKeys());
-        assertEquals(scheduledMeta, context.getHandlerMetadata());
-        assertEquals(OK, context.getStatus());
+        subject = new ScheduleSignHandler(dispatcher);
     }
 
     @Test
-    void scheduleSignFailsIfScheduleMissing() {
+    void scheduleSignVanillaNoExplicitPayer() throws PreCheckException {
         final var txn = scheduleSignTransaction();
-        given(keyLookup.getKey(scheduler)).willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
-        given(schedulesById.get(scheduleID.getScheduleNum())).willReturn(null);
-        final var context = new PreHandleContext(keyLookup, txn, scheduler);
-        subject.preHandle(context, scheduleStore, dispatcher);
-        assertEquals(scheduler, context.getPayer());
-        assertEquals(null, context.getHandlerMetadata());
-        assertEquals(INVALID_SCHEDULE_ID, context.getStatus());
+        scheduledTxn = givenSetupForScheduleSign();
+
+        final var context = new FakePreHandleContext(accountStore, txn);
+        context.registerStore(ReadableScheduleStore.class, scheduleStore);
+
+        subject.preHandle(context);
+        assertEquals(scheduler, context.payer());
+        assertEquals(schedulerKey, context.payerKey());
+        assertEquals(Collections.EMPTY_SET, context.requiredNonPayerKeys());
+
+        PreHandleContext innerContext = context.innerContext();
+        basicContextAssertions(innerContext, 0);
+        assertEquals(scheduler, innerContext.payer());
+        assertEquals(schedulerKey, innerContext.payerKey());
     }
 
     @Test
-    void scheduleSignVanillaWithOptionalPayerSet() {
+    void scheduleSignFailsIfScheduleMissing() throws PreCheckException {
         final var txn = scheduleSignTransaction();
-        givenSetupForScheduleSign(txn);
-        scheduledMeta = new TransactionMetadata(scheduledTxn, payer, OK, adminKey, List.of(), null, List.of());
+        given(accountStore.getAccountById(scheduler)).willReturn(schedulerAccount);
+        given(schedulerAccount.key()).willReturn(schedulerKey);
+        given(schedulesById.get(scheduleID.scheduleNum())).willReturn(null);
+        final var context = new FakePreHandleContext(accountStore, txn);
+        context.registerStore(ReadableScheduleStore.class, scheduleStore);
+
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_SCHEDULE_ID);
+
+        verify(dispatcher, never()).dispatch(any());
+    }
+
+    @Test
+    void scheduleSignVanillaWithOptionalPayerSet() throws PreCheckException {
+        final var txn = scheduleSignTransaction();
+        scheduledTxn = givenSetupForScheduleSign();
 
         given(schedule.hasExplicitPayer()).willReturn(true);
-        given(schedule.payer()).willReturn(EntityId.fromGrpcAccountId(payer));
-        given(keyLookup.getKey(scheduler)).willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
-        given(dispatcher.dispatch(scheduledTxn, payer)).willReturn(scheduledMeta);
+        // @migration this use of PbjConverter is temporary until services complete PBJ migration
+        given(schedule.payer()).willReturn(EntityId.fromGrpcAccountId(PbjConverter.fromPbj(payer)));
+        given(accountStore.getAccountById(payer)).willReturn(payerAccount);
+        given(payerAccount.key()).willReturn(adminKey);
 
-        final var context = new PreHandleContext(keyLookup, txn, scheduler);
-        subject.preHandle(context, scheduleStore, dispatcher);
+        final var context = new FakePreHandleContext(accountStore, txn);
+        context.registerStore(ReadableScheduleStore.class, scheduleStore);
 
-        assertEquals(scheduler, context.getPayer());
-        assertEquals(schedulerKey, context.getPayerKey());
-        assertEquals(scheduledMeta, context.getHandlerMetadata());
-        assertEquals(adminKey, ((TransactionMetadata) context.getHandlerMetadata()).payerKey());
-        assertEquals(OK, context.getStatus());
-        verify(dispatcher).dispatch(scheduledTxn, payer);
+        subject.preHandle(context);
+
+        assertEquals(scheduler, context.payer());
+        assertEquals(schedulerKey, context.payerKey());
+
+        final var innerContext = context.innerContext();
+        basicContextAssertions(innerContext, 0);
+        assertEquals(payer, innerContext.payer());
+        assertEquals(adminKey, innerContext.payerKey());
+
+        verify(dispatcher).dispatch(innerContext);
     }
 
     @Test
-    void scheduleSignForNotSchedulableFails() {
+    void scheduleSignForNotSchedulableFails() throws PreCheckException {
         final var txn = scheduleSignTransaction();
 
         scheduledTxn = TransactionBody.newBuilder()
-                .setTransactionID(TransactionID.newBuilder().setAccountID(scheduler))
-                .setScheduleCreate(ScheduleCreateTransactionBody.newBuilder().build())
+                .transactionID(TransactionID.newBuilder().accountID(scheduler))
+                .scheduleCreate(ScheduleCreateTransactionBody.newBuilder().build())
                 .build();
 
-        given(schedulesById.get(scheduleID.getScheduleNum())).willReturn(schedule);
-        given(keyLookup.getKey(scheduler)).willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
-        given(schedule.ordinaryViewOfScheduledTxn()).willReturn(scheduledTxn);
-        given(schedule.adminKey()).willReturn(Optional.of(adminJKey));
+        given(schedulesById.get(scheduleID.scheduleNum())).willReturn(schedule);
+        given(accountStore.getAccountById(scheduler)).willReturn(schedulerAccount);
+        given(schedulerAccount.key()).willReturn(schedulerKey);
+        given(schedule.ordinaryViewOfScheduledTxn()).willReturn(PbjConverter.fromPbj(scheduledTxn));
         given(schedule.hasExplicitPayer()).willReturn(false);
 
-        final var context = new PreHandleContext(keyLookup, txn, scheduler);
-        subject.preHandle(context, scheduleStore, dispatcher);
-        assertEquals(scheduler, context.getPayer());
-        assertEquals(schedulerKey, context.getPayerKey());
-        assertEquals(List.of(), context.getRequiredNonPayerKeys());
-        assertTrue(context.getHandlerMetadata() instanceof TransactionMetadata);
-        assertTrue(
-                ((TransactionMetadata) context.getHandlerMetadata()).txnBody().hasScheduleCreate());
-        assertEquals(
-                SCHEDULED_TRANSACTION_NOT_IN_WHITELIST, ((TransactionMetadata) context.getHandlerMetadata()).status());
-        assertEquals(scheduler, ((TransactionMetadata) context.getHandlerMetadata()).payer());
-        assertEquals(OK, context.getStatus());
+        final var context = new FakePreHandleContext(accountStore, txn);
+        context.registerStore(ReadableScheduleStore.class, scheduleStore);
+
+        assertThrowsPreCheck(() -> subject.preHandle(context), SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
     }
 
-    @Test
-    void scheduleSignNotInWhiteList() {
-        given(keyLookup.getKey(payer)).willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
-        final var txn = scheduleTxnNotRecognized();
-        final var context = new PreHandleContext(keyLookup, txn, payer);
-        subject.preHandle(context, scheduleStore, dispatcher);
-        assertEquals(txn, context.getTxn());
-        assertEquals(payer, context.getPayer());
-        assertEquals(INVALID_SCHEDULE_ID, context.getStatus());
-    }
+    // @todo Need to create a valid test for "schedule sign with key not in whitelist"
+    //       (the prior test just checked for a missing key, which throws NPE now)
 
-    private TransactionBody givenSetupForScheduleSign(TransactionBody txn) {
-        scheduledTxn = TransactionBody.newBuilder()
-                .setTransactionID(
-                        TransactionID.newBuilder().setAccountID(scheduler).build())
-                .setCryptoCreateAccount(CryptoCreateTransactionBody.getDefaultInstance())
+    private TransactionBody givenSetupForScheduleSign() {
+        final TransactionBody scheduledTxn = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder().accountID(scheduler).build())
+                .cryptoCreateAccount(CryptoCreateTransactionBody.newBuilder().build())
                 .build();
-        scheduledMeta = new TransactionMetadata(
-                asOrdinary(txn.getScheduleCreate().getScheduledTransactionBody(), txn.getTransactionID()),
-                scheduler,
-                OK,
-                schedulerKey,
-                List.of(),
-                null,
-                List.of());
-        given(schedulesById.get(scheduleID.getScheduleNum())).willReturn(schedule);
-        given(keyLookup.getKey(scheduler)).willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
-        given(schedule.ordinaryViewOfScheduledTxn()).willReturn(scheduledTxn);
-        given(schedule.adminKey()).willReturn(Optional.of(adminJKey));
+        given(schedulesById.get(scheduleID.scheduleNum())).willReturn(schedule);
+        given(accountStore.getAccountById(scheduler)).willReturn(schedulerAccount);
+        given(schedulerAccount.key()).willReturn(schedulerKey);
+        given(schedule.ordinaryViewOfScheduledTxn()).willReturn(PbjConverter.fromPbj(scheduledTxn));
         return scheduledTxn;
     }
 
     private TransactionBody scheduleSignTransaction() {
         return TransactionBody.newBuilder()
-                .setTransactionID(TransactionID.newBuilder().setAccountID(scheduler))
-                .setScheduleSign(ScheduleSignTransactionBody.newBuilder().setScheduleID(scheduleID))
+                .transactionID(TransactionID.newBuilder().accountID(scheduler))
+                .scheduleSign(ScheduleSignTransactionBody.newBuilder().scheduleID(scheduleID))
                 .build();
     }
 }

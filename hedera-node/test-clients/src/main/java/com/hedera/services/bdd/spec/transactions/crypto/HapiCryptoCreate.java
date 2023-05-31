@@ -30,6 +30,7 @@ import com.hedera.node.app.hapi.fees.usage.BaseTransactionMeta;
 import com.hedera.node.app.hapi.fees.usage.crypto.CryptoCreateMeta;
 import com.hedera.node.app.hapi.fees.usage.state.UsageAccumulator;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
+import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.fees.AdapterUtils;
@@ -92,6 +93,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
     private Optional<ByteString> evmAddress = Optional.empty();
     private Consumer<Address> addressObserver;
     private boolean fuzzingIdentifiers = false;
+    private boolean setEvmAddressAliasFromKey = false;
 
     @Override
     public HederaFunctionality type() {
@@ -259,7 +261,12 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
                 .<CryptoCreateTransactionBody, CryptoCreateTransactionBody.Builder>body(
                         CryptoCreateTransactionBody.class, b -> {
                             if (fuzzingIdentifiers && key.hasECDSASecp256K1()) {
-                                InitialAccountIdentifiers.fuzzedFrom(key).customize(b);
+                                InitialAccountIdentifiers.fuzzedFrom(spec, key).customize(this, b);
+                            } else if (setEvmAddressAliasFromKey) {
+                                final var congruentAddress = EthSigsUtils.recoverAddressFromPubKey(
+                                        key.getECDSASecp256K1().toByteArray());
+                                b.setKey(key);
+                                b.setAlias(ByteString.copyFrom(congruentAddress));
                             } else {
                                 if (alias.isPresent() || evmAddress.isPresent()) {
                                     keyName.ifPresent(
@@ -270,6 +277,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
                                     b.setKey(key);
                                 }
                             }
+
                             if (unknownFieldLocation == UnknownFieldLocation.OP_BODY) {
                                 b.setUnknownFields(nonEmptyUnknownFields());
                             }
@@ -354,5 +362,10 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
         return Optional.ofNullable(lastReceipt)
                 .map(receipt -> receipt.getAccountID().getAccountNum())
                 .orElse(-1L);
+    }
+
+    public HapiCryptoCreate withMatchingEvmAddress() {
+        setEvmAddressAliasFromKey = true;
+        return this;
     }
 }

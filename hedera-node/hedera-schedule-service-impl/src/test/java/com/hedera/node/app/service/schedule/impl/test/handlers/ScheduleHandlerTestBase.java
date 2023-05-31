@@ -16,44 +16,48 @@
 
 package com.hedera.node.app.service.schedule.impl.test.handlers;
 
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.google.protobuf.ByteString;
-import com.hedera.node.app.spi.AccountKeyLookup;
-import com.hedera.node.app.spi.PreHandleDispatcher;
-import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.meta.PreHandleContext;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
+import com.hedera.hapi.node.scheduled.ScheduleCreateTransactionBody;
+import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.util.UtilPrngTransactionBody;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.state.ReadableStates;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
-import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ScheduleHandlerTestBase {
-    protected Key key = Key.newBuilder()
-            .setEd25519(ByteString.copyFromUtf8("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+    protected static final Key TEST_KEY = Key.newBuilder()
+            .ed25519(Bytes.wrap("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
             .build();
-    protected HederaKey adminKey = asHederaKey(key).get();
-    protected AccountID scheduler = AccountID.newBuilder().setAccountNum(1001L).build();
-    protected AccountID payer = AccountID.newBuilder().setAccountNum(2001L).build();
-    protected TransactionBody scheduledTxn;
-    protected TransactionMetadata scheduledMeta;
+    protected Key adminKey = TEST_KEY;
+    protected AccountID scheduler = AccountID.newBuilder().accountNum(1001L).build();
+    protected AccountID payer = AccountID.newBuilder().accountNum(2001L).build();
 
     @Mock
-    protected AccountKeyLookup keyLookup;
+    protected Account schedulerAccount;
 
     @Mock
-    protected HederaKey schedulerKey;
+    protected Account payerAccount;
+
+    @Mock
+    protected ReadableAccountStore accountStore;
+
+    @Mock
+    protected Key payerKey;
+
+    @Mock
+    protected Key schedulerKey;
 
     @Mock
     protected PreHandleDispatcher dispatcher;
@@ -61,32 +65,17 @@ class ScheduleHandlerTestBase {
     @Mock
     protected ReadableStates states;
 
-    protected void basicMetaAssertions(
-            final TransactionMetadata meta,
-            final int nonPayerKeysSize,
-            final boolean failed,
-            final ResponseCodeEnum failureStatus) {
-        assertEquals(nonPayerKeysSize, meta.requiredNonPayerKeys().size());
-        assertTrue(failed ? meta.failed() : !meta.failed());
-        assertEquals(failureStatus, meta.status());
-    }
-
-    protected void basicContextAssertions(
-            final PreHandleContext context,
-            final int nonPayerKeysSize,
-            final boolean failed,
-            final ResponseCodeEnum failureStatus) {
-        assertEquals(nonPayerKeysSize, context.getRequiredNonPayerKeys().size());
-        assertTrue(failed ? context.failed() : !context.failed());
-        assertEquals(failureStatus, context.getStatus());
+    protected void basicContextAssertions(final PreHandleContext context, final int nonPayerKeysSize) {
+        assertEquals(nonPayerKeysSize, context.requiredNonPayerKeys().size());
     }
 
     protected TransactionBody scheduleTxnNotRecognized() {
         return TransactionBody.newBuilder()
-                .setTransactionID(TransactionID.newBuilder().setAccountID(scheduler))
-                .setScheduleCreate(ScheduleCreateTransactionBody.newBuilder()
-                        .setScheduledTransactionBody(
-                                SchedulableTransactionBody.newBuilder().build()))
+                .transactionID(TransactionID.newBuilder().accountID(scheduler))
+                .scheduleCreate(ScheduleCreateTransactionBody.newBuilder()
+                        .scheduledTransactionBody(SchedulableTransactionBody.newBuilder()
+                                .utilPrng(UtilPrngTransactionBody.DEFAULT)
+                                .build()))
                 .build();
     }
 }

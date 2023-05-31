@@ -27,12 +27,12 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTes
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.tokenAddress;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.tokenUpdateExpiryInfoWrapper;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.tokenUpdateExpiryInfoWrapperWithInvalidTokenID;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.UpdateTokenExpiryInfoPrecompile.decodeUpdateTokenExpiryInfo;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.UpdateTokenExpiryInfoPrecompile.decodeUpdateTokenExpiryInfoV2;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.UpdateTokenExpiryInfoPrecompile.getTokenUpdateExpiryInfoWrapper;
 import static java.util.function.UnaryOperator.identity;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.util.Integers;
@@ -62,6 +62,7 @@ import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.node.app.service.mono.store.contracts.precompile.impl.SystemContractAbis;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.UpdateTokenExpiryInfoPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.store.models.NftId;
@@ -69,6 +70,7 @@ import com.hedera.node.app.service.mono.store.tokens.HederaTokenStore;
 import com.hedera.node.app.service.mono.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -281,7 +283,7 @@ class UpdateTokenExpiryInfoPrecompileTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         updateTokenExpiryInfoPrecompile
-                .when(() -> decodeUpdateTokenExpiryInfo(any(), any()))
+                .when(() -> getTokenUpdateExpiryInfoWrapper(any(), any(), any()))
                 .thenReturn(tokenUpdateExpiryInfoWrapperWithInvalidTokenID);
         givenPricingUtilsContext();
         // when
@@ -296,7 +298,8 @@ class UpdateTokenExpiryInfoPrecompileTest {
     @Test
     void decodeUpdateExpiryInfoForTokenInput() {
         updateTokenExpiryInfoPrecompile.close();
-        final var decodedInput = decodeUpdateTokenExpiryInfo(UPDATE_EXPIRY_INFO_FOR_TOKEN_INPUT, identity());
+        final var decodedInput = getTokenUpdateExpiryInfoWrapper(
+                UPDATE_EXPIRY_INFO_FOR_TOKEN_INPUT, identity(), SystemContractAbis.UPDATE_TOKEN_EXPIRY_INFO_V1);
 
         assertTrue(decodedInput.tokenID().getTokenNum() > 0);
         assertTrue(decodedInput.expiry().second() > 0);
@@ -307,7 +310,8 @@ class UpdateTokenExpiryInfoPrecompileTest {
     @Test
     void decodeUpdateExpiryInfoV2ForTokenInput() {
         updateTokenExpiryInfoPrecompile.close();
-        final var decodedInput = decodeUpdateTokenExpiryInfoV2(UPDATE_EXPIRY_INFO_FOR_TOKEN_INPUT_V2, identity());
+        final var decodedInput = getTokenUpdateExpiryInfoWrapper(
+                UPDATE_EXPIRY_INFO_FOR_TOKEN_INPUT_V2, identity(), SystemContractAbis.UPDATE_TOKEN_EXPIRY_INFO_V2);
 
         assertTrue(decodedInput.tokenID().getTokenNum() > 0);
         assertTrue(decodedInput.expiry().second() > 0);
@@ -334,7 +338,8 @@ class UpdateTokenExpiryInfoPrecompileTest {
     }
 
     private void givenUpdateTokenContext() {
-        given(sigsVerifier.hasActiveAdminKey(true, tokenAddress, fungibleTokenAddr, wrappedLedgers))
+        given(sigsVerifier.hasActiveAdminKey(
+                        true, tokenAddress, fungibleTokenAddr, wrappedLedgers, HederaFunctionality.TokenUpdate))
                 .willReturn(true);
         given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
                 .willReturn(hederaTokenStore);
@@ -342,14 +347,16 @@ class UpdateTokenExpiryInfoPrecompileTest {
                 .willReturn(updateLogic);
         given(updateLogic.validate(any())).willReturn(ResponseCodeEnum.OK);
         updateTokenExpiryInfoPrecompile
-                .when(() -> decodeUpdateTokenExpiryInfo(any(), any()))
+                .when(() -> getTokenUpdateExpiryInfoWrapper(
+                        any(), any(), eq(SystemContractAbis.UPDATE_TOKEN_EXPIRY_INFO_V1)))
                 .thenReturn(tokenUpdateExpiryInfoWrapper);
         given(syntheticTxnFactory.createTokenUpdateExpiryInfo(tokenUpdateExpiryInfoWrapper))
                 .willReturn(TransactionBody.newBuilder().setTokenUpdate(TokenUpdateTransactionBody.newBuilder()));
     }
 
     private void givenUpdateTokenContextV2() {
-        given(sigsVerifier.hasActiveAdminKey(true, tokenAddress, fungibleTokenAddr, wrappedLedgers))
+        given(sigsVerifier.hasActiveAdminKey(
+                        true, tokenAddress, fungibleTokenAddr, wrappedLedgers, HederaFunctionality.TokenUpdate))
                 .willReturn(true);
         given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
                 .willReturn(hederaTokenStore);
@@ -357,7 +364,8 @@ class UpdateTokenExpiryInfoPrecompileTest {
                 .willReturn(updateLogic);
         given(updateLogic.validate(any())).willReturn(ResponseCodeEnum.OK);
         updateTokenExpiryInfoPrecompile
-                .when(() -> decodeUpdateTokenExpiryInfoV2(any(), any()))
+                .when(() -> getTokenUpdateExpiryInfoWrapper(
+                        any(), any(), eq(SystemContractAbis.UPDATE_TOKEN_EXPIRY_INFO_V2)))
                 .thenReturn(tokenUpdateExpiryInfoWrapper);
         given(syntheticTxnFactory.createTokenUpdateExpiryInfo(tokenUpdateExpiryInfoWrapper))
                 .willReturn(TransactionBody.newBuilder().setTokenUpdate(TokenUpdateTransactionBody.newBuilder()));

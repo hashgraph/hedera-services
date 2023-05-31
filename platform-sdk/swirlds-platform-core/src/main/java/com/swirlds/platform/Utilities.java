@@ -16,17 +16,11 @@
 
 package com.swirlds.platform;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.platform.internal.Deserializer;
 import com.swirlds.platform.internal.Serializer;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.net.SocketException;
 import java.util.Arrays;
 import java.util.List;
@@ -86,66 +80,6 @@ public final class Utilities {
             }
         }
         return result;
-    }
-
-    /**
-     * Do a deep clone of a 2D array. Here, "deep" means that after doing x=deepClone(y), x won't be
-     * affected by changes to any part of y, such as assigning to y or to y[0] or to y[0][0].
-     *
-     * @param original
-     * 		the original array
-     * @return the deep clone
-     */
-    public static byte[][] deepClone(byte[][] original) {
-        if (original == null) {
-            return null;
-        }
-        byte[][] result = original.clone();
-        for (int i = 0; i < original.length; i++) {
-            if (original[i] != null) {
-                result[i] = original[i].clone();
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Do a deep clone of any serialiazable object that can reach only other serializable objects through
-     * following references.
-     *
-     * @param original
-     * 		the object to clone
-     * @return the clone
-     */
-    public static Object deepCloneBySerializing(Object original) {
-        ObjectOutputStream dos = null;
-        ObjectInputStream dis = null;
-        try {
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            dos = new ObjectOutputStream(bos);
-            // serialize and pass the object
-            dos.writeObject(original);
-            dos.flush();
-            ByteArrayInputStream bin = new ByteArrayInputStream(bos.toByteArray());
-            dis = new ObjectInputStream(bin);
-            return dis.readObject();
-        } catch (Exception e) {
-            logger.error(EXCEPTION.getMarker(), "", e);
-        } finally {
-            try {
-                if (dos != null) {
-                    dos.close();
-                }
-            } catch (Exception ignored) {
-            }
-            try {
-                if (dis != null) {
-                    dis.close();
-                }
-            } catch (Exception ignored) {
-            }
-        }
-        return null;
     }
 
     /**
@@ -361,7 +295,7 @@ public final class Utilities {
      * @param part
      * 		a long value, the fraction of the whole being compared
      * @param whole
-     * 		a long value, the whole being considered (such as the sum of the entire stake)
+     * 		a long value, the whole being considered (such as the sum of the entire weight)
      * @return true if part is more than two thirds of the whole
      */
     public static boolean isSuperMajority(final long part, final long whole) {
@@ -395,7 +329,7 @@ public final class Utilities {
      * @param part
      * 		a long value, the fraction of the whole being compared
      * @param whole
-     * 		a long value, the whole being considered (such as the sum of the entire stake)
+     * 		a long value, the whole being considered (such as the sum of the entire weight)
      * @return true if part is greater than or equal to one third of the whole
      */
     public static boolean isStrongMinority(final long part, final long whole) {
@@ -413,7 +347,7 @@ public final class Utilities {
      * @param part
      * 		a long value, the fraction of the whole being compared
      * @param whole
-     * 		a long value, the whole being considered (such as the sum of the entire stake)
+     * 		a long value, the whole being considered (such as the sum of the entire weight)
      * @return true if part is greater or equal to one half of the whole
      */
     public static boolean isMajority(final long part, final long whole) {

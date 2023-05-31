@@ -27,7 +27,6 @@ import static com.hedera.services.bdd.spec.assertions.AutoAssocAsserts.accountTo
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingFungibleMovement;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
-import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
@@ -36,8 +35,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.isEndOfStakingPeriodRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createDefaultContract;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -49,7 +47,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.sortedCryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
@@ -84,11 +81,11 @@ import static com.hederahashgraph.api.proto.java.TokenSupplyType.FINITE;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
-import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -101,6 +98,7 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
+import com.swirlds.common.utility.CommonUtils;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
@@ -153,7 +151,6 @@ public class AutoAccountCreationSuite extends HapiSuite {
     private static final String HBAR_XFER = "hbarXfer";
     private static final String NFT_XFER = "nftXfer";
     private static final String FT_XFER = "ftXfer";
-    public static final String ANOTHER_SECP_256K1_SOURCE_KEY = "anotherSecp256k1Alias";
 
     public static void main(String... args) {
         new AutoAccountCreationSuite().runSuiteAsync();
@@ -197,15 +194,11 @@ public class AutoAccountCreationSuite extends HapiSuite {
                 /* --- HIP 583 --- */
                 hollowAccountCreationWithCryptoTransfer(),
                 failureAfterHollowAccountCreationReclaimsAlias(),
-                hollowAccountCompletionWithCryptoTransfer(),
-                hollowAccountCompletionWithContractCreate(),
-                hollowAccountCompletionWithContractCall(),
-                hollowAccountCompletionWithTokenAssociation(),
-                completedHollowAccountsTransfer(),
                 transferHbarsToEVMAddressAlias(),
                 transferFungibleToEVMAddressAlias(),
                 transferNonFungibleToEVMAddressAlias(),
-                hollowAccountCompletionWithTokenTransfer());
+                transferHbarsToECDSAKey(),
+                cannotAutoCreateWithTxnToLongZero());
     }
 
     private HapiSpec canAutoCreateWithHbarAndTokenTransfers() {
@@ -577,7 +570,10 @@ public class AutoAccountCreationSuite extends HapiSuite {
     private HapiSpec canAutoCreateWithFungibleTokenTransfersToAlias() {
         final var initialTokenSupply = 1000;
         final var sameTokenXfer = "sameTokenXfer";
-        final long transferFee = 1163019L;
+        // The expected fee for two token transfers to a receiver with no auto-creation;
+        // note it is approximate because the fee will vary slightly with the size of
+        // the sig map, depending on the lengths of the public key prefixes required
+        final long approxTransferFee = 1163019L;
 
         return defaultHapiSpec("canAutoCreateWithFungibleTokenTransfersToAlias")
                 .given(
@@ -642,7 +638,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                             final var payer = spec.registry().getAccountID(CIVILIAN);
                             final var parent = lookup.getResponseRecord();
                             final var child = lookup.getChildRecord(0);
-                            assertAliasBalanceAndFeeInChildRecord(parent, child, sponsor, payer, 0L, transferFee);
+                            assertAliasBalanceAndFeeInChildRecord(parent, child, sponsor, payer, 0L, approxTransferFee);
                         }))
                 .then(
                         /* --- transfer another token to created alias */
@@ -772,300 +768,6 @@ public class AutoAccountCreationSuite extends HapiSuite {
 
                     allRunFor(
                             spec, hbarTransfer, fungibleTokenTransfer, nftTransfer, getHollowAccountInfoAfterTransfers);
-                }));
-    }
-
-    private HapiSpec hollowAccountCompletionWithCryptoTransfer() {
-        return defaultHapiSpec("HollowAccountCompletionWithCryptoTransfer")
-                .given(
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
-                        cryptoCreate(CRYPTO_TRANSFER_RECEIVER).balance(INITIAL_BALANCE * ONE_HBAR))
-                .when(withOpContext((spec, opLog) -> {
-                    final var ecdsaKey = spec.registry()
-                            .getKey(SECP_256K1_SOURCE_KEY)
-                            .getECDSASecp256K1()
-                            .toByteArray();
-                    final var evmAddress = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
-                    final var op = cryptoTransfer(tinyBarsFromTo(LAZY_CREATE_SPONSOR, evmAddress, ONE_HUNDRED_HBARS))
-                            .hasKnownStatus(SUCCESS)
-                            .via(TRANSFER_TXN);
-                    final var op2 = getAliasedAccountInfo(evmAddress)
-                            .has(accountWith()
-                                    .hasEmptyKey()
-                                    .expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0, 0)
-                                    .autoRenew(THREE_MONTHS_IN_SECONDS)
-                                    .receiverSigReq(false)
-                                    .memo(LAZY_MEMO));
-                    final HapiGetTxnRecord hapiGetTxnRecord =
-                            getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged();
-                    allRunFor(spec, op, op2, hapiGetTxnRecord);
-
-                    final AccountID newAccountID =
-                            hapiGetTxnRecord.getChildRecord(0).getReceipt().getAccountID();
-                    spec.registry().saveAccountId(SECP_256K1_SOURCE_KEY, newAccountID);
-                }))
-                .then(withOpContext((spec, opLog) -> {
-                    final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
-
-                    final var evmAddress = ByteString.copyFrom(recoverAddressFromPubKey(
-                            ecdsaKey.getECDSASecp256K1().toByteArray()));
-
-                    final var op3 = cryptoTransfer(
-                                    tinyBarsFromTo(LAZY_CREATE_SPONSOR, CRYPTO_TRANSFER_RECEIVER, ONE_HUNDRED_HBARS))
-                            .payingWith(SECP_256K1_SOURCE_KEY)
-                            .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY))
-                            .hasKnownStatus(SUCCESS)
-                            .via(TRANSFER_TXN_2);
-
-                    final var cryptoCreateWithEVMAddress = cryptoCreate(PARTY)
-                            .alias(evmAddress)
-                            .hasPrecheck(INVALID_ALIAS_KEY)
-                            .balance(ONE_HBAR);
-
-                    final var cryptoCreateWithECDSAKeyAlias = cryptoCreate(PARTY)
-                            .alias(ecdsaKey.toByteString())
-                            .hasPrecheck(INVALID_ALIAS_KEY)
-                            .balance(ONE_HBAR);
-
-                    final var op4 = getAliasedAccountInfo(evmAddress)
-                            .has(accountWith().key(SECP_256K1_SOURCE_KEY).noAlias());
-
-                    final HapiGetTxnRecord hapiGetSecondTxnRecord =
-                            getTxnRecord(TRANSFER_TXN_2).andAllChildRecords().logged();
-                    allRunFor(
-                            spec,
-                            op3,
-                            cryptoCreateWithEVMAddress,
-                            cryptoCreateWithECDSAKeyAlias,
-                            op4,
-                            hapiGetSecondTxnRecord);
-                }));
-    }
-
-    private HapiSpec hollowAccountCompletionWithContractCreate() {
-        final String CONTRACT = "CreateTrivial";
-        return defaultHapiSpec("HollowAccountCompletionWithContractCreate")
-                .given(
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
-                        newKeyNamed(ADMIN_KEY),
-                        uploadInitCode(CONTRACT))
-                .when()
-                .then(withOpContext((spec, opLog) -> {
-                    final var ecdsaKey = spec.registry()
-                            .getKey(SECP_256K1_SOURCE_KEY)
-                            .getECDSASecp256K1()
-                            .toByteArray();
-                    final var evmAddress = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
-                    final var op = cryptoTransfer(tinyBarsFromTo(LAZY_CREATE_SPONSOR, evmAddress, ONE_HUNDRED_HBARS))
-                            .hasKnownStatus(SUCCESS)
-                            .via(TRANSFER_TXN);
-
-                    final HapiGetTxnRecord hapiGetTxnRecord =
-                            getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged();
-
-                    allRunFor(spec, op, hapiGetTxnRecord);
-
-                    final AccountID newAccountID =
-                            hapiGetTxnRecord.getChildRecord(0).getReceipt().getAccountID();
-                    spec.registry().saveAccountId(SECP_256K1_SOURCE_KEY, newAccountID);
-
-                    final var op2 = contractCreate(CONTRACT)
-                            .adminKey(ADMIN_KEY)
-                            .payingWith(SECP_256K1_SOURCE_KEY)
-                            .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY))
-                            .hasKnownStatus(SUCCESS)
-                            .via(TRANSFER_TXN_2);
-
-                    final var op3 = getAliasedAccountInfo(evmAddress)
-                            .has(accountWith().key(SECP_256K1_SOURCE_KEY).noAlias());
-
-                    final HapiGetTxnRecord hapiGetSecondTxnRecord =
-                            getTxnRecord(TRANSFER_TXN_2).andAllChildRecords().logged();
-
-                    allRunFor(spec, op2, op3, hapiGetSecondTxnRecord);
-                }));
-    }
-
-    private HapiSpec hollowAccountCompletionWithContractCall() {
-        final String CONTRACT = "PayReceivable";
-        final long DEPOSIT_AMOUNT = 1000;
-        return defaultHapiSpec("HollowAccountCompletionWithContractCall")
-                .given(
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
-                        newKeyNamed(ADMIN_KEY),
-                        uploadInitCode(CONTRACT),
-                        contractCreate(CONTRACT).adminKey(ADMIN_KEY))
-                .when()
-                .then(withOpContext((spec, opLog) -> {
-                    final var ecdsaKey = spec.registry()
-                            .getKey(SECP_256K1_SOURCE_KEY)
-                            .getECDSASecp256K1()
-                            .toByteArray();
-                    final var evmAddress = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
-                    final var op = cryptoTransfer(tinyBarsFromTo(LAZY_CREATE_SPONSOR, evmAddress, ONE_HUNDRED_HBARS))
-                            .hasKnownStatus(SUCCESS)
-                            .via(TRANSFER_TXN);
-
-                    final HapiGetTxnRecord hapiGetTxnRecord =
-                            getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged();
-
-                    allRunFor(spec, op, hapiGetTxnRecord);
-
-                    final AccountID newAccountID =
-                            hapiGetTxnRecord.getChildRecord(0).getReceipt().getAccountID();
-                    spec.registry().saveAccountId(SECP_256K1_SOURCE_KEY, newAccountID);
-
-                    final var op2 = contractCall(CONTRACT)
-                            .sending(DEPOSIT_AMOUNT)
-                            .payingWith(SECP_256K1_SOURCE_KEY)
-                            .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY))
-                            .hasKnownStatus(SUCCESS)
-                            .via(TRANSFER_TXN_2);
-
-                    final var op3 = getAliasedAccountInfo(evmAddress)
-                            .has(accountWith().key(SECP_256K1_SOURCE_KEY).noAlias());
-
-                    final HapiGetTxnRecord hapiGetSecondTxnRecord =
-                            getTxnRecord(TRANSFER_TXN_2).andAllChildRecords().logged();
-
-                    allRunFor(spec, op2, op3, hapiGetSecondTxnRecord);
-                }));
-    }
-
-    private HapiSpec hollowAccountCompletionWithTokenAssociation() {
-        final String TOKEN_TREASURY = "treasury";
-        final String VANILLA_TOKEN = "TokenD";
-        return defaultHapiSpec("HollowAccountCompletionWithTokenAssociation")
-                .given(
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
-                        cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        tokenCreate(VANILLA_TOKEN).treasury(TOKEN_TREASURY),
-                        cryptoCreate("test"))
-                .when()
-                .then(withOpContext((spec, opLog) -> {
-                    final var ecdsaKey = spec.registry()
-                            .getKey(SECP_256K1_SOURCE_KEY)
-                            .getECDSASecp256K1()
-                            .toByteArray();
-                    final var evmAddress = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
-                    final var op = cryptoTransfer(tinyBarsFromTo(LAZY_CREATE_SPONSOR, evmAddress, ONE_HUNDRED_HBARS))
-                            .hasKnownStatus(SUCCESS)
-                            .via(TRANSFER_TXN);
-
-                    final HapiGetTxnRecord hapiGetTxnRecord =
-                            getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged();
-
-                    allRunFor(spec, op, hapiGetTxnRecord);
-
-                    final AccountID newAccountID =
-                            hapiGetTxnRecord.getChildRecord(0).getReceipt().getAccountID();
-                    spec.registry().saveAccountId(SECP_256K1_SOURCE_KEY, newAccountID);
-
-                    final var op2 = tokenAssociate("test", VANILLA_TOKEN)
-                            .payingWith(SECP_256K1_SOURCE_KEY)
-                            .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY))
-                            .hasKnownStatus(SUCCESS)
-                            .via(TRANSFER_TXN_2);
-
-                    final var op3 = getAliasedAccountInfo(evmAddress)
-                            .has(accountWith().key(SECP_256K1_SOURCE_KEY).noAlias());
-
-                    final HapiGetTxnRecord hapiGetSecondTxnRecord =
-                            getTxnRecord(TRANSFER_TXN_2).andAllChildRecords().logged();
-
-                    allRunFor(spec, op2, op3, hapiGetSecondTxnRecord);
-                }));
-    }
-
-    private HapiSpec completedHollowAccountsTransfer() {
-        return defaultHapiSpec("CompletedHollowAccountsTransfer")
-                .given(
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        newKeyNamed(ANOTHER_SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
-                        cryptoCreate(CRYPTO_TRANSFER_RECEIVER).balance(INITIAL_BALANCE * ONE_HBAR))
-                .when(withOpContext((spec, opLog) -> {
-                    final var firstECDSAKey = spec.registry()
-                            .getKey(SECP_256K1_SOURCE_KEY)
-                            .getECDSASecp256K1()
-                            .toByteArray();
-                    final var firstEVMAddress = ByteString.copyFrom(recoverAddressFromPubKey(firstECDSAKey));
-                    final var op = cryptoTransfer(
-                                    tinyBarsFromTo(LAZY_CREATE_SPONSOR, firstEVMAddress, ONE_HUNDRED_HBARS))
-                            .hasKnownStatus(SUCCESS)
-                            .via(TRANSFER_TXN);
-
-                    final HapiGetTxnRecord hapiGetTxnRecord =
-                            getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged();
-                    allRunFor(spec, op, hapiGetTxnRecord);
-
-                    final AccountID newAccountID =
-                            hapiGetTxnRecord.getChildRecord(0).getReceipt().getAccountID();
-                    spec.registry().saveAccountId(SECP_256K1_SOURCE_KEY, newAccountID);
-
-                    final var secondECDSAKey = spec.registry()
-                            .getKey(ANOTHER_SECP_256K1_SOURCE_KEY)
-                            .getECDSASecp256K1()
-                            .toByteArray();
-                    final var secondEVMAddress = ByteString.copyFrom(recoverAddressFromPubKey(secondECDSAKey));
-                    final var op2 = cryptoTransfer(
-                                    tinyBarsFromTo(LAZY_CREATE_SPONSOR, secondEVMAddress, ONE_HUNDRED_HBARS))
-                            .hasKnownStatus(SUCCESS)
-                            .via(TRANSFER_TXN_2);
-                    final HapiGetTxnRecord secondHapiGetTxnRecord =
-                            getTxnRecord(TRANSFER_TXN_2).andAllChildRecords().logged();
-                    allRunFor(spec, op2, secondHapiGetTxnRecord);
-
-                    final AccountID anotherNewAccountID = secondHapiGetTxnRecord
-                            .getChildRecord(0)
-                            .getReceipt()
-                            .getAccountID();
-                    spec.registry().saveAccountId(ANOTHER_SECP_256K1_SOURCE_KEY, anotherNewAccountID);
-
-                    final var op3 = cryptoTransfer(
-                                    tinyBarsFromTo(LAZY_CREATE_SPONSOR, CRYPTO_TRANSFER_RECEIVER, ONE_HUNDRED_HBARS))
-                            .payingWith(SECP_256K1_SOURCE_KEY)
-                            .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY))
-                            .hasKnownStatus(SUCCESS)
-                            .via(TRANSFER_TXN + "3");
-
-                    allRunFor(spec, op3);
-
-                    final var op4 = cryptoTransfer(
-                                    tinyBarsFromTo(LAZY_CREATE_SPONSOR, CRYPTO_TRANSFER_RECEIVER, ONE_HUNDRED_HBARS))
-                            .payingWith(ANOTHER_SECP_256K1_SOURCE_KEY)
-                            .sigMapPrefixes(uniqueWithFullPrefixesFor(ANOTHER_SECP_256K1_SOURCE_KEY))
-                            .hasKnownStatus(SUCCESS)
-                            .via(TRANSFER_TXN + "4");
-
-                    allRunFor(spec, op4);
-                }))
-                .then(withOpContext((spec, opLog) -> {
-                    final var firstECDSAKey = spec.registry()
-                            .getKey(SECP_256K1_SOURCE_KEY)
-                            .getECDSASecp256K1()
-                            .toByteArray();
-                    final var firstEVMAddress = ByteString.copyFrom(recoverAddressFromPubKey(firstECDSAKey));
-
-                    final var secondECDSAKey = spec.registry()
-                            .getKey(ANOTHER_SECP_256K1_SOURCE_KEY)
-                            .getECDSASecp256K1()
-                            .toByteArray();
-                    final var secondEVMAddress = ByteString.copyFrom(recoverAddressFromPubKey(secondECDSAKey));
-
-                    var op5 = cryptoTransfer(tinyBarsFromTo(firstEVMAddress, secondEVMAddress, FIVE_HBARS))
-                            .payingWith(SECP_256K1_SOURCE_KEY)
-                            .via(TRANSFER_TXN + "5");
-
-                    var op6 = getTxnRecord(TRANSFER_TXN + "5")
-                            .andAllChildRecords()
-                            .logged();
-
-                    allRunFor(spec, op5, op6);
                 }));
     }
 
@@ -1447,7 +1149,10 @@ public class AutoAccountCreationSuite extends HapiSuite {
                             final var sponsor = spec.registry().getAccountID(SPONSOR);
                             final var payer = spec.registry().getAccountID(PAYER);
                             final var parent = lookup.getResponseRecord();
-                            final var child = lookup.getChildRecord(0);
+                            var child = lookup.getChildRecord(0);
+                            if (isEndOfStakingPeriodRecord(child)) {
+                                child = lookup.getChildRecord(1);
+                            }
                             assertAliasBalanceAndFeeInChildRecord(
                                     parent, child, sponsor, payer, ONE_HUNDRED_HBARS + ONE_HBAR, transferFee);
                             creationTime.set(child.getConsensusTimestamp().getSeconds());
@@ -1471,7 +1176,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
             final AccountID sponsor,
             final AccountID defaultPayer,
             final long newAccountFunding,
-            final long transferFee) {
+            final long approxTransferFee) {
         long receivedBalance = 0;
         long creationFeeSplit = 0;
         long payerBalWithAutoCreationFee = 0;
@@ -1500,8 +1205,19 @@ public class AutoAccountCreationSuite extends HapiSuite {
             }
         }
         assertEquals(newAccountFunding, receivedBalance, "Transferred incorrect amount to alias");
-        assertEquals(
-                creationFeeSplit - transferFee, child.getTransactionFee(), "Child record did not specify deducted fee");
+        // The charged auto-creation fee is the total fee collected minus the transfer fee; but
+        // recall the transfer fee can vary a bit based on the size of the sig map, so we'll enforce
+        // just approximate equality with the fee in the child record
+        final var approxAutoCreationFee = creationFeeSplit - approxTransferFee;
+        final var recordFee = child.getTransactionFee();
+        // A single extra byte in the signature map will cost just ~40 tinybar more, so allowing
+        // a delta of 1000 tinybar is sufficient to stabilize this test indefinitely
+        final var permissibleDelta = 1000L;
+        final var observedDelta = Math.abs(approxAutoCreationFee - recordFee);
+        assertTrue(
+                observedDelta <= permissibleDelta,
+                "Child record did not specify the auto-creation fee (expected ~" + approxAutoCreationFee + " but was "
+                        + recordFee + ")");
         assertEquals(0, payerBalWithAutoCreationFee, "Auto creation fee is deducted from payer");
     }
 
@@ -1591,6 +1307,52 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                 .via(TRANSFER_TXN),
                         getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
                                 .has(accountWith().expectedBalanceWithChargedUsd(3 * ONE_HBAR, 0, 0)));
+    }
+
+    private HapiSpec transferHbarsToECDSAKey() {
+
+        final AtomicReference<ByteString> evmAddress = new AtomicReference<>();
+        final var transferToECDSA = "transferToЕCDSA";
+
+        return defaultHapiSpec("transferHbarsToECDSAKey")
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(PAYER).balance(10 * ONE_HBAR),
+                        withOpContext((spec, opLog) -> {
+                            final var registry = spec.registry();
+                            final var ecdsaKey = registry.getKey(SECP_256K1_SOURCE_KEY);
+                            final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                            final var addressBytes = recoverAddressFromPubKey(tmp);
+                            final var evmAddressBytes = ByteString.copyFrom(addressBytes);
+                            evmAddress.set(evmAddressBytes);
+                        }))
+                .when(withOpContext((spec, opLog) -> {
+                    final var hbarCreateTransfer = cryptoTransfer(
+                                    tinyBarsFromAccountToAlias(PAYER, SECP_256K1_SOURCE_KEY, ONE_HBAR))
+                            .via(transferToECDSA);
+
+                    final var op1 = cryptoTransfer(tinyBarsFromTo(PAYER, evmAddress.get(), ONE_HBAR));
+
+                    final var op2 = getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                            .has(accountWith()
+                                    .balance(2 * ONE_HBAR)
+                                    .alias(SECP_256K1_SOURCE_KEY)
+                                    .key(SECP_256K1_SOURCE_KEY)
+                                    .autoRenew(THREE_MONTHS_IN_SECONDS)
+                                    .receiverSigReq(false)
+                                    .memo(AUTO_MEMO));
+
+                    final var op3 = childRecordsCheck(
+                            transferToECDSA,
+                            SUCCESS,
+                            recordWith()
+                                    .evmAddress(evmAddress.get())
+                                    .hasNoAlias()
+                                    .status(SUCCESS));
+
+                    allRunFor(spec, hbarCreateTransfer, op1, op2, op3);
+                }))
+                .then(getTxnRecord(transferToECDSA).andAllChildRecords().logged());
     }
 
     private HapiSpec transferFungibleToEVMAddressAlias() {
@@ -1783,98 +1545,40 @@ public class AutoAccountCreationSuite extends HapiSuite {
                         .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO)));
     }
 
-    private HapiSpec hollowAccountCompletionWithTokenTransfer() {
-        final var fungibleToken = "fungibleToken";
-        final AtomicReference<TokenID> ftId = new AtomicReference<>();
-        final AtomicReference<AccountID> partyId = new AtomicReference<>();
-        final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
-        final AtomicReference<ByteString> counterAlias = new AtomicReference<>();
+    private HapiSpec cannotAutoCreateWithTxnToLongZero() {
+        final AtomicReference<ByteString> evmAddress = new AtomicReference<>();
+        final var longZeroAddress = ByteString.copyFrom(CommonUtils.unhex("0000000000000000000000000000000fffffffff"));
 
-        return defaultHapiSpec("HollowAccountCompletionWithTokenTransfer")
+        return defaultHapiSpec("CannotAutoCreateWithTxnToLongZero")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(PARTY).balance(INITIAL_BALANCE * ONE_HBAR).maxAutomaticTokenAssociations(2),
-                        tokenCreate(fungibleToken).treasury(PARTY).initialSupply(1_000_000),
+                        cryptoCreate(PAYER).balance(10 * ONE_HBAR),
                         withOpContext((spec, opLog) -> {
                             final var registry = spec.registry();
                             final var ecdsaKey = registry.getKey(SECP_256K1_SOURCE_KEY);
                             final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
                             final var addressBytes = recoverAddressFromPubKey(tmp);
-                            assert addressBytes != null;
                             final var evmAddressBytes = ByteString.copyFrom(addressBytes);
-                            ftId.set(registry.getTokenID(fungibleToken));
-                            partyId.set(registry.getAccountID(PARTY));
-                            partyAlias.set(ByteString.copyFrom(asSolidityAddress(partyId.get())));
-                            counterAlias.set(evmAddressBytes);
+                            evmAddress.set(evmAddressBytes);
                         }))
                 .when(withOpContext((spec, opLog) -> {
-                    /* hollow account created with fungible token transfer as expected */
-                    final var cryptoTransferWithLazyCreate = cryptoTransfer(
-                                    (s, b) -> b.addTokenTransfers(TokenTransferList.newBuilder()
-                                            .setToken(ftId.get())
-                                            .addTransfers(aaWith(partyAlias.get(), -500))
-                                            .addTransfers(aaWith(counterAlias.get(), +500))))
-                            .signedBy(DEFAULT_PAYER, PARTY)
-                            .via(FT_XFER);
+                    final var validTransfer = cryptoTransfer(tinyBarsFromTo(PAYER, evmAddress.get(), ONE_HBAR))
+                            .hasKnownStatus(SUCCESS)
+                            .via("passedTxn");
 
-                    final var getHollowAccountInfoAfterCreation = getAliasedAccountInfo(counterAlias.get())
-                            .hasToken(relationshipWith(fungibleToken).balance(500))
-                            .has(accountWith()
-                                    .hasEmptyKey()
-                                    .noAlias()
-                                    .autoRenew(THREE_MONTHS_IN_SECONDS)
-                                    .receiverSigReq(false)
-                                    .memo(LAZY_MEMO));
+                    final var invalidTransferToLongZero = cryptoTransfer(
+                                    tinyBarsFromTo(PAYER, longZeroAddress, ONE_HBAR))
+                            .hasKnownStatus(INVALID_ACCOUNT_ID)
+                            .via("failedTxn");
 
-                    final HapiGetTxnRecord hapiGetTxnRecord =
-                            getTxnRecord(FT_XFER).andAllChildRecords().logged();
-
-                    allRunFor(spec, cryptoTransferWithLazyCreate, getHollowAccountInfoAfterCreation, hapiGetTxnRecord);
-
-                    final AccountID newAccountID =
-                            hapiGetTxnRecord.getChildRecord(0).getReceipt().getAccountID();
-
-                    spec.registry().saveAccountId(SECP_256K1_SOURCE_KEY, newAccountID);
+                    allRunFor(spec, validTransfer, invalidTransferToLongZero);
                 }))
                 .then(withOpContext((spec, opLog) -> {
-                    final var hbarTransfer = cryptoTransfer(
-                                    tinyBarsFromTo(PARTY, counterAlias.get(), ONE_HUNDRED_HBARS))
-                            .hasKnownStatus(SUCCESS)
-                            .via(TRANSFER_TXN_2);
-
-                    /* complete hollow account creation with fungible token transfer */
-                    final var fungibleTokenTransfer = cryptoTransfer(
-                                    moving(5, fungibleToken).between(PARTY, counterAlias.get()))
-                            .payingWith(SECP_256K1_SOURCE_KEY)
-                            .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY))
-                            .via(TRANSFER_TXN_2);
-
-                    final var cryptoCreateWithEVMAddress = cryptoCreate(PARTY)
-                            .alias(counterAlias.get())
-                            .hasPrecheck(INVALID_ALIAS_KEY)
-                            .balance(ONE_HBAR);
-
-                    final var cryptoCreateWithECDSAKeyAlias = cryptoCreate(PARTY)
-                            .alias(spec.registry().getKey(SECP_256K1_SOURCE_KEY).toByteString())
-                            .hasPrecheck(INVALID_ALIAS_KEY)
-                            .balance(ONE_HBAR);
-
-                    final var getCompletedHollowAccountInfo = getAliasedAccountInfo(counterAlias.get())
-                            .hasToken(relationshipWith(fungibleToken).balance(505))
-                            .has(accountWith().key(SECP_256K1_SOURCE_KEY).noAlias());
-
-                    final var hapiGetTxnRecord = getTxnRecord(FT_XFER)
+                    getTxnRecord("failedTxn").logged();
+                    getTxnRecord("passedTxn")
                             .hasChildRecordCount(1)
-                            .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO));
-
-                    allRunFor(
-                            spec,
-                            hbarTransfer,
-                            fungibleTokenTransfer,
-                            cryptoCreateWithEVMAddress,
-                            cryptoCreateWithECDSAKeyAlias,
-                            getCompletedHollowAccountInfo,
-                            hapiGetTxnRecord);
+                            .hasChildRecords(
+                                    recordWith().status(SUCCESS).memo(LAZY_MEMO).alias(evmAddress.get()));
                 }));
     }
 }

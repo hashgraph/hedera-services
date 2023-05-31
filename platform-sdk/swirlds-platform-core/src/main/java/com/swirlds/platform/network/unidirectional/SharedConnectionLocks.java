@@ -21,7 +21,7 @@ import com.swirlds.common.threading.locks.AutoClosableResourceLock;
 import com.swirlds.common.threading.locks.Locks;
 import com.swirlds.common.threading.locks.locked.LockedResource;
 import com.swirlds.common.threading.locks.locked.MaybeLockedResource;
-import com.swirlds.platform.Connection;
+import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionManager;
 import com.swirlds.platform.network.topology.NetworkTopology;
 import com.swirlds.platform.network.topology.StaticConnectionManagers;
@@ -75,7 +75,7 @@ public class SharedConnectionLocks {
         for (final NodeId peerId : topology.getNeighbors()) {
             final ConnectionManager supplier = suppliers.getManager(peerId, true);
             Objects.requireNonNull(supplier);
-            locks.put(peerId.getId(), Locks.createResourceLock(supplier));
+            locks.put(peerId.id(), Locks.createResourceLock(supplier));
         }
     }
 
@@ -94,7 +94,7 @@ public class SharedConnectionLocks {
         if (!topology.shouldConnectTo(nodeId)) {
             return NOT_ACQUIRED;
         }
-        return locks.get(nodeId.getId()).tryLock();
+        return locks.get(nodeId.id()).tryLock();
     }
 
     /**
@@ -113,6 +113,6 @@ public class SharedConnectionLocks {
         if (!topology.shouldConnectTo(nodeId)) {
             return NOT_ACQUIRED;
         }
-        return locks.get(nodeId.getId()).lock();
+        return locks.get(nodeId.id()).lock();
     }
 }

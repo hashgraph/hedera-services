@@ -17,14 +17,14 @@
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_PERIOD_MINS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILE_MIRROR_ID;
 import static com.hedera.node.app.service.mono.txns.crypto.AutoCreationLogic.AUTO_MEMO;
 import static com.hedera.node.app.service.mono.txns.crypto.AutoCreationLogic.LAZY_MEMO;
 import static com.hedera.node.app.service.mono.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
-import static com.hedera.node.app.spi.config.PropertyNames.STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR;
-import static com.hedera.node.app.spi.config.PropertyNames.STAKING_PERIOD_MINS;
-import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.BoolValue;
@@ -102,6 +102,7 @@ import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -296,8 +297,9 @@ public class SyntheticTxnFactory {
         return TransactionBody.newBuilder().setTokenMint(builder);
     }
 
-    public TransactionBody.Builder createFungibleApproval(final ApproveWrapper approveWrapper) {
-        return createNonfungibleApproval(approveWrapper, null, null);
+    public TransactionBody.Builder createFungibleApproval(
+            @NonNull final ApproveWrapper approveWrapper, @NonNull EntityId ownerId) {
+        return createNonfungibleApproval(approveWrapper, ownerId, null);
     }
 
     public TransactionBody.Builder createNonfungibleApproval(
@@ -306,11 +308,12 @@ public class SyntheticTxnFactory {
             @Nullable final EntityId operatorId) {
         final var builder = CryptoApproveAllowanceTransactionBody.newBuilder();
         if (approveWrapper.isFungible()) {
-            builder.addTokenAllowances(TokenAllowance.newBuilder()
+            var tokenAllowance = TokenAllowance.newBuilder()
                     .setTokenId(approveWrapper.tokenId())
+                    .setOwner(Objects.requireNonNull(ownerId).toGrpcAccountId())
                     .setSpender(approveWrapper.spender())
-                    .setAmount(approveWrapper.amount().longValueExact())
-                    .build());
+                    .setAmount(approveWrapper.amount().longValueExact());
+            builder.addTokenAllowances(tokenAllowance.build());
         } else {
             final var op = NftAllowance.newBuilder()
                     .setTokenId(approveWrapper.tokenId())
@@ -340,13 +343,14 @@ public class SyntheticTxnFactory {
     }
 
     public TransactionBody.Builder createApproveAllowanceForAllNFT(
-            final SetApprovalForAllWrapper setApprovalForAllWrapper) {
+            @NonNull final SetApprovalForAllWrapper setApprovalForAllWrapper, @NonNull EntityId ownerId) {
 
         final var builder = CryptoApproveAllowanceTransactionBody.newBuilder();
 
         builder.addNftAllowances(NftAllowance.newBuilder()
                 .setApprovedForAll(BoolValue.of(setApprovalForAllWrapper.approved()))
                 .setTokenId(setApprovalForAllWrapper.tokenId())
+                .setOwner(Objects.requireNonNull(ownerId).toGrpcAccountId())
                 .setSpender(setApprovalForAllWrapper.to())
                 .build());
 

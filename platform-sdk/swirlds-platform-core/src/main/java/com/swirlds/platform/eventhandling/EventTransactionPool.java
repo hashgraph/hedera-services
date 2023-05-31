@@ -16,28 +16,29 @@
 
 package com.swirlds.platform.eventhandling;
 
-import static com.swirlds.platform.components.TransThrottleSyncAndCreateRuleResponse.PASS;
-import static com.swirlds.platform.components.TransThrottleSyncAndCreateRuleResponse.SYNC_AND_CREATE;
+import static com.swirlds.common.metrics.Metrics.INFO_CATEGORY;
 
+import com.swirlds.common.metrics.FunctionGauge;
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.platform.SettingsProvider;
-import com.swirlds.platform.components.TransThrottleSyncAndCreateRule;
-import com.swirlds.platform.components.TransThrottleSyncAndCreateRuleResponse;
-import com.swirlds.platform.components.TransactionPool;
-import com.swirlds.platform.components.TransactionSupplier;
+import com.swirlds.platform.components.transaction.TransactionPool;
+import com.swirlds.platform.components.transaction.TransactionSupplier;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.function.BooleanSupplier;
 
 /**
- * Store a list of transactions created by self, both system and non-system, for wrapping in the next
- * event to be created.
+ * Store a list of transactions created by self, both system and non-system, for wrapping in the next event to be
+ * created.
  */
-public class EventTransactionPool implements TransactionPool, TransactionSupplier, TransThrottleSyncAndCreateRule {
+public class EventTransactionPool implements TransactionPool, TransactionSupplier {
 
     /**
      * A list of transactions created by this node waiting to be put into a self-event.
@@ -45,9 +46,8 @@ public class EventTransactionPool implements TransactionPool, TransactionSupplie
     protected final Queue<ConsensusTransactionImpl> transEvent = new LinkedList<>();
 
     /**
-     * A list of high-priority transactions created by this node waiting to be put into a self-event.
-     * Transactions in this queue are always inserted into an event before transactions waiting in
-     * {@link #transEvent}.
+     * A list of high-priority transactions created by this node waiting to be put into a self-event. Transactions in
+     * this queue are always inserted into an event before transactions waiting in {@link #transEvent}.
      */
     protected final Queue<ConsensusTransactionImpl> priorityTransEvent = new LinkedList<>();
 
@@ -68,30 +68,34 @@ public class EventTransactionPool implements TransactionPool, TransactionSupplie
 
     protected final SettingsProvider settings;
 
-    // Used for creating spy objects for unit tests
-    public EventTransactionPool() {
-        settings = null;
-        inFreeze = null;
-    }
-
     /**
      * Creates a new transaction pool for transactions waiting to be put in an event.
      *
-     * @param settings
-     * 		settings to use
-     * @param inFreeze
-     * 		Indicates if the system is currently in a freeze
+     * @param metrics  the metrics engine
+     * @param settings settings to use
+     * @param inFreeze Indicates if the system is currently in a freeze
      */
-    public EventTransactionPool(final SettingsProvider settings, final BooleanSupplier inFreeze) {
+    public EventTransactionPool(
+            @NonNull final Metrics metrics,
+            @Nullable SettingsProvider settings,
+            @Nullable final BooleanSupplier inFreeze) {
         this.settings = settings;
         this.inFreeze = inFreeze;
+
+        metrics.getOrCreate(
+                new FunctionGauge.Config<>(INFO_CATEGORY, "transEvent", Integer.class, this::getTransEventSize)
+                        .withDescription("transEvent queue size")
+                        .withUnit("count"));
+        metrics.getOrCreate(new FunctionGauge.Config<>(
+                        INFO_CATEGORY, "priorityTransEvent", Integer.class, this::getPriorityTransEventSize)
+                .withDescription("priorityTransEvent queue size")
+                .withUnit("count"));
     }
 
     /**
      * Get the next transaction that should be inserted into an event, or null if there is no available transaction.
      *
-     * @param currentEventSize
-     * 		the current size in bytes of the event being constructed
+     * @param currentEventSize the current size in bytes of the event being constructed
      * @return the next transaction, or null if no transaction is available
      */
     @SuppressWarnings("ConstantConditions")
@@ -155,7 +159,7 @@ public class EventTransactionPool implements TransactionPool, TransactionSupplie
 
     /**
      * @return the number of transactions waiting to be put in an event, both user and state signature system
-     * 		transactions
+     * transactions
      */
     public int numTransForEvent() {
         return numUserTransEvent + numSignatureTransEvent;
@@ -181,32 +185,19 @@ public class EventTransactionPool implements TransactionPool, TransactionSupplie
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    public TransThrottleSyncAndCreateRuleResponse shouldSyncAndCreate() {
-        // if we have transactions waiting to be put into an event, initiate a sync
-        if (numTransForEvent() > 0) {
-            return SYNC_AND_CREATE;
-        } else {
-            return PASS;
-        }
-    }
-
     public boolean submitTransaction(final ConsensusTransactionImpl transaction) {
         return submitTransaction(transaction, false);
     }
 
     /**
-     * Add the given transaction to the list of transactions to be submitted to the network.
-     * If the queue is full, it does nothing and returns false immediately.
+     * Add the given transaction to the list of transactions to be submitted to the network. If the queue is full, it
+     * does nothing and returns false immediately.
      *
-     * @param transaction
-     * 		The transaction. It must have been created by self.
-     * @param priority
-     * 		if true, then this transaction will be submitted before other waiting transactions that are
-     * 		not marked with the priority flag. Use with moderation, adding too many priority transactions
-     * 		(i.e. thousands per second) may disrupt the ability of the platform to perform some core functionalities.
+     * @param transaction The transaction. It must have been created by self.
+     * @param priority    if true, then this transaction will be submitted before other waiting transactions that are
+     *                    not marked with the priority flag. Use with moderation, adding too many priority transactions
+     *                    (i.e. thousands per second) may disrupt the ability of the platform to perform some core
+     *                    functionalities.
      * @return true if successful
      */
     @SuppressWarnings("ConstantConditions")

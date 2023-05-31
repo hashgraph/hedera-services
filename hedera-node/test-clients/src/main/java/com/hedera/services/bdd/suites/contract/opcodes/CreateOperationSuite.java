@@ -27,6 +27,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
@@ -59,6 +60,11 @@ public class CreateOperationSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(CreateOperationSuite.class);
     private static final String CONTRACT = "FactoryContract";
+    private static final String CALL_RECORD_TRANSACTION_NAME = "callRecord";
+    private static final String DEPLOYMENT_SUCCESS_FUNCTION = "deploymentSuccess";
+    private static final String DEPLOYMENT_SUCCESS_TXN = "deploymentSuccessTxn";
+    private static final String CONTRACT_INFO = "contractInfo";
+    private static final String PARENT_INFO = "parentInfo";
 
     public static void main(String... args) {
         new CreateOperationSuite().runSuiteAsync();
@@ -87,21 +93,29 @@ public class CreateOperationSuite extends HapiSuite {
     private HapiSpec factoryAndSelfDestructInConstructorContract() {
         final var contract = "FactorySelfDestructConstructor";
 
+        final var sender = "sender";
         return defaultHapiSpec("FactoryAndSelfDestructInConstructorContract")
-                .given(uploadInitCode(contract), contractCreate(contract).balance(10))
-                .when(contractCall(contract).hasKnownStatus(CONTRACT_DELETED))
+                .given(
+                        uploadInitCode(contract),
+                        cryptoCreate(sender).balance(ONE_HUNDRED_HBARS),
+                        contractCreate(contract).balance(10).payingWith(sender))
+                .when(contractCall(contract).hasKnownStatus(CONTRACT_DELETED).payingWith(sender))
                 .then(getContractBytecode(contract).hasCostAnswerPrecheck(CONTRACT_DELETED));
     }
 
     private HapiSpec factoryQuickSelfDestructContract() {
         final var contract = "FactoryQuickSelfDestruct";
-
+        final var sender = "sender";
         return defaultHapiSpec("FactoryQuickSelfDestructContract")
-                .given(uploadInitCode(contract), contractCreate(contract))
+                .given(
+                        uploadInitCode(contract),
+                        contractCreate(contract),
+                        cryptoCreate(sender).balance(ONE_HUNDRED_HBARS))
                 .when(contractCall(contract, "createAndDeleteChild")
                         .gas(4_000_000)
-                        .via("callRecord"))
-                .then(getTxnRecord("callRecord")
+                        .via(CALL_RECORD_TRANSACTION_NAME)
+                        .payingWith(sender))
+                .then(getTxnRecord(CALL_RECORD_TRANSACTION_NAME)
                         .hasPriority(recordWith()
                                 .contractCallResult(resultWith()
                                         .logs(inOrder(
@@ -119,22 +133,24 @@ public class CreateOperationSuite extends HapiSuite {
                 .given(
                         uploadInitCode(contract),
                         contractCreate(contract).logged().via("createRecord"),
-                        getContractInfo(contract).logged().saveToRegistry("parentInfo"))
-                .when(contractCall(contract, "callCreate").gas(780_000).via("callRecord"))
+                        getContractInfo(contract).logged().saveToRegistry(PARENT_INFO))
+                .when(contractCall(contract, "callCreate").gas(780_000).via(CALL_RECORD_TRANSACTION_NAME))
                 .then(
                         getTxnRecord("createRecord").saveCreatedContractListToRegistry("ctorChild"),
-                        getTxnRecord("callRecord").saveCreatedContractListToRegistry("callChild"),
-                        contractListWithPropertiesInheritedFrom("callChildCallResult", 2, "parentInfo"),
-                        contractListWithPropertiesInheritedFrom("ctorChildCreateResult", 3, "parentInfo"));
+                        getTxnRecord(CALL_RECORD_TRANSACTION_NAME).saveCreatedContractListToRegistry("callChild"),
+                        contractListWithPropertiesInheritedFrom("callChildCallResult", 2, PARENT_INFO),
+                        contractListWithPropertiesInheritedFrom("ctorChildCreateResult", 3, PARENT_INFO));
     }
 
     HapiSpec simpleFactoryWorks() {
         return defaultHapiSpec("ContractFactoryWorksHappyPath")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
-                .when(contractCall(CONTRACT, "deploymentSuccess").gas(780_000).via("deploymentSuccessTxn"))
+                .when(contractCall(CONTRACT, DEPLOYMENT_SUCCESS_FUNCTION)
+                        .gas(780_000)
+                        .via(DEPLOYMENT_SUCCESS_TXN))
                 .then(withOpContext((spec, opLog) -> {
-                    final var successTxn = getTxnRecord("deploymentSuccessTxn");
-                    final var parentContract = getContractInfo(CONTRACT).saveToRegistry("contractInfo");
+                    final var successTxn = getTxnRecord(DEPLOYMENT_SUCCESS_TXN);
+                    final var parentContract = getContractInfo(CONTRACT).saveToRegistry(CONTRACT_INFO);
                     allRunFor(spec, successTxn, parentContract);
 
                     final var createdContractIDs = successTxn
@@ -154,7 +170,7 @@ public class CreateOperationSuite extends HapiSuite {
                         .via("stackedDeploymentSuccessTxn"))
                 .then(withOpContext((spec, opLog) -> {
                     final var successTxn = getTxnRecord("stackedDeploymentSuccessTxn");
-                    final var parentContract = getContractInfo(CONTRACT).saveToRegistry("contractInfo");
+                    final var parentContract = getContractInfo(CONTRACT).saveToRegistry(CONTRACT_INFO);
                     allRunFor(spec, successTxn, parentContract);
 
                     final var createdContractIDs = successTxn
@@ -174,11 +190,13 @@ public class CreateOperationSuite extends HapiSuite {
                                 .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
                                 .gas(780_000)
                                 .via("deploymentFailureTxn"),
-                        contractCall(CONTRACT, "deploymentSuccess").gas(780_000).via("deploymentSuccessTxn"))
+                        contractCall(CONTRACT, DEPLOYMENT_SUCCESS_FUNCTION)
+                                .gas(780_000)
+                                .via(DEPLOYMENT_SUCCESS_TXN))
                 .then(withOpContext((spec, opLog) -> {
                     final var revertTxn = getTxnRecord("deploymentFailureTxn");
-                    final var deploymentSuccessTxn = getTxnRecord("deploymentSuccessTxn");
-                    final var parentContract = getContractInfo(CONTRACT).saveToRegistry("contractInfo");
+                    final var deploymentSuccessTxn = getTxnRecord(DEPLOYMENT_SUCCESS_TXN);
+                    final var parentContract = getContractInfo(CONTRACT).saveToRegistry(CONTRACT_INFO);
                     allRunFor(spec, revertTxn, parentContract, deploymentSuccessTxn);
 
                     final var createdContracts = deploymentSuccessTxn
@@ -203,11 +221,13 @@ public class CreateOperationSuite extends HapiSuite {
                                 .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
                                 .gas(780_000)
                                 .via("failureAfterDeploymentTxn"),
-                        contractCall(CONTRACT, "deploymentSuccess").gas(780_000).via("deploymentSuccessTxn"))
+                        contractCall(CONTRACT, DEPLOYMENT_SUCCESS_FUNCTION)
+                                .gas(780_000)
+                                .via(DEPLOYMENT_SUCCESS_TXN))
                 .then(withOpContext((spec, opLog) -> {
                     final var revertTxn = getTxnRecord("failureAfterDeploymentTxn");
-                    final var deploymentSuccessTxn = getTxnRecord("deploymentSuccessTxn");
-                    final var parentContract = getContractInfo(CONTRACT).saveToRegistry("contractInfo");
+                    final var deploymentSuccessTxn = getTxnRecord(DEPLOYMENT_SUCCESS_TXN);
+                    final var parentContract = getContractInfo(CONTRACT).saveToRegistry(CONTRACT_INFO);
                     allRunFor(spec, revertTxn, parentContract, deploymentSuccessTxn);
 
                     final var createdContracts = deploymentSuccessTxn
@@ -232,11 +252,13 @@ public class CreateOperationSuite extends HapiSuite {
                                 .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
                                 .gas(780_000)
                                 .via("stackedDeploymentFailureTxn"),
-                        contractCall(CONTRACT, "deploymentSuccess").gas(780_000).via("deploymentSuccessTxn"))
+                        contractCall(CONTRACT, DEPLOYMENT_SUCCESS_FUNCTION)
+                                .gas(780_000)
+                                .via(DEPLOYMENT_SUCCESS_TXN))
                 .then(withOpContext((spec, opLog) -> {
                     final var revertTxn = getTxnRecord("stackedDeploymentFailureTxn");
-                    final var deploymentSuccessTxn = getTxnRecord("deploymentSuccessTxn");
-                    final var parentContract = getContractInfo(CONTRACT).saveToRegistry("contractInfo");
+                    final var deploymentSuccessTxn = getTxnRecord(DEPLOYMENT_SUCCESS_TXN);
+                    final var parentContract = getContractInfo(CONTRACT).saveToRegistry(CONTRACT_INFO);
                     allRunFor(spec, revertTxn, parentContract, deploymentSuccessTxn);
 
                     final var createdContracts = deploymentSuccessTxn

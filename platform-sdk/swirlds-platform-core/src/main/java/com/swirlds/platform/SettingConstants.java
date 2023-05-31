@@ -72,7 +72,7 @@ public final class SettingConstants {
     static final boolean LOAD_KEYS_FROM_PFX_FILES_DEFAULT_VALUE = true;
     static final int MAX_TRANSACTION_BYTES_PER_EVENT_DEFAULT_VALUE = 245760;
     static final int MAX_TRANSACTION_COUNT_PER_EVENT_DEFAULT_VALUE = 245760;
-    static final boolean TRANS_THROTTLE_DEFAULT_VALUE = true;
+    static final boolean TRANS_THROTTLE_DEFAULT_VALUE = false;
     static final String CSV_OUTPUT_FOLDER_DEFAULT_VALUE = "";
     static final boolean DISABLE_METRICS_OUTPUT_DEFAULT_VALUE = false;
     static final String CSV_FILE_NAME_DEFAULT_VALUE = "";
@@ -89,7 +89,6 @@ public final class SettingConstants {
     static final int STALE_EVENT_PREVENTION_THRESHOLD_DEFAULT_VALUE = 5;
     static final int RESCUE_CHILDLESS_INVERSE_PROBABILITY_DEFAULT_VALUE = 10;
     static final boolean ENABLE_EVENT_STREAMING_DEFAULT_VALUE = false;
-    static final boolean RUN_PAUSE_CHECK_TIMER_DEFAULT_VALUE = false;
     static final int EVENT_STREAM_QUEUE_CAPACITY_DEFAULT_VALUE = 500;
     static final int EVENTS_LOG_PERIOD_DEFAULT_VALUE = 60;
     static final String EVENTS_LOG_DIR_DEFAULT_VALUE = "./eventstreams";

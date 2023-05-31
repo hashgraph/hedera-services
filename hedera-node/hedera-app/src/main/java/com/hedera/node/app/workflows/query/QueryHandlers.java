@@ -24,12 +24,12 @@ import com.hedera.node.app.service.contract.impl.handlers.ContractGetInfoHandler
 import com.hedera.node.app.service.contract.impl.handlers.ContractGetRecordsHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileGetContentsHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileGetInfoHandler;
-import com.hedera.node.app.service.network.impl.handlers.NetworkGetAccountDetailsHandler;
-import com.hedera.node.app.service.network.impl.handlers.NetworkGetByKeyHandler;
-import com.hedera.node.app.service.network.impl.handlers.NetworkGetExecutionTimeHandler;
-import com.hedera.node.app.service.network.impl.handlers.NetworkGetVersionInfoHandler;
-import com.hedera.node.app.service.network.impl.handlers.NetworkTransactionGetReceiptHandler;
-import com.hedera.node.app.service.network.impl.handlers.NetworkTransactionGetRecordHandler;
+import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkGetAccountDetailsHandler;
+import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkGetByKeyHandler;
+import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkGetExecutionTimeHandler;
+import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkGetVersionInfoHandler;
+import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkTransactionGetReceiptHandler;
+import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkTransactionGetRecordHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleGetInfoHandler;
 import com.hedera.node.app.service.token.impl.handlers.CryptoGetAccountBalanceHandler;
 import com.hedera.node.app.service.token.impl.handlers.CryptoGetAccountInfoHandler;
@@ -43,8 +43,7 @@ import com.hedera.node.app.service.token.impl.handlers.TokenGetNftInfosHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A record that contains all {@link com.hedera.node.app.spi.workflows.QueryHandler}s that are
- * available in the app
+ * A record that contains all {@link com.hedera.node.app.spi.workflows.QueryHandler}s that are available in the app
  */
 public record QueryHandlers(
         @NonNull ConsensusGetTopicInfoHandler consensusGetTopicInfoHandler,

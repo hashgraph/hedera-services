@@ -17,17 +17,20 @@
 package com.swirlds.common.merkle.synchronization.internal;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.common.merkle.synchronization.settings.ReconnectSettingsFactory;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
- * A wrapper object for a node that the sending synchronizer intends to send to the receiver.
- * These objects form a shadow tree that contains nodes that 1) have not yet received learner responses
- * and 2) have been or are about to be sent by the teacher.
+ * A wrapper object for a node that the sending synchronizer intends to send to the receiver. These objects form a
+ * shadow tree that contains nodes that 1) have not yet received learner responses and 2) have been or are about to be
+ * sent by the teacher.
  */
 public class NodeToSend {
 
@@ -53,16 +56,15 @@ public class NodeToSend {
     private final long unconditionalSendTimeMilliseconds;
 
     /**
-     * Wrappers around the children of this node. This list is only populated once the children have had a lesson
-     * sent for them.
+     * Wrappers around the children of this node. This list is only populated once the children have had a lesson sent
+     * for them.
      */
     private final List<NodeToSend> children;
 
     /**
      * Create an object that represents a node that may be sent in the future.
      *
-     * @param node
-     * 		the node that may be sent.
+     * @param node the node that may be sent.
      */
     public NodeToSend(final MerkleNode node) {
         this.node = node;
@@ -74,18 +76,17 @@ public class NodeToSend {
             children = null;
         }
 
-        unconditionalSendTimeMilliseconds =
-                System.currentTimeMillis() + ReconnectSettingsFactory.get().getMaxAckDelayMilliseconds();
+        final ReconnectConfig reconnectConfig = ConfigurationHolder.getConfigData(ReconnectConfig.class);
+        unconditionalSendTimeMilliseconds = System.currentTimeMillis() + reconnectConfig.maxAckDelayMilliseconds();
     }
 
     /**
-     * Whenever the teacher sends a query to the learner about a node, it registers that node to its parent
-     * in this shadow tree. This allows a positive response corresponding to an ancestor to propagate information
-     * that can prevent the node from needing to be sent.
+     * Whenever the teacher sends a query to the learner about a node, it registers that node to its parent in this
+     * shadow tree. This allows a positive response corresponding to an ancestor to propagate information that can
+     * prevent the node from needing to be sent.
      *
-     * @param child
-     * 		the node that is now eligible for sending. It is called a child because it is the child of a node that
-     * 		was just sent.
+     * @param child the node that is now eligible for sending. It is called a child because it is the child of a node
+     *              that was just sent.
      */
     public synchronized void registerChild(final NodeToSend child) {
         if (children == null) {
@@ -120,8 +121,9 @@ public class NodeToSend {
     }
 
     /**
-     * Return true if the learner has confirmed that it has the node in question
-     * (i.e. the node returned by {@link #getNode()}).
+     * Return true if the learner has confirmed that it has the node in question (i.e. the node returned by
+     * {@link #getNode()}).
+     *
      * @return
      */
     public boolean getResponseStatus() {
@@ -129,7 +131,7 @@ public class NodeToSend {
     }
 
     /**
-     * Wait for a resonse from the learner. Will return immediately if a response has already been received or
+     * Wait for a response from the learner. Will return immediately if a response has already been received or
      * if an ancestor has received a positive response. May sleep a short period if neither are true.
      * There is no guarantee that a response will have been received when this method returns.
      */
@@ -139,7 +141,7 @@ public class NodeToSend {
         }
 
         final long currentTime = System.currentTimeMillis();
-        if (currentTime > unconditionalSendTimeMilliseconds) {
+        if (currentTime >= unconditionalSendTimeMilliseconds) {
             return;
         }
 
@@ -172,18 +174,9 @@ public class NodeToSend {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder();
-
-        sb.append("nodeToSend: response = ");
-
-        if (!responseReceived) {
-            sb.append("?");
-        } else {
-            sb.append(responseStatus);
-        }
-
-        sb.append(", node = ").append(node);
-
-        return sb.toString();
+        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+                .append("response", responseReceived ? responseStatus : "?")
+                .append("node", node)
+                .toString();
     }
 }

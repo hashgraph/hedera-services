@@ -41,7 +41,7 @@ class MerkleDbSettingsFactoryTest {
                 500_000_000, defaultTestSettings.getMaxNumOfKeys(), "Default max num of keys should be 500 million");
         assertEquals(
                 0,
-                defaultTestSettings.getInternalHashesRamToDiskThreshold(),
+                defaultTestSettings.getHashesRamToDiskThreshold(),
                 "Default internal hashes ram to disk threshold should be 0");
         assertEquals(3 * 1024, defaultTestSettings.getSmallMergeCutoffMb(), "Default small merge cutoff should be 3GB");
         assertEquals(
@@ -61,9 +61,9 @@ class MerkleDbSettingsFactoryTest {
                 defaultTestSettings.getMergeActivatePeriod(),
                 "Default merge activation period should be 1 (SECONDS)");
         assertEquals(
-                64L,
+                1024L,
                 defaultTestSettings.getMaxNumberOfFilesInMerge(),
-                "Default max number of files in merge should be 64");
+                "Default max number of files in merge should be 1024");
         assertEquals(
                 8L,
                 defaultTestSettings.getMinNumberOfFilesInMerge(),

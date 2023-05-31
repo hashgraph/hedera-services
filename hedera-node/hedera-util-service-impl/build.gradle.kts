@@ -28,7 +28,14 @@ configurations.all {
 }
 
 dependencies {
+  testImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
+  annotationProcessor(libs.dagger.compiler)
   api(project(":hedera-node:hedera-util-service"))
   implementation(project(":hedera-node:hedera-mono-service"))
+  implementation(libs.bundles.di)
+  implementation(project(":hedera-node:hedera-config"))
   testImplementation(testLibs.bundles.mockito)
+  testImplementation(testLibs.assertj.core)
+  testImplementation(libs.swirlds.test.framework)
+  testImplementation(testFixtures(project(":hedera-node:hedera-config")))
 }

@@ -16,17 +16,17 @@
 
 package com.hedera.node.app.service.mono.state.initialization;
 
-import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_FEE_SCHEDULE_JSON_RESOURCE;
-import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_HAPI_PERMISSIONS_PATH;
-import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_NETWORK_PROPERTIES_PATH;
-import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_RATES_CURRENT_CENT_EQUIV;
-import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_RATES_CURRENT_EXPIRY;
-import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_RATES_CURRENT_HBAR_EQUIV;
-import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_RATES_NEXT_CENT_EQUIV;
-import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_RATES_NEXT_EXPIRY;
-import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_RATES_NEXT_HBAR_EQUIV;
-import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_SYSTEM_ENTITY_EXPIRY;
-import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_THROTTLE_DEF_JSON_RESOURCE;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_FEE_SCHEDULE_JSON_RESOURCE;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_HAPI_PERMISSIONS_PATH;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_NETWORK_PROPERTIES_PATH;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_RATES_CURRENT_CENT_EQUIV;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_RATES_CURRENT_EXPIRY;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_RATES_CURRENT_HBAR_EQUIV;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_RATES_NEXT_CENT_EQUIV;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_RATES_NEXT_EXPIRY;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_RATES_NEXT_HBAR_EQUIV;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_SYSTEM_ENTITY_EXPIRY;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_THROTTLE_DEF_JSON_RESOURCE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -249,8 +249,8 @@ class HfsSystemFilesManagerTest {
         final var book = legacyBookConstruction(currentBook);
         given(data.get(detailsId)).willReturn(book.toByteArray());
 
-        given(addressA.getStake()).willReturn(123L);
-        given(addressB.getStake()).willReturn(456L);
+        given(addressA.getWeight()).willReturn(123L);
+        given(addressB.getWeight()).willReturn(456L);
 
         subject.updateStakeDetails();
 
@@ -688,7 +688,7 @@ class HfsSystemFilesManagerTest {
                     .setMemo(ByteString.copyFromUtf8(memo))
                     .setRSAPubKey(CommonUtils.hex(publicKey.getEncoded()))
                     .setNodeId(address.getId())
-                    .setStake(address.getStake());
+                    .setStake(address.getWeight());
 
             final var serviceEndpoint = ServiceEndpoint.newBuilder()
                     .setIpAddressV4(ByteString.copyFrom(address.getAddressExternalIpv4()))

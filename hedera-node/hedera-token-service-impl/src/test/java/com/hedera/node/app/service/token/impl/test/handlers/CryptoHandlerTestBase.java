@@ -17,81 +17,261 @@
 package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
+import static com.hedera.test.utils.KeyUtils.B_COMPLEX_KEY;
+import static com.hedera.test.utils.KeyUtils.C_COMPLEX_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.lenient;
+import static org.mockito.Mock.Strictness.LENIENT;
 
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.token.CryptoAllowance;
+import com.hedera.hapi.node.token.TokenAllowance;
+import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
+import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
-import com.hedera.node.app.service.token.impl.ReadableAccountStore;
+import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
+import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
+import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.meta.PreHandleContext;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
-import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.utility.CommonUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
+import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+// FUTURE : Remove this and use CryptoTokenHandlerTestBase instead for all classes extending this class
 
 @ExtendWith(MockitoExtension.class)
 public class CryptoHandlerTestBase {
-    protected static final String ACCOUNTS = "ACCOUNTS";
+    public static final String ACCOUNTS = "ACCOUNTS";
     protected static final String ALIASES = "ALIASES";
     protected final Key key = A_COMPLEX_KEY;
-    protected final AccountID payer = asAccount("0.0.3");
+    protected final Key otherKey = C_COMPLEX_KEY;
+    protected final AccountID id = AccountID.newBuilder().accountNum(3).build();
     protected final Timestamp consensusTimestamp =
-            Timestamp.newBuilder().setSeconds(1_234_567L).build();
-    protected final HederaKey payerKey = asHederaKey(A_COMPLEX_KEY).get();
-    protected final Long payerNum = payer.getAccountNum();
+            Timestamp.newBuilder().seconds(1_234_567L).build();
+    protected final Instant consensusInstant = Instant.ofEpochSecond(consensusTimestamp.seconds());
+    protected final Key accountKey = A_COMPLEX_KEY;
+    protected final HederaKey accountHederaKey = asHederaKey(accountKey).get();
+    protected final Long accountNum = id.accountNum();
+    protected final EntityNumVirtualKey accountEntityNumVirtualKey = new EntityNumVirtualKey(accountNum);
+    protected final AccountID alias =
+            AccountID.newBuilder().alias(Bytes.wrap("testAlias")).build();
+    protected final byte[] evmAddress = CommonUtils.unhex("6aea3773ea468a814d954e6dec795bfee7d76e25");
+    protected final ContractID contractAlias =
+            ContractID.newBuilder().evmAddress(Bytes.wrap(evmAddress)).build();
+    protected final ContractID contract =
+            ContractID.newBuilder().contractNum(1234).build();
+
+    protected final AccountID deleteAccountId =
+            AccountID.newBuilder().accountNum(3213).build();
+    protected final AccountID transferAccountId =
+            AccountID.newBuilder().accountNum(32134).build();
+    protected final Long deleteAccountNum = deleteAccountId.accountNum();
+    protected final Long transferAccountNum = transferAccountId.accountNum();
+
+    protected final TokenID nft = TokenID.newBuilder().tokenNum(56789).build();
+    protected final TokenID token = TokenID.newBuilder().tokenNum(6789).build();
+    protected final AccountID spender = AccountID.newBuilder().accountNum(12345).build();
+    protected final AccountID delegatingSpender =
+            AccountID.newBuilder().accountNum(1234567).build();
+    protected final AccountID owner = AccountID.newBuilder().accountNum(123456).build();
+    protected final Key ownerKey = B_COMPLEX_KEY;
+    protected final CryptoAllowance cryptoAllowance = CryptoAllowance.newBuilder()
+            .spender(spender)
+            .owner(owner)
+            .amount(10L)
+            .build();
+    protected final TokenAllowance tokenAllowance = TokenAllowance.newBuilder()
+            .spender(spender)
+            .amount(10L)
+            .tokenId(token)
+            .owner(owner)
+            .build();
+    protected static final long defaultAutoRenewPeriod = 720000L;
+    protected static final long payerBalance = 10_000L;
+    protected MapReadableKVState<String, EntityNumValue> readableAliases;
+
+    protected MapReadableKVState<EntityNumVirtualKey, Account> readableAccounts;
+    protected MapWritableKVState<String, EntityNumValue> writableAliases;
+    protected MapWritableKVState<EntityNumVirtualKey, Account> writableAccounts;
+    protected Account account;
+    protected ReadableAccountStore readableStore;
+    protected WritableAccountStore writableStore;
+
+    protected Account deleteAccount;
+
+    protected Account transferAccount;
 
     @Mock
-    protected ReadableKVState<Long, MerkleAccount> aliases;
+    protected ReadableStates readableStates;
 
-    @Mock
-    protected ReadableKVState<Long, MerkleAccount> accounts;
-
-    @Mock
-    protected MerkleAccount payerAccount;
-
-    @Mock
-    protected ReadableStates states;
+    @Mock(strictness = LENIENT)
+    protected WritableStates writableStates;
 
     @Mock
     protected CryptoSignatureWaiversImpl waivers;
 
-    @Mock
-    protected TransactionMetadata metaToHandle;
-
-    protected ReadableAccountStore store;
-
     @BeforeEach
-    void commonSetUp() {
-        given(states.<Long, MerkleAccount>get(ACCOUNTS)).willReturn(accounts);
-        given(states.<Long, MerkleAccount>get(ALIASES)).willReturn(aliases);
-        store = new ReadableAccountStore(states);
-        setUpPayer();
+    public void setUp() {
+        account = givenValidAccount(accountNum);
+        deleteAccount = givenValidAccount(deleteAccountNum)
+                .copyBuilder()
+                .accountNumber(deleteAccountNum)
+                .key(accountKey)
+                .numberPositiveBalances(0)
+                .numberTreasuryTitles(0)
+                .build();
+        transferAccount = givenValidAccount(transferAccountNum)
+                .copyBuilder()
+                .accountNumber(transferAccountNum)
+                .key(key)
+                .build();
+        refreshStoresWithCurrentTokenOnlyInReadable();
     }
 
-    protected void basicMetaAssertions(
-            final PreHandleContext context,
-            final int keysSize,
-            final boolean failed,
-            final ResponseCodeEnum failureStatus) {
-        assertThat(context.getRequiredNonPayerKeys()).hasSize(keysSize);
-        assertThat(context.failed()).isEqualTo(failed);
-        assertThat(context.getStatus()).isEqualTo(failureStatus);
+    protected void basicMetaAssertions(final PreHandleContext context, final int keysSize) {
+        assertThat(context.requiredNonPayerKeys()).hasSize(keysSize);
     }
 
-    protected void setUpPayer() {
-        lenient().when(accounts.get(payerNum)).thenReturn(payerAccount);
-        lenient().when(payerAccount.getAccountKey()).thenReturn((JKey) payerKey);
+    protected void resetStores() {
+        readableAccounts = emptyReadableAccountStateBuilder().build();
+        writableAccounts = emptyWritableAccountStateBuilder().build();
+        readableAliases = emptyReadableAliasStateBuilder().build();
+        writableAliases = emptyWritableAliasStateBuilder().build();
+        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        given(readableStates.<String, EntityNumValue>get(ALIASES)).willReturn(readableAliases);
+        given(writableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(writableAccounts);
+        given(writableStates.<String, EntityNumValue>get(ALIASES)).willReturn(writableAliases);
+        readableStore = new ReadableAccountStoreImpl(readableStates);
+        writableStore = new WritableAccountStore(writableStates);
+    }
+
+    protected void refreshStoresWithCurrentTokenOnlyInReadable() {
+        readableAccounts = readableAccountState();
+        writableAccounts = emptyWritableAccountStateBuilder().build();
+        readableAliases = readableAliasState();
+        writableAliases = emptyWritableAliasStateBuilder().build();
+        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        given(readableStates.<String, EntityNumValue>get(ALIASES)).willReturn(readableAliases);
+        readableStore = new ReadableAccountStoreImpl(readableStates);
+        writableStore = new WritableAccountStore(writableStates);
+    }
+
+    protected void refreshStoresWithCurrentTokenInWritable() {
+        readableAccounts = readableAccountState();
+        writableAccounts = writableAccountStateWithOneKey();
+        readableAliases = readableAliasState();
+        writableAliases = writableAliasesStateWithOneKey();
+        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        given(readableStates.<String, EntityNumValue>get(ALIASES)).willReturn(readableAliases);
+        given(writableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(writableAccounts);
+        given(writableStates.<String, EntityNumValue>get(ALIASES)).willReturn(writableAliases);
+        readableStore = new ReadableAccountStoreImpl(readableStates);
+        writableStore = new WritableAccountStore(writableStates);
+    }
+
+    @NonNull
+    protected MapWritableKVState<EntityNumVirtualKey, Account> writableAccountStateWithOneKey() {
+        return emptyWritableAccountStateBuilder()
+                .value(accountEntityNumVirtualKey, account)
+                .value(EntityNumVirtualKey.fromLong(deleteAccountNum), deleteAccount)
+                .value(EntityNumVirtualKey.fromLong(transferAccountNum), transferAccount)
+                .build();
+    }
+
+    @NonNull
+    protected MapReadableKVState<EntityNumVirtualKey, Account> readableAccountState() {
+        return emptyReadableAccountStateBuilder()
+                .value(accountEntityNumVirtualKey, account)
+                .value(EntityNumVirtualKey.fromLong(deleteAccountNum), deleteAccount)
+                .value(EntityNumVirtualKey.fromLong(transferAccountNum), transferAccount)
+                .build();
+    }
+
+    @NonNull
+    protected MapWritableKVState<String, EntityNumValue> writableAliasesStateWithOneKey() {
+        return emptyWritableAliasStateBuilder()
+                .value(alias.toString(), new EntityNumValue(accountNum))
+                .value(contractAlias.toString(), new EntityNumValue(contract.contractNum()))
+                .build();
+    }
+
+    @NonNull
+    protected MapReadableKVState<String, EntityNumValue> readableAliasState() {
+        return emptyReadableAliasStateBuilder()
+                .value(alias.toString(), new EntityNumValue(accountNum))
+                .value(contractAlias.toString(), new EntityNumValue(contract.contractNum()))
+                .build();
+    }
+
+    @NonNull
+    protected MapReadableKVState.Builder<EntityNumVirtualKey, Account> emptyReadableAccountStateBuilder() {
+        return MapReadableKVState.builder(ACCOUNTS);
+    }
+
+    @NonNull
+    protected MapWritableKVState.Builder<EntityNumVirtualKey, Account> emptyWritableAccountStateBuilder() {
+        return MapWritableKVState.builder(ACCOUNTS);
+    }
+
+    @NonNull
+    protected MapWritableKVState.Builder<String, EntityNumValue> emptyWritableAliasStateBuilder() {
+        return MapWritableKVState.builder(ALIASES);
+    }
+
+    @NonNull
+    protected MapReadableKVState.Builder<String, EntityNumValue> emptyReadableAliasStateBuilder() {
+        return MapReadableKVState.builder(ALIASES);
+    }
+
+    protected Account givenValidAccount(final long accountNum) {
+        return new Account(
+                accountNum,
+                alias.alias(),
+                key,
+                1_234_567L,
+                payerBalance,
+                "testAccount",
+                false,
+                1_234L,
+                1_234_568L,
+                0,
+                true,
+                true,
+                3,
+                2,
+                1,
+                2,
+                10,
+                2,
+                3,
+                false,
+                2,
+                0,
+                1000L,
+                2,
+                72000,
+                0,
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyList(),
+                2,
+                false,
+                null);
     }
 }

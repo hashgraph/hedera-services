@@ -23,7 +23,7 @@ import static com.swirlds.platform.system.SystemUtils.exitSystem;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.utility.PlatformVersion;
 import com.swirlds.platform.SwirldsPlatform;
-import com.swirlds.platform.gui.SwirldsGui;
+import com.swirlds.platform.gui.GuiPlatformAccessor;
 import com.swirlds.platform.system.SystemExitReason;
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -294,8 +294,8 @@ public class SwirldMenu extends JPanel {
                             null, // parentCompoinent
                             (platform == null
                                             ? ""
-                                            : SwirldsGui.getAbout(
-                                                    platform.getSelfId().getId())) + "\n\n"
+                                            : GuiPlatformAccessor.getInstance().getAbout(platform.getSelfId()))
+                                    + "\n\n"
                                     + PlatformVersion.locateOrDefault().license(), // message
                             "About this app", // title
                             JOptionPane.DEFAULT_OPTION, // optionType

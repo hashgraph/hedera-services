@@ -24,6 +24,7 @@ import static java.lang.Double.isNaN;
 import static java.nio.file.StandardOpenOption.APPEND;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
+import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.metrics.Metric;
@@ -47,6 +48,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -107,7 +109,7 @@ public class LegacyCsvWriter {
         throwArgNull(folderPath, "folderPath");
         this.metricsConfig = throwArgNull(metricsConfig, "metricsConfig");
 
-        final String fileName = String.format("%s%d.csv", metricsConfig.csvFileName(), selfId.getId());
+        final String fileName = String.format("%s%d.csv", metricsConfig.csvFileName(), selfId.id());
         this.csvFilePath = folderPath.resolve(fileName);
     }
 
@@ -339,7 +341,9 @@ public class LegacyCsvWriter {
      */
     @Override
     public String toString() {
-        return "LegacyCsvWriter{csvFilePath=" + csvFilePath + '}';
+        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+                .append("csvFilePath", csvFilePath)
+                .toString();
     }
 
     // Collects cells for one or more rows in the CSV-file. Handles all formatting.

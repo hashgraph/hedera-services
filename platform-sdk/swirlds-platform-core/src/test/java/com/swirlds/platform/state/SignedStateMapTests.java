@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.state;
 
+import static com.swirlds.platform.state.signed.SignedStateMap.NO_STATE_ROUND;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -23,12 +24,12 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.spy;
 
-import com.swirlds.common.utility.AutoCloseableWrapper;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -41,39 +42,38 @@ class SignedStateMapTests {
 
         final SignedStateMap map = new SignedStateMap();
         assertEquals(0, map.getSize(), "unexpected size");
+        assertEquals(NO_STATE_ROUND, map.getLatestRound());
+        assertNull(map.getLatestAndReserve("test").getNullable());
 
-        final AtomicInteger references = new AtomicInteger();
-
-        final AtomicInteger referencesHeldByMap = references;
-
-        final SignedState signedState = SignedStateReferenceTests.buildSignedState(references);
+        final SignedState signedState = spy(SignedStateReferenceTests.buildSignedState());
         final long round = 1234;
         doReturn(round).when(signedState).getRound();
 
-        map.put(signedState);
+        map.put(signedState, "test");
         assertEquals(1, map.getSize(), "unexpected size");
+        try (final ReservedSignedState wrapper = map.getLatestAndReserve("test")) {
+            assertSame(signedState, wrapper.get());
+        }
+        assertEquals(signedState.getRound(), map.getLatestRound());
 
-        assertEquals(1, referencesHeldByMap.get(), "invalid reference count");
+        assertEquals(1, signedState.getReservationCount(), "invalid reference count");
 
-        // Subtract away the reference held by map, makes logic below simpler
-        referencesHeldByMap.getAndDecrement();
-
-        AutoCloseableWrapper<SignedState> wrapper;
+        ReservedSignedState wrapper;
 
         // Get a reference to a round that is not in the map
-        wrapper = map.get(0);
-        assertNull(wrapper.get());
+        wrapper = map.getAndReserve(0, "test");
+        assertNull(wrapper.getNullable());
         wrapper.close();
 
-        wrapper = map.get(0);
-        assertNull(wrapper.get());
+        wrapper = map.getAndReserve(0, "test");
+        assertNull(wrapper.getNullable());
         wrapper.close();
 
-        wrapper = map.get(round);
+        wrapper = map.getAndReserve(round, "test");
         assertSame(signedState, wrapper.get(), "wrapper returned incorrect object");
-        assertEquals(1, references.get(), "invalid reference count");
+        assertEquals(2, signedState.getReservationCount(), "invalid reference count");
         wrapper.close();
-        assertEquals(0, references.get(), "invalid reference count");
+        assertEquals(1, signedState.getReservationCount(), "invalid reference count");
 
         assertEquals(1, map.getSize(), "unexpected size");
     }
@@ -83,24 +83,27 @@ class SignedStateMapTests {
     void removeTest() {
         final SignedStateMap map = new SignedStateMap();
         assertEquals(0, map.getSize(), "unexpected size");
+        assertEquals(NO_STATE_ROUND, map.getLatestRound());
+        assertNull(map.getLatestAndReserve("test").getNullable());
 
-        final AtomicInteger references = new AtomicInteger();
-
-        final AtomicInteger referencesHeldByMap = references;
-
-        final SignedState signedState = SignedStateReferenceTests.buildSignedState(references);
+        final SignedState signedState = spy(SignedStateReferenceTests.buildSignedState());
         final long round = 1234;
         doReturn(round).when(signedState).getRound();
 
-        map.put(signedState);
+        map.put(signedState, "test");
         assertEquals(1, map.getSize(), "unexpected size");
+        try (final ReservedSignedState wrapper = map.getLatestAndReserve("test")) {
+            assertSame(signedState, wrapper.get());
+        }
 
-        assertEquals(1, referencesHeldByMap.get(), "invalid reference count");
+        assertEquals(1, signedState.getReservationCount(), "invalid reference count");
 
         // remove an element in the map
         map.remove(round);
         assertEquals(0, map.getSize(), "unexpected size");
-        assertEquals(0, referencesHeldByMap.get(), "invalid reference count");
+        assertEquals(-1, signedState.getReservationCount(), "invalid reference count");
+        assertEquals(NO_STATE_ROUND, map.getLatestRound());
+        assertNull(map.getLatestAndReserve("test").getNullable());
 
         // remove an element not in the map, should not throw
         map.remove(0);
@@ -112,30 +115,30 @@ class SignedStateMapTests {
         final SignedStateMap map = new SignedStateMap();
         assertEquals(0, map.getSize(), "unexpected size");
 
-        final AtomicInteger references1 = new AtomicInteger();
-
-        final AtomicInteger referencesHeldByMap1 = references1;
-
-        final SignedState signedState1 = SignedStateReferenceTests.buildSignedState(references1);
+        final SignedState signedState1 = spy(SignedStateReferenceTests.buildSignedState());
         final long round = 1234;
         doReturn(round).when(signedState1).getRound();
 
-        final AtomicInteger references2 = new AtomicInteger();
-
-        final AtomicInteger referencesHeldByMap2 = references2;
-
-        final SignedState signedState2 = SignedStateReferenceTests.buildSignedState(references2);
+        final SignedState signedState2 = spy(SignedStateReferenceTests.buildSignedState());
         doReturn(round).when(signedState2).getRound();
 
-        map.put(signedState1);
+        map.put(signedState1, "test");
         assertEquals(1, map.getSize(), "unexpected size");
-        assertEquals(1, referencesHeldByMap1.get(), "invalid reference count");
-        assertEquals(0, referencesHeldByMap2.get(), "invalid reference count");
+        assertEquals(1, signedState1.getReservationCount(), "invalid reference count");
+        assertEquals(0, signedState2.getReservationCount(), "invalid reference count");
+        try (final ReservedSignedState wrapper = map.getLatestAndReserve("test")) {
+            assertSame(signedState1, wrapper.get());
+        }
+        assertEquals(round, map.getLatestRound());
 
-        map.put(signedState2);
+        map.put(signedState2, "test");
         assertEquals(1, map.getSize(), "unexpected size");
-        assertEquals(0, referencesHeldByMap1.get(), "invalid reference count");
-        assertEquals(1, referencesHeldByMap2.get(), "invalid reference count");
+        assertEquals(-1, signedState1.getReservationCount(), "invalid reference count");
+        assertEquals(1, signedState2.getReservationCount(), "invalid reference count");
+        try (final ReservedSignedState wrapper = map.getLatestAndReserve("test")) {
+            assertSame(signedState2, wrapper.get());
+        }
+        assertEquals(round, map.getLatestRound());
     }
 
     @Test
@@ -144,8 +147,10 @@ class SignedStateMapTests {
         final SignedStateMap map = new SignedStateMap();
         assertEquals(0, map.getSize(), "unexpected size");
 
-        assertThrows(IllegalArgumentException.class, () -> map.put(null), "map should reject a null signed state");
+        assertThrows(NullPointerException.class, () -> map.put(null, ""), "map should reject a null signed state");
         assertEquals(0, map.getSize(), "unexpected size");
+        assertEquals(NO_STATE_ROUND, map.getLatestRound());
+        assertNull(map.getLatestAndReserve("test").getNullable());
     }
 
     @Test
@@ -154,51 +159,54 @@ class SignedStateMapTests {
         final SignedStateMap map = new SignedStateMap();
         assertEquals(0, map.getSize(), "unexpected size");
 
-        final AtomicInteger references1 = new AtomicInteger();
-
-        final AtomicInteger referencesHeldByMap1 = references1;
-
-        final SignedState signedState1 = SignedStateReferenceTests.buildSignedState(references1);
+        final SignedState signedState1 = spy(SignedStateReferenceTests.buildSignedState());
         final long round1 = 1234;
         doReturn(round1).when(signedState1).getRound();
 
-        final AtomicInteger references2 = new AtomicInteger();
-
-        final AtomicInteger referencesHeldByMap2 = references2;
-
-        final SignedState signedState2 = SignedStateReferenceTests.buildSignedState(references2);
+        final SignedState signedState2 = spy(SignedStateReferenceTests.buildSignedState());
         final long round2 = 1235;
         doReturn(round2).when(signedState2).getRound();
 
-        final AtomicInteger references3 = new AtomicInteger();
-
-        final AtomicInteger referencesHeldByMap3 = references3;
-
-        final SignedState signedState3 = SignedStateReferenceTests.buildSignedState(references3);
+        final SignedState signedState3 = spy(SignedStateReferenceTests.buildSignedState());
         final long round3 = 1236;
-        doReturn(round3).when(signedState2).getRound();
+        doReturn(round3).when(signedState3).getRound();
 
-        map.put(signedState1);
-        map.put(signedState2);
-        map.put(signedState3);
+        map.put(signedState1, "test");
+        try (final ReservedSignedState wrapper = map.getLatestAndReserve("test")) {
+            assertSame(signedState1, wrapper.get());
+        }
+        assertEquals(signedState1.getRound(), map.getLatestRound());
+        map.put(signedState2, "test");
+        try (final ReservedSignedState wrapper = map.getLatestAndReserve("test")) {
+            assertSame(signedState2, wrapper.get());
+        }
+        assertEquals(signedState2.getRound(), map.getLatestRound());
+        map.put(signedState3, "test");
+        try (final ReservedSignedState wrapper = map.getLatestAndReserve("test")) {
+            assertSame(signedState3, wrapper.get());
+        }
+        assertEquals(signedState3.getRound(), map.getLatestRound());
+
         assertEquals(3, map.getSize(), "unexpected size");
-        assertEquals(1, referencesHeldByMap1.get(), "invalid reference count");
-        assertEquals(1, referencesHeldByMap2.get(), "invalid reference count");
-        assertEquals(1, referencesHeldByMap3.get(), "invalid reference count");
+        assertEquals(1, signedState1.getReservationCount(), "invalid reference count");
+        assertEquals(1, signedState2.getReservationCount(), "invalid reference count");
+        assertEquals(1, signedState3.getReservationCount(), "invalid reference count");
 
         map.clear();
         assertEquals(0, map.getSize(), "unexpected size");
-        assertEquals(0, referencesHeldByMap1.get(), "invalid reference count");
-        assertEquals(0, referencesHeldByMap2.get(), "invalid reference count");
-        assertEquals(0, referencesHeldByMap3.get(), "invalid reference count");
+        assertEquals(-1, signedState1.getReservationCount(), "invalid reference count");
+        assertEquals(-1, signedState2.getReservationCount(), "invalid reference count");
+        assertEquals(-1, signedState3.getReservationCount(), "invalid reference count");
+        assertEquals(NO_STATE_ROUND, map.getLatestRound());
+        assertNull(map.getLatestAndReserve("test").getNullable());
 
-        assertNull(map.get(round1).get(), "state should not be in map");
-        assertNull(map.get(round2).get(), "state should not be in map");
-        assertNull(map.get(round3).get(), "state should not be in map");
+        assertNull(map.getAndReserve(round1, "test").getNullable(), "state should not be in map");
+        assertNull(map.getAndReserve(round2, "test").getNullable(), "state should not be in map");
+        assertNull(map.getAndReserve(round3, "test").getNullable(), "state should not be in map");
         assertEquals(0, map.getSize(), "unexpected size");
-        assertEquals(0, referencesHeldByMap1.get(), "invalid reference count");
-        assertEquals(0, referencesHeldByMap2.get(), "invalid reference count");
-        assertEquals(0, referencesHeldByMap3.get(), "invalid reference count");
+        assertEquals(-1, signedState1.getReservationCount(), "invalid reference count");
+        assertEquals(-1, signedState2.getReservationCount(), "invalid reference count");
+        assertEquals(-1, signedState3.getReservationCount(), "invalid reference count");
     }
 
     @Test
@@ -207,37 +215,25 @@ class SignedStateMapTests {
         final SignedStateMap map = new SignedStateMap();
         assertEquals(0, map.getSize(), "unexpected size");
 
-        final AtomicInteger references1 = new AtomicInteger();
-
-        final AtomicInteger referencesHeldByMap1 = references1;
-
-        final SignedState signedState1 = SignedStateReferenceTests.buildSignedState(references1);
+        final SignedState signedState1 = spy(SignedStateReferenceTests.buildSignedState());
         final long round1 = 1234;
         doReturn(round1).when(signedState1).getRound();
 
-        final AtomicInteger references2 = new AtomicInteger();
-
-        final AtomicInteger referencesHeldByMap2 = references2;
-
-        final SignedState signedState2 = SignedStateReferenceTests.buildSignedState(references2);
+        final SignedState signedState2 = spy(SignedStateReferenceTests.buildSignedState());
         final long round2 = 1235;
         doReturn(round2).when(signedState2).getRound();
 
-        final AtomicInteger references3 = new AtomicInteger();
-
-        final AtomicInteger referencesHeldByMap3 = references3;
-
-        final SignedState signedState3 = SignedStateReferenceTests.buildSignedState(references3);
+        final SignedState signedState3 = spy(SignedStateReferenceTests.buildSignedState());
         final long round3 = 1236;
         doReturn(round3).when(signedState2).getRound();
 
-        map.put(signedState1);
-        map.put(signedState2);
-        map.put(signedState3);
+        map.put(signedState1, "test");
+        map.put(signedState2, "test");
+        map.put(signedState3, "test");
         assertEquals(3, map.getSize(), "unexpected size");
-        assertEquals(1, referencesHeldByMap1.get(), "invalid reference count");
-        assertEquals(1, referencesHeldByMap2.get(), "invalid reference count");
-        assertEquals(1, referencesHeldByMap3.get(), "invalid reference count");
+        assertEquals(1, signedState1.getReservationCount(), "invalid reference count");
+        assertEquals(1, signedState2.getReservationCount(), "invalid reference count");
+        assertEquals(1, signedState3.getReservationCount(), "invalid reference count");
 
         final AtomicBoolean state1Found = new AtomicBoolean();
         final AtomicBoolean state2Found = new AtomicBoolean();
@@ -260,9 +256,9 @@ class SignedStateMapTests {
         assertTrue(state2Found.get(), "state not found");
         assertTrue(state3Found.get(), "state not found");
         assertEquals(3, map.getSize(), "unexpected size");
-        assertEquals(1, referencesHeldByMap1.get(), "invalid reference count");
-        assertEquals(1, referencesHeldByMap2.get(), "invalid reference count");
-        assertEquals(1, referencesHeldByMap3.get(), "invalid reference count");
+        assertEquals(1, signedState1.getReservationCount(), "invalid reference count");
+        assertEquals(1, signedState2.getReservationCount(), "invalid reference count");
+        assertEquals(1, signedState3.getReservationCount(), "invalid reference count");
 
         map.atomicIteration(iterator -> iterator.forEachRemaining(state -> {
             if (state == signedState2) {
@@ -270,62 +266,8 @@ class SignedStateMapTests {
             }
         }));
         assertEquals(2, map.getSize(), "unexpected size");
-        assertEquals(1, referencesHeldByMap1.get(), "invalid reference count");
-        assertEquals(0, referencesHeldByMap2.get(), "invalid reference count");
-        assertEquals(1, referencesHeldByMap3.get(), "invalid reference count");
-    }
-
-    @Test
-    @DisplayName("find() Test")
-    void findTest() {
-        final SignedStateMap map = new SignedStateMap();
-        assertEquals(0, map.getSize(), "unexpected size");
-
-        final AtomicInteger references1 = new AtomicInteger();
-
-        final AtomicInteger referencesHeldByMap1 = references1;
-
-        final SignedState signedState1 = SignedStateReferenceTests.buildSignedState(references1);
-        final long round1 = 1234;
-        doReturn(round1).when(signedState1).getRound();
-
-        final AtomicInteger references2 = new AtomicInteger();
-
-        final AtomicInteger referencesHeldByMap2 = references2;
-
-        final SignedState signedState2 = SignedStateReferenceTests.buildSignedState(references2);
-        final long round2 = 1235;
-        doReturn(round2).when(signedState2).getRound();
-
-        final AtomicInteger references3 = new AtomicInteger();
-
-        final AtomicInteger referencesHeldByMap3 = references3;
-
-        final SignedState signedState3 = SignedStateReferenceTests.buildSignedState(references3);
-        final long round3 = 1236;
-        doReturn(round3).when(signedState2).getRound();
-
-        map.put(signedState1);
-        map.put(signedState2);
-        map.put(signedState3);
-        assertEquals(3, map.getSize(), "unexpected size");
-        assertEquals(1, referencesHeldByMap1.get(), "invalid reference count");
-        assertEquals(1, referencesHeldByMap2.get(), "invalid reference count");
-        assertEquals(1, referencesHeldByMap3.get(), "invalid reference count");
-
-        try (final AutoCloseableWrapper<SignedState> foundState1 = map.find(ss -> ss == signedState1)) {
-            assertEquals(signedState1, foundState1.get(), "incorrect state found");
-            assertEquals(2, references1.get(), "invalid reference count");
-        }
-
-        try (final AutoCloseableWrapper<SignedState> foundState2 = map.find(ss -> ss == signedState2)) {
-            assertEquals(signedState2, foundState2.get(), "incorrect state found");
-            assertEquals(2, references2.get(), "invalid reference count");
-        }
-
-        try (final AutoCloseableWrapper<SignedState> foundState3 = map.find(ss -> ss == signedState3)) {
-            assertEquals(signedState3, foundState3.get(), "incorrect state found");
-            assertEquals(2, references3.get(), "invalid reference count");
-        }
+        assertEquals(1, signedState1.getReservationCount(), "invalid reference count");
+        assertEquals(-1, signedState2.getReservationCount(), "invalid reference count");
+        assertEquals(1, signedState3.getReservationCount(), "invalid reference count");
     }
 }

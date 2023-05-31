@@ -91,7 +91,7 @@ public class RecordStreamManagerTest {
 
     @BeforeAll
     public static void init() throws Exception {
-        given(platform.getSelfId()).willReturn(new NodeId(false, 0L));
+        given(platform.getSelfId()).willReturn(new NodeId(0L));
         NodeLocalProperties disabledProps = mock(NodeLocalProperties.class);
         given(disabledProps.isRecordStreamEnabled()).willReturn(false);
         NodeLocalProperties enabledProps = mock(NodeLocalProperties.class);
@@ -107,7 +107,9 @@ public class RecordStreamManagerTest {
                 recordMemo,
                 INITIAL_RANDOM_HASH,
                 streamType,
-                globalDynamicProperties);
+                globalDynamicProperties,
+                null,
+                File::delete);
 
         given(globalDynamicProperties.recordFileVersion()).willReturn(5);
 
@@ -120,7 +122,9 @@ public class RecordStreamManagerTest {
                 recordMemo,
                 INITIAL_RANDOM_HASH,
                 streamType,
-                globalDynamicProperties);
+                globalDynamicProperties,
+                null,
+                File::delete);
     }
 
     private static void configProps(NodeLocalProperties props) {

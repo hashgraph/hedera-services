@@ -29,7 +29,7 @@ import org.hyperledger.besu.evm.account.AccountStorageEntry;
 import org.hyperledger.besu.evm.code.CodeFactory;
 
 public class WorldStateAccount implements Account {
-    private static final Code EMPTY_CODE = CodeFactory.createCode(Bytes.EMPTY, Hash.hash(Bytes.EMPTY), 0, false);
+    private static final Code EMPTY_CODE = CodeFactory.createCode(Bytes.EMPTY, 0, false);
 
     private final Wei balance;
     private final Address address;
@@ -69,7 +69,7 @@ public class WorldStateAccount implements Account {
 
     @Override
     public Bytes getCode() {
-        return getCodeInternal().getContainerBytes();
+        return getCodeInternal().getBytes();
     }
 
     @Override

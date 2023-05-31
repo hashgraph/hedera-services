@@ -16,30 +16,22 @@
 
 package com.swirlds.platform.state;
 
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.Round;
-import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.threading.framework.Stoppable;
-import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.FreezePeriodChecker;
-import com.swirlds.platform.components.TransThrottleSyncAndCreateRule;
-import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.eventhandling.EventTransactionPool;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.LoadableFromSignedState;
-import java.time.Instant;
-import java.util.List;
 
 /**
  * The methods used to interact with instances of {@link SwirldState}.
  */
-public interface SwirldStateManager
-        extends FreezePeriodChecker, TransThrottleSyncAndCreateRule, Clearable, LoadableFromSignedState {
+public interface SwirldStateManager extends FreezePeriodChecker, Clearable, LoadableFromSignedState {
 
     /**
      * Invokes the pre-handle method. Called after the event has been verified but before
@@ -59,26 +51,6 @@ public interface SwirldStateManager
     void handlePreConsensusEvent(final EventImpl event);
 
     /**
-     * Provides a {@link Runnable} to execute while waiting for pre-consensus events (q1) to process.
-     *
-     * @return the runnable
-     */
-    default InterruptableRunnable getPreConsensusWaitForWorkRunnable() {
-        // tells QueueThread to execute its default method when there is nothing in the queue to process
-        return null;
-    }
-
-    /**
-     * Provides a {@link Runnable} to execute while waiting for consensus events (q2) to process.
-     *
-     * @return the runnable
-     */
-    default InterruptableRunnable getConsensusWaitForWorkRunnable() {
-        // tells QueueThread to execute its default method when there is nothing in the queue to process
-        return null;
-    }
-
-    /**
      * Determines if a pre-consensus event should be discarded or added to the pre-consensus queue (q1) for
      * processing.
      *
@@ -96,29 +68,6 @@ public interface SwirldStateManager
      * @return the transaction pool
      */
     EventTransactionPool getTransactionPool();
-
-    /**
-     * Updates the platform state object in the current round.
-     *
-     * @param round
-     * 		the current round that is being handled
-     * @param numEventsCons
-     * 		the number of events since genesis that have been handled at the end of this round
-     * @param hashEventsCons
-     * 		a running hash of all events
-     * @param snapshot a snapshot 	
-     * @param consensusTimestamp
-     * 		the timestamp of this round
-     * @param softwareVersion
-     * 		the version of the software currently running
-     */
-    void updatePlatformState(
-            final long round,
-            final long numEventsCons,
-            final Hash hashEventsCons,
-            final ConsensusSnapshot snapshot,
-            final Instant consensusTimestamp,
-            final SoftwareVersion softwareVersion);
 
     /**
      * Handles the events in a consensus round. Implementations are responsible for invoking {@link
@@ -197,12 +146,6 @@ public interface SwirldStateManager
      * 		non-priority transactions
      */
     boolean submitTransaction(ConsensusTransactionImpl transaction, boolean priority);
-
-    /**
-     * Called during recovery. Updates the dual state status to clear any possible inconsistency between freezeTime
-     * and lastFrozenTime.
-     */
-    void clearFreezeTimes();
 
     /**
      * Gets the stop behavior of the threads applying transactions to the state

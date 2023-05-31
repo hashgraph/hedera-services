@@ -16,12 +16,9 @@
 
 package com.swirlds.common.threading.framework.internal;
 
-import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
-
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.Stoppable;
+import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.common.threading.manager.ThreadManager;
@@ -56,26 +53,10 @@ public abstract class AbstractQueueThreadConfiguration<C extends AbstractQueueTh
      */
     private InterruptableConsumer<T> handler;
 
-    /** A runnable to execute when waiting for an item to become available in the queue. */
-    private InterruptableRunnable waitForItemRunnable;
-
     /** An initialized queue to use. */
     private BlockingQueue<T> queue;
 
-    /**
-     * The metrics system that will hold queue metrics
-     */
-    private Metrics metrics;
-
-    /**
-     * If enabled, the max size metric will be applied to the queue.
-     */
-    private boolean maxSizeMetricEnabled;
-
-    /**
-     * If enabled, the min size metric will be applied to the queue.
-     */
-    private boolean minSizeMetricEnabled;
+    private QueueThreadMetricsConfiguration metricsConfiguration;
 
     protected AbstractQueueThreadConfiguration(final ThreadManager threadManager) {
         super(threadManager);
@@ -95,11 +76,8 @@ public abstract class AbstractQueueThreadConfiguration<C extends AbstractQueueTh
         this.capacity = that.capacity;
         this.maxBufferSize = that.maxBufferSize;
         this.handler = that.handler;
-        this.waitForItemRunnable = that.waitForItemRunnable;
         this.queue = that.queue;
-        this.metrics = that.metrics;
-        this.maxSizeMetricEnabled = that.maxSizeMetricEnabled;
-        this.minSizeMetricEnabled = that.minSizeMetricEnabled;
+        this.metricsConfiguration = that.metricsConfiguration;
     }
 
     /**
@@ -190,65 +168,6 @@ public abstract class AbstractQueueThreadConfiguration<C extends AbstractQueueTh
     }
 
     /**
-     * Get the runnable to execute when waiting for an item to become available in the queue.
-     */
-    public InterruptableRunnable getWaitForItemRunnable() {
-        return waitForItemRunnable;
-    }
-
-    /**
-     * Set the runnable to execute when there is nothing in the queue to handle. The default is to poll the queue,
-     * waiting a certain amount of time for it to return an item.
-     *
-     * @param waitForItemRunnable the runnable to execute
-     * @return this object
-     */
-    @SuppressWarnings("unchecked")
-    public C setWaitForItemRunnable(final InterruptableRunnable waitForItemRunnable) {
-        throwIfImmutable();
-        this.waitForItemRunnable = waitForItemRunnable;
-        return (C) this;
-    }
-
-    /**
-     * Build a queue. Should only be called if a queue has not been provided.
-     *
-     * @return a newly initialized queue
-     */
-    private BlockingQueue<T> buildDefaultQueue() {
-        if (capacity > 0) {
-            return new LinkedBlockingQueue<>(capacity);
-        } else {
-            return new LinkedBlockingQueue<>();
-        }
-    }
-
-    /**
-     * Get the queue. If it doesn't exist then initialize with a default queue, and return that new queue. If the
-     * {@code metrics} field was set and any queue metrics are enabled, then {@code MeasuredBlockingQueue} will be
-     * initialized to be monitored with the enabled metrics.
-     *
-     * @return the queue that should be used
-     */
-    protected BlockingQueue<T> getOrInitializeQueue() {
-        if (getQueue() == null) {
-            setQueue(buildDefaultQueue());
-        }
-
-        if (metrics != null) {
-            final MeasuredBlockingQueue.Config queueConfig = new MeasuredBlockingQueue.Config(
-                            metrics, INTERNAL_CATEGORY, getThreadName())
-                    .withMaxSizeMetricEnabled(maxSizeMetricEnabled)
-                    .withMinSizeMetricEnabled(minSizeMetricEnabled);
-            if (queueConfig.isMetricEnabled()) {
-                setQueue(new MeasuredBlockingQueue<>(getQueue(), queueConfig));
-            }
-        }
-
-        return getQueue();
-    }
-
-    /**
      * Gets the queue specified by the user, or null if none has been specified.
      */
     public BlockingQueue<T> getQueue() {
@@ -274,31 +193,13 @@ public abstract class AbstractQueueThreadConfiguration<C extends AbstractQueueTh
         return (C) this;
     }
 
-    /**
-     * Enables the metric that tracks the maximum queue size
-     *
-     * @param metrics the metrics-system
-     * @return this object
-     */
-    @SuppressWarnings("unchecked")
-    public C enableMaxSizeMetric(final Metrics metrics) {
-        throwIfImmutable();
-        this.metrics = throwArgNull(metrics, "metrics");
-        this.maxSizeMetricEnabled = true;
-        return (C) this;
+    public QueueThreadMetricsConfiguration getMetricsConfiguration() {
+        return metricsConfiguration;
     }
 
-    /**
-     * Enables the metric that tracks the minimum queue size
-     *
-     * @param metrics the metrics-system
-     * @return this object
-     */
     @SuppressWarnings("unchecked")
-    public C enableMinSizeMetric(final Metrics metrics) {
-        throwIfImmutable();
-        this.metrics = throwArgNull(metrics, "metrics");
-        this.minSizeMetricEnabled = true;
+    public C setMetricsConfiguration(final QueueThreadMetricsConfiguration metricsConfiguration) {
+        this.metricsConfiguration = metricsConfiguration;
         return (C) this;
     }
 }

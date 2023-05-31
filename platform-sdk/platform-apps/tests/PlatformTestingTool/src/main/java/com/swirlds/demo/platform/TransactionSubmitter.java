@@ -51,6 +51,8 @@ public class TransactionSubmitter {
 
     private volatile long customizedTPS = 0;
 
+    private static final double ALLOWED_CATCHUP_DELTA = 1.3;
+
     /**
      * Force canSubmitMore to halt temporarily or allow it to run normally
      *
@@ -365,6 +367,15 @@ public class TransactionSubmitter {
                 return true;
             }
         } else if (this.goal == SUBMIT_GOAL.TRANS_PER_SECOND_PER_NODE) {
+            // if the node is offline for a while due to network disruption,
+            // it may try to catch up the lost transactions count by submitting
+            // many transactions in short window and lead to a burst of transactions. This is not good for
+            // platform, so we need to check the current TPS and make sure it is not too high.
+            final double tranSubTPS = (double) metrics.getValue("Debug.info", "tranSubTPS");
+            if (tranSubTPS > tranPerSecondGoal * ALLOWED_CATCHUP_DELTA) {
+                return false;
+            }
+
             float realTranPerSecond = ((float) accumulatedTrans) * SECONDS_TO_MILLISECONDS / (now - cycleStartMS + 1);
             if (realTranPerSecond > tranPerSecondGoal) {
                 logger.info(

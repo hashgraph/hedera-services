@@ -16,6 +16,9 @@
 
 package com.swirlds.common.threading.framework.internal;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
+
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.ThreadSeed;
@@ -23,8 +26,8 @@ import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * Implements a thread that continuously takes elements from a queue and handles them.
@@ -44,9 +47,14 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
 
     private final StoppableThread stoppableThread;
 
-    private final InterruptableRunnable waitForItemRunnable;
-
     private final AbstractQueueThreadConfiguration<?, T> configuration;
+
+    /**
+     * Incremented each time we timeout while waiting for work from the queue.
+     */
+    private final AtomicLong noWorkCount = new AtomicLong();
+    /** Tracks metrics related to this queue thread */
+    private final QueueThreadMetrics metrics;
 
     /**
      * <p>
@@ -62,7 +70,7 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
      * 		the configuration object
      */
     public QueueThreadImpl(final AbstractQueueThreadConfiguration<?, T> configuration) {
-        super(configuration.getOrInitializeQueue());
+        super(ThreadBuildingUtils.getOrBuildQueue(configuration));
 
         this.configuration = configuration;
 
@@ -75,11 +83,8 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
         }
 
         buffer = new ArrayList<>(bufferSize);
-
         handler = configuration.getHandler();
-
-        this.waitForItemRunnable =
-                Objects.requireNonNullElseGet(configuration.getWaitForItemRunnable(), () -> this::waitForItem);
+        metrics = new QueueThreadMetrics(configuration);
 
         stoppableThread = configuration
                 .setWork(this::doWork)
@@ -127,6 +132,7 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
                     "can not start thread if it has already built a seed or if it has already been started");
         }
 
+        metrics.startingWork();
         stoppableThread.start();
     }
 
@@ -224,7 +230,12 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
     private void doWork() throws InterruptedException {
         drainTo(buffer, bufferSize);
         if (buffer.size() == 0) {
-            waitForItemRunnable.run();
+            metrics.finishedWork();
+            final T item = waitForItem();
+            metrics.startingWork();
+            if (item != null) {
+                handler.accept(item);
+            }
             return;
         }
 
@@ -235,16 +246,46 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
     }
 
     /**
-     * Wait a while for the next item to become available and handle it. If no item becomes available before
-     * a timeout then return without doing any work.
+     * Wait a while for the next item to become available and return it. If no item becomes available before
+     * a timeout then return null.
      *
      * @throws InterruptedException
      * 		if this method is interrupted during execution
      */
-    private void waitForItem() throws InterruptedException {
-        final T item = poll(WAIT_FOR_WORK_DELAY_MS, TimeUnit.MILLISECONDS);
-        if (item != null) {
-            handler.accept(item);
+    private T waitForItem() throws InterruptedException {
+        final T item = poll(WAIT_FOR_WORK_DELAY_MS, MILLISECONDS);
+        if (item == null) {
+            noWorkCount.incrementAndGet();
+        }
+        return item;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void waitUntilNotBusy() throws InterruptedException {
+
+        // Wait for the no-work count to be incremented twice.
+        //
+        // This algorithm borders on being hacky and will not always
+        // return immediately as soon as it is legal to do so. This
+        // algorithm was chosen because it adds minimal overhead to a
+        // non-idle queue thread under standard operational conditions.
+        //
+        // Waiting for two increments is intentional. Waiting for just a
+        // single increment is not thread safe. By waiting for two increments,
+        // we guarantee that the work queue has been polled in this.waitForItem()
+        // and has returned no work strictly after we entered this method
+        // and read the initial count. If we only waited for a single
+        // increment, it is possible that we could read the initial count
+        // in-between the queue being polled and the no-work count being
+        // incremented, and if more work is enqueued in that time interval
+        // we would return prematurely if we only waited for a single increment.
+
+        final long initialCount = noWorkCount.get();
+        while (noWorkCount.get() <= initialCount + 1 && getStatus() != Status.DEAD) {
+            MILLISECONDS.sleep(WAIT_FOR_WORK_DELAY_MS);
         }
     }
 
@@ -289,6 +330,6 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
      */
     @Override
     public String toString() {
-        return "QueueThread(" + getName() + ")";
+        return new ToStringBuilder(this, SHORT_PREFIX_STYLE).append(getName()).toString();
     }
 }

@@ -22,7 +22,6 @@ import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.KEY;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.MEMO;
-import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
 
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
@@ -70,8 +69,9 @@ public class ContractCustomizer {
         final var expiry = consensusTime.getEpochSecond() + autoRenewPeriod;
 
         final var key = (decodedKey instanceof JContractIDKey) ? null : decodedKey;
+        // The customizer ignores null values, so use null if no auto-renew account is specified
         final var autoRenewAccount =
-                op.hasAutoRenewAccountId() ? EntityId.fromGrpcAccountId(op.getAutoRenewAccountId()) : MISSING_ENTITY_ID;
+                op.hasAutoRenewAccountId() ? EntityId.fromGrpcAccountId(op.getAutoRenewAccountId()) : null;
         final var customizer = new HederaAccountCustomizer()
                 .memo(op.getMemo())
                 .expiry(expiry)

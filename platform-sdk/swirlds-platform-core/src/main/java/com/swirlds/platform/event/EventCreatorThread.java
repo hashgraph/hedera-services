@@ -16,13 +16,13 @@
 
 package com.swirlds.platform.event;
 
+import com.swirlds.base.function.BooleanFunction;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.common.utility.BooleanFunction;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.config.ThreadConfig;
 import java.util.Collections;
@@ -65,13 +65,13 @@ public class EventCreatorThread implements Clearable {
         this.random = random;
         this.otherNodes = StreamSupport.stream(addressBook.spliterator(), false)
                 // don't create events with self as other parent
-                .filter(a -> !selfId.equalsMain(a.getId()))
-                .map(a -> NodeId.createMain(a.getId()))
+                .filter(a -> selfId.id() != a.getId())
+                .map(a -> new NodeId(a.getId()))
                 .collect(Collectors.toList());
 
         creatorThread = new StoppableThreadConfiguration<>(threadManager)
                 .setPriority(Thread.NORM_PRIORITY)
-                .setNodeId(selfId.getId())
+                .setNodeId(selfId)
                 .setMaximumRate(attemptedChatterEventPerSecond)
                 .setComponent("Chatter")
                 .setThreadName("EventGenerator")
@@ -86,12 +86,12 @@ public class EventCreatorThread implements Clearable {
     public void createEvent() {
         // in case of a single node network, create events that have self as the other parent
         if (otherNodes.isEmpty()) {
-            this.eventCreator.apply(selfId.getId());
+            this.eventCreator.apply(selfId.id());
             return;
         }
         Collections.shuffle(otherNodes, random);
         for (final NodeId neighbor : otherNodes) {
-            if (this.eventCreator.apply(neighbor.getId())) {
+            if (this.eventCreator.apply(neighbor.id())) {
                 // try all neighbors until we create an event
                 break;
             }

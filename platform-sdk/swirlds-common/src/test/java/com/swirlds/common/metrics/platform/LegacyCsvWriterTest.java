@@ -51,7 +51,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 class LegacyCsvWriterTest {
 
-    private static final NodeId NODE_ID = NodeId.createMain(42L);
+    private static final NodeId NODE_ID = new NodeId(42L);
     private Metrics metrics;
     private MetricsConfig metricsConfig;
 
@@ -80,7 +80,7 @@ class LegacyCsvWriterTest {
         final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, metricsConfig);
 
         // then
-        assertThat(writer.toString()).matches("^LegacyCsvWriter\\{csvFilePath=" + tempDir + ".*}$");
+        assertThat(writer.toString()).matches("^LegacyCsvWriter\\[csvFilePath=" + tempDir + ".*]$");
     }
 
     @Test

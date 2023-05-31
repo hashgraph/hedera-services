@@ -17,23 +17,23 @@
 package com.swirlds.virtualmap.internal.cache;
 
 import com.swirlds.common.threading.futures.StandardFuture;
-import java.util.Arrays;
-import java.util.Comparator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.Spliterator;
+import java.util.Spliterators.AbstractSpliterator;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * An array-backed concurrent data structure optimized for use by the {@link VirtualNodeCache}.
  * <p>
  * This class has been carefully designed to enable a high rate of concurrency (mostly lock-free)
  * with a minimum of array copying overhead. We were not able to avoid all array copies (see the
- * implementation of {@link #sortedStream(Comparator)}. If we could have found a better way to do
+ * implementation of {@link #stream()}. If we could have found a better way to do
  * concurrent sorting without needing to rewrite a pile of highly optimized sort code from the JDK
  * or an array copy, we would have done it). This class has been very careful to be defensive and
  * assert which operations are safe to execute concurrently on mutable instances and which require
@@ -45,12 +45,11 @@ import java.util.stream.Stream;
  * this class does not double the size of the storage, it simply increments by {@code capacity}.
  * <p>
  * Typically, an instance is created and then {@link #add(Object)} is called repeatedly. When the
- * {@link VirtualNodeCache} wishes to merge two arrays together, it will create a new {@link ConcurrentArray}
- * by supplying the two previous arrays to it via {@link #ConcurrentArray(ConcurrentArray, ConcurrentArray)}.
- * The source arrays for this operation <strong>must</strong> be immutable. An array is made immutable
+ * {@link VirtualNodeCache} wishes to merge two arrays together, it will call {@link #merge(ConcurrentArray)}.
+ * Both arrays for this operation <strong>must</strong> be immutable. An array is made immutable
  * by calling {@link #seal()}.
  * <p>
- * After all elements have been added, the {@link #sortedStream(Comparator)} method can be called to get
+ * After all elements have been added, the {@link #stream()} method can be called to get
  * a sorted stream of all array elements. Since this operation is incompatible with concurrent calls to
  * {@link #add(Object)}, the instance must first be sealed {@link #seal()} before calling {@code sortedStream}.
  * This is a safety precaution to guard against accidental sorting of a mutable {@link ConcurrentArray}.
@@ -65,7 +64,7 @@ final class ConcurrentArray<T> {
     private static final int DEFAULT_ELEMENT_ARRAY_LENGTH = 1024;
 
     /**
-     * A concurrent linked deque of arrays. Initially, the {@link ConcurrentArray} has a single
+     * A linked list of arrays. Initially, the {@link ConcurrentArray} has a single
      * sub-array sized to either the capacity provided in the constructor or {@link #DEFAULT_ELEMENT_ARRAY_LENGTH}.
      * As elements are added, they eventually fill up the sub-array, and it becomes necessary to create
      * a new sub-array and add it to the list.
@@ -75,15 +74,18 @@ final class ConcurrentArray<T> {
      * First, it required a rather coarse-grained lock which was bad for performance. Second, it required large
      * array copies, which hurt performance.
      * <p>
-     * Instead, we have a concurrent linked dequeue of smaller "sub" arrays. Whenever we need to grow capacity,
+     * Instead, we have a linked list of smaller "sub" arrays. Whenever we need to grow capacity,
      * rather than creating a new larger array and copying all the elements out of the old array into the new one,
-     * we simply create a new array. Whenever we need to "add all" from another {@link ConcurrentArray} into this
-     * one, we just add a few pointers to the concurrent linked dequeue and avoid all array copies.
+     * we simply create a new array. Whenever we need to "merge" another {@link ConcurrentArray} with this
+     * one, we just link them together and avoid all array copies.
      * <p>
      * To make this safe, it is imperative that <strong>only</strong> an immutable {@link ConcurrentArray} is the
      * source of a copy, so that the destination array can safely refer to the sub-arrays of the source.
+     * <p>
      */
-    private final ConcurrentLinkedDeque<SubArray<T>> arrays = new ConcurrentLinkedDeque<>();
+    private SubArray<T> head;
+
+    private SubArray<T> tail;
 
     /**
      * A thread-safe field holding the number of elements (that is, the number of actual elements in all sub-arrays).
@@ -134,49 +136,37 @@ final class ConcurrentArray<T> {
         }
 
         // Add the first array, so we are primed and ready to go. This also saves on a check later for an empty
-        // concurrent linked dequeue (we always know there is at least one sub-array).
+        // linked list (we always know there is at least one sub-array).
         this.subarrayCapacity = capacity;
-        arrays.add(new SubArray<>(capacity));
+        head = new SubArray<>(capacity);
+        tail = head;
     }
 
     /**
-     * Create a new {@link ConcurrentArray} with the contents of two other {@link ConcurrentArray}s.
-     * <strong>IMPORTANT!</strong> this does <strong>NOT</strong> copy the array data out of the source
-     * {@link ConcurrentArray}s. It directly reuses the data. Both of the source arrays must be immutable.
-     * This array will be <strong>sealed</strong>. It cannot be mutated after merging.
-     *
-     * @param arrayOne
-     * 		The first array to take data from. Cannot be null. Must be immutable.
-     * @param arrayTwo
-     * 		The second array to take data from. Cannot be null. Must be immutable.
-     * @throws NullPointerException
-     * 		if either array is null
-     * @throws IllegalArgumentException
-     * 		if either array is mutable, or if they are the same instance.
+     * Effectively adds all {@link SubArray}s from another {@link ConcurrentArray}.
+     * @param other
+     *      {@link ConcurrentArray} to be merged.
      */
-    ConcurrentArray(ConcurrentArray<T> arrayOne, ConcurrentArray<T> arrayTwo) {
-        Objects.requireNonNull(arrayOne);
-        Objects.requireNonNull(arrayTwo);
+    void merge(final ConcurrentArray<T> other) {
+        Objects.requireNonNull(other);
 
         // We don't allow either to be mutable
-        if (!arrayOne.isImmutable() || !arrayTwo.isImmutable()) {
-            throw new IllegalArgumentException("The source arrays *must* be immutable");
+        if (!(this.isImmutable() && other.isImmutable())) {
+            throw new IllegalArgumentException("Both arrays *must* be immutable");
         }
 
-        // OK, this is just being really picky. But don't let them be the same either. That's just weird.
-        // If both are the same, it is probably a bug. If we needed to support this, we could relax
-        // the restriction and just accept one of the two.
-        if (arrayOne == arrayTwo) {
-            throw new IllegalArgumentException("Both arguments should be distinct instances");
+        if (other == this) {
+            throw new IllegalArgumentException("Can not merge with itself");
         }
 
-        // Copy the pointers to the arrays of arrayOne and arrayTwo into the dequeue. We know
-        // that both sources are immutable, so we can do this safely.
-        this.subarrayCapacity = 1;
-        arrays.addAll(arrayOne.arrays);
-        arrays.addAll(arrayTwo.arrays);
-        elementCount.addAndGet(arrayOne.size() + arrayTwo.size());
-        immutable.set(true);
+        if (elementCount.get() == 0) {
+            head = other.head;
+            tail = other.tail;
+        } else if (other.elementCount.get() > 0) {
+            tail.next = other.head;
+            tail = other.tail;
+        }
+        elementCount.addAndGet(other.size());
     }
 
     /**
@@ -224,12 +214,12 @@ final class ConcurrentArray<T> {
         }
 
         int count = 0;
-        for (final SubArray<T> arr : arrays) {
-            final int arrSize = arr.size.get();
+        for (SubArray<T> cur = head; cur != null; cur = cur.next) {
+            final int arrSize = cur.size.get();
             if (index >= count + arrSize) {
                 count += arrSize;
             } else {
-                return arr.get(index - count);
+                return cur.get(index - count);
             }
         }
 
@@ -250,19 +240,17 @@ final class ConcurrentArray<T> {
             throw new IllegalStateException("You can not call add on a immutable ConcurrentArray");
         }
 
-        // The sub-arrays in the dequeue all considered full except for the very last one. If the very last one is
+        // The sub-arrays in the list are all considered full except for the very last one. If the very last one is
         // also full, then add a new sub-array. We want to avoid locking for normal operations, and only
         // do so if the sub-array is full. So we will get the last sub-array, try to add to it, and if we fail
         // to do so, then we will acquire the lock to create a new sub-array.
-        SubArray<T> lastArray = arrays.getLast();
-        boolean success = lastArray.add(element);
+        boolean success = tail.add(element);
         if (!success) {
             synchronized (this) {
                 // Within this lock we need to create a new sub-array. Unless in a race another thread has already
                 // entered this critical section and created the sub array. So we will once again get the last
-                // sub-array from the dequeue, try to add to it, and determine if we need to add a new sub-array.
-                lastArray = arrays.getLast();
-                success = lastArray.add(element);
+                // sub-array from the list, try to add to it, and determine if we need to add a new sub-array.
+                success = tail.add(element);
                 if (!success) {
                     // Create the sub-array
                     final SubArray<T> newArray = new SubArray<>(subarrayCapacity);
@@ -271,11 +259,11 @@ final class ConcurrentArray<T> {
                     // This must always be true! Capacity is always strictly greater than zero, and
                     // we hold the lock, so the above add operation should always succeed.
                     assert success;
-                    // Now, and only now, can we add the array to the dequeue. As soon as we add it,
+                    // Now, and only now, can we add the sub-array to the list. As soon as we add it,
                     // other threads can come along and add items to the array. If we were to put this
-                    // into the dequeue too soon, then the array could be filled up before our thread
+                    // into the list too soon, then the array could be filled up before our thread
                     // has a chance, causing the above assertion to fail.
-                    arrays.add(newArray);
+                    tail = tail.next = newArray;
                 }
             }
         }
@@ -285,49 +273,26 @@ final class ConcurrentArray<T> {
     }
 
     /**
-     * Get a sorted stream of all elements. The comparator will be used to sort the elements.
-     * If the comparator is null, then the natural ordering of the elements will be used.
-     * This method can only be called on immutable instances. It may be called concurrently.
+     * Get a stream of all elements in this concurrent array.
      *
-     * @param comparator
-     * 		The comparator to use to sort the elements. May be null, in which
-     * 		case natural ordering is used.
-     * @return A non-null Stream over all elements.
+     * <p>This method can only be called on immutable instances. It may be called concurrently.
+     *
+     * @return A non-null stream over all elements
      * @throws IllegalStateException
-     * 		If this instance is not immutable.
+     * 		If this instance is not immutable
      */
-    Stream<T> sortedStream(Comparator<T> comparator) {
+    Stream<T> stream() {
         if (!immutable.get()) {
-            throw new IllegalStateException("You can not call sortedStream on a mutable ConcurrentArray");
+            throw new IllegalStateException("You can not call stream() on a mutable ConcurrentArray");
         }
 
-        // A quick exit: if there are no elements, then return an empty stream.
+        // A quick exit: if there are no elements, then return an empty stream
         final int numberOfElements = this.elementCount.get();
         if (numberOfElements == 0) {
             return Stream.empty();
         }
 
-        // Convert the sub-arrays into a single array and sort it. We considered numerous alternatives to try to
-        // avoid the array copies, but we could not find a more efficient solution. Lock so that we can safely combine
-        // the arrays and sort the result.
-        final SubArray<T> newArray = new SubArray<>(numberOfElements);
-        synchronized (this) {
-            // Copy all the arrays to one new array
-            int nextIndex = 0;
-            for (final SubArray<T> array : arrays) {
-                final int arraySize = array.size.get();
-                System.arraycopy(array.array, 0, newArray.array, nextIndex, arraySize);
-                nextIndex += arraySize;
-            }
-            newArray.size.set(numberOfElements);
-            arrays.clear();
-            arrays.add(newArray);
-
-            // Now sort
-            Arrays.parallelSort(newArray.array, 0, numberOfElements, comparator);
-        }
-        // Create and return the stream
-        return Arrays.stream(newArray.array);
+        return StreamSupport.stream(new ConcurrentArraySpliterator<>(numberOfElements, head), false);
     }
 
     public StandardFuture<Void> parallelTraverse(Executor executor, Consumer<T> action) {
@@ -337,11 +302,13 @@ final class ConcurrentArray<T> {
 
         final StandardFuture<Void> result = new StandardFuture<>();
         final AtomicInteger count = new AtomicInteger(1);
-        for (SubArray<T> subArray : arrays) {
+        int nextIndex = 0;
+        int numberOfElements = elementCount.get();
+        for (SubArray<T> cur = head; cur != null && nextIndex < numberOfElements; cur = cur.next) {
             count.incrementAndGet();
+            final T[] array = cur.array;
+            final int size = cur.size.get();
             executor.execute(() -> {
-                T[] array = subArray.array;
-                int size = subArray.size.get();
                 for (int i = 0; i < size; ++i) {
                     action.accept(array[i]);
                 }
@@ -349,6 +316,7 @@ final class ConcurrentArray<T> {
                     result.complete(null);
                 }
             });
+            nextIndex += size;
         }
         if (count.decrementAndGet() == 0) {
             result.complete(null);
@@ -362,6 +330,7 @@ final class ConcurrentArray<T> {
     private static class SubArray<T> {
         private final T[] array;
         private final AtomicInteger size = new AtomicInteger(0);
+        private SubArray<T> next;
 
         @SuppressWarnings("unchecked")
         public SubArray(int capacity) {
@@ -405,6 +374,42 @@ final class ConcurrentArray<T> {
             // values.
             array[index] = element;
             return true;
+        }
+    }
+
+    /**
+     * Utility class to provide Stream support on top of concurrent arrays.
+     *
+     * @param <T>
+     */
+    private static class ConcurrentArraySpliterator<T> extends AbstractSpliterator<T> {
+        private SubArray<T> arr;
+        private int arrIndex = 0;
+
+        ConcurrentArraySpliterator(final int size, final SubArray<T> head) {
+            super(size, Spliterator.SIZED | Spliterator.NONNULL | Spliterator.IMMUTABLE);
+            arr = head;
+            skipEmpty();
+        }
+
+        @Override
+        public boolean tryAdvance(Consumer<? super T> action) {
+            if (arr == null) {
+                return false;
+            }
+            action.accept(arr.array[arrIndex++]);
+            if (arrIndex == arr.size.get()) {
+                arr = arr.next;
+                skipEmpty();
+            }
+            return true;
+        }
+
+        private void skipEmpty() {
+            while ((arr != null) && arr.size.get() == 0) {
+                arr = arr.next;
+            }
+            arrIndex = 0;
         }
     }
 }

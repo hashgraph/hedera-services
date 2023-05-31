@@ -112,8 +112,8 @@ import java.util.Objects;
  * @param <V>
  * 		The value. Must be a {@link VirtualValue}.
  */
-public final class VirtualMap<K extends VirtualKey<? super K>, V extends VirtualValue>
-        extends PartialBinaryMerkleInternal implements ExternalSelfSerializable, Labeled, MerkleInternal {
+public final class VirtualMap<K extends VirtualKey, V extends VirtualValue> extends PartialBinaryMerkleInternal
+        implements ExternalSelfSerializable, Labeled, MerkleInternal {
 
     /**
      * Used for serialization.
@@ -126,6 +126,7 @@ public final class VirtualMap<K extends VirtualKey<? super K>, V extends Virtual
     public static class ClassVersion {
         public static final int ORIGINAL = 1;
         public static final int MERKLE_SERIALIZATION_CLEANUP = 2;
+        public static final int REHASH_LEAVES = 3;
     }
 
     private static final class ChildIndices {
@@ -250,7 +251,7 @@ public final class VirtualMap<K extends VirtualKey<? super K>, V extends Virtual
      */
     @Override
     public int getVersion() {
-        return ClassVersion.MERKLE_SERIALIZATION_CLEANUP;
+        return ClassVersion.REHASH_LEAVES;
     }
 
     /**
@@ -340,6 +341,9 @@ public final class VirtualMap<K extends VirtualKey<? super K>, V extends Virtual
         final String inputFileName = in.readNormalisedString(fileNameLengthInBytes);
         final Path inputFile = inputDirectory.resolve(inputFileName);
         loadFromFile(inputFile);
+        if (version < ClassVersion.REHASH_LEAVES) {
+            root.fullLeafRehashIfNecessary();
+        }
     }
 
     /**
@@ -352,7 +356,6 @@ public final class VirtualMap<K extends VirtualKey<? super K>, V extends Virtual
      * 		For problems.
      */
     public void loadFromFile(final Path inputFile) throws IOException {
-
         final ValueReference<VirtualMapState> virtualMapState = new ValueReference<>();
         final ValueReference<VirtualRootNode<K, V>> virtualRootNode = new ValueReference<>();
 

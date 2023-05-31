@@ -16,40 +16,75 @@
 
 package com.hedera.node.app.service.schedule.impl.handlers;
 
-import static com.hedera.node.app.service.mono.utils.MiscUtils.functionOf;
-import static com.hedera.node.app.service.mono.utils.MiscUtils.isSchedulable;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
+import static com.hedera.node.app.spi.HapiUtils.QUERY_FUNCTIONS;
+import static com.hedera.node.app.spi.HapiUtils.functionOf;
 
-import com.hedera.node.app.service.mono.exceptions.UnknownHederaFunctionality;
-import com.hedera.node.app.spi.PreHandleDispatcher;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.spi.UnknownHederaFunctionality;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
+import java.util.Objects;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Provides some implementation support needed for both the {@link ScheduleCreateHandler} and {@link
  * ScheduleSignHandler}.
  */
 abstract class AbstractScheduleHandler {
-    protected TransactionMetadata preHandleScheduledTxn(
-            final TransactionBody scheduledTxn, final AccountID payerForNested, final PreHandleDispatcher dispatcher) {
+    private static final Logger logger = LogManager.getLogger(AbstractScheduleHandler.class);
+    public static final String IGNORED_EXCEPTION_MESSAGE =
+            "Ignored inner context pre check exception and replaced with UNRESOLVABLE_REQUIRED_SIGNERS.";
+
+    private final PreHandleDispatcher dispatcher;
+
+    AbstractScheduleHandler(PreHandleDispatcher dispatcher) {
+        this.dispatcher = Objects.requireNonNull(dispatcher, "The supplied argument 'dispatcher' must not be null.");
+    }
+
+    protected void preHandleScheduledTxn(
+            final PreHandleContext context, final TransactionBody scheduledTxn, final AccountID payerForNested)
+            throws PreCheckException {
         final HederaFunctionality scheduledFunction;
         try {
             scheduledFunction = functionOf(scheduledTxn);
         } catch (UnknownHederaFunctionality ex) {
-            return new TransactionMetadata(scheduledTxn, payerForNested, SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
+            throw new PreCheckException(SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
         }
 
         if (!isSchedulable(scheduledFunction)) {
-            return new TransactionMetadata(scheduledTxn, payerForNested, SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
+            throw new PreCheckException(SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
         }
 
-        final var meta = dispatcher.dispatch(scheduledTxn, payerForNested);
-        if (meta.failed()) {
-            return new TransactionMetadata(scheduledTxn, payerForNested, UNRESOLVABLE_REQUIRED_SIGNERS);
+        try {
+            final PreHandleContext innerContext = context.createNestedContext(scheduledTxn, payerForNested);
+            dispatcher.dispatch(innerContext);
+        } catch (final PreCheckException ignored) {
+            logger.debug(IGNORED_EXCEPTION_MESSAGE, ignored);
+            throw new PreCheckException(UNRESOLVABLE_REQUIRED_SIGNERS);
         }
-        return meta;
+    }
+
+    /**
+     * @param functionality any {@link HederaFunctionality}
+     * @return true if the functionality could possibly be allowed to be scheduled. Some
+     *     functionally may not be in {@link SchedulableTransactionBody} yet but could be in the
+     *     future. The scheduling.whitelist configuration property is separate from this and
+     *     provides the final list of functionality that can be scheduled.
+     */
+    public static boolean isSchedulable(final HederaFunctionality functionality) {
+        if (functionality == null) {
+            return false;
+        }
+        return switch (functionality) {
+            case SCHEDULE_CREATE, SCHEDULE_SIGN -> false;
+            default -> !QUERY_FUNCTIONS.contains(functionality);
+        };
     }
 }

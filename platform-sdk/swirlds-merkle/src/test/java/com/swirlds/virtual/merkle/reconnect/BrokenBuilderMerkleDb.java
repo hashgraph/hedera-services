@@ -48,9 +48,10 @@ public class BrokenBuilderMerkleDb extends BrokenBuilder {
     }
 
     @Override
-    public BreakableDataSource copy(final VirtualDataSource<TestKey, TestValue> snapshotMe) {
+    public BreakableDataSource copy(
+            final VirtualDataSource<TestKey, TestValue> snapshotMe, final boolean makeCopyActive) {
         final var breakableSnapshot = (BreakableDataSource) snapshotMe;
-        return new BreakableDataSourceMerkleDb(this, delegate.copy(breakableSnapshot.delegate));
+        return new BreakableDataSourceMerkleDb(this, delegate.copy(breakableSnapshot.delegate, makeCopyActive));
     }
 
     @Override

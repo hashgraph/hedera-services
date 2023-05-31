@@ -27,7 +27,6 @@ import com.hedera.node.app.service.mono.fees.annotations.GenericPriceMultiplier;
 import com.hedera.node.app.service.mono.fees.calculation.BasicFcfsUsagePrices;
 import com.hedera.node.app.service.mono.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.node.app.service.mono.fees.calculation.TxnResourceUsageEstimator;
-import com.hedera.node.app.service.mono.fees.calculation.UsageBasedFeeCalculator;
 import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
 import com.hedera.node.app.service.mono.fees.calculation.consensus.ConsensusFeesModule;
 import com.hedera.node.app.service.mono.fees.calculation.contract.ContractFeesModule;
@@ -75,10 +74,6 @@ public interface FeesModule {
     @Binds
     @Singleton
     StorageFeeCharging bindStorageFeeCharging(RecordedStorageFeeCharging recordedStorageFeeCharging);
-
-    @Binds
-    @Singleton
-    FeeCalculator bindFeeCalculator(UsageBasedFeeCalculator usageBasedFeeCalculator);
 
     @Binds
     @Singleton

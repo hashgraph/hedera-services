@@ -31,23 +31,17 @@ public class AccountDetailsAsserts extends BaseErroringAssertsProvider<AccountDe
     }
 
     public AccountDetailsAsserts key(Key key) {
-        registerProvider((spec, o) -> {
-            assertEquals(key, ((AccountDetails) o).getKey(), "Bad key!");
-        });
+        registerProvider((spec, o) -> assertEquals(key, ((AccountDetails) o).getKey(), "Bad key!"));
         return this;
     }
 
     public AccountDetailsAsserts noAlias() {
-        registerProvider((spec, o) -> {
-            assertTrue(((AccountDetails) o).getAlias().isEmpty(), "Bad Alias!");
-        });
+        registerProvider((spec, o) -> assertTrue(((AccountDetails) o).getAlias().isEmpty(), "Bad Alias!"));
         return this;
     }
 
     public AccountDetailsAsserts memo(String memo) {
-        registerProvider((spec, o) -> {
-            assertEquals(memo, ((AccountDetails) o).getMemo(), "Bad memo!");
-        });
+        registerProvider((spec, o) -> assertEquals(memo, ((AccountDetails) o).getMemo(), "Bad memo!"));
         return this;
     }
 
@@ -110,23 +104,20 @@ public class AccountDetailsAsserts extends BaseErroringAssertsProvider<AccountDe
     }
 
     public AccountDetailsAsserts cryptoAllowancesCount(int count) {
-        registerProvider((spec, o) -> {
-            assertEquals(count, ((AccountDetails) o).getGrantedCryptoAllowancesCount(), "Bad CryptoAllowances!");
-        });
+        registerProvider((spec, o) ->
+                assertEquals(count, ((AccountDetails) o).getGrantedCryptoAllowancesCount(), "Bad CryptoAllowances!"));
         return this;
     }
 
     public AccountDetailsAsserts tokenAllowancesCount(int count) {
-        registerProvider((spec, o) -> {
-            assertEquals(count, ((AccountDetails) o).getGrantedTokenAllowancesCount(), "Bad TokenAllowances!");
-        });
+        registerProvider((spec, o) ->
+                assertEquals(count, ((AccountDetails) o).getGrantedTokenAllowancesCount(), "Bad TokenAllowances!"));
         return this;
     }
 
     public AccountDetailsAsserts nftApprovedForAllAllowancesCount(int count) {
-        registerProvider((spec, o) -> {
-            assertEquals(count, ((AccountDetails) o).getGrantedNftAllowancesCount(), "Bad NFTAllowances!");
-        });
+        registerProvider((spec, o) ->
+                assertEquals(count, ((AccountDetails) o).getGrantedNftAllowancesCount(), "Bad NFTAllowances!"));
         return this;
     }
 
@@ -140,9 +131,7 @@ public class AccountDetailsAsserts extends BaseErroringAssertsProvider<AccountDe
     }
 
     public AccountDetailsAsserts balance(long amount) {
-        registerProvider((spec, o) -> {
-            assertEquals(amount, ((AccountDetails) o).getBalance(), "Bad balance!");
-        });
+        registerProvider((spec, o) -> assertEquals(amount, ((AccountDetails) o).getBalance(), "Bad balance!"));
         return this;
     }
 }

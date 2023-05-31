@@ -45,12 +45,15 @@ import static com.hedera.node.app.service.mono.utils.EntityIdUtils.accountIdFrom
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.contractIdFromEvmAddress;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.node.app.service.evm.store.contracts.HederaEvmStackedWorldUpdater;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount;
+import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractCustomizer;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
+import com.hedera.node.app.service.mono.store.UpdateAccountTrackerImpl;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import org.apache.tuweni.bytes.Bytes;
@@ -61,7 +64,7 @@ import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.hyperledger.besu.evm.worldstate.WrappedEvmAccount;
 
 public class HederaStackedWorldStateUpdater extends AbstractStackedLedgerUpdater<HederaMutableWorldState, Account>
-        implements HederaWorldUpdater {
+        implements HederaWorldUpdater, HederaEvmStackedWorldUpdater {
 
     // Returned when a client tries to un-alias a mirror address that has an EIP-1014 address
     private static final byte[] NON_CANONICAL_REFERENCE = new byte[20];
@@ -108,12 +111,17 @@ public class HederaStackedWorldStateUpdater extends AbstractStackedLedgerUpdater
     }
 
     /**
-     * Returns the mirror form of the given EVM address if it exists; or 20 bytes of binary zeros if
-     * the given address is the mirror address of an account with an EIP-1014 address.
+     * Given a 20-byte EVM address, returns one of three things:
+     * <ol>
+     *     <li>If the address is neither an alias nor long-zero address for any account, returns it unchanged.</li>
+     *     <li>If the address is the alias of an account, returns the long-zero address of that account.</li>
+     *     <li>If the address is the long-zero address of an account that <i>also has an EIP-1014 alias</i>,
+     *     returns 20 bytes of binary zeros ({@code NON_CANONICAL_REFERENCE}).</li>
+     * </ol>
      *
      * @param evmAddress an EVM address
-     * @return its mirror form, or binary zeros if an EIP-1014 address should have been used for
-     *     this account
+     * @return the input address if it does not reference an account; the long-zero address of its account if it does
+     * reference an account; or 20 bytes of binary zeros if it references an account with a different EIP-1014 alias
      */
     public byte[] unaliased(final byte[] evmAddress) {
         final var addressOrAlias = Address.wrap(Bytes.wrap(evmAddress));
@@ -132,6 +140,7 @@ public class HederaStackedWorldStateUpdater extends AbstractStackedLedgerUpdater
     public byte[] permissivelyUnaliased(final byte[] evmAddress) {
         return aliases().resolveForEvm(Address.wrap(Bytes.wrap(evmAddress))).toArrayUnsafe();
     }
+
     /**
      * Returns the underlying entity id of the last allocated EVM address.
      *
@@ -209,7 +218,8 @@ public class HederaStackedWorldStateUpdater extends AbstractStackedLedgerUpdater
         final var address = aliases().resolveForEvm(addressOrAlias);
         if (isTokenRedirect(address)) {
             final var proxyAccount = new HederaEvmWorldStateTokenAccount(address);
-            final var newMutable = new UpdateTrackingLedgerAccount<>(proxyAccount, trackingAccounts());
+            final var newMutable =
+                    new UpdateTrackingAccount<>(proxyAccount, new UpdateAccountTrackerImpl(trackingAccounts()));
             return new WrappedEvmAccount(newMutable);
         }
         return super.getAccount(address);

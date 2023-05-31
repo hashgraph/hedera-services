@@ -33,6 +33,7 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Transaction;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.LongConsumer;
@@ -59,8 +60,16 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
     private boolean saveRunningHash = false;
     private Optional<LongConsumer> seqNoInfoObserver = Optional.empty();
 
+    @Nullable
+    private LongConsumer expiryObserver = null;
+
     public HapiGetTopicInfo(String topic) {
         this.topic = topic;
+    }
+
+    public HapiGetTopicInfo exposingExpiryTo(final LongConsumer observer) {
+        expiryObserver = observer;
+        return this;
     }
 
     public HapiGetTopicInfo hasMemo(String memo) {
@@ -140,7 +149,9 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
                 .getConsSvcStub(targetNodeFor(spec), useTls, spec.setup().workflowOperations())
                 .getTopicInfo(query);
         if (verboseLoggingOn) {
-            log.info("Info: " + response.getConsensusGetTopicInfo().getTopicInfo());
+            String message = String.format(
+                    "Info: %s", response.getConsensusGetTopicInfo().getTopicInfo());
+            log.info(message);
         }
         if (saveRunningHash) {
             spec.registry()
@@ -153,6 +164,9 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
     @Override
     protected void assertExpectationsGiven(HapiSpec spec) {
         ConsensusTopicInfo info = response.getConsensusGetTopicInfo().getTopicInfo();
+        if (expiryObserver != null) {
+            expiryObserver.accept(info.getExpirationTime().getSeconds());
+        }
         topicMemo.ifPresent(exp -> assertEquals(exp, info.getMemo(), "Bad memo!"));
         if (seqNoFn.isPresent()) {
             seqNo = OptionalLong.of(seqNoFn.get().getAsLong());

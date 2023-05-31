@@ -30,43 +30,31 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEvent;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.components.EventCreationRules;
-import com.swirlds.platform.components.TransThrottleSyncAndCreateRules;
-import com.swirlds.platform.components.TransactionTracker;
 import com.swirlds.platform.eventhandling.EventTransactionPool;
+import com.swirlds.platform.gossip.FallenBehindManagerImpl;
+import com.swirlds.platform.gossip.sync.SyncManagerImpl;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.network.RandomGraph;
-import com.swirlds.platform.reconnect.FallenBehindManagerImpl;
-import com.swirlds.platform.state.PlatformDualState;
-import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
-import com.swirlds.platform.state.SwirldStateManagerDouble;
-import com.swirlds.platform.state.SwirldStateManagerSingle;
-import java.time.Instant;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.List;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 
 // Tests utilize static Settings configuration and must not be run in parallel
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class SyncManagerTest {
     private static final long ID = 0L;
-    private static final NodeId OTHER_ID = new NodeId(false, 1L);
-
-    private static Stream<Arguments> swirldStateManagers() {
-        return Stream.of(
-                Arguments.of(spy(SwirldStateManagerSingle.class)), Arguments.of(spy(SwirldStateManagerDouble.class)));
-    }
+    private static final NodeId OTHER_ID = new NodeId(1L);
 
     /**
      * A helper class that contains dummy data to feed into SyncManager lambdas.
@@ -75,10 +63,7 @@ public class SyncManagerTest {
 
         FreezeManager freezeManager;
         StartUpEventFrozenManager startUpEventFrozenManager;
-        public Long lastRoundSavedToDisk;
-        public Long lastCompletedRound;
         public DummyHashgraph hashgraph;
-        public TransactionTracker transactionTracker;
         public EventTransactionPool eventTransactionPool;
         public SwirldStateManager swirldStateManager;
         public RandomGraph connectionGraph;
@@ -87,11 +72,11 @@ public class SyncManagerTest {
         public DummyEventQueue eventQueue;
 
         public SyncManagerTestData() {
-            this(new NodeId(false, ID), spy(SwirldStateManager.class));
+            this(new NodeId(ID), spy(SwirldStateManager.class));
         }
 
         public SyncManagerTestData(final SwirldStateManager swirldStateManager) {
-            this(new NodeId(false, ID), swirldStateManager);
+            this(new NodeId(ID), swirldStateManager);
         }
 
         public SyncManagerTestData(final NodeId nodeId) {
@@ -101,10 +86,8 @@ public class SyncManagerTest {
         public SyncManagerTestData(final NodeId nodeId, final SwirldStateManager swirldStateManager) {
             freezeManager = mock(FreezeManager.class);
             startUpEventFrozenManager = mock(StartUpEventFrozenManager.class);
-            lastRoundSavedToDisk = 0L;
-            lastCompletedRound = 0L;
             hashgraph = new DummyHashgraph();
-            eventTransactionPool = spy(EventTransactionPool.class);
+            eventTransactionPool = spy(new EventTransactionPool(new NoOpMetrics(), null, null));
 
             this.swirldStateManager = swirldStateManager;
 
@@ -112,17 +95,6 @@ public class SyncManagerTest {
             doReturn(false).when(swirldStateManager).isInFreezePeriod(any());
 
             connectionGraph = new RandomGraph(100, 40, 0);
-            transactionTracker = new TransactionTracker() {
-                @Override
-                public long getNumUserTransEvents() {
-                    return hashgraph.numUserTransEvents;
-                }
-
-                @Override
-                public long getLastRoundReceivedAllTransCons() {
-                    return hashgraph.lastRoundReceivedAllTransCons;
-                }
-            };
             criticalQuorum = new CriticalQuorum() {
                 @Override
                 public boolean isInCriticalQuorum(final long nodeId) {
@@ -141,35 +113,28 @@ public class SyncManagerTest {
                     return null;
                 }
             };
+            final ReconnectConfig config = new TestConfigBuilder()
+                    .withValue("reconnect.fallenBehindThreshold", "0.25")
+                    .getOrCreateConfig()
+                    .getConfigData(ReconnectConfig.class);
 
             eventQueue = new DummyEventQueue(hashgraph);
             syncManager = new SyncManagerImpl(
+                    new NoOpMetrics(),
                     eventQueue,
                     connectionGraph,
                     nodeId,
-                    new EventCreationRules(List.of(nodeId, startUpEventFrozenManager, freezeManager)),
-                    List.of(freezeManager, startUpEventFrozenManager),
-                    new TransThrottleSyncAndCreateRules(List.of(eventTransactionPool, swirldStateManager)),
-                    () -> lastRoundSavedToDisk,
-                    () -> lastCompletedRound,
-                    transactionTracker,
+                    new EventCreationRules(List.of(startUpEventFrozenManager, freezeManager)),
                     criticalQuorum,
                     hashgraph.getAddressBook(),
-                    new FallenBehindManagerImpl(
-                            nodeId,
-                            connectionGraph,
-                            () -> {},
-                            () -> {},
-                            Settings.getInstance().getReconnect()));
+                    new FallenBehindManagerImpl(nodeId, connectionGraph, () -> {}, () -> {}, config));
         }
     }
 
     protected void resetTestSettings() {
-        Settings.getInstance().getReconnect().fallenBehindThreshold = 0.25;
         Settings.getInstance().setEventIntakeQueueThrottleSize(100);
         Settings.getInstance().setMaxIncomingSyncsInc(10);
         Settings.getInstance().setMaxOutgoingSyncs(10);
-        Settings.getInstance().setTransThrottle(true);
         Settings.getInstance().getState().saveStatePeriod = 100;
         Settings.getInstance().setStaleEventPreventionThreshold(10);
     }
@@ -191,8 +156,8 @@ public class SyncManagerTest {
         assertNull(test.syncManager.getNeededForFallenBehind());
 
         // neighbors 0 and 1 report fallen behind
-        test.syncManager.reportFallenBehind(new NodeId(false, neighbors[0]));
-        test.syncManager.reportFallenBehind(new NodeId(false, neighbors[1]));
+        test.syncManager.reportFallenBehind(new NodeId(neighbors[0]));
+        test.syncManager.reportFallenBehind(new NodeId(neighbors[1]));
 
         // we still dont have enough reports that we have fallen behind, we need more than [fallenBehindThreshold] of
         // the neighbors
@@ -200,7 +165,7 @@ public class SyncManagerTest {
 
         // add more reports
         for (int i = 2; i < 10; i++) {
-            test.syncManager.reportFallenBehind(new NodeId(false, neighbors[i]));
+            test.syncManager.reportFallenBehind(new NodeId(neighbors[i]));
         }
 
         // we are still missing 1 report
@@ -216,7 +181,7 @@ public class SyncManagerTest {
         }
 
         // add the report that will go over the [fallenBehindThreshold]
-        test.syncManager.reportFallenBehind(new NodeId(false, neighbors[10]));
+        test.syncManager.reportFallenBehind(new NodeId(neighbors[10]));
 
         // we should now say we have fallen behind
         assertTrue(test.syncManager.hasFallenBehind());
@@ -287,84 +252,6 @@ public class SyncManagerTest {
     }
 
     /**
-     * Verify the behavior of SyncManager's transThrottleCallAndCreate function
-     */
-    @ParameterizedTest
-    @MethodSource("swirldStateManagers")
-    @Order(4)
-    void transThrottleCallAndCreate(final SwirldStateManager swirldStateManager) {
-        final State consState = mock(State.class);
-        final PlatformDualState dualState = mock(PlatformDualState.class);
-        doReturn(dualState).when(consState).getPlatformDualState();
-        doReturn(consState).when(swirldStateManager).getConsensusState();
-
-        final SyncManagerTestData test = new SyncManagerTestData(swirldStateManager);
-        resetTestSettings();
-
-        // syncManager.transThrottleCallAndCreate() == true --> we should initiate a sync
-        // syncManager.transThrottleCallAndCreate() == false --> we should NOT initiate a sync
-
-        assertTrue(test.syncManager.transThrottleCallAndCreate(), "By default we should be able to initiate a sync");
-
-        // With no events, we should be able to sync until after 10 successful syncs
-        for (int i = 0; i < 9; i++) {
-            test.syncManager.successfulSync();
-            assertTrue(
-                    test.syncManager.transThrottleCallAndCreate(),
-                    "With no events, we should be able to sync until after 10 successful syncs");
-        }
-
-        // Once we sync once more we are out of the start up period and will not be allowed to sync
-        test.syncManager.successfulSync();
-        assertFalse(
-                test.syncManager.transThrottleCallAndCreate(),
-                "Once we sync once more we are out of the start up period and will not be allowed to sync");
-
-        // Turning off transThrottle in the settings will cause all syncs to be allowed.
-        Settings.getInstance().setTransThrottle(false);
-        assertTrue(
-                test.syncManager.transThrottleCallAndCreate(),
-                "Turning off transThrottle in the settings will cause all syncs to be allowed");
-        Settings.getInstance().setTransThrottle(true);
-        assertFalse(test.syncManager.transThrottleCallAndCreate());
-
-        // If there are non-consensus user transactions then we want to initiate a sync
-        test.hashgraph.numUserTransEvents = 1;
-        assertTrue(
-                test.syncManager.transThrottleCallAndCreate(),
-                "If there are non-consensus user transactions then we want to initiate a sync");
-        test.hashgraph.numUserTransEvents = 0;
-        assertFalse(test.syncManager.transThrottleCallAndCreate());
-
-        // If there are transactions waiting to be put into an event then initiate a sync
-        doReturn(1).when(test.eventTransactionPool).numTransForEvent();
-        assertTrue(
-                test.syncManager.transThrottleCallAndCreate(),
-                "If there are transactions waiting to be put into an event then initiate a sync");
-        doReturn(0).when(test.eventTransactionPool).numTransForEvent();
-        assertFalse(test.syncManager.transThrottleCallAndCreate());
-
-        // if current time is 1 minute before or during the freeze period, initiate a sync
-        doReturn(true).when(dualState).isInFreezePeriod(any(Instant.class));
-        assertTrue(
-                test.syncManager.transThrottleCallAndCreate(),
-                "if current time is 1 minute before or during the freeze period, initiate a sync");
-        doReturn(false).when(dualState).isInFreezePeriod(any(Instant.class));
-        assertFalse(test.syncManager.transThrottleCallAndCreate());
-
-        // We need to sync until we have a saved state that has processed all transactions
-        test.hashgraph.lastRoundReceivedAllTransCons = 10;
-        test.lastRoundSavedToDisk = 9L;
-        assertTrue(
-                test.syncManager.transThrottleCallAndCreate(),
-                "We need to sync until we have a saved state that has processed all transactions");
-        test.lastRoundSavedToDisk = 10L;
-        assertFalse(test.syncManager.transThrottleCallAndCreate());
-        test.lastRoundSavedToDisk = 11L;
-        assertFalse(test.syncManager.transThrottleCallAndCreate());
-    }
-
-    /**
      * Verify basic behavior of shouldCreateEvent()
      */
     @Test
@@ -387,29 +274,17 @@ public class SyncManagerTest {
                 "if neither node is part of the superMinority in the latest round, don't create an event");
 
         // If the other node is in the critical quorum then an event should be created.
-        test.hashgraph.isInCriticalQuorum.put(OTHER_ID.getId(), true);
+        test.hashgraph.isInCriticalQuorum.put(OTHER_ID.id(), true);
         assertTrue(test.syncManager.shouldCreateEvent(OTHER_ID, false, 0, 0));
-        test.hashgraph.isInCriticalQuorum.put(OTHER_ID.getId(), false);
+        test.hashgraph.isInCriticalQuorum.put(OTHER_ID.id(), false);
         assertFalse(
                 test.syncManager.shouldCreateEvent(OTHER_ID, false, 0, 0),
                 "if neither node is part of the superMinority in the latest round, don't create an event");
 
         // If both are in the critical quorum then an event should be created.
         test.hashgraph.isInCriticalQuorum.put(ID, true);
-        test.hashgraph.isInCriticalQuorum.put(OTHER_ID.getId(), true);
+        test.hashgraph.isInCriticalQuorum.put(OTHER_ID.id(), true);
         assertTrue(test.syncManager.shouldCreateEvent(OTHER_ID, false, 0, 0));
-    }
-
-    /**
-     * A mirror node should not create events
-     */
-    @Test
-    @Order(6)
-    void shouldCreateEventTestMirrorNode() {
-        final SyncManagerTestData test = new SyncManagerTestData(new NodeId(true, ID));
-        resetTestSettings();
-        test.hashgraph.isInCriticalQuorum.put(ID, true);
-        assertFalse(test.syncManager.shouldCreateEvent(OTHER_ID, false, 0, 0), "mirror node cannot create events");
     }
 
     /**
@@ -465,7 +340,7 @@ public class SyncManagerTest {
         final int eventsRead = 0;
         final int eventsWritten = 0;
 
-        final NodeId mainNodeId = new NodeId(false, ID);
+        final NodeId mainNodeId = new NodeId(ID);
         final SyncManagerTestData test = new SyncManagerTestData(mainNodeId);
         test.hashgraph.isInCriticalQuorum.put(ID, true);
 
@@ -480,9 +355,6 @@ public class SyncManagerTest {
                 test.syncManager.shouldCreateEvent(OTHER_ID, false, eventsRead, eventsWritten),
                 "when freezeManager.shouldNotCreateEvent returns true , should not create events");
         when(test.freezeManager.shouldCreateEvent()).thenReturn(PASS);
-
-        // set transThrottle to be false, to make transThrottleCallAndCreate() return true
-        Settings.getInstance().setTransThrottle(false);
 
         assertTrue(
                 test.syncManager.shouldCreateEvent(OTHER_ID, false, eventsRead, eventsWritten),

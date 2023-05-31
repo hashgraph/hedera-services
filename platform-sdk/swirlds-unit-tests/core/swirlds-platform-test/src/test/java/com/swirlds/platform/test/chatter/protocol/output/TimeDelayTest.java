@@ -16,9 +16,6 @@
 
 package com.swirlds.platform.test.chatter.protocol.output;
 
-import com.swirlds.platform.chatter.protocol.output.SendAction;
-import com.swirlds.platform.chatter.protocol.output.TimeDelay;
-import com.swirlds.platform.chatter.protocol.peer.PeerGossipState;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.test.event.EventBuilder;
 import java.time.Duration;

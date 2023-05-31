@@ -38,7 +38,6 @@ module com.swirlds.common {
     exports com.swirlds.common.merkle.synchronization;
     exports com.swirlds.common.merkle.synchronization.config;
     exports com.swirlds.common.merkle.synchronization.internal;
-    exports com.swirlds.common.merkle.synchronization.settings;
     exports com.swirlds.common.merkle.synchronization.streams;
     exports com.swirlds.common.merkle.synchronization.utility;
     exports com.swirlds.common.merkle.synchronization.views;
@@ -46,6 +45,7 @@ module com.swirlds.common {
     exports com.swirlds.common.metrics;
     exports com.swirlds.common.metrics.atomic;
     exports com.swirlds.common.metrics.config;
+    exports com.swirlds.common.metrics.noop;
     exports com.swirlds.common.metrics.platform;
     exports com.swirlds.common.metrics.platform.prometheus;
     exports com.swirlds.common.notification;
@@ -84,16 +84,13 @@ module com.swirlds.common {
             com.swirlds.platform.test,
             com.swirlds.common.test,
             com.swirlds.jrs,
-            com.swirlds.demo.platform;
+            com.swirlds.demo.platform,
+            com.swirlds.signingtool;
     exports com.swirlds.common.crypto.internal to
             com.swirlds.platform,
             com.swirlds.common.test;
     exports com.swirlds.common.notification.internal to
             com.swirlds.common.test;
-    exports com.swirlds.common.signingtool to
-            com.swirlds.common.test,
-            com.swirlds.demo.platform,
-            com.swirlds.jrs;
     exports com.swirlds.common.crypto.engine to
             com.swirlds.common.test;
 
@@ -143,10 +140,6 @@ module com.swirlds.common {
 
     opens com.swirlds.common.merkle.crypto to
             com.fasterxml.jackson.databind;
-
-    exports com.swirlds.common.context.internal to
-            com.swirlds.platform;
-
     opens com.swirlds.common.formatting to
             com.fasterxml.jackson.databind;
     opens com.swirlds.common.units to
@@ -154,6 +147,7 @@ module com.swirlds.common {
 
     exports com.swirlds.common.metrics.extensions;
 
+    requires transitive com.swirlds.base;
     requires com.swirlds.config;
     requires com.swirlds.logging;
     requires java.desktop;
@@ -181,4 +175,5 @@ module com.swirlds.common {
     /* Prometheus Java client */
     requires io.prometheus.simpleclient;
     requires io.prometheus.simpleclient.httpserver;
+    requires static com.github.spotbugs.annotations;
 }

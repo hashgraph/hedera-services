@@ -17,18 +17,23 @@
 package com.hedera.node.app.service.mono.state.migration;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
-import com.hedera.node.app.service.mono.state.merkle.MerklePayerRecords;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
 import com.hedera.node.app.service.mono.utils.EntityNum;
@@ -40,24 +45,23 @@ import java.util.function.BiConsumer;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class AccountStorageAdapterTest {
     private static final EntityNum SOME_NUM = EntityNum.fromInt(1234);
+    private static final EntityNum SOME_OTHER_NUM = EntityNum.fromInt(2345);
+    private static final EntityNum YET_ANOTHER_NUM = EntityNum.fromInt(3456);
     private static final Hash SOME_HASH = new Hash();
     private static final Set<EntityNum> SOME_KEY_SET = Set.of(SOME_NUM);
+    private static final Set<EntityNum> SOME_ON_DISK_KEY_SET = Set.of(SOME_NUM, SOME_OTHER_NUM, YET_ANOTHER_NUM);
     private static final EntityNumVirtualKey SOME_KEY = EntityNumVirtualKey.from(SOME_NUM);
     private static final MerkleAccount IN_MEMORY_STAND_IN = new MerkleAccount();
     private final OnDiskAccount onDiskStandIn = new OnDiskAccount();
 
     @Mock
     private MerkleMap<EntityNum, MerkleAccount> inMemoryAccounts;
-
-    @Mock
-    private MerkleMap<EntityNum, MerklePayerRecords> payerRecords;
 
     @Mock
     private VirtualMapLike<EntityNumVirtualKey, OnDiskAccount> onDiskAccounts;
@@ -169,31 +173,10 @@ class AccountStorageAdapterTest {
     }
 
     @Test
-    void keySetIdentifiesOnDisk() {
-        withOnDiskSubject();
-        given(payerRecords.keySet()).willReturn(SOME_KEY_SET);
-        assertSame(SOME_KEY_SET, subject.keySet());
-    }
-
-    @Test
     void keySetIdentifiesInMemory() {
         withInMemorySubject();
         given(inMemoryAccounts.keySet()).willReturn(SOME_KEY_SET);
         assertSame(SOME_KEY_SET, subject.keySet());
-    }
-
-    @Test
-    void onDiskArchivalIsNoop() {
-        withOnDiskSubject();
-        subject.archive();
-        verifyNoInteractions(onDiskAccounts);
-    }
-
-    @Test
-    void inMemArchivalPropagates() {
-        withInMemorySubject();
-        subject.archive();
-        verify(inMemoryAccounts).archive();
     }
 
     @Test
@@ -206,13 +189,20 @@ class AccountStorageAdapterTest {
     @Test
     @SuppressWarnings("unchecked")
     void onDiskForEachDelegates() throws InterruptedException {
-        final ArgumentCaptor<InterruptableConsumer<Pair<EntityNumVirtualKey, OnDiskAccount>>> captor =
-                ArgumentCaptor.forClass(InterruptableConsumer.class);
         withOnDiskSubject();
-        subject.forEach(visitor);
-        verify(onDiskAccounts).extractVirtualMapData(eq(getStaticThreadManager()), captor.capture(), eq(32));
-        captor.getValue().accept(Pair.of(SOME_KEY, onDiskStandIn));
-        verify(visitor).accept(SOME_NUM, onDiskStandIn);
+        willAnswer(invocation -> {
+                    final var observer = invocation.getArgument(1, InterruptableConsumer.class);
+                    observer.accept(Pair.of(SOME_KEY, onDiskStandIn));
+                    observer.accept(Pair.of(EntityNumVirtualKey.from(SOME_OTHER_NUM), onDiskStandIn));
+                    observer.accept(Pair.of(EntityNumVirtualKey.from(YET_ANOTHER_NUM), onDiskStandIn));
+                    return null;
+                })
+                .given(onDiskAccounts)
+                .extractVirtualMapData(eq(getStaticThreadManager()), any(InterruptableConsumer.class), eq(32));
+
+        final var actual = subject.keySet();
+
+        assertEquals(SOME_ON_DISK_KEY_SET, actual);
     }
 
     @Test
@@ -230,6 +220,6 @@ class AccountStorageAdapterTest {
     }
 
     private void withOnDiskSubject() {
-        subject = AccountStorageAdapter.fromOnDisk(MerkleMapLike.from(payerRecords), onDiskAccounts);
+        subject = AccountStorageAdapter.fromOnDisk(onDiskAccounts);
     }
 }

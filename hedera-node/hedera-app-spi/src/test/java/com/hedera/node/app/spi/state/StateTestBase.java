@@ -16,11 +16,16 @@
 
 package com.hedera.node.app.spi.state;
 
-import com.hedera.node.app.spi.fixtures.state.*;
+import com.hedera.node.app.spi.fixtures.state.ListReadableQueueState;
+import com.hedera.node.app.spi.fixtures.state.ListWritableQueueState;
+import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
+import com.hedera.node.app.spi.fixtures.state.MapReadableStates;
+import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
+import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class StateTestBase extends TestBase {
+public class StateTestBase extends com.hedera.node.app.spi.fixtures.state.StateTestBase {
     @NonNull
     protected MapReadableKVState<String, String> readableFruitState() {
         return MapReadableKVState.<String, String>builder(FRUIT_STATE_KEY)
@@ -85,28 +90,28 @@ public class StateTestBase extends TestBase {
     }
 
     @NonNull
-    protected MapReadableKVState<String, String> readableSTEAMState() {
-        return MapReadableKVState.<String, String>builder(STEAM_STATE_KEY)
-                .value(A_KEY, ART)
-                .value(B_KEY, BIOLOGY)
-                .value(C_KEY, CHEMISTRY)
-                .value(D_KEY, DISCIPLINE)
-                .value(E_KEY, ECOLOGY)
-                .value(F_KEY, FIELDS)
-                .value(G_KEY, GEOMETRY)
+    protected ListReadableQueueState<String> readableSTEAMState() {
+        return ListReadableQueueState.<String>builder(STEAM_STATE_KEY)
+                .value(ART)
+                .value(BIOLOGY)
+                .value(CHEMISTRY)
+                .value(DISCIPLINE)
+                .value(ECOLOGY)
+                .value(FIELDS)
+                .value(GEOMETRY)
                 .build();
     }
 
     @NonNull
-    protected MapWritableKVState<String, String> writableSTEAMState() {
-        return MapWritableKVState.<String, String>builder(STEAM_STATE_KEY)
-                .value(A_KEY, ART)
-                .value(B_KEY, BIOLOGY)
-                .value(C_KEY, CHEMISTRY)
-                .value(D_KEY, DISCIPLINE)
-                .value(E_KEY, ECOLOGY)
-                .value(F_KEY, FIELDS)
-                .value(G_KEY, GEOMETRY)
+    protected ListWritableQueueState<String> writableSTEAMState() {
+        return ListWritableQueueState.<String>builder(STEAM_STATE_KEY)
+                .value(ART)
+                .value(BIOLOGY)
+                .value(CHEMISTRY)
+                .value(DISCIPLINE)
+                .value(ECOLOGY)
+                .value(FIELDS)
+                .value(GEOMETRY)
                 .build();
     }
 

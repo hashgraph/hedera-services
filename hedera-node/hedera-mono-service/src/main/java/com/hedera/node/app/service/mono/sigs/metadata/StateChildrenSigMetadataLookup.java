@@ -30,8 +30,8 @@ import com.hedera.node.app.service.mono.files.MetadataMapFactory;
 import com.hedera.node.app.service.mono.files.store.FcBlobsBytesStore;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JHollowKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JWildcardECDSAKey;
 import com.hedera.node.app.service.mono.sigs.order.LinkedRefs;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
@@ -126,7 +126,7 @@ public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
             final AccountID idOrAlias, final @Nullable LinkedRefs linkedRefs) {
         if (isAlias(idOrAlias)) {
             final var alias = idOrAlias.getAlias();
-            if (alias.size() == EVM_ADDRESS_SIZE) {
+            if (isOfEvmAddressSize(alias)) {
                 final var evmAddress = alias.toByteArray();
                 if (aliasManager.isMirror(evmAddress)) {
                     return lookupAccountByNumber(EntityNum.fromMirror(evmAddress), linkedRefs);
@@ -226,7 +226,7 @@ public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
                     return SafeLookupResult.failure(IMMUTABLE_ACCOUNT);
                 } else {
                     return new SafeLookupResult<>(new AccountSigningMetadata(
-                            new JHollowKey(ByteStringUtils.unwrapUnsafelyIfPossible(accountAlias)),
+                            new JWildcardECDSAKey(ByteStringUtils.unwrapUnsafelyIfPossible(accountAlias), true),
                             account.isReceiverSigRequired()));
                 }
             }

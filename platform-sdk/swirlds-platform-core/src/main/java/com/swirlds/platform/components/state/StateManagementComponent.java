@@ -16,16 +16,17 @@
 
 package com.swirlds.platform.components.state;
 
-import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.platform.components.PlatformComponent;
 import com.swirlds.platform.components.common.output.NewSignedStateFromTransactionsConsumer;
 import com.swirlds.platform.components.common.output.RoundAppliedToStateConsumer;
 import com.swirlds.platform.components.common.output.SignedStateToLoadConsumer;
-import com.swirlds.platform.components.common.output.StateSignatureConsumer;
 import com.swirlds.platform.components.state.query.LatestSignedStateProvider;
-import com.swirlds.platform.reconnect.emergency.EmergencyStateFinder;
-import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionConsumer;
+import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionConsumer;
+import com.swirlds.platform.state.signed.ReservedSignedState;
+import com.swirlds.platform.state.signed.SignedStateFinder;
 import com.swirlds.platform.state.signed.SignedStateInfo;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
 /**
@@ -41,20 +42,23 @@ import java.util.List;
  */
 public interface StateManagementComponent
         extends PlatformComponent,
-                EmergencyStateFinder,
-                StateSignatureConsumer,
+                SignedStateFinder,
                 RoundAppliedToStateConsumer,
                 SignedStateToLoadConsumer,
                 NewSignedStateFromTransactionsConsumer,
-                LatestSignedStateProvider {
+                LatestSignedStateProvider,
+                PreConsensusSystemTransactionConsumer,
+                PostConsensusSystemTransactionConsumer {
 
     /**
-     * Get a wrapper containing the latest immutable signed state. May be unhashed, may or may not have all required
+     * Get a reserved instance of the latest immutable signed state. May be unhashed, may or may not have all required
      * signatures. State is returned with a reservation.
      *
-     * @return a wrapper with the latest signed state, or null if none are complete
+     * @param reason a short description of why this SignedState is being reserved. Each location where a SignedState is
+     *               reserved should attempt to use a unique reason, as this makes debugging reservation bugs easier.
+     * @return a reserved signed state, may contain null if none currently in memory are complete
      */
-    AutoCloseableWrapper<SignedState> getLatestImmutableState();
+    ReservedSignedState getLatestImmutableState(@NonNull final String reason);
 
     /**
      * Returns the latest round for which there is a complete signed state.
@@ -62,13 +66,6 @@ public interface StateManagementComponent
      * @return the latest round number
      */
     long getLastCompleteRound();
-
-    /**
-     * Get the last round for which a signed state was saved to disk.
-     *
-     * @return the last round that was saved to disk, or -1 if no round was recently saved to disk
-     */
-    long getLastRoundSavedToDisk();
 
     /**
      * Get the latest signed states stored by this component. This method creates a copy, so no changes to the array

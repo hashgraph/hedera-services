@@ -17,6 +17,7 @@
 package com.swirlds.platform;
 
 import com.swirlds.common.crypto.CryptographyHolder;
+import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
@@ -50,13 +51,20 @@ public class TestUtils {
         final Instant startTime = Instant.ofEpochSecond(1554466913);
         final EventImpl e = new EventImpl(
                 new BaseEventHashedData(
-                        creatorId, -1, -1, (byte[]) null, (byte[]) null, startTime, new SwirldTransaction[0]),
+                        new BasicSoftwareVersion(1),
+                        creatorId,
+                        -1,
+                        -1,
+                        (byte[]) null,
+                        (byte[]) null,
+                        startTime,
+                        new SwirldTransaction[0]),
                 new BaseEventUnhashedData(otherId, new byte[] {0, 0, 0, 0}),
                 null,
                 null);
         CryptographyHolder.get().digestSync(e.getBaseEventHashedData());
 
-        e.estimateTime(NodeId.createMain(creatorId), startTime.getEpochSecond(), 0);
+        e.estimateTime(new NodeId(creatorId), startTime.getEpochSecond(), 0);
         return e;
     }
 }

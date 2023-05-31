@@ -28,7 +28,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.test.metrics.NoOpMetrics;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 
@@ -85,21 +85,6 @@ class StartUpEventFrozenManagerTest {
                 PASS,
                 startUpEventFrozenManager.shouldCreateEvent(),
                 "shouldCreateEvent() should return PASS when it is not in startUp freeze");
-    }
-
-    @Test
-    void shouldSyncTest() {
-        final Metrics metrics = new NoOpMetrics();
-        StartUpEventFrozenManager startUpEventFrozenManager =
-                spy(new StartUpEventFrozenManager(metrics, InstantProvider::get));
-
-        doReturn(true).when(startUpEventFrozenManager).isEventCreationPausedAfterStartUp();
-        assertTrue(startUpEventFrozenManager.shouldSync(), "should sync during startUp freeze");
-
-        doReturn(false).when(startUpEventFrozenManager).isEventCreationPausedAfterStartUp();
-        assertFalse(
-                startUpEventFrozenManager.shouldSync(),
-                "shouldSync() should return false when it is not in startUp freeze");
     }
 
     private static class InstantProvider {

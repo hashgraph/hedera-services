@@ -42,9 +42,7 @@ public class Contract {
         if (adminKey != UNUSED_KEY) {
             adminKey.registerWith(spec, asAdminKeyFor(name));
         }
-        entityId.ifPresent(id -> {
-            spec.registry().saveContractId(name, id.asContract());
-        });
+        entityId.ifPresent(id -> spec.registry().saveContractId(name, id.asContract()));
     }
 
     public HapiQueryOp<?> existenceCheck(String name) {

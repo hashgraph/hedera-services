@@ -16,9 +16,12 @@
 
 package com.swirlds.common.merkle.copy;
 
+import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
+
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.route.MerkleRoute;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * A utility class used by copy methods. Keeps track of a node that needs to be copied.
@@ -101,6 +104,10 @@ class NodeToCopy {
 
     @Override
     public String toString() {
-        return "{parent: " + newParent + ", index: " + indexInParent + ", node to copy: " + nodeToCopy + "}";
+        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+                .append("parent", newParent)
+                .append("index", indexInParent)
+                .append("node to copy", nodeToCopy)
+                .toString();
     }
 }

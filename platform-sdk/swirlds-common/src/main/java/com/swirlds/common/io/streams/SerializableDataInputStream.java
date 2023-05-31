@@ -21,6 +21,7 @@ import static com.swirlds.common.io.streams.SerializableStreamConstants.NULL_LIS
 import static com.swirlds.common.io.streams.SerializableStreamConstants.NULL_VERSION;
 import static com.swirlds.common.io.streams.SerializableStreamConstants.SERIALIZATION_PROTOCOL_VERSION;
 
+import com.swirlds.base.function.CheckedFunction;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDet;
@@ -34,7 +35,6 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.function.Supplier;
 
@@ -110,7 +110,7 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
     /**
      * Throws an exception if the version is not supported.
      */
-    protected void validateVersion(final SerializableDet object, final int version) {
+    protected void validateVersion(final SerializableDet object, final int version) throws InvalidVersionException {
         if (version < object.getMinimumSupportedVersion() || version > object.getVersion()) {
             throw new InvalidVersionException(version, object);
         }
@@ -140,7 +140,8 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
      * Same as {@link #readSerializable(boolean, Supplier)} except that the constructor takes a class ID
      */
     private <T extends SelfSerializable> T readSerializable(
-            final boolean readClassId, final Function<Long, T> serializableConstructor) throws IOException {
+            final boolean readClassId, final CheckedFunction<Long, T, IOException> serializableConstructor)
+            throws IOException {
 
         final Long classId;
         if (readClassId) {
@@ -179,7 +180,7 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
     public <T extends SelfSerializable> void readSerializableIterableWithSize(
             final int maxSize, final Consumer<T> callback) throws IOException {
 
-        int size = readInt();
+        final int size = readInt();
         checkLengthLimit(size, maxSize);
         readSerializableIterableWithSizeInternal(
                 size, true, SerializableDataInputStream::registryConstructor, callback);
@@ -227,7 +228,7 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
     private <T extends SelfSerializable> void readSerializableIterableWithSizeInternal(
             final int size,
             final boolean readClassId,
-            final Function<Long, T> serializableConstructor,
+            final CheckedFunction<Long, T, IOException> serializableConstructor,
             final Consumer<T> callback)
             throws IOException {
 
@@ -275,7 +276,7 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
             final boolean readClassId,
             final ValueReference<Long> classId,
             final ValueReference<Integer> version,
-            final Function<Long, T> serializableConstructor)
+            final CheckedFunction<Long, T, IOException> serializableConstructor)
             throws IOException {
 
         if (!allSameClass) {
@@ -314,7 +315,7 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
      * @throws IOException
      * 		thrown if any IO problems occur
      */
-    public <T extends SelfSerializable> List<T> readSerializableList(int maxListSize) throws IOException {
+    public <T extends SelfSerializable> List<T> readSerializableList(final int maxListSize) throws IOException {
         return readSerializableList(maxListSize, true, SerializableDataInputStream::registryConstructor);
     }
 
@@ -356,17 +357,19 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
      * 		thrown if any IO problems occur
      */
     private <T extends SelfSerializable> List<T> readSerializableList(
-            final int maxListSize, final boolean readClassId, final Function<Long, T> serializableConstructor)
+            final int maxListSize,
+            final boolean readClassId,
+            final CheckedFunction<Long, T, IOException> serializableConstructor)
             throws IOException {
 
-        int length = readInt();
+        final int length = readInt();
         if (length == NULL_LIST_ARRAY_LENGTH) {
             return null;
         }
         checkLengthLimit(length, maxListSize);
 
         // ArrayList is used by default, we can add support for different list types in the future
-        List<T> list = new ArrayList<>(length);
+        final List<T> list = new ArrayList<>(length);
         if (length == 0) {
             return list;
         }
@@ -441,8 +444,9 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
      * @param <T>
      * 		the type of the class
      * @return a constructor for the class
+     * @throws ClassNotFoundException if the class ID is not registered
      */
-    private static <T extends SelfSerializable> T registryConstructor(final long classId) {
+    private static <T extends SelfSerializable> T registryConstructor(final long classId) throws IOException {
         final T rc = ConstructableRegistry.getInstance().createObject(classId);
         if (rc == null) {
             throw new ClassNotFoundException(classId);

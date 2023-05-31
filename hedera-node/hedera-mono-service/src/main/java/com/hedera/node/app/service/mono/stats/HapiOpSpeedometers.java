@@ -142,7 +142,7 @@ public class HapiOpSpeedometers {
         registerSpeedometers(platform, submittedTxns, submittedTxnsConfig);
         registerSpeedometers(platform, handledTxns, handledTxnsConfig);
         registerSpeedometers(platform, answeredQueries, answeredQueriesConfig);
-        receivedDeprecatedTxns = platform.getMetrics().getOrCreate(receivedDeprecatedTxnsConfig);
+        receivedDeprecatedTxns = platform.getContext().getMetrics().getOrCreate(receivedDeprecatedTxnsConfig);
 
         receivedOpsConfig = null;
         submittedTxnsConfig = null;
@@ -157,7 +157,7 @@ public class HapiOpSpeedometers {
             final Map<HederaFunctionality, SpeedometerMetric.Config> configs) {
 
         configs.forEach((function, config) ->
-                speedometers.put(function, platform.getMetrics().getOrCreate(config)));
+                speedometers.put(function, platform.getContext().getMetrics().getOrCreate(config)));
     }
 
     public void updateAll() {

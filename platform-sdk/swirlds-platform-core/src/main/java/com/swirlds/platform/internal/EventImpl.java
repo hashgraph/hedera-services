@@ -29,6 +29,7 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.stream.StreamAligned;
 import com.swirlds.common.stream.Timestamped;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.events.BaseEvent;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
@@ -42,12 +43,12 @@ import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.system.transaction.internal.SystemTransaction;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.EventStrings;
-import com.swirlds.platform.StreamEventParser;
 import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.EventMetadata;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.util.iterator.SkippingIterator;
 import com.swirlds.platform.util.iterator.TypedIterator;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -73,6 +74,12 @@ public class EventImpl extends EventMetadata
                 RunningHashable,
                 StreamAligned,
                 Timestamped {
+    /**
+     * the consensus timestamp of a transaction is guaranteed to be at least this many nanoseconds later than that of
+     * the transaction immediately before it in consensus order, and to be a multiple of this (must be positive and a
+     * multiple of 10)
+     */
+    public static final long MIN_TRANS_TIMESTAMP_INCR_NANOS = 1_000;
 
     /** The base event information, including some gossip specific information */
     private GossipEvent baseEvent;
@@ -99,6 +106,22 @@ public class EventImpl extends EventMetadata
 
     /** The number of application transactions in this round */
     private int numAppTransactions = 0;
+
+    /**
+     * The sequence number of an event before it is added to the write queue.
+     */
+    public static final long NO_STREAM_SEQUENCE_NUMBER = -1;
+
+    /**
+     * The sequence number of an event that will never be written to disk because it is stale.
+     */
+    public static final long STALE_EVENT_STREAM_SEQUENCE_NUMBER = -2;
+
+    /**
+     * Each event is assigned a sequence number as it is written to the preconsensus event stream. This is used to
+     * signal when events have been made durable.
+     */
+    private long streamSequenceNumber = NO_STREAM_SEQUENCE_NUMBER; // needs to be atomic, thread will mark as stale
 
     public EventImpl() {}
 
@@ -165,6 +188,31 @@ public class EventImpl extends EventMetadata
     }
 
     /**
+     * Set the sequence number in the preconsenus event stream for this event.
+     *
+     * @param streamSequenceNumber the sequence number
+     */
+    public void setStreamSequenceNumber(final long streamSequenceNumber) {
+        if (this.streamSequenceNumber != NO_STREAM_SEQUENCE_NUMBER
+                && streamSequenceNumber != STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
+            throw new IllegalStateException("sequence number already set");
+        }
+        this.streamSequenceNumber = streamSequenceNumber;
+    }
+
+    /**
+     * Get the sequence number in the preconsensus event stream for this event.
+     *
+     * @return the sequence number
+     */
+    public long getStreamSequenceNumber() {
+        if (streamSequenceNumber == NO_STREAM_SEQUENCE_NUMBER) {
+            throw new IllegalStateException("sequence number not set");
+        }
+        return streamSequenceNumber;
+    }
+
+    /**
      * initialize RunningHash instance
      */
     private void setDefaultValues() {
@@ -216,8 +264,7 @@ public class EventImpl extends EventMetadata
     /**
      * Returns the timestamp of the transaction with given index in this event
      *
-     * @param transactionIndex
-     * 		index of the transaction in this event
+     * @param transactionIndex index of the transaction in this event
      * @return timestamp of the given index transaction
      */
     public Instant getTransactionTime(final int transactionIndex) {
@@ -256,11 +303,10 @@ public class EventImpl extends EventMetadata
     }
 
     /**
-     * Events compare by generation. So sorting is always a topological sort. Returns -1 if this.generation
-     * is less than other.generation, 1 if greater, 0 if equal.
+     * Events compare by generation. So sorting is always a topological sort. Returns -1 if this.generation is less than
+     * other.generation, 1 if greater, 0 if equal.
      *
-     * @param other
-     *        {@inheritDoc}
+     * @param other {@inheritDoc}
      * @return {@inheritDoc}
      */
     @Override
@@ -376,8 +422,8 @@ public class EventImpl extends EventMetadata
     }
 
     /**
-     * Propagates consensus data to all transactions. Invoked when this event has reached consensus and all
-     * consensus data is set.
+     * Propagates consensus data to all transactions. Invoked when this event has reached consensus and all consensus
+     * data is set.
      */
     public void consensusReached() {
         final ConsensusTransactionImpl[] transactions = getTransactions();
@@ -492,7 +538,7 @@ public class EventImpl extends EventMetadata
     }
 
     public boolean isCreatedBy(final NodeId id) {
-        return getCreatorId() == id.getId();
+        return getCreatorId() == id.id();
     }
 
     public boolean hasUserTransactions() {
@@ -571,6 +617,15 @@ public class EventImpl extends EventMetadata
     @Override
     public long getGeneration() {
         return baseEvent.getHashedData().getGeneration();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Nullable
+    public SoftwareVersion getSoftwareVersion() {
+        return baseEvent.getHashedData().getSoftwareVersion();
     }
 
     /**
@@ -675,5 +730,16 @@ public class EventImpl extends EventMetadata
     @Override
     public void setHash(final Hash hash) {
         this.hash = hash;
+    }
+
+    /**
+     * Get a mnemonic string representing this event. Event should be hashed prior to this being called. Useful for
+     * debugging.
+     */
+    public String toMnemonic() {
+        if (getHash() == null) {
+            return "unhashed-event";
+        }
+        return getHash().toMnemonic();
     }
 }

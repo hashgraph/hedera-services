@@ -125,10 +125,8 @@ public class PermissionSemanticsSpec extends HapiSuite {
                                 .wacl(NEVER_TO_BE_USED)
                                 .hasKnownStatus(UNAUTHORIZED))
                 .then(
-                        withOpContext((spec, opLog) -> {
-                            approxExpiry.set(
-                                    spec.registry().getTimestamp(ETERNAL).getSeconds());
-                        }),
+                        withOpContext((spec, opLog) -> approxExpiry.set(
+                                spec.registry().getTimestamp(ETERNAL).getSeconds())),
                         fileUpdate(ETERNAL)
                                 .payingWith(CIVILIAN)
                                 .signedBy(CIVILIAN)

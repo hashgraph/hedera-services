@@ -17,14 +17,14 @@
 package com.swirlds.platform.test.components;
 
 import com.swirlds.common.stream.Signer;
+import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.components.EventCreationRules;
 import com.swirlds.platform.components.EventCreator;
 import com.swirlds.platform.components.EventHandler;
 import com.swirlds.platform.components.EventMapper;
-import com.swirlds.platform.components.TransactionPool;
-import com.swirlds.platform.components.TransactionSupplier;
-import com.swirlds.platform.components.TransactionTracker;
+import com.swirlds.platform.components.transaction.TransactionPool;
+import com.swirlds.platform.components.transaction.TransactionSupplier;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.internal.EventImpl;
 import java.util.function.BooleanSupplier;
@@ -42,12 +42,12 @@ public class AccessibleEventCreator extends EventCreator {
             final Supplier<GraphGenerations> graphGenerationsSupplier,
             final TransactionSupplier transactionSupplier,
             final EventHandler newEventHandler,
-            final TransactionTracker transactionTracker,
             final TransactionPool transactionPool,
             final BooleanSupplier isInFreeze,
             final EventCreationRules eventCreationRules) {
 
         super(
+                new BasicSoftwareVersion(1),
                 selfId,
                 signer,
                 graphGenerationsSupplier,
@@ -55,7 +55,6 @@ public class AccessibleEventCreator extends EventCreator {
                 newEventHandler,
                 eventMapper,
                 eventMapper,
-                transactionTracker,
                 transactionPool,
                 isInFreeze,
                 eventCreationRules);

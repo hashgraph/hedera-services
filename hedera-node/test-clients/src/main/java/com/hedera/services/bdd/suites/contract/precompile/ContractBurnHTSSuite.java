@@ -45,6 +45,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asHexedAddress;
@@ -55,6 +56,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_S
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -65,6 +67,7 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.math.BigInteger;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -73,16 +76,22 @@ public class ContractBurnHTSSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ContractBurnHTSSuite.class);
 
     private static final long GAS_TO_OFFER = 4_000_000L;
-    private static final String THE_CONTRACT = "BurnToken";
+    public static final String THE_BURN_CONTRACT = "BurnToken";
+    public static final String MULTIVERSION_BURN_CONTRACT = "MultiversionBurn";
 
-    private static final String ALICE = "Alice";
+    public static final String ALICE = "Alice";
     private static final String TOKEN = "Token";
     private static final String TOKEN_TREASURY = "TokenTreasury";
     private static final String MULTI_KEY = "purpose";
     private static final String CONTRACT_KEY = "Contract key";
     private static final String SUPPLY_KEY = "Supply key";
-    private static final String CREATION_TX = "creationTx";
+    public static final String CREATION_TX = "creationTx";
     private static final String BURN_AFTER_NESTED_MINT_TX = "burnAfterNestedMint";
+    public static final String BURN_TOKEN_WITH_EVENT = "burnTokenWithEvent";
+    private static final String FIRST = "First!";
+    private static final String SECOND = "Second!";
+    private static final String BURN_TOKEN_V_1 = "burnTokenV1";
+    private static final String BURN_TOKEN_V_2 = "burnTokenV2";
 
     public static void main(String... args) {
         new ContractBurnHTSSuite().runSuiteAsync();
@@ -99,7 +108,10 @@ public class ContractBurnHTSSuite extends HapiSuite {
     }
 
     List<HapiSpec> negativeSpecs() {
-        return List.of(hscsPreC020RollbackBurnThatFailsAfterAPrecompileTransfer());
+        return List.of(
+                hscsPreC020RollbackBurnThatFailsAfterAPrecompileTransfer(),
+                burnFungibleV1andV2WithZeroAndNegativeValues(),
+                burnNonFungibleV1andV2WithNegativeValues());
     }
 
     List<HapiSpec> positiveSpecs() {
@@ -122,11 +134,11 @@ public class ContractBurnHTSSuite extends HapiSuite {
                                 .supplyKey(MULTI_KEY)
                                 .adminKey(MULTI_KEY)
                                 .treasury(TOKEN_TREASURY),
-                        uploadInitCode(THE_CONTRACT),
+                        uploadInitCode(THE_BURN_CONTRACT),
                         withOpContext((spec, opLog) -> allRunFor(
                                 spec,
                                 contractCreate(
-                                                THE_CONTRACT,
+                                                THE_BURN_CONTRACT,
                                                 asHeadlongAddress(asHexedAddress(
                                                         spec.registry().getTokenID(TOKEN))))
                                         .payingWith(ALICE)
@@ -134,31 +146,15 @@ public class ContractBurnHTSSuite extends HapiSuite {
                                         .gas(GAS_TO_OFFER))),
                         getTxnRecord(CREATION_TX).logged())
                 .when(
-                        contractCall(THE_CONTRACT, "burnTokenWithEvent", BigInteger.ZERO, new long[0])
+                        // Burning 0 amount for Fungible tokens should fail
+                        contractCall(THE_BURN_CONTRACT, BURN_TOKEN_WITH_EVENT, BigInteger.ZERO, new long[0])
                                 .payingWith(ALICE)
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
                                 .gas(GAS_TO_OFFER)
-                                .via("burnZero"),
-                        getTxnRecord("burnZero")
-                                .hasPriority(recordWith()
-                                        .contractCallResult(resultWith()
-                                                .logs(inOrder(logWith()
-                                                        .noData()
-                                                        .withTopicsInOrder(List.of(parsedToByteString(50))))))),
+                                .via("burnZero")
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 50),
-                        childRecordsCheck(
-                                "burnZero",
-                                SUCCESS,
-                                recordWith()
-                                        .status(SUCCESS)
-                                        .contractCallResult(resultWith()
-                                                .contractCallResult(htsPrecompileResult()
-                                                        .forFunction(FunctionType.HAPI_BURN)
-                                                        .withStatus(SUCCESS)
-                                                        .withTotalSupply(50))
-                                                .gasUsed(gasUsed))
-                                        .newTotalSupply(50)),
-                        contractCall(THE_CONTRACT, "burnTokenWithEvent", BigInteger.ONE, new long[0])
+                        contractCall(THE_BURN_CONTRACT, BURN_TOKEN_WITH_EVENT, BigInteger.ONE, new long[0])
                                 .payingWith(ALICE)
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
                                 .gas(GAS_TO_OFFER)
@@ -185,9 +181,9 @@ public class ContractBurnHTSSuite extends HapiSuite {
                                         .tokenTransfers(
                                                 changingFungibleBalances().including(TOKEN, TOKEN_TREASURY, -1))
                                         .newTotalSupply(49)),
-                        newKeyNamed(CONTRACT_KEY).shape(DELEGATE_CONTRACT.signedWith(THE_CONTRACT)),
+                        newKeyNamed(CONTRACT_KEY).shape(DELEGATE_CONTRACT.signedWith(THE_BURN_CONTRACT)),
                         tokenUpdate(TOKEN).supplyKey(CONTRACT_KEY),
-                        contractCall(THE_CONTRACT, "burnToken", BigInteger.ONE, new long[0])
+                        contractCall(THE_BURN_CONTRACT, "burnToken", BigInteger.ONE, new long[0])
                                 .via("burn with contract key")
                                 .gas(GAS_TO_OFFER),
                         childRecordsCheck(
@@ -218,13 +214,13 @@ public class ContractBurnHTSSuite extends HapiSuite {
                                 .initialSupply(0L)
                                 .supplyKey(MULTI_KEY)
                                 .treasury(TOKEN_TREASURY),
-                        mintToken(TOKEN, List.of(copyFromUtf8("First!"))),
-                        mintToken(TOKEN, List.of(copyFromUtf8("Second!"))),
-                        uploadInitCode(THE_CONTRACT),
+                        mintToken(TOKEN, List.of(copyFromUtf8(FIRST))),
+                        mintToken(TOKEN, List.of(copyFromUtf8(SECOND))),
+                        uploadInitCode(THE_BURN_CONTRACT),
                         withOpContext((spec, opLog) -> allRunFor(
                                 spec,
                                 contractCreate(
-                                                THE_CONTRACT,
+                                                THE_BURN_CONTRACT,
                                                 asHeadlongAddress(asHexedAddress(
                                                         spec.registry().getTokenID(TOKEN))))
                                         .payingWith(ALICE)
@@ -236,7 +232,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
                             final var serialNumbers = new long[] {1L};
                             allRunFor(
                                     spec,
-                                    contractCall(THE_CONTRACT, "burnToken", BigInteger.ZERO, serialNumbers)
+                                    contractCall(THE_BURN_CONTRACT, "burnToken", BigInteger.ZERO, serialNumbers)
                                             .payingWith(ALICE)
                                             .alsoSigningWithFullPrefix(MULTI_KEY)
                                             .gas(GAS_TO_OFFER)
@@ -345,8 +341,8 @@ public class ContractBurnHTSSuite extends HapiSuite {
                                 .initialSupply(0L)
                                 .treasury(TOKEN_TREASURY)
                                 .withCustom(fixedHbarFee(300 * ONE_HBAR, feeCollector)),
-                        mintToken(tokenWithHbarFee, List.of(copyFromUtf8("First!"))),
-                        mintToken(tokenWithHbarFee, List.of(copyFromUtf8("Second!"))),
+                        mintToken(tokenWithHbarFee, List.of(copyFromUtf8(FIRST))),
+                        mintToken(tokenWithHbarFee, List.of(copyFromUtf8(SECOND))),
                         uploadInitCode(theContract),
                         withOpContext((spec, opLog) -> allRunFor(
                                 spec,
@@ -403,6 +399,116 @@ public class ContractBurnHTSSuite extends HapiSuite {
                         getAccountBalance(bob).hasTokenBalance(tokenWithHbarFee, 0),
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(tokenWithHbarFee, 1),
                         getAccountBalance(ALICE).hasTokenBalance(tokenWithHbarFee, 1));
+    }
+
+    private HapiSpec burnFungibleV1andV2WithZeroAndNegativeValues() {
+        final AtomicReference<Address> tokenAddress = new AtomicReference<>();
+        return defaultHapiSpec("burnFungibleV1andV2WithZeroAndNegativeValues")
+                .given(
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(ALICE).balance(10 * ONE_HUNDRED_HBARS),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(TOKEN)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .initialSupply(50L)
+                                .supplyKey(MULTI_KEY)
+                                .adminKey(MULTI_KEY)
+                                .treasury(TOKEN_TREASURY)
+                                .exposingAddressTo(tokenAddress::set),
+                        uploadInitCode(MULTIVERSION_BURN_CONTRACT),
+                        contractCreate(MULTIVERSION_BURN_CONTRACT)
+                                .payingWith(ALICE)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(SUCCESS))
+                .when(
+                        // Burning 0 amount for Fungible tokens should fail
+                        sourcing(() -> contractCall(
+                                        MULTIVERSION_BURN_CONTRACT,
+                                        BURN_TOKEN_V_1,
+                                        tokenAddress.get(),
+                                        BigInteger.ZERO,
+                                        new long[0])
+                                .payingWith(ALICE)
+                                .alsoSigningWithFullPrefix(MULTI_KEY)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+                        sourcing(() -> contractCall(
+                                        MULTIVERSION_BURN_CONTRACT, BURN_TOKEN_V_2, tokenAddress.get(), 0L, new long[0])
+                                .payingWith(ALICE)
+                                .alsoSigningWithFullPrefix(MULTI_KEY)
+                                .gas(GAS_TO_OFFER)
+                                .logged()
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+                        // Burning negative amount for Fungible tokens should fail
+                        sourcing(() -> contractCall(
+                                        MULTIVERSION_BURN_CONTRACT,
+                                        BURN_TOKEN_V_1,
+                                        tokenAddress.get(),
+                                        new BigInteger("FFFFFFFFFFFFFF00", 16),
+                                        new long[0])
+                                .payingWith(ALICE)
+                                .alsoSigningWithFullPrefix(MULTI_KEY)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+                        sourcing(() -> contractCall(
+                                        MULTIVERSION_BURN_CONTRACT,
+                                        BURN_TOKEN_V_2,
+                                        tokenAddress.get(),
+                                        -1L,
+                                        new long[0])
+                                .payingWith(ALICE)
+                                .alsoSigningWithFullPrefix(MULTI_KEY)
+                                .gas(GAS_TO_OFFER)
+                                .logged()
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
+                .then(getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 50));
+    }
+
+    private HapiSpec burnNonFungibleV1andV2WithNegativeValues() {
+        final AtomicReference<Address> tokenAddress = new AtomicReference<>();
+        return defaultHapiSpec("burnNonFungibleV1andV2WithNegativeValues")
+                .given(
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(ALICE).balance(10 * ONE_HUNDRED_HBARS),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(TOKEN)
+                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                .supplyKey(MULTI_KEY)
+                                .adminKey(MULTI_KEY)
+                                .treasury(TOKEN_TREASURY)
+                                .initialSupply(0L)
+                                .exposingAddressTo(tokenAddress::set),
+                        mintToken(TOKEN, List.of(copyFromUtf8(FIRST))),
+                        mintToken(TOKEN, List.of(copyFromUtf8(SECOND))),
+                        uploadInitCode(MULTIVERSION_BURN_CONTRACT),
+                        contractCreate(MULTIVERSION_BURN_CONTRACT)
+                                .payingWith(ALICE)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(SUCCESS))
+                .when(
+                        // Burning negative amount for Fungible tokens should fail
+                        sourcing(() -> contractCall(
+                                        MULTIVERSION_BURN_CONTRACT,
+                                        BURN_TOKEN_V_1,
+                                        tokenAddress.get(),
+                                        new BigInteger("FFFFFFFFFFFFFF00", 16),
+                                        new long[] {1L})
+                                .payingWith(ALICE)
+                                .alsoSigningWithFullPrefix(MULTI_KEY)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+                        sourcing(() -> contractCall(
+                                        MULTIVERSION_BURN_CONTRACT,
+                                        BURN_TOKEN_V_2,
+                                        tokenAddress.get(),
+                                        -1L,
+                                        new long[] {1L})
+                                .payingWith(ALICE)
+                                .alsoSigningWithFullPrefix(MULTI_KEY)
+                                .gas(GAS_TO_OFFER)
+                                .logged()
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
+                .then(getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 2));
     }
 
     @NotNull

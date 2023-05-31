@@ -19,9 +19,9 @@ package com.swirlds.virtualmap.internal.cache;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
+import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.exceptions.MutabilityException;
 import com.swirlds.common.exceptions.PlatformException;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -32,9 +32,8 @@ import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualMapSettingsFactory;
 import com.swirlds.virtualmap.VirtualValue;
-import com.swirlds.virtualmap.datasource.VirtualInternalRecord;
+import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
-import com.swirlds.virtualmap.datasource.VirtualRecord;
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.Map;
@@ -48,6 +47,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -60,16 +60,16 @@ import org.apache.logging.log4j.Logger;
  * completes, a fast-copy of the tree is made, along with a fast-copy of the cache. Any new changes to the
  * modifiable tree are done through the corresponding copy of the cache. The original tree and original
  * cache have <strong>IMMUTABLE</strong> leaf data. The original tree is then submitted to multiple hashing
- * threads. For each internal node that is hashed, a {@link VirtualInternalRecord} is created and added
+ * threads. For each internal node that is hashed, a {@link VirtualHashRecord} is created and added
  * to the {@link VirtualNodeCache}.
  * <p>
  * Eventually, there are multiple copies of the cache in memory. It may become necessary to merge two
  * caches together. The {@link #merge()} method is provided to merge a cache with the one-prior cache.
  * These merges are non-destructive, meaning it is OK to continue to query against a cache that has been merged.
  * <p>
- * At some point, the cache should be flushed to disk. This is done by calling the {@link #dirtyLeaves(long, long)}
- * and {@link #dirtyInternals(long)} methods and sending them to the code responsible for flushing. The cache
- * itself knows nothing about the data source or how to save data, it simply maintains a record of mutations
+ * At some point, the cache should be flushed to disk. This is done by calling the {@link #dirtyLeaves(long, long,
+ * boolean)} and {@link #dirtyHashes(long)} methods and sending them to the code responsible for flushing. The
+ * cache itself knows nothing about the data source or how to save data, it simply maintains a record of mutations
  * so that some other code can perform the flushing.
  * <p>
  * A cache is {@link FastCopyable}, so that each copy of the {@link VirtualMap} has a corresponding copy of the
@@ -90,9 +90,9 @@ import org.apache.logging.log4j.Logger;
  * which leaves occupied a given path, and for the internal node hashes at a given path.
  * <p>
  * To fulfill these design requirements, each "chain" of caches share three different indexes:
- * {@link #keyToDirtyLeafIndex}, {@link #pathToDirtyLeafIndex}, and {@link #pathToDirtyInternalIndex}.
+ * {@link #keyToDirtyLeafIndex}, {@link #pathToDirtyLeafIndex}, and {@link #pathToDirtyHashIndex}.
  * Each of these is a map from either the leaf key or a path (long) to a custom linked list data structure. Each element
- * in the list is a {@link Mutation} with a reference to the data item (either a {@link VirtualInternalRecord}
+ * in the list is a {@link Mutation} with a reference to the data item (either a {@link VirtualHashRecord}
  * or a {@link VirtualLeafRecord}, depending on the list), and a reference to the next {@link Mutation}
  * in the list. In this way, given a leaf key or path (based on the index), you can get the linked list and
  * walk the links from mutation to mutation. The most recent mutation is first in the list, the oldest mutation
@@ -112,7 +112,7 @@ import org.apache.logging.log4j.Logger;
  * @param <V>
  * 		The type of value used for leaves
  */
-public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends VirtualValue>
+public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue>
         implements FastCopyable, SelfSerializable {
 
     private static final Logger logger = LogManager.getLogger(VirtualNodeCache.class);
@@ -121,6 +121,7 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
 
     private static final class ClassVersion {
         public static final int ORIGINAL = 1;
+        public static final int NO_LEAF_HASHES = 2;
     }
 
     /**
@@ -128,28 +129,23 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
      * will ask the cache for a leaf either by key or path. At such times, if we determine by looking at
      * the mutation that the leaf has been deleted, we will return this singleton instance.
      */
-    public static final VirtualLeafRecord<?, ?> DELETED_LEAF_RECORD = new VirtualLeafRecord<>(-1, null, null, null);
+    public static final VirtualLeafRecord<?, ?> DELETED_LEAF_RECORD = new VirtualLeafRecord<>(-1, null, null);
 
     /**
-     * A special {@link VirtualInternalRecord} used to indicate that the record associated with a particular
+     * A special {@link Hash} used to indicate that the record associated with a particular
      * path has been deleted. The {@link VirtualMap} has code that asks the cache for the record. If the
      * return value is null, it will create a new record or load from disk, since it thinks {@code null}
      * means that the value doesn't exist. But we need it to know that we have deleted the record so it
      * doesn't go to disk. Hence, we have this special marker.
      */
-    public static final VirtualInternalRecord DELETED_INTERNAL_RECORD = new VirtualInternalRecord(-1);
+    public static final Hash DELETED_HASH = new Hash();
 
     /**
-     * A singleton comparator used for sorting dirty leaf mutations.
+     * Another marker {@link Hash} instance used to store null hashes instead of {@code null}s, which
+     * are only used for deleted hashes. Before hashes are returned to callers in {@link #dirtyHashes}
+     * or {@link #lookupHashByPath(long, boolean)}, this value is converted to {@code null}.
      */
-    private static final Comparator<Mutation<VirtualLeafRecord<?, ?>>> DIRTY_LEAF_COMPARATOR =
-            new MutationComparator<>();
-
-    /**
-     * A singleton comparator used for sorting dirty internal mutations.
-     */
-    private static final Comparator<Mutation<VirtualInternalRecord>> DIRTY_INTERNAL_COMPARATOR =
-            new MutationComparator<>();
+    public static final Hash NULL_HASH = new Hash();
 
     /**
      * The number of threads to use when cleaning. Can either be supplied by a system property, or
@@ -213,21 +209,21 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
      * <p>
      * <strong>ONE PER CHAIN OF CACHES</strong>.
      */
-    private final Map<K, Mutation<VirtualLeafRecord<K, V>>> keyToDirtyLeafIndex;
+    private final Map<K, Mutation<K, VirtualLeafRecord<K, V>>> keyToDirtyLeafIndex;
 
     /**
      * A shared index of paths to leaves, via {@link Mutation}s. Works the same as {@link #keyToDirtyLeafIndex}.
      * <p>
      * <strong>ONE PER CHAIN OF CACHES</strong>.
      */
-    private final Map<Long, Mutation<K>> pathToDirtyLeafIndex;
+    private final Map<Long, Mutation<Long, K>> pathToDirtyLeafIndex;
 
     /**
      * A shared index of paths to internals, via {@link Mutation}s. Works the same as {@link #keyToDirtyLeafIndex}.
      * <p>
      * <strong>ONE PER CHAIN OF CACHES</strong>.
      */
-    private final Map<Long, Mutation<VirtualInternalRecord>> pathToDirtyInternalIndex;
+    private final Map<Long, Mutation<Long, Hash>> pathToDirtyHashIndex;
 
     /**
      * Whether this instance is released. A released cache is often the last in the
@@ -255,7 +251,7 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
      * Since during the {@code handleTransaction} phase there should be no hashing going on,
      * we start off with this being set to true, just to catch bugs or false assumptions.
      */
-    private final AtomicBoolean internalIndexesAreImmutable = new AtomicBoolean(true);
+    private final AtomicBoolean hashesAreImmutable = new AtomicBoolean(true);
 
     /**
      * A set of all modifications to leaves that occurred in this version of the cache.
@@ -263,7 +259,7 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
      * <p>
      * <strong>ONE PER CACHE INSTANCE</strong>.
      */
-    private volatile ConcurrentArray<Mutation<VirtualLeafRecord<K, V>>> dirtyLeaves = new ConcurrentArray<>();
+    private ConcurrentArray<Mutation<K, VirtualLeafRecord<K, V>>> dirtyLeaves = new ConcurrentArray<>();
 
     /**
      * A set of leaf path changes that occurred in this version of the cache. This is separate
@@ -273,17 +269,17 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
      * <p>
      * <strong>ONE PER CACHE INSTANCE</strong>.
      */
-    private volatile ConcurrentArray<Mutation<K>> dirtyLeafPaths = new ConcurrentArray<>();
+    private ConcurrentArray<Mutation<Long, K>> dirtyLeafPaths = new ConcurrentArray<>();
 
     /**
-     * A set of all modifications to internal nodes that occurred in this version of the cache.
+     * A set of all modifications to node hashes that occurred in this version of the cache.
      * We use a list as an optimization, but it requires us to filter out mutations for the
      * same key or path from multiple versions.
      * Note that this isn't actually a set, we have to sort and filter duplicates later.
      * <p>
      * <strong>ONE PER CACHE INSTANCE</strong>.
      */
-    private volatile ConcurrentArray<Mutation<VirtualInternalRecord>> dirtyInternals = new ConcurrentArray<>();
+    private ConcurrentArray<Mutation<Long, Hash>> dirtyHashes = new ConcurrentArray<>();
 
     /**
      * A shared lock that prevents two copies from being merged/released at the same time. For example,
@@ -317,7 +313,7 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
     public VirtualNodeCache() {
         this.keyToDirtyLeafIndex = new ConcurrentHashMap<>();
         this.pathToDirtyLeafIndex = new ConcurrentHashMap<>();
-        this.pathToDirtyInternalIndex = new ConcurrentHashMap<>();
+        this.pathToDirtyHashIndex = new ConcurrentHashMap<>();
         this.releaseLock = new ReentrantLock();
         this.lastReleased = new AtomicLong(-1L);
     }
@@ -326,21 +322,21 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
      * Create a copy of the cache. The resulting copy will have a reference to the previous cache,
      * and the previous cache will have a reference to the copy. The copy will have a fastCopyVersion
      * that is one greater than the one it copied from. It will share some data structures. Critically,
-     * it will modify the {@link #internalIndexesAreImmutable} to be false so that the older copy
+     * it will modify the {@link #hashesAreImmutable} to be false so that the older copy
      * can be hashed.
      *
      * @param source
      * 		Cannot be null and must be the most recent version!
      */
     @SuppressWarnings("CopyConstructorMissesField")
-    private VirtualNodeCache(VirtualNodeCache<K, V> source) {
+    private VirtualNodeCache(final VirtualNodeCache<K, V> source) {
         // Make sure this version is exactly 1 greater than source
         this.fastCopyVersion.set(source.fastCopyVersion.get() + 1);
 
         // Get a reference to the shared data structures
         this.keyToDirtyLeafIndex = source.keyToDirtyLeafIndex;
         this.pathToDirtyLeafIndex = source.pathToDirtyLeafIndex;
-        this.pathToDirtyInternalIndex = source.pathToDirtyInternalIndex;
+        this.pathToDirtyHashIndex = source.pathToDirtyHashIndex;
         this.releaseLock = source.releaseLock;
         this.lastReleased = source.lastReleased;
 
@@ -370,7 +366,7 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
      */
     public void prepareForHashing() {
         this.leafIndexesAreImmutable.set(true);
-        this.internalIndexesAreImmutable.set(false);
+        this.hashesAreImmutable.set(false);
         this.dirtyLeaves.seal();
     }
 
@@ -432,11 +428,11 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
         CLEANING_POOL.execute(() -> {
             purge(dirtyLeaves, keyToDirtyLeafIndex);
             purge(dirtyLeafPaths, pathToDirtyLeafIndex);
-            purge(dirtyInternals, pathToDirtyInternalIndex);
+            purge(dirtyHashes, pathToDirtyHashIndex);
 
             dirtyLeaves = null;
             dirtyLeafPaths = null;
-            dirtyInternals = null;
+            dirtyHashes = null;
         });
 
         if (logger.isTraceEnabled()) {
@@ -460,7 +456,6 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
      * 		if there is nothing to merge into, or if both this cache and the one
      * 		it is merging into are not sealed.
      */
-    @SuppressWarnings("NonAtomicOperationOnVolatileField")
     public void merge() {
         releaseLock.lock();
         try {
@@ -468,18 +463,18 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
             final VirtualNodeCache<K, V> p = prev.get();
             if (p == null) {
                 throw new IllegalStateException("Cannot merge with a null cache");
-            } else if (!p.internalIndexesAreImmutable.get() || !internalIndexesAreImmutable.get()) {
+            } else if (!p.hashesAreImmutable.get() || !hashesAreImmutable.get()) {
                 throw new IllegalStateException("You can only merge caches that are sealed");
             }
 
-            // Merge the previous (newer) cache's array with mine, and assign the merge result to that cache.
+            // Merge my mutations into the previous (newer) cache's arrays.
             // This operation has a high probability of producing override mutations. That is, two mutations
             // for the same key/path but with different versions. Before returning to a caller a stream of
             // dirty leaves or dirty internals, the stream must be sorted (which we had to do anyway) and
             // deduplicated. But it makes for a _VERY FAST_ merge operation.
-            p.dirtyLeaves = new ConcurrentArray<>(dirtyLeaves, p.dirtyLeaves);
-            p.dirtyLeafPaths = new ConcurrentArray<>(dirtyLeafPaths, p.dirtyLeafPaths);
-            p.dirtyInternals = new ConcurrentArray<>(dirtyInternals, p.dirtyInternals);
+            p.dirtyLeaves.merge(dirtyLeaves);
+            p.dirtyLeafPaths.merge(dirtyLeafPaths);
+            p.dirtyHashes.merge(dirtyHashes);
 
             // Remove this cache from the chain and wire the prev and next caches together.
             // This will allow this cache to be garbage collected.
@@ -492,7 +487,7 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
                         "Merged version {}, {} dirty leaves, {} dirty internals",
                         fastCopyVersion,
                         dirtyLeaves.size(),
-                        dirtyInternals.size());
+                        dirtyHashes.seal());
             }
         }
     }
@@ -503,9 +498,9 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
      */
     public void seal() {
         leafIndexesAreImmutable.set(true);
-        internalIndexesAreImmutable.set(true);
+        hashesAreImmutable.set(true);
         dirtyLeaves.seal();
-        dirtyInternals.seal();
+        dirtyHashes.seal();
         dirtyLeafPaths.seal();
     }
 
@@ -530,22 +525,17 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
      * since we need to include this leaf in the set that are written to disk (since paths are
      * also written to disk).
      * <p>
-     * The method may be called concurrently from multiple threads. Note that if multiple threads are
-     * putting equal leaves in parallel, only one leaf ends up in the cache. Therefore, callers of this
-     * method shouldn't assume the leaf in the argument is put to the cache, they must check the return
-     * value instead. This is critical, for example, when this method is called from {@link
-     * #lookupLeafByKey(VirtualKey, boolean)} with forModify set.
+     * This method should only be called from the <strong>HANDLE TRANSACTION THREAD</strong>.
+     * It is NOT threadsafe!
      *
      * @param leaf
-     * 		The leaf to put. Must not be null. Must have the correct key and path
-     * @return
-     * 		The leaf that was put to the cache
+     * 		The leaf to put. Must not be null. Must have the correct key and path.
      * @throws NullPointerException
      * 		if the leaf is null
      * @throws MutabilityException
      * 		if the cache is immutable for leaf changes
      */
-    public VirtualLeafRecord<K, V> putLeaf(VirtualLeafRecord<K, V> leaf) {
+    public VirtualLeafRecord<K, V> putLeaf(final VirtualLeafRecord<K, V> leaf) {
         throwIfLeafImmutable();
         Objects.requireNonNull(leaf);
 
@@ -559,9 +549,7 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
 
         // Get the first data element (mutation) in the list based on the key,
         // and then create or update the associated mutation.
-        final Mutation<VirtualLeafRecord<K, V>> mutation =
-                keyToDirtyLeafIndex.compute(key, (k, mutations) -> mutate(leaf, mutations));
-        return mutation.value;
+        return keyToDirtyLeafIndex.compute(key, (k, mutations) -> mutate(leaf, mutations)).value;
     }
 
     /**
@@ -579,7 +567,7 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
      * @throws MutabilityException
      * 		if the cache is immutable for leaf changes
      */
-    public void deleteLeaf(VirtualLeafRecord<K, V> leaf) {
+    public void deleteLeaf(final VirtualLeafRecord<K, V> leaf) {
         throwIfLeafImmutable();
         Objects.requireNonNull(leaf);
 
@@ -591,8 +579,8 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
         assert key != null : "Keys cannot be null";
         keyToDirtyLeafIndex.compute(key, (k, mutations) -> {
             mutations = mutate(leaf, mutations);
-            mutations.deleted = true;
-            assert pathToDirtyLeafIndex.get(leaf.getPath()).deleted : "It should be deleted too";
+            mutations.setDeleted(true);
+            assert pathToDirtyLeafIndex.get(leaf.getPath()).isDeleted() : "It should be deleted too";
             return mutations;
         });
     }
@@ -602,7 +590,7 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
      * be called if there is no longer any leaf at this path. This happens when we add leaves
      * and the leaf at firstLeafPath is moved and replaced by an internal node, or when a leaf
      * is deleted and the lastLeafPath is moved or removed.
-     * <p>
+     *
      * This method should only be called from the <strong>HANDLE TRANSACTION THREAD</strong>.
      * It is NOT threadsafe!
      *
@@ -611,9 +599,9 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
      * @throws MutabilityException
      * 		if the cache is immutable for leaf changes
      */
-    public void clearLeafPath(long path) {
+    public void clearLeafPath(final long path) {
         throwIfLeafImmutable();
-        // Note: this marks the mutation as deleted, in addition to clearing the value of the mutation
+        // Note: this marks the mutations as deleted, in addition to clearing the value of the mutation
         updatePaths(null, path, pathToDirtyLeafIndex, dirtyLeafPaths);
     }
 
@@ -644,7 +632,7 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
      * @throws com.swirlds.common.exceptions.ReferenceCountException
      * 		if the cache has already been released
      */
-    public VirtualLeafRecord<K, V> lookupLeafByKey(K key, boolean forModify) {
+    public VirtualLeafRecord<K, V> lookupLeafByKey(final K key, final boolean forModify) {
         Objects.requireNonNull(key);
 
         // The only way to be released is to be in a condition where the data source has
@@ -656,7 +644,7 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
 
         // Get the newest mutation that is less or equal to this fastCopyVersion. If forModify and
         // the mutation does not exactly equal this fastCopyVersion, then create a mutation.
-        final Mutation<VirtualLeafRecord<K, V>> mutation = lookup(keyToDirtyLeafIndex.get(key));
+        final Mutation<K, VirtualLeafRecord<K, V>> mutation = lookup(keyToDirtyLeafIndex.get(key));
 
         // Always return null if there is no mutation regardless of forModify
         if (mutation == null) {
@@ -664,7 +652,7 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
         }
 
         // If the mutation was deleted, return our marker instance, regardless of forModify
-        if (mutation.deleted) {
+        if (mutation.isDeleted()) {
             //noinspection unchecked
             return (VirtualLeafRecord<K, V>) DELETED_LEAF_RECORD;
         }
@@ -675,7 +663,7 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
             assert !leafIndexesAreImmutable.get() : "You cannot create leaf records at this time!";
             @SuppressWarnings("unchecked")
             final VirtualLeafRecord<K, V> leaf =
-                    new VirtualLeafRecord<>(mutation.value.getPath(), null, mutation.value.getKey(), (V)
+                    new VirtualLeafRecord<>(mutation.value.getPath(), mutation.value.getKey(), (V)
                             mutation.value.getValue().copy());
             return putLeaf(leaf);
         }
@@ -689,7 +677,8 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
      * is returned. If there is no mutation record at all, null is returned, indicating a cache miss,
      * and that the caller should consult on-disk storage.
      * <p>
-     * This method may be called concurrently from multiple threads.
+     * This method may be called concurrently from multiple threads, but <strong>MUST NOT</strong>
+     * be called concurrently for the same path! It is NOT fully threadsafe!
      *
      * @param path
      * 		The path to use to lookup.
@@ -706,7 +695,7 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
      * @throws com.swirlds.common.exceptions.ReferenceCountException
      * 		if the cache has already been released
      */
-    public VirtualLeafRecord<K, V> lookupLeafByPath(long path, boolean forModify) {
+    public VirtualLeafRecord<K, V> lookupLeafByPath(final long path, final boolean forModify) {
         // The only way to be released is to be in a condition where the data source has
         // the data that was once in this cache but was merged and is therefore now released.
         // So we can return null and know the caller can find the data in the data source.
@@ -719,21 +708,21 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
         // Note that the mutations in pathToDirtyLeafIndex contain the *path* as the key,
         // and a leaf record *key* as the value. Thus, we look up a mutation first in the
         // pathToDirtyLeafIndex, get the leaf key, and then lookup based on that key.
-        final Mutation<K> mutation = lookup(pathToDirtyLeafIndex.get(path));
+        final Mutation<Long, K> mutation = lookup(pathToDirtyLeafIndex.get(path));
         // If mutation is null (path is unknown), return null regardless of forModify
         if (mutation == null) {
             return null;
         }
 
         //noinspection unchecked
-        return mutation.deleted
+        return mutation.isDeleted()
                 ? (VirtualLeafRecord<K, V>) DELETED_LEAF_RECORD
                 : lookupLeafByKey(mutation.value, forModify);
     }
 
     /**
-     * Gets a sorted stream of dirty leaves <strong>from this cache instance</strong>. Deleted leaves are
-     * not included in this stream.
+     * Gets a stream of dirty leaves <strong>from this cache instance</strong>. Deleted leaves are not included
+     * in this stream.
      * <p>
      * This method may be called concurrently from multiple threads (although in practice, this should never happen).
      *
@@ -745,26 +734,41 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
      * 		The last leaf path to receive in the results. It is possible, through merging of multiple rounds,
      * 		for the data to have leaf data that is outside the expected range for the {@link VirtualMap} of
      * 		this cache. We need to provide the leaf boundaries to compensate for this.
-     * @return A non-null stream of dirty leaves. May be empty. Will not contain duplicate records. Will be sorted
-     * 		by path, with the lowest (root-most) path first.
+     * @param sorted
+     *      Indicates if the resulting stream should be sorted by path or not
+     * @return A non-null stream of dirty leaves. May be empty. Will not contain duplicate records
      * @throws MutabilityException
      * 		if called on a cache that still allows dirty leaves to be added
      */
-    public Stream<VirtualLeafRecord<K, V>> dirtyLeaves(long firstLeafPath, long lastLeafPath) {
+    public Stream<VirtualLeafRecord<K, V>> dirtyLeaves(
+            final long firstLeafPath, final long lastLeafPath, final boolean sorted) {
         if (!dirtyLeaves.isImmutable()) {
             throw new MutabilityException("Cannot call on a cache that is still mutable for dirty leaves");
         }
-
-        final AtomicReference<Mutation<? extends VirtualRecord>> lastSeen = new AtomicReference<>();
-        return dirtyLeaves
-                .sortedStream(dirtyLeafComparator())
+        // Mark obsolete mutations to filter later
+        filterMutations(dirtyLeaves);
+        final Stream<VirtualLeafRecord<K, V>> result = dirtyLeaves.stream()
                 .filter(mutation -> {
                     final long path = mutation.value.getPath();
                     return path >= firstLeafPath && path <= lastLeafPath;
                 })
-                .filter(mutation -> dedupeByPath(mutation, lastSeen))
-                .filter(mutation -> !mutation.deleted)
+                .filter(mutation -> !mutation.isFiltered())
+                .filter(mutation -> !mutation.isDeleted())
                 .map(mutation -> mutation.value);
+        if (sorted) {
+            return result.sorted(Comparator.comparingLong(VirtualLeafRecord::getPath));
+        } else {
+            return result;
+        }
+    }
+
+    /**
+     * Gets estimated number of dirty leaf nodes in this cache.
+     *
+     * @return Estimated number of dirty leaf nodes
+     */
+    public long estimatedDirtyLeavesCount(long firstLeafPath, long lastLeafPath) {
+        return (dirtyLeaves == null) ? 0 : dirtyLeaves.size();
     }
 
     /**
@@ -776,7 +780,6 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
      * @throws MutabilityException
      * 		if called on a cache that still allows dirty leaves to be added
      */
-    @SuppressWarnings("unchecked")
     public Stream<VirtualLeafRecord<K, V>> deletedLeaves() {
         if (!dirtyLeaves.isImmutable()) {
             throw new MutabilityException("Cannot call on a cache that is still mutable for dirty leaves");
@@ -784,17 +787,17 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
 
         final Map<K, VirtualLeafRecord<K, V>> leaves = new ConcurrentHashMap<>();
         final StandardFuture<Void> result = dirtyLeaves.parallelTraverse(CLEANING_POOL, element -> {
-            if (element.deleted) {
-                K key = (K) element.key;
-                Mutation<VirtualLeafRecord<K, V>> mutation = lookup(keyToDirtyLeafIndex.get(key));
-                if (mutation != null && mutation.deleted) {
+            if (element.isDeleted()) {
+                final K key = element.key;
+                final Mutation<K, VirtualLeafRecord<K, V>> mutation = lookup(keyToDirtyLeafIndex.get(key));
+                if (mutation != null && mutation.isDeleted()) {
                     leaves.putIfAbsent(key, element.value);
                 }
             }
         });
         try {
             result.getAndRethrow();
-        } catch (InterruptedException ex) {
+        } catch (final InterruptedException ex) {
             Thread.currentThread().interrupt();
             throw new PlatformException("VirtualNodeCache.deletedLeaves() interrupted", ex, EXCEPTION);
         }
@@ -809,28 +812,39 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
     // --------------------------------------------------------------------------------------------
 
     /**
-     * Stores a {@link VirtualInternalRecord} into this version of the cache. This can be called
+     * For testing purposes only. Equivalent to putHash(node.getPath(), node.getHash())
+     * @param node the node to get path and hash from
+     */
+    public void putHash(final VirtualHashRecord node) {
+        Objects.requireNonNull(node);
+        putHash(node.path(), node.hash());
+    }
+
+    /**
+     * Stores a {@link Hash} into this version of the cache for a given path. This can be called
      * during {@code handleTransaction}, or during hashing, but must not be called once the
      * instance has been sealed (after hashing).
      * <p>
      * This method may be called concurrently from multiple threads, but <strong>MUST NOT</strong>
-     * be called concurrently for the same record! It is NOT fully threadsafe!
+     * be called concurrently for the same path! It is NOT fully threadsafe!
      *
-     * @param node
-     * 		The node. Cannot be null.
-     * @throws NullPointerException
-     * 		if the node argument is null.
+     * @param path
+     * 		Node path
+     * @param hash
+     * 		Node hash. Null values are accepted, although observed in tests only. In real scenarios
+     * 	    this method is only called by VirtualHasher (via VirtualRootNode), and it never puts
+     * 	    null hashes to the cache
      * @throws MutabilityException
      * 		if the instance has been sealed
      */
-    public void putInternal(VirtualInternalRecord node) {
+    public void putHash(final long path, final Hash hash) {
         throwIfInternalsImmutable();
-        Objects.requireNonNull(node);
-        updatePaths(node, node.getPath(), pathToDirtyInternalIndex, dirtyInternals);
+        // If the hash is null, put NULL_HASH instead to avoid mutation to be marked as deleted
+        updatePaths(hash != null ? hash : NULL_HASH, path, pathToDirtyHashIndex, dirtyHashes);
     }
 
     /**
-     * Marks the internal node at {@code path} as having been deleted. This only happens
+     * Marks the hash at {@code path} as having been deleted. This only happens
      * if the merkle tree shrinks. This is only called during {@code handleTransaction},
      * NOT during hashing and NOT after hashing.
      * <p>
@@ -838,13 +852,13 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
      * be called concurrently for the same record! It is NOT fully threadsafe!
      *
      * @param path
-     * 		The path to the internal node that is to be marked as deleted in this cache.
+     * 		The path to the virtual node that is to be marked as deleted in this cache.
      * @throws MutabilityException
      * 		if called when <strong>leaves</strong> are immutable.
      */
-    public void deleteInternal(long path) {
+    public void deleteHash(final long path) {
         throwIfLeafImmutable();
-        updatePaths(null, path, pathToDirtyInternalIndex, dirtyInternals);
+        updatePaths(null, path, pathToDirtyHashIndex, dirtyHashes);
     }
 
     /**
@@ -864,12 +878,12 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
      * 		in an older copy in the cache-chain, it will create a new instance and register
      * 		it as a mutation in this cache instance. In this way, you can safely modify the
      * 		returned record, if it exists.
-     * @return A {@link VirtualInternalRecord} if there is one in the cache (this instance or a previous
+     * @return A {@link Hash} if there is one in the cache (this instance or a previous
      * 		copy in the chain), or null if there is not one.
      * @throws com.swirlds.common.exceptions.ReferenceCountException
      * 		if the cache has already been released
      */
-    public VirtualInternalRecord lookupInternalByPath(final long path, final boolean forModify) {
+    public Hash lookupHashByPath(final long path, final boolean forModify) {
         // The only way to be released is to be in a condition where the data source has
         // the data that was once in this cache but was merged and is therefore now released.
         // So we can return null and know the caller can find the data in the data source.
@@ -877,57 +891,64 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
             return null;
         }
 
-        final Mutation<VirtualInternalRecord> mutation = lookup(pathToDirtyInternalIndex.get(path));
+        final Mutation<Long, Hash> mutation = lookup(pathToDirtyHashIndex.get(path));
 
         // Always return null if there is no mutation regardless of forModify
-        if (mutation == null) {
+        if ((mutation == null) || (mutation.value == NULL_HASH)) {
             return null;
         }
 
         // If the mutation was deleted, return our marker instance
-        if (mutation.deleted) {
-            return DELETED_INTERNAL_RECORD;
+        if (mutation.isDeleted()) {
+            return DELETED_HASH;
         }
 
         // If "forModify" was set and the mutation version is older than my version, then
         // create a new value and a new mutation and return the new mutation.
         if (forModify && mutation.version < fastCopyVersion.get()) {
-            assert !internalIndexesAreImmutable.get() : "You cannot create internal records at this time!";
-            final VirtualInternalRecord virtualRecord = new VirtualInternalRecord(path, null);
-            updatePaths(virtualRecord, path, pathToDirtyInternalIndex, dirtyInternals);
-            return virtualRecord;
+            assert !hashesAreImmutable.get() : "You cannot create internal records at this time!";
+            updatePaths(NULL_HASH, path, pathToDirtyHashIndex, dirtyHashes);
+            return null;
         }
 
         return mutation.value;
     }
 
     /**
-     * Gets a sorted stream of dirty internal records <strong>from this cache instance</strong>. Deleted records are
+     * Gets a stream of dirty internal records <strong>from this cache instance</strong>. Deleted records are
      * not included in this stream. Must be called <strong>after</strong> the cache has been sealed.
      * <p>
      * This method may be called concurrently from multiple threads (although in practice, this should never happen).
      *
-     * @param firstLeafPath
-     * 		The first leaf path at and above which no internal node results should be returned. It is possible,
-     * 		through merging of multiple rounds, for the data to have internal data that is outside the expected range
+     * @param lastLeafPath
+     * 		The last leaf path at and above which no node results should be returned. It is possible,
+     * 		through merging of multiple rounds, for the data to have data that is outside the expected range
      * 		for the {@link VirtualMap} of this cache. We need to provide the leaf boundaries to compensate for this.
-     * @return A non-null stream of dirty internal records. May be empty. Will not contain duplicate records.
-     * 		Will be sorted by path, with the lowest (root-most) path first.
+     * @return A non-null stream of dirty records. May be empty. Will not contain duplicate records.
      * @throws MutabilityException
      * 		if called on a non-sealed cache instance.
      */
-    public Stream<VirtualInternalRecord> dirtyInternals(long firstLeafPath) {
-        if (!dirtyInternals.isImmutable()) {
+    public Stream<VirtualHashRecord> dirtyHashes(final long lastLeafPath) {
+        if (!dirtyHashes.isImmutable()) {
             throw new MutabilityException("Cannot get the dirty internal records for a non-sealed cache.");
         }
+        // Mark obsolete mutations to filter later
+        filterMutations(dirtyHashes);
+        return dirtyHashes.stream()
+                .filter(mutation -> mutation.key <= lastLeafPath)
+                .filter(mutation -> !mutation.isFiltered())
+                .map(mutation ->
+                        new VirtualHashRecord(mutation.key, mutation.value != NULL_HASH ? mutation.value : null));
+    }
 
-        final AtomicReference<Mutation<? extends VirtualRecord>> lastSeen = new AtomicReference<>();
-        return dirtyInternals
-                .sortedStream(dirtyInternalComparator())
-                .filter(mutation -> mutation.deleted || mutation.value.getPath() < firstLeafPath)
-                .filter(mutation -> dedupeByPath(mutation, lastSeen))
-                .filter(mutation -> !mutation.deleted)
-                .map(mutation -> mutation.value);
+    /**
+     * Gets estimated number of dirty internal nodes in this cache.
+     *
+     * @return
+     * 		Estimated number of dirty internal nodes
+     */
+    public long estimatedInternalsCount(final long firstLeafPath) {
+        return (dirtyHashes == null) ? 0 : dirtyHashes.size();
     }
 
     /**
@@ -956,7 +977,7 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
         out.writeLong(fastCopyVersion.get());
         serializeKeyToDirtyLeafIndex(keyToDirtyLeafIndex, out);
         serializePathToDirtyLeafIndex(pathToDirtyLeafIndex, out);
-        serializePathToDirtyInternalIndex(pathToDirtyInternalIndex, out);
+        serializePathToDirtyHashIndex(pathToDirtyHashIndex, out);
     }
 
     /**
@@ -965,9 +986,9 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         this.fastCopyVersion.set(in.readLong());
-        deserializeKeyToDirtyLeafIndex(keyToDirtyLeafIndex, in);
+        deserializeKeyToDirtyLeafIndex(keyToDirtyLeafIndex, in, version);
         deserializePathToDirtyLeafIndex(pathToDirtyLeafIndex, in);
-        deserializePathToDirtyInternalIndex(pathToDirtyInternalIndex, in);
+        deserializePathToDirtyHashIndex(pathToDirtyHashIndex, in, version);
     }
 
     /**
@@ -975,12 +996,21 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
      */
     @Override
     public int getVersion() {
-        return ClassVersion.ORIGINAL;
+        return ClassVersion.NO_LEAF_HASHES;
+    }
+
+    /**
+     * Get fast copy version of the cache.
+     *
+     * @return Fast copy version
+     */
+    public long getFastCopyVersion() {
+        return fastCopyVersion.get();
     }
 
     /**
      * Creates a new instance of a {@link VirtualNodeCache}
-     * with {@code pathToDirtyInternalIndex}, {@code pathToDirtyLeafIndex}, and
+     * with {@code pathToDirtyHashIndex}, {@code pathToDirtyLeafIndex}, and
      * {@code keyToDirtyLeafIndex}, containing only elements not marked for deletion,
      * and only the latest mutation with version less than or equal to the current
      * version is added to the maps.
@@ -991,7 +1021,7 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
         synchronized (lastReleased) {
             final VirtualNodeCache<K, V> newSnapshot = new VirtualNodeCache<>();
             setMapSnapshotAndArray(
-                    this.pathToDirtyInternalIndex, newSnapshot.pathToDirtyInternalIndex, newSnapshot.dirtyInternals);
+                    this.pathToDirtyHashIndex, newSnapshot.pathToDirtyHashIndex, newSnapshot.dirtyHashes);
             setMapSnapshotAndArray(
                     this.pathToDirtyLeafIndex, newSnapshot.pathToDirtyLeafIndex, newSnapshot.dirtyLeafPaths);
             setMapSnapshotAndArray(this.keyToDirtyLeafIndex, newSnapshot.keyToDirtyLeafIndex, newSnapshot.dirtyLeaves);
@@ -1074,26 +1104,26 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
      * 		The path to update
      * @param index
      * 		The index controlling this path. Could be {@link #pathToDirtyLeafIndex} or
-     *        {@link #pathToDirtyInternalIndex}.
+     *        {@link #pathToDirtyHashIndex}.
      * @param dirtyPaths
      * 		The {@link ConcurrentArray} holding references to the dirty paths (leaf or internal).
      * 		Cannot be null.
-     * @param <T>
-     * 		The type of data stored in the mutation. Either a leaf key (K) or an internal record.
+     * @param <V1>
+     * 		The type of value stored in the mutation. Either a leaf key (K) or a hash.
      * @throws NullPointerException
      * 		if {@code dirtyPaths} is null.
      */
-    private <T> void updatePaths(
-            final T value,
+    private <V1> void updatePaths(
+            final V1 value,
             final long path,
-            final Map<Long, Mutation<T>> index,
-            final ConcurrentArray<Mutation<T>> dirtyPaths) {
+            final Map<Long, Mutation<Long, V1>> index,
+            final ConcurrentArray<Mutation<Long, V1>> dirtyPaths) {
         index.compute(path, (key, mutation) -> {
             // If there is no mutation or the mutation isn't for this version, then we need to create a new mutation.
             // Note that this code DEPENDS on hashing only a single round at a time. VirtualPipeline
             // enforces this constraint.
-            Mutation<T> nextMutation = mutation;
-            Mutation<T> previousMutation = null;
+            Mutation<Long, V1> nextMutation = mutation;
+            Mutation<Long, V1> previousMutation = null;
             while (nextMutation != null && nextMutation.version > fastCopyVersion.get()) {
                 previousMutation = nextMutation;
                 nextMutation = nextMutation.next;
@@ -1103,13 +1133,13 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
                 // I don't have an easy way to assert it programmatically, but by inspection, it must be true.
                 // Create a mutation for this version pointing to the next oldest mutation (if any).
                 nextMutation = new Mutation<>(nextMutation, path, value, fastCopyVersion.get());
-                nextMutation.deleted = value == null;
+                nextMutation.setDeleted(value == null);
                 // Hold a reference to this newest mutation in this cache
                 dirtyPaths.add(nextMutation);
             } else {
                 // This mutation already exists in this version. Simply update its value and deleted status.
                 nextMutation.value = value;
-                nextMutation.deleted = value == null;
+                nextMutation.setDeleted(value == null);
             }
             if (previousMutation != null) {
                 previousMutation.next = nextMutation;
@@ -1127,11 +1157,12 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
      *
      * @param mutation
      * 		The mutation list, can be null.
-     * @param <T>
-     * 		The value type held by the mutation. It will be either a Key, leaf record, or internal record.
+     * @param <K1> The key type held by the mutation. Either a Key or a path.
+     * @param <V1>>
+     * 		The value type held by the mutation. It will be either a Key, leaf record, or a hash.
      * @return null if the mutation could be found, or the mutation.
      */
-    private <T> Mutation<T> lookup(Mutation<T> mutation) {
+    private <K1, V1> Mutation<K1, V1> lookup(Mutation<K1, V1> mutation) {
         // Walk the list of values until we find the best match for our version
         for (; ; ) {
             // If mutation is null, then there is nothing else to look for. We're done.
@@ -1159,8 +1190,8 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
      * 		The list of mutations for this leaf. This can be null.
      * @return The mutation for this leaf.
      */
-    private Mutation<VirtualLeafRecord<K, V>> mutate(
-            VirtualLeafRecord<K, V> leaf, Mutation<VirtualLeafRecord<K, V>> mutation) {
+    private Mutation<K, VirtualLeafRecord<K, V>> mutate(
+            final VirtualLeafRecord<K, V> leaf, Mutation<K, VirtualLeafRecord<K, V>> mutation) {
 
         // We only create a new mutation if one of the following is true:
         //  - There is no mutation in the cache (mutation == null)
@@ -1170,7 +1201,7 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
             // So it should be true that this cache does not have this leaf in dirtyLeaves.
 
             // Create a new mutation
-            final Mutation<VirtualLeafRecord<K, V>> newerMutation =
+            final Mutation<K, VirtualLeafRecord<K, V>> newerMutation =
                     new Mutation<>(mutation, leaf.getKey(), leaf, fastCopyVersion.get());
             dirtyLeaves.add(newerMutation);
             mutation = newerMutation;
@@ -1181,9 +1212,9 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
             assert mutation.value.getKey().equals(leaf.getKey());
             mutation.value.setPath(leaf.getPath());
             mutation.value.setValue(leaf.getValue());
-            mutation.deleted = false;
+            mutation.setDeleted(false);
         } else {
-            mutation.deleted = false;
+            mutation.setDeleted(false);
         }
 
         return mutation;
@@ -1195,21 +1226,20 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
      *
      * @param index
      * 		The index to look through for entries to purge
-     * @param <T>
+     * @param <K>
      * 		The key type used in the index
-     * @param <U>
+     * @param <V>
      * 		The value type referenced by the mutation list
      */
-    @SuppressWarnings("unchecked")
-    private static <T, U> void purge(ConcurrentArray<Mutation<U>> array, Map<T, Mutation<U>> index) {
+    private static <K, V> void purge(final ConcurrentArray<Mutation<K, V>> array, final Map<K, Mutation<K, V>> index) {
         array.parallelTraverse(
                 CLEANING_POOL,
-                element -> index.compute((T) element.key, (key, mutation) -> {
+                element -> index.compute(element.key, (key, mutation) -> {
                     if (mutation == null || element.equals(mutation)) {
                         // Already removed for a more recent mutation
                         return null;
                     }
-                    for (Mutation<U> m = mutation; m.next != null; m = m.next) {
+                    for (Mutation<K, V> m = mutation; m.next != null; m = m.next) {
                         if (element.equals(m.next)) {
                             m.next = null;
                             break;
@@ -1217,6 +1247,36 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
                     }
                     return mutation;
                 }));
+    }
+
+    /**
+     * Node cache contains lists of hash and leaf mutations for every cache version. When caches
+     * are merged, the lists are merged, too. To make merges very fast, duplicates aren't removed
+     * from the lists on merge. On flush / hash, no duplicates are allowed, so duplicated entries
+     * need to be removed.
+     *
+     * This method iterates over the given list of mutations and marks all obsolete mutations as
+     * filtered. Later all marked mutations can be easily removed. A mutation is considered
+     * obsolete, if there is a newer mutation for the same key.
+     *
+     * @param array
+     * @param <K>
+     * 		The key type used in the index
+     * @param <V>
+     * 		The value type referenced by the mutation list
+     */
+    private static <K, V> void filterMutations(final ConcurrentArray<Mutation<K, V>> array) {
+        final Consumer<Mutation<K, V>> action = mutation -> {
+            if (mutation.next != null) {
+                mutation.next.setFiltered();
+            }
+        };
+        try {
+            array.parallelTraverse(CLEANING_POOL, action).getAndRethrow();
+        } catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -1233,17 +1293,19 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
      * 		Map that contains the original mutations
      * @param dst
      * 		Map that acts as the destination of mutations
-     * @param <R>
+     * @param <K2>
      * 		Key type
-     * @param <S>
+     * @param <L2>
      * 		Value type
      */
-    private <R, S> void setMapSnapshotAndArray(
-            final Map<R, Mutation<S>> src, final Map<R, Mutation<S>> dst, final ConcurrentArray<Mutation<S>> array) {
+    private <K2, L2> void setMapSnapshotAndArray(
+            final Map<K2, Mutation<K2, L2>> src,
+            final Map<K2, Mutation<K2, L2>> dst,
+            final ConcurrentArray<Mutation<K2, L2>> array) {
         final long accepted = fastCopyVersion.get();
         final long rejected = lastReleased.get();
-        for (final Map.Entry<R, Mutation<S>> entry : src.entrySet()) {
-            Mutation<S> mutation = entry.getValue();
+        for (final Map.Entry<K2, Mutation<K2, L2>> entry : src.entrySet()) {
+            Mutation<K2, L2> mutation = entry.getValue();
 
             while (mutation != null && mutation.version > accepted) {
                 mutation = mutation.next;
@@ -1259,7 +1321,7 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
     }
 
     /**
-     * Serialize the {@link #pathToDirtyInternalIndex}.
+     * Serialize the {@link #pathToDirtyHashIndex}.
      *
      * @param map
      * 		The index map to serialize. Cannot be null.
@@ -1268,30 +1330,26 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
      * @throws IOException
      * 		If something fails.
      */
-    private void serializePathToDirtyInternalIndex(
-            final Map<Long, Mutation<VirtualInternalRecord>> map, final SerializableDataOutputStream out)
-            throws IOException {
+    private void serializePathToDirtyHashIndex(
+            final Map<Long, Mutation<Long, Hash>> map, final SerializableDataOutputStream out) throws IOException {
         assert snapshot.get() : "Only snapshots can be serialized";
         out.writeInt(map.size());
-        for (final Map.Entry<Long, Mutation<VirtualInternalRecord>> entry : map.entrySet()) {
+        for (final Map.Entry<Long, Mutation<Long, Hash>> entry : map.entrySet()) {
             out.writeLong(entry.getKey());
-            final Mutation<VirtualInternalRecord> mutation = entry.getValue();
+            final Mutation<Long, Hash> mutation = entry.getValue();
             assert mutation != null : "Mutations cannot be null in a snapshot";
             assert mutation.version <= this.fastCopyVersion.get()
                     : "Trying to serialize pathToDirtyInternalIndex with a version ahead";
-
-            final VirtualInternalRecord internalRecord = mutation.value;
             out.writeLong(mutation.version);
-            out.writeBoolean(mutation.deleted);
-            if (internalRecord != null) {
-                out.writeLong(internalRecord.getPath());
-                out.writeSerializable(internalRecord.getHash(), true);
+            out.writeBoolean(mutation.isDeleted());
+            if (!mutation.isDeleted()) {
+                out.writeSerializable(mutation.value, true);
             }
         }
     }
 
     /**
-     * Deserialize the {@link #pathToDirtyInternalIndex}.
+     * Deserialize the {@link #pathToDirtyHashIndex}.
      *
      * @param map
      * 		The index. Cannot be null.
@@ -1300,26 +1358,26 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
      * @throws IOException
      * 		In case of trouble.
      */
-    private void deserializePathToDirtyInternalIndex(
-            final Map<Long, Mutation<VirtualInternalRecord>> map, final SerializableDataInputStream in)
+    private void deserializePathToDirtyHashIndex(
+            final Map<Long, Mutation<Long, Hash>> map, final SerializableDataInputStream in, final int version)
             throws IOException {
         final int sizeOfMap = in.readInt();
         for (int index = 0; index < sizeOfMap; index++) {
             final long key = in.readLong();
             final long mutationVersion = in.readLong();
             final boolean deleted = in.readBoolean();
-            long path = -1;
             Hash hash = null;
             if (!deleted) {
-                path = in.readLong();
+                if (version == ClassVersion.ORIGINAL) {
+                    // skip path
+                    in.readLong();
+                }
                 hash = in.readSerializable();
             }
-
-            final VirtualInternalRecord internalRecord = deleted ? null : new VirtualInternalRecord(path, hash);
-            final Mutation<VirtualInternalRecord> mutation = new Mutation<>(null, key, internalRecord, mutationVersion);
-            mutation.deleted = deleted;
+            final Mutation<Long, Hash> mutation = new Mutation<>(null, key, hash, mutationVersion);
+            mutation.setDeleted(deleted);
             map.put(key, mutation);
-            dirtyInternals.add(mutation);
+            dirtyHashes.add(mutation);
         }
     }
 
@@ -1333,20 +1391,20 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
      * @throws IOException
      * 		If something fails.
      */
-    private void serializePathToDirtyLeafIndex(final Map<Long, Mutation<K>> map, final SerializableDataOutputStream out)
-            throws IOException {
+    private void serializePathToDirtyLeafIndex(
+            final Map<Long, Mutation<Long, K>> map, final SerializableDataOutputStream out) throws IOException {
         assert snapshot.get() : "Only snapshots can be serialized";
         out.writeInt(map.size());
-        for (final Map.Entry<Long, Mutation<K>> entry : map.entrySet()) {
+        for (final Map.Entry<Long, Mutation<Long, K>> entry : map.entrySet()) {
             out.writeLong(entry.getKey());
-            final Mutation<K> mutation = entry.getValue();
+            final Mutation<Long, K> mutation = entry.getValue();
             assert mutation != null : "Mutations cannot be null in a snapshot";
             assert mutation.version <= this.fastCopyVersion.get()
                     : "Trying to serialize pathToDirtyLeafIndex with a version ahead";
 
             out.writeSerializable(mutation.value, true);
             out.writeLong(mutation.version);
-            out.writeBoolean(mutation.deleted);
+            out.writeBoolean(mutation.isDeleted());
         }
     }
 
@@ -1360,8 +1418,8 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
      * @throws IOException
      * 		In case of trouble.
      */
-    private void deserializePathToDirtyLeafIndex(final Map<Long, Mutation<K>> map, final SerializableDataInputStream in)
-            throws IOException {
+    private void deserializePathToDirtyLeafIndex(
+            final Map<Long, Mutation<Long, K>> map, final SerializableDataInputStream in) throws IOException {
         final int sizeOfMap = in.readInt();
         for (int index = 0; index < sizeOfMap; index++) {
             final Long path = in.readLong();
@@ -1369,8 +1427,8 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
             final long mutationVersion = in.readLong();
             final boolean deleted = in.readBoolean();
 
-            final Mutation<K> mutation = new Mutation<>(null, path, key, mutationVersion);
-            mutation.deleted = deleted;
+            final Mutation<Long, K> mutation = new Mutation<>(null, path, key, mutationVersion);
+            mutation.setDeleted(deleted);
             map.put(path, mutation);
             dirtyLeafPaths.add(mutation);
         }
@@ -1387,21 +1445,20 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
      * 		If something fails.
      */
     private void serializeKeyToDirtyLeafIndex(
-            final Map<K, Mutation<VirtualLeafRecord<K, V>>> map, final SerializableDataOutputStream out)
+            final Map<K, Mutation<K, VirtualLeafRecord<K, V>>> map, final SerializableDataOutputStream out)
             throws IOException {
         assert snapshot.get() : "Only snapshots can be serialized";
         out.writeInt(map.size());
-        for (final Map.Entry<K, Mutation<VirtualLeafRecord<K, V>>> entry : map.entrySet()) {
-            final Mutation<VirtualLeafRecord<K, V>> mutation = entry.getValue();
+        for (final Map.Entry<K, Mutation<K, VirtualLeafRecord<K, V>>> entry : map.entrySet()) {
+            final Mutation<K, VirtualLeafRecord<K, V>> mutation = entry.getValue();
             assert mutation != null : "Mutations cannot be null in a snapshot";
             assert mutation.version <= this.fastCopyVersion.get()
                     : "Trying to serialize keyToDirtyLeafIndex with a version ahead";
 
             final VirtualLeafRecord<K, V> leaf = mutation.value;
             out.writeSerializable(leaf, false);
-            out.writeSerializable(leaf.getHash(), true);
             out.writeLong(mutation.version);
-            out.writeBoolean(mutation.deleted);
+            out.writeBoolean(mutation.isDeleted());
         }
     }
 
@@ -1416,18 +1473,22 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
      * 		In case of trouble.
      */
     private void deserializeKeyToDirtyLeafIndex(
-            final Map<K, Mutation<VirtualLeafRecord<K, V>>> map, final SerializableDataInputStream in)
+            final Map<K, Mutation<K, VirtualLeafRecord<K, V>>> map,
+            final SerializableDataInputStream in,
+            final int version)
             throws IOException {
         final int sizeOfMap = in.readInt();
         for (int index = 0; index < sizeOfMap; index++) {
             final VirtualLeafRecord<K, V> leafRecord = in.readSerializable(false, VirtualLeafRecord::new);
-            leafRecord.setHash(in.readSerializable());
+            if (version == ClassVersion.ORIGINAL) {
+                // skip hash
+                in.readSerializable();
+            }
             final long mutationVersion = in.readLong();
             final boolean deleted = in.readBoolean();
-
-            final Mutation<VirtualLeafRecord<K, V>> mutation =
+            final Mutation<K, VirtualLeafRecord<K, V>> mutation =
                     new Mutation<>(null, leafRecord.getKey(), leafRecord, mutationVersion);
-            mutation.deleted = deleted;
+            mutation.setDeleted(deleted);
             map.put(leafRecord.getKey(), mutation);
             dirtyLeaves.add(mutation);
         }
@@ -1446,141 +1507,64 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
      * Helper method that throws MutabilityException if the internal is immutable
      */
     private void throwIfInternalsImmutable() {
-        if (internalIndexesAreImmutable.get()) {
+        if (hashesAreImmutable.get()) {
             throw new MutabilityException("This operation is not permitted on immutable internals");
-        }
-    }
-
-    /**
-     * Gets a singleton instance to a comparator for sorting virtual leaf records.
-     * Helper method for generics.
-     *
-     * @return The non-null comparator.
-     */
-    @SuppressWarnings("unchecked")
-    private Comparator<Mutation<VirtualLeafRecord<K, V>>> dirtyLeafComparator() {
-        return (Comparator<Mutation<VirtualLeafRecord<K, V>>>) (Object) DIRTY_LEAF_COMPARATOR;
-    }
-
-    /**
-     * Gets a singleton instance to a comparator for sorting virtual internal records.
-     * Helper method for generics.
-     *
-     * @return The non-null comparator.
-     */
-    private static Comparator<Mutation<VirtualInternalRecord>> dirtyInternalComparator() {
-        return DIRTY_INTERNAL_COMPARATOR;
-    }
-
-    /**
-     * A helper method called by a stream to filter out mutations that are "over-ridden" by other mutations.
-     * The stream has been pre-sorted such that the best answer comes first in the stream. As the stream is
-     * processed, we maintain a reference to the "lastSeen" mutation. If the "lastSeen" mutation is for the
-     * same item as the mutation supplied in this call, then the mutation is skipped. In this way, we can
-     * filter out any over-ridden mutations cheaply. We also filter out any mutations that represent deleted
-     * entries (we don't need them for archiving).
-     *
-     * @param mutation
-     * 		The current mutation to consider. Cannot be null.
-     * @param lastSeen
-     * 		The last mutation we have seen. Cannot be null, but may hold a null value.
-     * @return {@code true} if this mutation should be included, {@code false} if it should be filtered out.
-     */
-    private static boolean dedupeByPath(
-            Mutation<? extends VirtualRecord> mutation, AtomicReference<Mutation<? extends VirtualRecord>> lastSeen) {
-        // This invariant should *ALWAYS* be true by the nature of the rest of the cache. It should
-        // be completely impossible for it to be null. We assert this to find bugs during testing / refactoring.
-        assert mutation != null : "The mutation was unexpectedly null!";
-        // If two mutations have the same path, they may represent the same key/value across successive
-        // versions, or they may represent different key/value, perhaps even in the same version, where
-        // one replaced the other in this location in the tree. If all deleted records are sorted LAST,
-        // then this algorithm works.
-        final Mutation<? extends VirtualRecord> last = lastSeen.get();
-        final long lastPath = last == null || last.value == null ? Long.MAX_VALUE : last.value.getPath();
-        final long path = mutation.value == null ? Long.MAX_VALUE : mutation.value.getPath();
-        if (last != null && lastPath == path) {
-            return false;
-        } else {
-            lastSeen.set(mutation);
-            return true;
         }
     }
 
     /**
      * A mutation. Mutations are linked together within the mutation list. Each mutation
      * has a pointer to the next oldest mutation in the list.
-     *
-     * @param <U>
-     * 		The type of data held by the mutation.
+     * @param <K> The key type of data held by the mutation.
+     * @param <V> The type of data held by the mutation.
      */
-    private static final class Mutation<U> {
-        private volatile Mutation<U> next;
+    private static final class Mutation<K, V> {
+        private volatile Mutation<K, V> next;
         private final long version; // The version of the cache that owns this mutation
-        private final Object key;
-        private volatile U value;
-        private volatile boolean deleted;
+        private final K key;
+        private volatile V value;
+        private volatile byte flags = 0;
 
-        Mutation(Mutation<U> next, Object key, U value, long version) {
+        // A bit in the flags field, which indicates whether this mutation is for a deleted op
+        private static final int FLAG_BIT_DELETED = 0;
+        // A bit in the flags field, which indicates whether this mutation should not be included
+        // into resulting stream of dirty hashes / leaves
+        private static final int FLAG_BIT_FILTERED = 1;
+
+        Mutation(Mutation<K, V> next, K key, V value, long version) {
             this.next = next;
             this.key = key;
             this.value = value;
             this.version = version;
         }
-    }
 
-    /**
-     * A comparator that sorts mutations first by path, then by version, and then by whether
-     * they are "deleted".
-     *
-     * @param <R>
-     */
-    private static final class MutationComparator<R extends VirtualRecord> implements Comparator<Mutation<R>> {
-        @Override
-        public int compare(final Mutation<R> a, final Mutation<R> b) {
-            try {
-                // Note: NONE OF THESE ELEMENTS MAY BE NULL!!
-                assert a != null : "Mutation 'a' was unexpectedly null!";
-                assert b != null : "Mutation 'b' was unexpectedly null!";
+        boolean getFlag(int bit) {
+            return ((0xFF & flags) & (1 << bit)) != 0;
+        }
 
-                final R aRec = a.value;
-                final R bRec = b.value;
-
-                // It may be that the record is null, if it was a path-based record (such as dirtyInternals)
-                // and it was deleted. In this case, like with the deleted case, we sort deleted items *after*.
-
-                // Sort first by path (lower path first)
-                final long aPath = aRec == null ? Long.MAX_VALUE : aRec.getPath();
-                final long bPath = bRec == null ? Long.MAX_VALUE : bRec.getPath();
-                int order = Long.compare(aPath, bPath);
-                if (order != 0) {
-                    return order;
-                }
-
-                // Then by version (higher version first)
-                // NOTE: Critical, we sort the newest (largest) version first
-                order = Long.compare(b.version, a.version);
-                if (order != 0) {
-                    return order;
-                }
-
-                // Then by "deleted" (deleted records come later)
-                if (a.deleted && !b.deleted) {
-                    order = 1;
-                } else if (!a.deleted && b.deleted) {
-                    order = -1;
-                }
-
-                // There should never be two mutations for the same version and path, unless one or both
-                // are deleted (since deleted mutations will be filtered out later). Note that the only
-                // way that order can be zero by this point is if a.deleted && b.deleted, so I only have
-                // to check one of them.
-                assert order != 0 || a.deleted
-                        : "Error: Found two mutations for the same version=" + a.version + " and path=" + aPath;
-
-                return order;
-            } catch (final Exception ex) {
-                throw new RuntimeException(ex);
+        @SuppressWarnings("NonAtomicOperationOnVolatileField")
+        void setFlag(int bit, boolean value) {
+            if (value) {
+                flags |= (1 << bit);
+            } else {
+                flags &= ~(1 << bit);
             }
+        }
+
+        boolean isDeleted() {
+            return getFlag(FLAG_BIT_DELETED);
+        }
+
+        void setDeleted(final boolean deleted) {
+            setFlag(FLAG_BIT_DELETED, deleted);
+        }
+
+        boolean isFiltered() {
+            return getFlag(FLAG_BIT_FILTERED);
+        }
+
+        void setFiltered() {
+            setFlag(FLAG_BIT_FILTERED, true);
         }
     }
 
@@ -1606,14 +1590,14 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
                 .append("\n");
         //noinspection unchecked
         builder.append(toDebugStringIndex(
-                        "pathToDirtyInternalIndex", (Map<Object, Mutation>) (Object) pathToDirtyInternalIndex))
+                        "pathToDirtyHashIndex", (Map<Object, Mutation>) (Object) pathToDirtyHashIndex))
                 .append("\n");
         //noinspection unchecked
         builder.append(toDebugStringArray("dirtyLeaves", (ConcurrentArray<Mutation>) (Object) dirtyLeaves));
         //noinspection unchecked
         builder.append(toDebugStringArray("dirtyLeafPaths", (ConcurrentArray<Mutation>) (Object) dirtyLeafPaths));
         //noinspection unchecked
-        builder.append(toDebugStringArray("dirtyInternals", (ConcurrentArray<Mutation>) (Object) dirtyInternals));
+        builder.append(toDebugStringArray("dirtyHashes", (ConcurrentArray<Mutation>) (Object) dirtyHashes));
         return builder.toString();
     }
 
@@ -1652,7 +1636,7 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
                         .append(",")
                         .append(mutation.value)
                         .append(",")
-                        .append(mutation.deleted ? "D," : "")
+                        .append(mutation.isDeleted() ? "D," : "")
                         .append("V")
                         .append(mutation.version)
                         .append(mutation.version == this.fastCopyVersion.get() ? "*" : "")
@@ -1678,7 +1662,7 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
                     .append(",")
                     .append(mutation.value)
                     .append(",")
-                    .append(mutation.deleted ? "D," : "")
+                    .append(mutation.isDeleted() ? "D," : "")
                     .append("V")
                     .append(mutation.version)
                     .append(mutation.version == this.fastCopyVersion.get() ? "*" : "")

@@ -59,6 +59,9 @@ import org.apache.logging.log4j.Logger;
 
 public class TokenTransfersLoadProvider extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TokenTransfersLoadProvider.class);
+    private static final String TOKEN = "token";
+    private static final String SENDER = "sender";
+    private static final String RECEIVER = "receiver";
 
     private AtomicLong duration = new AtomicLong(Long.MAX_VALUE);
     private AtomicReference<TimeUnit> unit = new AtomicReference<>(MINUTES);
@@ -129,13 +132,13 @@ public class TokenTransfersLoadProvider extends HapiSuite {
                         (sendingAccountsPerToken.get() + receivingAccountsPerToken.get()) * balanceInit.get();
                 List<HapiSpecOperation> initializers = new ArrayList<>();
                 for (int i = 0; i < tokensPerTxn.get(); i++) {
-                    var token = "token" + i;
+                    var token = TOKEN + i;
                     var treasury = "treasury" + i;
                     initializers.add(cryptoCreate(treasury));
                     initializers.add(tokenCreate(token).treasury(treasury).initialSupply(initialSupply));
                     treasuries.add(treasury);
                     for (int j = 0; j < sendingAccountsPerToken.get(); j++) {
-                        var sender = token + "sender" + j;
+                        var sender = token + SENDER + j;
                         senders.computeIfAbsent(token, ignore -> new ArrayList<>())
                                 .add(sender);
                         initializers.add(cryptoCreate(sender));
@@ -144,7 +147,7 @@ public class TokenTransfersLoadProvider extends HapiSuite {
                                 cryptoTransfer(moving(balanceInit.get(), token).between(treasury, sender)));
                     }
                     for (int j = 0; j < receivingAccountsPerToken.get(); j++) {
-                        var receiver = token + "receiver" + j;
+                        var receiver = token + RECEIVER + j;
                         receivers
                                 .computeIfAbsent(token, ignore -> new ArrayList<>())
                                 .add(receiver);
@@ -173,14 +176,14 @@ public class TokenTransfersLoadProvider extends HapiSuite {
                 if (firstDir.get()) {
                     var xfers = new TokenMovement[numTokens * numSenders];
                     for (int i = 0; i < numTokens; i++) {
-                        var token = "token" + i;
+                        var token = TOKEN + i;
                         for (int j = 0; j < numSenders; j++) {
                             var receivers = new String[numReceivers];
                             for (int k = 0; k < numReceivers; k++) {
-                                receivers[k] = token + "receiver" + k;
+                                receivers[k] = token + RECEIVER + k;
                             }
                             xfers[i * numSenders + j] =
-                                    moving(numReceivers, token).distributing(token + "sender" + j, receivers);
+                                    moving(numReceivers, token).distributing(token + SENDER + j, receivers);
                         }
                     }
                     op = cryptoTransfer(xfers)
@@ -193,14 +196,14 @@ public class TokenTransfersLoadProvider extends HapiSuite {
                 } else {
                     var xfers = new TokenMovement[numTokens * numReceivers];
                     for (int i = 0; i < numTokens; i++) {
-                        var token = "token" + i;
+                        var token = TOKEN + i;
                         for (int j = 0; j < numReceivers; j++) {
                             var senders = new String[numSenders];
                             for (int k = 0; k < numSenders; k++) {
-                                senders[k] = token + "sender" + k;
+                                senders[k] = token + SENDER + k;
                             }
                             xfers[i * numReceivers + j] =
-                                    moving(numSenders, token).distributing(token + "receiver" + j, senders);
+                                    moving(numSenders, token).distributing(token + RECEIVER + j, senders);
                         }
                     }
                     op = cryptoTransfer(xfers)

@@ -40,6 +40,10 @@ import org.apache.logging.log4j.Logger;
 
 public class ScheduleDeleteSpecs extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ScheduleDeleteSpecs.class);
+    private static final String VALID_SCHEDULED_TXN = "validScheduledTxn";
+    private static final String SENDER = "sender";
+    private static final String RECEIVER = "receiver";
+    private static final String ADMIN = "admin";
 
     public static void main(String... args) {
         new ScheduleDeleteSpecs().runSuiteAsync();
@@ -63,24 +67,24 @@ public class ScheduleDeleteSpecs extends HapiSuite {
     private HapiSpec deleteWithNoAdminKeyFails() {
         return defaultHapiSpec("DeleteWithNoAdminKeyFails")
                 .given(
-                        cryptoCreate("sender"),
-                        cryptoCreate("receiver"),
-                        scheduleCreate("validScheduledTxn", cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1))))
+                        cryptoCreate(SENDER),
+                        cryptoCreate(RECEIVER),
+                        scheduleCreate(VALID_SCHEDULED_TXN, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1))))
                 .when()
-                .then(scheduleDelete("validScheduledTxn").hasKnownStatus(SCHEDULE_IS_IMMUTABLE));
+                .then(scheduleDelete(VALID_SCHEDULED_TXN).hasKnownStatus(SCHEDULE_IS_IMMUTABLE));
     }
 
     private HapiSpec unauthorizedDeletionFails() {
         return defaultHapiSpec("UnauthorizedDeletionFails")
                 .given(
-                        newKeyNamed("admin"),
+                        newKeyNamed(ADMIN),
                         newKeyNamed("non-admin-key"),
-                        cryptoCreate("sender"),
-                        cryptoCreate("receiver"),
-                        scheduleCreate("validScheduledTxn", cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1)))
-                                .adminKey("admin"))
+                        cryptoCreate(SENDER),
+                        cryptoCreate(RECEIVER),
+                        scheduleCreate(VALID_SCHEDULED_TXN, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1)))
+                                .adminKey(ADMIN))
                 .when()
-                .then(scheduleDelete("validScheduledTxn")
+                .then(scheduleDelete(VALID_SCHEDULED_TXN)
                         .signedBy(DEFAULT_PAYER, "non-admin-key")
                         .hasKnownStatus(INVALID_SIGNATURE));
     }
@@ -88,16 +92,16 @@ public class ScheduleDeleteSpecs extends HapiSuite {
     private HapiSpec deletingAlreadyDeletedIsObvious() {
         return defaultHapiSpec("DeletingAlreadyDeletedIsObvious")
                 .given(
-                        cryptoCreate("sender"),
-                        cryptoCreate("receiver"),
-                        newKeyNamed("admin"),
-                        scheduleCreate("validScheduledTxn", cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1)))
-                                .adminKey("admin"),
-                        scheduleDelete("validScheduledTxn").signedBy("admin", DEFAULT_PAYER))
+                        cryptoCreate(SENDER),
+                        cryptoCreate(RECEIVER),
+                        newKeyNamed(ADMIN),
+                        scheduleCreate(VALID_SCHEDULED_TXN, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1)))
+                                .adminKey(ADMIN),
+                        scheduleDelete(VALID_SCHEDULED_TXN).signedBy(ADMIN, DEFAULT_PAYER))
                 .when()
-                .then(scheduleDelete("validScheduledTxn")
+                .then(scheduleDelete(VALID_SCHEDULED_TXN)
                         .fee(ONE_HBAR)
-                        .signedBy("admin", DEFAULT_PAYER)
+                        .signedBy(ADMIN, DEFAULT_PAYER)
                         .hasKnownStatus(SCHEDULE_ALREADY_DELETED));
     }
 
@@ -114,12 +118,12 @@ public class ScheduleDeleteSpecs extends HapiSuite {
         return defaultHapiSpec("DeletingExecutedIsPointless")
                 .given(
                         createTopic("ofGreatInterest"),
-                        newKeyNamed("admin"),
-                        scheduleCreate("validScheduledTxn", submitMessageTo("ofGreatInterest"))
-                                .adminKey("admin"))
+                        newKeyNamed(ADMIN),
+                        scheduleCreate(VALID_SCHEDULED_TXN, submitMessageTo("ofGreatInterest"))
+                                .adminKey(ADMIN))
                 .when()
-                .then(scheduleDelete("validScheduledTxn")
-                        .signedBy("admin", DEFAULT_PAYER)
+                .then(scheduleDelete(VALID_SCHEDULED_TXN)
+                        .signedBy(ADMIN, DEFAULT_PAYER)
                         .hasKnownStatus(SCHEDULE_ALREADY_EXECUTED));
     }
 }

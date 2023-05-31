@@ -23,6 +23,7 @@ plugins {
 dependencies {
   // Individual Dependencies
   implementation(project(":swirlds-config-impl"))
+  compileOnly(libs.spotbugs.annotations)
 }
 
 tasks.withType<Javadoc>() { enabled = false }

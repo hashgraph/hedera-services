@@ -22,7 +22,9 @@ plugins {
 
 dependencies {
   // Individual Dependencies
+  implementation(project(":swirlds-base"))
   api(project(":swirlds-common"))
+  compileOnly(libs.spotbugs.annotations)
 
   // Test Dependencies
   testImplementation(project(":swirlds-config-impl"))

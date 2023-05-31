@@ -42,13 +42,13 @@ import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.PlatformWithDeprecatedMethods;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldDualState;
-import com.swirlds.common.system.SwirldState1;
+import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.ConsensusEvent;
+import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.utility.ThresholdLimitingHandler;
@@ -93,6 +93,7 @@ import com.swirlds.merkle.map.test.lifecycle.EntityType;
 import com.swirlds.merkle.map.test.lifecycle.TransactionState;
 import com.swirlds.merkle.map.test.lifecycle.TransactionType;
 import com.swirlds.merkle.map.test.pta.MapKey;
+import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.Utilities;
 import com.swirlds.virtualmap.VirtualMap;
 import java.io.File;
@@ -121,9 +122,9 @@ import org.apache.logging.log4j.MarkerManager;
  * writes them to the screen, and also saves them to disk in a comma separated value (.csv) file. Each transaction
  * consists of an optional sequence number and random bytes.
  */
-public class PlatformTestingToolState extends PartialNaryMerkleInternal implements MerkleInternal, SwirldState1 {
+public class PlatformTestingToolState extends PartialNaryMerkleInternal implements MerkleInternal, SwirldState {
 
-    private static final long CLASS_ID = 0xbaa7ddc780cf9e06L;
+    private static final long CLASS_ID = 0xc0900cfa7a24db76L;
     private static final Logger logger = LogManager.getLogger(PlatformTestingToolState.class);
     private static final Marker LOGM_DEMO_INFO = MarkerManager.getMarker("DEMO_INFO");
     private static final Marker LOGM_EXCEPTION = MarkerManager.getMarker("EXCEPTION");
@@ -161,7 +162,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     private static RunningAverageMetric htFCQMicroSec;
 
     /**
-     * Has {@link #init(Platform, AddressBook, SwirldDualState, InitTrigger, SoftwareVersion)} been called on this copy
+     * Has init() been called on this copy
      * or an ancestor copy of this object?
      */
     private final AtomicBoolean initialized = new AtomicBoolean(false);
@@ -489,11 +490,6 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         return controlQuorum;
     }
 
-    @JsonIgnore
-    public long getLastTranTimeStamp() {
-        return lastTranTimeStamp;
-    }
-
     public NextSeqConsList getNextSeqCons() {
         return getChild(ChildIndices.NEXT_SEQUENCE_CONSENSUS);
     }
@@ -596,9 +592,9 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     }
 
     public synchronized void setPayloadConfig(final FCMConfig fcmConfig) {
-        expectedFCMFamily.setNodeId(platform.getSelfId().getId());
+        expectedFCMFamily.setNodeId(platform.getSelfId().id());
         expectedFCMFamily.setFcmConfig(fcmConfig);
-        expectedFCMFamily.setStakedNodeNum(platform.getAddressBook().getNumberWithStake());
+        expectedFCMFamily.setWeightedNodeNum(platform.getAddressBook().getNumberWithWeight());
 
         referenceNftLedger.setFractionToTrack(this.getNftLedger(), fcmConfig.getNftTrackingFraction());
     }
@@ -619,9 +615,9 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
 
     void initControlStructures(final Action<Long, ControlAction> action) {
         this.controlQuorum = new QuorumTriggeredAction<>(
-                () -> platform.getSelfId().getId(),
+                () -> platform.getSelfId().id(),
                 platform.getAddressBook()::getSize,
-                platform.getAddressBook()::getNumberWithStake,
+                platform.getAddressBook()::getNumberWithWeight,
                 action);
 
         this.exceptionRateLimiter = new ThresholdLimitingHandler<>(EXCEPTION_RATE_THRESHOLD);
@@ -645,17 +641,6 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         return expectedFCMFamily;
     }
 
-    public synchronized long getNextSeq(final long id) {
-        final long ret =
-                getNextSeqCons() == null ? 0 : getNextSeqCons().get((int) id).getValue();
-        logger.info(
-                LOGM_DEMO_INFO,
-                "PlatformTestingDemoDemoState node {} will continue creating transaction from {}",
-                id,
-                ret);
-        return ret;
-    }
-
     /**
      * {@inheritDoc}
      */
@@ -664,7 +649,14 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         throwIfImmutable();
         roundCounter++;
 
-        return new PlatformTestingToolState(this);
+        final PlatformTestingToolState mutableCopy = new PlatformTestingToolState(this);
+
+        if (platform != null) {
+            UnsafeMutablePTTStateAccessor.getInstance()
+                    .setMutableState(platform.getSelfId().id(), mutableCopy);
+        }
+
+        return mutableCopy;
     }
 
     /**
@@ -713,7 +705,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
             }
         }
         SyntheticBottleneckConfig.getActiveConfig()
-                .throttleIfNeeded(platform.getSelfId().getId());
+                .throttleIfNeeded(platform.getSelfId().id());
     }
 
     /**
@@ -831,7 +823,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
                 serialize(
                         expectedFCMFamily.getExpectedMap(),
                         new File(STORAGE_DIRECTORY),
-                        createExpectedMapName(platform.getSelfId().getId(), timestamp),
+                        createExpectedMapName(platform.getSelfId().id(), timestamp),
                         false);
                 TransactionSubmitter.setForcePauseCanSubmitMore(new AtomicBoolean(false));
                 logger.info(LOGM_DEMO_INFO, "handling SAVE_EXPECTED_MAP");
@@ -1053,27 +1045,9 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         }
     }
 
-    @Override
-    public synchronized void preHandle(final Transaction transaction) {
-        if (!initialized.get()) {
-            throw new IllegalStateException("preHandle() called before init()");
-        }
-        preHandleTransaction(transaction);
-    }
-
     protected void preHandleTransaction(final Transaction transaction) {
         expandSignatures(transaction);
         transaction.setMetadata(true);
-    }
-
-    @Override
-    public synchronized void handleTransaction(
-            final long creatorId,
-            final Instant timeCreated,
-            final Instant estimatedTimestamp,
-            final Transaction trans,
-            final SwirldDualState swirldDualState) {
-        // intentional no-op
     }
 
     @Override
@@ -1082,6 +1056,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         if (!initialized.get()) {
             throw new IllegalStateException("handleConsensusRound() called before init()");
         }
+        delay();
         round.forEachEventTransaction((event, transaction) ->
                 handleConsensusTransaction(event, transaction, swirldDualState, round.getRoundNum()));
     }
@@ -1100,7 +1075,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
                     TESTING_EXCEPTIONS_ACCEPTABLE_RECONNECT.getMarker(),
                     "handleConsensusRound Interrupted [ nodeId = {}, round = {} ]. "
                             + "This should happen only during a reconnect",
-                    platform.getSelfId().getId(),
+                    platform.getSelfId().id(),
                     roundNum);
             Thread.currentThread().interrupt();
         } catch (final ExecutionException e) {
@@ -1167,8 +1142,6 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
                                 LOGM_EXCEPTION, "" + "InvalidProtocolBufferException while chekcing signature", error));
             }
         }
-
-        delay();
 
         //////////// start timing/////////////
         final long startTime = System.nanoTime();
@@ -1252,6 +1225,8 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
             final SoftwareVersion previousSoftwareVersion) {
 
         this.platform = platform;
+        UnsafeMutablePTTStateAccessor.getInstance()
+                .setMutableState(platform.getSelfId().id(), this);
 
         initialized.set(true);
 
@@ -1259,7 +1234,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
 
         // If parameter exists, load PayloadCfgSimple from top level json configuration file
         // Otherwise, load the default setting
-        final String[] parameters = ((PlatformWithDeprecatedMethods) platform).getParameters();
+        final String[] parameters = ParameterProvider.getInstance().getParameters();
         if (parameters != null && parameters.length > 0) {
             final String jsonFileName = parameters[0];
             final PayloadCfgSimple payloadCfgSimple = PlatformTestingToolMain.getPayloadCfgSimple(jsonFileName);
@@ -1268,8 +1243,8 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
             setConfig(new PayloadCfgSimple());
         }
 
-        expectedFCMFamily.setNodeId(platform.getSelfId().getId());
-        expectedFCMFamily.setStakedNodeNum(platform.getAddressBook().getNumberWithStake());
+        expectedFCMFamily.setNodeId(platform.getSelfId().id());
+        expectedFCMFamily.setWeightedNodeNum(platform.getAddressBook().getNumberWithWeight());
 
         // initialize data structures used for FCQueue transaction records expiration
         initializeExpirationQueueAndAccountsSet();
@@ -1422,11 +1397,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     public void rebuildExpectedMapFromState(final Instant consensusTimestamp, final boolean isRestart) {
         // rebuild ExpectedMap
         logger.info(LOGM_DEMO_INFO, "Start Rebuilding ExpectedMap");
-        long timestampMilliseconds = 0;
-        if (consensusTimestamp != null) {
-            timestampMilliseconds = consensusTimestamp.toEpochMilli();
-        }
-        this.expectedFCMFamily.rebuildExpectedMap(getStateMap(), isRestart, timestampMilliseconds);
+        this.expectedFCMFamily.rebuildExpectedMap(getStateMap(), isRestart, 0);
         logger.info(LOGM_DEMO_INFO, "Finish Rebuilding ExpectedMap [ size = {} ]", () -> expectedFCMFamily
                 .getExpectedMap()
                 .size());
@@ -1608,5 +1579,10 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         public static final int QUORUM_RESULT = 10;
 
         public static final int CHILD_COUNT = 11;
+    }
+
+    @Override
+    public void preHandle(final Event event) {
+        event.forEachTransaction(this::preHandleTransaction);
     }
 }

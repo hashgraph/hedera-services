@@ -16,18 +16,54 @@
 
 package com.hedera.node.app.service.mono.state.virtual;
 
+import static org.apache.commons.lang3.RandomUtils.nextInt;
+import static org.apache.commons.lang3.RandomUtils.nextLong;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
+import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
+import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
+import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEqualityVirtualKey;
+import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEqualityVirtualValue;
+import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleSecondVirtualValue;
+import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
+import com.hedera.node.app.service.mono.state.virtual.temporal.SecondSinceEpocVirtualKey;
+import com.swirlds.virtualmap.VirtualMap;
+import java.nio.file.Path;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class VirtualMapFactoryTest {
 
-    @Test
-    void virtualizedUniqueTokenStorage_whenEmpty_canProperlyInsertAndFetchValues() {
-        final VirtualMapFactory subject = new VirtualMapFactory();
+    @TempDir
+    private Path tempDir;
 
-        final var map = subject.newVirtualizedUniqueTokenStorage();
+    private VirtualMapFactory subject;
+
+    @BeforeEach
+    void setUp() {
+        subject = new VirtualMapFactory(tempDir);
+    }
+
+    private static Stream<Arguments> falseTrueNull() {
+        return Stream.of(Arguments.of(false), Arguments.of(true), Arguments.of((Boolean) null));
+    }
+
+    @ParameterizedTest
+    @MethodSource("falseTrueNull")
+    void virtualizedUniqueTokenStorage_whenEmpty_canProperlyInsertAndFetchValues(Boolean useMerkleDb) {
+        final VirtualMap<UniqueTokenKey, UniqueTokenValue> map;
+        if (useMerkleDb != null) {
+            map = subject.newVirtualizedUniqueTokenStorage(useMerkleDb);
+        } else {
+            map = subject.newVirtualizedUniqueTokenStorage();
+        }
+
         assertThat(map.isEmpty()).isTrue();
 
         map.put(
@@ -39,5 +75,153 @@ class VirtualMapFactoryTest {
         assertThat(value).isNotNull();
         assertThat(value.getOwnerAccountNum()).isEqualTo(789L);
         assertThat(value.getMetadata()).isEqualTo("hello world".getBytes());
+    }
+
+    @ParameterizedTest
+    @MethodSource("falseTrueNull")
+    void newOnDiskTokensRels_whenEmpty_canProperlyInsertAndFetchValues(Boolean useMerkleDb) {
+        final VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> map;
+        if (useMerkleDb != null) {
+            map = subject.newOnDiskTokenRels(useMerkleDb);
+        } else {
+            map = subject.newOnDiskTokenRels();
+        }
+
+        assertThat(map.isEmpty()).isTrue();
+
+        final EntityNumVirtualKey key = new EntityNumVirtualKey(nextLong());
+        final OnDiskTokenRel value = new OnDiskTokenRel();
+        value.setBalance(nextLong());
+        value.setNumbers(nextLong());
+        map.put(key, value);
+
+        final OnDiskTokenRel valueFromMap = map.get(key);
+        assertThat(valueFromMap).isEqualTo(value);
+    }
+
+    @ParameterizedTest
+    @MethodSource("falseTrueNull")
+    void newVirtualizedIterableStorage_whenEmpty_canProperlyInsertAndFetchValues(Boolean useMerkleDb) {
+        final VirtualMap<ContractKey, IterableContractValue> map;
+
+        if (useMerkleDb != null) {
+            map = subject.newVirtualizedIterableStorage(useMerkleDb);
+        } else {
+            map = subject.newVirtualizedIterableStorage();
+        }
+
+        assertThat(map.isEmpty()).isTrue();
+
+        final ContractKey key = new ContractKey(nextLong(), nextLong());
+        final IterableContractValue value = new IterableContractValue(nextLong());
+        map.put(key, value);
+
+        final IterableContractValue valueFromMap = map.get(key);
+        assertThat(valueFromMap).isEqualTo(value);
+    }
+
+    @ParameterizedTest
+    @MethodSource("falseTrueNull")
+    void newScheduleListStorage_whenEmpty_canProperlyInsertAndFetchValues(Boolean useMerkleDb) {
+        final VirtualMap<ContractKey, IterableContractValue> map;
+        if (useMerkleDb != null) {
+            map = subject.newVirtualizedIterableStorage(useMerkleDb);
+        } else {
+            map = subject.newVirtualizedIterableStorage();
+        }
+
+        assertThat(map.isEmpty()).isTrue();
+
+        final ContractKey key = new ContractKey(nextLong(), nextLong());
+        final IterableContractValue value = new IterableContractValue(nextLong());
+        map.put(key, value);
+
+        final IterableContractValue valueFromMap = map.get(key);
+        assertThat(valueFromMap).isEqualTo(value);
+    }
+
+    @Test
+    void newScheduleListStorage_whenEmpty_canProperlyInsertAndFetchValues() {
+        final VirtualMap<EntityNumVirtualKey, ScheduleVirtualValue> map;
+        map = subject.newScheduleListStorage();
+
+        assertThat(map.isEmpty()).isTrue();
+
+        final EntityNumVirtualKey key = new EntityNumVirtualKey(nextLong());
+        final ScheduleVirtualValue value = new ScheduleVirtualValue();
+        map.put(key, value);
+
+        final ScheduleVirtualValue valueFromMap = map.get(key);
+        assertThat(valueFromMap).isEqualTo(value);
+    }
+
+    @Test
+    void newScheduleTemporalStorage_whenEmpty_canProperlyInsertAndFetchValues() {
+        final VirtualMap<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue> map;
+        map = subject.newScheduleTemporalStorage();
+
+        assertThat(map.isEmpty()).isTrue();
+
+        final SecondSinceEpocVirtualKey key = new SecondSinceEpocVirtualKey(nextLong());
+        final ScheduleSecondVirtualValue value = new ScheduleSecondVirtualValue();
+        map.put(key, value);
+
+        final ScheduleSecondVirtualValue valueFromMap = map.get(key);
+        assertThat(valueFromMap).isEqualTo(value);
+    }
+
+    @Test
+    void newScheduleEqualityStorage_whenEmpty_canProperlyInsertAndFetchValues() {
+        final VirtualMap<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> map;
+        map = subject.newScheduleEqualityStorage();
+
+        assertThat(map.isEmpty()).isTrue();
+
+        final ScheduleEqualityVirtualKey key = new ScheduleEqualityVirtualKey(nextLong());
+        final ScheduleEqualityVirtualValue value = new ScheduleEqualityVirtualValue();
+        map.put(key, value);
+
+        final ScheduleEqualityVirtualValue valueFromMap = map.get(key);
+        assertThat(valueFromMap).isEqualTo(value);
+    }
+
+    @ParameterizedTest
+    @MethodSource("falseTrueNull")
+    void newOnDiskAccountStorage_whenEmpty_canProperlyInsertAndFetchValues(Boolean useMerkleDb) {
+        final VirtualMap<EntityNumVirtualKey, OnDiskAccount> map;
+        if (useMerkleDb != null) {
+            map = subject.newOnDiskAccountStorage(useMerkleDb);
+        } else {
+            map = subject.newOnDiskAccountStorage();
+        }
+
+        assertThat(map.isEmpty()).isTrue();
+
+        final EntityNumVirtualKey key = new EntityNumVirtualKey(nextLong());
+        final OnDiskAccount value = new OnDiskAccount();
+        map.put(key, value);
+
+        final OnDiskAccount valueFromMap = map.get(key);
+        assertThat(valueFromMap).isEqualTo(value);
+    }
+
+    @ParameterizedTest
+    @MethodSource("falseTrueNull")
+    void newVirtualizedBlobs_whenEmpty_canProperlyInsertAndFetchValues(Boolean useMerkleDb) {
+        final VirtualMap<VirtualBlobKey, VirtualBlobValue> map;
+        if (useMerkleDb != null) {
+            map = subject.newVirtualizedBlobs(useMerkleDb);
+        } else {
+            map = subject.newVirtualizedBlobs();
+        }
+
+        assertThat(map.isEmpty()).isTrue();
+
+        final VirtualBlobKey key = new VirtualBlobKey(VirtualBlobKey.Type.CONTRACT_BYTECODE, nextInt());
+        final VirtualBlobValue value = new VirtualBlobValue();
+        map.put(key, value);
+
+        final VirtualBlobValue valueFromMap = map.get(key);
+        assertThat(valueFromMap).isEqualTo(value);
     }
 }

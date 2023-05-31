@@ -32,11 +32,12 @@ import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
-import com.swirlds.platform.Connection;
+import com.swirlds.common.test.RandomAddressBookGenerator.WeightDistributionStrategy;
 import com.swirlds.platform.SettingsProvider;
-import com.swirlds.platform.SocketConnection;
 import com.swirlds.platform.network.ByteConstants;
+import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionTracker;
+import com.swirlds.platform.network.SocketConnection;
 import com.swirlds.platform.network.connection.NotConnectedConnection;
 import com.swirlds.platform.network.connectivity.OutboundConnectionCreator;
 import com.swirlds.platform.network.connectivity.SocketFactory;
@@ -63,12 +64,12 @@ class OutboundConnectionCreatorTest {
         final Random r = new Random();
         final AddressBook addressBook = new RandomAddressBookGenerator(r)
                 .setSize(numNodes)
-                .setStakeDistributionStrategy(RandomAddressBookGenerator.StakeDistributionStrategy.BALANCED)
+                .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.FAKE_HASH)
                 .setSequentialIds(true)
                 .build();
-        final NodeId thisNode = NodeId.createMain(r.nextInt(10));
-        final NodeId otherNode = NodeId.createMain(r.nextInt(10));
+        final NodeId thisNode = new NodeId(r.nextInt(10));
+        final NodeId otherNode = new NodeId(r.nextInt(10));
 
         final AtomicBoolean connected = new AtomicBoolean(true);
         final Socket socket = mock(Socket.class);
@@ -159,12 +160,12 @@ class OutboundConnectionCreatorTest {
         final Random r = new Random();
         final AddressBook addressBook = new RandomAddressBookGenerator(r)
                 .setSize(numNodes)
-                .setStakeDistributionStrategy(RandomAddressBookGenerator.StakeDistributionStrategy.BALANCED)
+                .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.FAKE_HASH)
                 .setSequentialIds(true)
                 .build();
-        final NodeId thisNode = NodeId.createMain(r.nextInt(10));
-        final NodeId otherNode = NodeId.createMain(r.nextInt(10));
+        final NodeId thisNode = new NodeId(r.nextInt(10));
+        final NodeId otherNode = new NodeId(r.nextInt(10));
 
         final AtomicBoolean connected = new AtomicBoolean(true);
         final Socket socket = mock(Socket.class);
@@ -218,12 +219,12 @@ class OutboundConnectionCreatorTest {
         final Random r = new Random();
         final AddressBook addressBook = new RandomAddressBookGenerator(r)
                 .setSize(numNodes)
-                .setStakeDistributionStrategy(RandomAddressBookGenerator.StakeDistributionStrategy.BALANCED)
+                .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.FAKE_HASH)
                 .setSequentialIds(true)
                 .build();
-        final NodeId thisNode = NodeId.createMain(r.nextInt(10));
-        final NodeId otherNode = NodeId.createMain(r.nextInt(10));
+        final NodeId thisNode = new NodeId(r.nextInt(10));
+        final NodeId otherNode = new NodeId(r.nextInt(10));
 
         final AtomicBoolean connected = new AtomicBoolean(true);
         final Socket socket = mock(Socket.class);

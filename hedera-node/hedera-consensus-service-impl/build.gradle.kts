@@ -28,12 +28,21 @@ configurations.all {
 }
 
 dependencies {
+  implementation(project(":hedera-node:hedera-config"))
   annotationProcessor(libs.dagger.compiler)
+  api(project(":hedera-node:hapi"))
   api(project(":hedera-node:hedera-consensus-service"))
+  api(project(":hedera-node:hapi"))
   implementation(project(":hedera-node:hedera-mono-service"))
   implementation(libs.bundles.di)
+  implementation(libs.pbj.runtime)
+  implementation(libs.swirlds.common)
   testImplementation(testLibs.bundles.testing)
   testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
   testImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
+  testImplementation(project(":hedera-node:hedera-token-service"))
+  testImplementation(project(":hedera-node:hedera-app"))
   testImplementation(testLibs.mockito.inline)
+  testImplementation(libs.swirlds.test.framework)
+  testImplementation(testFixtures(project(":hedera-node:hedera-config")))
 }

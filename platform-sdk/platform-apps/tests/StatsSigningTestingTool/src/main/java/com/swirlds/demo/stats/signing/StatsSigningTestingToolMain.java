@@ -27,13 +27,16 @@ package com.swirlds.demo.stats.signing;
  */
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.utility.Units.MILLISECONDS_TO_NANOSECONDS;
+import static com.swirlds.common.utility.Units.NANOSECONDS_TO_MICROSECONDS;
 import static com.swirlds.common.utility.Units.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
+import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.PlatformWithDeprecatedMethods;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.threading.framework.StoppableThread;
@@ -42,7 +45,8 @@ import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.demo.stats.signing.algorithms.ECSecP256K1Algorithm;
 import com.swirlds.demo.stats.signing.algorithms.X25519SigningAlgorithm;
 import com.swirlds.platform.Browser;
-import com.swirlds.platform.gui.SwirldsGui;
+import com.swirlds.platform.ParameterProvider;
+import com.swirlds.platform.gui.GuiPlatformAccessor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -54,10 +58,11 @@ import org.apache.logging.log4j.Logger;
 public class StatsSigningTestingToolMain implements SwirldMain {
     // the first four come from the parameters in the config.txt file
 
+    private static final Logger logger = LogManager.getLogger(StatsSigningTestingToolMain.class);
     /**
-     * the time of the last call to preEvent
+     * the time of the last measurement of TPS
      */
-    long lastEventTime = System.nanoTime();
+    long lastTPSMeasureTime = 0;
     /**
      * number of events needed to be created (the non-integer leftover from last preEvent call
      */
@@ -97,6 +102,34 @@ public class StatsSigningTestingToolMain implements SwirldMain {
 
     private final StoppableThread transactionGenerator;
 
+    private static final SpeedometerMetric.Config TRAN_SUBMIT_TPS_SPEED_CONFIG =
+            new SpeedometerMetric.Config("Debug.info", "tranSubTPS").withDescription("Transaction submitted TPS");
+
+    private SpeedometerMetric transactionSubmitSpeedometer;
+
+    /**
+     * The number of milliseconds of the window period to measure TPS over
+     */
+    private int tps_measure_window_milliseconds = 200;
+
+    /**
+     * The expected TPS for the network
+     */
+    private double expectedTPS = 0;
+
+    /** The constant used to calculate the window size, the higher the expected TPS, the smaller the window */
+    private static final long WINDOW_CALCULATION_CONST = 125000;
+
+    /**
+     * The number of seconds to ramp up the TPS to the expected value
+     */
+    private static final int TPS_RAMP_UP_WINDOW_MILLISECONDS = 20_000;
+
+    /**
+     * The timestamp when the ramp up started
+     */
+    private long rampUpStartTimeMilliSeconds = 0;
+
     /**
      * This is just for debugging: it allows the app to run in Eclipse. If the config.txt exists and lists a particular
      * SwirldMain class as the one to run, then it can run in Eclipse (with the green triangle icon).
@@ -105,7 +138,7 @@ public class StatsSigningTestingToolMain implements SwirldMain {
      * 		these are not used
      */
     public static void main(final String[] args) {
-        Browser.launch(args);
+        Browser.parseCommandLineArgsAndLaunch(args);
     }
 
     public StatsSigningTestingToolMain() {
@@ -120,21 +153,19 @@ public class StatsSigningTestingToolMain implements SwirldMain {
     @Override
     public void init(final Platform platform, final NodeId id) {
 
-        if (!(platform instanceof PlatformWithDeprecatedMethods)) {
-            // Don't bother with setup while in recovery mode
-            return;
-        }
-
-        final long syncDelay;
         this.platform = platform;
-        selfId = id.getId();
+        selfId = id.id();
         // parse the config.txt parameters, and allow optional _ as in 1_000_000
-        final String[] parameters = ((PlatformWithDeprecatedMethods) platform).getParameters();
+        final String[] parameters = ParameterProvider.getInstance().getParameters();
         headless = (parameters[0].equals("1"));
-        syncDelay = Integer.parseInt(parameters[2].replaceAll("_", ""));
         bytesPerTrans = Integer.parseInt(parameters[3].replaceAll("_", ""));
         transPerEventMax = Integer.parseInt(parameters[4].replaceAll("_", ""));
         transPerSecToCreate = Integer.parseInt(parameters[5].replaceAll("_", ""));
+
+        expectedTPS = transPerSecToCreate / (double) platform.getAddressBook().getSize();
+
+        // the higher the expected TPS, the smaller the window
+        tps_measure_window_milliseconds = (int) (WINDOW_CALCULATION_CONST / expectedTPS);
 
         // If we have a 7th setting, treat it as the signedTransPoolSize
         if (parameters.length > 6) {
@@ -145,26 +176,29 @@ public class StatsSigningTestingToolMain implements SwirldMain {
             // they shouldn't both be -1, so set one of them
             transPerEventMax = 1024;
         }
-        SwirldsGui.setAbout(
-                platform.getSelfId().getId(),
-                "Stats Signing Demo v. 1.3\nThis writes statistics to a log file,"
-                        + " such as the number of transactions per second.");
-        ((PlatformWithDeprecatedMethods) platform).setSleepAfterSync(syncDelay);
+        GuiPlatformAccessor.getInstance()
+                .setAbout(
+                        platform.getSelfId(),
+                        "Stats Signing Demo v. 1.3\nThis writes statistics to a log file,"
+                                + " such as the number of transactions per second.");
 
         transactionPool = new TransactionPool(
-                platform.getSelfId().getId(),
+                platform.getSelfId().id(),
                 signedTransPoolSize,
                 bytesPerTrans,
                 true,
                 new ECSecP256K1Algorithm(),
                 new X25519SigningAlgorithm());
+
+        final Metrics metrics = platform.getContext().getMetrics();
+        transactionSubmitSpeedometer = metrics.getOrCreate(TRAN_SUBMIT_TPS_SPEED_CONFIG);
     }
 
     @Override
     public void run() {
         final Thread shutdownHook = new ThreadConfiguration(getStaticThreadManager())
                 .setDaemon(false)
-                .setNodeId(platform.getSelfId().getId())
+                .setNodeId(platform.getSelfId())
                 .setComponent("app")
                 .setThreadName("demo_log_time_pulse")
                 .setRunnable(() -> {
@@ -191,14 +225,38 @@ public class StatsSigningTestingToolMain implements SwirldMain {
     private synchronized void generateTransactions() {
         byte[] transaction;
         final long now = System.nanoTime();
-        final double tps =
-                transPerSecToCreate / (double) platform.getAddressBook().getSize();
         int numCreated = 0;
 
-        if (transPerSecToCreate > -1) { // if not unlimited (-1 means unlimited)
-            toCreate += ((double) now - lastEventTime) * NANOSECONDS_TO_SECONDS * tps;
+        // if it's first time calling this, just set lastEventTime and return
+        // so the period from app start to the first time run() is called is ignored
+        // to avoid a huge burst of transactions at the start of the test
+        if (lastTPSMeasureTime == 0) {
+            lastTPSMeasureTime = now;
+            rampUpStartTimeMilliSeconds = (long) (now / MILLISECONDS_TO_NANOSECONDS);
+            logger.info(
+                    STARTUP.getMarker(),
+                    "First time calling generateTransactions() Expected TPS per code is {}",
+                    expectedTPS);
+            return;
         }
-        lastEventTime = now;
+
+        if (transPerSecToCreate > -1) { // if not unlimited (-1 means unlimited)
+            // ramp up the TPS to the expected value
+            long elapsedTime = now / MILLISECONDS_TO_NANOSECONDS - rampUpStartTimeMilliSeconds;
+            double rampUpTPS = 0;
+            if (elapsedTime < TPS_RAMP_UP_WINDOW_MILLISECONDS) {
+                rampUpTPS = expectedTPS * elapsedTime / ((double) (TPS_RAMP_UP_WINDOW_MILLISECONDS));
+            } else {
+                rampUpTPS = expectedTPS;
+            }
+
+            // for every measure window, re-calculate the toCreate counter
+            if (((double) now - lastTPSMeasureTime) * NANOSECONDS_TO_MICROSECONDS > tps_measure_window_milliseconds) {
+                toCreate = ((double) now - lastTPSMeasureTime) * NANOSECONDS_TO_SECONDS * rampUpTPS;
+                lastTPSMeasureTime = now;
+            }
+        }
+
         while (true) {
             if (transPerSecToCreate > -1 && toCreate < 1) {
                 break; // don't create too many transactions per second
@@ -217,6 +275,7 @@ public class StatsSigningTestingToolMain implements SwirldMain {
             numCreated++;
             toCreate--;
         }
+        transactionSubmitSpeedometer.update(numCreated);
         // toCreate will now represent any leftover transactions that we
         // failed to create this time, and will create next time
     }

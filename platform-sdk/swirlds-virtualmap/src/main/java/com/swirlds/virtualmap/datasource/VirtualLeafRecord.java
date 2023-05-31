@@ -16,7 +16,8 @@
 
 package com.swirlds.virtualmap.datasource;
 
-import com.swirlds.common.crypto.Hash;
+import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
+
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -26,15 +27,15 @@ import com.swirlds.virtualmap.internal.Path;
 import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
 import java.io.IOException;
 import java.util.Objects;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
- * A {@link VirtualRecord} for leaf data. The leaf record contains the hash, path, key, and value.
+ * An object for leaf data. The leaf record contains the path, key, and value.
  * This record is {@link SelfSerializable} to support reconnect and state saving, where it is necessary
  * to take leaf records from caches that are not yet flushed to disk and write them to the stream.
  * We never send hashes in the stream.
  */
-public final class VirtualLeafRecord<K extends VirtualKey, V extends VirtualValue> extends VirtualRecord
-        implements SelfSerializable {
+public final class VirtualLeafRecord<K extends VirtualKey, V extends VirtualValue> implements SelfSerializable {
 
     private static final long CLASS_ID = 0x410f45f0acd3264L;
 
@@ -42,6 +43,13 @@ public final class VirtualLeafRecord<K extends VirtualKey, V extends VirtualValu
         public static final int ORIGINAL = 1;
     }
 
+    /**
+     * The path for this record. The path can change over time as nodes are added or removed.
+     */
+    private volatile long path;
+
+    // key and value are effectively immutable, as they are being set only in the constructor and deserialize method,
+    // therefore they don't need to be volatile. They can't be final because of the deserialize method.
     private K key;
     private V value;
 
@@ -50,7 +58,7 @@ public final class VirtualLeafRecord<K extends VirtualKey, V extends VirtualValu
      * It creates a leaf with a totally invalid leaf path.
      */
     public VirtualLeafRecord() {
-        super(-1, null);
+        path = -1;
     }
 
     /**
@@ -59,8 +67,6 @@ public final class VirtualLeafRecord<K extends VirtualKey, V extends VirtualValu
      * @param path
      * 		The path. Must be positive (since 0 represents a root node, which is never a leaf),
      * 		or {@link Path#INVALID_PATH}.
-     * @param hash
-     * 		The hash. May be null.
      * @param key
      * 		The key for this record. This should normally never be null, but may be for
      * 		{@link VirtualNodeCache#DELETED_LEAF_RECORD}
@@ -68,15 +74,15 @@ public final class VirtualLeafRecord<K extends VirtualKey, V extends VirtualValu
      * @param value
      * 		The value for this record, which can be null.
      */
-    public VirtualLeafRecord(final long path, final Hash hash, final K key, final V value) {
-        super(path, hash);
+    public VirtualLeafRecord(final long path, final K key, final V value) {
+        this.path = path;
         this.key = key;
         this.value = value;
     }
 
     @SuppressWarnings("unchecked")
     public VirtualLeafRecord<K, V> copy() {
-        return new VirtualLeafRecord<>(getPath(), getHash(), key, (V) value.copy());
+        return new VirtualLeafRecord<>(path, key, (V) value.copy());
     }
 
     /**
@@ -99,6 +105,14 @@ public final class VirtualLeafRecord<K extends VirtualKey, V extends VirtualValu
         return value;
     }
 
+    public void setPath(long path) {
+        this.path = path;
+    }
+
+    public long getPath() {
+        return path;
+    }
+
     /**
      * Sets the value. May be null. Must set the hash to null if the value has changed.
      *
@@ -108,7 +122,6 @@ public final class VirtualLeafRecord<K extends VirtualKey, V extends VirtualValu
     public void setValue(final V value) {
         if (this.value != value) {
             this.value = value;
-            this.setHash(null);
         }
     }
 
@@ -133,9 +146,9 @@ public final class VirtualLeafRecord<K extends VirtualKey, V extends VirtualValu
      */
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
-        out.writeLong(this.getPath());
-        out.writeSerializable(this.key, true);
-        out.writeSerializable(this.value, true);
+        out.writeLong(path);
+        out.writeSerializable(key, true);
+        out.writeSerializable(value, true);
     }
 
     /**
@@ -143,7 +156,7 @@ public final class VirtualLeafRecord<K extends VirtualKey, V extends VirtualValu
      */
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        setPath(in.readLong());
+        this.path = in.readLong();
         this.key = in.readSerializable();
         this.value = in.readSerializable();
     }
@@ -161,12 +174,8 @@ public final class VirtualLeafRecord<K extends VirtualKey, V extends VirtualValu
             return false;
         }
 
-        if (!super.equals(o)) {
-            return false;
-        }
-
         final VirtualLeafRecord<?, ?> that = (VirtualLeafRecord<?, ?>) o;
-        return Objects.equals(key, that.key) && Objects.equals(value, that.value);
+        return path == that.path && Objects.equals(key, that.key) && Objects.equals(value, that.value);
     }
 
     /**
@@ -174,7 +183,7 @@ public final class VirtualLeafRecord<K extends VirtualKey, V extends VirtualValu
      */
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), key, value);
+        return Objects.hash(path, key, value);
     }
 
     /**
@@ -182,10 +191,10 @@ public final class VirtualLeafRecord<K extends VirtualKey, V extends VirtualValu
      */
     @Override
     public String toString() {
-        return "VirtualLeafRecord{" + "key="
-                + key + ", value="
-                + value + ", path="
-                + getPath() + ", hash="
-                + getHash() + '}';
+        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+                .append("key", key)
+                .append("value", value)
+                .append("path", path)
+                .toString();
     }
 }

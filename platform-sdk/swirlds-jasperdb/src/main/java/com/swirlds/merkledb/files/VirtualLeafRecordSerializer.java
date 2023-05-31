@@ -16,10 +16,8 @@
 
 package com.swirlds.merkledb.files;
 
-import static com.swirlds.merkledb.utilities.HashTools.byteBufferToHash;
+import static com.swirlds.jasperdb.utilities.HashTools.DEFAULT_DIGEST;
 
-import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.merkledb.serialize.DataItemHeader;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
@@ -32,7 +30,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
-public class VirtualLeafRecordSerializer<K extends VirtualKey<? super K>, V extends VirtualValue>
+public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends VirtualValue>
         implements DataItemSerializer<VirtualLeafRecord<K, V>> {
 
     private final long currentVersion;
@@ -44,13 +42,10 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey<? super K>, V exte
     private final int dataItemSerializedSize;
     private final int headerSize;
 
-    /** DataFileOutputStream needed when we are writing variable sized data */
-    private static final ThreadLocal<DataFileOutputStream> DATA_FILE_OUTPUT_STREAM_THREAD_LOCAL =
-            ThreadLocal.withInitial(() -> new DataFileOutputStream(1024));
+    private final int hashSize;
 
     public VirtualLeafRecordSerializer(MerkleDbTableConfig<K, V> tableConfig) {
-        currentVersion = (0x000000000000FFFFL & tableConfig.getHashVersion())
-                | ((0x000000000000FFFFL & tableConfig.getKeyVersion()) << 16)
+        currentVersion = ((0x000000000000FFFFL & tableConfig.getKeyVersion()) << 16)
                 | ((0x000000000000FFFFL & tableConfig.getValueVersion()) << 32);
         keySerializer = tableConfig.getKeySerializer();
         valueSerializer = tableConfig.getValueSerializer();
@@ -58,10 +53,11 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey<? super K>, V exte
         dataItemSerializedSize = variableSize
                 ? VARIABLE_DATA_SIZE
                 : (Long.BYTES // path
-                        + tableConfig.getHashType().digestLength() // hash
                         + keySerializer.getSerializedSize() // key
                         + valueSerializer.getSerializedSize()); // value
         headerSize = Long.BYTES + (variableSize ? Integer.BYTES : 0);
+        // for backwards compatibility
+        hashSize = tableConfig.getHashType().digestLength();
     }
 
     @Override
@@ -87,13 +83,20 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey<? super K>, V exte
         return dataItemSerializedSize;
     }
 
+    @Override
+    public int getSerializedSizeForVersion(long version) {
+        final int hashSerializationVersion = (int) (0x000000000000FFFFL & version);
+        if (hashSerializationVersion != 0 && !isVariableSize()) {
+            return getSerializedSize() + hashSize;
+        }
+        return getSerializedSize();
+    }
+
     /**
      * Deserialize a data item from a byte buffer, that was written with given data version
      *
-     * @param buffer
-     * 		The buffer to read from
-     * @param dataVersion
-     * 		The serialization version the data item was written with
+     * @param buffer The buffer to read from
+     * @param dataVersion The serialization version the data item was written with
      * @return Deserialized data item
      */
     @Override
@@ -104,58 +107,48 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey<? super K>, V exte
         final DataItemHeader dataItemHeader = deserializeHeader(buffer);
         // deserialize path from the header
         final long path = dataItemHeader.getKey();
-        // deserialize hash
-        final Hash hash = byteBufferToHash(buffer, hashSerializationVersion);
+
+        if (hashSerializationVersion != 0) {
+            // compatibility: read hash
+            buffer.position(buffer.position() + DEFAULT_DIGEST.digestLength());
+        }
         // deserialize key
         final K key = keySerializer.deserialize(buffer, keySerializationVersion);
         // deserialize value
         final V value = valueSerializer.deserialize(buffer, valueSerializationVersion);
         // return new VirtualLeafRecord
-        return new VirtualLeafRecord<>(path, hash, key, value);
+        return new VirtualLeafRecord<>(path, key, value);
     }
 
-    /**
-     * Serialize a data item including header to the output stream returning the size of the data written
-     *
-     * @param leafRecord
-     * 		The virtual record data item to serialize
-     * @param outputStream
-     * 		Output stream to write to
-     */
+    /** {@inheritDoc} */
     @Override
-    public int serialize(final VirtualLeafRecord<K, V> leafRecord, final SerializableDataOutputStream outputStream)
-            throws IOException {
+    public int serialize(final VirtualLeafRecord<K, V> leafRecord, final ByteBuffer buffer) throws IOException {
+        final int initialPos = buffer.position();
+        // path
+        buffer.putLong(leafRecord.getPath());
+        // total length, if variable size
         if (isVariableSize()) {
-            final DataFileOutputStream variableStream =
-                    DATA_FILE_OUTPUT_STREAM_THREAD_LOCAL.get().reset();
-            variableStream.write(leafRecord.getHash().getValue());
-            keySerializer.serialize(leafRecord.getKey(), variableStream);
-            valueSerializer.serialize(leafRecord.getValue(), variableStream);
-            variableStream.flush();
-
-            int bytesWritten = variableStream.bytesWritten();
-            bytesWritten += Long.BYTES; // path
-            bytesWritten += Integer.BYTES; // size
-
-            // header
-            outputStream.writeLong(leafRecord.getPath());
-            outputStream.writeInt(bytesWritten);
-            // data
-            variableStream.writeTo(outputStream);
-
-            return bytesWritten;
-        } else {
-            outputStream.writeLong(leafRecord.getPath());
-            outputStream.write(leafRecord.getHash().getValue());
-            keySerializer.serialize(leafRecord.getKey(), outputStream);
-            valueSerializer.serialize(leafRecord.getValue(), outputStream);
-            return dataItemSerializedSize;
+            buffer.putInt(0); // will be updated below
         }
+        // key
+        keySerializer.serialize(leafRecord.getKey(), buffer);
+        valueSerializer.serialize(leafRecord.getValue(), buffer);
+
+        final int totalSize;
+        if (isVariableSize()) {
+            final int finalPos = buffer.position();
+            buffer.position(initialPos + Long.BYTES);
+            totalSize = finalPos - initialPos;
+            buffer.putInt(totalSize);
+            buffer.position(finalPos);
+        } else {
+            totalSize = dataItemSerializedSize;
+        }
+
+        return totalSize;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public boolean equals(final Object obj) {
         if (!(obj instanceof VirtualLeafRecordSerializer<?, ?> that)) {
@@ -165,9 +158,7 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey<? super K>, V exte
                 && Objects.equals(valueSerializer, that.valueSerializer);
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public int hashCode() {
         return Objects.hash(keySerializer, valueSerializer);

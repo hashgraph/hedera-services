@@ -16,12 +16,12 @@
 
 package com.swirlds.platform.state;
 
+import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.internal.EventImpl;
 import java.time.Instant;
 import java.util.List;
@@ -66,10 +66,10 @@ public final class GenesisStateBuilder {
      * @param configuration configuration for the platform
      * @return a genesis dual state
      */
-    private static DualStateImpl buildGenesisDualState(final Configuration configuration) {
+    private static DualStateImpl buildGenesisDualState(final BasicConfig configuration) {
         final DualStateImpl dualState = new DualStateImpl();
 
-        final long genesisFreezeTime = configuration.getValue("genesisFreezeTime", Long.class, 0L);
+        final long genesisFreezeTime = configuration.genesisFreezeTime();
         if (genesisFreezeTime > 0) {
             dualState.setFreezeTime(Instant.ofEpochSecond(genesisFreezeTime));
         }
@@ -92,10 +92,11 @@ public final class GenesisStateBuilder {
             final SoftwareVersion appVersion,
             final Supplier<SwirldState> genesisSwirldStateBuilder) {
 
+        final BasicConfig basicConfig = platform.getContext().getConfiguration().getConfigData(BasicConfig.class);
         final State state = new State();
         state.setPlatformState(buildGenesisPlatformState(addressBook, appVersion));
         state.setSwirldState(genesisSwirldStateBuilder.get());
-        state.setDualState(buildGenesisDualState(platform.getContext().getConfiguration()));
+        state.setDualState(buildGenesisDualState(basicConfig));
 
         state.getSwirldState()
                 .init(platform, state.getSwirldDualState(), InitTrigger.GENESIS, SoftwareVersion.NO_VERSION);

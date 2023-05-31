@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.test.RandomUtils;
-import com.swirlds.platform.Connection;
+import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionManager;
 import com.swirlds.platform.network.connectivity.OutboundConnectionCreator;
 import com.swirlds.platform.network.topology.StaticConnectionManagers;
@@ -52,7 +52,7 @@ class StaticConnectionManagersTest {
     @MethodSource("topologicalVariations")
     void test(final int numNodes, final int numNeighbors) throws Exception {
         final Random r = RandomUtils.getRandomPrintSeed();
-        final NodeId selfId = NodeId.createMain(r.nextInt(numNodes));
+        final NodeId selfId = new NodeId(r.nextInt(numNodes));
         Mockito.when(connectionCreator.createConnection(Mockito.any())).thenAnswer(inv -> {
             final NodeId peerId = inv.getArgument(0, NodeId.class);
             return new FakeConnection(selfId, peerId);

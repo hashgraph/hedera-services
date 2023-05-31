@@ -308,7 +308,12 @@ class FreezeTokenPrecompileTest {
         given(syntheticTxnFactory.createFreeze(tokenFreezeUnFreezeWrapper))
                 .willReturn(TransactionBody.newBuilder()
                         .setTokenUnfreeze(TokenUnfreezeAccountTransactionBody.newBuilder()));
-        given(sigsVerifier.hasActiveFreezeKey(true, fungibleTokenAddr, fungibleTokenAddr, wrappedLedgers))
+        given(sigsVerifier.hasActiveFreezeKey(
+                        true,
+                        fungibleTokenAddr,
+                        fungibleTokenAddr,
+                        wrappedLedgers,
+                        HederaFunctionality.TokenFreezeAccount))
                 .willReturn(true);
     }
 

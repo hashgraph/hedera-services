@@ -16,30 +16,7 @@
 
 package com.hedera.node.app.service.mono.contracts.operation;
 
-/*
- * -
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ‍
- *
- */
-
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
-import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import java.util.Map;
 import java.util.function.BiPredicate;
 import org.hyperledger.besu.datatypes.Address;
@@ -57,17 +34,14 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
  * not exist or it is deleted.
  */
 public class HederaStaticCallOperation extends StaticCallOperation {
-    private final EvmSigsVerifier sigsVerifier;
     private final BiPredicate<Address, MessageFrame> addressValidator;
     private final Map<String, PrecompiledContract> precompiledContractMap;
 
     public HederaStaticCallOperation(
             final GasCalculator gasCalculator,
-            final EvmSigsVerifier sigsVerifier,
             final BiPredicate<Address, MessageFrame> addressValidator,
             final Map<String, PrecompiledContract> precompiledContractMap) {
         super(gasCalculator);
-        this.sigsVerifier = sigsVerifier;
         this.addressValidator = addressValidator;
         this.precompiledContractMap = precompiledContractMap;
     }
@@ -75,12 +49,13 @@ public class HederaStaticCallOperation extends StaticCallOperation {
     @Override
     public OperationResult execute(final MessageFrame frame, final EVM evm) {
         return HederaOperationUtil.addressSignatureCheckExecution(
-                sigsVerifier,
+                null,
                 frame,
                 to(frame),
                 () -> cost(frame),
                 () -> super.execute(frame, evm),
                 addressValidator,
-                precompiledContractMap);
+                precompiledContractMap,
+                () -> isStatic(frame));
     }
 }

@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.random.RandomGenerator;
 
+//TODO replace with weight generators
 public final class StakeGenerators {
 
     public static final StakeGenerator BALANCED = (l, i) -> StakeGenerators.balancedNodeStakes(i);

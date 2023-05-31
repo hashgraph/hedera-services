@@ -78,6 +78,7 @@ import java.util.OptionalInt;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
@@ -128,6 +129,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
     private Optional<ErroringAssertsProvider<List<TransactionRecord>>> duplicateExpectations = Optional.empty();
     private OptionalInt childRecordsCount = OptionalInt.empty();
     private Optional<Consumer<TransactionRecord>> observer = Optional.empty();
+    private boolean loggingOnlyFee = false;
 
     private Optional<Integer> pseudorandomNumberRange = Optional.empty();
 
@@ -185,6 +187,11 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
     public HapiGetTxnRecord exposingTo(final Consumer<TransactionRecord> observer) {
         this.observer = Optional.of(observer);
+        return this;
+    }
+
+    public HapiGetTxnRecord loggingOnlyFee() {
+        loggingOnlyFee = true;
         return this;
     }
 
@@ -461,10 +468,16 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
             }
 
             final var numActualRecords = actualRecords.size();
-            assertEquals(
-                    expectedChildRecords.size(),
-                    numActualRecords - numStakingRecords,
-                    "Wrong # of (non-staking) child records");
+            if (expectedChildRecords.size() != (numActualRecords - numStakingRecords)) {
+                final var printableActualRecords = actualRecords.stream()
+                        .filter(r -> !isEndOfStakingPeriodRecord(r))
+                        .map(TransactionRecord::toString)
+                        .collect(Collectors.joining(", "));
+                assertEquals(
+                        expectedChildRecords.size(),
+                        numActualRecords - numStakingRecords,
+                        "Wrong # of (non-staking) child records, got: " + printableActualRecords);
+            }
             for (int i = numStakingRecords; i < numActualRecords; i++) {
                 final var expectedChildRecord = expectedChildRecords.get(i - numStakingRecords);
                 final var actualChildRecord = actualRecords.get(i);
@@ -879,6 +892,10 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
             createdTokenIdsObserver.accept(tokenCreations);
         }
 
+        if (loggingOnlyFee && spec.ratesProvider().hasRateSet()) {
+            final var priceInUsd = sdec(spec.ratesProvider().toUsdWithActiveRates(rcd.getTransactionFee()), 5);
+            LOG.info("{}Record of {} charged ${}", spec::logPrefix, () -> txn, () -> priceInUsd);
+        }
         if (verboseLoggingOn) {
             if (format.isPresent()) {
                 format.get().accept(rcd, LOG);

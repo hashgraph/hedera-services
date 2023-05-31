@@ -42,6 +42,7 @@ import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.sigs.order.LinkedRefs;
+import com.hedera.node.app.service.mono.utils.PendingCompletion;
 import com.hedera.node.app.service.mono.utils.RationalizedSigMeta;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
@@ -56,6 +57,7 @@ import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -115,6 +117,24 @@ class PlatformTxnAccessorTest {
 
         // then:
         assertSame(RationalizedSigMeta.noneAvailable(), subject.getSigMeta());
+    }
+
+    @Test
+    void pendingCompletionsGetterSetterCheck() throws InvalidProtocolBufferException {
+        // setup:
+        final var signedTxnWithBody =
+                Transaction.newBuilder().setBodyBytes(someTxn.toByteString()).build();
+
+        // given:
+        final PlatformTxnAccessor subject = PlatformTxnAccessor.from(signedTxnWithBody);
+
+        // when:
+        assertSame(Collections.emptyList(), subject.getPendingCompletions());
+        final var pendingCompletions = List.of(new PendingCompletion(null, null));
+        subject.setPendingCompletions(pendingCompletions);
+
+        // then:
+        assertSame(pendingCompletions, subject.getPendingCompletions());
     }
 
     @Test

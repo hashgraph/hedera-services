@@ -21,6 +21,7 @@ import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
+import java.util.Set;
 import java.util.function.Supplier;
 
 /**
@@ -31,11 +32,11 @@ import java.util.function.Supplier;
  * the new config API. This class must be seen as a workaround that will be removed once we do not need static access
  * anymore! The class must only be used when we can not avoid static access without having a big refactoring. This class
  * is not thread safe!
- *
+ * <p>
  * The class is defined as a singleton that provides the current configuration. By default the configuration has no
- * config sources. Therefore the default values will be used for all values of config data records (see
- * {@link ConfigData}). A new config can be set by calling the {@link #setConfiguration(Configuration)} method. That
- * should be done once in the browser or for unit tests and nowhere else!
+ * config sources. Therefore the default values will be used for all values of config data records (see {@link
+ * ConfigData}). A new config can be set by calling the {@link #setConfiguration(Configuration)} method. That should be
+ * done once in the browser or for unit tests and nowhere else!
  *
  * @deprecated Will be removed once we have the Platform Context in place or all mentioned problems have been refactored
  */
@@ -51,15 +52,15 @@ public final class ConfigurationHolder implements Supplier<Configuration> {
     }
 
     public void reset() {
-        this.configuration = ConfigUtils.addAllConfigDataOnClasspath(ConfigurationBuilder.create())
+        this.configuration = ConfigUtils.scanAndRegisterAllConfigTypes(
+                        ConfigurationBuilder.create(), Set.of("com.swirlds"))
                 .build();
     }
 
     /**
      * Sets the config. This method should only be called in the browser at startup or at unit tests
      *
-     * @param configuration
-     * 		the new configuration
+     * @param configuration the new configuration
      */
     public void setConfiguration(final Configuration configuration) {
         this.configuration = CommonUtils.throwArgNull(configuration, "configuration");
@@ -87,13 +88,11 @@ public final class ConfigurationHolder implements Supplier<Configuration> {
     /**
      * Convenience method for {@link Configuration#getConfigData(Class)}.
      *
-     * @param type
-     * 		the data type
-     * @param <T>
-     * 		the type
+     * @param type the data type
+     * @param <T>  the type
      * @return the data instance
      */
-    public static <T extends Record> T getConfigData(Class<T> type) {
+    public static <T extends Record> T getConfigData(final Class<T> type) {
         return getInstance().get().getConfigData(type);
     }
 }

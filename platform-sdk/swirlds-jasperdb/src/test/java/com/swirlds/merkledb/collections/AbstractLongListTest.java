@@ -20,7 +20,7 @@ import static com.swirlds.common.utility.Units.BYTES_TO_MEBIBYTES;
 import static com.swirlds.common.utility.Units.MEBIBYTES_TO_BYTES;
 import static com.swirlds.merkledb.MerkleDbTestUtils.checkDirectMemoryIsCleanedUpToLessThanBaseUsage;
 import static com.swirlds.merkledb.MerkleDbTestUtils.getDirectMemoryUsedBytes;
-import static com.swirlds.merkledb.collections.LongList.FILE_HEADER_SIZE;
+import static com.swirlds.merkledb.collections.AbstractLongList.FILE_HEADER_SIZE_V2;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -37,19 +37,19 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.io.TempDir;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-abstract class AbstractLongListTest<T extends LongList> {
+abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
 
     private static final int OUT_OF_SAMPLE_INDEX = 13_000_123;
     private static final long REPL_VALUE = 42;
     private static final long DEFAULT_VALUE = 0;
 
-    private static LongList longList;
+    private static AbstractLongList<?> longList;
 
     protected int getSampleSize() {
         return 1_000_000;
     }
 
-    protected LongList createLongList() {
+    protected AbstractLongList<?> createLongList() {
         return new LongListHeap();
     }
 
@@ -73,11 +73,11 @@ abstract class AbstractLongListTest<T extends LongList> {
         final long capacity = longList.capacity();
 
         assertEquals(
-                LongList.DEFAULT_MAX_LONGS_TO_STORE,
+                AbstractLongList.DEFAULT_MAX_LONGS_TO_STORE,
                 longList.capacity(),
                 "Capacity should be default it not given explicitly");
         assertEquals(
-                LongList.DEFAULT_NUM_LONGS_PER_CHUNK,
+                AbstractLongList.DEFAULT_NUM_LONGS_PER_CHUNK,
                 longList.getNumLongsPerChunk(),
                 "Num longs per chunk should be default it not given explicitly");
 
@@ -120,24 +120,24 @@ abstract class AbstractLongListTest<T extends LongList> {
     @Order(3)
     void writeToFileAndReadBack(@TempDir final Path tempDir) throws IOException {
         final int sampleSize = getSampleSize();
-        final Path file = tempDir.resolve("HashListByteBufferTest.hl");
+        final Path file = tempDir.resolve("LongListByteBufferTest.hl");
         // write longList data
         longList.writeToFile(file);
         // check file exists and contains some data
         assertTrue(Files.exists(file), "file does not exist");
         assertEquals(
-                (FILE_HEADER_SIZE + (Long.BYTES * (long) sampleSize)),
+                (FILE_HEADER_SIZE_V2 + (Long.BYTES * (long) sampleSize)),
                 Files.size(file),
                 "Expected file to contain all the data so its size [" + Files.size(file)
                         + "] should have been header plus longs data size ["
-                        + (FILE_HEADER_SIZE + (Long.BYTES * (sampleSize)))
+                        + (FILE_HEADER_SIZE_V2 + (Long.BYTES * (sampleSize)))
                         + "]");
         // check all data, to make sure it did not get messed up
         for (int i = 0; i < sampleSize; i++) {
             final long readValue = longList.get(i, 0);
             assertEquals(i, readValue, "Longs don't match for " + i + " got [" + readValue + "] should be [" + i + "]");
         }
-        // now try and construct a new HashList reading from the file
+        // now try and construct a new LongList reading from the file
         try (final LongList longList2 = createLongListFromFile(file)) {
             // now check data and other attributes
             assertEquals(longList.capacity(), longList2.capacity(), "Unexpected value for longList2.capacity()");
@@ -191,7 +191,7 @@ abstract class AbstractLongListTest<T extends LongList> {
     void chunkSizeFactoryWorks() {
         final int expectedNum = Math.toIntExact(2 * MEBIBYTES_TO_BYTES / Long.BYTES);
 
-        final LongList subject2mbChunks = createLongListWithChunkSizeInMb(2);
+        final AbstractLongList<?> subject2mbChunks = createLongListWithChunkSizeInMb(2);
 
         checkNumLongsPerChunk(subject2mbChunks, expectedNum);
     }
@@ -212,7 +212,7 @@ abstract class AbstractLongListTest<T extends LongList> {
 
     @Test
     @Order(6)
-    void testClose() throws IOException {
+    void testClose() {
         // close
         if (longList != null) {
             longList.close();
@@ -244,7 +244,7 @@ abstract class AbstractLongListTest<T extends LongList> {
                 "Stream size should match initial sample size");
     }
 
-    protected void checkNumLongsPerChunk(final LongList subject, final int expected) {
+    protected void checkNumLongsPerChunk(final AbstractLongList<?> subject, final int expected) {
         assertEquals(
                 expected,
                 subject.getNumLongsPerChunk(),

@@ -192,7 +192,8 @@ public class HapiApiClients {
         int after = stubCount();
         this.defaultNode = defaultNode;
         if (after > before) {
-            log.info("Constructed " + (after - before) + " new stubs building clients for " + this);
+            String message = String.format("Constructed %s new stubs building clients for %s", (after - before), this);
+            log.info(message);
         }
     }
 

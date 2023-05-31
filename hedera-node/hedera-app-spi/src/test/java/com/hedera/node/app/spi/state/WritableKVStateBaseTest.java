@@ -17,8 +17,10 @@
 package com.hedera.node.app.spi.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.anyString;
 
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -94,8 +96,8 @@ class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
 
             // Commit should cause no changes to the backing store
             state.commit();
-            Mockito.verify(state, Mockito.never()).putIntoDataSource(Mockito.anyString(), Mockito.anyString());
-            Mockito.verify(state, Mockito.never()).removeFromDataSource(Mockito.anyString());
+            Mockito.verify(state, Mockito.never()).putIntoDataSource(anyString(), anyString());
+            Mockito.verify(state, Mockito.never()).removeFromDataSource(anyString());
         }
 
         /**
@@ -133,8 +135,8 @@ class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
 
             // Commit should cause no changes to the backing store
             state.commit();
-            Mockito.verify(state, Mockito.never()).putIntoDataSource(Mockito.anyString(), Mockito.anyString());
-            Mockito.verify(state, Mockito.never()).removeFromDataSource(Mockito.anyString());
+            Mockito.verify(state, Mockito.never()).putIntoDataSource(anyString(), anyString());
+            Mockito.verify(state, Mockito.never()).removeFromDataSource(anyString());
         }
 
         /**
@@ -194,9 +196,9 @@ class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
 
             // Commit should cause the most recent put value to be saved
             state.commit();
-            Mockito.verify(state, Mockito.times(1)).putIntoDataSource(Mockito.anyString(), Mockito.anyString());
+            Mockito.verify(state, Mockito.times(1)).putIntoDataSource(anyString(), anyString());
             Mockito.verify(state, Mockito.times(1)).putIntoDataSource(C_KEY, CHERRY);
-            Mockito.verify(state, Mockito.never()).removeFromDataSource(Mockito.anyString());
+            Mockito.verify(state, Mockito.never()).removeFromDataSource(anyString());
         }
 
         /**
@@ -229,9 +231,9 @@ class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
 
             // Commit should cause the most recent put value to be saved
             state.commit();
-            Mockito.verify(state, Mockito.times(1)).putIntoDataSource(Mockito.anyString(), Mockito.anyString());
+            Mockito.verify(state, Mockito.times(1)).putIntoDataSource(anyString(), anyString());
             Mockito.verify(state, Mockito.times(1)).putIntoDataSource(B_KEY, BLACKBERRY);
-            Mockito.verify(state, Mockito.never()).removeFromDataSource(Mockito.anyString());
+            Mockito.verify(state, Mockito.never()).removeFromDataSource(anyString());
         }
 
         /**
@@ -261,9 +263,93 @@ class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
 
             // Commit should cause the value to be removed
             state.commit();
-            Mockito.verify(state, Mockito.never()).putIntoDataSource(Mockito.anyString(), Mockito.anyString());
-            Mockito.verify(state, Mockito.times(1)).removeFromDataSource(Mockito.anyString());
+            Mockito.verify(state, Mockito.never()).putIntoDataSource(anyString(), anyString());
+            Mockito.verify(state, Mockito.times(1)).removeFromDataSource(anyString());
             Mockito.verify(state, Mockito.times(1)).removeFromDataSource(A_KEY);
+        }
+    }
+
+    /**
+     * Gives size of backing store plus modifications (additions or removals).
+     * If a new key is added by calling {@code put()}, then size increases, as new key is added to modifications map for addition.
+     * If an existing key is removed by calling {@code remove()}, then size decreases, as new key is added to modifications map for removal.
+     */
+    @Nested
+    @DisplayName("size")
+    final class SizeTest {
+        @Test
+        @DisplayName("Adding a key that does not already exist in the backing store impacts size")
+        void putNew() {
+            assertThat(state.readKeys()).isEmpty();
+            assertThat(state.modifiedKeys()).isEmpty();
+
+            // Before doing put, the size should be 2 (setup of the test adds 2 keys)
+            assertEquals(2, state.size());
+            state.put(C_KEY, CHERRY);
+
+            // After put, size includes modifications as well. So the size should be 3.
+            assertEquals(3, state.size());
+
+            // Commit should keep the size, as the modifications are considered in size.
+            state.commit();
+            Mockito.verify(state, Mockito.times(1)).putIntoDataSource(anyString(), anyString());
+            Mockito.verify(state, Mockito.times(1)).putIntoDataSource(C_KEY, CHERRY);
+            Mockito.verify(state, Mockito.never()).removeFromDataSource(anyString());
+            assertEquals(3, state.size());
+        }
+
+        @Test
+        @DisplayName("Removing a key that exists in the backing store impacts size")
+        void removeExisting() {
+            assertThat(state.readKeys()).isEmpty();
+            assertThat(state.modifiedKeys()).isEmpty();
+
+            // Before remove, the size should be 2 (setup of the test adds 2 keys)
+            assertEquals(2, state.size());
+
+            state.remove(A_KEY);
+            // After remove, size includes modifications as well. So the size should be 1.
+            assertEquals(1, state.size());
+
+            // Commit should not cause any change in size, as the modifications were considered
+            state.commit();
+            Mockito.verify(state, Mockito.never()).putIntoDataSource(anyString(), anyString());
+            Mockito.verify(state, Mockito.times(1)).removeFromDataSource(A_KEY);
+            assertEquals(1, state.size());
+        }
+
+        @Test
+        @DisplayName("Getting a key from the backing store doesn't affect size")
+        void getDoesntAffect() {
+            assertThat(state.readKeys()).isEmpty();
+            assertThat(state.modifiedKeys()).isEmpty();
+
+            state.get(A_KEY);
+            // Before commit, the size should be 2 (setup of the test adds 2 keys)
+            assertEquals(2, state.size());
+
+            // Commit should not have any effect on size
+            state.commit();
+            Mockito.verify(state, Mockito.never()).putIntoDataSource(anyString(), anyString());
+            Mockito.verify(state, Mockito.never()).removeFromDataSource(anyString());
+            assertEquals(2, state.size());
+        }
+
+        @Test
+        @DisplayName("Doing a getForModify on a key existing in the backing store doesn't affect size")
+        void getForModifyDoesntAffect() {
+            assertThat(state.readKeys()).isEmpty();
+            assertThat(state.modifiedKeys()).isEmpty();
+
+            state.getForModify(A_KEY);
+            // Before commit, the size should be 2 (setup of the test adds 2 keys)
+            assertEquals(2, state.size());
+
+            // Commit should not have any effect on size
+            state.commit();
+            Mockito.verify(state, Mockito.never()).putIntoDataSource(anyString(), anyString());
+            Mockito.verify(state, Mockito.never()).removeFromDataSource(anyString());
+            assertEquals(2, state.size());
         }
     }
 
@@ -338,9 +424,9 @@ class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
 
             // Commit should cause the value to be updated
             state.commit();
-            Mockito.verify(state, Mockito.times(1)).putIntoDataSource(Mockito.anyString(), Mockito.anyString());
+            Mockito.verify(state, Mockito.times(1)).putIntoDataSource(anyString(), anyString());
             Mockito.verify(state, Mockito.times(1)).putIntoDataSource(B_KEY, BLACKBERRY);
-            Mockito.verify(state, Mockito.never()).removeFromDataSource(Mockito.anyString());
+            Mockito.verify(state, Mockito.never()).removeFromDataSource(anyString());
         }
 
         /** Calling put twice is idempotent. */
@@ -358,9 +444,9 @@ class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
 
             // Commit should cause the value to be updated to the latest value
             state.commit();
-            Mockito.verify(state, Mockito.times(1)).putIntoDataSource(Mockito.anyString(), Mockito.anyString());
+            Mockito.verify(state, Mockito.times(1)).putIntoDataSource(anyString(), anyString());
             Mockito.verify(state, Mockito.times(1)).putIntoDataSource(B_KEY, BLUEBERRY);
-            Mockito.verify(state, Mockito.never()).removeFromDataSource(Mockito.anyString());
+            Mockito.verify(state, Mockito.never()).removeFromDataSource(anyString());
         }
 
         /**
@@ -381,9 +467,9 @@ class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
 
             // Commit should cause the value to be updated to the latest value
             state.commit();
-            Mockito.verify(state, Mockito.times(1)).putIntoDataSource(Mockito.anyString(), Mockito.anyString());
+            Mockito.verify(state, Mockito.times(1)).putIntoDataSource(anyString(), anyString());
             Mockito.verify(state, Mockito.times(1)).putIntoDataSource(B_KEY, BLACKBERRY);
-            Mockito.verify(state, Mockito.never()).removeFromDataSource(Mockito.anyString());
+            Mockito.verify(state, Mockito.never()).removeFromDataSource(anyString());
         }
     }
 
@@ -418,8 +504,8 @@ class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
             // Commit should cause the value to be removed (even though it doesn't actually exist in
             // the backend)
             state.commit();
-            Mockito.verify(state, Mockito.never()).putIntoDataSource(Mockito.anyString(), Mockito.anyString());
-            Mockito.verify(state, Mockito.times(1)).removeFromDataSource(Mockito.anyString());
+            Mockito.verify(state, Mockito.never()).putIntoDataSource(anyString(), anyString());
+            Mockito.verify(state, Mockito.times(1)).removeFromDataSource(anyString());
             Mockito.verify(state, Mockito.times(1)).removeFromDataSource(C_KEY);
         }
 
@@ -447,8 +533,8 @@ class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
 
             // Commit should cause the value to be removed
             state.commit();
-            Mockito.verify(state, Mockito.never()).putIntoDataSource(Mockito.anyString(), Mockito.anyString());
-            Mockito.verify(state, Mockito.times(1)).removeFromDataSource(Mockito.anyString());
+            Mockito.verify(state, Mockito.never()).putIntoDataSource(anyString(), anyString());
+            Mockito.verify(state, Mockito.times(1)).removeFromDataSource(anyString());
             Mockito.verify(state, Mockito.times(1)).removeFromDataSource(A_KEY);
         }
 
@@ -477,8 +563,8 @@ class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
 
             // Commit should cause the value to be removed
             state.commit();
-            Mockito.verify(state, Mockito.never()).putIntoDataSource(Mockito.anyString(), Mockito.anyString());
-            Mockito.verify(state, Mockito.times(1)).removeFromDataSource(Mockito.anyString());
+            Mockito.verify(state, Mockito.never()).putIntoDataSource(anyString(), anyString());
+            Mockito.verify(state, Mockito.times(1)).removeFromDataSource(anyString());
             Mockito.verify(state, Mockito.times(1)).removeFromDataSource(B_KEY);
         }
 
@@ -507,8 +593,8 @@ class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
 
             // Commit should cause the value to be removed but not "put"
             state.commit();
-            Mockito.verify(state, Mockito.never()).putIntoDataSource(Mockito.anyString(), Mockito.anyString());
-            Mockito.verify(state, Mockito.times(1)).removeFromDataSource(Mockito.anyString());
+            Mockito.verify(state, Mockito.never()).putIntoDataSource(anyString(), anyString());
+            Mockito.verify(state, Mockito.times(1)).removeFromDataSource(anyString());
             Mockito.verify(state, Mockito.times(1)).removeFromDataSource(A_KEY);
         }
 
@@ -537,8 +623,8 @@ class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
 
             // Commit should cause the value to be removed but not "put"
             state.commit();
-            Mockito.verify(state, Mockito.never()).putIntoDataSource(Mockito.anyString(), Mockito.anyString());
-            Mockito.verify(state, Mockito.times(1)).removeFromDataSource(Mockito.anyString());
+            Mockito.verify(state, Mockito.never()).putIntoDataSource(anyString(), anyString());
+            Mockito.verify(state, Mockito.times(1)).removeFromDataSource(anyString());
             Mockito.verify(state, Mockito.times(1)).removeFromDataSource(C_KEY);
         }
 
@@ -567,8 +653,8 @@ class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
 
             // Commit should cause the value to be removed but not "put"
             state.commit();
-            Mockito.verify(state, Mockito.never()).putIntoDataSource(Mockito.anyString(), Mockito.anyString());
-            Mockito.verify(state, Mockito.times(1)).removeFromDataSource(Mockito.anyString());
+            Mockito.verify(state, Mockito.never()).putIntoDataSource(anyString(), anyString());
+            Mockito.verify(state, Mockito.times(1)).removeFromDataSource(anyString());
             Mockito.verify(state, Mockito.times(1)).removeFromDataSource(A_KEY);
         }
 
@@ -597,8 +683,8 @@ class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
 
             // Commit should cause the value to be removed but not "put"
             state.commit();
-            Mockito.verify(state, Mockito.never()).putIntoDataSource(Mockito.anyString(), Mockito.anyString());
-            Mockito.verify(state, Mockito.times(1)).removeFromDataSource(Mockito.anyString());
+            Mockito.verify(state, Mockito.never()).putIntoDataSource(anyString(), anyString());
+            Mockito.verify(state, Mockito.times(1)).removeFromDataSource(anyString());
             Mockito.verify(state, Mockito.times(1)).removeFromDataSource(C_KEY);
         }
 
@@ -627,8 +713,8 @@ class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
 
             // Commit should cause the value to be removed but not "put"
             state.commit();
-            Mockito.verify(state, Mockito.never()).putIntoDataSource(Mockito.anyString(), Mockito.anyString());
-            Mockito.verify(state, Mockito.times(1)).removeFromDataSource(Mockito.anyString());
+            Mockito.verify(state, Mockito.never()).putIntoDataSource(anyString(), anyString());
+            Mockito.verify(state, Mockito.times(1)).removeFromDataSource(anyString());
             Mockito.verify(state, Mockito.times(1)).removeFromDataSource(A_KEY);
         }
     }

@@ -77,6 +77,8 @@ public class DelegatePrecompileSuite extends HapiSuite {
     private static final String DELEGATE_KEY = "Delegate key";
     private static final String SIMPLE_AND_DELEGATE_KEY_NAME = "Simple And Delegate key";
     private static final String SUPPLY_KEY = "supplyKey";
+    private static final String DELEGATE_BURN_CALL_WITH_DELEGATE_CONTRACT_KEY_TXN =
+            "delegateBurnCallWithDelegateContractKeyTxn";
 
     public static void main(String... args) {
         new DelegatePrecompileSuite().runSuiteAsync();
@@ -179,11 +181,11 @@ public class DelegatePrecompileSuite extends HapiSuite {
                                         BigInteger.ZERO,
                                         new long[] {1L})
                                 .payingWith(GENESIS)
-                                .via("delegateBurnCallWithDelegateContractKeyTxn")
+                                .via(DELEGATE_BURN_CALL_WITH_DELEGATE_CONTRACT_KEY_TXN)
                                 .gas(GAS_TO_OFFER))))
                 .then(
                         childRecordsCheck(
-                                "delegateBurnCallWithDelegateContractKeyTxn",
+                                DELEGATE_BURN_CALL_WITH_DELEGATE_CONTRACT_KEY_TXN,
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
@@ -224,11 +226,11 @@ public class DelegatePrecompileSuite extends HapiSuite {
                                         HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenTokenID.get())),
                                         BigInteger.ONE)
                                 .payingWith(GENESIS)
-                                .via("delegateBurnCallWithDelegateContractKeyTxn")
+                                .via(DELEGATE_BURN_CALL_WITH_DELEGATE_CONTRACT_KEY_TXN)
                                 .gas(GAS_TO_OFFER))))
                 .then(
                         childRecordsCheck(
-                                "delegateBurnCallWithDelegateContractKeyTxn",
+                                DELEGATE_BURN_CALL_WITH_DELEGATE_CONTRACT_KEY_TXN,
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)

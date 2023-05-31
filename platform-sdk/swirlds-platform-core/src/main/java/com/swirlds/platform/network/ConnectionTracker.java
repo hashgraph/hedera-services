@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.network;
 
-import com.swirlds.platform.Connection;
-
 /**
  * Tracks all connections that have been opened and closed by the platform
  */
@@ -32,8 +30,8 @@ public interface ConnectionTracker {
     /**
      * Notifies the tracker that a connection has been closed
      *
-     * @param outbound
-     * 		true if it was an outbound connection (initiated by self)
+     * @param outbound true if it was an outbound connection (initiated by self)
+     * @param connection the connection that was closed.
      */
-    void connectionClosed(final boolean outbound);
+    void connectionClosed(final boolean outbound, final Connection connection);
 }

@@ -18,7 +18,6 @@ package com.hedera.node.app.service.mono.txns.submission;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -27,7 +26,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 
-import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.mono.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -47,9 +45,6 @@ class BasicSubmissionFlowTest {
     private static final SignedTxnAccessor someAccessor = SignedTxnAccessor.uncheckedFrom(someTxn);
 
     @Mock
-    private NodeInfo nodeInfo;
-
-    @Mock
     private TransactionPrecheck precheck;
 
     @Mock
@@ -58,17 +53,8 @@ class BasicSubmissionFlowTest {
     private BasicSubmissionFlow subject;
 
     @Test
-    void rejectsAllOnZeroStakeNode() {
-        setupZeroStakeNode();
-
-        final var response = subject.submit(someTxn);
-
-        assertEquals(INVALID_NODE_ACCOUNT, response.getNodeTransactionPrecheckCode());
-    }
-
-    @Test
     void rejectsPrecheckFailures() {
-        setupStakedNode();
+        setupNonZeroStakeNode();
         given(precheck.performForTopLevel(someTxn)).willReturn(Pair.of(someFailure, null));
 
         final var response = subject.submit(someTxn);
@@ -79,7 +65,7 @@ class BasicSubmissionFlowTest {
 
     @Test
     void translatesPlatformCreateFailure() {
-        setupStakedNode();
+        setupNonZeroStakeNode();
         givenValidPrecheck();
         given(submissionManager.trySubmission(any())).willReturn(PLATFORM_TRANSACTION_NOT_CREATED);
 
@@ -90,7 +76,7 @@ class BasicSubmissionFlowTest {
 
     @Test
     void rejectsInvalidAccessor() {
-        setupStakedNode();
+        setupNonZeroStakeNode();
         given(precheck.performForTopLevel(someTxn)).willReturn(Pair.of(someSuccess, null));
 
         final var response = subject.submit(someTxn);
@@ -101,7 +87,7 @@ class BasicSubmissionFlowTest {
 
     @Test
     void followsHappyPathToOk() {
-        setupStakedNode();
+        setupNonZeroStakeNode();
         givenValidPrecheck();
         givenOkSubmission();
 
@@ -118,12 +104,7 @@ class BasicSubmissionFlowTest {
         given(precheck.performForTopLevel(someTxn)).willReturn(Pair.of(someSuccess, someAccessor));
     }
 
-    private void setupStakedNode() {
-        subject = new BasicSubmissionFlow(nodeInfo, precheck, submissionManager);
-    }
-
-    private void setupZeroStakeNode() {
-        given(nodeInfo.isSelfZeroStake()).willReturn(true);
-        subject = new BasicSubmissionFlow(nodeInfo, precheck, submissionManager);
+    private void setupNonZeroStakeNode() {
+        subject = new BasicSubmissionFlow(precheck, submissionManager);
     }
 }

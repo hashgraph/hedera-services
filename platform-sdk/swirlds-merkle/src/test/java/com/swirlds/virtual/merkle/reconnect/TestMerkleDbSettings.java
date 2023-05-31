@@ -42,8 +42,8 @@ public class TestMerkleDbSettings implements MerkleDbSettings {
 
     /** {@inheritDoc} */
     @Override
-    public long getInternalHashesRamToDiskThreshold() {
-        return defaultSettings.getInternalHashesRamToDiskThreshold();
+    public long getHashesRamToDiskThreshold() {
+        return defaultSettings.getHashesRamToDiskThreshold();
     }
 
     /** {@inheritDoc} */
@@ -169,5 +169,17 @@ public class TestMerkleDbSettings implements MerkleDbSettings {
     @Override
     public int getReservedBufferLengthForLeafList() {
         return defaultSettings.getReservedBufferLengthForLeafList();
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public double getPercentHalfDiskHashMapFlushThreads() {
+        return defaultSettings.getPercentHalfDiskHashMapFlushThreads();
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public int getNumHalfDiskHashMapFlushThreads() {
+        return defaultSettings.getNumHalfDiskHashMapFlushThreads();
     }
 }

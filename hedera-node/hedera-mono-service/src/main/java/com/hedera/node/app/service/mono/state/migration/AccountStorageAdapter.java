@@ -21,12 +21,12 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
-import com.hedera.node.app.service.mono.state.merkle.MerklePayerRecords;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.swirlds.common.crypto.Hash;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import org.apache.logging.log4j.LogManager;
@@ -37,33 +37,27 @@ public class AccountStorageAdapter {
     private static final int THREAD_COUNT = 32;
     private final boolean accountsOnDisk;
     private final @Nullable MerkleMapLike<EntityNum, MerkleAccount> inMemoryAccounts;
-    private final @Nullable MerkleMapLike<EntityNum, MerklePayerRecords> payerRecords;
     private final @Nullable VirtualMapLike<EntityNumVirtualKey, OnDiskAccount> onDiskAccounts;
 
     public static AccountStorageAdapter fromInMemory(final MerkleMapLike<EntityNum, MerkleAccount> accounts) {
-        return new AccountStorageAdapter(accounts, null, null);
+        return new AccountStorageAdapter(accounts, null);
     }
 
-    public static AccountStorageAdapter fromOnDisk(
-            final MerkleMapLike<EntityNum, MerklePayerRecords> payerRecords,
-            final VirtualMapLike<EntityNumVirtualKey, OnDiskAccount> accounts) {
-        return new AccountStorageAdapter(null, payerRecords, accounts);
+    public static AccountStorageAdapter fromOnDisk(final VirtualMapLike<EntityNumVirtualKey, OnDiskAccount> accounts) {
+        return new AccountStorageAdapter(null, accounts);
     }
 
     private AccountStorageAdapter(
             @Nullable final MerkleMapLike<EntityNum, MerkleAccount> inMemoryAccounts,
-            @Nullable final MerkleMapLike<EntityNum, MerklePayerRecords> payerRecords,
             @Nullable final VirtualMapLike<EntityNumVirtualKey, OnDiskAccount> onDiskAccounts) {
         if (inMemoryAccounts != null) {
             this.accountsOnDisk = false;
             this.inMemoryAccounts = inMemoryAccounts;
             this.onDiskAccounts = null;
-            this.payerRecords = null;
         } else {
             this.accountsOnDisk = true;
             this.inMemoryAccounts = null;
             this.onDiskAccounts = onDiskAccounts;
-            this.payerRecords = payerRecords;
         }
     }
 
@@ -104,19 +98,15 @@ public class AccountStorageAdapter {
                 : inMemoryAccounts.containsKey(num);
     }
 
-    public void archive() {
-        if (!accountsOnDisk) {
-            inMemoryAccounts.archive();
-        }
-    }
-
     public Hash getHash() {
         return accountsOnDisk ? onDiskAccounts.getHash() : inMemoryAccounts.getHash();
     }
 
     public Set<EntityNum> keySet() {
         if (accountsOnDisk) {
-            return payerRecords.keySet();
+            final Set<EntityNum> allAccountNums = new HashSet<>();
+            forEachOnDisk((num, account) -> allAccountNums.add(num));
+            return allAccountNums;
         } else {
             return inMemoryAccounts.keySet();
         }
@@ -124,18 +114,22 @@ public class AccountStorageAdapter {
 
     public void forEach(final BiConsumer<EntityNum, HederaAccount> visitor) {
         if (accountsOnDisk) {
-            try {
-                onDiskAccounts.extractVirtualMapData(
-                        getStaticThreadManager(),
-                        entry -> visitor.accept(entry.getKey().asEntityNum(), entry.getValue()),
-                        THREAD_COUNT);
-            } catch (final InterruptedException e) {
-                log.error("Interrupted while extracting VM data", e);
-                Thread.currentThread().interrupt();
-                throw new IllegalStateException(e);
-            }
+            forEachOnDisk(visitor);
         } else {
             inMemoryAccounts.forEach(visitor);
+        }
+    }
+
+    private void forEachOnDisk(final BiConsumer<EntityNum, HederaAccount> visitor) {
+        try {
+            onDiskAccounts.extractVirtualMapData(
+                    getStaticThreadManager(),
+                    entry -> visitor.accept(entry.getKey().asEntityNum(), entry.getValue()),
+                    THREAD_COUNT);
+        } catch (final InterruptedException e) {
+            log.error("Interrupted while extracting VM data", e);
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException(e);
         }
     }
 

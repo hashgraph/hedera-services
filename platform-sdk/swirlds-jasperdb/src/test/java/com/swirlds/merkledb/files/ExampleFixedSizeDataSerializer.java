@@ -16,12 +16,10 @@
 
 package com.swirlds.merkledb.files;
 
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.merkledb.serialize.DataItemHeader;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Objects;
 
 /**
  * Very simple DataItem that is fixed size and has a long key and long value. Designed for testing
@@ -40,8 +38,7 @@ public class ExampleFixedSizeDataSerializer implements DataItemSerializer<long[]
     /**
      * Deserialize data item header from the given byte buffer
      *
-     * @param buffer
-     * 		Buffer to read from
+     * @param buffer Buffer to read from
      * @return The read header
      */
     @Override
@@ -59,9 +56,7 @@ public class ExampleFixedSizeDataSerializer implements DataItemSerializer<long[]
         return Long.BYTES * 2;
     }
 
-    /**
-     * Get the current data item serialization version
-     */
+    /** Get the current data item serialization version */
     @Override
     public long getCurrentDataVersion() {
         return 1;
@@ -70,10 +65,8 @@ public class ExampleFixedSizeDataSerializer implements DataItemSerializer<long[]
     /**
      * Deserialize a data item from a byte buffer, that was written with given data version
      *
-     * @param buffer
-     * 		The buffer to read from containing the data item including its header
-     * @param dataVersion
-     * 		The serialization version the data item was written with
+     * @param buffer The buffer to read from containing the data item including its header
+     * @param dataVersion The serialization version the data item was written with
      * @return Deserialized data item
      */
     @Override
@@ -81,20 +74,10 @@ public class ExampleFixedSizeDataSerializer implements DataItemSerializer<long[]
         return new long[] {buffer.getLong(), buffer.getLong()};
     }
 
-    /**
-     * Serialize a data item including header to the output stream returning the size of the data written
-     *
-     * @param data
-     * 		The data item to serialize
-     * @param outputStream
-     * 		Output stream to write to
-     */
     @Override
-    public int serialize(long[] data, SerializableDataOutputStream outputStream) throws IOException {
-        Objects.requireNonNull(data);
-        Objects.requireNonNull(outputStream);
-        outputStream.writeLong(data[0]);
-        outputStream.writeLong(data[1]);
+    public int serialize(final long[] data, final ByteBuffer buffer) throws IOException {
+        buffer.putLong(data[0]);
+        buffer.putLong(data[1]);
         return getSerializedSize();
     }
 }

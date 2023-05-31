@@ -41,15 +41,14 @@ import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.platform.components.EventCreationRules;
 import com.swirlds.platform.components.EventHandler;
 import com.swirlds.platform.components.EventMapper;
-import com.swirlds.platform.components.TransactionPool;
-import com.swirlds.platform.components.TransactionSupplier;
-import com.swirlds.platform.components.TransactionTracker;
+import com.swirlds.platform.components.transaction.TransactionPool;
+import com.swirlds.platform.components.transaction.TransactionSupplier;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.EventConstants;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.event.creation.AncientParentsRule;
+import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.sync.Generations;
 import com.swirlds.platform.test.event.EventMocks;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
@@ -70,7 +69,7 @@ import org.mockito.Mockito;
 
 @DisplayName("Event Creator Tests")
 class EventCreatorTests {
-    private static final NodeId selfId = new NodeId(false, 1234);
+    private static final NodeId selfId = new NodeId(1234);
     private static final Signer noOpSigner =
             (bytes) -> new Signature(SignatureType.RSA, new byte[SignatureType.RSA.signatureLength()]);
     private static final GraphGenerations defaultGenerations = new Generations(
@@ -79,12 +78,6 @@ class EventCreatorTests {
 
     private static final TransactionSupplier defaultTransactionSupplier = () -> new SwirldTransaction[0];
     private static final EventHandler noOpEventHandler = (event) -> {};
-
-    static final TransactionTracker defaultTransactionTracker = mock(TransactionTracker.class);
-
-    static {
-        when(defaultTransactionTracker.getNumUserTransEvents()).thenReturn(0L);
-    }
 
     static final TransactionPool defaultTransactionPool = mock(TransactionPool.class);
 
@@ -308,7 +301,6 @@ class EventCreatorTests {
                 defaultGenerationsSupplier,
                 () -> transactions,
                 events::add,
-                defaultTransactionTracker,
                 defaultTransactionPool,
                 () -> false,
                 defaultThrottles);
@@ -353,7 +345,7 @@ class EventCreatorTests {
         final EventImpl selfParentImpl = EventMocks.mockEvent(selfParent);
 
         final Map<Long, EventImpl> recentEvents = new HashMap<>();
-        recentEvents.put(selfId.getId(), selfParentImpl);
+        recentEvents.put(selfId.id(), selfParentImpl);
         recentEvents.put(1L, otherParent);
 
         final AccessibleEventCreator eventCreator = new AccessibleEventCreator(
@@ -363,7 +355,6 @@ class EventCreatorTests {
                 defaultGenerationsSupplier,
                 () -> transactions,
                 events::add,
-                defaultTransactionTracker,
                 defaultTransactionPool,
                 () -> false,
                 defaultThrottles);
@@ -373,7 +364,7 @@ class EventCreatorTests {
         assertEquals(1, events.size(), "expected an event to have been created");
         final EventImpl event = events.remove();
 
-        assertEquals(selfId.getId(), event.getCreatorId(), "expected id to match self ID");
+        assertEquals(selfId.id(), event.getCreatorId(), "expected id to match self ID");
         assertTrue(
                 event.getTimeCreated().isAfter(prevEventTime.plusNanos(previousTransactions.length - 1)),
                 "expected timestamp to be greater than previous timestamp");
@@ -429,7 +420,6 @@ class EventCreatorTests {
                     events.add(e);
                     Mockito.when(mapper.getMostRecentSelfEvent()).thenReturn(e);
                 },
-                defaultTransactionTracker,
                 defaultTransactionPool,
                 () -> false,
                 defaultThrottles);
@@ -469,7 +459,6 @@ class EventCreatorTests {
                 defaultGenerationsSupplier,
                 defaultTransactionSupplier,
                 events::add,
-                defaultTransactionTracker,
                 defaultTransactionPool,
                 () -> false,
                 new EventCreationRules(List.of(mockRule)));

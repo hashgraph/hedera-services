@@ -32,6 +32,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.generateAccountIDWithAliasCalculatedFrom;
 import static com.hedera.node.app.service.mono.txns.span.SpanMapManager.reCalculateXferMeta;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asTypedEvmAddress;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -41,9 +42,11 @@ import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
+import com.hedera.node.app.service.mono.context.properties.CustomFeeType;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfers;
 import com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfersMarshal;
@@ -69,9 +72,13 @@ import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -82,11 +89,14 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class TransferPrecompile extends AbstractWritePrecompile {
+    private static final Logger log = LogManager.getLogger(TransferPrecompile.class);
     private static final Function CRYPTO_TRANSFER_FUNCTION =
             new Function("cryptoTransfer((address,(address,int64)[],(address,address,int64)[])[])", INT);
     private static final Function CRYPTO_TRANSFER_FUNCTION_V2 = new Function(
@@ -117,18 +127,27 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     private static final Bytes TRANSFER_NFT_SELECTOR = Bytes.wrap(TRANSFER_NFT_FUNCTION.selector());
     private static final ABIType<Tuple> TRANSFER_NFT_DECODER = TypeFactory.create("(bytes32,bytes32,bytes32,int64)");
     private static final String TRANSFER = String.format(FAILURE_MESSAGE, "transfer");
+    private static final String CHANGE_SWITCHED_TO_APPROVAL_WITHOUT_MATCHING_ADJUSTMENT_IN =
+            "Change {} switched to approval without matching adjustment in {}";
+    private static final String CHANGE_SWITCHED_TO_APPROVAL_MATCHED_CREDIT_IN =
+            "Change {} switched to approval but matched credit in {}";
     private final HederaStackedWorldStateUpdater updater;
     private final EvmSigsVerifier sigsVerifier;
     private final int functionId;
     private final Address senderAddress;
     private final ImpliedTransfersMarshal impliedTransfersMarshal;
     private final boolean isLazyCreationEnabled;
+    private final boolean topLevelSigsAreEnabled;
     private ResponseCodeEnum impliedValidity;
     private ImpliedTransfers impliedTransfers;
     private HederaTokenStore hederaTokenStore;
     protected CryptoTransferWrapper transferOp;
     private AbstractAutoCreationLogic autoCreationLogic;
     private int numLazyCreates;
+    private Set<CustomFeeType> htsUnsupportedCustomReceiverDebits;
+
+    // Non-final for testing purposes
+    private boolean canFallbackToApprovals;
 
     public TransferPrecompile(
             final WorldLedgers ledgers,
@@ -140,14 +159,20 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final PrecompilePricingUtils pricingUtils,
             final int functionId,
             final Address senderAddress,
-            final boolean isLazyCreationEnabled) {
+            final Set<CustomFeeType> htsUnsupportedCustomFeeReceiverDebits,
+            final boolean isLazyCreationEnabled,
+            final boolean topLevelSigsAreEnabled,
+            final boolean canFallbackToApprovals) {
         super(ledgers, sideEffects, syntheticTxnFactory, infrastructureFactory, pricingUtils);
         this.updater = updater;
         this.sigsVerifier = sigsVerifier;
         this.functionId = functionId;
         this.senderAddress = senderAddress;
         this.impliedTransfersMarshal = infrastructureFactory.newImpliedTransfersMarshal(ledgers.customFeeSchedules());
+        this.htsUnsupportedCustomReceiverDebits = htsUnsupportedCustomFeeReceiverDebits;
         this.isLazyCreationEnabled = isLazyCreationEnabled;
+        this.topLevelSigsAreEnabled = topLevelSigsAreEnabled;
+        this.canFallbackToApprovals = canFallbackToApprovals;
     }
 
     protected void initializeHederaTokenStore() {
@@ -212,6 +237,11 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 
         hederaTokenStore.setAccountsLedger(ledgers.accounts());
 
+        final boolean allowFixedCustomFeeTransfers =
+                !htsUnsupportedCustomReceiverDebits.contains(CustomFeeType.FIXED_FEE);
+        final boolean allowRoyaltyFallbackCustomFeeTransfers =
+                !htsUnsupportedCustomReceiverDebits.contains(CustomFeeType.ROYALTY_FALLBACK_FEE);
+
         final var transferLogic = infrastructureFactory.newTransferLogic(
                 hederaTokenStore, sideEffects, ledgers.nfts(), ledgers.accounts(), ledgers.tokenRels());
 
@@ -222,19 +252,46 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             if (change.hasAlias()) {
                 replaceAliasWithId(change, changes, completedLazyCreates);
             }
-            if (change.isForNft() || units < 0) {
-                if (change.isApprovedAllowance() || change.isForCustomFee()) {
+
+            final var isDebit = units < 0;
+            final var isCredit = units > 0;
+
+            if (change.isForCustomFee() && isDebit) {
+                if (change.includesFallbackFee())
+                    validateTrue(allowRoyaltyFallbackCustomFeeTransfers, NOT_SUPPORTED, "royalty fee");
+                else validateTrue(allowFixedCustomFeeTransfers, NOT_SUPPORTED, "fixed fee");
+            }
+
+            if (change.isForNft() || isDebit) {
+                // The receiver signature is enforced for a transfer of NFT with a royalty fallback
+                // fee
+                final var isForNonFallbackRoyaltyFee = change.isForCustomFee() && !change.includesFallbackFee();
+                if (change.isApprovedAllowance() || isForNonFallbackRoyaltyFee) {
                     // Signing requirements are skipped for changes to be authorized via an
                     // allowance
                     continue;
                 }
-                final var hasSenderSig = KeyActivationUtils.validateKey(
+                final var senderHasSignedOrIsMsgSenderInFrame = KeyActivationUtils.validateKey(
                         frame,
                         change.getAccount().asEvmAddress(),
                         sigsVerifier::hasActiveKey,
                         ledgers,
-                        updater.aliases());
-                validateTrue(hasSenderSig, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, TRANSFER);
+                        updater.aliases(),
+                        CryptoTransfer);
+                // If the transfer doesn't have explicit sender authorization via msg.sender,
+                // AND cannot use top-level signatures, then even if it did not claim to have
+                // an approval, let it try to succeed via an approval IF this precompile is
+                // one of the HAPI-style transfer precompiles
+                if (!senderHasSignedOrIsMsgSenderInFrame && !topLevelSigsAreEnabled && canFallbackToApprovals) {
+                    change.switchToApproved();
+                    updateSynthOpForAutoApprovalOf(transactionBody.getCryptoTransferBuilder(), change);
+                    continue;
+                } else {
+                    validateTrue(
+                            senderHasSignedOrIsMsgSenderInFrame,
+                            INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE,
+                            TRANSFER);
+                }
             }
             if (!change.isForCustomFee()) {
                 /* Only process receiver sig requirements for that are not custom fee payments (custom fees are never
@@ -247,14 +304,16 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                             counterPartyAddress,
                             sigsVerifier::hasActiveKeyOrNoReceiverSigReq,
                             ledgers,
-                            updater.aliases());
-                } else if (units > 0) {
+                            updater.aliases(),
+                            CryptoTransfer);
+                } else if (isCredit) {
                     hasReceiverSigIfReq = KeyActivationUtils.validateKey(
                             frame,
                             change.getAccount().asEvmAddress(),
                             sigsVerifier::hasActiveKeyOrNoReceiverSigReq,
                             ledgers,
-                            updater.aliases());
+                            updater.aliases(),
+                            CryptoTransfer);
                 }
                 validateTrue(hasReceiverSigIfReq, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, TRANSFER);
             }
@@ -452,21 +511,30 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         final var amounts = (long[]) decodedArguments.get(2);
 
         final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers = new ArrayList<>();
-        for (int i = 0; i < accountIDs.size(); i++) {
-            final var amount = amounts[i];
-
-            var accountID = accountIDs.get(i);
-            if (amount > 0 && !exists.test(accountID)) {
-                accountID = generateAccountIDWithAliasCalculatedFrom(accountID);
-            }
-
-            DecodingFacade.addSignedAdjustment(fungibleTransfers, tokenType, accountID, amount, false);
-        }
+        addSignedAdjustments(fungibleTransfers, accountIDs, exists, tokenType, amounts);
 
         final var tokenTransferWrappers =
                 Collections.singletonList(new TokenTransferWrapper(NO_NFT_EXCHANGES, fungibleTransfers));
 
         return new CryptoTransferWrapper(new TransferWrapper(hbarTransfers), tokenTransferWrappers);
+    }
+
+    public static void addSignedAdjustments(
+            final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers,
+            final List<AccountID> accountIDs,
+            final Predicate<AccountID> exists,
+            final TokenID tokenType,
+            final long[] amounts) {
+        for (int i = 0; i < accountIDs.size(); i++) {
+            final var amount = amounts[i];
+
+            var accountID = accountIDs.get(i);
+            if (amount > 0 && !exists.test(accountID) && !accountID.hasAlias()) {
+                accountID = generateAccountIDWithAliasCalculatedFrom(accountID);
+            }
+
+            DecodingFacade.addSignedAdjustment(fungibleTransfers, tokenType, accountID, amount, false);
+        }
     }
 
     public static CryptoTransferWrapper decodeTransferToken(
@@ -478,6 +546,10 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         final var sender = convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
         final var receiver = convertLeftPaddedAddressToAccountId(decodedArguments.get(2), aliasResolver, exists);
         final var amount = (long) decodedArguments.get(3);
+
+        if (amount < 0) {
+            throw new IllegalArgumentException("Amount must be non-negative");
+        }
 
         final var tokenTransferWrappers = Collections.singletonList(new TokenTransferWrapper(
                 NO_NFT_EXCHANGES,
@@ -496,19 +568,29 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         final var serialNumbers = ((long[]) decodedArguments.get(3));
 
         final List<SyntheticTxnFactory.NftExchange> nftExchanges = new ArrayList<>();
+        addNftExchanges(nftExchanges, senders, receivers, serialNumbers, tokenID, exists);
+
+        final var tokenTransferWrappers =
+                Collections.singletonList(new TokenTransferWrapper(nftExchanges, NO_FUNGIBLE_TRANSFERS));
+        return new CryptoTransferWrapper(new TransferWrapper(hbarTransfers), tokenTransferWrappers);
+    }
+
+    public static void addNftExchanges(
+            final List<SyntheticTxnFactory.NftExchange> nftExchanges,
+            final List<AccountID> senders,
+            final List<AccountID> receivers,
+            final long[] serialNumbers,
+            final TokenID tokenID,
+            final Predicate<AccountID> exists) {
         for (var i = 0; i < senders.size(); i++) {
             var receiver = receivers.get(i);
-            if (!exists.test(receiver)) {
+            if (!exists.test(receiver) && !receiver.hasAlias()) {
                 receiver = generateAccountIDWithAliasCalculatedFrom(receiver);
             }
             final var nftExchange =
                     new SyntheticTxnFactory.NftExchange(serialNumbers[i], tokenID, senders.get(i), receiver);
             nftExchanges.add(nftExchange);
         }
-
-        final var tokenTransferWrappers =
-                Collections.singletonList(new TokenTransferWrapper(nftExchanges, NO_FUNGIBLE_TRANSFERS));
-        return new CryptoTransferWrapper(new TransferWrapper(hbarTransfers), tokenTransferWrappers);
     }
 
     public static CryptoTransferWrapper decodeTransferNFT(
@@ -607,5 +689,151 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                 .setAmount(amount)
                 .setIsApproval(isApproval)
                 .build();
+    }
+
+    public void setCanFallbackToApprovals(final boolean canFallbackToApprovals) {
+        this.canFallbackToApprovals = canFallbackToApprovals;
+    }
+
+    /**
+     * Given a {@link BalanceChange} that was switched from key-based authorization to approval-based authorization,
+     * tries to update the matching adjustment in the transfer list of the in-progress synthetic {@code CryptoTransfer}
+     * op to reflect the switch.
+     *
+     * <p><b>Important:</b> this method acts via side effects, mutating the given {@code opBuilder} in-place.
+     *
+     * @param opBuilder the builder for the in-progress synthetic {@code CryptoTransfer} op
+     * @param switchedChange the {@code BalanceChange} switched to approval-based authorization
+     */
+    @VisibleForTesting
+    static void updateSynthOpForAutoApprovalOf(
+            @NonNull final CryptoTransferTransactionBody.Builder opBuilder,
+            @NonNull final BalanceChange switchedChange) {
+        if (switchedChange.isForCustomFee()) {
+            // The synthetic CryptoTransfer op won't have any transfer list entry for a custom fee adjustment,
+            // so we can't externalize any more info in this case (given the current record creation logic)
+            return;
+        }
+        if (switchedChange.isForHbar()) {
+            updateSynthOpForAutoApprovalOfHbar(opBuilder, switchedChange);
+        } else {
+            updateSynthOpForAutoApprovalOfToken(opBuilder, switchedChange);
+        }
+    }
+
+    /**
+     * Given an hbar {@link BalanceChange} that was switched from key-based authorization to approval-based
+     * authorization, tries to update the matching adjustment in the hbar transfer list of the in-progress
+     * synthetic {@code CryptoTransfer} op to reflect the switch.
+     *
+     * @param opBuilder the builder for the in-progress synthetic {@code CryptoTransfer} op
+     * @param switchedChange the hbar {@code BalanceChange} switched to approval-based authorization
+     */
+    private static void updateSynthOpForAutoApprovalOfHbar(
+            @NonNull final CryptoTransferTransactionBody.Builder opBuilder,
+            @NonNull final BalanceChange switchedChange) {
+        final var transfersBuilder = opBuilder.getTransfersBuilder();
+        for (int i = 0, n = transfersBuilder.getAccountAmountsCount(); i < n; i++) {
+            final var hbarAdjust = transfersBuilder.getAccountAmountsBuilder(i);
+            if (hbarAdjust.getAccountID().equals(switchedChange.accountId())) {
+                if (hbarAdjust.getAmount() < 0) {
+                    hbarAdjust.setIsApproval(true);
+                } else {
+                    log.error(CHANGE_SWITCHED_TO_APPROVAL_MATCHED_CREDIT_IN, switchedChange, opBuilder);
+                }
+                return;
+            }
+        }
+        // This doesn't make sense, as it implies the TransferPrecompile has switched a non-custom-fee hbar
+        // adjustment to approval-based authorization, but the synthetic CryptoTransfer op doesn't have a
+        // matching adjustment in its transfer list
+        log.error(CHANGE_SWITCHED_TO_APPROVAL_WITHOUT_MATCHING_ADJUSTMENT_IN, switchedChange, opBuilder);
+    }
+
+    /**
+     * Given a token {@link BalanceChange} that was switched from key-based authorization to approval-based
+     * authorization, tries to update the matching adjustment in the token transfer list of the in-progress
+     * synthetic {@code CryptoTransfer} op to reflect the switch.
+     *
+     * @param opBuilder the builder for the in-progress synthetic {@code CryptoTransfer} op
+     * @param switchedChange the token {@code BalanceChange} switched to approval-based authorization
+     */
+    private static void updateSynthOpForAutoApprovalOfToken(
+            final CryptoTransferTransactionBody.Builder opBuilder, final BalanceChange switchedChange) {
+        for (int i = 0, n = opBuilder.getTokenTransfersCount(); i < n; i++) {
+            final var tokenTransfers = opBuilder.getTokenTransfers(i);
+            if (tokenTransfers.getToken().equals(switchedChange.tokenId())) {
+                if (switchedChange.isForNft()) {
+                    updateBodyForAutoApprovalOfNonFungible(opBuilder, tokenTransfers, switchedChange, i);
+                } else {
+                    updateBodyForAutoApprovalOfFungible(opBuilder, tokenTransfers, switchedChange, i);
+                }
+                // Token ids cannot be repeated, so if there was an adjustment matching this change, it was in this list
+                return;
+            }
+        }
+    }
+
+    /**
+     * Given a fungible {@link BalanceChange} that was switched from key-based authorization to approval-based
+     * authorization, tries to update the matching adjustment in the token transfer list of the in-progress
+     * synthetic {@code CryptoTransfer} op to reflect the switch.
+     *
+     * @param opBuilder the builder for the in-progress synthetic {@code CryptoTransfer} op
+     * @param switchedChange the fungible {@code BalanceChange} switched to approval-based authorization
+     */
+    private static void updateBodyForAutoApprovalOfFungible(
+            final CryptoTransferTransactionBody.Builder opBuilder,
+            final TokenTransferList tokenTransfers,
+            final BalanceChange switchedChange,
+            final int tokenTransfersIndex) {
+        for (int j = 0, m = tokenTransfers.getTransfersCount(); j < m; j++) {
+            final var adjust = tokenTransfers.getTransfers(j);
+            if (adjust.getAccountID().equals(switchedChange.accountId())) {
+                if (adjust.getAmount() < 0) {
+                    opBuilder
+                            .getTokenTransfersBuilder(tokenTransfersIndex)
+                            .getTransfersBuilder(j)
+                            .setIsApproval(true);
+                } else {
+                    log.error(CHANGE_SWITCHED_TO_APPROVAL_MATCHED_CREDIT_IN, switchedChange, opBuilder);
+                }
+                return;
+            }
+        }
+        // This doesn't make sense, as it implies the TransferPrecompile has switched a non-custom-fee fungible
+        // adjustment to approval-based authorization, but the synthetic CryptoTransfer op doesn't have a
+        // matching adjustment in its token transfer list
+        log.error(CHANGE_SWITCHED_TO_APPROVAL_WITHOUT_MATCHING_ADJUSTMENT_IN, switchedChange, opBuilder);
+    }
+
+    /**
+     * Given a non-fungible {@link BalanceChange} that was switched from key-based authorization to approval-based
+     * authorization, tries to update the matching adjustment in the token transfer list of the in-progress
+     * synthetic {@code CryptoTransfer} op to reflect the switch.
+     *
+     * @param opBuilder the builder for the in-progress synthetic {@code CryptoTransfer} op
+     * @param switchedChange the non-fungible {@code BalanceChange} switched to approval-based authorization
+     */
+    private static void updateBodyForAutoApprovalOfNonFungible(
+            final CryptoTransferTransactionBody.Builder opBuilder,
+            final TokenTransferList tokenTransfers,
+            final BalanceChange switchedChange,
+            final int tokenTransfersIndex) {
+        for (int j = 0, m = tokenTransfers.getNftTransfersCount(); j < m; j++) {
+            final var change = tokenTransfers.getNftTransfers(j);
+            if (change.getSenderAccountID().equals(switchedChange.accountId())
+                    && change.getSerialNumber() == switchedChange.serialNo()) {
+                opBuilder
+                        .getTokenTransfersBuilder(tokenTransfersIndex)
+                        .getNftTransfersBuilder(j)
+                        .setIsApproval(true);
+                return;
+            }
+        }
+        // This doesn't make sense, as it implies the TransferPrecompile has switched a non-custom-fee NFT
+        // ownership change to approval-based authorization, but the synthetic CryptoTransfer op doesn't
+        // have a matching ownership change in its token transfer list
+        log.error(CHANGE_SWITCHED_TO_APPROVAL_WITHOUT_MATCHING_ADJUSTMENT_IN, switchedChange, opBuilder);
     }
 }

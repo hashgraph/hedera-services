@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.chatter;
 
-import com.swirlds.platform.chatter.protocol.messages.ChatterEvent;
+import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
 
 public interface GossipEventObserver {
 

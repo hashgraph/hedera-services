@@ -47,8 +47,8 @@ public class ObjectStreamIterator<T extends SelfSerializable> implements IOItera
     private final CountingStreamExtension byteCounter;
 
     /**
-     * Once we encounter the first IO exception, we want to report this exception any time somebody
-     * attempts to do something that is not possible due to the exception.
+     * Once we encounter the first IO exception, we want to report this exception any time somebody attempts to do
+     * something that is not possible due to the exception.
      */
     private Exception exception;
 
@@ -58,15 +58,10 @@ public class ObjectStreamIterator<T extends SelfSerializable> implements IOItera
     private T next;
 
     /**
-     * If true, then allow for the object file to be abruptly terminated, and return the non-corrupted data
-     * at the beginning of the file.
+     * If true, then allow for the object file to be abruptly terminated, and return the non-corrupted data at the
+     * beginning of the file.
      */
     private final boolean toleratePartialFile;
-
-    /**
-     * If the last object in the stream can't be read then this file can be considered "damaged";
-     */
-    private boolean damaged = false;
 
     private static final int EXPECTED_OBJECT_STREAM_VERSION = 1;
     private static final int EXPECTED_EVENT_STREAM_VERSION = 5;
@@ -74,14 +69,11 @@ public class ObjectStreamIterator<T extends SelfSerializable> implements IOItera
     /**
      * Create an iterator that reads from a file.
      *
-     * @param objectStreamFile
-     * 		the file to read from
-     * @param toleratePartialFile
-     * 		if true then allow the stream file to end abruptly (possibly mid-object),
-     * 		and return all objects that are complete within the stream. If false then throw
-     * 		if the file is incomplete.
-     * @throws FileNotFoundException
-     * 		if the file does not exist or can't be read
+     * @param objectStreamFile    the file to read from
+     * @param toleratePartialFile if true then allow the stream file to end abruptly (possibly mid-object), and return
+     *                            all objects that are complete within the stream. If false then throw if the file is
+     *                            incomplete.
+     * @throws FileNotFoundException if the file does not exist or can't be read
      */
     public ObjectStreamIterator(final Path objectStreamFile, final boolean toleratePartialFile) throws IOException {
         this(new BufferedInputStream(new FileInputStream(objectStreamFile.toFile())), toleratePartialFile);
@@ -90,12 +82,10 @@ public class ObjectStreamIterator<T extends SelfSerializable> implements IOItera
     /**
      * Create an iterator from an input stream.
      *
-     * @param in
-     * 		the input stream
-     * @param toleratePartialFile
-     * 		if true then allow the stream file to end abruptly (possibly mid-object),
-     * 		and return all objects that are complete within the stream. If false then throw
-     * 		if the file is incomplete.
+     * @param in                  the input stream
+     * @param toleratePartialFile if true then allow the stream file to end abruptly (possibly mid-object), and return
+     *                            all objects that are complete within the stream. If false then throw if the file is
+     *                            incomplete.
      */
     public ObjectStreamIterator(final InputStream in, final boolean toleratePartialFile) throws IOException {
         this.byteCounter = new CountingStreamExtension();
@@ -183,15 +173,6 @@ public class ObjectStreamIterator<T extends SelfSerializable> implements IOItera
      */
     public long getBytesRead() {
         return byteCounter.getCount();
-    }
-
-    /**
-     * Is this file damaged? A file can be damaged if the JVM is killed abruptly while data is being written.
-     *
-     * @return true if this file is damaged
-     */
-    public boolean isDamaged() {
-        return damaged;
     }
 
     /**

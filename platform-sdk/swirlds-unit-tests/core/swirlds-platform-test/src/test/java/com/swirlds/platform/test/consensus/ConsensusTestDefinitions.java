@@ -46,6 +46,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 
+//TODO check develop for Eds changes
 public final class ConsensusTestDefinitions {
 
     private ConsensusTestDefinitions() {}
@@ -105,28 +106,28 @@ public final class ConsensusTestDefinitions {
         final Function<List<Long>, List<EventSource<?>>> eventSourceBuilder = nodeStakes -> {
             final double forkProbability = 0.1;
             final int numberOfForkedBranches = 10;
-            final long totalStake = nodeStakes.stream().reduce(0L, Long::sum);
+            final long totalWeight = nodeWeights.stream().reduce(0L, Long::sum);
 
             // Determine a single forking event source that has less than a strong minority
             // of stake
             int forkingNodeId = -1;
-            for (int i = 0; i < nodeStakes.size(); i++) {
-                final long stake = nodeStakes.get(i);
-                if (!Utilities.isStrongMinority(stake, totalStake)) {
+            for (int i = 0; i < nodeWeights.size(); i++) {
+                final long weight = nodeWeights.get(i);
+                if (!Utilities.isStrongMinority(weight, totalWeight)) {
                     forkingNodeId = i;
                     break;
                 }
             }
 
-            final List<EventSource<?>> eventSources = new ArrayList<>(nodeStakes.size());
-            for (int i = 0; i < nodeStakes.size(); i++) {
-                final long stake = nodeStakes.get(i);
+            final List<EventSource<?>> eventSources = new ArrayList<>(nodeWeights.size());
+            for (int i = 0; i < nodeWeights.size(); i++) {
+                final long weight = nodeWeights.get(i);
                 if (i == forkingNodeId) {
-                    eventSources.add(new ForkingEventSource(stake)
+                    eventSources.add(new ForkingEventSource(weight)
                             .setForkProbability(forkProbability)
                             .setMaximumBranchCount(numberOfForkedBranches));
                 } else {
-                    eventSources.add(new StandardEventSource(stake));
+                    eventSources.add(new StandardEventSource(weight));
                 }
             }
             return eventSources;
@@ -257,6 +258,7 @@ public final class ConsensusTestDefinitions {
         // If the number of nodes is not divisible by 3 then the last clique will be slightly larger
         final int cliqueSize = numberOfNodes / 3;
 
+        return List.of(phase1, phase2, phase3);
         // A node to clique mapping
         final Map<Integer, Integer> cliques = new HashMap<>();
         for (int i = 0; i < cliqueSize; i++) {

@@ -25,19 +25,23 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.test.RandomUtils;
-import com.swirlds.platform.Connection;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.metrics.ReconnectMetrics;
+import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.reconnect.ReconnectController;
 import com.swirlds.platform.reconnect.ReconnectHelper;
-import com.swirlds.platform.reconnect.ReconnectSettingsImpl;
 import com.swirlds.platform.reconnect.ReconnectThrottle;
 import com.swirlds.platform.state.EmergencyRecoveryFile;
 import com.swirlds.platform.state.EmergencyRecoveryManager;
+import com.swirlds.platform.state.signed.SignedStateFinder;
 import com.swirlds.platform.state.signed.SignedStateManager;
-import java.time.Duration;
+import com.swirlds.test.framework.config.TestConfigBuilder;
+import java.time.Instant;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -51,7 +55,7 @@ import org.junit.jupiter.params.provider.ValueSource;
  */
 public class EmergencyReconnectProtocolTests {
 
-    private static final NodeId PEER_ID = new NodeId(false, 1L);
+    private static final NodeId PEER_ID = new NodeId(1L);
 
     private static Stream<Arguments> initiateParams() {
         return Stream.of(
@@ -83,7 +87,7 @@ public class EmergencyReconnectProtocolTests {
         final EmergencyRecoveryManager emergencyRecoveryManager = mock(EmergencyRecoveryManager.class);
         if (initiateParams.emergencyStateRequired) {
             when(emergencyRecoveryManager.isEmergencyStateRequired()).thenReturn(true);
-            final EmergencyRecoveryFile file = new EmergencyRecoveryFile(1L, RandomUtils.randomHash());
+            final EmergencyRecoveryFile file = new EmergencyRecoveryFile(1L, RandomUtils.randomHash(), Instant.now());
             when(emergencyRecoveryManager.getEmergencyRecoveryFile()).thenReturn(file);
         } else {
             when(emergencyRecoveryManager.isEmergencyStateRequired()).thenReturn(false);
@@ -91,6 +95,9 @@ public class EmergencyReconnectProtocolTests {
 
         final ReconnectController reconnectController = mock(ReconnectController.class);
         when(reconnectController.acquireLearnerPermit()).thenReturn(initiateParams.getsPermit);
+
+        final FallenBehindManager fallenBehindManager = mock(FallenBehindManager.class);
+        when(fallenBehindManager.hasFallenBehind()).thenReturn(false);
 
         final EmergencyReconnectProtocol protocol = new EmergencyReconnectProtocol(
                 getStaticThreadManager(),
@@ -101,7 +108,8 @@ public class EmergencyReconnectProtocolTests {
                 mock(SignedStateManager.class),
                 100,
                 mock(ReconnectMetrics.class),
-                reconnectController);
+                reconnectController,
+                fallenBehindManager);
 
         assertEquals(initiateParams.shouldInitiate, protocol.shouldInitiate(), "unexpected initiation result");
     }
@@ -113,6 +121,9 @@ public class EmergencyReconnectProtocolTests {
         final ReconnectThrottle teacherThrottle = mock(ReconnectThrottle.class);
         when(teacherThrottle.initiateReconnect(anyLong())).thenReturn(!teacherIsThrottled);
 
+        final FallenBehindManager fallenBehindManager = mock(FallenBehindManager.class);
+        when(fallenBehindManager.hasFallenBehind()).thenReturn(false);
+
         final EmergencyReconnectProtocol protocol = new EmergencyReconnectProtocol(
                 getStaticThreadManager(),
                 mock(NotificationEngine.class),
@@ -122,7 +133,8 @@ public class EmergencyReconnectProtocolTests {
                 mock(SignedStateManager.class),
                 100,
                 mock(ReconnectMetrics.class),
-                mock(ReconnectController.class));
+                mock(ReconnectController.class),
+                fallenBehindManager);
 
         assertEquals(!teacherIsThrottled, protocol.shouldAccept(), "unexpected protocol acceptance");
     }
@@ -139,16 +151,20 @@ public class EmergencyReconnectProtocolTests {
         final ReconnectController reconnectController =
                 new ReconnectController(getStaticThreadManager(), mock(ReconnectHelper.class), () -> {});
 
+        final FallenBehindManager fallenBehindManager = mock(FallenBehindManager.class);
+        when(fallenBehindManager.hasFallenBehind()).thenReturn(false);
+
         final EmergencyReconnectProtocol protocol = new EmergencyReconnectProtocol(
                 getStaticThreadManager(),
                 mock(NotificationEngine.class),
                 PEER_ID,
                 emergencyRecoveryManager,
                 teacherThrottle,
-                mock(EmergencyStateFinder.class),
+                mock(SignedStateFinder.class),
                 100,
                 mock(ReconnectMetrics.class),
-                reconnectController);
+                reconnectController,
+                fallenBehindManager);
 
         // the ReconnectController must be running in order to provide permits
         getStaticThreadManager()
@@ -180,10 +196,14 @@ public class EmergencyReconnectProtocolTests {
     @DisplayName("Tests if teacher throttle gets released")
     @Test
     void testTeacherThrottleReleased() {
-        final ReconnectSettingsImpl reconnectSettings = new ReconnectSettingsImpl();
-        // we don't want the time based throttle to interfere
-        reconnectSettings.minimumTimeBetweenReconnects = Duration.ZERO;
-        final ReconnectThrottle teacherThrottle = new ReconnectThrottle(reconnectSettings);
+        final Configuration config = new TestConfigBuilder()
+                // we don't want the time based throttle to interfere
+                .withValue("reconnect.minimumTimeBetweenReconnects", "0s")
+                .getOrCreateConfig();
+        final ReconnectThrottle teacherThrottle = new ReconnectThrottle(config.getConfigData(ReconnectConfig.class));
+
+        final FallenBehindManager fallenBehindManager = mock(FallenBehindManager.class);
+        when(fallenBehindManager.hasFallenBehind()).thenReturn(false);
 
         final EmergencyReconnectProtocol protocol = new EmergencyReconnectProtocol(
                 getStaticThreadManager(),
@@ -191,10 +211,11 @@ public class EmergencyReconnectProtocolTests {
                 PEER_ID,
                 mock(EmergencyRecoveryManager.class),
                 teacherThrottle,
-                mock(EmergencyStateFinder.class),
+                mock(SignedStateFinder.class),
                 100,
                 mock(ReconnectMetrics.class),
-                mock(ReconnectController.class));
+                mock(ReconnectController.class),
+                fallenBehindManager);
 
         assertTrue(protocol.shouldAccept(), "expected protocol to accept initiation");
 
@@ -206,6 +227,6 @@ public class EmergencyReconnectProtocolTests {
                 () -> protocol.runProtocol(throwingConnection),
                 "expected an exception to be thrown");
 
-        assertTrue(teacherThrottle.initiateReconnect(PEER_ID.getId()), "Teacher throttle should be released");
+        assertTrue(teacherThrottle.initiateReconnect(PEER_ID.id()), "Teacher throttle should be released");
     }
 }

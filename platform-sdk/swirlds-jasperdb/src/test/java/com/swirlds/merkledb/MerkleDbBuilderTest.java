@@ -100,14 +100,15 @@ class MerkleDbBuilderTest {
             MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> merkleDbDataSource =
                     (MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue>) dataSource;
             assertEquals(
-                    defaultDatabase.getStorageDir().resolve("tables").resolve("test2"),
+                    defaultDatabase
+                            .getStorageDir()
+                            .resolve("tables")
+                            .resolve("test2-" + merkleDbDataSource.getTableId()),
                     merkleDbDataSource.getStorageDir());
             MerkleDbSettings settings = MerkleDbSettingsFactory.get();
             assertFalse(merkleDbDataSource.isPreferDiskBasedIndexes());
             assertEquals(settings.getMaxNumOfKeys(), merkleDbDataSource.getMaxNumberOfKeys());
-            assertEquals(
-                    settings.getInternalHashesRamToDiskThreshold(),
-                    merkleDbDataSource.getInternalHashesRamToDiskThreshold());
+            assertEquals(settings.getHashesRamToDiskThreshold(), merkleDbDataSource.getHashesRamToDiskThreshold());
             // set explicitly above
             assertFalse(merkleDbDataSource.isCompactionEnabled());
         } finally {
@@ -122,10 +123,7 @@ class MerkleDbBuilderTest {
     public void testBuilderOverrides() throws IOException {
         final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig =
                 createTableConfig();
-        tableConfig
-                .preferDiskIndices(true)
-                .maxNumberOfKeys(1999)
-                .internalHashesRamToDiskThreshold(Integer.MAX_VALUE >> 4);
+        tableConfig.preferDiskIndices(true).maxNumberOfKeys(1999).hashesRamToDiskThreshold(Integer.MAX_VALUE >> 4);
         final MerkleDbDataSourceBuilder<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> builder =
                 new MerkleDbDataSourceBuilder<>(tableConfig);
         final Path defaultDbPath = testDirectory.resolve("defaultDatabasePath");
@@ -136,10 +134,12 @@ class MerkleDbBuilderTest {
             assertTrue(dataSource instanceof MerkleDbDataSource);
             MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> merkleDbDataSource =
                     (MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue>) dataSource;
-            assertEquals(defaultDbPath.resolve("tables").resolve("test3"), merkleDbDataSource.getStorageDir());
+            assertEquals(
+                    defaultDbPath.resolve("tables").resolve("test3-" + merkleDbDataSource.getTableId()),
+                    merkleDbDataSource.getStorageDir());
             assertTrue(merkleDbDataSource.isPreferDiskBasedIndexes());
             assertEquals(1999, merkleDbDataSource.getMaxNumberOfKeys());
-            assertEquals(Integer.MAX_VALUE >> 4, merkleDbDataSource.getInternalHashesRamToDiskThreshold());
+            assertEquals(Integer.MAX_VALUE >> 4, merkleDbDataSource.getHashesRamToDiskThreshold());
             // set explicitly above
             assertTrue(merkleDbDataSource.isCompactionEnabled());
         } finally {

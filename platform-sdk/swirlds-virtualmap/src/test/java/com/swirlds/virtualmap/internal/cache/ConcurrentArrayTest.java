@@ -33,7 +33,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -90,37 +89,37 @@ class ConcurrentArrayTest {
     }
 
     /**
-     * I should not be able to pass null as either source ConcurrentArray when creating a ConcurrentArray.
+     * I should not be able to pass null as an argument to merge.
      */
     @Test
     @Tags({@Tag("VirtualMerkle"), @Tag("VirtualNodeCache")})
-    @DisplayName("Null is not a valid input as either argument to the ConcurrentArray constructor")
+    @DisplayName("Null is not a valid input for merge")
     void mergeConstructorCannotTakeNull() {
         final ConcurrentArray<String> source = new ConcurrentArray<>(10);
         source.seal();
-        assertThrows(NullPointerException.class, () -> new ConcurrentArray<>(null, source), "Expected NPE");
-        assertThrows(NullPointerException.class, () -> new ConcurrentArray<>(source, null), "Expected NPE");
+        assertThrows(NullPointerException.class, () -> source.merge(null), "Expected NPE");
     }
 
     /**
-     * Neither source array can be mutable when using the "merge" constructor.
+     * Neither array can be mutable when merged.
      */
     @Test
     @Tags({@Tag("VirtualMerkle"), @Tag("VirtualNodeCache")})
-    @DisplayName("Source ConcurrentArrays must be immutable when passed to the constructor")
+    @DisplayName("ConcurrentArrays must be immutable when merged")
     void mergeConstructorCannotTakeMutableSources() {
+        final ConcurrentArray<String> mutableSource1 = new ConcurrentArray<>(10);
         final ConcurrentArray<String> immutableSource = new ConcurrentArray<>(10);
         immutableSource.seal();
-        final ConcurrentArray<String> mutableSource = new ConcurrentArray<>(10);
+        final ConcurrentArray<String> mutableSource2 = new ConcurrentArray<>(10);
 
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new ConcurrentArray<>(immutableSource, mutableSource),
-                "Expected IAE when passing a mutable source");
+                () -> immutableSource.merge(mutableSource1),
+                "Expected IAE when merging with a mutable source");
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new ConcurrentArray<>(mutableSource, immutableSource),
-                "Expected IAE when passing a mutable source");
+                () -> mutableSource2.merge(immutableSource),
+                "Expected IAE when merging a mutable array");
     }
 
     /**
@@ -128,13 +127,13 @@ class ConcurrentArrayTest {
      */
     @Test
     @Tags({@Tag("VirtualMerkle"), @Tag("VirtualNodeCache")})
-    @DisplayName("Source ConcurrentArrays must be unique")
+    @DisplayName("Merged ConcurrentArrays must be unique")
     void mergeConstructorArgsMustBeUniqueInstances() {
         final ConcurrentArray<String> immutableSource = new ConcurrentArray<>(10);
         immutableSource.seal();
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new ConcurrentArray<>(immutableSource, immutableSource),
+                () -> immutableSource.merge(immutableSource),
                 "Expected IAE when passing same source twice");
     }
 
@@ -170,10 +169,10 @@ class ConcurrentArrayTest {
         b.seal();
 
         // Merge. I should have 9 elements, and 5 should not be one of them.
-        final ConcurrentArray<String> arr = new ConcurrentArray<>(a, b);
-        assertEquals(14, arr.size(), "Wrong value");
+        b.merge(a);
+        assertEquals(14, b.size(), "Wrong value");
 
-        final List<String> elements = arr.seal().sortedStream(null).collect(Collectors.toList());
+        final List<String> elements = b.stream().sorted().toList();
 
         assertEquals("Element 1", elements.get(0), "Wrong value");
         assertEquals("Element 2", elements.get(1), "Wrong value");
@@ -209,15 +208,10 @@ class ConcurrentArrayTest {
         b.add("Element 6");
         b.seal();
 
-        final ConcurrentArray<String> arr = new ConcurrentArray<>(a, b);
-        assertTrue(arr.isImmutable(), "Expected array to be immutable");
+        b.merge(a);
+        assertTrue(b.isImmutable(), "Expected array to be immutable");
     }
 
-    /**
-     * Although this is NOT A REQUIREMENT for our implementation (at least, at the time
-     * this comment was written), it should be possible to use a ConcurrentArray as the source
-     * of more than one merged ConcurrentArray.
-     */
     @Test
     @Tags({@Tag("VirtualMerkle"), @Tag("VirtualNodeCache")})
     @DisplayName("Reusing the same ConcurrentArray source should be permitted")
@@ -234,7 +228,6 @@ class ConcurrentArrayTest {
         b.add("Element 6");
         b.add("Element 7");
         b.add("Element 8");
-        b.add("Element 9");
         b.seal();
 
         final ConcurrentArray<String> c = new ConcurrentArray<>(5);
@@ -246,11 +239,11 @@ class ConcurrentArrayTest {
         c.seal();
 
         // Merge a and b together and validate the result
-        final ConcurrentArray<String> arr1 = new ConcurrentArray<>(a, b);
-        assertEquals(9, arr1.size(), "Wrong value");
-        List<String> elements = arr1.seal().sortedStream(null).collect(Collectors.toList());
+        b.merge(a);
+        assertEquals(8, b.size(), "Wrong value");
+        List<String> elements = b.stream().sorted().toList();
 
-        assertEquals(9, elements.size(), "Wrong value");
+        assertEquals(8, elements.size(), "Wrong value");
         assertEquals("Element 1", elements.get(0), "Wrong value");
         assertEquals("Element 2", elements.get(1), "Wrong value");
         assertEquals("Element 3", elements.get(2), "Wrong value");
@@ -259,12 +252,11 @@ class ConcurrentArrayTest {
         assertEquals("Element 6", elements.get(5), "Wrong value");
         assertEquals("Element 7", elements.get(6), "Wrong value");
         assertEquals("Element 8", elements.get(7), "Wrong value");
-        assertEquals("Element 9", elements.get(8), "Wrong value");
 
         // Merge a and c and validate the result.
-        final ConcurrentArray<String> arr2 = new ConcurrentArray<>(a, c);
-        assertEquals(9, arr2.size(), "Wrong value");
-        elements = arr2.seal().sortedStream(null).collect(Collectors.toList());
+        c.merge(a);
+        assertEquals(9, c.size(), "Wrong value");
+        elements = c.stream().sorted().toList();
 
         assertEquals(9, elements.size(), "Wrong value");
         assertEquals("Element 1", elements.get(0), "Wrong value");
@@ -276,6 +268,67 @@ class ConcurrentArrayTest {
         assertEquals("Element C", elements.get(6), "Wrong value");
         assertEquals("Element D", elements.get(7), "Wrong value");
         assertEquals("Element E", elements.get(8), "Wrong value");
+    }
+
+    @Test
+    @Tags({@Tag("VirtualMerkle"), @Tag("VirtualNodeCache")})
+    @DisplayName("Merged with empty array")
+    void mergeWithEmptyArray() {
+        final ConcurrentArray<String> a = new ConcurrentArray<>(5);
+        a.add("Element 1");
+        a.add("Element 2");
+        a.seal();
+
+        final ConcurrentArray<String> b = new ConcurrentArray<>(5);
+        b.seal();
+
+        final ConcurrentArray<String> c = new ConcurrentArray<>(5);
+        c.seal();
+
+        // Merge with an empty array
+        a.merge(b);
+        assertEquals(2, a.size(), "Wrong size");
+
+        // Merge an empty array with a non-empty one
+        c.merge(a);
+        assertEquals(2, c.size(), "Wrong size");
+    }
+
+    @Test
+    @Tags({@Tag("VirtualMerkle"), @Tag("VirtualNodeCache")})
+    @DisplayName("Multiple merge")
+    void multipleMerge() {
+        final ConcurrentArray<String> a = new ConcurrentArray<>(5);
+        a.add("Element 1");
+        a.seal();
+
+        final ConcurrentArray<String> b = new ConcurrentArray<>(5);
+        b.add("Element 2");
+        b.add("Element 3");
+        b.seal();
+
+        final ConcurrentArray<String> c = new ConcurrentArray<>(5);
+        c.add("Element 4");
+        c.add("Element 5");
+        c.add("Element 6");
+        c.seal();
+
+        a.merge(b);
+        a.merge(c);
+        assertEquals(6, a.size(), "Wrong size");
+
+        List<String> elements = a.stream().toList();
+        assertEquals(6, elements.size(), "Wrong stream size");
+
+        List<String> sorted = a.stream().sorted().toList();
+
+        assertEquals(a.size(), sorted.size(), "Wrong value");
+        assertEquals("Element 1", sorted.get(0), "Wrong value");
+        assertEquals("Element 2", sorted.get(1), "Wrong value");
+        assertEquals("Element 3", sorted.get(2), "Wrong value");
+        assertEquals("Element 4", sorted.get(3), "Wrong value");
+        assertEquals("Element 5", sorted.get(4), "Wrong value");
+        assertEquals("Element 6", sorted.get(5), "Wrong value");
     }
 
     /**
@@ -384,7 +437,7 @@ class ConcurrentArrayTest {
 
         // Check that every element is there, and in order.
         final AtomicInteger expected = new AtomicInteger(0);
-        arr.seal().sortedStream(null).forEach(value -> assertEquals(expected.getAndIncrement(), value, "Wrong value"));
+        arr.seal().stream().sorted().forEach(value -> assertEquals(expected.getAndIncrement(), value, "Wrong value"));
         assertEquals(numElements, expected.get(), "Wrong value");
     }
 
@@ -398,17 +451,13 @@ class ConcurrentArrayTest {
     void callingSortedStreamOnMutableArrayThrows() {
         final ConcurrentArray<String> arr = new ConcurrentArray<>();
         assertThrows(
-                IllegalStateException.class,
-                () -> arr.sortedStream(null),
-                "Expected IAE when sorting a mutable array with no elements");
+                IllegalStateException.class, arr::stream, "Expected IAE when sorting a mutable array with no elements");
 
         arr.add("Element 5");
         arr.add("Element 2");
         arr.add("Element 8");
         assertThrows(
-                IllegalStateException.class,
-                () -> arr.sortedStream(null),
-                "Expected IAE when sorting a mutable array with elements");
+                IllegalStateException.class, arr::stream, "Expected IAE when sorting a mutable array with elements");
     }
 
     /**
@@ -421,7 +470,7 @@ class ConcurrentArrayTest {
         final ConcurrentArray<String> arr = new ConcurrentArray<>();
         arr.seal();
 
-        final Stream<String> stream = arr.sortedStream(null);
+        final Stream<String> stream = arr.stream();
         assertEquals(0, stream.count(), "Stream count should have been 0");
     }
 
@@ -452,7 +501,7 @@ class ConcurrentArrayTest {
             final int ii = i + 1;
             futures[i] = e.submit(() -> {
                 Comparator<Integer> comparator = Comparator.comparingInt(a -> (a * 997 * ii) % numElements);
-                final List<Integer> elements = arr.sortedStream(comparator).toList();
+                final List<Integer> elements = arr.stream().sorted(comparator).toList();
                 assertEquals(numElements, elements.size(), "Wrong value");
                 for (int j = 0; j < numElements - 1; j++) {
                     assertTrue(comparator.compare(elements.get(j), elements.get(j + 1)) <= 0, "Wrong value");

@@ -22,14 +22,16 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.IntegerGauge;
 import com.swirlds.common.metrics.LongGauge;
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.dispatch.Observer;
 import com.swirlds.platform.dispatch.triggers.error.CatastrophicIssTrigger;
 import com.swirlds.platform.dispatch.triggers.flow.StateHashValidityTrigger;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Metrics for ISS events.
@@ -54,14 +56,14 @@ public class IssMetrics {
     private final IntegerGauge issCountGauge;
 
     /**
-     * The current total stake tied up by ISS events.
+     * The current total weight tied up by ISS events.
      */
-    private long issStake;
+    private long issWeight;
 
     /**
-     * The metric for the current stake tied up by ISS events.
+     * The metric for the current weight tied up by ISS events.
      */
-    private final LongGauge issStakeGage;
+    private final LongGauge issWeightGage;
 
     /**
      * The ISS status of a node.
@@ -102,7 +104,7 @@ public class IssMetrics {
     /**
      * The current ISS status of nodes.
      */
-    private final Map<Long /* node ID */, IssStatus> issDataByNode = new HashMap<>();
+    private final Map<NodeId, IssStatus> issDataByNode = new HashMap<>();
 
     /**
      * Constructor of {@code IssMetrics}
@@ -112,18 +114,18 @@ public class IssMetrics {
      * @throws IllegalArgumentException
      * 		if {@code metrics} is {@code null}
      */
-    public IssMetrics(final Metrics metrics, final AddressBook addressBook) {
-        CommonUtils.throwArgNull(metrics, "metrics");
-        this.addressBook = CommonUtils.throwArgNull(addressBook, "addressBook");
+    public IssMetrics(@NonNull final Metrics metrics, @NonNull final AddressBook addressBook) {
+        Objects.requireNonNull(metrics, "metrics must not be null");
+        this.addressBook = Objects.requireNonNull(addressBook, "addressBook must not be null");
 
         issCountGauge = metrics.getOrCreate(new IntegerGauge.Config(INTERNAL_CATEGORY, "issCount")
                 .withDescription("the number of nodes that currently disagree with the consensus hash"));
 
-        issStakeGage = metrics.getOrCreate(new LongGauge.Config(INTERNAL_CATEGORY, "issStake")
-                .withDescription("the amount of stake tied up by ISS events"));
+        issWeightGage = metrics.getOrCreate(new LongGauge.Config(INTERNAL_CATEGORY, "issWeight")
+                .withDescription("the amount of weight tied up by ISS events"));
 
         for (final Address address : addressBook) {
-            issDataByNode.put(address.getId(), new IssStatus());
+            issDataByNode.put(address.getNodeId(), new IssStatus());
         }
     }
 
@@ -135,10 +137,33 @@ public class IssMetrics {
     }
 
     /**
-     * Get the current stake currently tied up in an ISS.
+     * Get the current weight currently tied up in an ISS.
      */
-    public long getIssStake() {
-        return issStake;
+    public long getIssWeight() {
+        return issWeight;
+    }
+
+    /**
+     * Report the status of a node.
+     *
+     * @param round
+     * 		the round number
+     * @param nodeId
+     * 		the ID of the node that submitted the hash
+     * @param nodeHash
+     * 		the hash computed by the node
+     * @param consensusHash
+     * 		the consensus hash computed by the network
+     * @deprecated in 0.39.0, use {@link #stateHashValidityObserver(Long, NodeId, Hash, Hash)} instead
+     */
+    @Deprecated(forRemoval = true, since = "0.39.0")
+    @Observer(StateHashValidityTrigger.class)
+    public void stateHashValidityObserver(
+            @NonNull final Long round,
+            @NonNull final Long nodeId,
+            @NonNull final Hash nodeHash,
+            @NonNull final Hash consensusHash) {
+        stateHashValidityObserver(round, new NodeId(nodeId), nodeHash, consensusHash);
     }
 
     /**
@@ -153,9 +178,15 @@ public class IssMetrics {
      * @param consensusHash
      * 		the consensus hash computed by the network
      */
-    @Observer(StateHashValidityTrigger.class)
     public void stateHashValidityObserver(
-            final Long round, final Long nodeId, final Hash nodeHash, final Hash consensusHash) {
+            @NonNull final Long round,
+            @NonNull final NodeId nodeId,
+            @NonNull final Hash nodeHash,
+            @NonNull final Hash consensusHash) {
+        Objects.requireNonNull(round, "round must not be null");
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
+        Objects.requireNonNull(nodeHash, "nodeHash must not be null");
+        Objects.requireNonNull(consensusHash, "consensusHash must not be null");
 
         final boolean hasIss = !nodeHash.equals(consensusHash);
 
@@ -173,16 +204,16 @@ public class IssMetrics {
         issStatus.setRound(round);
 
         if (issStatus.hasIss() != hasIss) {
-            final long stake = addressBook.getAddress(nodeId).getStake();
+            final long weight = addressBook.getAddress(nodeId).getWeight();
             if (hasIss) {
                 issCount++;
-                issStake += stake;
+                issWeight += weight;
             } else {
                 issCount--;
-                issStake -= stake;
+                issWeight -= weight;
             }
             issCountGauge.set(issCount);
-            issStakeGage.set(issStake);
+            issWeightGage.set(issWeight);
             issStatus.setHasIss(hasIss);
         }
     }
@@ -210,9 +241,9 @@ public class IssMetrics {
         }
 
         issCount = addressBook.getSize();
-        issStake = addressBook.getTotalStake();
+        issWeight = addressBook.getTotalWeight();
 
         issCountGauge.set(issCount);
-        issStakeGage.set(issStake);
+        issWeightGage.set(issWeight);
     }
 }

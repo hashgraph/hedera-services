@@ -22,8 +22,12 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * In a JUnit5 test extended with the {@link LogCaptureExtension}, denotes the field whose logs
- * should be captured per test method execution.
+ * In a JUnit5 test extended with the {@link LogCaptureExtension}, denotes the
+ * field of a class type whose logs should be captured per test method execution.
+ *
+ * (The field itself isn't used - only its type is needed, to get a
+ * {@link org.apache.logging.log4j.Logger} for that type - thus it need not ever
+ * hold an instance.)
  */
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)

@@ -35,7 +35,6 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusMetrics;
 import com.swirlds.platform.state.signed.LoadableFromSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.sync.Generations;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -47,7 +46,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.function.BiConsumer;
 
 import static com.swirlds.logging.LogMarker.CONSENSUS_VOTING;
 import static com.swirlds.logging.LogMarker.STARTUP;
@@ -1064,16 +1062,16 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus,
         // parents have equal rounds (not -1), so check if x can strongly see witnesses with a
         // supermajority of stake
         // sum of stake involved
-        long stake = 0;
+        long weight = 0;
         int numStronglySeen = 0;
         for (long m = 0; m < numMembers; m++) {
             if (timedStronglySeeP(x, m) != null) {
-                stake += addressBook.getAddress(m).getStake();
+                weight += addressBook.getAddress(m).getWeight();
                 numStronglySeen++;
             }
         }
         consensusMetrics.witnessesStronglySeen(numStronglySeen);
-        if (Utilities.isSuperMajority(stake, addressBook.getTotalStake())) {
+        if (Utilities.isSuperMajority(weight, addressBook.getTotalWeight())) {
             // it's a supermajority, so advance to the next round
             x.setRoundCreated(1 + parentRound(x));
             consensusMetrics.roundIncrementedByStronglySeen();

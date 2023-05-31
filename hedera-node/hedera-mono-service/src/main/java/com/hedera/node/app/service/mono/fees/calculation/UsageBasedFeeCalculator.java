@@ -130,6 +130,20 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
             Query query, FeeData usagePrices, Timestamp at, Function<QueryResourceUsageEstimator, FeeData> usageFn) {
         var usageEstimator = getQueryUsageEstimator(query);
         var queryUsage = usageFn.apply(usageEstimator);
+        return computeFromQueryResourceUsage(queryUsage, usagePrices, at);
+    }
+
+    /**
+     * Computes the fees for a query, given the query's resource usage, the current prices,
+     * and the estimated consensus time.
+     *
+     * @param queryUsage the resource usage of the query
+     * @param usagePrices the current prices
+     * @param at the estimated consensus time
+     * @return the fees for the query
+     */
+    public FeeObject computeFromQueryResourceUsage(
+            final FeeData queryUsage, final FeeData usagePrices, final Timestamp at) {
         return getFeeObject(usagePrices, queryUsage, exchange.rate(at));
     }
 
@@ -190,7 +204,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
         return Math.max(priceInTinyBars, 1L);
     }
 
-    private Map<SubType, FeeData> uncheckedPricesGiven(TxnAccessor accessor, Timestamp at) {
+    public Map<SubType, FeeData> uncheckedPricesGiven(TxnAccessor accessor, Timestamp at) {
         try {
             return usagePrices.pricesGiven(accessor.getFunction(), at);
         } catch (Exception e) {
@@ -218,7 +232,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
             try {
                 final var usage = usageEstimator.usageGiven(accessor.getTxn(), sigUsage, view);
                 final var applicablePrices = prices.get(usage.getSubType());
-                return getFeeObject(applicablePrices, usage, rate, feeMultiplierSource.currentMultiplier(accessor));
+                return feesIncludingCongestion(usage, applicablePrices, accessor, rate);
             } catch (InvalidTxBodyException e) {
                 log.warn(
                         "Argument accessor={} malformed for implied estimator {}!",
@@ -227,6 +241,11 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
                 throw new IllegalArgumentException(e);
             }
         }
+    }
+
+    public FeeObject feesIncludingCongestion(
+            final FeeData usage, final FeeData typedPrices, final TxnAccessor accessor, final ExchangeRate rate) {
+        return getFeeObject(typedPrices, usage, rate, feeMultiplierSource.currentMultiplier(accessor));
     }
 
     private QueryResourceUsageEstimator getQueryUsageEstimator(Query query) {
@@ -250,7 +269,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
         throw new NoSuchElementException("No estimator exists for the given transaction");
     }
 
-    private SigValueObj getSigUsage(TxnAccessor accessor, JKey payerKey) {
+    public SigValueObj getSigUsage(TxnAccessor accessor, JKey payerKey) {
         int numPayerKeys = numSimpleKeys(payerKey);
         final var sigUsage = accessor.usageGiven(numPayerKeys);
         return new SigValueObj(sigUsage.numSigs(), numPayerKeys, sigUsage.sigsSize());

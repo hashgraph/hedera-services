@@ -33,7 +33,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * Validates the signed state received by the learner in an emergency reconnect. If the received state has the exact
  * round and hash requested, it does not need to be fully signed. If the state is for a later round, it must be signed
- * by at least half the network stake to be considered valid. The emergency reconnect scenario is described in
+ * by at least half the network weight to be considered valid. The emergency reconnect scenario is described in
  * disaster-recovery.md.
  */
 public class EmergencySignedStateValidator implements SignedStateValidator {
@@ -51,7 +51,7 @@ public class EmergencySignedStateValidator implements SignedStateValidator {
     /**
      * {@inheritDoc}
      *
-     * If the {@code signedState} is matches the request round and hash exactly, this method updates the next epoch hash
+     * If the {@code reservedSignedState} is matches the request round and hash exactly, this method updates the next epoch hash
      * via {@link com.swirlds.platform.state.PlatformData#setNextEpochHash(Hash)}. Doing so does not modify the hash,
      * but will trigger the epoch hash to update when the next round reaches consensus.
      * Note: the previous state is ignored by this validator.  Emergency round, emergency state hash, and epoch hash
@@ -133,7 +133,7 @@ public class EmergencySignedStateValidator implements SignedStateValidator {
         logger.info(
                 SIGNED_STATE.getMarker(),
                 "Emergency recovery signed state is for round later than requested. "
-                        + "Validating that the state is signed by a majority stake.");
+                        + "Validating that the state is signed by a majority weight.");
 
         // must be fully signed
         checkSignatures(signedState, addressBook);

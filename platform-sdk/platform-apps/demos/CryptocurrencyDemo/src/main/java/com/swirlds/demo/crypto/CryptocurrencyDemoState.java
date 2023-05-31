@@ -35,7 +35,7 @@ import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldDualState;
-import com.swirlds.common.system.SwirldState2;
+import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.Utilities;
@@ -52,7 +52,7 @@ import java.util.Random;
  * entirely new cryptocurrency is created every time all the computers start the program over again, so
  * these cryptocurrencies won't have any actual value.
  */
-public class CryptocurrencyDemoState extends PartialMerkleLeaf implements SwirldState2, MerkleLeaf {
+public class CryptocurrencyDemoState extends PartialMerkleLeaf implements SwirldState, MerkleLeaf {
 
     /**
      * The version history of this class.
@@ -87,10 +87,6 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
         ask // run slow/fast or broadcast a bid/ask
     }
 
-    /** in slow mode, number of milliseconds to sleep after each outgoing sync */
-    private static final int delaySlowSync = 1000;
-    /** in fast mode, number of milliseconds to sleep after each outgoing sync */
-    private static final int delayFastSync = 0;
     /** number of different stocks that can be bought and sold */
     public static final int NUM_STOCKS = 10;
     /** remember the last MAX_TRADES trades that occurred. */
@@ -228,11 +224,8 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
         if (transaction == null || transaction.getContents().length == 0) {
             return;
         }
-        if (transaction.getContents()[0] == TransType.slow.ordinal()) {
-            platform.setSleepAfterSync(delaySlowSync);
-            return;
-        } else if (transaction.getContents()[0] == TransType.fast.ordinal()) {
-            platform.setSleepAfterSync(delayFastSync);
+        if (transaction.getContents()[0] == TransType.slow.ordinal()
+                || transaction.getContents()[0] == TransType.fast.ordinal()) {
             return;
         } else if (!isConsensus || transaction.getContents().length < 3) {
             return; // ignore any bid/ask that doesn't have consensus yet
@@ -324,11 +317,6 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
         price[tradeStock] = (byte) tradePrice;
         askId[tradeStock] = -1L;
         bidId[tradeStock] = -1L;
-
-        // start with fast syncing until first trade, then be slow until user hits "F"
-        if (numTrades == 1) {
-            platform.setSleepAfterSync(delaySlowSync);
-        }
     }
 
     /**
@@ -367,8 +355,6 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
                 shares[i][j] = 200L; // each member starts with 200 shares of each stock
             }
         }
-        // start with fast syncing, until the first trade
-        this.platform.setSleepAfterSync(delayFastSync);
     }
 
     /**

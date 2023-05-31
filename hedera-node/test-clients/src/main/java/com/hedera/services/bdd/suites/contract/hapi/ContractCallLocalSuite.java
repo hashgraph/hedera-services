@@ -29,7 +29,9 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
@@ -43,6 +45,7 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
 import java.util.List;
+import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -71,7 +74,8 @@ public class ContractCallLocalSuite extends HapiSuite {
             insufficientFeeFails(),
             lowBalanceFails(),
             erc20Query(),
-            vanillaSuccess()
+            vanillaSuccess(),
+            callLocalDoesNotCheckSignaturesNorPayer()
         });
     }
 
@@ -170,6 +174,18 @@ public class ContractCallLocalSuite extends HapiSuite {
                 .when()
                 .then(contractCallLocalWithFunctionAbi(TOKEN, decimalsABI)
                         .has(resultWith().resultThruAbi(decimalsABI, isLiteralResult(new Object[] {DECIMALS}))));
+    }
+
+    // https://github.com/hashgraph/hedera-services/pull/5485
+    private HapiSpec callLocalDoesNotCheckSignaturesNorPayer() {
+        return defaultHapiSpec("VanillaSuccess")
+                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).adminKey(THRESHOLD))
+                .when(contractCall(CONTRACT, "create").gas(785_000))
+                .then(withOpContext((spec, opLog) -> IntStream.range(0, 2000).forEach(i -> {
+                    final var create = cryptoCreate("account #" + i).deferStatusResolution();
+                    final var callLocal = contractCallLocal(CONTRACT, "getIndirect");
+                    allRunFor(spec, create, callLocal);
+                })));
     }
 
     @Override

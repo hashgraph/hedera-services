@@ -96,9 +96,8 @@ public class SysDelSysUndelSpec extends HapiSuite {
         return defaultHapiSpec("happyPathFlows")
                 .given(
                         fileCreate("misc").lifetime(lifetime).contents(ORIG_FILE),
-                        UtilVerbs.withOpContext((spec, opLog) -> {
-                            initExpiry.set(spec.registry().getTimestamp("misc").getSeconds());
-                        }))
+                        UtilVerbs.withOpContext((spec, opLog) -> initExpiry.set(
+                                spec.registry().getTimestamp("misc").getSeconds())))
                 .when(
                         systemFileDelete("misc")
                                 .payingWith(SYSTEM_DELETE_ADMIN)

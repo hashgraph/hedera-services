@@ -28,10 +28,16 @@ public class AutoRenewConfigChoices {
     static final int DEFAULT_HIGH_TOUCH_COUNT = 10_000;
     static final int HIGH_SCAN_CYCLE_COUNT = 10_000;
 
-    static final String defaultMinAutoRenewPeriod =
-            HapiSpecSetup.getDefaultNodeProps().get("ledger.autoRenewPeriod.minDuration");
-    static final String defaultGracePeriod = HapiSpecSetup.getDefaultNodeProps().get("autorenew.gracePeriod");
-    static final String defaultNumToScan = HapiSpecSetup.getDefaultNodeProps().get("autorenew.numberOfEntitiesToScan");
+    static final String LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION = "ledger.autoRenewPeriod.minDuration";
+    static final String DEFAULT_MIN_AUTO_RENEW_PERIOD =
+            HapiSpecSetup.getDefaultNodeProps().get(LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION);
+    static final String AUTORENEW_GRACE_PERIOD = "autorenew.gracePeriod";
+    static final String DEFAULT_GRACE_PERIOD =
+            HapiSpecSetup.getDefaultNodeProps().get(AUTORENEW_GRACE_PERIOD);
+    static final String AUTORENEW_NUMBER_OF_ENTITIES_TO_SCAN = "autorenew.numberOfEntitiesToScan";
+    static final String DEFAULT_NUM_TO_SCAN =
+            HapiSpecSetup.getDefaultNodeProps().get(AUTORENEW_NUMBER_OF_ENTITIES_TO_SCAN);
+    static final String AUTO_RENEW_TARGET_TYPES = "autoRenew.targetTypes";
 
     public static HapiSpecOperation enableContractAutoRenewWith(final long minAutoRenewPeriod, final long gracePeriod) {
         return enableContractAutoRenewWith(
@@ -68,34 +74,39 @@ public class AutoRenewConfigChoices {
             final int maxTouch,
             final String targetTypes) {
         return Map.of(
-                "ledger.autoRenewPeriod.minDuration", "" + minAutoRenew,
-                "autoRenew.targetTypes", targetTypes,
-                "autorenew.gracePeriod", "" + gracePeriod,
-                "autorenew.numberOfEntitiesToScan", "" + maxScan,
-                "autorenew.maxNumberOfEntitiesToRenewOrDelete", "" + maxTouch);
+                LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION,
+                "" + minAutoRenew,
+                AUTO_RENEW_TARGET_TYPES,
+                targetTypes,
+                AUTORENEW_GRACE_PERIOD,
+                "" + gracePeriod,
+                AUTORENEW_NUMBER_OF_ENTITIES_TO_SCAN,
+                "" + maxScan,
+                "autorenew.maxNumberOfEntitiesToRenewOrDelete",
+                "" + maxTouch);
     }
 
     static Map<String, String> leavingAutoRenewDisabledWith(long minAutoRenewPeriod) {
-        return Map.of("ledger.autoRenewPeriod.minDuration", "" + minAutoRenewPeriod);
+        return Map.of(LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION, "" + minAutoRenewPeriod);
     }
 
     public static Map<String, String> disablingAutoRenewWithDefaults() {
         return Map.of(
-                "ledger.autoRenewPeriod.minDuration", defaultMinAutoRenewPeriod,
-                "autoRenew.targetTypes", "",
-                "autorenew.gracePeriod", defaultGracePeriod,
-                "autorenew.numberOfEntitiesToScan", defaultNumToScan);
+                LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION, DEFAULT_MIN_AUTO_RENEW_PERIOD,
+                AUTO_RENEW_TARGET_TYPES, "",
+                AUTORENEW_GRACE_PERIOD, DEFAULT_GRACE_PERIOD,
+                AUTORENEW_NUMBER_OF_ENTITIES_TO_SCAN, DEFAULT_NUM_TO_SCAN);
     }
 
     public static Map<String, String> disablingAutoRenewWith(long minAutoRenew) {
         return Map.of(
-                "ledger.autoRenewPeriod.minDuration",
+                LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION,
                 "" + minAutoRenew,
-                "autoRenew.targetTypes",
+                AUTO_RENEW_TARGET_TYPES,
                 "",
-                "autorenew.gracePeriod",
-                defaultGracePeriod,
-                "autorenew.numberOfEntitiesToScan",
-                defaultNumToScan);
+                AUTORENEW_GRACE_PERIOD,
+                DEFAULT_GRACE_PERIOD,
+                AUTORENEW_NUMBER_OF_ENTITIES_TO_SCAN,
+                DEFAULT_NUM_TO_SCAN);
     }
 }

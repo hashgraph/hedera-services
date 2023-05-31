@@ -26,14 +26,14 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Validates a signed state by summing the amount of stake held by the valid signatures on the state.
+ * Validates a signed state by summing the amount of weight held by the valid signatures on the state.
  */
 public class DefaultSignedStateValidator implements SignedStateValidator {
     private static final Logger logger = LogManager.getLogger(DefaultSignedStateValidator.class);
     private static final String STATE_TOO_EARLY_MESSAGE =
             """
 		Received signed state is for a round smaller than, or a consensus earlier than, we started with. \
-		Original round %d, received round %d. Original timestamp %t, received timestamp %t.""";
+		Original round %d, received round %d. Original timestamp %s, received timestamp %s.""";
     private static final String STATE_TOO_EARLY_LOG_MESSAGE =
             """
 		State is too old. Failed reconnect state:

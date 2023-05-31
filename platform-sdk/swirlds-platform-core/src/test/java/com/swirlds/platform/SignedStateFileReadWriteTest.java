@@ -20,6 +20,7 @@ import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.io.utility.FileUtils.throwIfFileExists;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.platform.state.signed.SignedStateFileReader.readStateFile;
+import static com.swirlds.platform.state.signed.SignedStateFileUtils.CURRENT_ADDRESS_BOOK_FILE_NAME;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.HASH_INFO_FILE_NAME;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.SIGNED_STATE_FILE_NAME;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.getSignedStateDirectory;
@@ -76,7 +77,7 @@ import org.junit.jupiter.api.io.TempDir;
 @DisplayName("SignedState Read/Write Test")
 class SignedStateFileReadWriteTest {
 
-    private static final NodeId SELF_ID = new NodeId(false, 1234);
+    private static final NodeId SELF_ID = new NodeId(1234);
     private static final String MAIN_CLASS_NAME = "com.swirlds.foobar";
     private static final String SWIRLD_NAME = "mySwirld";
     /**
@@ -108,7 +109,6 @@ class SignedStateFileReadWriteTest {
         final String hashInfoString = new MerkleTreeVisualizer(state)
                 .setDepth(StateSettings.getDebugHashDepth())
                 .render();
-        final String platformInfoString = state.getPlatformState().getInfoString();
 
         final StringBuilder sb = new StringBuilder();
         try (final BufferedReader br = new BufferedReader(new FileReader(hashInfoFile.toFile()))) {
@@ -117,7 +117,6 @@ class SignedStateFileReadWriteTest {
 
         final String fileString = sb.toString();
         assertTrue(fileString.contains(hashInfoString), "hash info string not found");
-        assertTrue(fileString.contains(platformInfoString), "platform info string not found");
     }
 
     @Test
@@ -130,17 +129,19 @@ class SignedStateFileReadWriteTest {
         writeStateFile(testDirectory, signedState);
         assertTrue(exists(stateFile), "signed state file should be present");
 
-        final DeserializedSignedState deserializedSignedState = readStateFile(stateFile);
+        final DeserializedSignedState deserializedSignedState =
+                readStateFile(TestPlatformContextBuilder.create().build(), stateFile);
         MerkleCryptoFactory.getInstance()
-                .digestTreeSync(deserializedSignedState.signedState().getState());
+                .digestTreeSync(
+                        deserializedSignedState.reservedSignedState().get().getState());
 
         assertNotNull(deserializedSignedState.originalHash(), "hash should not be null");
         assertEquals(signedState.getState().getHash(), deserializedSignedState.originalHash(), "hash should match");
         assertEquals(
                 signedState.getState().getHash(),
-                deserializedSignedState.signedState().getState().getHash(),
+                deserializedSignedState.reservedSignedState().get().getState().getHash(),
                 "hash should match");
-        assertNotSame(signedState, deserializedSignedState.signedState(), "state should be a different object");
+        assertNotSame(signedState, deserializedSignedState.reservedSignedState(), "state should be a different object");
     }
 
     @Test
@@ -152,14 +153,15 @@ class SignedStateFileReadWriteTest {
         final Path stateFile = directory.resolve(SIGNED_STATE_FILE_NAME);
         final Path hashInfoFile = directory.resolve(HASH_INFO_FILE_NAME);
         final Path settingsUsedFile = directory.resolve("settingsUsed.txt");
+        final Path addressBookFile = directory.resolve(CURRENT_ADDRESS_BOOK_FILE_NAME);
 
         throwIfFileExists(stateFile, hashInfoFile, settingsUsedFile, directory);
-
-        writeSignedStateToDisk(directory, signedState, "test");
+        writeSignedStateToDisk(new NodeId(0), directory, signedState, "test");
 
         assertTrue(exists(stateFile), "state file should exist");
         assertTrue(exists(hashInfoFile), "hash info file should exist");
         assertTrue(exists(settingsUsedFile), "settings used file should exist");
+        assertTrue(exists(addressBookFile), "address book file should exist");
     }
 
     @Test
@@ -203,14 +205,14 @@ class SignedStateFileReadWriteTest {
 
         assertEquals(
                 getAbsolutePath("./data/saved/com.swirlds.foobar/1234"),
-                getSignedStatesDirectoryForNode("com.swirlds.foobar", new NodeId(false, 1234)),
+                getSignedStatesDirectoryForNode("com.swirlds.foobar", new NodeId(1234)),
                 "unexpected saved state file");
 
         Settings.getInstance().getState().savedStateDirectory = "foo/bar/baz";
 
         assertEquals(
                 getAbsolutePath("./foo/bar/baz/com.swirlds.barfoo/4321"),
-                getSignedStatesDirectoryForNode("com.swirlds.barfoo", new NodeId(false, 4321)),
+                getSignedStatesDirectoryForNode("com.swirlds.barfoo", new NodeId(4321)),
                 "unexpected saved state file");
 
         Settings.getInstance().getState().savedStateDirectory = "data/saved";
@@ -223,14 +225,14 @@ class SignedStateFileReadWriteTest {
 
         assertEquals(
                 getAbsolutePath("./data/saved/com.swirlds.foobar/1234/mySwirld"),
-                getSignedStatesDirectoryForSwirld("com.swirlds.foobar", new NodeId(false, 1234), "mySwirld"),
+                getSignedStatesDirectoryForSwirld("com.swirlds.foobar", new NodeId(1234), "mySwirld"),
                 "unexpected saved state file");
 
         Settings.getInstance().getState().savedStateDirectory = "foo/bar/baz";
 
         assertEquals(
                 getAbsolutePath("./foo/bar/baz/com.swirlds.barfoo/4321/myOtherSwirld"),
-                getSignedStatesDirectoryForSwirld("com.swirlds.barfoo", new NodeId(false, 4321), "myOtherSwirld"),
+                getSignedStatesDirectoryForSwirld("com.swirlds.barfoo", new NodeId(4321), "myOtherSwirld"),
                 "unexpected saved state file");
 
         Settings.getInstance().getState().savedStateDirectory = "data/saved";
@@ -243,14 +245,14 @@ class SignedStateFileReadWriteTest {
 
         assertEquals(
                 getAbsolutePath("./data/saved/com.swirlds.foobar/1234/mySwirld/1337"),
-                getSignedStateDirectory("com.swirlds.foobar", new NodeId(false, 1234), "mySwirld", 1337),
+                getSignedStateDirectory("com.swirlds.foobar", new NodeId(1234), "mySwirld", 1337),
                 "unexpected saved state file");
 
         Settings.getInstance().getState().savedStateDirectory = "foo/bar/baz";
 
         assertEquals(
                 getAbsolutePath("./foo/bar/baz/com.swirlds.barfoo/4321/myOtherSwirld/42"),
-                getSignedStateDirectory("com.swirlds.barfoo", new NodeId(false, 4321), "myOtherSwirld", 42),
+                getSignedStateDirectory("com.swirlds.barfoo", new NodeId(4321), "myOtherSwirld", 42),
                 "unexpected saved state file");
 
         Settings.getInstance().getState().savedStateDirectory = "data/saved";
@@ -269,7 +271,7 @@ class SignedStateFileReadWriteTest {
                         "state.savedStateDirectory",
                         testDirectory.resolve("data/saved").toString());
         final PlatformContext context = TestPlatformContextBuilder.create()
-                .withConfigBuilder(configBuilder)
+                .withConfiguration(configBuilder.getOrCreateConfig())
                 .build();
 
         final SignedStateMetrics signedStateMetrics = mock(SignedStateMetrics.class);
@@ -284,13 +286,14 @@ class SignedStateFileReadWriteTest {
                 MAIN_CLASS_NAME,
                 SELF_ID,
                 SWIRLD_NAME,
-                (ss, path, success) -> {});
+                (ss, path, success) -> {},
+                x -> {});
         manager.start();
 
         final int rounds = 3;
 
         // Save a few states to the directory
-        for (int round = 0; round < rounds; round++) {
+        for (int round = 1; round <= rounds; round++) {
             final SignedState signedState =
                     new RandomSignedStateGenerator().setRound(round).build();
 
@@ -300,7 +303,7 @@ class SignedStateFileReadWriteTest {
         // The states should have been written by now
         AssertionUtils.assertEventuallyDoesNotThrow(
                 () -> {
-                    for (int round = 0; round < rounds; round++) {
+                    for (int round = 1; round <= rounds; round++) {
                         final Path stateFile = getSignedStateDirectory(MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME, round)
                                 .resolve("SignedState.swh");
                         assertTrue(Files.exists(stateFile), "Signed state file " + stateFile + " does not exist");
@@ -340,7 +343,7 @@ class SignedStateFileReadWriteTest {
         assertEquals(2, Files.walk(getSignedStatesBaseDirectory(), 1).count(), "too many files in directory");
 
         // Each of the states should still be present
-        for (int round = 0; round < rounds; round++) {
+        for (int round = 1; round <= rounds; round++) {
             final Path stateFile = getSignedStateDirectory(MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME, round)
                     .resolve("SignedState.swh");
             assertTrue(Files.exists(stateFile), "Signed state file " + stateFile + " does not exist");

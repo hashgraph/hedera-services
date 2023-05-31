@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.mono.sigs;
 
 import com.hedera.node.app.service.mono.ServicesState;
+import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.node.app.service.mono.sigs.order.SigRequirements;
@@ -65,15 +66,19 @@ public final class HederaToPlatformSigOps {
      *   <li>If an error occurs while creating the platform {@link Signature} objects for either the
      *       payer or the entities in non-payer roles, ignore it silently.
      * </ul>
+     *  @param txnAccessor the accessor for the platform txn
      *
-     * @param txnAccessor the accessor for the platform txn
-     * @param sigReqs facility for listing Hedera keys required to sign the gRPC txn
-     * @param pkToSigFn source of crypto sigs for the simple keys in the Hedera key leaves
+     * @param sigReqs      facility for listing Hedera keys required to sign the gRPC txn
+     * @param pkToSigFn    source of crypto sigs for the simple keys in the Hedera key leaves
+     * @param aliasManager alias to entity nums resolver
      */
     public static void expandIn(
-            final SwirldsTxnAccessor txnAccessor, final SigRequirements sigReqs, final PubKeyToSigBytes pkToSigFn) {
+            final SwirldsTxnAccessor txnAccessor,
+            final SigRequirements sigReqs,
+            final PubKeyToSigBytes pkToSigFn,
+            final AliasManager aliasManager) {
         txnAccessor.clearCryptoSigs();
         final var scopedSigFactory = new ReusableBodySigningFactory(txnAccessor);
-        new Expansion(txnAccessor, sigReqs, pkToSigFn, cryptoSigsFunction, scopedSigFactory).execute();
+        new Expansion(txnAccessor, sigReqs, pkToSigFn, cryptoSigsFunction, scopedSigFactory, aliasManager).execute();
     }
 }

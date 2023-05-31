@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.state.merkle;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.spi.SemanticVersionComparator;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.*;
@@ -26,14 +27,13 @@ import com.hedera.node.app.state.merkle.disk.OnDiskValue;
 import com.hedera.node.app.state.merkle.disk.OnDiskValueSerializer;
 import com.hedera.node.app.state.merkle.memory.InMemoryValue;
 import com.hedera.node.app.state.merkle.memory.InMemoryWritableKVState;
+import com.hedera.node.app.state.merkle.queue.QueueNode;
 import com.hedera.node.app.state.merkle.singleton.SingletonNode;
 import com.hedera.node.app.state.merkle.singleton.StringLeaf;
 import com.hedera.node.app.state.merkle.singleton.ValueLeaf;
-import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.crypto.DigestType;
 import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
 import com.swirlds.jasperdb.files.DataFileCommon;
@@ -62,7 +62,7 @@ import org.apache.logging.log4j.Logger;
  * version.
  */
 public class MerkleSchemaRegistry implements SchemaRegistry {
-    private static final Logger log = LogManager.getLogger(MerkleSchemaRegistry.class);
+    private static final Logger logger = LogManager.getLogger(MerkleSchemaRegistry.class);
 
     /** The name of the service using this registry. */
     private final String serviceName;
@@ -99,8 +99,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
     public SchemaRegistry register(@NonNull Schema schema) {
         schemas.remove(schema);
         schemas.add(Objects.requireNonNull(schema));
-        // TODO - add toString() to Schema
-        log.info("Registering schema for {} ", serviceName);
+        logger.debug("Registering schema v{} for service {} ", schema.getVersion(), serviceName);
 
         // Any states being created, need to be registered for deserialization
         schema.statesToCreate().forEach(def -> {
@@ -169,11 +168,14 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             final var statesToCreate = schema.statesToCreate();
             statesToCreate.forEach(def -> {
                 final var stateKey = def.stateKey();
-                log.info("Creating state {} for {}", stateKey, serviceName);
+                logger.debug("Creating state {} for {}", stateKey, serviceName);
                 final var md = new StateMetadata<>(serviceName, schema, def);
                 if (def.singleton()) {
                     final var singleton = new SingletonNode<>(md, null);
                     hederaState.putServiceStateIfAbsent(md, singleton);
+                } else if (def.queue()) {
+                    final var queue = new QueueNode<>(md);
+                    hederaState.putServiceStateIfAbsent(md, queue);
                 } else if (!def.onDisk()) {
                     final var map = new MerkleMap<>();
                     map.setLabel(StateUtils.computeLabel(serviceName, stateKey));
@@ -184,8 +186,6 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                             .maxNumOfKeys(def.maxKeysHint())
                             .keySerializer(ks)
                             .virtualLeafRecordSerializer(new VirtualLeafRecordSerializer(
-                                    (short) 1,
-                                    DigestType.SHA_384,
                                     (short) 1,
                                     DataFileCommon.VARIABLE_DATA_SIZE,
                                     ks,
@@ -345,6 +345,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                     new ClassConstructorPair(OnDiskValueSerializer.class, () -> new OnDiskValueSerializer<>(md)));
             constructableRegistry.registerConstructable(
                     new ClassConstructorPair(SingletonNode.class, () -> new SingletonNode<>(md, null)));
+            constructableRegistry.registerConstructable(
+                    new ClassConstructorPair(QueueNode.class, () -> new QueueNode<>(md)));
             constructableRegistry.registerConstructable(new ClassConstructorPair(StringLeaf.class, StringLeaf::new));
             constructableRegistry.registerConstructable(
                     new ClassConstructorPair(ValueLeaf.class, () -> new ValueLeaf<>(md)));

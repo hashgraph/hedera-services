@@ -30,10 +30,10 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTes
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.fungibleWipe;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.fungibleWipeAmountOversize;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.fungibleWipeMaxAmount;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.recipientAddress;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.timestamp;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.WipeFungiblePrecompile.decodeWipe;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.WipeFungiblePrecompile.decodeWipeV2;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.WipeFungiblePrecompile.getWipeWrapper;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static java.util.function.UnaryOperator.identity;
@@ -81,6 +81,7 @@ import com.hedera.node.app.service.mono.store.TypedTokenStore;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.node.app.service.mono.store.contracts.precompile.impl.SystemContractAbis;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.WipeFungiblePrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.store.models.NftId;
@@ -98,13 +99,16 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
@@ -121,6 +125,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class WipeFungiblePrecompileTest {
 
     private final Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE));
+
+    @Mock
+    private Account acc;
+
+    @Mock
+    private Deque<MessageFrame> stack;
+
+    @Mock
+    private Iterator<MessageFrame> dequeIterator;
 
     @Mock
     private AccountStore accountStore;
@@ -274,7 +287,12 @@ class WipeFungiblePrecompileTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        given(sigsVerifier.hasActiveWipeKey(true, fungibleTokenAddr, fungibleTokenAddr, wrappedLedgers))
+        given(sigsVerifier.hasActiveWipeKey(
+                        true,
+                        fungibleTokenAddr,
+                        fungibleTokenAddr,
+                        wrappedLedgers,
+                        HederaFunctionality.TokenAccountWipe))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))
@@ -286,7 +304,7 @@ class WipeFungiblePrecompileTest {
                 .willReturn(TransactionBody.newBuilder().build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
-        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(mockFeeObject.serviceFee()).willReturn(1L);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
                 .willReturn(expirableTxnRecordBuilder);
         given(wipeLogic.validateSyntax(any())).willReturn(OK);
@@ -313,8 +331,9 @@ class WipeFungiblePrecompileTest {
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
         doCallRealMethod().when(frame).setExceptionalHaltReason(any());
         wipeFungiblePrecompile
-                .when(() -> decodeWipe(eq(pretendArguments), any()))
+                .when(() -> getWipeWrapper(eq(pretendArguments), any(), eq(SystemContractAbis.WIPE_TOKEN_ACCOUNT_V1)))
                 .thenReturn(fungibleWipeAmountOversize);
+        givenIfDelegateCall();
         // when:
         final var result = subject.computePrecompile(pretendArguments, frame);
         // then:
@@ -337,7 +356,7 @@ class WipeFungiblePrecompileTest {
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
 
         wipeFungiblePrecompile
-                .when(() -> decodeWipe(eq(pretendArguments), any()))
+                .when(() -> getWipeWrapper(eq(pretendArguments), any(), eq(SystemContractAbis.WIPE_TOKEN_ACCOUNT_V1)))
                 .thenReturn(fungibleWipeMaxAmount);
         given(syntheticTxnFactory.createWipe(fungibleWipeMaxAmount)).willReturn(mockSynthBodyBuilder);
         given(mockSynthBodyBuilder.build())
@@ -346,6 +365,7 @@ class WipeFungiblePrecompileTest {
         given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, Instant.ofEpochSecond(123L)));
         given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
         when(accessorFactory.uncheckedSpecializedAccessor(any())).thenThrow(new IllegalArgumentException("error"));
+        givenIfDelegateCall();
 
         // then:
         assertThrows(IllegalArgumentException.class, () -> subject.computePrecompile(pretendArguments, frame));
@@ -363,10 +383,15 @@ class WipeFungiblePrecompileTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         wipeFungiblePrecompile
-                .when(() -> decodeWipe(eq(pretendArguments), any()))
+                .when(() -> getWipeWrapper(eq(pretendArguments), any(), eq(SystemContractAbis.WIPE_TOKEN_ACCOUNT_V1)))
                 .thenReturn(fungibleWipeMaxAmount);
         given(syntheticTxnFactory.createWipe(fungibleWipeMaxAmount)).willReturn(mockSynthBodyBuilder);
-        given(sigsVerifier.hasActiveWipeKey(true, fungibleTokenAddr, fungibleTokenAddr, wrappedLedgers))
+        given(sigsVerifier.hasActiveWipeKey(
+                        true,
+                        fungibleTokenAddr,
+                        fungibleTokenAddr,
+                        wrappedLedgers,
+                        HederaFunctionality.TokenAccountWipe))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))
@@ -378,7 +403,7 @@ class WipeFungiblePrecompileTest {
                 .willReturn(TransactionBody.newBuilder().build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
-        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(mockFeeObject.serviceFee()).willReturn(1L);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
                 .willReturn(expirableTxnRecordBuilder);
         given(wipeLogic.validateSyntax(any())).willReturn(OK);
@@ -404,7 +429,7 @@ class WipeFungiblePrecompileTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         wipeFungiblePrecompile
-                .when(() -> decodeWipe(eq(pretendArguments), any()))
+                .when(() -> getWipeWrapper(eq(pretendArguments), any(), eq(SystemContractAbis.WIPE_TOKEN_ACCOUNT_V1)))
                 .thenReturn(fungibleWipe);
         given(syntheticTxnFactory.createWipe(fungibleWipe))
                 .willReturn(TransactionBody.newBuilder().setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()));
@@ -425,7 +450,8 @@ class WipeFungiblePrecompileTest {
     @Test
     void decodeFungibleWipeInput() {
         wipeFungiblePrecompile.close();
-        final var decodedInput = decodeWipe(FUNGIBLE_WIPE_INPUT, identity());
+        final var decodedInput =
+                getWipeWrapper(FUNGIBLE_WIPE_INPUT, identity(), SystemContractAbis.WIPE_TOKEN_ACCOUNT_V1);
 
         assertTrue(decodedInput.token().getTokenNum() > 0);
         assertTrue(decodedInput.account().getAccountNum() > 0);
@@ -437,7 +463,8 @@ class WipeFungiblePrecompileTest {
     @Test
     void decodeFungibleWipeInputV2() {
         wipeFungiblePrecompile.close();
-        final var decodedInput = decodeWipeV2(FUNGIBLE_WIPE_INPUT_V2, identity());
+        final var decodedInput =
+                getWipeWrapper(FUNGIBLE_WIPE_INPUT_V2, identity(), SystemContractAbis.WIPE_TOKEN_ACCOUNT_V2);
 
         assertTrue(decodedInput.token().getTokenNum() > 0);
         assertTrue(decodedInput.account().getAccountNum() > 0);
@@ -449,7 +476,7 @@ class WipeFungiblePrecompileTest {
     private void givenFungibleFrameContext() {
         givenFrameContext();
         wipeFungiblePrecompile
-                .when(() -> decodeWipe(eq(pretendArguments), any()))
+                .when(() -> getWipeWrapper(eq(pretendArguments), any(), eq(SystemContractAbis.WIPE_TOKEN_ACCOUNT_V1)))
                 .thenReturn(fungibleWipe);
         given(syntheticTxnFactory.createWipe(fungibleWipe)).willReturn(mockSynthBodyBuilder);
     }
@@ -485,5 +512,14 @@ class WipeFungiblePrecompileTest {
         given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
+    }
+
+    private void givenIfDelegateCall() {
+        given(frame.getContractAddress()).willReturn(contractAddress);
+        given(frame.getRecipientAddress()).willReturn(recipientAddress);
+        given(worldUpdater.get(recipientAddress)).willReturn(acc);
+        given(acc.getNonce()).willReturn(-1L);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(frame.getMessageFrameStack().iterator()).willReturn(dequeIterator);
     }
 }

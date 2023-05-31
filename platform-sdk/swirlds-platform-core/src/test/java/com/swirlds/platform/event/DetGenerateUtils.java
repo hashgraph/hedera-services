@@ -22,6 +22,7 @@ import static com.swirlds.common.test.RandomUtils.randomSignature;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.system.events.ConsensusData;
@@ -46,6 +47,7 @@ public abstract class DetGenerateUtils {
 
     public static BaseEventHashedData generateBaseEventHashedData(final Random random) {
         return new BaseEventHashedData(
+                new BasicSoftwareVersion(1),
                 nextLong(random, 0), // creatorId, must be positive
                 nextLong(random, 0), // selfParentGen, must be positive
                 nextLong(random, 0), // otherParentGen, must be positive

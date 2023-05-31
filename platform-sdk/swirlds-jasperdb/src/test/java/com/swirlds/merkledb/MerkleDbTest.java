@@ -16,15 +16,18 @@
 
 package com.swirlds.merkledb;
 
+import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.virtualmap.datasource.VirtualKeySet;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -88,8 +91,6 @@ public class MerkleDbTest {
         Assertions.assertEquals(tempDir.resolve("tables"), instance.getTablesDir());
         // and here
         Assertions.assertTrue(Files.exists(tempDir.resolve("metadata.mdb")));
-        final String tableName = "tablex";
-        Assertions.assertEquals(tempDir.resolve("tables/" + tableName), instance.getTableDir(tableName));
     }
 
     @Test
@@ -102,7 +103,10 @@ public class MerkleDbTest {
                 instance.createDataSource(tableName, tableConfig, false);
         Assertions.assertNotNull(dataSource);
         final Path dbDir = instance.getStorageDir();
-        Assertions.assertEquals(dbDir.resolve("tables/" + tableName), dataSource.getStorageDir());
+        final int tableId = dataSource.getTableId();
+        Assertions.assertEquals(dbDir.resolve("tables/" + tableName + "-" + tableId), dataSource.getStorageDir());
+        Assertions.assertEquals(
+                dbDir.resolve("tables/" + tableName + "-" + tableId), instance.getTableDir(tableName, tableId));
         dataSource.close();
     }
 
@@ -121,8 +125,56 @@ public class MerkleDbTest {
     }
 
     @Test
-    @DisplayName("Check data source table config")
-    public void testDataSourceConfig() throws IOException {
+    @DisplayName("Load existing datasource")
+    void testLoadExistingDatasource() throws IOException {
+        final MerkleDb instance = MerkleDb.getDefaultInstance();
+        final String tableName = randomAlphabetic(10);
+        final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();
+        instance.createDataSource(tableName, tableConfig, false).close();
+
+        // create datasource reusing existing metadata
+        MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dataSource =
+                new MerkleDbDataSource<>(instance, tableName, instance.getNextTableId() - 1, tableConfig, false);
+        Assertions.assertNotNull(dataSource);
+        // This datasource cannot be properly closed because MerkleDb instance is not aware of this.
+        // Assertion error is expected
+        assertThrows(AssertionError.class, dataSource::close);
+    }
+
+    @Test
+    @DisplayName("Create datasource with corrupted file structure - directory exists but metadata is missing")
+    void testDataSourceUsingAbsentDir() throws IOException {
+        final MerkleDb instance = MerkleDb.getDefaultInstance();
+        final String tableName = randomAlphabetic(10);
+        final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();
+        // creating empty table directory with no metadata
+        Path tableStorageDir = instance.getTableDir(tableName, instance.getNextTableId() + 1);
+        Files.createDirectories(tableStorageDir);
+        assertThrows(IOException.class, () -> instance.createDataSource(tableName, tableConfig, false));
+        Files.delete(tableStorageDir);
+    }
+
+    @Test
+    @DisplayName("Test creation of a virtual key set")
+    void testBuildKeySet() throws IOException {
+        final MerkleDb instance = MerkleDb.getDefaultInstance();
+        final String tableName = randomAlphabetic(10);
+        final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();
+        final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dataSource =
+                instance.createDataSource(tableName, tableConfig, false);
+        VirtualKeySet<ExampleLongKeyFixedSize> keySet = dataSource.buildKeySet();
+        Assertions.assertNotNull(keySet);
+        for (int i = 0; i < 100; i++) {
+            keySet.add(new ExampleLongKeyFixedSize(i));
+        }
+        for (int i = 0; i < 100; i++) {
+            assertTrue(keySet.contains(new ExampleLongKeyFixedSize(i)));
+        }
+        dataSource.close();
+    }
+
+    @Test
+    void testVirtualKeySet() throws IOException {
         final MerkleDb instance = MerkleDb.getDefaultInstance();
         final String tableName = "tablea";
         final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();
@@ -169,7 +221,8 @@ public class MerkleDbTest {
         final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dataSource2 =
                 instance.getDataSource(tableName, false);
         Assertions.assertNotNull(dataSource2);
-        Assertions.assertNotEquals(dataSource2, dataSource);
+        Assertions.assertEquals(dataSource2, dataSource);
+        Assertions.assertNotSame(dataSource2, dataSource);
         dataSource2.close();
     }
 
@@ -184,7 +237,7 @@ public class MerkleDbTest {
         Assertions.assertNotNull(dataSource);
 
         final Path snapshotDir = TemporaryFileBuilder.buildTemporaryFile();
-        instance.snapshot(snapshotDir);
+        instance.snapshot(snapshotDir, dataSource);
 
         final MerkleDb instance2 = MerkleDb.getInstance(snapshotDir);
         final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dataSource2 =
@@ -211,12 +264,14 @@ public class MerkleDbTest {
         Assertions.assertNotNull(dataSource2);
 
         final Path snapshotDir = TemporaryFileBuilder.buildTemporaryFile();
-        instance.snapshot(snapshotDir);
+        instance.snapshot(snapshotDir, dataSource1);
+        instance.snapshot(snapshotDir, dataSource2);
 
         final MerkleDb instance2 = MerkleDb.getInstance(snapshotDir);
-        Assertions.assertTrue(Files.exists(instance2.getTableDir(tableName1)));
-        Assertions.assertTrue(Files.exists(instance2.getTableDir(tableName2)));
-        Assertions.assertFalse(Files.exists(instance2.getTableDir("tabled")));
+        Assertions.assertTrue(Files.exists(instance2.getTableDir(tableName1, dataSource1.getTableId())));
+        Assertions.assertFalse(Files.exists(instance2.getTableDir("tabled", dataSource1.getTableId())));
+        Assertions.assertTrue(Files.exists(instance2.getTableDir(tableName2, dataSource2.getTableId())));
+        Assertions.assertFalse(Files.exists(instance2.getTableDir("tabled", dataSource2.getTableId())));
         final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> restored1 =
                 instance2.getDataSource(tableName1, false);
         Assertions.assertEquals(tableConfig, restored1.getTableConfig());
@@ -246,37 +301,54 @@ public class MerkleDbTest {
                 instance.createDataSource(tableName2, tableConfig, false);
         Assertions.assertNotNull(dataSource2);
 
-        final Path snapshotDir = TemporaryFileBuilder.buildTemporaryFile();
-        instance.snapshot(snapshotDir, Set.of(dataSource2));
+        final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> activeCopy =
+                instance.copyDataSource(dataSource2, true);
         dataSource1.close();
         dataSource2.close();
 
-        final MerkleDb instance2 = MerkleDb.getInstance(snapshotDir);
-        Assertions.assertFalse(Files.exists(instance2.getTableDir(tableName1)));
-        Assertions.assertTrue(Files.exists(instance2.getTableDir(tableName2)));
-        Assertions.assertThrows(IllegalStateException.class, () -> instance2.getDataSource(tableName1, false));
-        final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> restored2 =
-                instance2.getDataSource(tableName2, false);
-        Assertions.assertEquals(tableConfig, restored2.getTableConfig());
-        Assertions.assertEquals(tableConfig, instance2.getTableConfig(restored2.getTableId()));
-        restored2.close();
+        Assertions.assertEquals(tableName2, activeCopy.getTableName());
+        Assertions.assertNotEquals(dataSource2.getStorageDir(), activeCopy.getStorageDir());
+        Assertions.assertEquals(tableConfig, activeCopy.getTableConfig());
+        activeCopy.close();
     }
 
     @Test
-    @DisplayName("Get snapshot after data source close")
-    public void testSnapshotAfterClose() throws IOException {
+    @DisplayName("Snapshot data source copies")
+    void testSnapshotCopiedTables() throws IOException {
         final MerkleDb instance = MerkleDb.getDefaultInstance();
-        final String tableName = "tablef";
         final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();
-        final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dataSource =
-                instance.createDataSource(tableName, tableConfig, false);
-        Assertions.assertNotNull(dataSource);
-        dataSource.close();
-        final Path snapshotDir = TemporaryFileBuilder.buildTemporaryFile();
-        instance.snapshot(snapshotDir);
-        final MerkleDb instance2 = MerkleDb.getInstance(snapshotDir);
-        // If a data source is closed, it isn't included to snapshot by default
-        Assertions.assertThrows(IllegalStateException.class, () -> instance2.getDataSource(tableName, false));
+        final String tableName1 = "tablee3";
+        final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dataSource1 =
+                instance.createDataSource(tableName1, tableConfig, false);
+        Assertions.assertNotNull(dataSource1);
+        final String tableName2 = "tablee4";
+        final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dataSource2 =
+                instance.createDataSource(tableName2, tableConfig, false);
+        Assertions.assertNotNull(dataSource2);
+
+        final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> inactiveCopy1 =
+                instance.copyDataSource(dataSource1, false);
+        final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> activeCopy2 =
+                instance.copyDataSource(dataSource2, true);
+
+        final Path snapshotDir = TemporaryFileBuilder.buildTemporaryFile("testSnapshotCopiedTables");
+        // Check primary tables can be snapshotted
+        instance.snapshot(snapshotDir, dataSource1);
+        instance.snapshot(snapshotDir, activeCopy2);
+        // Should not be able to snapshot non-primary tables
+        Assertions.assertThrows(IllegalArgumentException.class, () -> instance.snapshot(snapshotDir, dataSource2));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> instance.snapshot(snapshotDir, inactiveCopy1));
+
+        final MerkleDb snapshotInstance = MerkleDb.getInstance(snapshotDir);
+        Assertions.assertTrue(Files.exists(snapshotInstance.getTableDir(tableName1, dataSource1.getTableId())));
+        Assertions.assertTrue(Files.exists(snapshotInstance.getTableDir(tableName2, activeCopy2.getTableId())));
+        Assertions.assertFalse(Files.exists(snapshotInstance.getTableDir(tableName1, inactiveCopy1.getTableId())));
+        Assertions.assertFalse(Files.exists(snapshotInstance.getTableDir(tableName2, dataSource2.getTableId())));
+
+        dataSource1.close();
+        dataSource2.close();
+        inactiveCopy1.close();
+        activeCopy2.close();
     }
 
     @Test
@@ -289,7 +361,8 @@ public class MerkleDbTest {
                 instance.createDataSource(tableName, tableConfig, false);
         Assertions.assertNotNull(dataSource);
         final Path snapshotDir = TemporaryFileBuilder.buildTemporaryFile();
-        instance.snapshot(snapshotDir);
+        instance.snapshot(snapshotDir, dataSource);
+
         final Path newDir = TemporaryFileBuilder.buildTemporaryFile();
         MerkleDb.setDefaultPath(newDir);
         final MerkleDb instance2 = MerkleDb.restore(snapshotDir, null);
@@ -300,5 +373,120 @@ public class MerkleDbTest {
 
         dataSource.close();
         dataSource2.close();
+    }
+
+    @Test
+    @DisplayName("Restore with no shared dir")
+    public void testRestoreNoSharedDir() throws IOException {
+        final MerkleDb instance = MerkleDb.getDefaultInstance();
+        final String tableName = "tableh";
+        final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();
+        final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dataSource =
+                instance.createDataSource(tableName, tableConfig, false);
+        Assertions.assertNotNull(dataSource);
+
+        final Path snapshotDir = TemporaryFileBuilder.buildTemporaryFile();
+        instance.snapshot(snapshotDir, dataSource);
+        // Make sure the instance can be restored even without the shared dir. In the future this
+        // test may need to be removed, when the shared folder becomes mandatory to exist
+        Files.delete(snapshotDir.resolve("shared"));
+
+        final Path newDir = TemporaryFileBuilder.buildTemporaryFile();
+        final MerkleDb instance2 = MerkleDb.restore(snapshotDir, newDir);
+        Assertions.assertTrue(Files.exists(instance2.getSharedDir()));
+
+        dataSource.close();
+    }
+
+    @Test
+    @DisplayName("Double snapshots")
+    public void testDoubleSnapshot() throws IOException {
+        final MerkleDb instance = MerkleDb.getDefaultInstance();
+        final String tableName = "tablei";
+        final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();
+        final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dataSource =
+                instance.createDataSource(tableName + "1", tableConfig, false);
+        Assertions.assertNotNull(dataSource);
+        final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dataSource2 =
+                instance.createDataSource(tableName + "2", tableConfig, false);
+        Assertions.assertNotNull(dataSource2);
+
+        final Path snapshotDir = TemporaryFileBuilder.buildTemporaryFile();
+        instance.snapshot(snapshotDir, dataSource);
+        // Can't snapshot into the same target MerkleDb instance again
+        Assertions.assertThrows(IllegalStateException.class, () -> instance.snapshot(snapshotDir, dataSource));
+        // dataSource2 isn't in the target dir, should be able to snapshot
+        instance.snapshot(snapshotDir, dataSource2);
+
+        dataSource.close();
+        dataSource2.close();
+    }
+
+    @Test
+    @DisplayName("Test copied data sources are auto deleted on close")
+    void testCopiedDataSourceAutoDeleted() throws IOException {
+        final MerkleDb instance = MerkleDb.getDefaultInstance();
+        final String tableName1 = "tablej1";
+        final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig1 = fixedConfig();
+        final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dataSource1 =
+                instance.createDataSource(tableName1, tableConfig1, false);
+        Assertions.assertNotNull(dataSource1);
+        final String tableName2 = "tablej2";
+        final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig2 = fixedConfig();
+        final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dataSource2 =
+                instance.createDataSource(tableName2, tableConfig2, false);
+        Assertions.assertNotNull(dataSource2);
+
+        final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> inactiveCopy1 =
+                instance.copyDataSource(dataSource1, false);
+        final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> activeCopy2 =
+                instance.copyDataSource(dataSource2, true);
+
+        dataSource1.close();
+        dataSource2.close();
+        inactiveCopy1.close();
+        activeCopy2.close();
+
+        Assertions.assertTrue(Files.exists(instance.getTableDir(tableName1, dataSource1.getTableId())));
+        Assertions.assertFalse(Files.exists(instance.getTableDir(tableName1, inactiveCopy1.getTableId())));
+        Assertions.assertFalse(Files.exists(instance.getTableDir(tableName2, dataSource2.getTableId())));
+        Assertions.assertTrue(Files.exists(instance.getTableDir(tableName2, activeCopy2.getTableId())));
+    }
+
+    @Test
+    @DisplayName("Compactions after data source copy")
+    public void checkBackgroundCompactionsOnCopy() throws IOException {
+        final MerkleDb instance = MerkleDb.getDefaultInstance();
+        final String tableName = "tablek";
+        final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();
+        final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dataSource =
+                instance.createDataSource(tableName + "1", tableConfig, true);
+        Assertions.assertNotNull(dataSource);
+        final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dataSourceCopy =
+                instance.copyDataSource(dataSource, false);
+        Assertions.assertNotNull(dataSourceCopy);
+
+        Assertions.assertTrue(dataSource.isCompactionEnabled());
+        Assertions.assertFalse(dataSourceCopy.isCompactionEnabled());
+        dataSource.close();
+        dataSourceCopy.close();
+    }
+
+    @Test
+    @DisplayName("Compactions after data source import")
+    public void checkBackgroundCompactionsOnImport() throws IOException {
+        final MerkleDb instance1 = MerkleDb.getDefaultInstance();
+        final String tableName = "tablel";
+        final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();
+        final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dataSource =
+                instance1.createDataSource(tableName + "1", tableConfig, true);
+        Assertions.assertNotNull(dataSource);
+
+        final Path snapshotDir = TemporaryFileBuilder.buildTemporaryFile("checkBackgroundCompactionsOnImport");
+        instance1.snapshot(snapshotDir, dataSource);
+
+        Assertions.assertTrue(dataSource.isCompactionEnabled());
+
+        dataSource.close();
     }
 }

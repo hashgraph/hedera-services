@@ -53,6 +53,10 @@ public final class MemoValidation extends HapiSuite {
     private static final char MULTI_BYTE_CHAR = 'ф';
     private static final String primary = "primary";
     private static final String secondary = "secondary";
+    private static final String SCHEDULING_WHITELIST = "scheduling.whitelist";
+    private static final String CREATE = "create";
+    private static final String ADMIN_KEY = "adminKey";
+    private static final String IN_VALID_MEMO_WITH_MULTI_BYTE_CHARS = "inValidMemoWithMultiByteChars";
 
     private static String longMemo;
     private static String validMemoWithMultiByteChars;
@@ -84,12 +88,12 @@ public final class MemoValidation extends HapiSuite {
         return defaultHapiSpec("MemoValidationsOnContractOps")
                 .given(uploadInitCode(contract), contractCreate(contract).omitAdminKey())
                 .when(
-                        contractCall(contract, "create").memo(longMemo).hasPrecheck(MEMO_TOO_LONG),
-                        contractCall(contract, "create").memo(ZERO_BYTE_MEMO).hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
-                        contractCall(contract, "create")
+                        contractCall(contract, CREATE).memo(longMemo).hasPrecheck(MEMO_TOO_LONG),
+                        contractCall(contract, CREATE).memo(ZERO_BYTE_MEMO).hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
+                        contractCall(contract, CREATE)
                                 .memo(inValidMemoWithMultiByteChars)
                                 .hasPrecheck(MEMO_TOO_LONG),
-                        contractCall(contract, "create")
+                        contractCall(contract, CREATE)
                                 .memo(stringOf49Bytes + SINGLE_BYTE_CHAR + MULTI_BYTE_CHAR + stringOf49Bytes)
                                 .hasPrecheck(MEMO_TOO_LONG))
                 .then(
@@ -109,8 +113,8 @@ public final class MemoValidation extends HapiSuite {
         return defaultHapiSpec("MemoValidationsOnTokenOps")
                 .given(
                         cryptoCreate("firstUser"),
-                        newKeyNamed("adminKey"),
-                        tokenCreate(primary).blankMemo().adminKey("adminKey"))
+                        newKeyNamed(ADMIN_KEY),
+                        tokenCreate(primary).blankMemo().adminKey(ADMIN_KEY))
                 .when(
                         tokenUpdate(primary).memo(longMemo).hasPrecheck(MEMO_TOO_LONG),
                         tokenUpdate(primary).entityMemo(ZERO_BYTE_MEMO).hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
@@ -124,10 +128,10 @@ public final class MemoValidation extends HapiSuite {
                 .then(
                         tokenCreate(secondary).entityMemo(longMemo).hasPrecheck(MEMO_TOO_LONG),
                         tokenCreate(secondary).entityMemo(ZERO_BYTE_MEMO).hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
-                        tokenCreate("inValidMemoWithMultiByteChars")
+                        tokenCreate(IN_VALID_MEMO_WITH_MULTI_BYTE_CHARS)
                                 .entityMemo(inValidMemoWithMultiByteChars)
                                 .hasPrecheck(MEMO_TOO_LONG),
-                        tokenCreate("inValidMemoWithMultiByteChars")
+                        tokenCreate(IN_VALID_MEMO_WITH_MULTI_BYTE_CHARS)
                                 .entityMemo(stringOf49Bytes + SINGLE_BYTE_CHAR + MULTI_BYTE_CHAR + stringOf49Bytes)
                                 .hasPrecheck(MEMO_TOO_LONG),
                         tokenCreate(secondary).entityMemo(stringOf49Bytes + MULTI_BYTE_CHAR + stringOf49Bytes),
@@ -137,12 +141,12 @@ public final class MemoValidation extends HapiSuite {
     }
 
     private HapiSpec scheduleOps() {
-        final String defaultWhitelist = HapiSpecSetup.getDefaultNodeProps().get("scheduling.whitelist");
+        final String defaultWhitelist = HapiSpecSetup.getDefaultNodeProps().get(SCHEDULING_WHITELIST);
         final var toScheduleOp1 = cryptoCreate("test");
         final var toScheduleOp2 = cryptoCreate("test").balance(1L);
         return defaultHapiSpec("MemoValidationsOnScheduleOps")
                 .given(
-                        overriding("scheduling.whitelist", "CryptoCreate"),
+                        overriding(SCHEDULING_WHITELIST, "CryptoCreate"),
                         scheduleCreate(primary, toScheduleOp1).blankMemo())
                 .when(
                         scheduleSign(primary).memo(longMemo).hasPrecheck(MEMO_TOO_LONG),
@@ -160,7 +164,7 @@ public final class MemoValidation extends HapiSuite {
                         scheduleCreate(secondary, toScheduleOp2)
                                 .withEntityMemo(ZERO_BYTE_MEMO)
                                 .hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
-                        scheduleCreate("inValidMemoWithMultiByteChars", toScheduleOp2)
+                        scheduleCreate(IN_VALID_MEMO_WITH_MULTI_BYTE_CHARS, toScheduleOp2)
                                 .withEntityMemo(inValidMemoWithMultiByteChars)
                                 .hasPrecheck(MEMO_TOO_LONG),
                         scheduleCreate(secondary, toScheduleOp2).withEntityMemo(validMemoWithMultiByteChars),
@@ -172,14 +176,14 @@ public final class MemoValidation extends HapiSuite {
                         scheduleCreate("invalidMemo", toScheduleOp2.balance(200L))
                                 .withEntityMemo(stringOf49Bytes + SINGLE_BYTE_CHAR + MULTI_BYTE_CHAR + stringOf49Bytes)
                                 .hasPrecheck(MEMO_TOO_LONG),
-                        overriding("scheduling.whitelist", defaultWhitelist));
+                        overriding(SCHEDULING_WHITELIST, defaultWhitelist));
     }
 
     private HapiSpec topicOps() {
         return defaultHapiSpec("MemoValidationsOnTopicOps")
                 .given(
-                        newKeyNamed("adminKey"),
-                        createTopic(primary).adminKeyName("adminKey").blankMemo())
+                        newKeyNamed(ADMIN_KEY),
+                        createTopic(primary).adminKeyName(ADMIN_KEY).blankMemo())
                 .when(
                         updateTopic(primary).topicMemo(longMemo).hasKnownStatus(MEMO_TOO_LONG),
                         updateTopic(primary).topicMemo(ZERO_BYTE_MEMO).hasKnownStatus(INVALID_ZERO_BYTE_IN_STRING),
@@ -194,7 +198,7 @@ public final class MemoValidation extends HapiSuite {
                         createTopic(secondary).topicMemo(longMemo).hasKnownStatus(MEMO_TOO_LONG),
                         createTopic(secondary).topicMemo(ZERO_BYTE_MEMO).hasKnownStatus(INVALID_ZERO_BYTE_IN_STRING),
                         createTopic(secondary).topicMemo(validMemoWithMultiByteChars),
-                        createTopic("inValidMemoWithMultiByteChars")
+                        createTopic(IN_VALID_MEMO_WITH_MULTI_BYTE_CHARS)
                                 .topicMemo(inValidMemoWithMultiByteChars)
                                 .hasKnownStatus(MEMO_TOO_LONG),
                         createTopic("validMemo1").topicMemo(stringOf49Bytes + MULTI_BYTE_CHAR + stringOf49Bytes),

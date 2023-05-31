@@ -30,6 +30,7 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.extendable.ExtendableInputStream;
 import com.swirlds.common.io.extendable.extensions.CountingStreamExtension;
 import com.swirlds.common.stream.EventStreamManager;
+import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
@@ -39,6 +40,7 @@ import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.internal.ObjectStreamIterator;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.FileInputStream;
@@ -62,7 +64,7 @@ import org.mockito.Mockito;
 /**
  * Utilities for recovery tests.
  */
-final class RecoveryTestUtils {
+public final class RecoveryTestUtils {
 
     private RecoveryTestUtils() {}
 
@@ -85,6 +87,7 @@ final class RecoveryTestUtils {
         }
 
         final BaseEventHashedData baseEventHashedData = new BaseEventHashedData(
+                new BasicSoftwareVersion(1),
                 random.nextInt(),
                 random.nextLong(),
                 random.nextLong(),
@@ -179,8 +182,9 @@ final class RecoveryTestUtils {
             throws NoSuchAlgorithmException, IOException {
 
         final EventStreamManager<EventImpl> eventEventStreamManager = new EventStreamManager<>(
+                TestPlatformContextBuilder.create().build(),
                 getStaticThreadManager(),
-                new NodeId(false, 0),
+                new NodeId(0L),
                 x -> randomSignature(random),
                 "test",
                 true,

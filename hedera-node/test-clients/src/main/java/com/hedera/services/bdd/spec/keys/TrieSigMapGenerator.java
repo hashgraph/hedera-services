@@ -150,7 +150,8 @@ public class TrieSigMapGenerator implements SigMapGenerator {
                     prefix = trie.randomPrefix(key.length);
                     break;
             }
-            log.debug(CommonUtils.hex(key) + " gets prefix " + CommonUtils.hex(prefix));
+            final String message = String.format("%s gets prefix %s", CommonUtils.hex(key), CommonUtils.hex(prefix));
+            log.debug(message);
             return prefix;
         };
     }

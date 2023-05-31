@@ -119,26 +119,24 @@ public class UniqueTokenStateSetup extends HapiSuite {
                         mgmtOfIntProp(maxPrepOpsPerSecs, "mint_maxPrepOpsPerSecs"),
                         mgmtOfIntProp(numXferPrepAccounts, "mint_numXferPrepAccounts"),
                         mgmtOfLongProp(prepDuration, "mint_prepDuration"),
-                        withOpContext((spec, opLog) -> {
-                            opLog.info(
-                                    "Resolved configuration:\n  "
-                                            + "mint_prepDuration={}\n  "
-                                            + "mint_numXferPrepAccounts={}\n  "
-                                            + "mint_maxPrepOpsPerSecs={}\n  "
-                                            + "mint_duration={}\n  "
-                                            + "mint_maxOpsPerSec={}\n  "
-                                            + "mint_numTokens={}\n  "
-                                            + "mint_numNftsPerToken={}\n  "
-                                            + "mint_numNftsPerMintOp={}",
-                                    prepDuration.get(),
-                                    numXferPrepAccounts.get(),
-                                    maxPrepOpsPerSecs.get(),
-                                    duration.get(),
-                                    maxPrepOpsPerSecs.get(),
-                                    numTokens.get(),
-                                    numNftsPerToken.get(),
-                                    numNftsPerMintOp.get());
-                        }))
+                        withOpContext((spec, opLog) -> opLog.info(
+                                "Resolved configuration:\n  "
+                                        + "mint_prepDuration={}\n  "
+                                        + "mint_numXferPrepAccounts={}\n  "
+                                        + "mint_maxPrepOpsPerSecs={}\n  "
+                                        + "mint_duration={}\n  "
+                                        + "mint_maxOpsPerSec={}\n  "
+                                        + "mint_numTokens={}\n  "
+                                        + "mint_numNftsPerToken={}\n  "
+                                        + "mint_numNftsPerMintOp={}",
+                                prepDuration.get(),
+                                numXferPrepAccounts.get(),
+                                maxPrepOpsPerSecs.get(),
+                                duration.get(),
+                                maxPrepOpsPerSecs.get(),
+                                numTokens.get(),
+                                numNftsPerToken.get(),
+                                numNftsPerMintOp.get())))
                 .when(
                         runWithProvider(xferPrepAccountFactory())
                                 .lasting(prepDuration::get, unit::get)

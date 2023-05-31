@@ -30,7 +30,7 @@ import java.nio.ByteBuffer;
  * @param <K>
  * 		The map key type stored in the buckets
  */
-public class BucketSerializer<K extends VirtualKey<? super K>> implements DataItemSerializer<Bucket<K>> {
+public class BucketSerializer<K extends VirtualKey> implements DataItemSerializer<Bucket<K>> {
     /**
      * Temporary bucket buffers. There is an open question if this should be static, the reason it is not is we need
      * different ThreadLocals for each key type.
@@ -106,7 +106,7 @@ public class BucketSerializer<K extends VirtualKey<? super K>> implements DataIt
      * @return The read header
      */
     @Override
-    public DataItemHeader deserializeHeader(final ByteBuffer buffer) {
+    public DataItemHeader deserializeHeader(final ByteBuffer buffer, final long dataVersion) {
         int bucketIndex = buffer.getInt();
         int size = buffer.getInt();
         return new DataItemHeader(size, bucketIndex);
@@ -118,7 +118,7 @@ public class BucketSerializer<K extends VirtualKey<? super K>> implements DataIt
      * @return Either a number of bytes or DataFileCommon.VARIABLE_DATA_SIZE if size is variable
      */
     @Override
-    public int getSerializedSize() {
+    public int getSerializedSize(final long dataVersion) {
         return DataFileCommon.VARIABLE_DATA_SIZE;
     }
 

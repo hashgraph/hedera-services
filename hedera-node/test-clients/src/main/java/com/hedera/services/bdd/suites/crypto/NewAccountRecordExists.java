@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.keys.SigControl.SECP256K1_ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -79,7 +78,7 @@ public class NewAccountRecordExists extends HapiSuite {
         final var balance = 1_234_567L;
         final var memo = "It was the best of times";
         final var account = "novel";
-        return onlyDefaultHapiSpec("NewAccountIsReflectedInRecordStreamV2")
+        return defaultHapiSpec("NewAccountIsReflectedInRecordStreamV2")
                 .given(streamMustInclude(
                         recordedCryptoCreate(account, a -> a.withMemo(memo).withBalance(balance))))
                 .when(cryptoCreate(account).balance(balance).memo(memo))

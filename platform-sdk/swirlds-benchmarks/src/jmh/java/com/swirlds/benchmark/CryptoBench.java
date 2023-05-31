@@ -31,6 +31,8 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -124,6 +126,10 @@ public abstract class CryptoBench extends VirtualMapBench {
 
         logger.info(RUN_DELIMITER);
 
+        if (getConfig().enableSnapshots()) {
+            enableSnapshots();
+        }
+
         final long[] map = new long[verify ? maxKey : 0];
         VirtualMap<BenchmarkKey, BenchmarkValue> virtualMap = createMap(map);
 
@@ -198,11 +204,24 @@ public abstract class CryptoBench extends VirtualMapBench {
 
         logger.info(RUN_DELIMITER);
 
+        if (getConfig().enableSnapshots()) {
+            enableSnapshots();
+        }
+
         final long[] map = new long[verify ? maxKey : 0];
         VirtualMap<BenchmarkKey, BenchmarkValue> virtualMap = createMap(map);
 
-        final ExecutorService prefetchPool =
-                Executors.newCachedThreadPool(new ThreadConfiguration(getStaticThreadManager())
+        // Use a custom queue and executor for warmups. It may happen that some warmup jobs
+        // aren't complete by the end of the round, so they will start piling up. To fix it,
+        // clear the queue in the end of each round
+        final BlockingQueue<Runnable> queue = new LinkedBlockingQueue<>();
+        final ExecutorService prefetchPool = new ThreadPoolExecutor(
+                numThreads,
+                numThreads,
+                1,
+                TimeUnit.SECONDS,
+                queue,
+                new ThreadConfiguration(getStaticThreadManager())
                         .setComponent("benchmark")
                         .setThreadName("prefetch")
                         .setExceptionHandler((t, ex) -> logger.error("Uncaught exception during prefetching", ex))
@@ -219,12 +238,14 @@ public abstract class CryptoBench extends VirtualMapBench {
 
             // Warm keys in parallel asynchronously
             final VirtualMap<BenchmarkKey, BenchmarkValue> currentMap = virtualMap;
-            for (int thread = 0; thread < numThreads; ++thread) {
-                final int idx = thread;
+            for (int j = 0; j < keys.length; j += KEYS_PER_RECORD) {
+                final int key = j;
                 prefetchPool.execute(() -> {
-                    for (int j = idx * KEYS_PER_RECORD; j < keys.length; j += numThreads * KEYS_PER_RECORD) {
-                        currentMap.warm(new BenchmarkKey(keys[j]));
-                        currentMap.warm(new BenchmarkKey(keys[j + 1]));
+                    try {
+                        currentMap.warm(new BenchmarkKey(keys[key]));
+                        currentMap.warm(new BenchmarkKey(keys[key + 1]));
+                    } catch (final Exception e) {
+                        logger.error("Warmup exception", e);
                     }
                 });
             }
@@ -267,6 +288,8 @@ public abstract class CryptoBench extends VirtualMapBench {
                 }
             }
 
+            queue.clear();
+
             virtualMap = copyMap(virtualMap);
 
             // Report TPS
@@ -296,6 +319,10 @@ public abstract class CryptoBench extends VirtualMapBench {
         beforeTest("transferParallel");
 
         logger.info(RUN_DELIMITER);
+
+        if (getConfig().enableSnapshots()) {
+            enableSnapshots();
+        }
 
         final long[] map = new long[verify ? maxKey : 0];
         VirtualMap<BenchmarkKey, BenchmarkValue> virtualMap = createMap(map);

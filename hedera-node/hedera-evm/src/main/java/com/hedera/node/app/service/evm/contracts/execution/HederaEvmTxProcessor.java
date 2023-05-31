@@ -168,6 +168,8 @@ public abstract class HederaEvmTxProcessor {
         this.gasUsed = calculateGasUsedByTX(gasLimit, initialFrame);
         this.sbhRefund = updater.getSbhRefund();
 
+        tracer.finalizeOperation(initialFrame);
+
         // Externalise result
         if (initialFrame.getState() == MessageFrame.State.COMPLETED_SUCCESS) {
             return HederaEvmTransactionProcessingResult.successful(

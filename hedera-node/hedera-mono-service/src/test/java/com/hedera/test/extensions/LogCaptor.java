@@ -54,6 +54,10 @@ public class LogCaptor {
         this.logger.setLevel(Level.DEBUG);
     }
 
+    public void clear() {
+        capture.reset();
+    }
+
     public void stopCapture() {
         this.logger.removeAppender(appender);
     }

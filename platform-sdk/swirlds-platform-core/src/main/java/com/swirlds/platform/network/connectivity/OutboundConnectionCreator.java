@@ -25,15 +25,15 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.platform.Connection;
 import com.swirlds.platform.SettingsProvider;
-import com.swirlds.platform.SocketConnection;
+import com.swirlds.platform.gossip.sync.SyncInputStream;
+import com.swirlds.platform.gossip.sync.SyncOutputStream;
 import com.swirlds.platform.network.ByteConstants;
+import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionTracker;
 import com.swirlds.platform.network.NetworkUtils;
+import com.swirlds.platform.network.SocketConnection;
 import com.swirlds.platform.network.connection.NotConnectedConnection;
-import com.swirlds.platform.sync.SyncInputStream;
-import com.swirlds.platform.sync.SyncOutputStream;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.Socket;
@@ -82,8 +82,8 @@ public class OutboundConnectionCreator {
      * @return the new connection, or a connection that is not connected if it couldn't connect on the first try
      */
     public Connection createConnection(final NodeId otherId) {
-        final Address other = addressBook.getAddress(otherId.getId());
-        final Address ownAddress = addressBook.getAddress(selfId.getId());
+        final Address other = addressBook.getAddress(otherId.id());
+        final Address ownAddress = addressBook.getAddress(selfId.id());
         final int port = other.getConnectPortIpv4(ownAddress);
         final byte[] ip = getConnectAddressIpv4(ownAddress, other);
         final String ipAddress = Address.ipString(ip);
@@ -113,7 +113,7 @@ public class OutboundConnectionCreator {
                 }
             }
 
-            dos.writeUTF(addressBook.getAddress(selfId.getId()).getNickname());
+            dos.writeUTF(addressBook.getAddress(selfId.id()).getNickname());
             dos.flush();
 
             final int ack = dis.readInt(); // read the ACK for creating the connection

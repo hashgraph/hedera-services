@@ -26,6 +26,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTes
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.tokenDeleteWrapper;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.DeleteTokenPrecompile.decodeDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -197,7 +198,7 @@ class DeleteTokenPrecompileTest {
     @BeforeEach
     void setUp() throws IOException {
         final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
-        canonicalPrices.put(HederaFunctionality.TokenDelete, Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
+        canonicalPrices.put(TokenDelete, Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
         final PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(
                 assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView, accessorFactory);
@@ -304,7 +305,7 @@ class DeleteTokenPrecompileTest {
         deleteTokenPrecompile.when(() -> decodeDelete(any())).thenReturn(tokenDeleteWrapper);
         given(syntheticTxnFactory.createDelete(tokenDeleteWrapper))
                 .willReturn(TransactionBody.newBuilder().setTokenDeletion(TokenDeleteTransactionBody.newBuilder()));
-        given(sigsVerifier.hasActiveAdminKey(true, fungibleTokenAddr, fungibleTokenAddr, wrappedLedgers))
+        given(sigsVerifier.hasActiveAdminKey(true, fungibleTokenAddr, fungibleTokenAddr, wrappedLedgers, TokenDelete))
                 .willReturn(true);
     }
 

@@ -16,15 +16,21 @@
 
 package com.swirlds.platform.internal;
 
+import static com.swirlds.base.ArgumentUtils.throwArgNull;
+import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
+
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.util.iterator.TypedIterator;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+
 
 /** A consensus round with events and all other relevant data. */
 public class ConsensusRound implements Round {
@@ -40,6 +46,8 @@ public class ConsensusRound implements Round {
     private int numAppTransactions = 0;
     /** A snapshot of consensus at this consensus round */
     private final ConsensusSnapshot snapshot;
+    /** The event that, when added to the hashgraph, caused this round to reach consensus. */
+    private final EventImpl keystoneEvent;
 
     /**
      * Same as {@link #ConsensusRound(List, GraphGenerations, long, ConsensusSnapshot)} but the
@@ -68,16 +76,23 @@ public class ConsensusRound implements Round {
      * Create a new instance with the provided consensus info.
      *
      * @param consensusEvents the events in the round, in consensus order
+     * @param keystoneEvent   the event that, when added to the hashgraph, caused this round to reach consensus
      * @param generations the consensus generations for this round
      * @param roundNum the round number
      * @param snapshot snapshot of consensus at this round
      */
     private ConsensusRound(
-            final List<EventImpl> consensusEvents,
-            final GraphGenerations generations,
+            @NonNull final List<EventImpl> consensusEvents,
+            @NonNull final EventImpl keystoneEvent,
+            @NonNull final GraphGenerations generations,
             final long roundNum,
-            final ConsensusSnapshot snapshot) {
+            @NonNull final ConsensusSnapshot snapshot) {
+        throwArgNull(consensusEvents, "consensusEvents");
+        throwArgNull(keystoneEvent, "keystoneEvent");
+        throwArgNull(generations, "generations");
+
         this.consensusEvents = Collections.unmodifiableList(consensusEvents);
+        this.keystoneEvent = keystoneEvent;
         this.generations = generations;
         this.roundNum = roundNum;
         this.snapshot = snapshot;
@@ -172,8 +187,18 @@ public class ConsensusRound implements Round {
         return lastEvent;
     }
 
+    /**
+     * @return the event that, when added to the hashgraph, caused this round to reach consensus
+     */
+    public @NonNull EventImpl getKeystoneEvent() {
+        return keystoneEvent;
+    }
+
     @Override
     public String toString() {
-        return "round: " + roundNum + ", consensus events: " + EventUtils.toShortStrings(consensusEvents);
+        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+                .append("round", roundNum)
+                .append("consensus events", EventUtils.toShortStrings(consensusEvents))
+                .toString();
     }
 }

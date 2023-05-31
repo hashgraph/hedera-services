@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.crypto.CryptographyHolder;
+import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
@@ -238,6 +239,7 @@ public class EventImplTests {
     private static EventImpl newEvent(final ConsensusTransactionImpl[] transactions) {
         return new EventImpl(
                 new BaseEventHashedData(
+                        new BasicSoftwareVersion(1),
                         0L,
                         0L,
                         0L,

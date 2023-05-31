@@ -23,7 +23,10 @@ import static com.swirlds.logging.LogMarker.ERROR;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.MERKLE_DB;
 import static com.swirlds.merkledb.KeyRange.INVALID_KEY_RANGE;
+import static com.swirlds.merkledb.MerkleDb.MERKLEDB_COMPONENT;
+import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
+import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
@@ -38,7 +41,7 @@ import com.swirlds.merkledb.files.DataFileCollection;
 import com.swirlds.merkledb.files.DataFileCommon;
 import com.swirlds.merkledb.files.DataFileReader;
 import com.swirlds.merkledb.files.MemoryIndexDiskKeyValueStore;
-import com.swirlds.merkledb.files.VirtualInternalRecordSerializer;
+import com.swirlds.merkledb.files.VirtualHashRecordSerializer;
 import com.swirlds.merkledb.files.VirtualLeafRecordSerializer;
 import com.swirlds.merkledb.files.hashmap.Bucket;
 import com.swirlds.merkledb.files.hashmap.HalfDiskHashMap;
@@ -52,7 +55,7 @@ import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualLongKey;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
-import com.swirlds.virtualmap.datasource.VirtualInternalRecord;
+import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualKeySet;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import java.io.DataInputStream;
@@ -74,20 +77,17 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.IntConsumer;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends VirtualValue>
-        implements VirtualDataSource<K, V> {
+public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualValue> implements VirtualDataSource<K, V> {
 
     private static final Logger logger = LogManager.getLogger(MerkleDbDataSource.class);
 
@@ -97,9 +97,6 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
      * holder will have been configured by the time this static initializer runs.
      */
     private static final MerkleDbSettings settings = MerkleDbSettingsFactory.get();
-
-    /** Label for database component used in logging, stats, etc. */
-    private static final String MERKLEDB_COMPONENT = "merkledb";
 
     /** Count of open database instances */
     private static final LongAdder COUNT_OF_OPEN_DATABASES = new LongAdder();
@@ -150,20 +147,20 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
     private final LongList pathToDiskLocationLeafNodes;
 
     /**
-     * In memory off-heap store for internal node hashes. This data is never stored on disk so on
-     * load from disk, this will be empty. That should cause all internal node hashes to have to be
-     * computed on the first round which will be expensive.
+     * In memory off-heap store for node hashes. This data is never stored on disk so on load from disk, this
+     * will be empty. That should cause all internal node hashes to have to be computed on the first round
+     * which will be expensive.
      */
-    private final HashList internalHashStoreRam;
+    private final HashList hashStoreRam;
 
     /**
-     * On disk store for internal hashes. Can be null if all hashes are being stored in ram by
-     * setting internalHashesRamToDiskThreshold to Long.MAX_VALUE.
+     * On disk store for node hashes. Can be null if all hashes are being stored in ram by setting
+     * tableConfig.hashesRamToDiskThreshold to Long.MAX_VALUE.
      */
-    private final MemoryIndexDiskKeyValueStore<VirtualInternalRecord> internalHashStoreDisk;
+    private final MemoryIndexDiskKeyValueStore<VirtualHashRecord> hashStoreDisk;
 
-    /** True when internalHashesRamToDiskThreshold is less than Long.MAX_VALUE */
-    private final boolean hasDiskStoreForInternalHashes;
+    /** True when hashesRamToDiskThreshold is less than Long.MAX_VALUE */
+    private final boolean hasDiskStoreForHashes;
 
     /**
      * In memory off-heap store for key to path map, this is used when isLongKeyMode=true and keys
@@ -177,8 +174,8 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
      */
     private final HalfDiskHashMap<K> objectKeyToPath;
 
-    /** Mixed disk and off-heap memory store for path to leaf key, hash and value */
-    private final MemoryIndexDiskKeyValueStore<VirtualLeafRecord<K, V>> pathToHashKeyValue;
+    /** Mixed disk and off-heap memory store for path to leaf key and value */
+    private final MemoryIndexDiskKeyValueStore<VirtualLeafRecord<K, V>> pathToKeyValue;
 
     /**
      * Cache size for reading virtual leaf records. Initialized in data source creation time from
@@ -213,32 +210,8 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
     /** Flag for if a snapshot is in progress */
     private final AtomicBoolean snapshotInProgress = new AtomicBoolean(false);
 
-    /**
-     * A lock for snapshots / flushes synchronization. Snapshots must be protected against
-     * concurrent saves of new data. Snapshots can not start while an existing save is happening and
-     * save can not start while a snapshot is active.
-     */
-    private final ReentrantLock flushLock = new ReentrantLock();
-
     /** The range of valid leaf paths for data currently stored by this data source. */
     private volatile KeyRange validLeafPathRange = INVALID_KEY_RANGE;
-
-    /**
-     * A semaphore to sync data source snapshots and store compactions.
-     * <p>
-     * <p>One of the goals is to lock the snapshot thread as little as possible. Compaction can be
-     * paused and resumed at any moment. That's why the semaphore is acquired for the whole run of
-     * snapshot(), while during compaction it is acquired and released for very short periods: when
-     * indices are updated and when merged files are removed. If compaction threads are doing
-     * anything else, e.g. iterating through files to merge, it can be run in parallel to
-     * snapshotting, until compaction thread starts updating store index.
-     * <p>
-     * <p>Since compaction thread can be paused at various points, it's possible that snapshot will
-     * capture files that are already merged (no index entries pointing to them). Some index entries
-     * can be updated to use the new file, some can point to old files, but since both old and new
-     * files are in the snapshot, it shouldn't be a problem.
-     */
-    private final Semaphore mergingPaused = new Semaphore(1);
 
     private MerkleDbStatistics statistics;
 
@@ -248,7 +221,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
      */
     private static final AtomicBoolean firstStatRegistration = new AtomicBoolean(true);
 
-    private final boolean compactionEnabled;
+    private final AtomicBoolean compactionEnabled = new AtomicBoolean();
 
     /** When was the last medium-sized merge, only touched from single merge thread. */
     private Instant lastMediumMerge;
@@ -275,10 +248,6 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
         this.tableName = tableName;
         this.tableId = tableId;
         this.tableConfig = tableConfig;
-        this.compactionEnabled = compactionEnabled;
-
-        // updated count of open databases
-        COUNT_OF_OPEN_DATABASES.increment();
 
         // create thread group with label
         final ThreadGroup threadGroup = new ThreadGroup("MerkleDb-" + tableName);
@@ -317,7 +286,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
                         (t, ex) -> logger.error(EXCEPTION.getMarker(), "Uncaught exception during snapshots", ex))
                 .buildFactory());
 
-        final Path storageDir = database.getTableDir(tableName);
+        final Path storageDir = database.getTableDir(tableName, tableId);
         dbPaths = new MerkleDbPaths(storageDir);
 
         // check if we are loading an existing database or creating a new one
@@ -340,7 +309,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
         }
 
         // data item serializers for internal/leaf file collections
-        final VirtualInternalRecordSerializer internalRecordSerializer = new VirtualInternalRecordSerializer();
+        final VirtualHashRecordSerializer virtualHashRecordSerializer = new VirtualHashRecordSerializer();
         final VirtualLeafRecordSerializer<K, V> leafRecordSerializer = new VirtualLeafRecordSerializer<>(tableConfig);
 
         // create path to disk location index
@@ -362,23 +331,23 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
         }
 
         // internal node hashes store, RAM
-        if (tableConfig.getInternalHashesRamToDiskThreshold() > 0) {
-            if (Files.exists(dbPaths.internalHashStoreRamFile)) {
-                internalHashStoreRam = new HashListByteBuffer(dbPaths.internalHashStoreRamFile);
+        if (tableConfig.getHashesRamToDiskThreshold() > 0) {
+            if (Files.exists(dbPaths.hashStoreRamFile)) {
+                hashStoreRam = new HashListByteBuffer(dbPaths.hashStoreRamFile);
             } else {
-                internalHashStoreRam = new HashListByteBuffer();
+                hashStoreRam = new HashListByteBuffer();
             }
         } else {
-            internalHashStoreRam = null;
+            hashStoreRam = null;
         }
         // internal node hashes store, on disk
-        hasDiskStoreForInternalHashes = tableConfig.getInternalHashesRamToDiskThreshold() < Long.MAX_VALUE;
-        internalHashStoreDisk = hasDiskStoreForInternalHashes
+        hasDiskStoreForHashes = tableConfig.getHashesRamToDiskThreshold() < Long.MAX_VALUE;
+        hashStoreDisk = hasDiskStoreForHashes
                 ? new MemoryIndexDiskKeyValueStore<>(
-                        dbPaths.internalHashStoreDiskDirectory,
+                        dbPaths.hashStoreDiskDirectory,
                         tableName + "_internalhashes",
                         tableName + ":internalHashes",
-                        internalRecordSerializer,
+                        virtualHashRecordSerializer,
                         null,
                         pathToDiskLocationInternalNodes)
                 : null;
@@ -395,10 +364,10 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
                 loadedDataCallback = null;
             } else {
                 longKeyToPath = new LongListOffHeap();
-                loadedDataCallback = (path, dataLocation, hashKeyValueData) -> {
-                    // read key from hashKeyValueData, as we are in isLongKeyMode mode then
+                loadedDataCallback = (path, dataLocation, keyValueData) -> {
+                    // read key from keyValueData, as we are in isLongKeyMode mode then
                     // the key is a single long
-                    final long key = hashKeyValueData.getLong(0);
+                    final long key = keyValueData.getLong(0);
                     // update index
                     longKeyToPath.put(key, path);
                 };
@@ -418,9 +387,9 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
             loadedDataCallback = null;
         }
 
-        // Create path to hash,key,value store, this will create new or load if files exist
-        pathToHashKeyValue = new MemoryIndexDiskKeyValueStore<>(
-                dbPaths.pathToHashKeyValueDirectory,
+        // Create path to key/value store, this will create new or load if files exist
+        pathToKeyValue = new MemoryIndexDiskKeyValueStore<>(
+                dbPaths.pathToKeyValueDirectory,
                 tableName + "_pathtohashkeyvalue",
                 tableName + ":pathToHashKeyValue",
                 leafRecordSerializer,
@@ -442,7 +411,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
                 .plus((long) (settings.getFullMergePeriod() * Math.random()), settings.getMergePeriodUnit());
 
         // If merging is enabled start merging service
-        if (this.compactionEnabled) {
+        if (compactionEnabled) {
             startBackgroundCompaction();
         }
 
@@ -454,7 +423,9 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
                 tableName,
                 storageDir,
                 tableConfig.getMaxNumberOfKeys(),
-                tableConfig.getInternalHashesRamToDiskThreshold());
+                tableConfig.getHashesRamToDiskThreshold());
+        // updated count of open databases
+        COUNT_OF_OPEN_DATABASES.increment();
     }
 
     /**
@@ -464,6 +435,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
      */
     @Override
     public void startBackgroundCompaction() {
+        compactionEnabled.set(true);
         synchronized (mergingExecutor) {
             if (mergingFuture == null || mergingFuture.isCancelled()) {
                 mergingFuture = mergingExecutor.scheduleAtFixedRate(
@@ -484,6 +456,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
                 mergingFuture = null;
             }
         }
+        compactionEnabled.set(false);
     }
 
     /** {@inheritDoc} */
@@ -511,30 +484,13 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
     }
 
     /** Get the most recent first leaf path */
-    long getFirstLeafPath() {
+    public long getFirstLeafPath() {
         return validLeafPathRange.getMinValidKey();
     }
 
     /** Get the most recent last leaf path */
-    long getLastLeafPath() {
+    public long getLastLeafPath() {
         return validLeafPathRange.getMaxValidKey();
-    }
-
-    /**
-     * Waits for the current flush (if active) to complete and prevents new flushes from happening
-     * until {@link #flushUnlock()}} is called. This method is used by MerkleDb to make sure all
-     * data sources in a single database are in consistent state before taking a snapshot.
-     */
-    void flushLock() {
-        flushLock.lock();
-    }
-
-    /**
-     * Resumes data source flushes. This method is used by MerkleDb after database snapshot is
-     * taken.
-     */
-    void flushUnlock() {
-        flushLock.unlock();
     }
 
     /**
@@ -543,19 +499,31 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
      * critical for snapshots (e.g. update an index), it will be stopped until {@link
      * #resumeMerging()}} is called.
      */
-    void pauseMerging() {
-        mergingPaused.acquireUninterruptibly();
+    void pauseMerging() throws IOException {
+        if (hasDiskStoreForHashes) {
+            hashStoreDisk.pauseMerging();
+        }
+        pathToKeyValue.pauseMerging();
+        if (!isLongKeyMode) {
+            objectKeyToPath.pauseMerging();
+        }
     }
 
     /** Resumes previously stopped data file collection merging. */
-    void resumeMerging() {
-        mergingPaused.release();
+    void resumeMerging() throws IOException {
+        if (hasDiskStoreForHashes) {
+            hashStoreDisk.resumeMerging();
+        }
+        pathToKeyValue.resumeMerging();
+        if (!isLongKeyMode) {
+            objectKeyToPath.resumeMerging();
+        }
     }
 
     /**
      * Save a batch of data to data store.
      *
-     * <p>If you call this method where not all data is provided to cover the change in
+     * If you call this method where not all data is provided to cover the change in
      * firstLeafPath and lastLeafPath, then any reads after this call may return rubbish or throw
      * obscure exceptions for any internals or leaves that have not been written. For example, if
      * you were to grow the tree by more than 2x, and then called this method in batches, be aware
@@ -564,7 +532,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
      *
      * @param firstLeafPath the tree path for first leaf
      * @param lastLeafPath the tree path for last leaf
-     * @param internalRecords stream of records for internal nodes, it is assumed this is sorted by
+     * @param hashRecordsToUpdate stream of records with hashes to update, it is assumed this is sorted by
      *     path and each path only appears once.
      * @param leafRecordsToAddOrUpdate stream of new leaf nodes and updated leaf nodes
      * @param leafRecordsToDelete stream of new leaf nodes to delete, The leaf record's key and path
@@ -575,21 +543,19 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
     public void saveRecords(
             final long firstLeafPath,
             final long lastLeafPath,
-            final Stream<VirtualInternalRecord> internalRecords,
+            final Stream<VirtualHashRecord> hashRecordsToUpdate,
             final Stream<VirtualLeafRecord<K, V>> leafRecordsToAddOrUpdate,
             final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete)
             throws IOException {
-        flushLock.lock();
         try {
             validLeafPathRange = new KeyRange(firstLeafPath, lastLeafPath);
-            final CountDownLatch countDownLatch = new CountDownLatch(firstLeafPath > 0 ? 1 : 0);
+            final CountDownLatch countDownLatch = new CountDownLatch(lastLeafPath > 0 ? 1 : 0);
 
-            // might as well write to the 3 data stores in parallel, so lets fork 2 threads for the
-            // easy stuff
-            if (firstLeafPath > 0) {
+            // might as well write to the 3 data stores in parallel, so lets fork 2 threads for the easy stuff
+            if (lastLeafPath > 0) {
                 storeInternalExecutor.execute(() -> {
                     try {
-                        writeInternalRecords(firstLeafPath, internalRecords);
+                        writeHashes(lastLeafPath, hashRecordsToUpdate);
                     } catch (final IOException e) {
                         logger.error(ERROR.getMarker(), "[{}] Failed to store internal records", tableName, e);
                         throw new UncheckedIOException(e);
@@ -600,7 +566,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
             }
 
             // we might as well do this in the archive thread rather than leaving it waiting
-            writeLeavesToPathToHashKeyValue(firstLeafPath, lastLeafPath, leafRecordsToAddOrUpdate, leafRecordsToDelete);
+            writeLeavesToPathToKeyValue(firstLeafPath, lastLeafPath, leafRecordsToAddOrUpdate, leafRecordsToDelete);
             // wait for the other two threads in the rare case they are not finished yet. We need to
             // have all writing
             // done before we return as when we return the state version we are writing is deleted
@@ -617,7 +583,6 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
                 Thread.currentThread().interrupt();
             }
         } finally {
-            flushLock.unlock();
             // update file stats
             updateFileStats();
             // update off-heap stats
@@ -670,7 +635,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
         if (path == INVALID_PATH) {
             // Cache the result if not already cached
             if (leafRecordCache != null && cached == null) {
-                leafRecordCache[cacheIndex] = new VirtualLeafRecord<K, V>(path, null, key, null);
+                leafRecordCache[cacheIndex] = new VirtualLeafRecord<K, V>(path, key, null);
             }
             return null;
         }
@@ -684,7 +649,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
 
         statistics.cycleLeafByKeyReadsPerSecond();
         // Go ahead and lookup the value.
-        VirtualLeafRecord<K, V> leafRecord = pathToHashKeyValue.get(path);
+        VirtualLeafRecord<K, V> leafRecord = pathToKeyValue.get(path);
 
         // FUTURE WORK: once the reconnect key leak bug is fixed, this block should be removed
         if (!leafRecord.getKey().equals(key)) {
@@ -723,7 +688,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
             throw new IllegalArgumentException("path (" + path + ") is not valid; must be in range " + leafPathRange);
         }
         statistics.cycleLeafByPathReadsPerSecond();
-        return pathToHashKeyValue.get(path);
+        return pathToKeyValue.get(path);
     }
 
     /**
@@ -756,7 +721,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
 
         if (leafRecordCache != null) {
             // Path may be INVALID_PATH here. Still needs to be cached (negative result)
-            leafRecordCache[cacheIndex] = new VirtualLeafRecord<K, V>(path, null, key, null);
+            leafRecordCache[cacheIndex] = new VirtualLeafRecord<K, V>(path, key, null);
         }
 
         return path;
@@ -770,25 +735,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
      * @throws IOException if there was a problem loading hash
      */
     @Override
-    public Hash loadLeafHash(final long path) throws IOException {
-        if (path < 0) {
-            throw new IllegalArgumentException("path is less than 0");
-        }
-        final KeyRange leafPathRange = validLeafPathRange;
-        if (!leafPathRange.withinRange(path)) {
-            throw new IllegalArgumentException("path (" + path + ") is not valid; must be in range " + leafPathRange);
-        }
-
-        statistics.cycleLeafByPathReadsPerSecond();
-        // read value
-        /* FUTURE WORK - https://github.com/swirlds/swirlds-platform/issues/3937 */
-        final VirtualLeafRecord<K, V> leafRecord = pathToHashKeyValue.get(path);
-        return leafRecord == null ? null : leafRecord.getHash();
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public VirtualInternalRecord loadInternalRecord(final long path, final boolean deserialize) throws IOException {
+    public Hash loadHash(final long path) throws IOException {
         if (path < 0) {
             throw new IllegalArgumentException("path is less than 0");
         }
@@ -797,38 +744,33 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
         // know about. This can happen if some leaves have been added to the tree, but we haven't
         // hashed yet, so the cache doesn't have any internal records for it, and somebody
         // tries to iterate over the nodes in the tree.
-        final long firstLeaf = validLeafPathRange.getMinValidKey();
-        if (path >= firstLeaf) {
+        long lastLeaf = validLeafPathRange.getMaxValidKey();
+        if (path > lastLeaf) {
             return null;
         }
 
-        VirtualInternalRecord record = null;
-        if (path < tableConfig.getInternalHashesRamToDiskThreshold()) {
-            if (deserialize) {
-                final Hash hash = internalHashStoreRam.get(path);
-                if (hash != null) {
-                    statistics.cycleInternalNodeReadsPerSecond();
-                    record = new VirtualInternalRecord(path, hash);
-                }
-            }
+        final Hash hash;
+        if (path < tableConfig.getHashesRamToDiskThreshold()) {
+            hash = hashStoreRam.get(path);
         } else {
-            record = internalHashStoreDisk.get(path, deserialize);
+            final VirtualHashRecord rec = hashStoreDisk.get(path);
+            hash = (rec != null) ? rec.hash() : null;
             statistics.cycleInternalNodeReadsPerSecond();
         }
 
-        return record;
+        return hash;
     }
 
     /**
      * Wait for any merges to finish and then close all data stores.
      *
-     * <p><b>After closing delete the database directory and all data!</b> For testing purpose only.
+     * <b>After closing delete the database directory and all data!</b> For testing purpose only.
      */
     public void closeAndDelete() throws IOException {
         try {
             close();
         } finally {
-            database.removeDataSource(tableName);
+            database.removeTable(tableId);
         }
     }
 
@@ -845,11 +787,11 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
             } finally {
                 // close all closable data stores
                 logger.info(MERKLE_DB.getMarker(), "Closing Data Source [{}]", tableName);
-                if (internalHashStoreRam != null) {
-                    internalHashStoreRam.close();
+                if (hashStoreRam != null) {
+                    hashStoreRam.close();
                 }
-                if (internalHashStoreDisk != null) {
-                    internalHashStoreDisk.close();
+                if (hashStoreDisk != null) {
+                    hashStoreDisk.close();
                 }
                 pathToDiskLocationInternalNodes.close();
                 pathToDiskLocationLeafNodes.close();
@@ -859,7 +801,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
                 if (objectKeyToPath != null) {
                     objectKeyToPath.close();
                 }
-                pathToHashKeyValue.close();
+                pathToKeyValue.close();
                 // updated count of open databases
                 COUNT_OF_OPEN_DATABASES.decrement();
                 // Store metadata
@@ -874,10 +816,11 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
      * Write a snapshot of the current state of the database at this moment in time. This will block
      * till the snapshot is completely created.
      *
-     * <p><b> Only one snapshot can happen at a time, this will throw an IllegalStateException if
+     *
+     * <b> Only one snapshot can happen at a time, this will throw an IllegalStateException if
      * another snapshot is currently happening. </b>
      *
-     * <p><b> IMPORTANT, after this is completed the caller owns the directory. It is responsible
+     * <b> IMPORTANT, after this is completed the caller owns the directory. It is responsible
      * for deleting it when it is no longer needed. </b>
      *
      * @param snapshotDirectory Directory to put snapshot into, it will be created if it doesn't
@@ -912,12 +855,12 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
                     pathToDiskLocationLeafNodes.writeToFile(snapshotDbPaths.pathToDiskLocationLeafNodesFile);
                     return true;
                 });
-                runWithSnapshotExecutor(internalHashStoreRam != null, countDownLatch, "internalHashStoreRam", () -> {
-                    internalHashStoreRam.writeToFile(snapshotDbPaths.internalHashStoreRamFile);
+                runWithSnapshotExecutor(hashStoreRam != null, countDownLatch, "internalHashStoreRam", () -> {
+                    hashStoreRam.writeToFile(snapshotDbPaths.hashStoreRamFile);
                     return true;
                 });
-                runWithSnapshotExecutor(internalHashStoreDisk != null, countDownLatch, "internalHashStoreDisk", () -> {
-                    internalHashStoreDisk.snapshot(snapshotDbPaths.internalHashStoreDiskDirectory);
+                runWithSnapshotExecutor(hashStoreDisk != null, countDownLatch, "internalHashStoreDisk", () -> {
+                    hashStoreDisk.snapshot(snapshotDbPaths.hashStoreDiskDirectory);
                     return true;
                 });
                 runWithSnapshotExecutor(longKeyToPath != null, countDownLatch, "longKeyToPath", () -> {
@@ -928,8 +871,8 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
                     objectKeyToPath.snapshot(snapshotDbPaths.objectKeyToPathDirectory);
                     return true;
                 });
-                runWithSnapshotExecutor(true, countDownLatch, "pathToHashKeyValue", () -> {
-                    pathToHashKeyValue.snapshot(snapshotDbPaths.pathToHashKeyValueDirectory);
+                runWithSnapshotExecutor(true, countDownLatch, "pathToKeyValue", () -> {
+                    pathToKeyValue.snapshot(snapshotDbPaths.pathToKeyValueDirectory);
                     return true;
                 });
                 runWithSnapshotExecutor(true, countDownLatch, "metadata", () -> {
@@ -956,23 +899,39 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
         }
     }
 
+    @Override
+    public long estimatedSize(final long dirtyInternals, final long dirtyLeaves) {
+        // Deleted leaves count is ignored, as deleted leaves aren't flushed to data source
+        final long estimatedInternalsSize = dirtyInternals
+                * (Long.BYTES // path
+                        + DigestType.SHA_384.digestLength()); // hash
+        final long estimatedLeavesSize = dirtyLeaves
+                * (Long.BYTES // path
+                        + DigestType.SHA_384.digestLength() // hash
+                        + tableConfig.getKeySerializer().getTypicalSerializedSize() // key
+                        + tableConfig.getValueSerializer().getTypicalSerializedSize()); // value
+        final long estimatedTotalSize = estimatedInternalsSize + estimatedLeavesSize;
+        return estimatedTotalSize;
+    }
+
     /** toString for debugging */
     @Override
     public String toString() {
-        return "MerkleDbDataSource{" + "maxNumberOfKeys="
-                + tableConfig.getMaxNumberOfKeys() + ", preferDiskBasedIndexes="
-                + tableConfig.isPreferDiskBasedIndices() + ", isLongKeyMode="
-                + isLongKeyMode + ", pathToDiskLocationInternalNodes.size="
-                + pathToDiskLocationInternalNodes.size() + ", pathToDiskLocationLeafNodes.size="
-                + pathToDiskLocationLeafNodes.size() + ", internalHashesRamToDiskThreshold="
-                + tableConfig.getInternalHashesRamToDiskThreshold() + ", internalHashStoreRam.size="
-                + (internalHashStoreRam == null ? null : internalHashStoreRam.size()) + ", internalHashStoreDisk="
-                + internalHashStoreDisk + ", hasDiskStoreForInternalHashes="
-                + hasDiskStoreForInternalHashes + ", longKeyToPath.size="
-                + (longKeyToPath == null ? null : longKeyToPath.size()) + ", objectKeyToPath="
-                + objectKeyToPath + ", pathToHashKeyValue="
-                + pathToHashKeyValue + ", snapshotInProgress="
-                + snapshotInProgress.get() + '}';
+        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+                .append("maxNumberOfKeys", tableConfig.getMaxNumberOfKeys())
+                .append("preferDiskBasedIndexes", tableConfig.isPreferDiskBasedIndices())
+                .append("isLongKeyMode", isLongKeyMode)
+                .append("pathToDiskLocationInternalNodes.size", pathToDiskLocationInternalNodes.size())
+                .append("pathToDiskLocationLeafNodes.size", pathToDiskLocationLeafNodes.size())
+                .append("hashesRamToDiskThreshold", tableConfig.getHashesRamToDiskThreshold())
+                .append("hashStoreRam.size", hashStoreRam == null ? null : hashStoreRam.size())
+                .append("hashStoreDisk", hashStoreDisk)
+                .append("hasDiskStoreForHashes", hasDiskStoreForHashes)
+                .append("longKeyToPath.size", longKeyToPath == null ? null : longKeyToPath.size())
+                .append("objectKeyToPath", objectKeyToPath)
+                .append("pathToKeyValue", pathToKeyValue)
+                .append("snapshotInProgress", snapshotInProgress.get())
+                .toString();
     }
 
     /**
@@ -1023,8 +982,8 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
     }
 
     // For testing purpose
-    long getInternalHashesRamToDiskThreshold() {
-        return tableConfig.getInternalHashesRamToDiskThreshold();
+    long getHashesRamToDiskThreshold() {
+        return tableConfig.getHashesRamToDiskThreshold();
     }
 
     // For testing purpose
@@ -1034,7 +993,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
 
     // For testing purpose
     boolean isCompactionEnabled() {
-        return compactionEnabled;
+        return compactionEnabled.get();
     }
 
     private void saveMetadata(final Path targetFile) throws IOException {
@@ -1052,7 +1011,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
         try (final DataInputStream metaIn = new DataInputStream(Files.newInputStream(sourceFile))) {
             final int fileVersion = metaIn.readInt();
             if (fileVersion == MetadataFileFormatVersion.ORIGINAL) {
-                metaIn.readLong(); // skip internalHashesRamToDiskThreshold
+                metaIn.readLong(); // skip hashesRamToDiskThreshold
             } else if (fileVersion != MetadataFileFormatVersion.KEYRANGE_ONLY) {
                 throw new IOException(
                         "Tried to read a file with incompatible file format version [" + fileVersion + "].");
@@ -1077,7 +1036,8 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
     @Override
     public void copyStatisticsFrom(final VirtualDataSource<K, V> that) {
         if (!(that instanceof MerkleDbDataSource<?, ?> thatDataSource)) {
-            throw new IllegalArgumentException("can only copy statistics from MerkleDbDataSource");
+            logger.warn(MERKLE_DB.getMarker(), "Can only copy statistics from MerkleDbDataSource");
+            return;
         }
         statistics = thatDataSource.statistics;
     }
@@ -1090,18 +1050,17 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
      * two places where files are added or removed.
      */
     private void updateFileStats() {
-        if (internalHashStoreDisk != null) {
-            final LongSummaryStatistics internalHashesFileSizeStats = internalHashStoreDisk.getFilesSizeStatistics();
-            statistics.setInternalHashesStoreFileCount((int) internalHashesFileSizeStats.getCount());
-            statistics.setInternalHashesStoreTotalFileSizeInMB(
-                    internalHashesFileSizeStats.getSum() * BYTES_TO_MEBIBYTES);
+        if (hashStoreDisk != null) {
+            final LongSummaryStatistics hashesFileSizeStats = hashStoreDisk.getFilesSizeStatistics();
+            statistics.setInternalHashesStoreFileCount((int) hashesFileSizeStats.getCount());
+            statistics.setInternalHashesStoreTotalFileSizeInMB(hashesFileSizeStats.getSum() * BYTES_TO_MEBIBYTES);
         }
         if (!isLongKeyMode) {
             final LongSummaryStatistics leafKeyFileSizeStats = objectKeyToPath.getFilesSizeStatistics();
             statistics.setLeafKeyToPathStoreFileCount((int) leafKeyFileSizeStats.getCount());
             statistics.setLeafKeyToPathStoreTotalFileSizeInMB(leafKeyFileSizeStats.getSum() * BYTES_TO_MEBIBYTES);
         }
-        final LongSummaryStatistics leafDataFileSizeStats = pathToHashKeyValue.getFilesSizeStatistics();
+        final LongSummaryStatistics leafDataFileSizeStats = pathToKeyValue.getFilesSizeStatistics();
         statistics.setLeafPathToHashKeyValueStoreFileCount((int) leafDataFileSizeStats.getCount());
         statistics.setLeafPathToHashKeyValueStoreTotalFileSizeInMB(leafDataFileSizeStats.getSum() * BYTES_TO_MEBIBYTES);
     }
@@ -1145,7 +1104,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
         } catch (final InterruptedException e) {
             logger.warn(EXCEPTION.getMarker(), "[{}] Interrupted while waiting on executors to shutdown", tableName, e);
             Thread.currentThread().interrupt();
-            throw new IOException("Interrupted while waiting for merge to finish.", e);
+            throw new IOException("Interrupted while waiting for shutdown to finish.", e);
         }
     }
 
@@ -1185,27 +1144,26 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
         }
     }
 
-    /** Write all internal records hashes to internalHashStore */
-    private void writeInternalRecords(final long firstLeafPath, final Stream<VirtualInternalRecord> internalRecords)
-            throws IOException {
-        if ((internalRecords == null) || (firstLeafPath <= 0)) {
+    /**
+     * Write all hashes to hashStore
+     */
+    private void writeHashes(final long maxValidPath, final Stream<VirtualHashRecord> dirtyHashes) throws IOException {
+        if ((dirtyHashes == null) || (maxValidPath <= 0)) {
             // nothing to do
             return;
         }
 
-        if (hasDiskStoreForInternalHashes) {
-            internalHashStoreDisk.startWriting();
+        if (hasDiskStoreForHashes) {
+            hashStoreDisk.startWriting(0, maxValidPath);
         }
 
-        final AtomicLong lastPath = new AtomicLong(INVALID_PATH);
-        internalRecords.forEach(rec -> {
-            assert rec.getPath() > lastPath.getAndSet(rec.getPath()) : "Path should be in ascending order!";
+        dirtyHashes.forEach(rec -> {
             statistics.cycleInternalNodeWritesPerSecond();
-            if (rec.getPath() < tableConfig.getInternalHashesRamToDiskThreshold()) {
-                internalHashStoreRam.put(rec.getPath(), rec.getHash());
+            if (rec.path() < tableConfig.getHashesRamToDiskThreshold()) {
+                hashStoreRam.put(rec.path(), rec.hash());
             } else {
                 try {
-                    internalHashStoreDisk.put(rec.getPath(), rec);
+                    hashStoreDisk.put(rec.path(), rec);
                 } catch (final IOException e) {
                     logger.error(EXCEPTION.getMarker(), "[{}] IOException writing internal records", tableName, e);
                     throw new UncheckedIOException(e);
@@ -1213,34 +1171,31 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
             }
         });
 
-        if (hasDiskStoreForInternalHashes) {
-            internalHashStoreDisk.endWriting(0, firstLeafPath - 1);
+        if (hasDiskStoreForHashes) {
+            hashStoreDisk.endWriting();
         }
     }
 
-    /** Write all the given leaf records to pathToHashKeyValue */
-    private void writeLeavesToPathToHashKeyValue(
+    /** Write all the given leaf records to pathToKeyValue */
+    private void writeLeavesToPathToKeyValue(
             final long firstLeafPath,
             final long lastLeafPath,
-            final Stream<VirtualLeafRecord<K, V>> leafRecordsToAddOrUpdate,
-            final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete)
+            final Stream<VirtualLeafRecord<K, V>> dirtyLeaves,
+            final Stream<VirtualLeafRecord<K, V>> deletedLeaves)
             throws IOException {
-        if ((leafRecordsToAddOrUpdate == null) || (firstLeafPath <= 0)) {
+        if ((dirtyLeaves == null) || (firstLeafPath <= 0)) {
             // nothing to do
             return;
         }
 
         // start writing
-        pathToHashKeyValue.startWriting();
+        pathToKeyValue.startWriting(firstLeafPath, lastLeafPath);
         if (!isLongKeyMode) {
             objectKeyToPath.startWriting();
         }
 
         // iterate over leaf records
-        final AtomicLong lastPath = new AtomicLong(INVALID_PATH);
-        leafRecordsToAddOrUpdate.forEach(leafRecord -> {
-            assert leafRecord.getPath() > lastPath.getAndSet(leafRecord.getPath())
-                    : "Path should be in ascending order!";
+        dirtyLeaves.forEach(leafRecord -> {
             statistics.cycleLeafWritesPerSecond();
 
             // update objectKeyToPath
@@ -1250,11 +1205,11 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
                 objectKeyToPath.put(leafRecord.getKey(), leafRecord.getPath());
             }
 
-            // update pathToHashKeyValue
+            // update pathToKeyValue
             try {
-                pathToHashKeyValue.put(leafRecord.getPath(), leafRecord);
+                pathToKeyValue.put(leafRecord.getPath(), leafRecord);
             } catch (final IOException e) {
-                logger.error(EXCEPTION.getMarker(), "[{}] IOException writing to pathToHashKeyValue", tableName, e);
+                logger.error(EXCEPTION.getMarker(), "[{}] IOException writing to pathToKeyValue", tableName, e);
                 throw new UncheckedIOException(e);
             }
 
@@ -1263,7 +1218,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
         });
 
         // iterate over leaf records to delete
-        leafRecordsToDelete.forEach(leafRecord -> {
+        deletedLeaves.forEach(leafRecord -> {
             // update objectKeyToPath
             if (isLongKeyMode) {
                 longKeyToPath.put(((VirtualLongKey) leafRecord.getKey()).getKeyAsLong(), INVALID_PATH);
@@ -1271,7 +1226,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
                 objectKeyToPath.delete(leafRecord.getKey());
             }
 
-            // delete from pathToHashKeyValue, we don't need to explicitly delete leaves as
+            // delete from pathToKeyValue, we don't need to explicitly delete leaves as
             // they will be deleted on
             // next merge based on range of valid leaf paths. If a leaf at path X is deleted
             // then a new leaf is
@@ -1282,7 +1237,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
         });
 
         // end writing
-        pathToHashKeyValue.endWriting(firstLeafPath, lastLeafPath);
+        pathToKeyValue.endWriting();
         if (!isLongKeyMode) {
             objectKeyToPath.endWriting();
         }
@@ -1290,11 +1245,11 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
 
     /**
      * Invalidates the given key in virtual leaf record cache, if the cache is enabled.
-     * <p>
-     * <p>If the key is deleted, it's still updated in the cache. It means no record with the given
+     *
+     * If the key is deleted, it's still updated in the cache. It means no record with the given
      * key exists in the data source, so further lookups for the key are skipped.
-     * <p>
-     * <p>Cache index is calculated as the key's hash code % cache size. The cache is only updated,
+     *
+     * Cache index is calculated as the key's hash code % cache size. The cache is only updated,
      * if the current record at this index has the given key. If the key is different, no update is
      * performed.
      *
@@ -1316,10 +1271,10 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
      * Start a Merge if needed, this is called by default every 30 seconds if a merge is not already
      * running. This implements the logic for how often and with what files we merge.
      *
-     * <p><b> IMPORTANT: This method is called on a thread that can be interrupted, so it needs to
+     * <b> IMPORTANT: This method is called on a thread that can be interrupted, so it needs to
      * gracefully stop when it is interrupted. </b>
      *
-     * <p><b> IMPORTANT: The set of files we merge must always be contiguous in order of time
+     * <b> IMPORTANT: The set of files we merge must always be contiguous in order of time
      * contained data created. As merged files have a later index but old data the index can not be
      * used alone to work out order of files to merge. </b>
      *
@@ -1336,7 +1291,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
             final Instant now = Instant.now(clock);
             final Instant afterInternalHashStoreDiskMerge;
             final Instant afterObjectKeyToPathMerge;
-            final Instant afterPathToHashKeyValueMerge;
+            final Instant afterPathToKeyValueMerge;
 
             final UnaryOperator<List<DataFileReader>> filesToMergeFilter;
             boolean isLargeMerge = false;
@@ -1347,29 +1302,26 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
                 /* Filter nothing during a full merge */
                 filesToMergeFilter = dataFileReaders -> dataFileReaders;
                 isLargeMerge = true;
-                logger.info(MERKLE_DB.getMarker(), "[{}] Starting Large Merge", tableName);
+                logger.debug(MERKLE_DB.getMarker(), "[{}] Starting Large Merge", tableName);
             } else if (isTimeForMediumMerge(now)) {
                 lastMediumMerge = now;
                 filesToMergeFilter = DataFileCommon.newestFilesSmallerThan(
                         settings.getMediumMergeCutoffMb(), settings.getMaxNumberOfFilesInMerge());
                 isMediumMerge = true;
-                logger.info(MERKLE_DB.getMarker(), "[{}] Starting Medium Merge", tableName);
+                logger.debug(MERKLE_DB.getMarker(), "[{}] Starting Medium Merge", tableName);
             } else {
                 filesToMergeFilter = DataFileCommon.newestFilesSmallerThan(
                         settings.getSmallMergeCutoffMb(), settings.getMaxNumberOfFilesInMerge());
                 isSmallMerge = true;
-                logger.info(MERKLE_DB.getMarker(), "[{}] Starting Small Merge", tableName);
+                logger.debug(MERKLE_DB.getMarker(), "[{}] Starting Small Merge", tableName);
             }
 
-            // we need to merge disk files for internal hashes if they exist and pathToHashKeyValue
-            // store
-            if (hasDiskStoreForInternalHashes) {
-                // horrible hack to get around generics because file filters work on any type of
-                // DataFileReader
-                final UnaryOperator<List<DataFileReader<VirtualInternalRecord>>> internalRecordFileFilter =
-                        (UnaryOperator<List<DataFileReader<VirtualInternalRecord>>>) ((Object) filesToMergeFilter);
-                internalHashStoreDisk.merge(
-                        internalRecordFileFilter, mergingPaused, settings.getMinNumberOfFilesInMerge());
+            // we need to merge disk files for internal hashes if they exist and pathToKeyValue store
+            if (hasDiskStoreForHashes) {
+                // horrible hack to get around generics because file filters work on any type of DataFileReader
+                final UnaryOperator<List<DataFileReader<VirtualHashRecord>>> internalRecordFileFilter =
+                        (UnaryOperator<List<DataFileReader<VirtualHashRecord>>>) ((Object) filesToMergeFilter);
+                hashStoreDisk.merge(internalRecordFileFilter, settings.getMinNumberOfFilesInMerge());
                 afterInternalHashStoreDiskMerge = Instant.now(clock);
             } else {
                 afterInternalHashStoreDiskMerge = now; // zero elapsed time
@@ -1383,30 +1335,29 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
                 // DataFileReader
                 final UnaryOperator<List<DataFileReader<Bucket<K>>>> bucketFileFilter =
                         (UnaryOperator<List<DataFileReader<Bucket<K>>>>) ((Object) filesToMergeFilter);
-                objectKeyToPath.merge(bucketFileFilter, mergingPaused, settings.getMinNumberOfFilesInMerge());
+                objectKeyToPath.merge(bucketFileFilter, settings.getMinNumberOfFilesInMerge());
                 // set third "now"
                 afterObjectKeyToPathMerge = Instant.now(clock);
             }
-            // now do main merge of pathToHashKeyValue store
+            // now do main merge of pathToKeyValue store
             // horrible hack to get around generics because file filters work on any type of
             // DataFileReader
             final UnaryOperator<List<DataFileReader<VirtualLeafRecord<K, V>>>> leafRecordFileFilter =
                     (UnaryOperator<List<DataFileReader<VirtualLeafRecord<K, V>>>>) ((Object) filesToMergeFilter);
-            pathToHashKeyValue.merge(leafRecordFileFilter, mergingPaused, settings.getMinNumberOfFilesInMerge());
+            pathToKeyValue.merge(leafRecordFileFilter, settings.getMinNumberOfFilesInMerge());
             // set fourth "now"
-            afterPathToHashKeyValueMerge = Instant.now(clock);
+            afterPathToKeyValueMerge = Instant.now(clock);
 
             // determine how long each of the sub-merges took.
             final Duration firstMergeDuration = Duration.between(now, afterInternalHashStoreDiskMerge);
             final Duration secondMergeDuration =
                     Duration.between(afterInternalHashStoreDiskMerge, afterObjectKeyToPathMerge);
-            final Duration thirdMergeDuration =
-                    Duration.between(afterObjectKeyToPathMerge, afterPathToHashKeyValueMerge);
+            final Duration thirdMergeDuration = Duration.between(afterObjectKeyToPathMerge, afterPathToKeyValueMerge);
 
             // update the 3 appropriate "Merge" statistics, based on
             // isSmallMerge/isMediumMerge/isLargeMerge
             if (isSmallMerge) {
-                if (hasDiskStoreForInternalHashes) {
+                if (hasDiskStoreForHashes) {
                     statistics.setInternalHashesStoreSmallMergeTime(firstMergeDuration.toSeconds()
                             + firstMergeDuration.getNano() * Units.NANOSECONDS_TO_SECONDS);
                 }
@@ -1417,7 +1368,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
                 statistics.setLeafPathToHashKeyValueStoreSmallMergeTime(
                         thirdMergeDuration.toSeconds() + thirdMergeDuration.getNano() * Units.NANOSECONDS_TO_SECONDS);
             } else if (isMediumMerge) {
-                if (hasDiskStoreForInternalHashes) {
+                if (hasDiskStoreForHashes) {
                     statistics.setInternalHashesStoreMediumMergeTime(firstMergeDuration.toSeconds()
                             + firstMergeDuration.getNano() * Units.NANOSECONDS_TO_SECONDS);
                 }
@@ -1428,7 +1379,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
                 statistics.setLeafPathToHashKeyValueStoreMediumMergeTime(
                         thirdMergeDuration.toSeconds() + thirdMergeDuration.getNano() * Units.NANOSECONDS_TO_SECONDS);
             } else if (isLargeMerge) {
-                if (hasDiskStoreForInternalHashes) {
+                if (hasDiskStoreForHashes) {
                     statistics.setInternalHashesStoreLargeMergeTime(firstMergeDuration.toSeconds()
                             + firstMergeDuration.getNano() * Units.NANOSECONDS_TO_SECONDS);
                 }
@@ -1439,21 +1390,19 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
                 statistics.setLeafPathToHashKeyValueStoreLargeMergeTime(
                         thirdMergeDuration.toSeconds() + thirdMergeDuration.getNano() * Units.NANOSECONDS_TO_SECONDS);
             }
-            // update file stats (those statistics don't care about small vs medium vs large merge
-            // size)
+            // update file stats (those statistics don't care about small vs medium vs large merge size)
             updateFileStats();
             // update off-heap usage statistic
             updateOffHeapStats();
+            logger.debug(MERKLE_DB.getMarker(), "[{}] Finished Merge", tableName);
             return true;
         } catch (final InterruptedException | ClosedByInterruptException e) {
             logger.info(MERKLE_DB.getMarker(), "Interrupted while merging, this is allowed.");
             Thread.currentThread().interrupt();
             return false;
-        } catch (final Throwable e) { // NOSONAR: Log and return false if an error occurred since this is on
-            // a thread.
+        } catch (final Throwable e) {
             // It is important that we capture all exceptions here, otherwise a single exception
-            // will stop all
-            // future merges from happening.
+            // will stop all  future merges from happening.
             logger.error(EXCEPTION.getMarker(), "[{}] Merge failed", tableName, e);
             return false;
         }
@@ -1478,5 +1427,24 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
      */
     boolean isLongKeyMode() {
         return isLongKeyMode;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int hashCode() {
+        return Objects.hash(database, tableId);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof MerkleDbDataSource<?, ?> other)) {
+            return false;
+        }
+        return Objects.equals(database, other.database) && Objects.equals(tableId, other.tableId);
     }
 }

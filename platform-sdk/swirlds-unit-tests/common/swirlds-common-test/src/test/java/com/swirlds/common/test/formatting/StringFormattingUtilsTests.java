@@ -19,10 +19,16 @@ package com.swirlds.common.test.formatting;
 import static com.swirlds.common.formatting.StringFormattingUtils.addLine;
 import static com.swirlds.common.formatting.StringFormattingUtils.commaSeparatedNumber;
 import static com.swirlds.common.formatting.StringFormattingUtils.formattedList;
+import static com.swirlds.common.formatting.StringFormattingUtils.parseSanitizedTimestamp;
 import static com.swirlds.common.formatting.StringFormattingUtils.repeatedChar;
+import static com.swirlds.common.formatting.StringFormattingUtils.sanitizeTimestamp;
+import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.swirlds.common.test.RandomUtils;
+import java.time.Instant;
 import java.util.List;
+import java.util.Random;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -247,5 +253,15 @@ class StringFormattingUtilsTests {
         assertEquals("-1,111.7", commaSeparatedNumber(-1111.6666666, 1));
         assertEquals("-1,111.67", commaSeparatedNumber(-1111.6666666, 2));
         assertEquals("-1,111.667", commaSeparatedNumber(-1111.6666666, 3));
+    }
+
+    @Test
+    @DisplayName("Sanitized Timestamp Test")
+    void sanitizedTimestampTest() {
+        final Random random = getRandomPrintSeed();
+        final Instant original = RandomUtils.randomInstant(random);
+        final String serialized = sanitizeTimestamp(original);
+        final Instant deserialized = parseSanitizedTimestamp(serialized);
+        assertEquals(original, deserialized);
     }
 }

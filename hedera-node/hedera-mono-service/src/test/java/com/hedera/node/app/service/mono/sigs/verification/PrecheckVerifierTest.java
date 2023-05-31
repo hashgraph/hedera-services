@@ -31,8 +31,8 @@ import static org.mockito.BDDMockito.mock;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JHollowKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JWildcardECDSAKey;
 import com.hedera.node.app.service.mono.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.node.app.service.mono.sigs.PlatformSigOps;
 import com.hedera.node.app.service.mono.sigs.factories.ReusableBodySigningFactory;
@@ -212,8 +212,8 @@ class PrecheckVerifierTest {
                 .getEncoded(true);
         var ecdsaDecompressedBytes = MiscCryptoUtils.decompressSecp256k1(ecdsaCompressedBytes);
         var ecdsaHash = Hash.hash(Bytes.of(ecdsaDecompressedBytes)).toArrayUnsafe();
-        List<JKey> reqKeys =
-                Arrays.asList(new JHollowKey(Arrays.copyOfRange(ecdsaHash, ecdsaHash.length - 20, ecdsaHash.length)));
+        List<JKey> reqKeys = Arrays.asList(
+                new JWildcardECDSAKey(Arrays.copyOfRange(ecdsaHash, ecdsaHash.length - 20, ecdsaHash.length), true));
 
         given(precheckKeyReqs.getRequiredKeys(TransactionBody.parseFrom(signedTransaction.getBodyBytes())))
                 .willReturn(reqKeys);

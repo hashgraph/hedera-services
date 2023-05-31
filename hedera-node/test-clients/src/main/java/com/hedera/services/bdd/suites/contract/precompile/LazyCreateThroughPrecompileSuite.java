@@ -24,6 +24,7 @@ import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.acco
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
+import static com.hedera.services.bdd.spec.keys.SigControl.SECP256K1_ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
@@ -99,6 +100,7 @@ import java.util.stream.LongStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
+import org.junit.jupiter.api.Assertions;
 
 public class LazyCreateThroughPrecompileSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(LazyCreateThroughPrecompileSuite.class);
@@ -146,6 +148,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
     private static final Tuple[] EMPTY_TUPLE_ARRAY = new Tuple[] {};
     private static final String RECIPIENT = "recipient";
     private static final String NOT_ENOUGH_GAS_TXN = "NOT_ENOUGH_GAS_TXN";
+    private static final String ECDSA_KEY = "abcdECDSAkey";
 
     public static void main(String... args) {
         new LazyCreateThroughPrecompileSuite().runSuiteAsync();
@@ -376,6 +379,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                                 htsPrecompileResult().withStatus(SUCCESS)))));
     }
 
+    @SuppressWarnings("java:S5960")
     HapiSpec canCreateViaFungibleWithFractionalFee() {
         final var ft = "ft";
         final var ftKey = NFT_KEY;
@@ -394,6 +398,8 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                 .maxAutomaticTokenAssociations(1)
                                 .keyShape(ED25519)
                                 .exposingCreatedIdTo(id -> civilianId.set(id.getAccountNum())),
+                        // If running locally, ensures the entity 0.0.<civilianId + 1> is an account w/ EVM address
+                        cryptoCreate("somebody").keyShape(SECP256K1_ON).withMatchingEvmAddress(),
                         tokenCreate(ft)
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
                                 .supplyKey(ftKey)
@@ -402,18 +408,32 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                 .treasury(TOKEN_TREASURY)
                                 .exposingCreatedIdTo(idLit -> ftMirrorAddr.set(asHexedSolidityAddress(asToken(idLit)))),
                         cryptoTransfer(TokenMovement.moving(supply, ft).between(TOKEN_TREASURY, CIVILIAN)))
-                .when(sourcing(() -> contractCall(
-                                AUTO_CREATION_MODES,
-                                "createDirectlyViaFungible",
-                                headlongFromHexed(ftMirrorAddr.get()),
-                                mirrorAddrWith(civilianId.get()),
-                                nonMirrorAddrWith(civilianId.get() + 1),
-                                supply)
-                        .via(creationAttempt)
-                        .gas(GAS_TO_OFFER)
-                        .alsoSigningWithFullPrefix(CIVILIAN)
-                        .hasKnownStatus(SUCCESS)))
-                .then(getTxnRecord(creationAttempt).andAllChildRecords().logged());
+                .when(withOpContext((spec, opLog) -> {
+                    final var op = contractCall(
+                                    AUTO_CREATION_MODES,
+                                    "createDirectlyViaFungible",
+                                    headlongFromHexed(ftMirrorAddr.get()),
+                                    mirrorAddrWith(civilianId.get()),
+                                    nonMirrorAddrWith(123, civilianId.get() + 1),
+                                    supply)
+                            .via(creationAttempt)
+                            .gas(GAS_TO_OFFER)
+                            .alsoSigningWithFullPrefix(CIVILIAN)
+                            .hasKnownStatusFrom(SUCCESS, CONTRACT_REVERT_EXECUTED);
+                    allRunFor(spec, op);
+                    // If this ContractCall was converted to an EthereumTransaction, then it will
+                    // not be tracking the last receipt and we can't do this extra logging; this is
+                    // fine for now, since the _Eth spec hasn't been flaky
+                    if (op.hasActualStatus() && op.getActualStatus() == CONTRACT_REVERT_EXECUTED) {
+                        final var lookup = getTxnRecord(creationAttempt).andAllChildRecords();
+                        allRunFor(spec, lookup);
+                        Assertions.fail("canCreateViaFungibleWithFractionalFee() failed w/ record "
+                                + lookup.getResponseRecord()
+                                + " and child records "
+                                + lookup.getChildRecords());
+                    }
+                }))
+                .then();
     }
 
     HapiSpec canCreateMultipleHollows() {
@@ -449,7 +469,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                 "createSeveralDirectly",
                                 headlongFromHexed(nftMirrorAddr.get()),
                                 nCopiesOfSender(n, mirrorAddrWith(civilianId.get())),
-                                nNonMirrorAddressFrom(n, civilianId.get() + 1),
+                                nNonMirrorAddressFrom(n, civilianId.get() + 1_234_567_890L),
                                 LongStream.iterate(1L, l -> l + 1).limit(n).toArray())
                         .via(creationAttempt)
                         .gas(GAS_TO_OFFER)
@@ -476,8 +496,12 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
     }
 
     private Address nonMirrorAddrWith(final long num) {
-        return Address.wrap(
-                Address.toChecksumAddress(new BigInteger(1, HapiPropertySource.asSolidityAddress(666, 666, num))));
+        return nonMirrorAddrWith(666, num);
+    }
+
+    private Address nonMirrorAddrWith(final long seed, final long num) {
+        return Address.wrap(Address.toChecksumAddress(
+                new BigInteger(1, HapiPropertySource.asSolidityAddress((int) seed, seed, num))));
     }
 
     private HapiSpec cryptoTransferV1LazyCreate() {
@@ -505,7 +529,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                 .initialSupply(0L)
                                 .supplyKey(MULTI_KEY),
                         mintToken(NFT_TOKEN, List.of(META1, META2)),
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
                         cryptoTransfer(moving(500, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, SENDER)),
                         cryptoTransfer(moving(500, FUNGIBLE_TOKEN_2).between(TOKEN_TREASURY, SENDER)),
                         uploadInitCode(NESTED_LAZY_PRECOMPILE_CONTRACT),
@@ -518,7 +542,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                     final var token2 = spec.registry().getTokenID(FUNGIBLE_TOKEN_2);
                     final var nftToken = spec.registry().getTokenID(NFT_TOKEN);
                     final var sender = spec.registry().getAccountID(SENDER);
-                    final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
+                    final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
                     final var evmAddressBytes = ByteString.copyFrom(recoverAddressFromPubKey(
                             ecdsaKey.getECDSASecp256K1().toByteArray()));
                     final var amountToBeSent = 50L;
@@ -647,7 +671,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                     TRANSFER_TXN3,
                                     CONTRACT_REVERT_EXECUTED,
                                     recordWith().status(NO_REMAINING_AUTOMATIC_ASSOCIATIONS)),
-                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                            getAliasedAccountInfo(ECDSA_KEY)
                                     .has(AccountInfoAsserts.accountWith()
                                             .key(EMPTY_KEY)
                                             .autoRenew(THREE_MONTHS_IN_SECONDS)
@@ -687,7 +711,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                 .initialSupply(0L)
                                 .supplyKey(MULTI_KEY),
                         mintToken(NFT_TOKEN, List.of(META1, META2)),
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
                         cryptoTransfer(moving(500, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, SENDER)),
                         cryptoTransfer(moving(500, FUNGIBLE_TOKEN_2).between(TOKEN_TREASURY, SENDER)),
                         uploadInitCode(NESTED_LAZY_PRECOMPILE_CONTRACT),
@@ -696,7 +720,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                 .has(ContractInfoAsserts.contractWith().maxAutoAssociations(1))
                                 .logged())
                 .when(withOpContext((spec, opLog) -> {
-                    final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
+                    final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
                     final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
                     final var addressBytes = recoverAddressFromPubKey(tmp);
                     final var evmAddressBytes = ByteString.copyFrom(addressBytes);
@@ -818,7 +842,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                     TRANSFER_TXN3,
                                     CONTRACT_REVERT_EXECUTED,
                                     recordWith().status(NO_REMAINING_AUTOMATIC_ASSOCIATIONS)),
-                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                            getAliasedAccountInfo(ECDSA_KEY)
                                     .has(AccountInfoAsserts.accountWith()
                                             .key(EMPTY_KEY)
                                             .autoRenew(THREE_MONTHS_IN_SECONDS)
@@ -838,7 +862,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
 
         return defaultHapiSpec("transferTokenLazyCreate")
                 .given(
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
@@ -855,7 +879,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                         tokenAssociate(OWNER, List.of(FUNGIBLE_TOKEN)),
                         cryptoTransfer(moving(5, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, OWNER)))
                 .when(withOpContext((spec, opLog) -> {
-                    final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
+                    final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
                     final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
                     final var addressBytes = recoverAddressFromPubKey(tmp);
                     final var alias = ByteStringUtils.wrapUnsafely(addressBytes);
@@ -875,7 +899,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                     .alsoSigningWithFullPrefix(OWNER)
                                     .gas(GAS_TO_OFFER)
                                     .hasKnownStatus(SUCCESS),
-                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                            getAliasedAccountInfo(ECDSA_KEY)
                                     .has(AccountInfoAsserts.accountWith()
                                             .key(EMPTY_KEY)
                                             .autoRenew(THREE_MONTHS_IN_SECONDS)
@@ -899,7 +923,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
 
         return defaultHapiSpec("transferTokensToEVMAddressAliasRevertAndTransferAgainSuccessfully")
                 .given(
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
@@ -916,7 +940,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                         tokenAssociate(OWNER, List.of(FUNGIBLE_TOKEN)),
                         cryptoTransfer(moving(5, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, OWNER)))
                 .when(withOpContext((spec, opLog) -> {
-                    final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
+                    final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
                     final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
                     final var addressBytes = recoverAddressFromPubKey(tmp);
                     final var alias = ByteStringUtils.wrapUnsafely(addressBytes);
@@ -939,7 +963,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                     .gas(GAS_TO_OFFER)
                                     .alsoSigningWithFullPrefix(OWNER)
                                     .hasKnownStatus(SUCCESS),
-                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                            getAliasedAccountInfo(ECDSA_KEY)
                                     .has(AccountInfoAsserts.accountWith()
                                             .key(EMPTY_KEY)
                                             .autoRenew(THREE_MONTHS_IN_SECONDS)
@@ -961,7 +985,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
     private HapiSpec transferNftLazyCreate() {
         return defaultHapiSpec("transferNftLazyCreate")
                 .given(
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
                         cryptoCreate(SPENDER),
@@ -980,7 +1004,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                         mintToken(NON_FUNGIBLE_TOKEN, List.of(FIRST_META, SECOND_META)),
                         cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L).between(TOKEN_TREASURY, OWNER)))
                 .when(withOpContext((spec, opLog) -> {
-                    final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
+                    final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
                     final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
                     final var addressBytes = recoverAddressFromPubKey(tmp);
                     final var alias = ByteStringUtils.wrapUnsafely(addressBytes);
@@ -1000,7 +1024,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                     .alsoSigningWithFullPrefix(OWNER)
                                     .gas(GAS_TO_OFFER)
                                     .hasKnownStatus(SUCCESS),
-                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                            getAliasedAccountInfo(ECDSA_KEY)
                                     .has(AccountInfoAsserts.accountWith()
                                             .key(EMPTY_KEY)
                                             .autoRenew(THREE_MONTHS_IN_SECONDS)
@@ -1022,7 +1046,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
     private HapiSpec transferNftsLazyCreate() {
         return defaultHapiSpec("transferNftsLazyCreate")
                 .given(
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
                         cryptoCreate(SPENDER),
@@ -1041,7 +1065,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                         mintToken(NON_FUNGIBLE_TOKEN, List.of(FIRST_META, SECOND_META)),
                         cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L).between(TOKEN_TREASURY, OWNER)))
                 .when(withOpContext((spec, opLog) -> {
-                    final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
+                    final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
                     final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
                     final var addressBytes = recoverAddressFromPubKey(tmp);
                     final var alias = ByteStringUtils.wrapUnsafely(addressBytes);
@@ -1063,7 +1087,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                     .via(TRANSFER_NFTS_TXN)
                                     .alsoSigningWithFullPrefix(OWNER)
                                     .gas(GAS_TO_OFFER),
-                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                            getAliasedAccountInfo(ECDSA_KEY)
                                     .has(AccountInfoAsserts.accountWith()
                                             .key(EMPTY_KEY)
                                             .autoRenew(THREE_MONTHS_IN_SECONDS)
@@ -1087,7 +1111,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
 
         return defaultHapiSpec("erc20TransferLazyCreate")
                 .given(
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(FUNGIBLE_TOKEN)
@@ -1103,7 +1127,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                         tokenAssociate(ERC_20_CONTRACT, List.of(FUNGIBLE_TOKEN)),
                         cryptoTransfer(moving(5, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, ERC_20_CONTRACT)))
                 .when(withOpContext((spec, opLog) -> {
-                    final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
+                    final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
                     final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
                     final var addressBytes = recoverAddressFromPubKey(tmp);
                     final var alias = ByteStringUtils.wrapUnsafely(addressBytes);
@@ -1129,7 +1153,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                     .via(TRANSFER_TXN)
                                     .gas(GAS_TO_OFFER)
                                     .hasKnownStatus(SUCCESS),
-                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                            getAliasedAccountInfo(ECDSA_KEY)
                                     .has(AccountInfoAsserts.accountWith()
                                             .key(EMPTY_KEY)
                                             .autoRenew(THREE_MONTHS_IN_SECONDS)
@@ -1155,7 +1179,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
         return defaultHapiSpec("erc20TransferFromLazyCreate")
                 .given(
                         newKeyNamed(MULTI_KEY),
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
                         cryptoCreate(RECIPIENT),
                         cryptoCreate(TOKEN_TREASURY),
@@ -1174,7 +1198,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                         tokenAssociate(ERC_20_CONTRACT, FUNGIBLE_TOKEN),
                         cryptoTransfer(moving(10, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, OWNER)))
                 .when(withOpContext((spec, opLog) -> {
-                    final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
+                    final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
                     final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
                     final var addressBytes = recoverAddressFromPubKey(tmp);
                     final var alias = ByteStringUtils.wrapUnsafely(addressBytes);
@@ -1213,7 +1237,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                     .gas(4_000_000)
                                     .via(TRANSFER_FROM_ACCOUNT_REVERT_TXN)
                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).hasCostAnswerPrecheck(INVALID_ACCOUNT_ID),
+                            getAliasedAccountInfo(ECDSA_KEY).hasCostAnswerPrecheck(INVALID_ACCOUNT_ID),
                             // successful lazy create
                             contractCall(
                                             ERC_20_CONTRACT,
@@ -1227,7 +1251,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                     .gas(4_000_000)
                                     .via(TRANSFER_FROM_ACCOUNT_TXN)
                                     .hasKnownStatus(SUCCESS),
-                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                            getAliasedAccountInfo(ECDSA_KEY)
                                     .has(AccountInfoAsserts.accountWith()
                                             .key(EMPTY_KEY)
                                             .autoRenew(THREE_MONTHS_IN_SECONDS)
@@ -1256,7 +1280,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
     private HapiSpec erc721TransferFromLazyCreate() {
         return defaultHapiSpec("erc721TransferFromLazyCreate")
                 .given(
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
                         cryptoCreate(SPENDER),
@@ -1275,7 +1299,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                         mintToken(NON_FUNGIBLE_TOKEN, List.of(FIRST_META, SECOND_META)),
                         cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1L).between(TOKEN_TREASURY, OWNER)))
                 .when(withOpContext((spec, opLog) -> {
-                    final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
+                    final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
                     final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
                     final var addressBytes = recoverAddressFromPubKey(tmp);
                     final var alias = ByteStringUtils.wrapUnsafely(addressBytes);
@@ -1313,7 +1337,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                     .via(TRANSFER_FROM_ACCOUNT_TXN)
                                     .gas(GAS_TO_OFFER)
                                     .hasKnownStatus(SUCCESS),
-                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                            getAliasedAccountInfo(ECDSA_KEY)
                                     .has(AccountInfoAsserts.accountWith()
                                             .key(EMPTY_KEY)
                                             .autoRenew(THREE_MONTHS_IN_SECONDS)
@@ -1340,7 +1364,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
         final var successfulTransferFromTxn = "txn";
         return defaultHapiSpec("htsTransferFromFungibleTokenLazyCreate")
                 .given(
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(5),
                         tokenCreate(FUNGIBLE_TOKEN)
@@ -1364,7 +1388,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                         .tokenAllowancesContaining(
                                                 FUNGIBLE_TOKEN, HTS_TRANSFER_FROM_CONTRACT, allowance)))
                 .when(withOpContext((spec, opLog) -> {
-                    final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
+                    final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
                     final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
                     final var addressBytes = recoverAddressFromPubKey(tmp);
                     final ByteString alias = ByteStringUtils.wrapUnsafely(addressBytes);
@@ -1393,7 +1417,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                                     .contractCallResult(htsPrecompileResult()
                                                             .forFunction(FunctionType.HAPI_TRANSFER_FROM)
                                                             .withStatus(SUCCESS)))),
-                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                            getAliasedAccountInfo(ECDSA_KEY)
                                     .logged()
                                     .has(AccountInfoAsserts.accountWith()
                                             .key(EMPTY_KEY)
@@ -1410,7 +1434,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
     private HapiSpec htsTransferFromForNFTLazyCreate() {
         return defaultHapiSpec("htsTransferFromForNFTLazyCreate")
                 .given(
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(5),
                         tokenCreate(NFT_TOKEN)
@@ -1428,7 +1452,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                 .signedBy(DEFAULT_PAYER, OWNER)
                                 .fee(ONE_HBAR))
                 .when(withOpContext((spec, opLog) -> {
-                    final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
+                    final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
                     final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
                     final var addressBytes = recoverAddressFromPubKey(tmp);
                     final var alias = ByteStringUtils.wrapUnsafely(addressBytes);
@@ -1457,7 +1481,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                                     .contractCallResult(htsPrecompileResult()
                                                             .forFunction(FunctionType.HAPI_TRANSFER_FROM)
                                                             .withStatus(SUCCESS)))),
-                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                            getAliasedAccountInfo(ECDSA_KEY)
                                     .logged()
                                     .has(AccountInfoAsserts.accountWith()
                                             .key(EMPTY_KEY)

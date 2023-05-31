@@ -68,7 +68,7 @@ public class NodeSignatureVerifier {
             String account = new String(nodeAddress.getMemo().toByteArray());
             try {
                 accountKeys.put(account, loadPublicKey(nodeAddress.getRSAPubKey()));
-                log.info("Discovered node " + account);
+                log.info("Discovered node {}", account);
             } catch (IllegalArgumentException ex) {
                 log.warn("Malformed address key {} for node {}", nodeAddress.getRSAPubKey(), account);
                 throw new IllegalArgumentException("Malformed public key!");

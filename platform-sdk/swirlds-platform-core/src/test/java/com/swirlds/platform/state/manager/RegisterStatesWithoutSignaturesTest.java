@@ -23,16 +23,14 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
-import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateManager;
-import com.swirlds.test.framework.TestQualifierTags;
 import java.util.HashMap;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("SignedStateManager: Register States Without Signatures Test")
@@ -48,23 +46,18 @@ public class RegisterStatesWithoutSignaturesTest extends AbstractSignedStateMana
             .setSequentialIds(false)
             .build();
 
-    final long selfId = addressBook.getId(0);
-
     /**
      * Called on each state as it gets too old without collecting enough signatures.
      * <p>
      * This consumer is provided by the wiring layer, so it should release the resource when finished.
      */
     private StateLacksSignaturesConsumer stateLacksSignaturesConsumer() {
-        return ssw -> {
+        return ss -> {
             stateLacksSignaturesCount.getAndIncrement();
 
-            assertEquals(highestRound.get() - roundsToKeepForSigning, ssw.get().getRound(), "unexpected round retired");
+            assertEquals(highestRound.get() - roundsToKeepForSigning, ss.getRound(), "unexpected round retired");
             assertSame(
-                    signedStates.get(highestRound.get() - roundsToKeepForSigning),
-                    ssw.get(),
-                    "unexpected state was retired");
-            ssw.release();
+                    signedStates.get(highestRound.get() - roundsToKeepForSigning), ss, "unexpected state was retired");
         };
     }
 
@@ -74,20 +67,16 @@ public class RegisterStatesWithoutSignaturesTest extends AbstractSignedStateMana
      * This consumer is provided by the wiring layer, so it should release the resource when finished.
      */
     private StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer() {
-        return ssw -> {
-            stateHasEnoughSignaturesCount.getAndIncrement();
-            ssw.release();
-        };
+        return ss -> stateHasEnoughSignaturesCount.getAndIncrement();
     }
 
     /**
      * Keep adding new states to the manager but never sign any of them (other than self signatures).
      */
     @Test
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Register States Without Signatures")
     void registerStatesWithoutSignatures() throws InterruptedException {
-        final SignedStateManager manager = new SignedStateManagerBuilder(addressBook, stateConfig, selfId)
+        final SignedStateManager manager = new SignedStateManagerBuilder(buildStateConfig())
                 .stateLacksSignaturesConsumer(stateLacksSignaturesConsumer())
                 .stateHasEnoughSignaturesConsumer(stateHasEnoughSignaturesConsumer())
                 .build();
@@ -104,13 +93,13 @@ public class RegisterStatesWithoutSignaturesTest extends AbstractSignedStateMana
             signedStates.put((long) round, signedState);
             highestRound.set(round);
 
-            manager.addUnsignedState(signedState);
+            manager.addState(signedState);
 
-            try (final AutoCloseableWrapper<SignedState> lastState = manager.getLatestImmutableState()) {
+            try (final ReservedSignedState lastState = manager.getLatestImmutableState("test")) {
                 assertSame(signedState, lastState.get(), "last signed state has unexpected value");
             }
-            try (final AutoCloseableWrapper<SignedState> lastCompletedState = manager.getLatestSignedState()) {
-                assertNull(lastCompletedState.get(), "no states should be completed in this test");
+            try (final ReservedSignedState lastCompletedState = manager.getLatestSignedState("test")) {
+                assertNull(lastCompletedState.getNullable(), "no states should be completed in this test");
             }
 
             final int expectedUnsignedStates = Math.max(0, round - roundsToKeepForSigning + 1);

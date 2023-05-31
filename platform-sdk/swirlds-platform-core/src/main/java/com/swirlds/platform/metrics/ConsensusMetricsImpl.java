@@ -162,7 +162,7 @@ public class ConsensusMetricsImpl implements ConsensusMetrics {
     @Override
     public void addedEvent(final EventImpl event) {
         // this method is only ever called by 1 thread, so no need for locks
-        if (!selfId.equalsMain(event.getCreatorId())
+        if (selfId.id() != event.getCreatorId()
                 && event.getRoundCreated() > lastRoundNumber) { // if first event in a round
             final Instant now = Instant.now();
             if (firstEventInLastRoundTime != null) {
@@ -187,7 +187,7 @@ public class ConsensusMetricsImpl implements ConsensusMetrics {
      */
     @Override
     public void lastFamousInRound(final EventImpl event) {
-        if (!selfId.equalsMain(event.getCreatorId())) { // record this for events received
+        if (selfId.id() != event.getCreatorId()) { // record this for events received
             avgReceivedFamousTime.update(event.getBaseEvent().getTimeReceived().until(Instant.now(), ChronoUnit.NANOS)
                     * NANOSECONDS_TO_SECONDS);
         }
@@ -215,7 +215,7 @@ public class ConsensusMetricsImpl implements ConsensusMetrics {
         // Because of transThrottle, these statistics can end up being misleading, so we are only tracking events that
         // have user transactions in them.
         if (event.hasUserTransactions()) {
-            if (selfId.equalsMain(event.getCreatorId())) { // set either created or received time to now
+            if (selfId.id() == event.getCreatorId()) { // set either created or received time to now
                 avgCreatedConsensusTime.update(
                         event.getBaseEvent().getTimeReceived().until(Instant.now(), ChronoUnit.NANOS)
                                 * NANOSECONDS_TO_SECONDS);
@@ -231,7 +231,7 @@ public class ConsensusMetricsImpl implements ConsensusMetrics {
         // Because of transThrottle, these statistics can end up being misleading, so we are only tracking events that
         // have user transactions in them.
         if (event.hasUserTransactions()) {
-            if (selfId.equalsMain(event.getCreatorId())) {
+            if (selfId.id() == event.getCreatorId()) {
                 avgSelfCreatedTimestamp.update(
                         event.getTimeCreated().until(event.getConsensusTimestamp(), ChronoUnit.NANOS)
                                 * NANOSECONDS_TO_SECONDS);

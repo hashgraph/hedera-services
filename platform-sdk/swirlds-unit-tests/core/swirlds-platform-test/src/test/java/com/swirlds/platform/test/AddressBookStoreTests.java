@@ -26,10 +26,10 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.CryptographyHolder;
-import com.swirlds.common.exceptions.MutabilityException;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
@@ -37,7 +37,6 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.address.AddressBookValidator;
 import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.platform.state.address.AddressBookStore;
-import com.swirlds.platform.state.address.BranchingAddressBookStore;
 import com.swirlds.platform.state.address.SequentialAddressBookStore;
 import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.test.framework.config.TestConfigBuilder;
@@ -95,10 +94,6 @@ class AddressBookStoreTests {
 
     static Stream<Arguments> addressBookStoreImpls() {
         return Stream.of(
-                Arguments.of(new AddressBookStoreImpl(
-                        BranchingAddressBookStore.class.getSimpleName(), BranchingAddressBookStore::new, true)),
-                Arguments.of(new AddressBookStoreImpl(
-                        BranchingAddressBookStore.class.getSimpleName(), BranchingAddressBookStore::new, false)),
                 Arguments.of(new AddressBookStoreImpl(
                         SequentialAddressBookStore.class.getSimpleName(), SequentialAddressBookStore::new, true)),
                 Arguments.of(new AddressBookStoreImpl(
@@ -402,12 +397,7 @@ class AddressBookStoreTests {
         final AddressBookStore copy = store.copy();
 
         assertTrue(copy.isMutable(), "copy should always be mutable");
-
-        if (store instanceof BranchingAddressBookStore) {
-            assertTrue(copy.isMutable(), "original should always be mutable for branching store");
-        } else if (store instanceof SequentialAddressBookStore) {
-            assertTrue(store.isImmutable(), "original should become immutable for sequential store");
-        }
+        assertTrue(store.isImmutable(), "original should become immutable for sequential store");
 
         MerkleCryptoFactory.getInstance().digestTreeSync(store);
         MerkleCryptoFactory.getInstance().digestTreeSync(copy);
@@ -543,9 +533,9 @@ class AddressBookStoreTests {
 
         final AddressBookStore store = addressBookStoreImpl.constructor.get();
 
-        // Force all nodes to have zero stake
+        // Force all nodes to have zero weight
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setCustomStakeGenerator(nodeId -> 0)
+                .setCustomWeightGenerator(nodeId -> 0)
                 .build();
 
         assertThrows(
@@ -553,16 +543,16 @@ class AddressBookStoreTests {
 
         // Add an address book that has a high next ID
         final RandomAddressBookGenerator generator =
-                new RandomAddressBookGenerator().setSize(100).setSequentialIds(true);
+                new RandomAddressBookGenerator().setSize(100).setSequentialIds(false);
         final AddressBook firstAddressBook = generator.build().setRound(0);
         store.add(firstAddressBook);
         assertEquals(1, store.getSize(), "store is the wrong size");
 
         // Attempting to add an address book store with a low next ID should fail
         final RandomAddressBookGenerator invalidGenerator =
-                new RandomAddressBookGenerator().setSize(10).setSequentialIds(true);
+                new RandomAddressBookGenerator().setSize(10).setSequentialIds(false);
         final AddressBook invalidBook =
-                invalidGenerator.setSequentialIds(true).build().setRound(1);
+                invalidGenerator.setSequentialIds(false).build().setRound(1);
         store.add(invalidBook);
         assertEquals(2, store.getSize(), "store is the wrong size");
 

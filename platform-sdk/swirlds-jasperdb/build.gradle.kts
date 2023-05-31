@@ -23,8 +23,10 @@ plugins {
 
 dependencies {
   // Individual Dependencies
+  implementation(project(":swirlds-base"))
   api(project(":swirlds-virtualmap"))
   api(project(":swirlds-config-api"))
+  compileOnly(libs.spotbugs.annotations)
 
   // Bundle Dependencies
   implementation(libs.bundles.eclipse)

@@ -41,6 +41,7 @@ import org.apache.logging.log4j.Logger;
 
 public class CryptoCornerCasesSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(CryptoCornerCasesSuite.class);
+    private static final String NEW_PAYEE = "newPayee";
 
     public static void main(String... args) {
         new CryptoCornerCasesSuite().runSuiteSync();
@@ -67,7 +68,7 @@ public class CryptoCornerCasesSuite extends HapiSuite {
         return defaultHapiSpec("InvalidTransactionBody")
                 .given()
                 .when()
-                .then(cryptoCreate("newPayee")
+                .then(cryptoCreate(NEW_PAYEE)
                         .balance(10000L)
                         .withProtoStructure(HapiSpecSetup.TxnProtoStructure.OLD) // Ensure legacy construction so
                         // removeTransactionBody() works
@@ -88,7 +89,7 @@ public class CryptoCornerCasesSuite extends HapiSuite {
         return defaultHapiSpec("InvalidNodeAccount")
                 .given()
                 .when()
-                .then(cryptoCreate("newPayee")
+                .then(cryptoCreate(NEW_PAYEE)
                         .balance(10000L)
                         .scrambleTxnBody(CryptoCornerCasesSuite::replaceTxnNodeAccount)
                         .hasPrecheckFrom(INVALID_NODE_ACCOUNT, INVALID_TRANSACTION));
@@ -102,7 +103,7 @@ public class CryptoCornerCasesSuite extends HapiSuite {
         return defaultHapiSpec("InvalidTransactionDuration")
                 .given()
                 .when()
-                .then(cryptoCreate("newPayee")
+                .then(cryptoCreate(NEW_PAYEE)
                         .balance(10000L)
                         .scrambleTxnBody(CryptoCornerCasesSuite::replaceTxnDuration)
                         .hasPrecheckFrom(INVALID_TRANSACTION_DURATION, INVALID_TRANSACTION));
@@ -117,7 +118,7 @@ public class CryptoCornerCasesSuite extends HapiSuite {
         return defaultHapiSpec("InvalidTransactionMemoTooLong")
                 .given()
                 .when()
-                .then(cryptoCreate("newPayee")
+                .then(cryptoCreate(NEW_PAYEE)
                         .balance(10000L)
                         .scrambleTxnBody(CryptoCornerCasesSuite::replaceTxnMemo)
                         .hasPrecheckFrom(MEMO_TOO_LONG, INVALID_TRANSACTION));
@@ -136,7 +137,7 @@ public class CryptoCornerCasesSuite extends HapiSuite {
         return defaultHapiSpec("InvalidTransactionDuration")
                 .given()
                 .when()
-                .then(cryptoCreate("newPayee")
+                .then(cryptoCreate(NEW_PAYEE)
                         .balance(10000L)
                         .scrambleTxnBody(CryptoCornerCasesSuite::replaceTxnPayerAccount)
                         .hasPrecheckFrom(PAYER_ACCOUNT_NOT_FOUND, INVALID_TRANSACTION));
@@ -151,7 +152,7 @@ public class CryptoCornerCasesSuite extends HapiSuite {
         return defaultHapiSpec("InvalidTransactionStartTime")
                 .given()
                 .when()
-                .then(cryptoCreate("newPayee")
+                .then(cryptoCreate(NEW_PAYEE)
                         .balance(10000L)
                         .scrambleTxnBody(CryptoCornerCasesSuite::replaceTxnStartTtime)
                         .hasPrecheckFrom(INVALID_TRANSACTION_START, INVALID_TRANSACTION));

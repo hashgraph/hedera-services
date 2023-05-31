@@ -62,14 +62,6 @@ public class SwirldStateMetrics {
                     + "(in microseconds)")
             .withFormat(FORMAT_16_2);
     private final RunningAverageMetric avgStateCopyMicros;
-
-    private static final RunningAverageMetric.Config AVG_SHUFFLE_MICROS_CONFIG = new RunningAverageMetric.Config(
-                    INTERNAL_CATEGORY, "shuffleMicros")
-            .withDescription(
-                    "average time spent in SwirldStateManagerSingle.Shuffler#shuffle() method " + "(in microseconds)")
-            .withFormat(FORMAT_16_2);
-    private final RunningAverageMetric avgShuffleMicros;
-
     /**
      * average time spent in
      * {@code SwirldStateManager#prehandle} by the {@code intake} thread (in microseconds)
@@ -91,7 +83,6 @@ public class SwirldStateMetrics {
         avgConsHandleTime = metrics.getOrCreate(AVG_CONS_HANDLE_TIME_CONFIG);
         transHandledPerSecond = metrics.getOrCreate(TRANS_HANDLED_PER_SECOND_CONFIG);
         avgStateCopyMicros = metrics.getOrCreate(AVG_STATE_COPY_MICROS_CONFIG);
-        avgShuffleMicros = metrics.getOrCreate(AVG_SHUFFLE_MICROS_CONFIG);
         preConsHandleTime = new AverageTimeStat(
                 metrics,
                 ChronoUnit.MICROS,
@@ -141,17 +132,6 @@ public class SwirldStateMetrics {
      */
     public void stateCopyMicros(final double micros) {
         avgStateCopyMicros.update(micros);
-    }
-
-    /**
-     * Records the time spent performing a shuffle in {@link com.swirlds.platform.state.SwirldStateManagerSingle}  (in
-     * microseconds).
-     *
-     * @param micros
-     * 		the amount of time in microseconds
-     */
-    public void shuffleMicros(final double micros) {
-        avgShuffleMicros.update(micros);
     }
 
     /**

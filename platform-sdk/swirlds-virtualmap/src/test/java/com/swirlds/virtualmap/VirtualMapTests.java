@@ -34,8 +34,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.exceptions.MutabilityException;
 import com.swirlds.common.exceptions.ReferenceCountException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -122,8 +122,8 @@ class VirtualMapTests extends VirtualTestBase {
             if (info != null) {
                 final String threadName = info.getThreadName();
                 if (!threadName.contains("hasher")
-                        && !threadName.contains("CacheCleaner-")
-                        && !threadName.contains("<virtual-pipeline: lifecycle")
+                        && !threadName.contains("virtual-map: cache-cleaner")
+                        && !threadName.contains("virtual-pipeline: lifecycle")
                         && !threadName.contains("ForkJoinPool.commonPool-worker-")
                         && !(threadName.contains("pool-") && threadName.contains("-thread-"))) {
                     threadNames.add(threadName);
@@ -547,8 +547,8 @@ class VirtualMapTests extends VirtualTestBase {
         fcm.release();
     }
 
-    // TODO test deleting the same key two times in a row.
-    // TODO Test that a deleted node's value cannot be subsequently read.
+    // FUTURE WORK test deleting the same key two times in a row.
+    // FUTURE WORK Test that a deleted node's value cannot be subsequently read.
 
     //    @Test
     //    @Tag(TestTypeTags.FUNCTIONAL)
@@ -583,7 +583,7 @@ class VirtualMapTests extends VirtualTestBase {
     //        assertLeafOrder(fcm, E_KEY);
     //        assertEquals(EGGPLANT, fcm.remove(E_KEY));
     //
-    //        // TODO validate hashing works as expected
+    //        // FUTURE WORK validate hashing works as expected
     //
     //    }
 
@@ -614,7 +614,7 @@ class VirtualMapTests extends VirtualTestBase {
     //        assertEquals(CHERRY, fcm.remove(C_KEY));
     //        assertEquals(GRAPE, fcm.remove(G_KEY));
     //
-    //        // TODO validate hashing works as expected
+    //        // FUTURE WORK validate hashing works as expected
     //
     //    }
 
@@ -638,7 +638,7 @@ class VirtualMapTests extends VirtualTestBase {
         assertEquals(FIG, fcm.remove(F_KEY), "Wrong value");
         assertEquals(GRAPE, fcm.remove(G_KEY), "Wrong value");
 
-        // TODO validate hashing works as expected
+        // FUTURE WORK validate hashing works as expected
 
         fcm.release();
     }
@@ -664,7 +664,7 @@ class VirtualMapTests extends VirtualTestBase {
         assertEquals(GRAPE, fcm.remove(G_KEY), "Wrong value");
 
         fcm.put(D_KEY, DATE);
-        // TODO validate hashing works as expected
+        // FUTURE WORK validate hashing works as expected
 
         fcm.release();
     }
@@ -739,7 +739,7 @@ class VirtualMapTests extends VirtualTestBase {
     //        fcm.put(F_KEY, FIG);
     //        fcm.put(G_KEY, GRAPE);
     //
-    // TODO Cannot iterate until after hashing, which invalidates the test
+    // FUTURE WORK Cannot iterate until after hashing, which invalidates the test
     //        var completed = fcm;
     //        fcm = fcm.copy();
     //        completed.hash().get();
@@ -828,7 +828,6 @@ class VirtualMapTests extends VirtualTestBase {
 
     @Test(/* no exception expected */ )
     @DisplayName("Partly dirty maps have missing hashes only on dirty leaves and parents")
-    @Disabled("Need to work out how to test ths properly")
     void nullHashesOnDirtyNodes() throws ExecutionException, InterruptedException {
         VirtualMap<TestKey, TestValue> fcm = createMap();
         fcm.put(A_KEY, APPLE);
@@ -846,7 +845,7 @@ class VirtualMapTests extends VirtualTestBase {
         fcm.put(B_KEY, BEAR);
 
         // This hash iterator should visit MapState, B, <internal>, D, <internal>, <internal (root)>, fcm
-        // TODO gotta figure out how to test
+        // FUTURE WORK gotta figure out how to test
         //        final var hashItr = new MerkleHashIterator(fcm);
         //        hashItr.next();
         //        assertEquals(new VFCLeafNode<>(B_KEY, BEAR), getRecordFromNode((MerkleLeaf) hashItr.next()));
@@ -1080,6 +1079,7 @@ class VirtualMapTests extends VirtualTestBase {
         map1.getRoot().detach(Path.of("tmp"));
         map0.release();
 
+        map1.release();
         final CountDownLatch finishedFlushing = new CountDownLatch(1);
         final Thread th = new Thread(() -> {
             try {
@@ -1093,12 +1093,11 @@ class VirtualMapTests extends VirtualTestBase {
         th.start();
 
         try {
-            if (!finishedFlushing.await(1, SECONDS)) {
+            if (!finishedFlushing.await(4, SECONDS)) {
                 th.interrupt();
                 fail("Timed out, which happens if the test fails or the test has a bug but never if it passes");
             }
         } finally {
-            map1.release();
             map2.release();
         }
     }

@@ -16,12 +16,14 @@
 
 package com.hedera.node.app.service.mono.throttling;
 
+import static com.hedera.node.app.hapi.utils.CommonUtils.functionOf;
 import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.node.app.service.mono.grpc.marshalling.AliasResolver.usesAliases;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.isGasThrottled;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 
+import com.hedera.node.app.hapi.utils.exception.UnknownHederaFunctionality;
 import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ScaleFactor;
 import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleBucket;
 import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions;
@@ -29,7 +31,6 @@ import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleGroup;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.hapi.utils.throttles.GasLimitDeterministicThrottle;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.mono.exceptions.UnknownHederaFunctionality;
 import com.hedera.node.app.service.mono.grpc.marshalling.AliasResolver;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.store.schedule.ScheduleStore;
@@ -154,6 +155,28 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
     @Override
     public List<DeterministicThrottle> allActiveThrottles() {
         return activeThrottles;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<DeterministicThrottle.UsageSnapshot> getUsageSnapshots() {
+        final List<DeterministicThrottle.UsageSnapshot> snapshots = new ArrayList<>();
+        for (final var throttle : activeThrottles) {
+            snapshots.add(throttle.usageSnapshot());
+        }
+        return snapshots;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void resetUsageThrottlesTo(final List<DeterministicThrottle.UsageSnapshot> snapshots) {
+        for (int i = 0, n = activeThrottles.size(); i < n; i++) {
+            activeThrottles.get(i).resetUsageTo(snapshots.get(i));
+        }
     }
 
     @Override
@@ -331,7 +354,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 
         HederaFunctionality scheduledFunction;
         try {
-            scheduledFunction = MiscUtils.functionOf(normalTxn);
+            scheduledFunction = functionOf(normalTxn);
         } catch (UnknownHederaFunctionality ex) {
             log.debug("ScheduleCreate was associated with an invalid txn.", ex);
             return true;
@@ -408,7 +431,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 
         HederaFunctionality scheduledFunction;
         try {
-            scheduledFunction = MiscUtils.functionOf(normalTxn);
+            scheduledFunction = functionOf(normalTxn);
         } catch (UnknownHederaFunctionality ex) {
             log.error("ScheduleSign was associated with an invalid txn.", ex);
             return true;

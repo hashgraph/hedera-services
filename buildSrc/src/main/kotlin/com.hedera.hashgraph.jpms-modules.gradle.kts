@@ -1,5 +1,3 @@
-import gradle.kotlin.dsl.accessors._34a132ac50631db3ea5353237b274f3d.extraJavaModuleInfo
-
 /*
  * Copyright 2016-2022 Hedera Hashgraph, LLC
  *
@@ -22,8 +20,6 @@ plugins {
 }
 
 extraJavaModuleInfo {
-    failOnMissingModuleInfo.set(true)
-
     automaticModule("com.hedera.hashgraph:protobuf-java", "com.hedera.hashgraph.protobuf.java.api")
 
     automaticModule("com.goterl:lazysodium-java", "lazysodium.java")
@@ -48,6 +44,7 @@ extraJavaModuleInfo {
 
     automaticModule("org.hyperledger.besu:secp256k1", "org.hyperledger.besu.secp256k1")
     automaticModule("org.hyperledger.besu.internal:crypto", "org.hyperledger.besu.crypto")
+    automaticModule("tech.pegasys:jc-kzg-4844", "tech.pegasys.jckzg4844")
 
     automaticModule("javax.annotation:javax.annotation-api", "javax.annotation.api")
     automaticModule("javax.inject:javax.inject", "javax.inject")
@@ -99,6 +96,7 @@ extraJavaModuleInfo {
     automaticModule("org.hyperledger.besu:bls12-381", "org.hyperledger.besu.bls12.for381")
     automaticModule("org.hyperledger.besu:secp256r1", "org.hyperledger.besu.secp256r1")
     automaticModule("org.hyperledger.besu:blake2bf", "org.hyperledger.besu.blake2bf")
+    automaticModule("org.hyperledger.besu:arithmetic", "org.hyperledger.besu.arithmetic")
     automaticModule("org.apache.commons:commons-math3", "org.apache.commons.math3")
 
     automaticModule("com.github.docker-java:docker-java-transport-zerodep", "com.github.docker.transport.zerodep")
@@ -108,6 +106,12 @@ extraJavaModuleInfo {
     automaticModule("org.testcontainers:junit-jupiter", "org.testcontainers.junit.jupiter")
     automaticModule("org.mockito:mockito-inline", "org.mockito.inline")
 
+    // Automatic modules for PBJ dependencies
+    automaticModule("org.antlr:antlr4", "org.antlr.antlr4")
+    automaticModule("org.antlr:antlr-runtime", "org.antlr.antlr4.runtime")
+    automaticModule("org.antlr:ST4", "org.antlr.ST4")
+    automaticModule("org.abego.treelayout:org.abego.treelayout.core", "org.abego.treelayout.core")
+
 
     // Test Related Modules
     automaticModule("com.github.docker-java:docker-java-transport", "com.github.docker.java.transport")
@@ -115,4 +119,8 @@ extraJavaModuleInfo {
     automaticModule("hamcrest-core-1.3.jar", "hamcrest.core")
     automaticModule("org.awaitility:awaitility", "awaitility")
     automaticModule("org.testcontainers:testcontainers", "org.testcontainers")
+
+    automaticModule("uk.org.webcompere:system-stubs-jupiter", "uk.org.webcompere.systemstubs.jupiter")
+    automaticModule("uk.org.webcompere:system-stubs-core", "uk.org.webcompere.systemstubs.core")
+
 }

@@ -168,9 +168,9 @@ class EntityIdUtilsTest {
         };
         final var num = Longs.fromByteArray(numBytes);
         final byte[] expected = {
-            (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xAB,
-            (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xCD,
-            (byte) 0xFE, (byte) 0x00, (byte) 0x00, (byte) 0xFE,
+            (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00,
+            (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00,
+            (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00,
             (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xDE,
             (byte) 0xBA, (byte) 0x00, (byte) 0x00, (byte) 0xBA
         };
@@ -182,7 +182,7 @@ class EntityIdUtilsTest {
                 .setEvmAddress(ByteString.copyFrom(create2AddressBytes))
                 .build();
 
-        final var actual = asEvmAddress(shard, realm, num);
+        final var actual = asEvmAddress(num);
         final var typedActual = EntityIdUtils.asTypedEvmAddress(equivAccount);
         final var typedToken = EntityIdUtils.asTypedEvmAddress(equivToken);
         final var anotherActual = EntityIdUtils.asEvmAddress(equivContract);
@@ -195,9 +195,9 @@ class EntityIdUtilsTest {
         assertArrayEquals(expected, typedToken.toArray());
         assertArrayEquals(create2AddressBytes, create2Actual);
         assertEquals(CommonUtils.hex(expected), actualHex);
-        assertEquals(equivAccount, EntityIdUtils.accountIdFromEvmAddress(actual));
-        assertEquals(equivContract, contractIdFromEvmAddress(actual));
-        assertEquals(equivToken, tokenIdFromEvmAddress(actual));
+        assertEquals(asAccount(String.format("%d.%d.%d", 0, 0, num)), EntityIdUtils.accountIdFromEvmAddress(actual));
+        assertEquals(asContract(String.format("%d.%d.%d", 0, 0, num)), contractIdFromEvmAddress(actual));
+        assertEquals(asToken(String.format("%d.%d.%d", 0, 0, num)), tokenIdFromEvmAddress(actual));
     }
 
     @ParameterizedTest
@@ -242,7 +242,7 @@ class EntityIdUtilsTest {
     void asSolidityAddressHexWorksProperly() {
         final var id = new Id(1, 2, 3);
 
-        assertEquals("0000000100000000000000020000000000000003", EntityIdUtils.asHexedEvmAddress(id));
+        assertEquals("0000000000000000000000000000000000000003", EntityIdUtils.asHexedEvmAddress(id));
     }
 
     @Test
@@ -255,7 +255,7 @@ class EntityIdUtilsTest {
 
         final var result = EntityIdUtils.asEvmAddress(id);
 
-        final var expectedBytes = new byte[] {0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 3};
+        final var expectedBytes = new byte[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3};
 
         assertArrayEquals(expectedBytes, result);
     }
@@ -270,7 +270,7 @@ class EntityIdUtilsTest {
 
         final var result = EntityIdUtils.asEvmAddress(id);
 
-        final var expectedBytes = new byte[] {0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 3};
+        final var expectedBytes = new byte[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3};
 
         assertArrayEquals(expectedBytes, result);
     }

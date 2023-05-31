@@ -371,7 +371,7 @@ class StateChildrenSigMetadataLookupTest {
         assertEquals(knownAccount.getAccountNum(), linkedRefs.linkedNumbers()[0]);
         assertArrayEquals(
                 evmAddressBytes.toByteArray(),
-                result.metadata().key().getHollowKey().getEvmAddress());
+                result.metadata().key().getWildcardECDSAKey().getEvmAddress());
     }
 
     @Test
@@ -390,7 +390,7 @@ class StateChildrenSigMetadataLookupTest {
         assertFalse(result.metadata().receiverSigRequired());
         assertArrayEquals(
                 evmAddressBytes.toByteArray(),
-                result.metadata().key().getHollowKey().getEvmAddress());
+                result.metadata().key().getWildcardECDSAKey().getEvmAddress());
     }
 
     @Test

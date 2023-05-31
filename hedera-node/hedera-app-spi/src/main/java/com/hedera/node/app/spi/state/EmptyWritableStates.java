@@ -25,20 +25,27 @@ import java.util.Set;
 public final class EmptyWritableStates implements WritableStates {
     @NonNull
     @Override
-    public <K extends Comparable<K>, V> WritableKVState<K, V> get(@NonNull String stateKey) {
+    public <K, V> WritableKVState<K, V> get(@NonNull final String stateKey) {
         Objects.requireNonNull(stateKey);
         throw new IllegalArgumentException("There are no k/v states");
     }
 
     @NonNull
     @Override
-    public <T> WritableSingletonState<T> getSingleton(@NonNull String stateKey) {
+    public <T> WritableSingletonState<T> getSingleton(@NonNull final String stateKey) {
         Objects.requireNonNull(stateKey);
         throw new IllegalArgumentException("There are no singleton states");
     }
 
+    @NonNull
     @Override
-    public boolean contains(@NonNull String stateKey) {
+    public <E> WritableQueueState<E> getQueue(@NonNull final String stateKey) {
+        Objects.requireNonNull(stateKey);
+        throw new IllegalArgumentException("There are no queue states");
+    }
+
+    @Override
+    public boolean contains(@NonNull final String stateKey) {
         return false;
     }
 

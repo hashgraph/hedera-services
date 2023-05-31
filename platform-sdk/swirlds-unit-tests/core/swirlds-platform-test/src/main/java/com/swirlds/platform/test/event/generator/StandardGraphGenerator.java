@@ -140,7 +140,7 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
     private void buildAddressBook(final List<EventSource<?>> eventSources) {
         addressBook = new RandomAddressBookGenerator(getRandom())
                 .setSize(sources.size())
-                .setCustomStakeGenerator(id -> eventSources.get((int) id).getStake())
+                .setCustomWeightGenerator(id -> eventSources.get((int) id).getWeight())
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.FAKE_HASH)
                 .setSequentialIds(true)
                 .build();

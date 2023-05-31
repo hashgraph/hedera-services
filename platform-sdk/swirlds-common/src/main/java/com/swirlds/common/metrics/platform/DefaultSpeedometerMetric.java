@@ -16,6 +16,8 @@
 
 package com.swirlds.common.metrics.platform;
 
+import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
+
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.statistics.StatsBuffered;
 import com.swirlds.common.statistics.StatsSpeedometer;
@@ -84,7 +86,7 @@ public class DefaultSpeedometerMetric extends AbstractDistributionMetric impleme
      */
     @Override
     public String toString() {
-        return new ToStringBuilder(this)
+        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
                 .appendSuper(super.toString())
                 .append("halfLife", halfLife)
                 .append("value", get())

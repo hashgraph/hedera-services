@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.service.mono.ledger.accounts.staking;
 
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_STAKING_REWARD_ACCOUNT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_RATE;
 import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
-import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_STAKING_REWARD_ACCOUNT;
-import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REWARD_RATE;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -97,6 +97,7 @@ class PendingRewardsManagementTest {
         given(properties.getLongProperty(STAKING_REWARD_RATE)).willReturn(rewardRate);
         given(stakingInfos.keySet()).willReturn(Set.of(onlyNodeNum));
         given(stakingInfos.getForModify(onlyNodeNum)).willReturn(info);
+        given(info.getStake()).willReturn(125_000L * HBARS_TO_TINYBARS);
         given(info.stakeRewardStartMinusUnclaimed()).willReturn(stakeRewardStart - unclaimedStakeRewardStart);
         given(dynamicProperties.requireMinStakeToReward()).willReturn(true);
         given(info.updateRewardSumHistory(

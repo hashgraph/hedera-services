@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.mono.state.virtual;
 
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.merkledb.serialize.ValueSerializer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -54,10 +53,15 @@ public class IterableContractMerkleDbValueSerializer implements ValueSerializer<
         return VARIABLE_DATA_SIZE;
     }
 
+    // FUTURE WORK: mark it as @Override after migration to platform 0.39
+    public int getTypicalSerializedSize() {
+        return IterableContractValue.getTypicalSerializedSize();
+    }
+
     // Value serialization
 
     @Override
-    public int serialize(final IterableContractValue value, final SerializableDataOutputStream out) throws IOException {
+    public int serialize(final IterableContractValue value, final ByteBuffer out) throws IOException {
         Objects.requireNonNull(value);
         Objects.requireNonNull(out);
         value.serialize(out);

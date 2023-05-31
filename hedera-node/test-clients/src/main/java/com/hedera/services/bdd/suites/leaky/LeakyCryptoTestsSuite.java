@@ -37,6 +37,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCustomC
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumContractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
@@ -65,6 +66,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.remembering;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCreateSuite.EMPTY_CONSTRUCTOR_CONTRACT;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.CRYPTO_TRANSFER_RECEIVER;
@@ -103,6 +105,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCre
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_ALREADY_ASSIGNED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -152,9 +155,8 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
     private static final String ASSOCIATIONS_LIMIT_PROPERTY = "entities.limitTokenAssociations";
     private static final String DEFAULT_ASSOCIATIONS_LIMIT =
             HapiSpecSetup.getDefaultNodeProps().get(ASSOCIATIONS_LIMIT_PROPERTY);
-    private static final String LAZY_CREATE_PROPERTY_NAME = "lazyCreation.enabled";
-
     private static final String FACTORY_MIRROR_CONTRACT = "FactoryMirror";
+    public static final String LAZY_CREATE_PROPERTY_NAME = "lazyCreation.enabled";
     public static final String CONTRACTS_EVM_VERSION_PROP = "contracts.evm.version";
     public static final String AUTO_ACCOUNT = "autoAccount";
     public static final String LAZY_ACCOUNT_RECIPIENT = "lazyAccountRecipient";
@@ -174,6 +176,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                 cannotExceedAccountAllowanceLimit(),
                 cannotExceedAllowancesTransactionLimit(),
                 createAnAccountWithEVMAddressAliasAndECKey(),
+                createAnAccountWithEVMAddress(),
                 scheduledCryptoApproveAllowanceWaitForExpiryTrue(),
                 txnsUsingHip583FunctionalitiesAreNotAcceptedWhenFlagsAreDisabled(),
                 getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
@@ -183,7 +186,43 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                 lazyCreateViaEthereumCryptoTransfer(),
                 hollowAccountCompletionWithSimultaniousPropertiesUpdate(),
                 contractDeployAfterEthereumTransferLazyCreate(),
-                contractCallAfterEthereumTransferLazyCreate());
+                contractCallAfterEthereumTransferLazyCreate(),
+                autoAssociationPropertiesWorkAsExpected());
+    }
+
+    private HapiSpec autoAssociationPropertiesWorkAsExpected() {
+        final var minAutoRenewPeriodPropertyName = "ledger.autoRenewPeriod.minDuration";
+        final var maxAssociationsPropertyName = "ledger.maxAutoAssociations";
+        final var shortLivedAutoAssocUser = "shortLivedAutoAssocUser";
+        final var longLivedAutoAssocUser = "longLivedAutoAssocUser";
+        final var payerBalance = 100 * ONE_HUNDRED_HBARS;
+        final var updateWithExpiredAccount = "updateWithExpiredAccount";
+        final var autoAssocSlotPrice = 0.0018;
+        final var baseFee = 0.00022;
+        double plusTenSlotsFee = baseFee + 10 * autoAssocSlotPrice;
+        return propertyPreservingHapiSpec("AutoAssociationPropertiesWorkAsExpected")
+                .preserving(maxAssociationsPropertyName, minAutoRenewPeriodPropertyName)
+                .given(
+                        overridingTwo(
+                                maxAssociationsPropertyName, "100",
+                                minAutoRenewPeriodPropertyName, "1"),
+                        cryptoCreate(longLivedAutoAssocUser)
+                                .balance(payerBalance)
+                                .autoRenewSecs(THREE_MONTHS_IN_SECONDS),
+                        cryptoCreate(shortLivedAutoAssocUser)
+                                .balance(payerBalance)
+                                .autoRenewSecs(1))
+                .when()
+                .then(
+                        cryptoUpdate(longLivedAutoAssocUser)
+                                .payingWith(longLivedAutoAssocUser)
+                                .maxAutomaticAssociations(101)
+                                .hasKnownStatus(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
+                        cryptoUpdate(shortLivedAutoAssocUser)
+                                .payingWith(shortLivedAutoAssocUser)
+                                .maxAutomaticAssociations(10)
+                                .via(updateWithExpiredAccount),
+                        validateChargedUsd(updateWithExpiredAccount, plusTenSlotsFee));
     }
 
     private HapiSpec getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee() {
@@ -322,11 +361,10 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
         final Map<String, String> startingProps = new HashMap<>();
         return defaultHapiSpec("txnsUsingHip583FunctionalitiesAreNotAcceptedWhenFlagsAreDisabled")
                 .given(
-                        remembering(
-                                startingProps, LAZY_CREATION_ENABLED, CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED),
+                        remembering(startingProps, LAZY_CREATION_ENABLED, CRYPTO_CREATE_WITH_ALIAS_ENABLED),
                         overridingTwo(
                                 LAZY_CREATION_ENABLED, FALSE_VALUE,
-                                CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED, FALSE_VALUE),
+                                CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE_VALUE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519))
                 .when(withOpContext((spec, opLog) -> {
@@ -498,13 +536,8 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
         final Map<String, String> startingProps = new HashMap<>();
         return defaultHapiSpec("CreateAnAccountWithEVMAddressAliasAndECKey")
                 .given(
-                        remembering(
-                                startingProps, LAZY_CREATION_ENABLED, CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED),
-                        overridingTwo(
-                                LAZY_CREATION_ENABLED,
-                                TRUE_VALUE,
-                                CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED,
-                                TRUE_VALUE),
+                        remembering(startingProps, LAZY_CREATION_ENABLED, CRYPTO_CREATE_WITH_ALIAS_ENABLED),
+                        overridingTwo(LAZY_CREATION_ENABLED, TRUE_VALUE, CRYPTO_CREATE_WITH_ALIAS_ENABLED, TRUE_VALUE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE))
                 .when(withOpContext((spec, opLog) -> {
                     final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
@@ -537,7 +570,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                             .key(SECP_256K1_SOURCE_KEY)
                             .alias(evmAddressBytes)
                             .balance(100 * ONE_HBAR)
-                            .hasPrecheck(INVALID_ALIAS_KEY);
+                            .hasPrecheck(ALIAS_ALREADY_ASSIGNED);
 
                     allRunFor(spec, op, op2, op3, op4, op5, op6);
                     var hapiGetAccountInfo = getAliasedAccountInfo(evmAddressBytes)
@@ -556,6 +589,27 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                     allRunFor(spec, hapiGetAccountInfo, hapiGetAnotherAccountInfo, getTxnRecord);
                 }))
                 .then(overridingAllOfDeferred(() -> startingProps));
+    }
+
+    private HapiSpec createAnAccountWithEVMAddress() {
+        return propertyPreservingHapiSpec("CreateAnAccountWithEVMAddress")
+                .preserving(LAZY_CREATION_ENABLED, CRYPTO_CREATE_WITH_ALIAS_ENABLED)
+                .given(
+                        overridingTwo(LAZY_CREATION_ENABLED, TRUE_VALUE, CRYPTO_CREATE_WITH_ALIAS_ENABLED, TRUE_VALUE),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE))
+                .when(withOpContext((spec, opLog) -> {
+                    final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
+                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                    final var addressBytes = recoverAddressFromPubKey(tmp);
+                    assert addressBytes.length > 0;
+                    final var evmAddressBytes = ByteString.copyFrom(addressBytes);
+                    final var op = cryptoCreate(ACCOUNT)
+                            .alias(evmAddressBytes)
+                            .balance(100 * ONE_HBAR)
+                            .hasPrecheck(INVALID_ALIAS_KEY);
+                    allRunFor(spec, op);
+                }))
+                .then();
     }
 
     private HapiSpec cannotExceedAllowancesTransactionLimit() {
@@ -688,41 +742,18 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
         final var payer = "payer";
         final var secondKey = "secondKey";
         return propertyPreservingHapiSpec("hollowAccountCreationChargesExpectedFees")
-                .preserving(LAZY_CREATION_ENABLED, CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED)
+                .preserving(LAZY_CREATION_ENABLED, CRYPTO_CREATE_WITH_ALIAS_ENABLED)
                 .given(
-                        overridingTwo(
-                                LAZY_CREATION_ENABLED,
-                                "true",
-                                CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED,
-                                "true"),
+                        overridingTwo(LAZY_CREATION_ENABLED, "true", CRYPTO_CREATE_WITH_ALIAS_ENABLED, "true"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(secondKey).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(payer).balance(ONE_HUNDRED_HBARS + REDUCED_TOTAL_FEE),
+                        cryptoCreate(payer).balance(0L),
                         reduceFeeFor(
                                 List.of(CryptoTransfer, CryptoUpdate, CryptoCreate),
                                 REDUCED_NODE_FEE,
                                 REDUCED_NETWORK_FEE,
                                 REDUCED_SERVICE_FEE))
                 .when(withOpContext((spec, opLog) -> {
-                    // crypto create fees check
-                    final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
-                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
-                    final var addressBytes = recoverAddressFromPubKey(tmp);
-                    final var evmAddressBytes = ByteString.copyFrom(addressBytes);
-                    final var op = cryptoCreate(ACCOUNT)
-                            .alias(evmAddressBytes)
-                            .payingWith(payer)
-                            .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE)
-                            .balance(ONE_HUNDRED_HBARS);
-                    final var op2 = cryptoTransfer(tinyBarsFromTo(GENESIS, payer, 2 * REDUCED_TOTAL_FEE));
-                    final var op3 = cryptoCreate(ACCOUNT)
-                            .alias(evmAddressBytes)
-                            .payingWith(payer)
-                            .hasKnownStatus(SUCCESS)
-                            .balance(ONE_HUNDRED_HBARS);
-                    final var op4 = getAccountBalance(payer).hasTinyBars(0).logged();
-                    allRunFor(spec, op, op2, op3, op4);
-
                     // crypto transfer fees check
                     final HapiCryptoTransfer transferToPayerAgain =
                             cryptoTransfer(tinyBarsFromTo(GENESIS, payer, ONE_HUNDRED_HBARS + 2 * REDUCED_TOTAL_FEE));

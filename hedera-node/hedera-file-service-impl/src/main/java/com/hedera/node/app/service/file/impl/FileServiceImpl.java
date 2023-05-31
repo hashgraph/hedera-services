@@ -16,15 +16,15 @@
 
 package com.hedera.node.app.service.file.impl;
 
+import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.FileService;
-import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
-import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKeySerializer;
-import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
+import com.hedera.node.app.service.file.impl.codec.EntityNumCodec;
+import com.hedera.node.app.service.mono.state.codec.CodecFactory;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
-import com.hedera.node.app.spi.state.serdes.MonoMapSerdesAdapter;
-import com.hederahashgraph.api.proto.java.SemanticVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
@@ -32,11 +32,16 @@ import java.util.Set;
 public final class FileServiceImpl implements FileService {
     private static final int MAX_BLOBS = 4096;
     private static final SemanticVersion CURRENT_VERSION =
-            SemanticVersion.newBuilder().setMinor(34).build();
-    public static final String BLOBS_KEY = "BLOBS";
+            SemanticVersion.newBuilder().minor(34).build();
+    public static final String BLOBS_KEY = "FILES";
 
     @Override
-    public void registerSchemas(@NonNull SchemaRegistry registry) {
+    public void registerMonoAdapterSchemas(@NonNull final SchemaRegistry registry) {
+        registerSchemas(registry);
+    }
+
+    @Override
+    public void registerSchemas(@NonNull final SchemaRegistry registry) {
         registry.register(fileServiceSchema());
     }
 
@@ -45,17 +50,17 @@ public final class FileServiceImpl implements FileService {
             @NonNull
             @Override
             public Set<StateDefinition> statesToCreate() {
-                return Set.of(blobsDef());
+                return Set.of(filesDef());
             }
         };
     }
 
-    private static StateDefinition<VirtualBlobKey, VirtualBlobValue> blobsDef() {
-        final var keySerdes = MonoMapSerdesAdapter.serdesForVirtualKey(
-                VirtualBlobKey.CURRENT_VERSION, VirtualBlobKey::new, new VirtualBlobKeySerializer());
-        final var valueSerdes =
-                MonoMapSerdesAdapter.serdesForVirtualValue(VirtualBlobValue.CURRENT_VERSION, VirtualBlobValue::new);
+    @NonNull
+    private static StateDefinition<EntityNum, File> filesDef() {
+        final var keyCodec = new EntityNumCodec();
 
-        return StateDefinition.onDisk(BLOBS_KEY, keySerdes, valueSerdes, MAX_BLOBS);
+        final var valueCodec = CodecFactory.newInMemoryCodec(File.PROTOBUF::parse, File.PROTOBUF::write);
+
+        return StateDefinition.onDisk(BLOBS_KEY, keyCodec, valueCodec, MAX_BLOBS);
     }
 }

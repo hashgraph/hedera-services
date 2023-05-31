@@ -18,18 +18,18 @@ package com.hedera.node.app.service.mono.state.initialization;
 
 import static com.google.protobuf.TextFormat.escapeBytes;
 import static com.hedera.node.app.hapi.utils.sysfiles.serdes.FeesJsonToProtoSerde.loadFeeScheduleFromStream;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_FEE_SCHEDULE_JSON_RESOURCE;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_HAPI_PERMISSIONS_PATH;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_NETWORK_PROPERTIES_PATH;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_RATES_CURRENT_CENT_EQUIV;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_RATES_CURRENT_EXPIRY;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_RATES_CURRENT_HBAR_EQUIV;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_RATES_NEXT_CENT_EQUIV;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_RATES_NEXT_EXPIRY;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_RATES_NEXT_HBAR_EQUIV;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_SYSTEM_ENTITY_EXPIRY;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_THROTTLE_DEF_JSON_RESOURCE;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.parseAccount;
-import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_FEE_SCHEDULE_JSON_RESOURCE;
-import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_HAPI_PERMISSIONS_PATH;
-import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_NETWORK_PROPERTIES_PATH;
-import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_RATES_CURRENT_CENT_EQUIV;
-import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_RATES_CURRENT_EXPIRY;
-import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_RATES_CURRENT_HBAR_EQUIV;
-import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_RATES_NEXT_CENT_EQUIV;
-import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_RATES_NEXT_EXPIRY;
-import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_RATES_NEXT_HBAR_EQUIV;
-import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_SYSTEM_ENTITY_EXPIRY;
-import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_THROTTLE_DEF_JSON_RESOURCE;
 import static com.swirlds.common.system.address.Address.ipString;
 
 import com.google.protobuf.ByteString;
@@ -130,7 +130,7 @@ public final class HfsSystemFilesManager implements SystemFilesManager {
         final Map<Long, Long> stakes = new HashMap<>();
         for (int i = 0, n = book.getSize(); i < n; i++) {
             final var address = book.getAddress(i);
-            stakes.put(address.getId(), address.getStake());
+            stakes.put(address.getId(), address.getWeight());
         }
 
         final var detailsFid = fileNumbers.toFid(fileNumbers.nodeDetails());
@@ -412,7 +412,7 @@ public final class HfsSystemFilesManager implements SystemFilesManager {
                 .setIpAddress(ByteString.copyFromUtf8(ipString(address.getAddressExternalIpv4())))
                 .setRSAPubKey(CommonUtils.hex(address.getSigPublicKey().getEncoded()))
                 .setNodeId(address.getId())
-                .setStake(address.getStake())
+                .setStake(address.getWeight())
                 .setMemo(ByteString.copyFromUtf8(address.getMemo()));
         final var serviceEndpoint = ServiceEndpoint.newBuilder()
                 .setIpAddressV4(ByteString.copyFrom(address.getAddressExternalIpv4()))

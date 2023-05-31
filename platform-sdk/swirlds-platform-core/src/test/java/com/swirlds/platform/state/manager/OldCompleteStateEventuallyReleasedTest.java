@@ -24,19 +24,18 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
-import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateManager;
-import com.swirlds.test.framework.TestQualifierTags;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("SignedStateManager: Old Complete State Eventually Released Test")
@@ -52,8 +51,6 @@ class OldCompleteStateEventuallyReleasedTest extends AbstractSignedStateManagerT
             .setSequentialIds(false)
             .build();
 
-    final long selfId = addressBook.getId(0);
-
     /**
      * Called on each state as it gets too old without collecting enough signatures.
      * <p>
@@ -61,28 +58,24 @@ class OldCompleteStateEventuallyReleasedTest extends AbstractSignedStateManagerT
      */
     private StateLacksSignaturesConsumer stateLacksSignaturesConsumer() {
         // No state is unsigned in this test. If this method is called then the test is expected to fail.
-        return ssw -> {
-            stateLacksSignaturesCount.getAndIncrement();
-            ssw.release();
-        };
+        return ss -> stateLacksSignaturesCount.getAndIncrement();
     }
 
     /**
      * Keep adding new states to the manager but never sign any of them (other than self signatures).
      */
     @Test
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Old Complete State Eventually Released")
     void oldCompleteStateEventuallyReleased() throws InterruptedException {
 
-        final SignedStateManager manager = new SignedStateManagerBuilder(addressBook, stateConfig, selfId)
+        final SignedStateManager manager = new SignedStateManagerBuilder(buildStateConfig())
                 .stateLacksSignaturesConsumer(stateLacksSignaturesConsumer())
                 .build();
 
         final Hash stateHash = randomHash(random);
-        final Map<Long, Signature> signatures = new HashMap<>();
+        final Map<NodeId, Signature> signatures = new HashMap<>();
         for (final Address address : addressBook) {
-            signatures.put(address.getId(), buildFakeSignature(address.getSigPublicKey(), stateHash));
+            signatures.put(address.getNodeId(), buildFakeSignature(address.getSigPublicKey(), stateHash));
         }
 
         // Add a complete signed state. Eventually this will get released.
@@ -95,7 +88,7 @@ class OldCompleteStateEventuallyReleasedTest extends AbstractSignedStateManagerT
 
         signedStates.put(0L, stateFromDisk);
         highestRound.set(0);
-        manager.addCompleteSignedState(stateFromDisk);
+        manager.addState(stateFromDisk);
 
         // Create a series of signed states. Don't add any signatures. Self signatures will be automatically added.
         final int count = roundsToKeepForSigning * 100;
@@ -109,15 +102,15 @@ class OldCompleteStateEventuallyReleasedTest extends AbstractSignedStateManagerT
             signedStates.put((long) round, signedState);
             highestRound.set(round);
 
-            manager.addUnsignedState(signedState);
+            manager.addState(signedState);
 
-            try (final AutoCloseableWrapper<SignedState> lastState = manager.getLatestImmutableState()) {
+            try (final ReservedSignedState lastState = manager.getLatestImmutableState("test")) {
                 assertSame(signedState, lastState.get(), "last signed state has unexpected value");
             }
-            try (final AutoCloseableWrapper<SignedState> lastCompletedState = manager.getLatestSignedState()) {
+            try (final ReservedSignedState lastCompletedState = manager.getLatestSignedState("test")) {
 
                 if (round >= roundsToKeepForSigning) {
-                    assertNull(lastCompletedState.get(), "initial state should have been released");
+                    assertNull(lastCompletedState.getNullable(), "initial state should have been released");
                 } else {
                     assertSame(lastCompletedState.get(), stateFromDisk);
                 }

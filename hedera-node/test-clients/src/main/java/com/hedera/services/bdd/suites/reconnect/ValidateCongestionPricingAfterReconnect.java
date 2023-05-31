@@ -52,16 +52,18 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
 /**
- * A reconnect test in which a congestion pricing multiplier is updated and triggered while the node
- * 0.0.8 is disconnected from the network. Once the node is reconnected validate that the congestion
- * pricing is in affect on reconnected node
+ * A reconnect test in which a congestion pricing multiplier is updated and triggered while the node 0.0.8 is
+ * disconnected from the network. Once the node is reconnected validate that the congestion pricing is in affect on
+ * reconnected node
  */
 public class ValidateCongestionPricingAfterReconnect extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ValidateCongestionPricingAfterReconnect.class);
+    private static final String FEES_PERCENT_CONGESTION_MULTIPLIERS = "fees.percentCongestionMultipliers";
     private static final String defaultCongestionMultipliers =
-            HapiSpecSetup.getDefaultNodeProps().get("fees.percentCongestionMultipliers");
+            HapiSpecSetup.getDefaultNodeProps().get(FEES_PERCENT_CONGESTION_MULTIPLIERS);
+    private static final String FEES_MIN_CONGESTION_PERIOD = "fees.minCongestionPeriod";
     private static final String defaultMinCongestionPeriod =
-            HapiSpecSetup.getDefaultNodeProps().get("fees.minCongestionPeriod");
+            HapiSpecSetup.getDefaultNodeProps().get(FEES_MIN_CONGESTION_PERIOD);
 
     public static void main(String... args) {
         new ValidateAppPropertiesStateAfterReconnect().runSuiteSync();
@@ -105,9 +107,9 @@ public class ValidateCongestionPricingAfterReconnect extends HapiSuite {
                                 .fee(ONE_HUNDRED_HBARS)
                                 .payingWith(EXCHANGE_RATE_CONTROL)
                                 .overridingProps(Map.of(
-                                        "fees.percentCongestionMultipliers",
+                                        FEES_PERCENT_CONGESTION_MULTIPLIERS,
                                         "1,10x",
-                                        "fees.minCongestionPeriod",
+                                        FEES_MIN_CONGESTION_PERIOD,
                                         tmpMinCongestionPeriodInSecs)),
                         fileUpdate(THROTTLE_DEFS)
                                 .fee(ONE_HUNDRED_HBARS)
@@ -165,13 +167,11 @@ public class ValidateCongestionPricingAfterReconnect extends HapiSuite {
                                 .setNode(reconnectingNode),
 
                         /* check if the multiplier took effect in the contract call operation */
-                        withOpContext((spec, opLog) -> {
-                            Assertions.assertEquals(
-                                    10.0,
-                                    (1.0 * tenXPrice.get()) / normalPrice.get(),
-                                    0.1,
-                                    "~10x multiplier should be in affect!");
-                        }),
+                        withOpContext((spec, opLog) -> Assertions.assertEquals(
+                                10.0,
+                                (1.0 * tenXPrice.get()) / normalPrice.get(),
+                                0.1,
+                                "~10x multiplier should be in affect!")),
 
                         /* revert the multiplier before test ends */
                         fileUpdate(THROTTLE_DEFS)
@@ -183,8 +183,8 @@ public class ValidateCongestionPricingAfterReconnect extends HapiSuite {
                                 .fee(ONE_HUNDRED_HBARS)
                                 .payingWith(EXCHANGE_RATE_CONTROL)
                                 .overridingProps(Map.of(
-                                        "fees.percentCongestionMultipliers", defaultCongestionMultipliers,
-                                        "fees.minCongestionPeriod", defaultMinCongestionPeriod)),
+                                        FEES_PERCENT_CONGESTION_MULTIPLIERS, defaultCongestionMultipliers,
+                                        FEES_MIN_CONGESTION_PERIOD, defaultMinCongestionPeriod)),
                         cryptoTransfer(HapiCryptoTransfer.tinyBarsFromTo(GENESIS, FUNDING, 1))
                                 .payingWith(GENESIS));
     }

@@ -16,178 +16,222 @@
 
 package com.hedera.node.app.workflows.prehandle;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
+import static com.hedera.node.app.spi.HapiUtils.isHollow;
+import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
+import static com.hedera.node.app.workflows.prehandle.PreHandleResult.nodeDueDiligenceFailure;
+import static com.hedera.node.app.workflows.prehandle.PreHandleResult.preHandleFailure;
+import static com.hedera.node.app.workflows.prehandle.PreHandleResult.unknownFailure;
+import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.SessionContext;
-import com.hedera.node.app.spi.meta.PreHandleContext;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
-import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.SignaturePair;
+import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.signature.ExpandedSignaturePair;
+import com.hedera.node.app.signature.SignatureExpander;
+import com.hedera.node.app.signature.SignatureVerifier;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.workflows.dispatcher.StoreFactory;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.app.state.DeduplicationCache;
+import com.hedera.node.app.workflows.TransactionChecker;
+import com.hedera.node.app.workflows.TransactionInfo;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.node.app.workflows.onset.WorkflowOnset;
-import com.hederahashgraph.api.proto.java.*;
+import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.VersionedConfiguration;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.system.events.Event;
+import com.swirlds.common.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.function.Function;
-import java.util.function.Supplier;
+import java.util.HashSet;
 import java.util.stream.Stream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /** Implementation of {@link PreHandleWorkflow} */
+@Singleton
 public class PreHandleWorkflowImpl implements PreHandleWorkflow {
-
-    private static final Logger LOG = LoggerFactory.getLogger(PreHandleWorkflowImpl.class);
-
+    private static final Logger logger = LogManager.getLogger(PreHandleWorkflowImpl.class);
     /**
-     * Per-thread shared resources are shared in a {@link SessionContext}. We store these in a
-     * thread local, because we do not have control over the thread pool used by the underlying gRPC
-     * server.
-     */
-    private static final ThreadLocal<SessionContext> SESSION_CONTEXT_THREAD_LOCAL =
-            ThreadLocal.withInitial(() -> new SessionContext(
-                    Query.parser(), Transaction.parser(), SignedTransaction.parser(), TransactionBody.parser()));
-
-    private final WorkflowOnset onset;
-    private final TransactionDispatcher dispatcher;
-    private final Function<Supplier<?>, CompletableFuture<?>> runner;
-
-    /**
-     * Constructor of {@code PreHandleWorkflowImpl}
+     * Used to verify basic syntactic and semantic validity of a transaction.
      *
-     * @param exe the {@link ExecutorService} to use when submitting new tasks
-     * @param dispatcher the {@link TransactionDispatcher} that will call transaction-specific
-     *     {@code preHandle()}-methods
-     * @param onset the {@link WorkflowOnset} that pre-processes the {@link byte[]} of a transaction
+     * <p>The hashgraph platform gossips {@link Event}s between nodes. Each {@link Event} contains zero or
+     * more transactions. We have to parse the bytes for those transactions, and check their validity both
+     * semantically and syntactically. This is done by the {@link TransactionChecker}. It is possible that
+     * a misbehaving node, or a malicious node, will gossip a transaction that is invalid.
+     */
+    private final TransactionChecker transactionChecker;
+    /** Dispatches transactions to the appropriate {@link TransactionHandler} based on the type of transaction. */
+    private final TransactionDispatcher dispatcher;
+    /** "Expands" {@link SignaturePair}s by converting prefixes into full keys. */
+    private final SignatureExpander signatureExpander;
+    /** Verifies signatures */
+    private final SignatureVerifier signatureVerifier;
+    /** Provides the latest versioned configuration */
+    private final ConfigProvider configProvider;
+    /** Used for registering notice of transactionIDs seen by this node */
+    private final DeduplicationCache deduplicationCache;
+
+    /**
+     * Creates a new instance of {@code PreHandleWorkflowImpl}.
+     *
+     * @param dispatcher the {@link TransactionDispatcher} for invoking the {@link TransactionHandler} for each
+     *                   transaction.
+     * @param transactionChecker the {@link TransactionChecker} for parsing and verifying the transaction
+     * @param signatureVerifier the {@link SignatureVerifier} to verify signatures
      * @throws NullPointerException if any of the parameters is {@code null}
      */
+    @Inject
     public PreHandleWorkflowImpl(
-            @NonNull final ExecutorService exe,
             @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final WorkflowOnset onset) {
-        requireNonNull(exe);
-
+            @NonNull final TransactionChecker transactionChecker,
+            @NonNull final SignatureVerifier signatureVerifier,
+            @NonNull final SignatureExpander signatureExpander,
+            @NonNull final ConfigProvider configProvider,
+            @NonNull final DeduplicationCache deduplicationCache) {
         this.dispatcher = requireNonNull(dispatcher);
-        this.onset = requireNonNull(onset);
-        this.runner = supplier -> CompletableFuture.supplyAsync(supplier, exe);
+        this.transactionChecker = requireNonNull(transactionChecker);
+        this.signatureVerifier = requireNonNull(signatureVerifier);
+        this.signatureExpander = requireNonNull(signatureExpander);
+        this.configProvider = requireNonNull(configProvider);
+        this.deduplicationCache = requireNonNull(deduplicationCache);
     }
 
-    // Used only for testing
-    PreHandleWorkflowImpl(
-            @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final WorkflowOnset onset,
-            @NonNull final Function<Supplier<?>, CompletableFuture<?>> runner) {
-        this.dispatcher = requireNonNull(dispatcher);
-        this.onset = requireNonNull(onset);
-        this.runner = requireNonNull(runner);
-    }
-
+    /** {@inheritDoc} */
     @Override
-    public synchronized void start(@NonNull final HederaState state, @NonNull final Event event) {
-        requireNonNull(state);
-        requireNonNull(event);
+    public void preHandle(
+            @NonNull final ReadableStoreFactory readableStoreFactory,
+            @NonNull final AccountID creator,
+            @NonNull final Stream<Transaction> transactions) {
 
-        // Each transaction in the event will go through pre-handle using a background thread
-        // from the executor service. The Future representing that work is stored on the
-        // platform transaction. The HandleTransactionWorkflow will pull this future back
-        // out and use it to block until the pre handle work is done, if needed.
-        final ArrayList<CompletableFuture<?>> futures = new ArrayList<>();
-        final var itr = event.transactionIterator();
-        while (itr.hasNext()) {
-            final var platformTx = itr.next();
-            final var future = runner.apply(() -> preHandle(state, platformTx));
-            platformTx.setMetadata(future);
-            futures.add(future);
-        }
+        requireNonNull(readableStoreFactory);
+        requireNonNull(creator);
+        requireNonNull(transactions);
 
-        // wait until all transactions were processed before returning
-        final CompletableFuture<?>[] array = futures.toArray(new CompletableFuture<?>[0]);
-        CompletableFuture.allOf(array).join();
+        // Used for looking up payer account information.
+        final var accountStore = readableStoreFactory.getStore(ReadableAccountStore.class);
+
+        // In parallel, we will pre-handle each transaction.
+        transactions.parallel().forEach(tx -> {
+            if (tx.isSystem()) return;
+            try {
+                tx.setMetadata(preHandleTransaction(creator, readableStoreFactory, accountStore, tx));
+            } catch (final Throwable unexpectedException) {
+                // If some random exception happened, then we should not charge the node for it. Instead,
+                // we will just record the exception and try again during handle. Then if we fail again
+                // at handle, then we will throw away the transaction (hopefully, deterministically!)
+                logger.error("Unexpected error while pre handling a transaction!", unexpectedException);
+                tx.setMetadata(unknownFailure());
+            }
+        });
     }
 
-    private TransactionMetadata preHandle(
-            final HederaState state, final com.swirlds.common.system.transaction.Transaction platformTx) {
-        TransactionBody txBody = null;
-        AccountID payerID = null;
+    // For each transaction, we will use a background thread to parse the transaction, validate it, lookup the
+    // payer, collect non-payer keys, and warm up the cache. Then, once all the keys have been collected, we will
+    // pass the keys and signatures to the platform for verification.
+    @Override
+    @NonNull
+    public PreHandleResult preHandleTransaction(
+            @NonNull final AccountID creator,
+            @NonNull final ReadableStoreFactory storeFactory,
+            @NonNull final ReadableAccountStore accountStore,
+            @NonNull final Transaction platformTx) {
+
+        // 1. Parse the Transaction and check the syntax
+        final var txBytes = Bytes.wrap(platformTx.getContents());
+        final TransactionInfo txInfo;
         try {
-            final var ctx = SESSION_CONTEXT_THREAD_LOCAL.get();
-            final var txBytes = platformTx.getContents();
-
-            // 1. Parse the Transaction and check the syntax
-            final var onsetResult = onset.parseAndCheck(ctx, txBytes);
-            txBody = onsetResult.txBody();
-            payerID = txBody.getTransactionID().getAccountID();
-
-            // 2. Call PreTransactionHandler to do transaction-specific checks, get list of required
-            // keys, and prefetch required data
-            final var storeFactory = new StoreFactory(state);
-            final var accountStore = storeFactory.getAccountStore();
-            final var handlerContext = new PreHandleContext(accountStore, txBody);
-            dispatcher.dispatchPreHandle(storeFactory, handlerContext);
-
-            // 3. Prepare signature-data
-            // TODO: Prepare signature-data once this functionality was implemented
-
-            // 4. Verify signatures
-            // TODO: Verify signature via the platform once this functionality was implemented
-
-            // 5. Return TransactionMetadata
-            return createTransactionMetadata(storeFactory.getUsedStates(), handlerContext);
-
-        } catch (PreCheckException preCheckException) {
-            return createInvalidTransactionMetadata(txBody, payerID, preCheckException.responseCode());
-        } catch (Exception ex) {
-            // Some unknown and unexpected failure happened. If this was non-deterministic, I could
-            // end up with an ISS. It is critical that I log whatever happened, because we should
-            // have caught all legitimate failures in another catch block.
-            LOG.error("An unexpected exception was thrown during pre-handle", ex);
-            return createInvalidTransactionMetadata(txBody, payerID, ResponseCodeEnum.UNKNOWN);
+            txInfo = transactionChecker.parseAndCheck(txBytes);
+        } catch (PreCheckException preCheck) {
+            // The node SHOULD have verified the transaction before it was submitted to the network.
+            // Since it didn't, it has failed in its due diligence and will be charged accordingly.
+            return nodeDueDiligenceFailure(creator, preCheck.responseCode(), null);
         }
-    }
 
-    @NonNull
-    private static TransactionMetadata createTransactionMetadata(
-            @NonNull final Map<String, ReadableStates> usedStates, @NonNull final PreHandleContext context) {
-        final List<TransactionMetadata.ReadKeys> readKeys = extractAllReadKeys(usedStates);
-        return new TransactionMetadata(context, readKeys);
-    }
+        // Also register this txID as having been seen (we don't actually do deduplication in the pre-handle because
+        // deduplication needs to be done deterministically, but we will keep track of the fact that we have seen this
+        // transaction ID, so we can give proper results in the different receipt queries)
+        final var txId = txInfo.txBody().transactionID();
+        assert txId != null : "TransactionID should never be null, transactionChecker forbids it";
+        deduplicationCache.add(txId);
 
-    @NonNull
-    private static TransactionMetadata createInvalidTransactionMetadata(
-            @Nullable final TransactionBody txBody,
-            @Nullable final AccountID payerID,
-            @NonNull final ResponseCodeEnum responseCode) {
-        return new TransactionMetadata(txBody, payerID, responseCode);
-    }
+        // 2. Get Payer Account
+        final var payer = txId.accountID();
+        assert payer != null : "Payer account cannot be null, transactionChecker forbids it";
+        final var payerAccount = accountStore.getAccountById(payer);
+        if (payerAccount == null) {
+            // If the payer account doesn't exist, then we cannot gather signatures for it, and will need to do
+            // so later during the handle phase. Technically, we could still try to gather and verify the other
+            // signatures, but that might be tricky and complicated with little gain. So just throw.
+            return preHandleFailure(creator, null, PAYER_ACCOUNT_NOT_FOUND, txInfo, null);
+        }
 
-    private static List<TransactionMetadata.ReadKeys> extractAllReadKeys(
-            @NonNull final Map<String, ReadableStates> usedStates) {
-        return usedStates.entrySet().stream()
-                .flatMap(entry -> {
-                    final String statesKey = entry.getKey();
-                    final ReadableStates readableStates = entry.getValue();
-                    return extractReadKeysFromReadableStates(statesKey, readableStates);
-                })
-                .toList();
-    }
+        // Bootstrap the expanded signature pairs by grabbing all prefixes that are "full" keys already
+        final var originals = txInfo.signatureMap().sigPairOrElse(emptyList());
+        final var expanded = new HashSet<ExpandedSignaturePair>();
+        signatureExpander.expand(originals, expanded);
 
-    private static Stream<TransactionMetadata.ReadKeys> extractReadKeysFromReadableStates(
-            @NonNull final String statesKey, @NonNull final ReadableStates readableStates) {
-        return readableStates.stateKeys().stream()
-                .map(stateKey -> {
-                    final Set<? extends Comparable<?>> readKeys =
-                            readableStates.get(stateKey).readKeys();
-                    return new TransactionMetadata.ReadKeys(statesKey, stateKey, readKeys);
-                })
-                .filter(listEntry -> !listEntry.readKeys().isEmpty());
+        // 3. Expand the Payer signature
+        final Key payerKey;
+        if (!isHollow(payerAccount)) {
+            // If the account IS a hollow account, then we will discover all such possible signatures when expanding
+            // all "full prefix" keys above, so we already have it covered. We only need to do this if the payer is
+            // NOT a hollow account (which is the common case).
+            payerKey = payerAccount.keyOrThrow();
+            signatureExpander.expand(payerKey, originals, expanded);
+        } else {
+            payerKey = null;
+        }
+
+        // 4a. Create the PreHandleContext. This will get reused across several calls to the transaction handlers
+        final PreHandleContext context;
+        final VersionedConfiguration configuration = configProvider.getConfiguration();
+        try {
+            // NOTE: Once PreHandleContext is moved from being a concrete implementation in SPI, to being an Interface/
+            // implementation pair, with the implementation in `hedera-app`, then we will change the constructor,
+            // so I can pass the payer account in directly, since I've already looked it up. But I don't really want
+            // that as a public API in the SPI, so for now, we do a double lookup. Boo.
+            context = new PreHandleContextImpl(storeFactory, txInfo.txBody(), configuration);
+        } catch (PreCheckException preCheck) {
+            // This should NEVER happen. The only way an exception is thrown from the PreHandleContext constructor
+            // is if the payer account doesn't exist, but by the time we reach this line of code, we already know
+            // that it does exist.
+            throw new RuntimeException(
+                    "Payer account disappeared between preHandle and preHandleContext creation!", preCheck);
+        }
+
+        // 4b. Call Pre-Transaction Handlers
+        try {
+            // FUTURE: First, perform semantic checks on the transaction (TBD)
+            // Then gather the signatures from the transaction handler
+            dispatcher.dispatchPreHandle(context);
+            // FUTURE: Finally, let the transaction handler do warm up of other state it may want to use later (TBD)
+        } catch (PreCheckException preCheck) {
+            // It is quite possible those semantic checks and other tasks will fail and throw a PreCheckException.
+            // In that case, the payer will end up paying for the transaction. So we still need to do the signature
+            // verifications that we have determined so far.
+            final var results = signatureVerifier.verify(txInfo.signedBytes(), expanded);
+            return preHandleFailure(payer, payerKey, preCheck.responseCode(), txInfo, results);
+        }
+
+        // 5. Expand additional SignaturePairs based on gathered keys (we can safely ignore hollow accounts because we
+        // already grabbed them when expanding the "full prefix" keys above)
+        final var nonPayerKeys = context.requiredNonPayerKeys();
+        for (final var key : nonPayerKeys) {
+            signatureExpander.expand(key, originals, expanded);
+        }
+
+        // 6. Submit the expanded SignaturePairs to the cryptography engine for verification
+        final var results = signatureVerifier.verify(txInfo.signedBytes(), expanded);
+
+        // 7. Create and return TransactionMetadata
+        return new PreHandleResult(
+                payer, payerKey, SO_FAR_SO_GOOD, OK, txInfo, results, null, configuration.getVersion());
     }
 }

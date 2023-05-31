@@ -17,20 +17,25 @@
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT;
+import static com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.isTokenProxyRedirect;
 import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.isViewFunction;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.KeyActivationUtils.areTopLevelSigsAvailable;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.contractIdFromEvmAddress;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
+import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.RedirectTarget;
 import com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
@@ -126,17 +131,19 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
     private static final Logger log = LogManager.getLogger(HTSPrecompiledContract.class);
 
     public static final String HTS_PRECOMPILED_CONTRACT_ADDRESS = "0x167";
+    public static final int HTS_PRECOMPILED_CONTRACT_ADDRESS_INT = Integer.decode(HTS_PRECOMPILED_CONTRACT_ADDRESS);
     public static final ContractID HTS_PRECOMPILE_MIRROR_ID = contractIdFromEvmAddress(
             Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArrayUnsafe());
     public static final EntityId HTS_PRECOMPILE_MIRROR_ENTITY_ID =
             EntityId.fromGrpcContractId(HTS_PRECOMPILE_MIRROR_ID);
 
-    private static final PrecompileContractResult NO_RESULT =
-            new PrecompileContractResult(null, true, MessageFrame.State.COMPLETED_FAILED, Optional.empty());
+    public static final PrecompileContractResult INVALID_DELEGATE = new PrecompileContractResult(
+            null, true, MessageFrame.State.COMPLETED_FAILED, Optional.of(ExceptionalHaltReason.PRECOMPILE_ERROR));
 
     private static final Bytes STATIC_CALL_REVERT_REASON = Bytes.of("HTS precompiles are not static".getBytes());
     private static final String NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON = "Invalid operation for ERC-20 token!";
     private static final String NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON = "Invalid operation for ERC-721 token!";
+    private static final String NOT_SUPPORTED_HRC_TOKEN_OPERATION_REASON = "Invalid operation for HRC token!";
     public static final String URI_QUERY_NON_EXISTING_TOKEN_ERROR = "ERC721Metadata: URI query for nonexistent token";
 
     private final EntityCreator creator;
@@ -221,13 +228,26 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
     @NonNull
     @Override
     public PrecompileContractResult computePrecompile(final Bytes input, @NonNull final MessageFrame frame) {
+        if (unqualifiedDelegateDetected(frame)) {
+            frame.setExceptionalHaltReason(Optional.of(ExceptionalHaltReason.PRECOMPILE_ERROR));
+            return INVALID_DELEGATE;
+        }
         prepareFields(frame);
-        prepareComputation(input, updater::unaliased);
+        try {
+            prepareComputation(input, updater::unaliased);
+        } catch (InvalidTransactionException e) {
+            final var haltReason = NOT_SUPPORTED.equals(e.getResponseCode())
+                    ? HederaExceptionalHaltReason.NOT_SUPPORTED
+                    : HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT;
+            frame.setExceptionalHaltReason(Optional.of(haltReason));
+            return PrecompileContractResult.halt(null, Optional.of(haltReason));
+        }
 
         gasRequirement = defaultGas();
         if (this.precompile == null || this.transactionBody == null) {
-            frame.setExceptionalHaltReason(Optional.of(ERROR_DECODING_PRECOMPILE_INPUT));
-            return NO_RESULT;
+            final var haltReason = Optional.of(ERROR_DECODING_PRECOMPILE_INPUT);
+            frame.setExceptionalHaltReason(haltReason);
+            return PrecompileContractResult.halt(null, haltReason);
         }
 
         final var now = frame.getBlockValues().getTimestamp();
@@ -237,6 +257,47 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
         return result == null
                 ? PrecompiledContract.PrecompileContractResult.halt(null, Optional.of(ExceptionalHaltReason.NONE))
                 : PrecompiledContract.PrecompileContractResult.success(result);
+    }
+
+    public boolean unqualifiedDelegateDetected(MessageFrame frame) {
+        // if the first message frame is not a delegate, it's not a delegate
+        if (!isDelegateCall(frame)) {
+            return false;
+        }
+
+        final var recipient = frame.getRecipientAddress();
+        // but we accept delegates iff the token redirect contract calls us,
+        // so if they are not a token, or on the permitted callers list, then
+        // we are a delegate and we are done.
+        if (isToken(frame, recipient)
+                || dynamicProperties.permittedDelegateCallers().contains(recipient)) {
+            // make sure we have a parent calling context
+            final var stack = frame.getMessageFrameStack();
+            final var frames = stack.iterator();
+            frames.next();
+            if (!frames.hasNext()) {
+                // Impossible to get here w/o a catastrophic EVM bug
+                log.error("Possibly CATASTROPHIC failure - delegatecall frame had no parent");
+                return false;
+            }
+            // If the token redirect contract was called via delegate, then it's a delegate
+            return isDelegateCall(frames.next());
+        }
+        return true;
+    }
+
+    static boolean isToken(final MessageFrame frame, final Address address) {
+        final var account = frame.getWorldUpdater().get(address);
+        if (account != null) {
+            return account.getNonce() == TOKEN_PROXY_ACCOUNT_NONCE;
+        }
+        return false;
+    }
+
+    private static boolean isDelegateCall(final MessageFrame frame) {
+        final var contract = frame.getContractAddress();
+        final var recipient = frame.getRecipientAddress();
+        return !contract.equals(recipient);
     }
 
     void prepareFields(final MessageFrame frame) {
@@ -256,6 +317,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
         final int functionId = input.getInt(0);
         this.gasRequirement = 0L;
 
+        final var topLevelSigsEnabledForTransfer =
+                areTopLevelSigsAvailable(senderAddress, CryptoTransfer, dynamicProperties);
         this.precompile = switch (functionId) {
             case AbiConstants.ABI_ID_CRYPTO_TRANSFER,
                     AbiConstants.ABI_ID_TRANSFER_TOKENS,
@@ -271,7 +334,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                     precompilePricingUtils,
                     functionId,
                     senderAddress,
-                    dynamicProperties.isImplicitCreationEnabled());
+                    dynamicProperties.getHtsUnsupportedCustomFeeReceiverDebits(),
+                    dynamicProperties.isImplicitCreationEnabled(),
+                    topLevelSigsEnabledForTransfer,
+                    true);
             case AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2 -> checkFeatureFlag(
                     dynamicProperties.isAtomicCryptoTransferEnabled(),
                     () -> new TransferPrecompile(
@@ -284,7 +350,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             precompilePricingUtils,
                             functionId,
                             senderAddress,
-                            dynamicProperties.isImplicitCreationEnabled()));
+                            dynamicProperties.getHtsUnsupportedCustomFeeReceiverDebits(),
+                            dynamicProperties.isImplicitCreationEnabled(),
+                            topLevelSigsEnabledForTransfer,
+                            true));
             case AbiConstants.ABI_ID_MINT_TOKEN, AbiConstants.ABI_ID_MINT_TOKEN_V2 -> new MintPrecompile(
                     ledgers,
                     encoder,
@@ -489,7 +558,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
             case AbiConstants.ABI_ID_GET_TOKEN_KEY -> new GetTokenKeyPrecompile(
                     null, syntheticTxnFactory, ledgers, encoder, evmEncoder, precompilePricingUtils);
             case AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN -> {
-                final var target = DescriptorUtils.getRedirectTarget(input);
+                RedirectTarget target;
+                try {
+                    target = DescriptorUtils.getRedirectTarget(input);
+                } catch (final Exception e) {
+                    throw new InvalidTransactionException(ResponseCodeEnum.ERROR_DECODING_BYTESTRING);
+                }
                 final var isExplicitRedirectCall = target.massagedInput() != null;
                 if (isExplicitRedirectCall) {
                     input = target.massagedInput();
@@ -557,7 +631,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                             infrastructureFactory,
                                             precompilePricingUtils,
                                             functionId,
-                                            dynamicProperties.isImplicitCreationEnabled()));
+                                            dynamicProperties.getHtsUnsupportedCustomFeeReceiverDebits(),
+                                            dynamicProperties.isImplicitCreationEnabled(),
+                                            topLevelSigsEnabledForTransfer));
 
                             case AbiConstants.ABI_ID_ERC_TRANSFER_FROM -> checkFeatureFlag(
                                     dynamicProperties.areAllowancesEnabled(),
@@ -574,7 +650,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                             infrastructureFactory,
                                             precompilePricingUtils,
                                             functionId,
-                                            dynamicProperties.isImplicitCreationEnabled()));
+                                            dynamicProperties.getHtsUnsupportedCustomFeeReceiverDebits(),
+                                            dynamicProperties.isImplicitCreationEnabled(),
+                                            topLevelSigsEnabledForTransfer));
                             case AbiConstants.ABI_ID_ERC_ALLOWANCE -> checkFeatureFlag(
                                     dynamicProperties.areAllowancesEnabled(),
                                     () -> new AllowancePrecompile(
@@ -624,6 +702,36 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                             encoder,
                                             evmEncoder,
                                             precompilePricingUtils));
+                            case AbiConstants.ABI_ID_HRC_ASSOCIATE -> checkFeatureFlag(
+                                    dynamicProperties.isHRCAssociateEnabled(),
+                                    () -> checkHRCToken(
+                                            ledgers.tokens().exists(tokenId),
+                                            () -> new AssociatePrecompile(
+                                                    tokenId,
+                                                    senderAddress,
+                                                    ledgers,
+                                                    updater.aliases(),
+                                                    sigsVerifier,
+                                                    sideEffectsTracker,
+                                                    syntheticTxnFactory,
+                                                    infrastructureFactory,
+                                                    precompilePricingUtils,
+                                                    feeCalculator)));
+                            case AbiConstants.ABI_ID_HRC_DISSOCIATE -> checkFeatureFlag(
+                                    dynamicProperties.isHRCAssociateEnabled(),
+                                    () -> checkHRCToken(
+                                            ledgers.tokens().exists(tokenId),
+                                            () -> new DissociatePrecompile(
+                                                    tokenId,
+                                                    senderAddress,
+                                                    ledgers,
+                                                    updater.aliases(),
+                                                    sigsVerifier,
+                                                    sideEffectsTracker,
+                                                    syntheticTxnFactory,
+                                                    infrastructureFactory,
+                                                    precompilePricingUtils,
+                                                    feeCalculator)));
                             default -> null;
                         };
                 yield isExplicitRedirectCall
@@ -697,7 +805,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             infrastructureFactory,
                             precompilePricingUtils,
                             functionId,
-                            dynamicProperties.isImplicitCreationEnabled()));
+                            dynamicProperties.getHtsUnsupportedCustomFeeReceiverDebits(),
+                            dynamicProperties.isImplicitCreationEnabled(),
+                            topLevelSigsEnabledForTransfer));
             case AbiConstants.ABI_ID_TRANSFER_FROM_NFT -> checkFeatureFlag(
                     dynamicProperties.areAllowancesEnabled(),
                     () -> new ERCTransferPrecompile(
@@ -712,7 +822,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             infrastructureFactory,
                             precompilePricingUtils,
                             functionId,
-                            dynamicProperties.isImplicitCreationEnabled()));
+                            dynamicProperties.getHtsUnsupportedCustomFeeReceiverDebits(),
+                            dynamicProperties.isImplicitCreationEnabled(),
+                            topLevelSigsEnabledForTransfer));
             default -> null;};
         if (precompile != null) {
             decodeInput(input, aliasResolver);
@@ -740,6 +852,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
     private Precompile checkFungible(final boolean isFungible, final Supplier<Precompile> precompileSupplier) {
         if (!isFungible) {
             throw new InvalidTransactionException(NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON, INVALID_TOKEN_ID);
+        } else {
+            return precompileSupplier.get();
+        }
+    }
+
+    private Precompile checkHRCToken(final boolean validToken, final Supplier<Precompile> precompileSupplier) {
+        if (!validToken) {
+            throw new InvalidTransactionException(NOT_SUPPORTED_HRC_TOKEN_OPERATION_REASON, INVALID_TOKEN_ID);
         } else {
             return precompileSupplier.get();
         }

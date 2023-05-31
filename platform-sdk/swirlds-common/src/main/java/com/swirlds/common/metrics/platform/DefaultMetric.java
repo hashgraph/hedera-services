@@ -16,6 +16,8 @@
 
 package com.swirlds.common.metrics.platform;
 
+import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
+
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.MetricConfig;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
@@ -132,7 +134,7 @@ public abstract class DefaultMetric implements Metric {
      */
     @Override
     public String toString() {
-        return new ToStringBuilder(this)
+        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
                 .append("category", category)
                 .append("name", name)
                 .append("description", description)

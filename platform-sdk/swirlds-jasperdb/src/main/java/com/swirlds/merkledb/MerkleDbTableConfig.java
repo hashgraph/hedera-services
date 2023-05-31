@@ -39,8 +39,7 @@ import java.util.Objects;
  * @param <V>
  *     Virtual value type
  */
-public final class MerkleDbTableConfig<K extends VirtualKey<? super K>, V extends VirtualValue>
-        implements SelfSerializable {
+public final class MerkleDbTableConfig<K extends VirtualKey, V extends VirtualValue> implements SelfSerializable {
 
     private static final long CLASS_ID = 0xbb41e7eb9fcad23cL;
 
@@ -96,7 +95,7 @@ public final class MerkleDbTableConfig<K extends VirtualKey<? super K>, V extend
      * we swap from ram to disk. This allows a tree where the lower levels of the tree nodes hashes are in ram and the
      * upper larger less changing layers are on disk.
      */
-    private long internalHashesRamToDiskThreshold = settings.getInternalHashesRamToDiskThreshold();
+    private long hashesRamToDiskThreshold = settings.getHashesRamToDiskThreshold();
 
     /**
      * Indicates whether to store indexes on disk or in Java heap/off-heap memory.
@@ -238,20 +237,20 @@ public final class MerkleDbTableConfig<K extends VirtualKey<? super K>, V extend
      * @return
      *      Internal hashes RAM/disk threshold
      */
-    public long getInternalHashesRamToDiskThreshold() {
-        return internalHashesRamToDiskThreshold;
+    public long getHashesRamToDiskThreshold() {
+        return hashesRamToDiskThreshold;
     }
 
     /**
      * Specifies internal hashes RAM/disk threshold.
      *
-     * @param internalHashesRamToDiskThreshold
+     * @param hashesRamToDiskThreshold
      *      Internal hashes RAM/disk threshold
      * @return
      *      This table config object
      */
-    public MerkleDbTableConfig<K, V> internalHashesRamToDiskThreshold(final long internalHashesRamToDiskThreshold) {
-        this.internalHashesRamToDiskThreshold = internalHashesRamToDiskThreshold;
+    public MerkleDbTableConfig<K, V> hashesRamToDiskThreshold(final long hashesRamToDiskThreshold) {
+        this.hashesRamToDiskThreshold = hashesRamToDiskThreshold;
         return this;
     }
 
@@ -301,7 +300,7 @@ public final class MerkleDbTableConfig<K extends VirtualKey<? super K>, V extend
     public void serialize(final SerializableDataOutputStream out) throws IOException {
         out.writeBoolean(preferDiskBasedIndices);
         out.writeLong(maxNumberOfKeys);
-        out.writeLong(internalHashesRamToDiskThreshold);
+        out.writeLong(hashesRamToDiskThreshold);
         out.writeShort(hashVersion);
         out.writeInt(hashType.id());
         out.writeShort(keyVersion);
@@ -317,13 +316,27 @@ public final class MerkleDbTableConfig<K extends VirtualKey<? super K>, V extend
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         preferDiskBasedIndices = in.readBoolean();
         maxNumberOfKeys = in.readLong();
-        internalHashesRamToDiskThreshold = in.readLong();
+        hashesRamToDiskThreshold = in.readLong();
         hashVersion = in.readShort();
         hashType = DigestType.valueOf(in.readInt());
         keyVersion = in.readShort();
         keySerializer = in.readSerializable();
         valueVersion = in.readShort();
         valueSerializer = in.readSerializable();
+    }
+
+    /**
+     * Creates a copy of this table config.
+     *
+     * @return Table config copy
+     */
+    public MerkleDbTableConfig<K, V> copy() {
+        final MerkleDbTableConfig<K, V> copy = new MerkleDbTableConfig<>(
+                hashVersion, hashType, keyVersion, keySerializer, valueVersion, valueSerializer);
+        copy.preferDiskIndices(preferDiskBasedIndices);
+        copy.hashesRamToDiskThreshold(hashesRamToDiskThreshold);
+        copy.maxNumberOfKeys(maxNumberOfKeys);
+        return copy;
     }
 
     /**
@@ -340,7 +353,7 @@ public final class MerkleDbTableConfig<K extends VirtualKey<? super K>, V extend
                 valueSerializer,
                 preferDiskBasedIndices,
                 maxNumberOfKeys,
-                internalHashesRamToDiskThreshold);
+                hashesRamToDiskThreshold);
     }
 
     /**
@@ -353,7 +366,7 @@ public final class MerkleDbTableConfig<K extends VirtualKey<? super K>, V extend
         }
         return (preferDiskBasedIndices == other.preferDiskBasedIndices)
                 && (maxNumberOfKeys == other.maxNumberOfKeys)
-                && (internalHashesRamToDiskThreshold == other.internalHashesRamToDiskThreshold)
+                && (hashesRamToDiskThreshold == other.hashesRamToDiskThreshold)
                 && (hashVersion == other.hashVersion)
                 && Objects.equals(hashType, other.hashType)
                 && (keyVersion == other.keyVersion)

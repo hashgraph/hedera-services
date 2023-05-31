@@ -156,11 +156,10 @@ public class HapiTokenFeeScheduleUpdate extends HapiTxnOp<HapiTokenFeeScheduleUp
         final Optional<Throwable> error = subOp.execFor(spec);
         if (error.isPresent()) {
             if (!loggingOff) {
-                scopedLog.warn(
-                        "Unable to look up current info for "
-                                + HapiPropertySource.asTokenString(
-                                        spec.registry().getTokenID(token)),
-                        error.get());
+                String message = String.format(
+                        "Unable to look up current info for %s",
+                        HapiPropertySource.asTokenString(spec.registry().getTokenID(token)));
+                scopedLog.warn(message, error.get());
             }
             throw error.get();
         }

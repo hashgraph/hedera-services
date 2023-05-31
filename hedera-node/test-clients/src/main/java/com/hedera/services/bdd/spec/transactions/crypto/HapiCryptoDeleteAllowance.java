@@ -91,9 +91,7 @@ public class HapiCryptoDeleteAllowance extends HapiTxnOp<HapiCryptoDeleteAllowan
         calculateAllowances(spec, nftallowances);
         CryptoDeleteAllowanceTransactionBody opBody = spec.txns()
                 .<CryptoDeleteAllowanceTransactionBody, CryptoDeleteAllowanceTransactionBody.Builder>body(
-                        CryptoDeleteAllowanceTransactionBody.class, b -> {
-                            b.addAllNftAllowances(nftallowances);
-                        });
+                        CryptoDeleteAllowanceTransactionBody.class, b -> b.addAllNftAllowances(nftallowances));
         return b -> b.setCryptoDeleteAllowance(opBody);
     }
 

@@ -20,29 +20,26 @@ import static com.swirlds.logging.LogMarker.RECONNECT;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.platform.Connection;
+import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.metrics.ReconnectMetrics;
+import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
 import com.swirlds.platform.network.protocol.Protocol;
-import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
-import com.swirlds.platform.sync.FallenBehindManager;
 import java.io.IOException;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-/**
- * Implements the reconnect protocol over a bidirectional network. This reconnect implementation is used when the
- * chatter protocol is enabled.
- */
+/** Implements the reconnect protocol over a bidirectional network */
 public class ReconnectProtocol implements Protocol {
 
     private static final Logger logger = LogManager.getLogger(ReconnectProtocol.class);
 
     private final NodeId peerId;
     private final ReconnectThrottle teacherThrottle;
-    private final Supplier<SignedState> lastCompleteSignedState;
+    private final Supplier<ReservedSignedState> lastCompleteSignedState;
     private final int reconnectSocketTimeout;
     private final ReconnectMetrics reconnectMetrics;
     private final ReconnectController reconnectController;
@@ -50,7 +47,7 @@ public class ReconnectProtocol implements Protocol {
     private InitiatedBy initiatedBy = InitiatedBy.NO_ONE;
     private final ThreadManager threadManager;
     private final FallenBehindManager fallenBehindManager;
-    private SignedState teacherState;
+    private ReservedSignedState teacherState;
 
     /**
      * @param threadManager           responsible for creating and managing threads
@@ -60,12 +57,13 @@ public class ReconnectProtocol implements Protocol {
      * @param reconnectSocketTimeout  the socket timeout to use when executing a reconnect
      * @param reconnectMetrics        tracks reconnect metrics
      * @param reconnectController     controls reconnecting as a learner
+     * @param fallenBehindManager     maintains this node's behind status
      */
     public ReconnectProtocol(
             final ThreadManager threadManager,
             final NodeId peerId,
             final ReconnectThrottle teacherThrottle,
-            final Supplier<SignedState> lastCompleteSignedState,
+            final Supplier<ReservedSignedState> lastCompleteSignedState,
             final int reconnectSocketTimeout,
             final ReconnectMetrics reconnectMetrics,
             final ReconnectController reconnectController,
@@ -82,13 +80,11 @@ public class ReconnectProtocol implements Protocol {
         this.fallenBehindManager = fallenBehindManager;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public boolean shouldInitiate() {
         // if this neighbor has not told me I have fallen behind, I will not reconnect with him
-        if (!fallenBehindManager.shouldReconnectFrom(peerId.getId())) {
+        if (!fallenBehindManager.shouldReconnectFrom(peerId.id())) {
             return false;
         }
 
@@ -100,18 +96,14 @@ public class ReconnectProtocol implements Protocol {
         return acquiredPermit;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public void initiateFailed() {
         reconnectController.cancelLearnerPermit();
         initiatedBy = InitiatedBy.NO_ONE;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public boolean shouldAccept() {
         // we should not be the teacher if we have fallen behind
@@ -120,64 +112,58 @@ public class ReconnectProtocol implements Protocol {
         }
 
         // Check if we have a state that is legal to send to a learner.
-        // This method reserves the signed state which is later manually
-        // released by the ReconnectTeacher (or by this component if we don't fail first).
         teacherState = lastCompleteSignedState.get();
 
-        if (teacherState == null) {
+        if (teacherState.isNull()) {
             logger.info(
                     RECONNECT.getMarker(),
-                    "Rejecting reconnect request from node {} " + "due to lack of a fully signed state",
-                    peerId.getId());
+                    "Rejecting reconnect request from node {} due to lack of a fully signed state",
+                    peerId.id());
             return false;
         }
 
-        if (!teacherState.getState().isInitialized()) {
-            teacherState.release();
+        if (!teacherState.get().getState().isInitialized()) {
+            teacherState.close();
             teacherState = null;
             logger.warn(
                     RECONNECT.getMarker(),
                     "Rejecting reconnect request from node {} " + "due to lack of an initialized signed state.",
-                    peerId.getId());
+                    peerId.id());
             return false;
-        } else if (!teacherState.isComplete()) {
+        } else if (!teacherState.get().isComplete()) {
             // this is only possible if signed state manager violates its contractual obligations
-            teacherState.release();
+            teacherState.close();
             teacherState = null;
             logger.error(
                     RECONNECT.getMarker(),
-                    "Rejecting reconnect request from node {} "
-                            + "due to lack of a fully signed state. The signed state manager attempted to provide "
-                            + "a state that was not fully signed, which should not be possible.",
-                    peerId.getId());
+                    "Rejecting reconnect request from node {} due to lack of a fully signed state."
+                            + " The signed state manager attempted to provide a state that was not"
+                            + " fully signed, which should not be possible.",
+                    peerId.id());
             return false;
         }
 
         // Check if a reconnect with the learner is permitted by the throttle.
-        final boolean reconnectPermittedByThrottle = teacherThrottle.initiateReconnect(peerId.getId());
+        final boolean reconnectPermittedByThrottle = teacherThrottle.initiateReconnect(peerId.id());
         if (reconnectPermittedByThrottle) {
             initiatedBy = InitiatedBy.PEER;
             return true;
         } else {
-            teacherState.release();
+            teacherState.close();
             teacherState = null;
             return false;
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public void acceptFailed() {
-        teacherState.release();
+        teacherState.close();
         teacherState = null;
         teacherThrottle.reconnectAttemptFinished();
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public boolean acceptOnSimultaneousInitiate() {
         // if both nodes fall behind, it makes no sense to reconnect with each other
@@ -185,9 +171,7 @@ public class ReconnectProtocol implements Protocol {
         return false;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public void runProtocol(final Connection connection)
             throws NetworkProtocolException, IOException, InterruptedException {
@@ -220,19 +204,20 @@ public class ReconnectProtocol implements Protocol {
      */
     private void teacher(final Connection connection) {
 
-        try {
+        try (final ReservedSignedState state = teacherState) {
             new ReconnectTeacher(
                             threadManager,
                             connection,
-                            teacherState,
                             reconnectSocketTimeout,
-                            connection.getSelfId().getId(),
-                            connection.getOtherId().getId(),
-                            teacherState.getRound(),
+                            connection.getSelfId().id(),
+                            connection.getOtherId().id(),
+                            state.get().getRound(),
+                            fallenBehindManager::hasFallenBehind,
                             reconnectMetrics)
-                    .execute();
+                    .execute(state.get());
         } finally {
             teacherThrottle.reconnectAttemptFinished();
+            teacherState = null;
         }
     }
 

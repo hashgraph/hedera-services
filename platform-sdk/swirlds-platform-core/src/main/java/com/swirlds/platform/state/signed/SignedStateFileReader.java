@@ -24,11 +24,13 @@ import static com.swirlds.platform.state.signed.SignedStateFileUtils.getSignedSt
 import static java.nio.file.Files.exists;
 import static java.nio.file.Files.isDirectory;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.logging.LogMarker;
 import com.swirlds.platform.state.State;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -36,6 +38,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Objects;
 import java.util.TreeMap;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
@@ -106,13 +109,19 @@ public final class SignedStateFileReader {
     /**
      * Reads a SignedState from disk
      *
+     * @param platformContext the platform context
      * @param stateFile
      * 		the file to read from
      * @return a signed state with it's associated hash (as computed when the state was serialized)
      * @throws IOException
      * 		if there is any problems with reading from a file
      */
-    public static DeserializedSignedState readStateFile(final Path stateFile) throws IOException {
+    public static DeserializedSignedState readStateFile(
+            @NonNull final PlatformContext platformContext, @NonNull final Path stateFile) throws IOException {
+
+        Objects.requireNonNull(platformContext);
+        Objects.requireNonNull(stateFile);
+
         checkSignedStatePath(stateFile);
 
         final DeserializedSignedState returnState;
@@ -131,11 +140,13 @@ public final class SignedStateFileReader {
                     return Triple.of(state, hash, sigSet);
                 });
 
-        final SignedState newSignedState = new SignedState(data.getLeft());
+        final SignedState newSignedState =
+                new SignedState(platformContext, data.getLeft(), "SignedStateFileReader.readStateFile()");
 
         newSignedState.setSigSet(data.getRight());
 
-        returnState = new DeserializedSignedState(newSignedState, data.getMiddle());
+        returnState = new DeserializedSignedState(
+                newSignedState.reserve("SignedStateFileReader.readStateFile()"), data.getMiddle());
 
         return returnState;
     }

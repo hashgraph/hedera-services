@@ -60,6 +60,14 @@ import java.time.Duration;
  * 		The interval between flushing of copies. This value defines the value of N where every Nth copy is flushed. The
  * 		value must be positive and will typically be a fairly small number, such as 20. The first copy is not flushed,
  * 		but every Nth copy thereafter is.
+ * @param copyFlushThreshold
+ *      Virtual root copy flush threshold. A copy can be flushed to disk only if it's size exceeds this
+ *      threshold. If set to zero, size-based flushes aren't used, and copies are flushed based on {@link
+ *      #flushInterval} instead.
+ * @param familyThrottleThreshold
+ *      Virtual root family throttle threshold. When estimated size of all unreleased copies of the same virtual
+ *      root exceeds this threshold, virtual pipeline starts applying backpressure on creating new root copies.
+ *      If the threshold is set to zero, this backpressure mechanism is not used.
  * @param preferredFlushQueueSize
  * 		The preferred maximum number of virtual maps waiting to be flushed. If more maps than this number are awaiting
  * 		flushing then slow down fast copies of the virtual map so that flushing can catch up.
@@ -72,10 +80,10 @@ import java.time.Duration;
 @ConfigData("virtualMap")
 public record VirtualMapConfig(
         @Min(0) @Max(100) @ConfigProperty(defaultValue = "50.0")
-                double percentHashThreads, // TODO: We need to add min/max support for double values
+                double percentHashThreads, // FUTURE WORK: We need to add min/max support for double values
         @Min(-1) @ConfigProperty(defaultValue = "-1") int numHashThreads,
         @Min(0) @Max(100) @ConfigProperty(defaultValue = "25.0")
-                double percentCleanerThreads, // TODO: We need to add min/max support for double values
+                double percentCleanerThreads, // FUTURE WORK: We need to add min/max support for double values
         @Min(-1) @ConfigProperty(defaultValue = "-1") int numCleanerThreads,
         @Min(2) @Max(Integer.MAX_VALUE) @ConfigProperty(defaultValue = "2147483647") long maximumVirtualMapSize,
         @ConstraintMethod("virtualMapWarningThresholdValidation") @Min(1) @ConfigProperty(defaultValue = "5000000")
@@ -83,6 +91,8 @@ public record VirtualMapConfig(
         @ConstraintMethod("virtualMapWarningIntervalValidation") @Min(1) @ConfigProperty(defaultValue = "100000")
                 long virtualMapWarningInterval,
         @Min(1) @ConfigProperty(defaultValue = "20") int flushInterval,
+        @ConfigProperty(defaultValue = "200000000") long copyFlushThreshold,
+        @ConfigProperty(defaultValue = "2000000000") long familyThrottleThreshold,
         @ConfigProperty(defaultValue = "2") int preferredFlushQueueSize,
         @ConfigProperty(defaultValue = "200ms") Duration flushThrottleStepSize,
         @ConfigProperty(defaultValue = "5s") Duration maximumFlushThrottlePeriod) {

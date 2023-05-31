@@ -107,6 +107,8 @@ class RecordStreamFileWriterTest {
                 streamType,
                 expectedExportDir(),
                 maxSidecarFileSize,
+                false,
+                File::delete,
                 globalDynamicProperties);
         messageDigest = MessageDigest.getInstance(DigestType.SHA_384.algorithmName());
         messageDigest.digest("yumyum".getBytes(StandardCharsets.UTF_8));

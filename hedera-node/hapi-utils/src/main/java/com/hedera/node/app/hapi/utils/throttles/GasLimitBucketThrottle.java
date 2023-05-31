@@ -79,6 +79,15 @@ public class GasLimitBucketThrottle {
     }
 
     /**
+     * Returns the percent of the throttle bucket's capacity that is used, as of the last throttling decision.
+     *
+     * @return the percent of the bucket that is used
+     */
+    double instantaneousPercentUsed() {
+        return 100.0 * bucket.capacityUsed() / bucket.totalCapacity();
+    }
+
+    /**
      * Returns the approximate ratio of free-to-used capacity in the underlying bucket; if there is
      * no capacity used, returns {@code Long.MAX_VALUE}
      *

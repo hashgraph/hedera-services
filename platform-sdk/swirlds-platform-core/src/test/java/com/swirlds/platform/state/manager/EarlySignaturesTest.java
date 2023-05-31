@@ -20,12 +20,13 @@ import static com.swirlds.platform.state.manager.SignedStateManagerTestUtils.bui
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
+import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
-import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateManager;
 import java.util.HashMap;
@@ -44,11 +45,9 @@ public class EarlySignaturesTest extends AbstractSignedStateManagerTest {
 
     private final AddressBook addressBook = new RandomAddressBookGenerator(random)
             .setSize(4)
-            .setStakeDistributionStrategy(RandomAddressBookGenerator.StakeDistributionStrategy.BALANCED)
-            .setSequentialIds(true)
+            .setWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
+            .setSequentialIds(false)
             .build();
-
-    private final long selfId = addressBook.getId(0);
 
     /**
      * Called on each state as it gets too old without collecting enough signatures.
@@ -57,10 +56,7 @@ public class EarlySignaturesTest extends AbstractSignedStateManagerTest {
      */
     private StateLacksSignaturesConsumer stateLacksSignaturesConsumer() {
         // No state is unsigned in this test. If this method is called then the test is expected to fail.
-        return ssw -> {
-            stateLacksSignaturesCount.getAndIncrement();
-            ssw.release();
-        };
+        return ss -> stateLacksSignaturesCount.getAndIncrement();
     }
 
     /**
@@ -69,18 +65,16 @@ public class EarlySignaturesTest extends AbstractSignedStateManagerTest {
      * This consumer is provided by the wiring layer, so it should release the resource when finished.
      */
     private StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer() {
-        return ssw -> {
-            stateHasEnoughSignaturesCount.getAndIncrement();
-            ssw.release();
-        };
+        return ss -> stateHasEnoughSignaturesCount.getAndIncrement();
     }
 
     @Test
     @DisplayName("Early Signatures Test")
     void earlySignaturesTest() throws InterruptedException {
         final int count = 100;
+        final StateConfig stateConfig = buildStateConfig();
         final int futureSignatures = stateConfig.maxAgeOfFutureStateSignatures();
-        SignedStateManager manager = new SignedStateManagerBuilder(addressBook, stateConfig, selfId)
+        SignedStateManager manager = new SignedStateManagerBuilder(stateConfig)
                 .stateLacksSignaturesConsumer(stateLacksSignaturesConsumer())
                 .stateHasEnoughSignaturesConsumer(stateHasEnoughSignaturesConsumer())
                 .build();
@@ -88,12 +82,12 @@ public class EarlySignaturesTest extends AbstractSignedStateManagerTest {
         // send out signatures super early. Many will be rejected.
         for (long round = 0; round < count; round++) {
             // All node 0 and 2 signatures are sent very early.
-            manager.preConsensusSignatureObserver(round, 0L, buildReallyFakeSignature());
-            manager.preConsensusSignatureObserver(round, 2L, buildReallyFakeSignature());
+            manager.preConsensusSignatureObserver(round, addressBook.getNodeId(0), buildReallyFakeSignature());
+            manager.preConsensusSignatureObserver(round, addressBook.getNodeId(2), buildReallyFakeSignature());
 
             // Even numbered rounds have 3 sent very early.
             if (round % 2 == 0) {
-                manager.preConsensusSignatureObserver(round, 3L, buildReallyFakeSignature());
+                manager.preConsensusSignatureObserver(round, addressBook.getNodeId(3), buildReallyFakeSignature());
             }
         }
 
@@ -112,20 +106,20 @@ public class EarlySignaturesTest extends AbstractSignedStateManagerTest {
             signedStates.put((long) round, signedState);
             highestRound.set(round);
 
-            manager.addUnsignedState(signedState);
+            manager.addState(signedState);
 
             // Add some signatures to one of the previous states, but only if that round need signatures.
             final long roundToSign = round - roundAgeToSign;
 
             if (roundToSign > 0) {
                 if (roundToSign >= futureSignatures) {
-                    addSignature(manager, roundToSign, 0);
-                    addSignature(manager, roundToSign, 1);
-                    addSignature(manager, roundToSign, 2);
+                    addSignature(manager, roundToSign, addressBook.getNodeId(0));
+                    addSignature(manager, roundToSign, addressBook.getNodeId(1));
+                    addSignature(manager, roundToSign, addressBook.getNodeId(2));
                     expectedCompletedStateCount++;
                 } else if (roundToSign % 2 != 0) {
-                    addSignature(manager, roundToSign, 0);
-                    addSignature(manager, roundToSign, 1);
+                    addSignature(manager, roundToSign, addressBook.getNodeId(0));
+                    addSignature(manager, roundToSign, addressBook.getNodeId(1));
                     expectedCompletedStateCount++;
                 }
             }
@@ -138,10 +132,10 @@ public class EarlySignaturesTest extends AbstractSignedStateManagerTest {
                 lastExpectedCompletedRound = Math.max(lastExpectedCompletedRound, roundToSign);
             }
 
-            try (final AutoCloseableWrapper<SignedState> lastState = manager.getLatestImmutableState()) {
+            try (final ReservedSignedState lastState = manager.getLatestImmutableState("test")) {
                 assertSame(signedState, lastState.get(), "last signed state has unexpected value");
             }
-            try (final AutoCloseableWrapper<SignedState> lastCompletedState = manager.getLatestSignedState()) {
+            try (final ReservedSignedState lastCompletedState = manager.getLatestSignedState("test")) {
                 assertSame(
                         signedStates.get(lastExpectedCompletedRound),
                         lastCompletedState.get(),

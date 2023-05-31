@@ -25,7 +25,7 @@ import java.nio.ByteBuffer;
 public class BenchmarkRecordSerializer implements DataItemSerializer<BenchmarkRecord> {
 
     @Override
-    public int getSerializedSize() {
+    public int getSerializedSize(final long dataVersion) {
         return Integer.BYTES + BenchmarkRecord.getSerializedSize();
     }
 
@@ -55,7 +55,7 @@ public class BenchmarkRecordSerializer implements DataItemSerializer<BenchmarkRe
     }
 
     @Override
-    public DataItemHeader deserializeHeader(ByteBuffer buffer) {
+    public DataItemHeader deserializeHeader(ByteBuffer buffer, final long dataVersion) {
         int size = buffer.getInt();
         long key = buffer.getLong();
         return new DataItemHeader(size, key);

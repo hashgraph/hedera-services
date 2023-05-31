@@ -17,6 +17,7 @@
 package com.hedera.node.app.spi.fixtures.state;
 
 import com.hedera.node.app.spi.state.ReadableKVState;
+import com.hedera.node.app.spi.state.ReadableQueueState;
 import com.hedera.node.app.spi.state.ReadableSingletonState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -39,7 +40,7 @@ public class MapReadableStates implements ReadableStates {
     @SuppressWarnings("unchecked")
     @NonNull
     @Override
-    public <K extends Comparable<K>, V> ReadableKVState<K, V> get(@NonNull String stateKey) {
+    public <K, V> ReadableKVState<K, V> get(@NonNull final String stateKey) {
         final var state = states.get(Objects.requireNonNull(stateKey));
         if (state == null) {
             throw new IllegalArgumentException("Unknown k/v state key " + stateKey);
@@ -51,7 +52,7 @@ public class MapReadableStates implements ReadableStates {
     @SuppressWarnings("unchecked")
     @NonNull
     @Override
-    public <T> ReadableSingletonState<T> getSingleton(@NonNull String stateKey) {
+    public <T> ReadableSingletonState<T> getSingleton(@NonNull final String stateKey) {
         final var state = states.get(Objects.requireNonNull(stateKey));
         if (state == null) {
             throw new IllegalArgumentException("Unknown singleton state key " + stateKey);
@@ -60,8 +61,20 @@ public class MapReadableStates implements ReadableStates {
         return (ReadableSingletonState<T>) state;
     }
 
+    @SuppressWarnings("unchecked")
+    @NonNull
     @Override
-    public boolean contains(@NonNull String stateKey) {
+    public <E> ReadableQueueState<E> getQueue(@NonNull final String stateKey) {
+        final var state = states.get(Objects.requireNonNull(stateKey));
+        if (state == null) {
+            throw new IllegalArgumentException("Unknown queue state key " + stateKey);
+        }
+
+        return (ReadableQueueState<E>) state;
+    }
+
+    @Override
+    public boolean contains(@NonNull final String stateKey) {
         return states.containsKey(stateKey);
     }
 
@@ -114,6 +127,19 @@ public class MapReadableStates implements ReadableStates {
          */
         @NonNull
         public Builder state(@NonNull final ReadableSingletonState<?> state) {
+            this.states.put(state.getStateKey(), state);
+            return this;
+        }
+
+        /**
+         * Defines a new {@link ReadableQueueState} that should be available in the {@link
+         * MapReadableStates} instance created by this builder.
+         *
+         * @param state The state to include
+         * @return a reference to this builder
+         */
+        @NonNull
+        public Builder state(@NonNull final ReadableQueueState<?> state) {
             this.states.put(state.getStateKey(), state);
             return this;
         }
