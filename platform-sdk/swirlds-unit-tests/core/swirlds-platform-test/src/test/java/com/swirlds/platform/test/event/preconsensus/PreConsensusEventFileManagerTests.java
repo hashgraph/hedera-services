@@ -1182,4 +1182,77 @@ class PreConsensusEventFileManagerTests {
         // Iterating again without fixing discontinuities should still work.
         assertIteratorEquality(files.iterator(), manager.getFileIterator(startGeneration, false));
     }
+
+    @Test
+    @DisplayName("clear() Test")
+    void clearTest() throws IOException {
+        final Random random = getRandomPrintSeed();
+
+        final int fileCount = 100;
+
+        final List<PreconsensusEventFile> files = new ArrayList<>();
+
+        // Intentionally pick values close to wrapping around the 3 digit to 4 digit sequence number.
+        // This will cause the files not to line up alphabetically, and this is a scenario that the
+        // code should be able to handle.
+        final long firstSequenceNumber = random.nextLong(950, 1000);
+
+        final long maxDelta = random.nextLong(10, 20);
+        long minimumGeneration = random.nextLong(0, 1000);
+        long maximumGeneration = random.nextLong(minimumGeneration, minimumGeneration + maxDelta);
+        Instant timestamp = Instant.now();
+
+        for (long sequenceNumber = firstSequenceNumber;
+                sequenceNumber < firstSequenceNumber + fileCount;
+                sequenceNumber++) {
+
+            final PreconsensusEventFile file = PreconsensusEventFile.of(
+                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, fileDirectory, false);
+
+            minimumGeneration = random.nextLong(minimumGeneration, maximumGeneration + 1);
+            maximumGeneration =
+                    Math.max(maximumGeneration, random.nextLong(minimumGeneration, minimumGeneration + maxDelta));
+            timestamp = timestamp.plusMillis(random.nextInt(1, 100_000));
+
+            files.add(file);
+            createDummyFile(file);
+        }
+
+        final PlatformContext platformContext = buildContext();
+
+        final PreconsensusEventFileManager manager =
+                new PreconsensusEventFileManager(platformContext, OSTime.getInstance(), 0);
+
+        // All files should be present
+        assertIteratorEquality(
+                files.iterator(), manager.getFileIterator(PreconsensusEventFileManager.NO_MINIMUM_GENERATION, false));
+
+        manager.clear();
+
+        // There should be no files
+        assertIteratorEquality(
+                Collections.emptyIterator(),
+                manager.getFileIterator(PreconsensusEventFileManager.NO_MINIMUM_GENERATION, false));
+
+        // To verify that the files have disappeared, create a new manager and instantiate it from the same directory.
+        final PreconsensusEventFileManager manager2 =
+                new PreconsensusEventFileManager(platformContext, OSTime.getInstance(), 0);
+        assertIteratorEquality(
+                Collections.emptyIterator(),
+                manager2.getFileIterator(PreconsensusEventFileManager.NO_MINIMUM_GENERATION, false));
+
+        // Make sure the files ended up in the recycle bin.
+        final Set<String> recycledFiles = new HashSet<>();
+        final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
+        final PreconsensusEventStreamConfig streamConfig =
+                platformContext.getConfiguration().getConfigData(PreconsensusEventStreamConfig.class);
+        final Path recycleBinDirectory = stateConfig.savedStateDirectory().resolve(streamConfig.recycleBinDirectory());
+        try (final var stream = Files.list(recycleBinDirectory)) {
+            stream.forEach(path -> recycledFiles.add(path.getFileName().toString()));
+        }
+
+        for (final PreconsensusEventFile file : files) {
+            assertTrue(recycledFiles.contains(file.getFileName()));
+        }
+    }
 }

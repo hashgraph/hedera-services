@@ -367,6 +367,11 @@ public class SwirldsPlatform implements Platform, Startable {
                 wiring.wireAppCommunicationComponent(notificationEngine);
 
         preConsensusEventFileManager = buildPreConsensusEventFileManager();
+        if (emergencyRecoveryManager.isEmergencyStateRequired()) {
+            // TODO talk with Kelly about this
+            preConsensusEventFileManager.clear();
+        }
+
         preConsensusEventWriter = components.add(buildPreConsensusEventWriter(preConsensusEventFileManager));
 
         stateManagementComponent = wiring.wireStateManagementComponent(

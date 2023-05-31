@@ -23,6 +23,7 @@ import static com.swirlds.logging.LogMarker.STARTUP;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.time.Time;
+import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.RandomAccessDeque;
 import com.swirlds.common.utility.Units;
 import com.swirlds.common.utility.ValueReference;
@@ -51,7 +52,7 @@ import org.apache.logging.log4j.Logger;
  * This object is not thread safe.
  * </p>
  */
-public class PreconsensusEventFileManager {
+public class PreconsensusEventFileManager implements Clearable {
 
     private static final Logger logger = LogManager.getLogger(PreconsensusEventFileManager.class);
 
@@ -126,8 +127,10 @@ public class PreconsensusEventFileManager {
         this.databaseDirectory = savedStateDirectory
                 .resolve(preConsensusEventStreamConfig.databaseDirectory())
                 .resolve(Long.toString(selfId));
+        Files.createDirectories(databaseDirectory);
 
         this.recycleBinDirectory = savedStateDirectory.resolve(preConsensusEventStreamConfig.recycleBinDirectory());
+        Files.createDirectories(recycleBinDirectory);
 
         if (!Files.exists(databaseDirectory)) {
             Files.createDirectories(databaseDirectory);
@@ -404,7 +407,9 @@ public class PreconsensusEventFileManager {
             // Delete files in reverse order, so that if we crash prior to finishing at least
             // the stream does not have gaps in sequence numbers.
             for (int index = files.size() - 1; index >= indexOfDiscontinuity; index--) {
-                files.removeLast().deleteFile(databaseDirectory, recycleBinDirectory);
+                final PreconsensusEventFile fileToRemove = files.removeLast();
+                totalFileByteCount -= Files.size(fileToRemove.getPath());
+                fileToRemove.deleteFile(databaseDirectory, recycleBinDirectory);
             }
         } catch (final IOException e) {
             throw new UncheckedIOException("unable to delete file after discontinuity", e);
@@ -593,5 +598,33 @@ public class PreconsensusEventFileManager {
             metrics.getPreconsensusEventFileAverageSizeMB()
                     .set(((double) totalFileByteCount) / files.size() * Units.BYTES_TO_MEBIBYTES);
         }
+    }
+
+    /**
+     * Clear all data from the preconsensus event stream, both in memory and on disk. DANGER: calling this method
+     * at an inappropriate time can cause the node to lose data needed for rollback prevention.
+     */
+    @Override
+    public void clear() {
+        if (files.size() == 0) {
+            logger.info(STARTUP.getMarker(), "clearing preconsensus event stream but stream is already empty");
+            return;
+        }
+
+        logger.info(
+                STARTUP.getMarker(),
+                "clearing preconsensus event stream, first file = {}, last file = {}",
+                files.getFirst(),
+                files.getLast());
+
+        for (final PreconsensusEventFile file : files) {
+            try {
+                file.deleteFile(databaseDirectory, recycleBinDirectory);
+            } catch (final IOException e) {
+                throw new UncheckedIOException("unable to delete file " + file, e);
+            }
+        }
+        files.clear();
+        totalFileByteCount = 0;
     }
 }

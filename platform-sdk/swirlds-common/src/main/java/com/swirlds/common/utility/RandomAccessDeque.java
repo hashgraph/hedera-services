@@ -32,7 +32,7 @@ import java.util.NoSuchElementException;
  * @param <T>
  * 		the type of data stored in the queue
  */
-public class RandomAccessDeque<T> implements Iterable<T> {
+public class RandomAccessDeque<T> implements Iterable<T>, Clearable {
 
     private static final int DEFAULT_CAPACITY = 1024;
 
@@ -267,5 +267,15 @@ public class RandomAccessDeque<T> implements Iterable<T> {
                 return next;
             }
         };
+    }
+
+    /**
+     * Remove all data from the queue.
+     */
+    @Override
+    public void clear() {
+        while (size() > 0) {
+            removeLast();
+        }
     }
 }

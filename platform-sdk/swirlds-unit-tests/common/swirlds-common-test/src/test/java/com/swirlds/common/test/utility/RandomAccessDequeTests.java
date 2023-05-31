@@ -446,4 +446,26 @@ class RandomAccessDequeTests {
             assertEquals(i, iterator.next());
         }
     }
+
+    @Test
+    @DisplayName("clear() Test")
+    void clearTest() {
+        final RandomAccessDeque<Integer> queue = new RandomAccessDeque<>();
+        for (int i = 0; i < 100; i++) {
+            queue.addLast(i);
+        }
+
+        queue.clear();
+        assertEquals(0, queue.size());
+        assertThrows(NoSuchElementException.class, () -> queue.get(0));
+
+        // Now, make sure the queue can be refilled with things and still work
+        final List<Integer> expectedValues = new ArrayList<>();
+        for (int i = 0; i < 100; i++) {
+            queue.addLast(i);
+            expectedValues.add(i);
+        }
+
+        validateContents(getRandomPrintSeed(), expectedValues, queue);
+    }
 }
