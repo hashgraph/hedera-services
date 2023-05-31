@@ -342,11 +342,6 @@ public class ShadowGraph implements Clearable {
         return result;
     }
 
-    // TODO
-    public synchronized void setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
-        expireBelow = minimumGenerationNonAncient;
-    }
-
     /**
      * <p>Update the reservable generation and remove any events from the shadow graph that can and should be
      * expired.</p>
