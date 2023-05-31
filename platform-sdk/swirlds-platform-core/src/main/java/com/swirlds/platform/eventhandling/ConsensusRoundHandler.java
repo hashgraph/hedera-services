@@ -34,10 +34,12 @@ import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.stream.EventStreamManager;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.PlatformStatNames;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
+import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.SettingsProvider;
@@ -163,7 +165,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
     public ConsensusRoundHandler(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
-            final long selfId,
+            @NonNull final NodeId selfId,
             @NonNull final SettingsProvider settings,
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final ConsensusHandlingMetrics consensusHandlingMetrics,
@@ -176,7 +178,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
 
         this.platformContext = Objects.requireNonNull(platformContext);
         this.roundAppliedToStateConsumer = roundAppliedToStateConsumer;
-
+        Objects.requireNonNull(selfId, "selfId must not be null");
         this.settings = settings;
         this.swirldStateManager = swirldStateManager;
         this.consensusHandlingMetrics = consensusHandlingMetrics;
@@ -200,6 +202,8 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
                         .get()
                         .getConfigData(ThreadConfig.class)
                         .logStackTracePauseDuration())
+                .setMetricsConfiguration(
+                        new QueueThreadMetricsConfiguration(platformContext.getMetrics()).enableBusyTimeMetric())
                 .setQueue(queue)
                 .build();
 

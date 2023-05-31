@@ -81,6 +81,7 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_MAX_NUM;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_NONCES_EXTERNALIZATION_ENABLED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_PERMITTED_DELEGATE_CALLERS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_PRECOMPILE_EXCHANGE_RATE_GAS_COST;
@@ -182,6 +183,7 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.QUERIES_BLOB_LOOK_UP_RETRIES;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.RATES_MIDNIGHT_CHECK_INTERVAL;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.RECORDS_USE_CONSOLIDATED_FCQ;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.SCHEDULING_LONG_TERM_ENABLED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.SCHEDULING_MAX_EXPIRATION_FUTURE_SECS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.SCHEDULING_MAX_NUM;
@@ -389,6 +391,7 @@ class BootstrapPropertiesTest {
             entry(DEV_ONLY_DEFAULT_NODE_LISTENS, true),
             entry(CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED, true),
             entry(CONTRACTS_PRECOMPILE_HRC_FACADE_ASSOCIATE_ENABLED, true),
+            entry(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED, false),
             entry(DEV_DEFAULT_LISTENING_NODE_ACCOUNT, "0.0.3"),
             entry(ENTITIES_MAX_LIFETIME, 3153600000L),
             entry(ENTITIES_SYSTEM_DELETABLE, EnumSet.of(EntityType.FILE)),
@@ -462,8 +465,8 @@ class BootstrapPropertiesTest {
             entry(NETTY_PROD_MAX_CONNECTION_AGE, 15L),
             entry(NETTY_PROD_MAX_CONNECTION_AGE_GRACE, 5L),
             entry(NETTY_PROD_MAX_CONNECTION_IDLE, 10L),
-            entry(NETTY_PROD_KEEP_ALIVE_TIME, 10L),
-            entry(NETTY_PROD_KEEP_ALIVE_TIMEOUT, 3L),
+            entry(NETTY_PROD_KEEP_ALIVE_TIME, 60L),
+            entry(NETTY_PROD_KEEP_ALIVE_TIMEOUT, 15L),
             entry(NETTY_START_RETRIES, 90),
             entry(NETTY_START_RETRY_INTERVAL_MS, 1_000L),
             entry(NETTY_TLS_CERT_PATH, "hedera.crt"),
@@ -556,7 +559,8 @@ class BootstrapPropertiesTest {
             entry(ACCOUNTS_BLOCKLIST_RESOURCE, "evm-addresses-blocklist.csv"),
             entry(STAKING_SUM_OF_CONSENSUS_WEIGHTS, 500),
             entry(CACHE_CRYPTO_TRANSFER_WARM_THREADS, 30),
-            entry(CONFIG_VERSION, 10));
+            entry(CONFIG_VERSION, 10),
+            entry(RECORDS_USE_CONSOLIDATED_FCQ, false));
 
     @Test
     void containsProperty() {

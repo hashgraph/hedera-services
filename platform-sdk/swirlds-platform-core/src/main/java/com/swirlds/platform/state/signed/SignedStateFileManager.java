@@ -143,7 +143,7 @@ public class SignedStateFileManager implements Startable {
                 .setCapacity(stateConfig.stateSavingQueueSize())
                 .setMaxBufferSize(1)
                 .setPriority(basicConfig.threadPriorityNonSync())
-                .setNodeId(selfId.id())
+                .setNodeId(selfId)
                 .setComponent(PLATFORM_THREAD_POOL_NAME)
                 .setThreadName("signed-state-file-manager")
                 .setHandler(Runnable::run)
@@ -221,7 +221,7 @@ public class SignedStateFileManager implements Startable {
             final long round = reservedSignedState.get().getRound();
             try (reservedSignedState) {
                 try {
-                    writeSignedStateToDisk(selfId.id(), directory, reservedSignedState.get(), taskDescription);
+                    writeSignedStateToDisk(selfId, directory, reservedSignedState.get(), taskDescription);
                     metrics.getWriteStateToDiskTimeMetric()
                             .update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
 

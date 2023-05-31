@@ -30,8 +30,8 @@ import static org.mockito.Mockito.when;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.node.app.DaggerHederaApp;
-import com.hedera.node.app.HederaApp;
+import com.hedera.node.app.DaggerHederaInjectionComponent;
+import com.hedera.node.app.HederaInjectionComponent;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.service.mono.state.migration.StateChildIndices;
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
@@ -127,9 +127,9 @@ class StateLifecyclesTest extends ResponsibleVMapUser {
         if (withKeyDetails) {
             given(pubKey.getEncoded()).willReturn(Longs.toByteArray(Long.MAX_VALUE));
         }
-        final var nodeId = platform.getSelfId().getIdAsInt();
+        final var node = platform.getSelfId();
         final var address = new Address(
-                nodeId,
+                node,
                 "",
                 "",
                 1L,
@@ -149,8 +149,8 @@ class StateLifecyclesTest extends ResponsibleVMapUser {
         return new AddressBook(List.of(address));
     }
 
-    private static HederaApp createApp(final Platform platform) {
-        return DaggerHederaApp.builder()
+    private static HederaInjectionComponent createApp(final Platform platform) {
+        return DaggerHederaInjectionComponent.builder()
                 .initTrigger(InitTrigger.GENESIS)
                 .initialHash(new Hash())
                 .platform(platform)

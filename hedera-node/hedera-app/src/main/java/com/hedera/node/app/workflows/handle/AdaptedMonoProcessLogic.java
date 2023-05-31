@@ -34,6 +34,7 @@ import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.signature.impl.SignatureVerificationFutureImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.swirlds.common.crypto.TransactionSignature;
+import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -55,12 +56,15 @@ public class AdaptedMonoProcessLogic implements ProcessLogic {
     }
 
     @Override
-    public void incorporateConsensusTxn(final ConsensusTransaction platformTxn, final long submittingMember) {
+    public void incorporateConsensusTxn(
+            @NonNull final ConsensusTransaction platformTxn,
+            final long submittingMember,
+            @NonNull final SoftwareVersion softwareVersion) {
         if (platformTxn.getMetadata() instanceof PreHandleResult metadata) {
             final var accessor = adaptForMono(platformTxn, metadata);
             platformTxn.setMetadata(accessor);
         }
-        monoProcessLogic.incorporateConsensusTxn(platformTxn, submittingMember);
+        monoProcessLogic.incorporateConsensusTxn(platformTxn, submittingMember, softwareVersion);
     }
 
     @NonNull

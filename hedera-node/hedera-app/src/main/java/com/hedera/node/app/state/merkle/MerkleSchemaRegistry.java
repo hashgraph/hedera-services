@@ -27,13 +27,13 @@ import com.hedera.node.app.state.merkle.disk.OnDiskValue;
 import com.hedera.node.app.state.merkle.disk.OnDiskValueSerializer;
 import com.hedera.node.app.state.merkle.memory.InMemoryValue;
 import com.hedera.node.app.state.merkle.memory.InMemoryWritableKVState;
+import com.hedera.node.app.state.merkle.queue.QueueNode;
 import com.hedera.node.app.state.merkle.singleton.SingletonNode;
 import com.hedera.node.app.state.merkle.singleton.StringLeaf;
 import com.hedera.node.app.state.merkle.singleton.ValueLeaf;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.crypto.DigestType;
 import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
 import com.swirlds.jasperdb.files.DataFileCommon;
@@ -173,6 +173,9 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                 if (def.singleton()) {
                     final var singleton = new SingletonNode<>(md, null);
                     hederaState.putServiceStateIfAbsent(md, singleton);
+                } else if (def.queue()) {
+                    final var queue = new QueueNode<>(md);
+                    hederaState.putServiceStateIfAbsent(md, queue);
                 } else if (!def.onDisk()) {
                     final var map = new MerkleMap<>();
                     map.setLabel(StateUtils.computeLabel(serviceName, stateKey));
@@ -183,8 +186,6 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                             .maxNumOfKeys(def.maxKeysHint())
                             .keySerializer(ks)
                             .virtualLeafRecordSerializer(new VirtualLeafRecordSerializer(
-                                    (short) 1,
-                                    DigestType.SHA_384,
                                     (short) 1,
                                     DataFileCommon.VARIABLE_DATA_SIZE,
                                     ks,
@@ -344,6 +345,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                     new ClassConstructorPair(OnDiskValueSerializer.class, () -> new OnDiskValueSerializer<>(md)));
             constructableRegistry.registerConstructable(
                     new ClassConstructorPair(SingletonNode.class, () -> new SingletonNode<>(md, null)));
+            constructableRegistry.registerConstructable(
+                    new ClassConstructorPair(QueueNode.class, () -> new QueueNode<>(md)));
             constructableRegistry.registerConstructable(new ClassConstructorPair(StringLeaf.class, StringLeaf::new));
             constructableRegistry.registerConstructable(
                     new ClassConstructorPair(ValueLeaf.class, () -> new ValueLeaf<>(md)));

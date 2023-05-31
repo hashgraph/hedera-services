@@ -24,6 +24,7 @@ This code is maintained by the "Platform Base" team.
 This code is maintained by the "Platform Hashgraph" team.
 
 - [System Startup Sequence](./core/system-startup-sequence.svg)
+- [Platform Status](./core/platform-status.md)
 - Components
     - Gossip
         - Sync gossip algorithm

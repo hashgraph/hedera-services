@@ -64,9 +64,11 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.state.migration.MapMigrationToDisk;
+import com.hedera.node.app.service.mono.state.migration.RecordConsolidation;
 import com.hedera.node.app.service.mono.state.migration.StakingInfoMapBuilder;
 import com.hedera.node.app.service.mono.state.migration.StateChildIndices;
 import com.hedera.node.app.service.mono.state.migration.StateVersions;
+import com.hedera.node.app.service.mono.state.migration.StorageStrategy;
 import com.hedera.node.app.service.mono.state.migration.ToDiskMigrations;
 import com.hedera.node.app.service.mono.state.org.StateMetadata;
 import com.hedera.node.app.service.mono.state.virtual.VirtualMapFactory;
@@ -217,6 +219,9 @@ class ServicesStateTest extends ResponsibleVMapUser {
 
     @Mock
     private ServicesState.MapToDiskMigration mapToDiskMigration;
+
+    @Mock
+    private ServicesState.RecordConsolidator recordConsolidator;
 
     @Mock
     private Supplier<VirtualMapFactory> vmf;
@@ -492,7 +497,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
     }
 
     @Test
-    void genesisWhenVirtualNftsEnabled() {
+    void genesisInitRespectsSelectedOnDiskMapsAndConsolidatedRecords() {
         // setup:
         subject = tracked(new ServicesState(bootstrapProperties));
         given(bootstrapProperties.getBooleanProperty(PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE))
@@ -501,6 +506,8 @@ class ServicesStateTest extends ResponsibleVMapUser {
                 .willReturn(false);
         given(bootstrapProperties.getBooleanProperty(PropertyNames.ACCOUNTS_STORE_ON_DISK))
                 .willReturn(false);
+        given(bootstrapProperties.getBooleanProperty(PropertyNames.RECORDS_USE_CONSOLIDATED_FCQ))
+                .willReturn(true);
         ServicesState.setAppBuilder(() -> appBuilder);
 
         given(addressBook.getSize()).willReturn(3);
@@ -532,6 +539,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
 
         // then:
         assertTrue(subject.uniqueTokens().isVirtual());
+        assertEquals(StorageStrategy.IN_SINGLE_FCQ, subject.payerRecords().storageStrategy());
 
         // cleanup:
         ServicesState.setAppBuilder(DaggerServicesApp::builder);
@@ -738,6 +746,48 @@ class ServicesStateTest extends ResponsibleVMapUser {
     }
 
     @Test
+    void nonGenesisInitConsolidatesRecords() {
+        subject = tracked(new ServicesState(bootstrapProperties));
+        given(bootstrapProperties.getBooleanProperty(PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE))
+                .willReturn(false);
+        given(bootstrapProperties.getBooleanProperty(PropertyNames.ACCOUNTS_STORE_ON_DISK))
+                .willReturn(false);
+        given(bootstrapProperties.getBooleanProperty(PropertyNames.TOKENS_STORE_RELS_ON_DISK))
+                .willReturn(false);
+        given(bootstrapProperties.getBooleanProperty(PropertyNames.RECORDS_USE_CONSOLIDATED_FCQ))
+                .willReturn(true);
+        ServicesState.setRecordConsolidator(recordConsolidator);
+
+        final var vmap = mock(VirtualMap.class);
+        final var mmap = mock(MerkleMap.class);
+        mockAllMaps(mmap, vmap);
+        subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+        subject.setChild(StateChildIndices.STORAGE, vmap);
+        subject.setChild(StateChildIndices.CONTRACT_STORAGE, vmap);
+        subject.setChild(StateChildIndices.PAYER_RECORDS_OR_CONSOLIDATED_FCQ, mmap);
+
+        final var when = Instant.ofEpochSecond(1_234_567L, 890);
+        given(dualState.getFreezeTime()).willReturn(when);
+        given(dualState.getLastFrozenTime()).willReturn(when);
+
+        given(app.hashLogger()).willReturn(hashLogger);
+        given(app.initializationFlow()).willReturn(initFlow);
+        given(app.dualStateAccessor()).willReturn(dualStateAccessor);
+        given(platform.getSelfId()).willReturn(selfId);
+        given(platform.getAddressBook()).willReturn(addressBook);
+        given(app.sysFilesManager()).willReturn(systemFilesManager);
+        given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
+        // and:
+        APPS.save(selfId.getIdAsInt(), app);
+
+        // when:
+        subject.init(platform, dualState, RESTART, currentVersion);
+        verify(recordConsolidator).consolidateRecordsToSingleFcq(subject);
+
+        ServicesState.setRecordConsolidator(RecordConsolidation::toSingleFcq);
+    }
+
+    @Test
     void nonGenesisInitHandlesNftMigration() {
         subject = tracked(new ServicesState(bootstrapProperties));
         given(bootstrapProperties.getBooleanProperty(PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE))
@@ -746,12 +796,15 @@ class ServicesStateTest extends ResponsibleVMapUser {
                 .willReturn(true);
         given(bootstrapProperties.getBooleanProperty(PropertyNames.TOKENS_STORE_RELS_ON_DISK))
                 .willReturn(false);
+        given(bootstrapProperties.getBooleanProperty(PropertyNames.RECORDS_USE_CONSOLIDATED_FCQ))
+                .willReturn(false);
         ServicesState.setMapToDiskMigration(mapToDiskMigration);
         ServicesState.setVmFactory(vmf);
         given(vmf.get()).willReturn(virtualMapFactory);
 
         final var vmap = mock(VirtualMap.class);
-        mockAllMaps(mock(MerkleMap.class), vmap);
+        final var mmap = mock(MerkleMap.class);
+        mockAllMaps(mmap, vmap);
         subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
         subject.setChild(StateChildIndices.STORAGE, vmap);
         subject.setChild(StateChildIndices.CONTRACT_STORAGE, vmap);
@@ -772,15 +825,17 @@ class ServicesStateTest extends ResponsibleVMapUser {
 
         // when:
         subject.init(platform, dualState, RESTART, currentVersion);
-        assertTrue(subject.uniqueTokens().isVirtual());
         verify(mapToDiskMigration)
                 .migrateToDiskAsApropos(
                         INSERTIONS_PER_COPY,
+                        false,
                         subject,
                         new ToDiskMigrations(true, false),
                         virtualMapFactory,
                         ServicesState.accountMigrator,
                         ServicesState.tokenRelMigrator);
+        subject.setChild(StateChildIndices.PAYER_RECORDS_OR_CONSOLIDATED_FCQ, mmap);
+        assertEquals(StorageStrategy.IN_PAYER_SCOPED_FCQ, subject.payerRecords().storageStrategy());
 
         ServicesState.setMapToDiskMigration(MapMigrationToDisk::migrateToDiskAsApropos);
         ServicesState.setVmFactory(VirtualMapFactory::new);
@@ -795,6 +850,8 @@ class ServicesStateTest extends ResponsibleVMapUser {
                 .willReturn(false);
         given(bootstrapProperties.getBooleanProperty(PropertyNames.TOKENS_STORE_RELS_ON_DISK))
                 .willReturn(true);
+        given(bootstrapProperties.getBooleanProperty(PropertyNames.RECORDS_USE_CONSOLIDATED_FCQ))
+                .willReturn(false);
         ServicesState.setMapToDiskMigration(mapToDiskMigration);
         ServicesState.setVmFactory(vmf);
         given(vmf.get()).willReturn(virtualMapFactory);
@@ -824,6 +881,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         verify(mapToDiskMigration)
                 .migrateToDiskAsApropos(
                         INSERTIONS_PER_COPY,
+                        false,
                         subject,
                         new ToDiskMigrations(false, true),
                         virtualMapFactory,
@@ -958,16 +1016,35 @@ class ServicesStateTest extends ResponsibleVMapUser {
 
     @Test
     void updatesAddressBookWithZeroWeightOnGenesisStart() {
+        final var node0 = new NodeId(0);
+        final var node1 = new NodeId(1);
+        given(platform.getSelfId()).willReturn(node0);
+
+        final var pretendAddressBook = createPretendBookFrom(platform, true);
+
         final MerkleMap<EntityNum, MerkleStakingInfo> stakingMap = subject.getChild(StateChildIndices.STAKING_INFO);
         assertEquals(1, stakingMap.size());
         assertEquals(0, stakingMap.get(EntityNum.fromLong(0L)).getWeight());
 
-        subject.updateWeight(addressBook, platform.getContext());
-        verify(addressBook).updateWeight(0, 0);
+        assertEquals(10L, pretendAddressBook.getAddress(node0).getWeight());
+        assertEquals(10L, pretendAddressBook.getAddress(node1).getWeight());
+
+        subject.updateWeight(pretendAddressBook, platform.getContext());
+
+        // if staking info map has node with 0 weight and a new node is added,
+        // both gets weight of 0
+        assertEquals(0L, pretendAddressBook.getAddress(node0).getWeight());
+        assertEquals(0L, pretendAddressBook.getAddress(node1).getWeight());
     }
 
     @Test
-    void updatesAddressBookWithNonZeroWeightsOnGenesisStart() {
+    void updatesAddressBookWithZeroWeightForNewNodes() {
+        final var node0 = new NodeId(0);
+        final var node1 = new NodeId(1);
+
+        given(platform.getSelfId()).willReturn(node0);
+
+        final var pretendAddressBook = createPretendBookFrom(platform, true);
         final MerkleMap<EntityNum, MerkleStakingInfo> stakingMap = subject.getChild(StateChildIndices.STAKING_INFO);
         assertEquals(1, stakingMap.size());
         assertEquals(0, stakingMap.get(EntityNum.fromLong(0L)).getWeight());
@@ -979,8 +1056,43 @@ class ServicesStateTest extends ResponsibleVMapUser {
         assertEquals(1000L, stakingMap.get(EntityNum.fromLong(0L)).getStake());
         subject.setChild(StateChildIndices.STAKING_INFO, stakingMap);
 
-        subject.updateWeight(addressBook, platform.getContext());
-        verify(addressBook).updateWeight(0, 500);
+        assertEquals(10L, pretendAddressBook.getAddress(node0).getWeight());
+        assertEquals(10L, pretendAddressBook.getAddress(node1).getWeight());
+
+        subject.updateWeight(pretendAddressBook, platform.getContext());
+
+        // only one node in state and new node added in config.txt gets weight of 0
+        assertEquals(500, pretendAddressBook.getAddress(node0).getWeight());
+        assertEquals(0L, pretendAddressBook.getAddress(node1).getWeight());
+    }
+
+    @Test
+    void updatesAddressBookWithNonZeroWeightsOnGenesisStartIfStakesExist() {
+        final var node0 = new NodeId(0);
+        final var node1 = new NodeId(1);
+        given(platform.getSelfId()).willReturn(node0);
+        final var pretendAddressBook = createPretendBookFrom(platform, true);
+
+        final MerkleMap<EntityNum, MerkleStakingInfo> stakingMap = subject.getChild(StateChildIndices.STAKING_INFO);
+        assertEquals(1, stakingMap.size());
+        assertEquals(0, stakingMap.get(EntityNum.fromLong(0L)).getWeight());
+
+        stakingMap.put(EntityNum.fromLong(1L), new MerkleStakingInfo());
+        stakingMap.forEach((k, v) -> {
+            v.setStake(1000L);
+            v.setWeight(500);
+        });
+        assertEquals(1000L, stakingMap.get(EntityNum.fromLong(0L)).getStake());
+        subject.setChild(StateChildIndices.STAKING_INFO, stakingMap);
+
+        assertEquals(10L, pretendAddressBook.getAddress(node0).getWeight());
+        assertEquals(10L, pretendAddressBook.getAddress(node1).getWeight());
+
+        subject.updateWeight(pretendAddressBook, platform.getContext());
+
+        // both nodes in staking info gets weight as in state
+        assertEquals(500, pretendAddressBook.getAddress(node0).getWeight());
+        assertEquals(500L, pretendAddressBook.getAddress(node1).getWeight());
     }
 
     private static ServicesApp createApp(final Platform platform) {

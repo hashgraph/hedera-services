@@ -18,6 +18,7 @@ package com.hedera.node.app.service.mono.records;
 
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.fromGrpcScheduleId;
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -282,6 +283,40 @@ class RecordCacheTest {
     }
 
     @Test
+    void managesStaleRecordsAsExpected() throws InvalidProtocolBufferException {
+        final var consensusTime = Instant.now();
+        final var txnId =
+                TransactionID.newBuilder().setAccountID(asAccount("0.0.1001")).build();
+        final var signedTxn = Transaction.newBuilder()
+                .setBodyBytes(TransactionBody.newBuilder()
+                        .setTransactionID(txnId)
+                        .setMemo("Catastrophe!")
+                        .build()
+                        .toByteString())
+                .build();
+        final var effectivePayer = IdUtils.asAccount("0.0.3");
+        given(histories.computeIfAbsent(argThat(txnId::equals), any())).willReturn(recentHistory);
+        final var accessor = PlatformTxnAccessor.from(signedTxn.toByteArray());
+
+        final var expirableTxnRecordBuilder = ExpirableTxnRecord.newBuilder()
+                .setTxnId(TxnId.fromGrpc(txnId))
+                .setReceipt(TxnReceipt.newBuilder().setStatus(BUSY.name()).build())
+                .setMemo(accessor.getTxn().getMemo())
+                .setTxnHash(accessor.getHash())
+                .setConsensusTime(RichInstant.fromJava(consensusTime));
+        final var expectedRecord = expirableTxnRecordBuilder.build();
+        expectedRecord.setExpiry(consensusTime.getEpochSecond() + 180);
+        expectedRecord.setSubmittingMember(submittingMember);
+
+        given(creator.createInvalidFailureRecord(any(), any())).willReturn(expirableTxnRecordBuilder);
+        given(creator.saveExpiringRecord(any(), any(), anyLong(), anyLong())).willReturn(expectedRecord);
+
+        subject.setStaleTransaction(effectivePayer, accessor, consensusTime, submittingMember);
+
+        verify(recentHistory).observe(argThat(expectedRecord::equals), argThat(BUSY::equals));
+    }
+
+    @Test
     void managesTriggeredFailInvalidRecordAsExpected() throws InvalidProtocolBufferException {
         final var consensusTime = Instant.now();
         final var txnId =
@@ -314,6 +349,40 @@ class RecordCacheTest {
 
         // then:
         verify(recentHistory).observe(expirableTxnRecord, FAIL_INVALID);
+    }
+
+    @Test
+    void managesTriggeredStaleRecordAsExpected() throws InvalidProtocolBufferException {
+        final var consensusTime = Instant.now();
+        final var txnId =
+                TransactionID.newBuilder().setAccountID(asAccount("0.0.1001")).build();
+        final var signedTxn = Transaction.newBuilder()
+                .setBodyBytes(TransactionBody.newBuilder()
+                        .setTransactionID(txnId)
+                        .setMemo("Catastrophe!")
+                        .build()
+                        .toByteString())
+                .build();
+        final var effectivePayer = IdUtils.asAccount("0.0.3");
+        final var effectiveScheduleID = IdUtils.asSchedule("0.0.123");
+        given(histories.computeIfAbsent(argThat(txnId::equals), any())).willReturn(recentHistory);
+        final var accessor = SignedTxnAccessor.from(signedTxn.toByteArray());
+        final var expirableTxnRecordBuilder = ExpirableTxnRecord.newBuilder()
+                .setTxnId(TxnId.fromGrpc(txnId))
+                .setReceipt(TxnReceipt.newBuilder().setStatus(BUSY.name()).build())
+                .setMemo(accessor.getTxn().getMemo())
+                .setTxnHash(accessor.getHash())
+                .setConsensusTime(RichInstant.fromJava(consensusTime))
+                .setScheduleRef(fromGrpcScheduleId(effectiveScheduleID));
+        final var expirableTxnRecord = expirableTxnRecordBuilder.build();
+        given(creator.createInvalidFailureRecord(any(), any())).willReturn(expirableTxnRecordBuilder);
+        given(creator.saveExpiringRecord(any(), any(), anyLong(), anyLong())).willReturn(expirableTxnRecord);
+
+        // when:
+        subject.setStaleTransaction(effectivePayer, accessor, consensusTime, submittingMember);
+
+        // then:
+        verify(recentHistory).observe(expirableTxnRecord, BUSY);
     }
 
     @Test
