@@ -29,6 +29,7 @@ import com.swirlds.platform.event.creation.AncientParentsRule;
 import com.swirlds.platform.event.creation.BelowIntCreationRule;
 import com.swirlds.platform.event.creation.ChatteringRule;
 import com.swirlds.platform.event.creation.OtherParentTracker;
+import com.swirlds.platform.gossip.chatter.protocol.peer.CommunicationState;
 import com.swirlds.platform.test.event.EventBuilder;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;

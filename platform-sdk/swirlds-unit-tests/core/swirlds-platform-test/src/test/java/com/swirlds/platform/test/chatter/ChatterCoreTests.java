@@ -34,6 +34,8 @@ import com.swirlds.platform.test.event.EventBuilder;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
+
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 

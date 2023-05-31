@@ -18,6 +18,7 @@ package com.swirlds.platform.benchmark.consensus;
 
 import com.swirlds.common.config.ConfigUtils;
 import com.swirlds.common.config.ConsensusConfig;
+import com.swirlds.common.test.WeightGenerators;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.ConsensusImpl;
@@ -71,7 +72,7 @@ public class ConsensusBenchmark {
     @Setup
     public void setup() {
         final List<EventSource<?>> eventSources =
-                EventSourceFactory.newStandardEventSources(StakeGenerators.balancedNodeStakes(numNodes));
+                EventSourceFactory.newStandardEventSources(WeightGenerators.balancedNodeWeights(numNodes));
         final StandardGraphGenerator generator = new StandardGraphGenerator(seed, eventSources);
         final StandardEventEmitter emitter = new StandardEventEmitter(generator);
         events = emitter.emitEvents(numEvents);

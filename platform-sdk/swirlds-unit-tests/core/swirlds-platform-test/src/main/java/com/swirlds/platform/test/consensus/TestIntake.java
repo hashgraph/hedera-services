@@ -40,8 +40,6 @@ import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.state.signed.LoadableFromSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.sync.ShadowGraph;
-import com.swirlds.platform.sync.ShadowGraphEventObserver;
 import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
 import com.swirlds.platform.test.event.IndexedEvent;
 import java.util.Arrays;

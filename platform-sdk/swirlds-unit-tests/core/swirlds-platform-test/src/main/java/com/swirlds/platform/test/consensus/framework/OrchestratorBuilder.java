@@ -16,11 +16,9 @@
 
 package com.swirlds.platform.test.consensus.framework;
 
-import static com.swirlds.common.test.StakeGenerators.BALANCED;
-
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.common.test.ResettableRandom;
-import com.swirlds.common.test.StakeGenerator;
+import com.swirlds.common.test.WeightGenerator;
 import com.swirlds.platform.test.event.emitter.EventEmitter;
 import com.swirlds.platform.test.event.emitter.EventEmitterGenerator;
 import com.swirlds.platform.test.event.emitter.ShuffledEventEmitter;
@@ -32,10 +30,12 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static com.swirlds.common.test.WeightGenerators.BALANCED;
+
 /** A builder for {@link ConsensusTestOrchestrator} instances */
 public class OrchestratorBuilder {
     private int numberOfNodes = 4;
-    private StakeGenerator stakeGenerator = BALANCED;
+    private WeightGenerator stakeGenerator = BALANCED;
     private long seed = 0;
     private int totalEventNum = 10_000;
     private Function<List<Long>, List<EventSource<?>>> eventSourceBuilder = EventSourceFactory::newStandardEventSources;
@@ -65,7 +65,7 @@ public class OrchestratorBuilder {
 
     public OrchestratorBuilder setTestInput(final TestInput testInput) {
         numberOfNodes = testInput.numberOfNodes();
-        stakeGenerator = testInput.stakeGenerator();
+        stakeGenerator = testInput.weightGenerator();
         seed = testInput.seed();
         totalEventNum = testInput.eventsToGenerate();
         return this;
@@ -88,13 +88,13 @@ public class OrchestratorBuilder {
 
     public ConsensusTestOrchestrator build() {
         final ResettableRandom random = RandomUtils.initRandom(seed, false);
-        final long stakeSeed = random.nextLong();
+        final long weightSeed = random.nextLong();
         final long graphSeed = random.nextLong();
         final long shuffler1Seed = random.nextLong();
         final long shuffler2Seed = random.nextLong();
 
-        final List<Long> stakes = stakeGenerator.getStakes(stakeSeed, numberOfNodes);
-        final List<EventSource<?>> eventSources = eventSourceBuilder.apply(stakes);
+        final List<Long> weights = stakeGenerator.getWeights(weightSeed, numberOfNodes);
+        final List<EventSource<?>> eventSources = eventSourceBuilder.apply(weights);
         for (final EventSource<?> eventSource : eventSources) {
             eventSourceConfigurator.accept(eventSource);
         }
@@ -114,6 +114,6 @@ public class OrchestratorBuilder {
         nodes.add(ConsensusTestNode.genesisContext(node1Emitter));
         nodes.add(ConsensusTestNode.genesisContext(node2Emitter));
 
-        return new ConsensusTestOrchestrator(nodes, stakes, totalEventNum);
+        return new ConsensusTestOrchestrator(nodes, weights, totalEventNum);
     }
 }

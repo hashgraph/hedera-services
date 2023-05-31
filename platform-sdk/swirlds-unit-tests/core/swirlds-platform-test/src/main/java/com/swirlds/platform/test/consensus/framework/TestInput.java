@@ -16,6 +16,6 @@
 
 package com.swirlds.platform.test.consensus.framework;
 
-import com.swirlds.common.test.StakeGenerator;
+import com.swirlds.common.test.WeightGenerator;
 
-public record TestInput(int numberOfNodes, StakeGenerator stakeGenerator, long seed, int eventsToGenerate) {}
+public record TestInput(int numberOfNodes, WeightGenerator weightGenerator, long seed, int eventsToGenerate) {}

@@ -50,13 +50,13 @@ public class ConsensusTestRunner {
         // TODO print description
         for (final long seed : params.seeds()) {
             System.out.println("Running seed: " + seed);
-            test.accept(new TestInput(params.numNodes(), params.stakeGenerator(), seed, eventsToGenerate));
+            test.accept(new TestInput(params.numNodes(), params.weightGenerator(), seed, eventsToGenerate));
         }
 
         for (int i = 0; i < iterations; i++) {
             final long seed = new Random().nextLong();
             System.out.println("Running seed: " + seed);
-            test.accept(new TestInput(params.numNodes(), params.stakeGenerator(), seed, eventsToGenerate));
+            test.accept(new TestInput(params.numNodes(), params.weightGenerator(), seed, eventsToGenerate));
         }
     }
 }

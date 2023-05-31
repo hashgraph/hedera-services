@@ -31,7 +31,6 @@ import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.sync.Generations;
 import com.swirlds.platform.test.event.EventBuilder;
 import com.swirlds.platform.test.event.generator.GraphGenerator;
 import com.swirlds.platform.test.event.generator.StandardGraphGenerator;

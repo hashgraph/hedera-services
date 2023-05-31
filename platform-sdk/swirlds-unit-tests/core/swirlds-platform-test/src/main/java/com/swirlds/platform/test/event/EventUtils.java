@@ -22,7 +22,6 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.test.merkle.util.MerkleSerializeUtils;
 import com.swirlds.common.test.state.DummySwirldState;
-import com.swirlds.platform.eventhandling.SignedStateEventsAndGenerations;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedState;
@@ -40,46 +39,6 @@ import java.util.Set;
 import org.apache.commons.lang3.tuple.Pair;
 
 public abstract class EventUtils {
-
-    /**
-     * Create a signed state based on the consensus events supplied
-     *
-     * @param events
-     * 		a list of consensus events
-     * @param eventsAndGenerations
-     * 		holds consensus events and round generation information
-     * @param addressBook
-     * 		the address book used
-     */
-    @SuppressWarnings("unchecked")
-    public static SignedState createSignedState(
-            final List<IndexedEvent> events,
-            final SignedStateEventsAndGenerations eventsAndGenerations,
-            final AddressBook addressBook) {
-        // add events to be filtered
-        eventsAndGenerations.addEvents((List<EventImpl>) (List<?>) events);
-        // expire those we dont need
-        eventsAndGenerations.expire();
-
-        // create a signed state with the original events
-        final State originalState = new State();
-
-        final PlatformState platformState = new PlatformState();
-        platformState.setAddressBook(addressBook);
-        platformState.setPlatformData(new PlatformData());
-
-        final PlatformData platformData = new PlatformData();
-        platformData
-                .setRound(eventsAndGenerations.getLastRoundReceived())
-                .setEvents(eventsAndGenerations.getEventsForSignedState())
-                .setMinGenInfo(eventsAndGenerations.getMinGenForSignedState());
-
-        originalState.setSwirldState(new DummySwirldState());
-        originalState.setPlatformState(platformState);
-        platformState.setPlatformData(platformData);
-
-        return new SignedState(TestPlatformContextBuilder.create().build(), originalState, "test", false);
-    }
 
     /**
      * Creates a copy of the supplies SignedState to simulate a restart or reconnect
