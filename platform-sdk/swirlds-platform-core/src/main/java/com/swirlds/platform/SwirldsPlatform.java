@@ -22,7 +22,6 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.PLATFORM_STATUS;
 import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.logging.LogMarker.STARTUP;
-import static com.swirlds.platform.PreconsensusEventReplay.replayPreconsensusEvents;
 import static com.swirlds.platform.state.GenesisStateBuilder.buildGenesisState;
 import static com.swirlds.platform.state.address.AddressBookMetrics.registerAddressBookMetrics;
 import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
@@ -462,9 +461,9 @@ public class SwirldsPlatform implements Platform, Startable {
             final State stateToLoad;
             if (signedStateFromDisk != null) {
                 logger.debug(STARTUP.getMarker(), () -> new SavedStateLoadedPayload(
-                                signedStateFromDisk.getRound(),
-                                signedStateFromDisk.getConsensusTimestamp(),
-                                startUpEventFrozenManager.getStartUpEventFrozenEndTime())
+                        signedStateFromDisk.getRound(),
+                        signedStateFromDisk.getConsensusTimestamp(),
+                        startUpEventFrozenManager.getStartUpEventFrozenEndTime())
                         .toString());
 
                 stateToLoad = loadedState.initialState;
@@ -700,7 +699,8 @@ public class SwirldsPlatform implements Platform, Startable {
      * @param signedStateFromDisk the initial signed state loaded from disk
      * @param initialState        the initial {@link State} object. This is a fast copy of the state loaded from disk
      */
-    private record LoadedState(@NonNull ReservedSignedState signedStateFromDisk, @Nullable State initialState) {}
+    private record LoadedState(@NonNull ReservedSignedState signedStateFromDisk, @Nullable State initialState) {
+    }
 
     /**
      * Update the address book with the current address book read from config.txt. Eventually we will not do this, and
@@ -1023,14 +1023,30 @@ public class SwirldsPlatform implements Platform, Startable {
 
         metrics.start();
 
+        replayPreconsensusEvents();
+
+        gossip.start();
+
+        // in case of a single node network, the platform status update will not be triggered by connections, so it
+        // needs to be triggered now
+        checkPlatformStatus();
+    }
+
+    /**
+     * If configured to do so, replay preconsensus events.
+     */
+    private void replayPreconsensusEvents() {
         final boolean enableReplay = platformContext
                 .getConfiguration()
                 .getConfigData(PreConsensusEventStreamConfig.class)
                 .enableReplay();
         if (!enableReplay) {
-            currentPlatformStatus.set(PlatformStatus.READY);
+            final PlatformStatus previous = currentPlatformStatus.getAndSet(PlatformStatus.READY);
+            logger.info(PLATFORM_STATUS.getMarker(), () -> new PlatformStatusPayload(
+                    "Platform status changed.", previous.name(), PlatformStatus.READY.name())
+                    .toString());
         } else {
-            replayPreconsensusEvents(
+            PreconsensusEventReplay.replayPreconsensusEvents(
                     platformContext,
                     OSTime.getInstance(),
                     preConsensusEventFileManager,
@@ -1045,12 +1061,6 @@ public class SwirldsPlatform implements Platform, Startable {
                     diskStateRound,
                     diskStateTimestamp);
         }
-
-        gossip.start();
-
-        // in case of a single node network, the platform status update will not be triggered by connections, so it
-        // needs to be triggered now
-        checkPlatformStatus();
     }
 
     /**
@@ -1076,10 +1086,8 @@ public class SwirldsPlatform implements Platform, Startable {
             final PlatformStatus oldStatus = currentPlatformStatus.getAndSet(newStatus);
             if (oldStatus != newStatus) {
                 logger.info(PLATFORM_STATUS.getMarker(), () -> new PlatformStatusPayload(
-                                "Platform status changed.", oldStatus == null ? "" : oldStatus.name(), newStatus.name())
+                        "Platform status changed.", oldStatus == null ? "" : oldStatus.name(), newStatus.name())
                         .toString());
-
-                logger.info(PLATFORM_STATUS.getMarker(), "Platform status changed to: {}", newStatus.toString());
 
                 notificationEngine.dispatch(
                         PlatformStatusChangeListener.class, new PlatformStatusChangeNotification(newStatus));
