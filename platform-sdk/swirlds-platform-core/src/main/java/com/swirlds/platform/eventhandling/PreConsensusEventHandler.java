@@ -134,7 +134,6 @@ public class PreConsensusEventHandler implements PreConsensusEventObserver, Clea
 
     @Override
     public void clear() {
-        // TODO these logs are no longer accurate
         logger.info(RECONNECT.getMarker(), "pre-consensus handler: preparing for reconnect");
         queueThread.clear();
         logger.info(RECONNECT.getMarker(), "pre-consensus handler: ready for reconnect");
