@@ -22,6 +22,7 @@ import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import java.util.EnumSet;
 import java.util.function.LongBinaryOperator;
+import java.util.function.LongSupplier;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
@@ -102,6 +103,8 @@ public interface LongAccumulator extends Metric {
     final class Config extends MetricConfig<LongAccumulator, LongAccumulator.Config> {
 
         private final LongBinaryOperator accumulator;
+        private final LongSupplier initializer;
+
         private final long initialValue;
 
         /**
@@ -121,6 +124,7 @@ public interface LongAccumulator extends Metric {
         public Config(final String category, final String name) {
             super(category, name, "%d");
             this.accumulator = Long::max;
+            this.initializer = null;
             this.initialValue = 0L;
         }
 
@@ -131,10 +135,12 @@ public interface LongAccumulator extends Metric {
                 final String unit,
                 final String format,
                 final LongBinaryOperator accumulator,
+                final LongSupplier initializer,
                 final long initialValue) {
 
             super(category, name, description, unit, format);
             this.accumulator = throwArgNull(accumulator, "accumulator");
+            this.initializer = initializer;
             this.initialValue = initialValue;
         }
 
@@ -144,7 +150,8 @@ public interface LongAccumulator extends Metric {
         @Override
         public LongAccumulator.Config withDescription(final String description) {
             return new LongAccumulator.Config(
-                    getCategory(), getName(), description, getUnit(), getFormat(), getAccumulator(), getInitialValue());
+                    getCategory(), getName(), description, getUnit(), getFormat(), getAccumulator(), getInitializer(),
+                    getInitialValue());
         }
 
         /**
@@ -153,7 +160,8 @@ public interface LongAccumulator extends Metric {
         @Override
         public LongAccumulator.Config withUnit(final String unit) {
             return new LongAccumulator.Config(
-                    getCategory(), getName(), getDescription(), unit, getFormat(), getAccumulator(), getInitialValue());
+                    getCategory(), getName(), getDescription(), unit, getFormat(), getAccumulator(), getInitializer(),
+                    getInitialValue());
         }
 
         /**
@@ -167,7 +175,8 @@ public interface LongAccumulator extends Metric {
          */
         public LongAccumulator.Config withFormat(final String format) {
             return new LongAccumulator.Config(
-                    getCategory(), getName(), getDescription(), getUnit(), format, getAccumulator(), getInitialValue());
+                    getCategory(), getName(), getDescription(), getUnit(), format, getAccumulator(), getInitializer(),
+                    getInitialValue());
         }
 
         /**
@@ -177,6 +186,15 @@ public interface LongAccumulator extends Metric {
          */
         public LongBinaryOperator getAccumulator() {
             return accumulator;
+        }
+
+        /**
+         * Getter of the {@code initializer}
+         *
+         * @return the initializer
+         */
+        public LongSupplier getInitializer() {
+            return initializer;
         }
 
         /**
@@ -191,7 +209,29 @@ public interface LongAccumulator extends Metric {
          */
         public LongAccumulator.Config withAccumulator(final LongBinaryOperator accumulator) {
             return new LongAccumulator.Config(
-                    getCategory(), getName(), getDescription(), getUnit(), getFormat(), accumulator, getInitialValue());
+                    getCategory(), getName(), getDescription(), getUnit(), getFormat(), accumulator, getInitializer(),
+                    getInitialValue());
+        }
+
+        /**
+         * Fluent-style setter of the initial value.
+         * <p>
+         * If both {@code initializer} and {@code initialValue} are set, the {@code initialValue} is ignored
+         *
+         * @param initializer
+         * 		the initializer
+         * @return a new configuration-object with updated {@code initializer}
+         */
+        public LongAccumulator.Config withInitializer(final LongSupplier initializer) {
+            return new LongAccumulator.Config(
+                    getCategory(),
+                    getName(),
+                    getDescription(),
+                    getUnit(),
+                    getFormat(),
+                    getAccumulator(),
+                    throwArgNull(initializer, "initializer"),
+                    getInitialValue());
         }
 
         /**
@@ -212,7 +252,8 @@ public interface LongAccumulator extends Metric {
          */
         public LongAccumulator.Config withInitialValue(final long initialValue) {
             return new LongAccumulator.Config(
-                    getCategory(), getName(), getDescription(), getUnit(), getFormat(), getAccumulator(), initialValue);
+                    getCategory(), getName(), getDescription(), getUnit(), getFormat(), getAccumulator(),
+                    getInitializer(), initialValue);
         }
 
         /**
