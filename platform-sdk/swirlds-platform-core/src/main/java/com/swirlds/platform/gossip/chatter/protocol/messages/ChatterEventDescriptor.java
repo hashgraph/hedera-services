@@ -37,6 +37,11 @@ public class ChatterEventDescriptor implements EventDescriptor {
 
     private static final class ClassVersion {
         public static final int ORIGINAL = 1;
+        /**
+         * The creator field is serialized as a self serializable node id.
+         * @since 0.40.0
+         */
+        public static final int SELF_SERIALIZABLE_NODE_ID = 2;
     }
 
     private Hash hash;
@@ -76,9 +81,7 @@ public class ChatterEventDescriptor implements EventDescriptor {
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
         out.writeSerializable(hash, false);
-        // FUTURE WORK: The creator should be a selfSerializable NodeId at some point.
-        // Changing the event format may require a HIP.  The old format is preserved for now.
-        out.writeLong(creator.id());
+        out.writeSerializable(creator, false);
         out.writeLong(generation);
     }
 
@@ -88,13 +91,10 @@ public class ChatterEventDescriptor implements EventDescriptor {
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         hash = in.readSerializable(false, Hash::new);
-        // FUTURE WORK: The creator should be a selfSerializable NodeId at some point.
-        // Changing the event format may require a HIP.  The old format is preserved for now.
-        final long serializedCreator = in.readLong();
-        if (serializedCreator < NodeId.LOWEST_NODE_NUMBER) {
-            throw new IOException("Invalid negative creator id: %d".formatted(serializedCreator));
+        if (version < ClassVersion.SELF_SERIALIZABLE_NODE_ID) {
+            creator = new NodeId(in.readLong());
         } else {
-            creator = new NodeId(serializedCreator);
+            creator = in.readSerializable(false, NodeId::new);
         }
         generation = in.readLong();
 
@@ -106,6 +106,14 @@ public class ChatterEventDescriptor implements EventDescriptor {
      */
     @Override
     public int getVersion() {
+        return ClassVersion.SELF_SERIALIZABLE_NODE_ID;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int getMinimumSupportedVersion() {
         return ClassVersion.ORIGINAL;
     }
 
