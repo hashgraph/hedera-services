@@ -88,6 +88,9 @@ import java.time.Duration;
  *                                                        wide crash (perhaps due to a bug) can cause transactions that
  *                                                        previously reached consensus to be "forgotten" and effectively
  *                                                        rolled back.
+ * @param replayQueueSize                                 the size of the queue used for holding preconsensus events
+ *                                                        that are waiting to be replayed
+ * @param replayHashPoolSize                              the number of threads used for hashing events during replay
  */
 @ConfigData("event.preconsensus")
 public record PreConsensusEventStreamConfig(
@@ -104,4 +107,6 @@ public record PreConsensusEventStreamConfig(
         // FUTURE WORK: once tested make this default true
         @ConfigProperty(defaultValue = "false") boolean enableStorage,
         // FUTURE WORK: once tested make this default true
-        @ConfigProperty(defaultValue = "false") boolean enableReplay) {}
+        @ConfigProperty(defaultValue = "false") boolean enableReplay,
+        @ConfigProperty(defaultValue = "1024") int replayQueueSize,
+        @ConfigProperty(defaultValue = "8") int replayHashPoolSize) {}

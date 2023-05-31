@@ -27,6 +27,7 @@ import static com.swirlds.platform.state.address.AddressBookMetrics.registerAddr
 import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 
 import com.swirlds.base.state.Startable;
+import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
@@ -98,6 +99,7 @@ import com.swirlds.platform.event.preconsensus.PreConsensusEventFileManager;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventStreamConfig;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamSequencer;
+import com.swirlds.platform.event.preconsensus.PreconsensusReplayWorkflow;
 import com.swirlds.platform.event.preconsensus.SyncPreConsensusEventWriter;
 import com.swirlds.platform.event.validation.AncientValidator;
 import com.swirlds.platform.event.validation.EventDeduplication;
@@ -395,14 +397,6 @@ public class SwirldsPlatform implements Platform, Startable {
 
         final Settings settings = Settings.getInstance();
 
-        // if this setting is 0 or less, there is no startup freeze
-        if (settings.getFreezeSecondsAfterStartup() > 0) {
-            final Instant startUpEventFrozenEndTime =
-                    Instant.now().plusSeconds(settings.getFreezeSecondsAfterStartup());
-            startUpEventFrozenManager.setStartUpEventFrozenEndTime(startUpEventFrozenEndTime);
-            logger.info(STARTUP.getMarker(), "startUpEventFrozenEndTime: {}", () -> startUpEventFrozenEndTime);
-        }
-
         final Address address = getSelfAddress();
         final String eventStreamManagerName;
         if (address.getMemo() != null && !address.getMemo().isEmpty()) {
@@ -461,9 +455,9 @@ public class SwirldsPlatform implements Platform, Startable {
             final State stateToLoad;
             if (signedStateFromDisk != null) {
                 logger.debug(STARTUP.getMarker(), () -> new SavedStateLoadedPayload(
-                        signedStateFromDisk.getRound(),
-                        signedStateFromDisk.getConsensusTimestamp(),
-                        startUpEventFrozenManager.getStartUpEventFrozenEndTime())
+                                signedStateFromDisk.getRound(),
+                                signedStateFromDisk.getConsensusTimestamp(),
+                                startUpEventFrozenManager.getStartUpEventFrozenEndTime())
                         .toString());
 
                 stateToLoad = loadedState.initialState;
@@ -699,8 +693,7 @@ public class SwirldsPlatform implements Platform, Startable {
      * @param signedStateFromDisk the initial signed state loaded from disk
      * @param initialState        the initial {@link State} object. This is a fast copy of the state loaded from disk
      */
-    private record LoadedState(@NonNull ReservedSignedState signedStateFromDisk, @Nullable State initialState) {
-    }
+    private record LoadedState(@NonNull ReservedSignedState signedStateFromDisk, @Nullable State initialState) {}
 
     /**
      * Update the address book with the current address book read from config.txt. Eventually we will not do this, and
@@ -1024,7 +1017,7 @@ public class SwirldsPlatform implements Platform, Startable {
         metrics.start();
 
         replayPreconsensusEvents();
-
+        configureStartupEventFreeze();
         gossip.start();
 
         // in case of a single node network, the platform status update will not be triggered by connections, so it
@@ -1043,11 +1036,12 @@ public class SwirldsPlatform implements Platform, Startable {
         if (!enableReplay) {
             final PlatformStatus previous = currentPlatformStatus.getAndSet(PlatformStatus.READY);
             logger.info(PLATFORM_STATUS.getMarker(), () -> new PlatformStatusPayload(
-                    "Platform status changed.", previous.name(), PlatformStatus.READY.name())
+                            "Platform status changed.", previous.name(), PlatformStatus.READY.name())
                     .toString());
         } else {
-            PreconsensusEventReplay.replayPreconsensusEvents(
+            PreconsensusReplayWorkflow.replayPreconsensusEvents(
                     platformContext,
+                    threadManager,
                     OSTime.getInstance(),
                     preConsensusEventFileManager,
                     preConsensusEventWriter,
@@ -1060,6 +1054,21 @@ public class SwirldsPlatform implements Platform, Startable {
                     initialMinimumGenerationNonAncient,
                     diskStateRound,
                     diskStateTimestamp);
+        }
+    }
+
+    /**
+     * We don't want to create events right after starting up. Configure that pause in event creation.
+     */
+    private void configureStartupEventFreeze() {
+        final int freezeSecondsAfterStartup = platformContext
+                .getConfiguration()
+                .getConfigData(BasicConfig.class)
+                .freezeSecondsAfterStartup();
+        if (freezeSecondsAfterStartup > 0) {
+            final Instant startUpEventFrozenEndTime = Instant.now().plusSeconds(freezeSecondsAfterStartup);
+            startUpEventFrozenManager.setStartUpEventFrozenEndTime(startUpEventFrozenEndTime);
+            logger.info(STARTUP.getMarker(), "startUpEventFrozenEndTime: {}", () -> startUpEventFrozenEndTime);
         }
     }
 
@@ -1086,7 +1095,7 @@ public class SwirldsPlatform implements Platform, Startable {
             final PlatformStatus oldStatus = currentPlatformStatus.getAndSet(newStatus);
             if (oldStatus != newStatus) {
                 logger.info(PLATFORM_STATUS.getMarker(), () -> new PlatformStatusPayload(
-                        "Platform status changed.", oldStatus == null ? "" : oldStatus.name(), newStatus.name())
+                                "Platform status changed.", oldStatus == null ? "" : oldStatus.name(), newStatus.name())
                         .toString());
 
                 notificationEngine.dispatch(

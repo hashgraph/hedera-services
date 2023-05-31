@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform;
+package com.swirlds.platform.event.preconsensus;
 
 import static com.swirlds.common.formatting.StringFormattingUtils.commaSeparatedNumber;
 import static com.swirlds.common.system.PlatformStatus.READY;
@@ -25,27 +25,23 @@ import static com.swirlds.logging.LogMarker.PLATFORM_STATUS;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.formatting.UnitFormatter;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.system.PlatformStatus;
 import com.swirlds.common.threading.framework.QueueThread;
+import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.time.Time;
 import com.swirlds.logging.payloads.PlatformStatusPayload;
 import com.swirlds.platform.components.EventIntake;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.event.EventIntakeTask;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.preconsensus.PreConsensusEventFileManager;
-import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
@@ -53,27 +49,22 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+// TODO test
+
 /**
  * This class encapsulates the logic for replaying preconsensus events at boot up time.
  */
-public final class PreconsensusEventReplay {
+public final class PreconsensusReplayWorkflow {
 
-    private static final Logger logger = LogManager.getLogger(PreconsensusEventReplay.class);
+    private static final Logger logger = LogManager.getLogger(PreconsensusReplayWorkflow.class);
 
-    /**
-     * Data about replayed events
-     *
-     * @param eventCount       the number of replayed events
-     * @param transactionCount the number of transactions in the replayed events
-     */
-    private record ReplayResult(long eventCount, long transactionCount) {}
-
-    private PreconsensusEventReplay() {}
+    private PreconsensusReplayWorkflow() {}
 
     /**
      * Replays preconsensus events from disk.
      *
      * @param platformContext                    the platform context for this node
+     * @param threadManager                      the thread manager for this node
      * @param preConsensusEventFileManager       manages the preconsensus event files on disk
      * @param preConsensusEventWriter            writes preconsensus events to disk
      * @param shadowGraph                        the shadow graph, used by gossip to track the current events
@@ -88,6 +79,7 @@ public final class PreconsensusEventReplay {
      */
     public static void replayPreconsensusEvents(
             @NonNull final PlatformContext platformContext,
+            @NonNull final ThreadManager threadManager,
             @NonNull final Time time,
             @NonNull final PreConsensusEventFileManager preConsensusEventFileManager,
             @NonNull final PreConsensusEventWriter preConsensusEventWriter,
@@ -122,32 +114,40 @@ public final class PreconsensusEventReplay {
         try {
             final Instant start = time.now();
 
-            final ReplayResult replayResult = replayEvents(
-                    platformContext,
-                    preConsensusEventFileManager,
-                    shadowGraph,
-                    eventIntake,
-                    initialMinimumGenerationNonAncient);
+            final IOIterator<EventImpl> iterator =
+                    preConsensusEventFileManager.getEventIterator(initialMinimumGenerationNonAncient);
+
+            final EventReplayPipeline eventReplayPipeline =
+                    new EventReplayPipeline(platformContext, threadManager, iterator, (EventImpl e) -> {
+                        if (shadowGraph.isHashInGraph(e.getBaseEventHashedData().getHash())) {
+                            // the shadowgraph doesn't deal with duplicate events well, filter them out here
+                            return;
+                        }
+                        eventIntake.addUnlinkedEvent(new GossipEvent(e.getHashedData(), e.getUnhashedData()));
+                    });
+            eventReplayPipeline.replayEvents();
 
             waitForReplayToComplete(intakeQueue, consensusRoundHandler);
 
             final Instant finish = time.now();
             final Duration elapsed = Duration.between(start, finish);
 
-            logReplayInfo(stateManagementComponent, diskStateRound, diskStateTimestamp, replayResult, elapsed);
+            logReplayInfo(
+                    stateManagementComponent,
+                    diskStateRound,
+                    diskStateTimestamp,
+                    eventReplayPipeline.getEventCount(),
+                    eventReplayPipeline.getTransactionCount(),
+                    elapsed);
 
             preConsensusEventWriter.beginStreamingNewEvents();
 
-        } catch (final IOException e) {
-            throw new UncheckedIOException("unable to replay preconsensus event stream", e);
-        } catch (InterruptedException e) {
+        } catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("interrupted while replaying preconsensus event stream", e);
         }
 
         setupEndOfReplayStatus(currentPlatformStatus);
-
-        // TODO when does "start up frozen" start measuring time?
     }
 
     /**
@@ -182,46 +182,6 @@ public final class PreconsensusEventReplay {
     }
 
     /**
-     * Replay events from the preconsensus event stream.
-     */
-    @NonNull
-    private static ReplayResult replayEvents(
-            @NonNull final PlatformContext platformContext,
-            @NonNull final PreConsensusEventFileManager preConsensusEventFileManager,
-            @NonNull final ShadowGraph shadowGraph,
-            @NonNull final EventIntake eventIntake,
-            final long initialMinimumGenerationNonAncient)
-            throws IOException {
-
-        long eventCount = 0;
-        long transactionCount = 0;
-
-        // TODO fix discontinuities
-        final IOIterator<EventImpl> iterator =
-                preConsensusEventFileManager.getEventIterator(initialMinimumGenerationNonAncient);
-
-        while (iterator.hasNext()) {
-            final EventImpl event = iterator.next();
-
-            eventCount++;
-            transactionCount += event.getTransactions().length;
-
-            // TODO should we do this on a background thread?
-            final Hash eventHash = platformContext.getCryptography().digestSync(event.getBaseEventHashedData());
-
-            if (shadowGraph.isHashInGraph(eventHash)) {
-                // the shadowgraph doesn't deal with duplicate events well, filter them out here
-                continue;
-            }
-
-            final GossipEvent gossipEvent = new GossipEvent(event.getHashedData(), event.getUnhashedData());
-            eventIntake.addUnlinkedEvent(gossipEvent);
-        }
-
-        return new ReplayResult(eventCount, transactionCount);
-    }
-
-    /**
      * Wait for all events to be replied. Some of this work happens on asynchronous threads, so we need to wait for them
      * to complete even after we exhaust all available events from the stream.
      */
@@ -246,7 +206,8 @@ public final class PreconsensusEventReplay {
             @NonNull final StateManagementComponent stateManagementComponent,
             final long diskStateRound,
             @Nullable final Instant diskStateTimestamp,
-            @NonNull ReplayResult replayResult,
+            final long eventCount,
+            final long transactionCount,
             @NonNull final Duration elapsedTime) {
 
         try (final ReservedSignedState latestConsensusRound =
@@ -256,7 +217,7 @@ public final class PreconsensusEventReplay {
                 logger.info(
                         STARTUP.getMarker(),
                         "Replayed {} preconsensus events. No rounds reached consensus.",
-                        commaSeparatedNumber(replayResult.eventCount));
+                        commaSeparatedNumber(eventCount));
                 return;
             }
             final long latestRound = latestConsensusRound.get().getRound();
@@ -278,8 +239,8 @@ public final class PreconsensusEventReplay {
                     "replayed {} preconsensus events. These events contained {} transactions. "
                             + "{} rounds reached consensus spanning {} of consensus time. The latest "
                             + "round to reach consensus is round {}. Replay took {}.",
-                    commaSeparatedNumber(replayResult.eventCount),
-                    commaSeparatedNumber(replayResult.transactionCount),
+                    commaSeparatedNumber(eventCount),
+                    commaSeparatedNumber(transactionCount),
                     commaSeparatedNumber(elapsedRounds),
                     new UnitFormatter(elapsedConsensusTime.toMillis(), UNIT_MILLISECONDS).setAbbreviate(false),
                     commaSeparatedNumber(latestRound),
