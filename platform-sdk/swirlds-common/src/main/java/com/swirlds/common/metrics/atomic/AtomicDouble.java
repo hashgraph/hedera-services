@@ -19,7 +19,10 @@ package com.swirlds.common.metrics.atomic;
 import static java.lang.Double.doubleToRawLongBits;
 import static java.lang.Double.longBitsToDouble;
 
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.function.DoubleBinaryOperator;
+import java.util.function.DoubleUnaryOperator;
 
 /**
  * A (partial) implementation of an {@code AtomicDouble}, which allows atomic updates and
@@ -99,5 +102,46 @@ public class AtomicDouble {
         final long expectedBits = doubleToRawLongBits(expectedValue);
         final long newBits = doubleToRawLongBits(newValue);
         return updater.compareAndSet(this, expectedBits, newBits);
+    }
+
+    /**
+     * Atomically adds the given value to the current value.
+     *
+     * @param delta the value to add
+     * @return the updated value
+     */
+    public final double addAndGet(double delta) {
+        return accumulateAndGet(delta, Double::sum);
+    }
+
+    /**
+     * Atomically updates the current value with the results of applying the given function to the
+     * current and given values.
+     *
+     * @param x the update value
+     * @param accumulatorFunction the accumulator function
+     * @return the updated value
+     */
+    public final double accumulateAndGet(double x, DoubleBinaryOperator accumulatorFunction) {
+        Objects.requireNonNull(accumulatorFunction);
+        return updateAndGet(oldValue -> accumulatorFunction.applyAsDouble(oldValue, x));
+    }
+
+    /**
+     * Atomically updates the current value with the results of applying the given function.
+     *
+     * @param updateFunction the update function
+     * @return the updated value
+     */
+    public final double updateAndGet(DoubleUnaryOperator updateFunction) {
+        while (true) {
+            long current = bits;
+            double currentVal = longBitsToDouble(current);
+            double nextVal = updateFunction.applyAsDouble(currentVal);
+            long next = doubleToRawLongBits(nextVal);
+            if (updater.compareAndSet(this, current, next)) {
+                return nextVal;
+            }
+        }
     }
 }

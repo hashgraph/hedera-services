@@ -73,7 +73,7 @@ public class DefaultDoubleAccumulator extends DefaultMetric implements DoubleAcc
      */
     @Override
     public void update(final double other) {
-        container.getAndSet(accumulator.applyAsDouble(container.get(), other));
+        container.accumulateAndGet(other, accumulator);
     }
 
     @Override
