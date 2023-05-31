@@ -231,7 +231,7 @@ public class ContractDeleteSuite extends HapiSuite {
     }
 
     HapiSpec rejectsWithoutProperSig() {
-        return defaultHapiSpec("ScDelete")
+        return defaultHapiSpec("rejectsWithoutProperSig")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when()
                 .then(contractDelete(CONTRACT).signedBy(GENESIS).hasKnownStatus(INVALID_SIGNATURE));

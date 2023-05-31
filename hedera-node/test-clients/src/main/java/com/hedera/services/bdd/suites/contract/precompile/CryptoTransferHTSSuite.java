@@ -1040,7 +1040,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
         final var senderKey = "senderKey";
         final var contractKey = "contractAdminKey";
 
-        return defaultHapiSpec("ActiveContractIsVerifiedWithoutCheckingSignatures")
+        return defaultHapiSpec("activeContractInFrameIsVerifiedWithoutNeedForSignature")
                 .given(
                         newKeyNamed(multiKey),
                         newKeyNamed(senderKey),

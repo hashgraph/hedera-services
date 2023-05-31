@@ -66,6 +66,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.util.Comparator;
 import java.util.List;
 import java.util.LongSummaryStatistics;
 import java.util.Objects;
@@ -1176,16 +1177,16 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
     /**
      * Write all internal records hashes to internalHashStore
      */
-    private void writeHashes(final long maxValidPath, final Stream<VirtualHashRecord> records) throws IOException {
-        if (records != null && maxValidPath > 0) {
-            // use an iterator rather than stream.forEach so that exceptions are propagated properly
-
+    private void writeHashes(final long maxValidPath, final Stream<VirtualHashRecord> dirtyHashes) throws IOException {
+        if (dirtyHashes != null && maxValidPath > 0) {
             if (hasDiskStoreForHashes) {
                 pathToHashDisk.startWriting();
             }
 
+            final Stream<VirtualHashRecord> sortedDirtyHashes =
+                    dirtyHashes.sorted(Comparator.comparingLong(VirtualHashRecord::path));
             final AtomicLong lastPath = new AtomicLong(INVALID_PATH);
-            records.forEach(rec -> {
+            sortedDirtyHashes.forEach(rec -> {
                 assert rec.path() > lastPath.getAndSet(rec.path()) : "Path should be in ascending order!";
                 statistics.cycleInternalNodeWritesPerSecond();
 
@@ -1238,10 +1239,10 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
     private void writeLeaves(
             final long firstLeafPath,
             final long lastLeafPath,
-            final Stream<VirtualLeafRecord<K, V>> leafRecordsToAddOrUpdate,
-            final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete)
+            final Stream<VirtualLeafRecord<K, V>> dirtyLeaves,
+            final Stream<VirtualLeafRecord<K, V>> deletedLeaves)
             throws IOException {
-        if (leafRecordsToAddOrUpdate != null && firstLeafPath > 0) {
+        if (dirtyLeaves != null && firstLeafPath > 0) {
 
             // start writing
             pathToKeyValue.startWriting();
@@ -1251,7 +1252,9 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
 
             // iterate over leaf records
             final AtomicLong lastPath = new AtomicLong(INVALID_PATH);
-            leafRecordsToAddOrUpdate.forEach(leafRecord -> {
+            final Stream<VirtualLeafRecord<K, V>> sortedDirtyLeaves =
+                    dirtyLeaves.sorted(Comparator.comparingLong(VirtualLeafRecord::getPath));
+            sortedDirtyLeaves.forEach(leafRecord -> {
                 assert leafRecord.getPath() > lastPath.getAndSet(leafRecord.getPath())
                         : "Path should be in ascending order!";
                 statistics.cycleLeafWritesPerSecond();
@@ -1275,7 +1278,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
             });
 
             // iterate over leaf records to delete
-            leafRecordsToDelete.forEach(leafRecord -> {
+            deletedLeaves.forEach(leafRecord -> {
                 // update objectKeyToPath
                 if (isLongKeyMode) {
                     longKeyToPath.put(((VirtualLongKey) leafRecord.getKey()).getKeyAsLong(), INVALID_PATH);

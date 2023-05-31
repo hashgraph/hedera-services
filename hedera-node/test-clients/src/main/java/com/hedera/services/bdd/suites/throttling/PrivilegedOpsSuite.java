@@ -63,15 +63,14 @@ public class PrivilegedOpsSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            superusersAreNeverThrottledOnTransfers(),
-            superusersAreNeverThrottledOnMiscTxns(),
-            superusersAreNeverThrottledOnHcsTxns(),
-            superusersAreNeverThrottledOnMiscQueries(),
-            superusersAreNeverThrottledOnHcsQueries(),
-            systemAccountUpdatePrivilegesAsExpected(),
-            freezeAdminPrivilegesAsExpected(),
-        });
+        return List.of(
+                superusersAreNeverThrottledOnTransfers(),
+                superusersAreNeverThrottledOnMiscTxns(),
+                superusersAreNeverThrottledOnHcsTxns(),
+                superusersAreNeverThrottledOnMiscQueries(),
+                superusersAreNeverThrottledOnHcsQueries(),
+                systemAccountUpdatePrivilegesAsExpected(),
+                freezeAdminPrivilegesAsExpected());
     }
 
     Function<String, HapiSpecOperation[]> transferBurstFn = payer -> IntStream.range(0, BURST_SIZE)
@@ -79,26 +78,26 @@ public class PrivilegedOpsSuite extends HapiSuite {
                     .payingWith(payer)
                     .fee(ONE_HUNDRED_HBARS)
                     .deferStatusResolution())
-            .toArray(n -> new HapiSpecOperation[n]);
+            .toArray(HapiSpecOperation[]::new);
     Function<String, HapiSpecOperation[]> miscTxnBurstFn = payer -> IntStream.range(0, BURST_SIZE)
             .mapToObj(i -> cryptoCreate(String.format("Account%d", i))
                     .payingWith(payer)
                     .deferStatusResolution())
-            .toArray(n -> new HapiSpecOperation[n]);
+            .toArray(HapiSpecOperation[]::new);
     Function<String, HapiSpecOperation[]> hcsTxnBurstFn = payer -> IntStream.range(0, BURST_SIZE)
             .mapToObj(i ->
                     createTopic(String.format("Topic%d", i)).payingWith(payer).deferStatusResolution())
-            .toArray(n -> new HapiSpecOperation[n]);
+            .toArray(HapiSpecOperation[]::new);
     Function<String, HapiSpecOperation[]> miscQueryBurstFn = payer -> IntStream.range(0, BURST_SIZE)
             .mapToObj(
                     i -> getAccountInfo(ADDRESS_BOOK_CONTROL).nodePayment(100L).payingWith(payer))
-            .toArray(n -> new HapiSpecOperation[n]);
+            .toArray(HapiSpecOperation[]::new);
     Function<String, HapiSpecOperation[]> hcsQueryBurstFn = payer -> IntStream.range(0, BURST_SIZE)
             .mapToObj(i -> getTopicInfo("misc").nodePayment(100L).payingWith(payer))
-            .toArray(n -> new HapiSpecOperation[n]);
+            .toArray(HapiSpecOperation[]::new);
 
     private HapiSpec freezeAdminPrivilegesAsExpected() {
-        return defaultHapiSpec("FreezeAdminPrivilegesAsExpected")
+        return defaultHapiSpec("freezeAdminPrivilegesAsExpected")
                 .given(
                         cryptoCreate(CIVILIAN),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, EXCHANGE_RATE_CONTROL, ONE_MILLION_HBARS)))
@@ -141,7 +140,7 @@ public class PrivilegedOpsSuite extends HapiSuite {
 
     private HapiSpec systemAccountUpdatePrivilegesAsExpected() {
         final var tmpTreasury = "tmpTreasury";
-        return defaultHapiSpec("SystemAccountUpdatePrivilegesAsExpected")
+        return defaultHapiSpec("systemAccountUpdatePrivilegesAsExpected")
                 .given(newKeyNamed(tmpTreasury), newKeyNamed(NEW_88), cryptoCreate(CIVILIAN))
                 .when(cryptoUpdate(ACCOUNT_88)
                         .payingWith(GENESIS)
@@ -193,7 +192,7 @@ public class PrivilegedOpsSuite extends HapiSuite {
     }
 
     private HapiSpec superusersAreNeverThrottledOnTransfers() {
-        return defaultHapiSpec("SuperusersAreNeverThrottledOnTransfers")
+        return defaultHapiSpec("superusersAreNeverThrottledOnTransfers")
                 .given(
                         cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L))
                                 .fee(ONE_HUNDRED_HBARS),
@@ -213,7 +212,7 @@ public class PrivilegedOpsSuite extends HapiSuite {
     }
 
     private HapiSpec superusersAreNeverThrottledOnMiscTxns() {
-        return defaultHapiSpec("MasterIsNeverThrottledOnMiscTxns")
+        return defaultHapiSpec("superusersAreNeverThrottledOnMiscTxns")
                 .given(
                         cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L))
                                 .fee(ONE_HUNDRED_HBARS),
@@ -233,7 +232,7 @@ public class PrivilegedOpsSuite extends HapiSuite {
     }
 
     private HapiSpec superusersAreNeverThrottledOnHcsTxns() {
-        return defaultHapiSpec("MasterIsNeverThrottledOnHcsTxns")
+        return defaultHapiSpec("superusersAreNeverThrottledOnHcsTxns")
                 .given(
                         cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L)),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, 1_000_000_000_000L)))
@@ -250,7 +249,7 @@ public class PrivilegedOpsSuite extends HapiSuite {
     }
 
     private HapiSpec superusersAreNeverThrottledOnMiscQueries() {
-        return defaultHapiSpec("MasterIsNeverThrottledOnMiscQueries")
+        return defaultHapiSpec("superusersAreNeverThrottledOnMiscQueries")
                 .given(
                         cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L)),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, 1_000_000_000_000L)))
@@ -267,7 +266,7 @@ public class PrivilegedOpsSuite extends HapiSuite {
     }
 
     private HapiSpec superusersAreNeverThrottledOnHcsQueries() {
-        return defaultHapiSpec("MasterIsNeverThrottledOnHcsQueries")
+        return defaultHapiSpec("superusersAreNeverThrottledOnHcsQueries")
                 .given(
                         cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L)),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, 1_000_000_000_000L)),

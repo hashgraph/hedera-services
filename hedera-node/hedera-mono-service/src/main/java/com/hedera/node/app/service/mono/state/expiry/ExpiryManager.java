@@ -136,6 +136,10 @@ public class ExpiryManager {
                 if (!nextRecord.equals(nextPayerRecord)) {
                     log.error("Inconsistent queryable record {} for expired record {}", nextPayerRecord, nextRecord);
                 }
+                // No more records for this payer, so remove the queue
+                if (payerRecords.isEmpty()) {
+                    curQueryableRecords.remove(nextRecord.getPayerNum());
+                }
             } else {
                 log.error(
                         "No queryable records found for payer {} despite link to expiring record {}",

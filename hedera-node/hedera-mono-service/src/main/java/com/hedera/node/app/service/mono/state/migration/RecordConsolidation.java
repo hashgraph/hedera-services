@@ -58,7 +58,10 @@ public class RecordConsolidation {
 
         // Remove all records from legacy accounts
         numsWithRecords.sort(Comparator.naturalOrder());
-        numsWithRecords.forEach(accounts::remove);
+        numsWithRecords.forEach(num -> {
+            final var mutableAccount = (MerkleAccount) accounts.getForModify(num);
+            mutableAccount.records().clear();
+        });
 
         finishConsolidation(savedRecords, mutableState);
     }

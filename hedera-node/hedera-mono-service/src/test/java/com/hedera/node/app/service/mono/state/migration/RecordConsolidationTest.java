@@ -76,6 +76,7 @@ class RecordConsolidationTest {
         final var capturedRecords = recordsCaptor.getValue();
         assertEquals(accountsAndRecords.getValue(), new LinkedList<>(capturedRecords));
 
+        assertEquals(numAccounts, accountsAndRecords.getKey().size());
         accountsAndRecords.getKey().forEach((num, account) -> {
             assertTrue(account.records().isEmpty());
         });

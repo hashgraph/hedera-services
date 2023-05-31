@@ -265,7 +265,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         subject.handle(handleContext);
 
         // When an account is deleted, marks the value of the account deleted flag to true
-        assertThat(writableStore.get(deleteAccountId).get().deleted()).isTrue();
+        assertThat(writableStore.get(deleteAccountId).deleted()).isTrue();
     }
 
     @Test
