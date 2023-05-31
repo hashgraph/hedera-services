@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.internal;
 
-import static com.swirlds.platform.consensus.ConsensusConstants.MIN_TRANS_TIMESTAMP_INCR_NANOS;
-
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
@@ -49,6 +47,8 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.util.iterator.SkippingIterator;
 import com.swirlds.platform.util.iterator.TypedIterator;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -58,7 +58,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
  * An internal platform event. It holds all the event data relevant to the platform. It implements the Event interface
@@ -148,14 +147,14 @@ public class EventImpl extends EventMetadata
         this(gossipEvent, new ConsensusData(), selfParent, otherParent);
     }
 
-    /**
+    /*
      * This constructor is used in {@link StreamEventParser} when parsing events from stream
      *
      * @param consensusEvent the consensus data to contain within this event
      */
-    public EventImpl(final DetailedConsensusEvent consensusEvent) {
-        buildFromConsensusEvent(consensusEvent);
-    }
+    //public EventImpl(final DetailedConsensusEvent consensusEvent) {
+    //    buildFromConsensusEvent(consensusEvent);
+    //}
 
     public EventImpl(
             final BaseEventHashedData baseEventHashedData,
@@ -240,7 +239,7 @@ public class EventImpl extends EventMetadata
     @Deprecated(forRemoval = true)
     public synchronized void estimateTime(
             final NodeId selfId, final double avgSelfCreatedTimestamp, final double avgOtherReceivedTimestamp) {
-        setEstimatedTime(selfId.equalsMain(getCreatorId()) ? getTimeCreated() : baseEvent.getTimeReceived());
+        setEstimatedTime(selfId.equals(getCreatorId()) ? getTimeCreated() : baseEvent.getTimeReceived());
     }
 
     /**

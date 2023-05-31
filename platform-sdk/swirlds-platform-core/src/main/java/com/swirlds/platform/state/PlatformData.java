@@ -343,6 +343,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
      * @param events an array of events
      * @return this object
      */
+    @Deprecated
     public PlatformData setEvents(final EventImpl[] events) {
         this.events = events;
         if (events != null && events.length > 0) {
@@ -388,6 +389,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
      * @param minGenInfo minimum generation info list
      * @return this object
      */
+    @Deprecated
     public PlatformData setMinGenInfo(final List<MinGenInfo> minGenInfo) {
         this.minGenInfo = minGenInfo;
         return this;

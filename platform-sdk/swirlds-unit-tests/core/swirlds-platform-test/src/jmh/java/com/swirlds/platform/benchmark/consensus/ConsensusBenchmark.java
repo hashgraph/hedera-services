@@ -18,8 +18,6 @@ package com.swirlds.platform.benchmark.consensus;
 
 import com.swirlds.common.config.ConfigUtils;
 import com.swirlds.common.config.ConsensusConfig;
-import com.swirlds.common.test.StakeGenerators;
-import com.swirlds.common.test.WeightGenerators;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.ConsensusImpl;
@@ -31,6 +29,7 @@ import com.swirlds.platform.test.event.source.EventSource;
 import com.swirlds.platform.test.event.source.EventSourceFactory;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.tuple.Pair;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -78,7 +77,7 @@ public class ConsensusBenchmark {
         events = emitter.emitEvents(numEvents);
 
         final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create();
-        ConfigUtils.scanAndRegisterAllConfigTypes(configurationBuilder, "com.swirlds");
+        ConfigUtils.scanAndRegisterAllConfigTypes(configurationBuilder, Set.of("com.swirlds"));
 
         consensus = new ConsensusImpl(
                 configurationBuilder.build().getConfigData(ConsensusConfig.class),

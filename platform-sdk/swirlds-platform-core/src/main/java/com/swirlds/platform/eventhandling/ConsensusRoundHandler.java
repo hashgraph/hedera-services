@@ -16,12 +16,6 @@
 
 package com.swirlds.platform.eventhandling;
 
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_3;
-import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
-import static com.swirlds.logging.LogMarker.RECONNECT;
-import static com.swirlds.logging.LogMarker.STARTUP;
-import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
-
 import com.swirlds.base.function.CheckedConsumer;
 import com.swirlds.base.state.Startable;
 import com.swirlds.common.config.ConsensusConfig;
@@ -57,18 +51,16 @@ import com.swirlds.platform.stats.AverageAndMax;
 import com.swirlds.platform.stats.AverageStat;
 import com.swirlds.platform.stats.CycleTimingStat;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_3;
+import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
 import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
@@ -138,11 +130,6 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
     private final int roundsNonAncient;
 
     private final PlatformContext platformContext;
-
-    private static final RunningAverageMetric.Config AVG_Q_SIGNED_STATE_EVENTS_CONFIG = new RunningAverageMetric.Config(
-                    INTERNAL_CATEGORY, "queueSignedStateEvents")
-            .withDescription("number of handled consensus events that will be part of the next signed state")
-            .withUnit("count");
 
     private static final RunningAverageMetric.Config AVG_STATE_TO_HASH_SIGN_DEPTH_CONFIG =
             new RunningAverageMetric.Config(INTERNAL_CATEGORY, "stateToHashSignDepth")
@@ -221,13 +208,10 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
                 "average number of events in the consensus queue (q2) waiting to be handled",
                 FORMAT_10_3,
                 AverageStat.WEIGHT_VOLATILE);
-        final RunningAverageMetric avgQSignedStateEvents =
-                platformContext.getMetrics().getOrCreate(AVG_Q_SIGNED_STATE_EVENTS_CONFIG);
         final RunningAverageMetric avgStateToHashSignDepth =
                 platformContext.getMetrics().getOrCreate(AVG_STATE_TO_HASH_SIGN_DEPTH_CONFIG);
         platformContext.getMetrics().addUpdater(() -> {
             avgQ2ConsEvents.update(queueThread.size());
-            avgQSignedStateEvents.update(eventsAndGenerations.getNumberOfEvents());
             avgStateToHashSignDepth.update(getStateToHashSignSize());
         });
     }
@@ -448,9 +432,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
                 .setRound(round.getRoundNum())
                 .setNumEventsCons(numEventsCons.get())
                 .setHashEventsCons(runningHash)
-                .setEvents(events)
                 .setConsensusTimestamp(round.getLastEvent().getLastTransTime())
-                .setMinGenInfo(minGen)
                 .setCreationSoftwareVersion(softwareVersion)
                 .setRoundsNonAncient(roundsNonAncient);
                 //round.getSnapshot(),

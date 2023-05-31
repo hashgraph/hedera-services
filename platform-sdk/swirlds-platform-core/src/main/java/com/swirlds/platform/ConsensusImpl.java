@@ -30,6 +30,7 @@ import com.swirlds.platform.consensus.ElectionRound;
 import com.swirlds.platform.consensus.InitJudges;
 import com.swirlds.platform.consensus.SequentialRingBuffer;
 import com.swirlds.platform.consensus.ThreadSafeConsensusInfo;
+import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusMetrics;
@@ -554,20 +555,20 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus,
      */
     private CountingVote getCountingVote(final CandidateWitness candidateWitness, final List<EventImpl> stronglySeen) {
         // count votes from witnesses you strongly see
-        long yesStake = 0; // total stake of all members voting yes
-        long noStake = 0; // total stake of all members voting yes
+        long yesWeight = 0; // total weight of all members voting yes
+        long noWeight = 0; // total weight of all members voting yes
         for (final EventImpl w : stronglySeen) {
-            final long stake = addressBook.getAddress(w.getCreatorId()).getStake();
+            final long weight = addressBook.getAddress(w.getCreatorId()).getWeight();
             if (w.getVote(candidateWitness)) {
-                yesStake += stake;
+                yesWeight += weight;
             } else {
-                noStake += stake;
+                noWeight += weight;
             }
         }
-        final long totalStake = addressBook.getTotalStake();
+        final long totalWeight = addressBook.getTotalWeight();
         final boolean superMajority =
-                Utilities.isSuperMajority(yesStake, totalStake) || Utilities.isSuperMajority(noStake, totalStake);
-        final boolean countingVote = yesStake >= noStake;
+                Utilities.isSuperMajority(yesWeight, totalWeight) || Utilities.isSuperMajority(noWeight, totalWeight);
+        final boolean countingVote = yesWeight >= noWeight;
 
         return CountingVote.get(countingVote, superMajority);
     }
@@ -682,6 +683,8 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus,
 
         return new ConsensusRound(
                 consensusEvents,
+                //TODO can this be null?
+                recentEvents.get(recentEvents.size()-1),
                 new Generations(this),
                 new ConsensusSnapshot(
                         decidedRoundNumber,
@@ -944,7 +947,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus,
         // calculate the answer, and remember it for next time
         // find and memoize answers for all choices of m, then return answer for just this m
         final int numMembers = addressBook.getSize(); // number of members
-        final long totalStake = addressBook.getTotalStake(); // total stake in existence
+        final long totalWeight = addressBook.getTotalWeight(); // total stake in existence
         final EventImpl sp = selfParent(x); // self parent
         final EventImpl op = otherParent(x); // other parent
         final long prx = parentRound(x); // parent round of x
@@ -963,13 +966,13 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus,
                 if (round(st) != prx) { // ignore if the canonical is in the wrong round, or doesn't exist
                     x.setStronglySeeP(mm, null);
                 } else {
-                    long stake = 0;
+                    long weight = 0;
                     for (long m3 = 0; m3 < numMembers; m3++) {
                         if (seeThru(x, mm, m3) == st) { // only count intermediates that see the canonical witness
-                            stake += addressBook.getAddress(m3).getStake();
+                            weight += addressBook.getAddress(m3).getWeight();
                         }
                     }
-                    if (Utilities.isSuperMajority(stake, totalStake)) { // strongly see supermajority of
+                    if (Utilities.isSuperMajority(weight, totalWeight)) { // strongly see supermajority of
                         // intermediates
                         x.setStronglySeeP(mm, st);
                     } else {

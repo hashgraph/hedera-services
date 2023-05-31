@@ -50,26 +50,24 @@ public class ConsensusRound implements Round {
     private final EventImpl keystoneEvent;
 
     /**
-     * Same as {@link #ConsensusRound(List, GraphGenerations, long, ConsensusSnapshot)} but the
-     * round number is derived from the event and the judge hashes and minGen are empty.
-     *
      * @deprecated this is currently used only by unit tests, should be removed before merging to
      *     develop
      */
     @Deprecated(forRemoval = true)
     public ConsensusRound(final List<EventImpl> consensusEvents, final GraphGenerations generations) {
-        this(consensusEvents, generations, consensusEvents.get(0).getRoundReceived(), null);
+        throw new RuntimeException("dont use this");
     }
 
     /**
-     * Same as {@link #ConsensusRound(List, GraphGenerations, long, ConsensusSnapshot)} but the
+     * Same as {@link #ConsensusRound(List, EventImpl, GraphGenerations, long, ConsensusSnapshot)} but the
      * round number is derived from the snapshot
      */
     public ConsensusRound(
             final List<EventImpl> consensusEvents,
+            @NonNull final EventImpl keystoneEvent,
             final GraphGenerations generations,
             final ConsensusSnapshot snapshot) {
-        this(consensusEvents, generations, snapshot.round(), snapshot);
+        this(consensusEvents, keystoneEvent, generations, snapshot.round(), snapshot);
     }
 
     /**
