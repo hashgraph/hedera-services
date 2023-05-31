@@ -79,7 +79,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.IntConsumer;
 import java.util.function.UnaryOperator;
@@ -1148,9 +1147,8 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     /**
      * Write all hashes to hashStore
      */
-    private void writeHashes(final long maxValidPath, final Stream<VirtualHashRecord> pathHashRecords)
-            throws IOException {
-        if ((pathHashRecords == null) || (maxValidPath <= 0)) {
+    private void writeHashes(final long maxValidPath, final Stream<VirtualHashRecord> dirtyHashes) throws IOException {
+        if ((dirtyHashes == null) || (maxValidPath <= 0)) {
             // nothing to do
             return;
         }
@@ -1159,9 +1157,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
             hashStoreDisk.startWriting(0, maxValidPath);
         }
 
-        final AtomicLong lastPath = new AtomicLong(INVALID_PATH);
-        pathHashRecords.forEach(rec -> {
-            assert rec.path() > lastPath.getAndSet(rec.path()) : "Path should be in ascending order!";
+        dirtyHashes.forEach(rec -> {
             statistics.cycleInternalNodeWritesPerSecond();
             if (rec.path() < tableConfig.getHashesRamToDiskThreshold()) {
                 hashStoreRam.put(rec.path(), rec.hash());
@@ -1184,10 +1180,10 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     private void writeLeavesToPathToKeyValue(
             final long firstLeafPath,
             final long lastLeafPath,
-            final Stream<VirtualLeafRecord<K, V>> leafRecordsToAddOrUpdate,
-            final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete)
+            final Stream<VirtualLeafRecord<K, V>> dirtyLeaves,
+            final Stream<VirtualLeafRecord<K, V>> deletedLeaves)
             throws IOException {
-        if ((leafRecordsToAddOrUpdate == null) || (firstLeafPath <= 0)) {
+        if ((dirtyLeaves == null) || (firstLeafPath <= 0)) {
             // nothing to do
             return;
         }
@@ -1199,10 +1195,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
         }
 
         // iterate over leaf records
-        final AtomicLong lastPath = new AtomicLong(INVALID_PATH);
-        leafRecordsToAddOrUpdate.forEach(leafRecord -> {
-            assert leafRecord.getPath() > lastPath.getAndSet(leafRecord.getPath())
-                    : "Path should be in ascending order!";
+        dirtyLeaves.forEach(leafRecord -> {
             statistics.cycleLeafWritesPerSecond();
 
             // update objectKeyToPath
@@ -1225,7 +1218,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
         });
 
         // iterate over leaf records to delete
-        leafRecordsToDelete.forEach(leafRecord -> {
+        deletedLeaves.forEach(leafRecord -> {
             // update objectKeyToPath
             if (isLongKeyMode) {
                 longKeyToPath.put(((VirtualLongKey) leafRecord.getKey()).getKeyAsLong(), INVALID_PATH);

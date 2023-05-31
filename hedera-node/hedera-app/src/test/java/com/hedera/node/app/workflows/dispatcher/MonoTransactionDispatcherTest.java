@@ -17,6 +17,7 @@
 package com.hedera.node.app.workflows.dispatcher;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hedera.hapi.node.freeze.FreezeType.FREEZE_ABORT;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -34,7 +35,9 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TopicID;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.consensus.ConsensusCreateTopicTransactionBody;
 import com.hedera.hapi.node.consensus.ConsensusDeleteTopicTransactionBody;
 import com.hedera.hapi.node.consensus.ConsensusSubmitMessageTransactionBody;
@@ -141,6 +144,7 @@ import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
 import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.node.app.spi.state.WritableFreezeStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -328,6 +332,9 @@ class MonoTransactionDispatcherTest {
 
     @Mock
     private WritableTokenRelationStore writableTokenRelStore;
+
+    @Mock
+    private WritableFreezeStore writableFreezeStore;
 
     @Mock
     private UsageLimits usageLimits;
@@ -666,6 +673,19 @@ class MonoTransactionDispatcherTest {
     }
 
     @Test
+    void dispatchesCryptoUpdateAsExpected() {
+        final var txnBody = TransactionBody.newBuilder()
+                .cryptoUpdateAccount(CryptoUpdateTransactionBody.DEFAULT)
+                .build();
+        given(handleContext.body()).willReturn(txnBody);
+        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+
+        dispatcher.dispatchHandle(handleContext);
+
+        verify(writableAccountStore).commit();
+    }
+
+    @Test
     void dispatchesCryptoDeleteAsExpected() {
         final var txnBody = TransactionBody.newBuilder()
                 .cryptoDelete(CryptoDeleteTransactionBody.DEFAULT)
@@ -676,6 +696,23 @@ class MonoTransactionDispatcherTest {
 
         dispatcher.dispatchHandle(handleContext);
         verify(writableAccountStore).commit();
+    }
+
+    @Test
+    void dispatchesFreezeAsExpected() {
+        final var txnBody = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder()
+                        .transactionValidStart(
+                                Timestamp.newBuilder().seconds(1000).build()))
+                .freeze(FreezeTransactionBody.newBuilder()
+                        .freezeType(FREEZE_ABORT)
+                        .build())
+                .build();
+        given(handleContext.body()).willReturn(txnBody);
+
+        dispatcher.dispatchHandle(handleContext);
+
+        verifyNoInteractions(txnCtx);
     }
 
     @Test

@@ -26,11 +26,14 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * attributes like memos or keys.
  */
 public interface AttributeValidator {
+    int MAX_NESTED_KEY_LEVELS = 15;
+
     /**
-     * Validates the given key.
+     * Validates the given key. If the key is more than allowed depth, throws {@code ResponseCodeEnum.BAD_ENCODING}
+     * Then validates each key in the given structure. If the key is not valid throws {@code ResponseCodeEnum.BAD_ENCODING}
      *
      * @param key the key to validate
-     * @throws HandleException if the key is invalid
+     * @throws HandleException if the key is invalid or more than {@value MAX_NESTED_KEY_LEVELS}
      */
     void validateKey(Key key);
 

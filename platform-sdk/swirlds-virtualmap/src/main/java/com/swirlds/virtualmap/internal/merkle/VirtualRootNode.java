@@ -1118,22 +1118,18 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             VirtualNodeCache<K, V> cacheToFlush, VirtualStateAccessor stateToUse, VirtualDataSource<K, V> ds) {
         try {
             // Get the leaves that were changed and sort them by path so that lower paths come first
-            final Stream<VirtualLeafRecord<K, V>> sortedDirtyLeaves =
-                    cacheToFlush.dirtyLeaves(stateToUse.getFirstLeafPath(), stateToUse.getLastLeafPath());
-
+            final Stream<VirtualLeafRecord<K, V>> dirtyLeaves =
+                    cacheToFlush.dirtyLeaves(stateToUse.getFirstLeafPath(), stateToUse.getLastLeafPath(), false);
             // Get the deleted leaves
             final Stream<VirtualLeafRecord<K, V>> deletedLeaves = cacheToFlush.deletedLeaves();
-
             // Save the dirty hashes
-            final Stream<VirtualHashRecord> sortedDirtyHashes = cacheToFlush.dirtyHashes(stateToUse.getLastLeafPath());
-
+            final Stream<VirtualHashRecord> dirtyHashes = cacheToFlush.dirtyHashes(stateToUse.getLastLeafPath());
             ds.saveRecords(
                     stateToUse.getFirstLeafPath(),
                     stateToUse.getLastLeafPath(),
-                    sortedDirtyHashes,
-                    sortedDirtyLeaves,
+                    dirtyHashes,
+                    dirtyLeaves,
                     deletedLeaves);
-
         } catch (final ClosedByInterruptException ex) {
             logger.info(
                     TESTING_EXCEPTIONS_ACCEPTABLE_RECONNECT.getMarker(),
@@ -1249,7 +1245,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         };
         Hash virtualHash = hasher.hash(
                 records::findHash,
-                cache.dirtyLeaves(state.getFirstLeafPath(), state.getLastLeafPath())
+                cache.dirtyLeaves(state.getFirstLeafPath(), state.getLastLeafPath(), true)
                         .iterator(),
                 state.getFirstLeafPath(),
                 state.getLastLeafPath(),
@@ -1479,27 +1475,13 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
     }
 
     /**
-     * Loads the leaf, sibling and siblings of parents on the path to root.
+     * Loads the leaf record.
      * Lower level caches (VirtualDataSource, the OS file cache) should make subsequent value retrievals faster.
      * Warming keys can be done in parallel.
      * @param key key to the leaf node
      */
     public void warm(final K key) {
-
-        // Warm the leaf node
-        final VirtualLeafRecord<K, V> leafRecord = records.findLeafRecord(key, false);
-        if (leafRecord == null) {
-            return;
-        }
-
-        // Warm node hashes for all siblings on the path to root.
-        // Those are used when rehashing the tree due to a changed leaf.
-        for (long path = leafRecord.getPath(); path > 0; path = getParentPath(path)) {
-            final long siblingPath = getSiblingPath(path);
-            if (siblingPath != INVALID_PATH) {
-                records.findHash(siblingPath);
-            }
-        }
+        records.findLeafRecord(key, false);
     }
 
     ////////////////////////

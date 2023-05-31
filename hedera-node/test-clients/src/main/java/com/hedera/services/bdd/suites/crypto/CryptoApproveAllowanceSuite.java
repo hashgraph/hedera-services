@@ -227,7 +227,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
     private HapiSpec approveForAllSpenderCanDelegateOnNFT() {
         final String delegatingSpender = "delegatingSpender";
         final String newSpender = "newSpender";
-        return defaultHapiSpec("ApproveForAllSpenderCanDelegateOnNFTs")
+        return defaultHapiSpec("approveForAllSpenderCanDelegateOnNFT")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
@@ -1360,7 +1360,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
     }
 
     private HapiSpec approveForAllDoesNotSetExplicitNFTSpender() {
-        return defaultHapiSpec("ApproveForAllSetNFTSpender")
+        return defaultHapiSpec("approveForAllDoesNotSetExplicitNFTSpender")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),

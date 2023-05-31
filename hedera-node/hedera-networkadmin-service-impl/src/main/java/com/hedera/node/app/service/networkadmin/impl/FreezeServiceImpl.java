@@ -27,7 +27,10 @@ import java.util.Set;
 
 /** Standard implementation of the {@link FreezeService} {@link com.hedera.node.app.spi.Service}. */
 public final class FreezeServiceImpl implements FreezeService {
+    // special files will move to FileService
     public static final String UPGRADE_FILES_KEY = "SPECIAL_FILES";
+
+    public static final String DUAL_STATE_KEY = "DUAL_STATE";
 
     private static final SemanticVersion CURRENT_VERSION =
             SemanticVersion.newBuilder().minor(34).build();
