@@ -31,7 +31,6 @@ import java.util.Iterator;
 import java.util.List;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
-
 /** A consensus round with events and all other relevant data. */
 public class ConsensusRound implements Round {
     /** an unmodifiable list of consensus events in this round, in consensus order */

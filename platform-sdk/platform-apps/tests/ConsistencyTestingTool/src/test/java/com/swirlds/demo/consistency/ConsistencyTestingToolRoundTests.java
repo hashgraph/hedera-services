@@ -78,7 +78,8 @@ class ConsistencyTestingToolRoundTests {
             mockEvents.add(mockEvent);
         });
 
-        return new ConsensusRound(mockEvents, mock(EventImpl.class), mock(GraphGenerations.class), mock(ConsensusSnapshot.class));
+        return new ConsensusRound(
+                mockEvents, mock(EventImpl.class), mock(GraphGenerations.class), mock(ConsensusSnapshot.class));
     }
 
     @Test

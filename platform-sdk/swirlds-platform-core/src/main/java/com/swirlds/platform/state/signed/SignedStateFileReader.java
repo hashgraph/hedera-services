@@ -166,10 +166,10 @@ public final class SignedStateFileReader {
                 (final MerkleDataInputStream in) -> {
                     readAndCheckVersion(in);
                     return null;
-                    //TODO needs platform context
-//                    return new SignedState(
-//                            in.readMerkleTree(stateFile.getParent(),
-//                                    MAX_MERKLE_NODES_IN_STATE));
+                    // TODO needs platform context
+                    //                    return new SignedState(
+                    //                            in.readMerkleTree(stateFile.getParent(),
+                    //                                    MAX_MERKLE_NODES_IN_STATE));
                 });
     }
 

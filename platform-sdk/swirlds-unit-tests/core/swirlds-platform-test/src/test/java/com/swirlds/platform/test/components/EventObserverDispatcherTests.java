@@ -75,12 +75,11 @@ class EventObserverDispatcherTests {
 
         e2.setLastInRoundReceived(true);
 
-        dispatchAndCheckConsensus(
-                new ConsensusRound(
-                        List.of(e1, e2),
-                        mock(EventImpl.class), Generations.GENESIS_GENERATIONS,
-                        mock(ConsensusSnapshot.class)
-                ));
+        dispatchAndCheckConsensus(new ConsensusRound(
+                List.of(e1, e2),
+                mock(EventImpl.class),
+                Generations.GENESIS_GENERATIONS,
+                mock(ConsensusSnapshot.class)));
     }
 
     private void dispatchAndCheckConsensus(final ConsensusRound consensusRound, final SimpleEventTracker... yes) {

@@ -16,6 +16,9 @@
 
 package com.swirlds.platform;
 
+import static com.swirlds.logging.LogMarker.CONSENSUS_VOTING;
+import static com.swirlds.logging.LogMarker.STARTUP;
+
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.consensus.AncestorSearch;
@@ -36,9 +39,6 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusMetrics;
 import com.swirlds.platform.state.signed.LoadableFromSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -47,9 +47,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-
-import static com.swirlds.logging.LogMarker.CONSENSUS_VOTING;
-import static com.swirlds.logging.LogMarker.STARTUP;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * All the code for calculating the consensus for events in a hashgraph. This calculates the
@@ -183,9 +182,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus,
      * @param addressBook the global address book, which never changes
      */
     public ConsensusImpl(
-            final ConsensusConfig config,
-            final ConsensusMetrics consensusMetrics,
-            final AddressBook addressBook) {
+            final ConsensusConfig config, final ConsensusMetrics consensusMetrics, final AddressBook addressBook) {
         super(config, new SequentialRingBuffer<>(ConsensusConstants.ROUND_FIRST, config.roundsExpired() * 2));
         this.config = config;
         this.consensusMetrics = consensusMetrics;
@@ -683,8 +680,8 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus,
 
         return new ConsensusRound(
                 consensusEvents,
-                //TODO can this be null?
-                recentEvents.get(recentEvents.size()-1),
+                // TODO can this be null?
+                recentEvents.get(recentEvents.size() - 1),
                 new Generations(this),
                 new ConsensusSnapshot(
                         decidedRoundNumber,

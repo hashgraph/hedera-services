@@ -47,8 +47,6 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.util.iterator.SkippingIterator;
 import com.swirlds.platform.util.iterator.TypedIterator;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
-
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -58,6 +56,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
  * An internal platform event. It holds all the event data relevant to the platform. It implements the Event interface
@@ -152,9 +151,9 @@ public class EventImpl extends EventMetadata
      *
      * @param consensusEvent the consensus data to contain within this event
      */
-    //public EventImpl(final DetailedConsensusEvent consensusEvent) {
+    // public EventImpl(final DetailedConsensusEvent consensusEvent) {
     //    buildFromConsensusEvent(consensusEvent);
-    //}
+    // }
 
     public EventImpl(
             final BaseEventHashedData baseEventHashedData,

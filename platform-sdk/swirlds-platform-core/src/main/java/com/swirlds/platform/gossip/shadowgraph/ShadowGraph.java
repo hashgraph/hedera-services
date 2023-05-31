@@ -182,10 +182,7 @@ public class ShadowGraph implements Clearable {
     public void startFromGeneration(final long generation) {
         expireBelow = generation;
         oldestGeneration = generation;
-        logger.info(
-                STARTUP.getMarker(),
-                "Shadow graph starting from generation {}",
-                generation);
+        logger.info(STARTUP.getMarker(), "Shadow graph starting from generation {}", generation);
     }
 
     /**

@@ -197,8 +197,7 @@ public class EventFlowWrapper {
             final Consumer<ConsensusRound> roundConsumer,
             final EventEmitter<?> eventEmitter) {
 
-        final Consensus consensus =
-                ConsensusUtils.buildSimpleConsensus(addressBook);
+        final Consensus consensus = ConsensusUtils.buildSimpleConsensus(addressBook);
 
         final List<ConsensusRound> allConsensusRounds = new LinkedList<>();
 

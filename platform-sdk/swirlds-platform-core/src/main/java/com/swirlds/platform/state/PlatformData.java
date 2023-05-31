@@ -24,7 +24,6 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.events.EventSerializationOptions;
 import com.swirlds.common.utility.NonCryptographicHashing;
 import com.swirlds.platform.consensus.RoundCalculationUtils;
 import com.swirlds.platform.internal.EventImpl;
@@ -110,13 +109,12 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
      */
     private Hash nextEpochHash;
 
-    //TODO add snapshot
+    // TODO add snapshot
 
     /**
      * The number of non-ancient rounds.
      */
     private int roundsNonAncient;
-
 
     public PlatformData() {}
 

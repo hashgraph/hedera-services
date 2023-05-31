@@ -18,6 +18,7 @@ package com.swirlds.platform.state;
 
 import static com.swirlds.common.utility.Units.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
+
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.events.Event;

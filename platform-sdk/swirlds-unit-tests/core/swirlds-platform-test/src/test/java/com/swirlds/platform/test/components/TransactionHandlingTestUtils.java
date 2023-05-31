@@ -75,6 +75,7 @@ public final class TransactionHandlingTestUtils {
             events.add(newDummyEvent(transactionCount));
         }
 
-        return new ConsensusRound(events, mock(EventImpl.class), mock(GraphGenerations.class), mock(ConsensusSnapshot.class));
+        return new ConsensusRound(
+                events, mock(EventImpl.class), mock(GraphGenerations.class), mock(ConsensusSnapshot.class));
     }
 }

@@ -26,7 +26,6 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.ConsensusImpl;
 import com.swirlds.platform.consensus.GraphGenerations;
-import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.intake.IntakeCycleStats;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.metrics.ConsensusMetrics;
@@ -72,9 +71,7 @@ public abstract class ConsensusUtils {
 
     public static ConsensusImpl buildSimpleConsensus(final AddressBook addressBook) {
         return new ConsensusImpl(
-                ConfigurationHolder.getConfigData(ConsensusConfig.class),
-                NOOP_CONSENSUS_METRICS,
-                addressBook);
+                ConfigurationHolder.getConfigData(ConsensusConfig.class), NOOP_CONSENSUS_METRICS, addressBook);
     }
 
     public static void checkGenerations(

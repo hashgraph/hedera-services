@@ -16,6 +16,12 @@
 
 package com.swirlds.platform.eventhandling;
 
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_3;
+import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
+import static com.swirlds.logging.LogMarker.RECONNECT;
+import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
+
 import com.swirlds.base.function.CheckedConsumer;
 import com.swirlds.base.state.Startable;
 import com.swirlds.common.config.ConsensusConfig;
@@ -51,19 +57,12 @@ import com.swirlds.platform.stats.AverageAndMax;
 import com.swirlds.platform.stats.AverageStat;
 import com.swirlds.platform.stats.CycleTimingStat;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
-
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_3;
-import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
-import static com.swirlds.logging.LogMarker.RECONNECT;
-import static com.swirlds.logging.LogMarker.STARTUP;
-import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Created by a Platform to manage the flow of consensus events to SwirldState (1 instance or 3 depending on the
@@ -435,7 +434,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
                 .setConsensusTimestamp(round.getLastEvent().getLastTransTime())
                 .setCreationSoftwareVersion(softwareVersion)
                 .setRoundsNonAncient(roundsNonAncient);
-                //round.getSnapshot(),
+        // round.getSnapshot(),
     }
 
     private void createSignedState() throws InterruptedException {

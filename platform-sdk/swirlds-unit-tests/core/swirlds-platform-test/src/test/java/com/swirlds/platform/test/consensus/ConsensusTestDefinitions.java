@@ -46,7 +46,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 
-//TODO check develop for Eds changes
+// TODO check develop for Eds changes
 public final class ConsensusTestDefinitions {
 
     private ConsensusTestDefinitions() {}
@@ -258,8 +258,8 @@ public final class ConsensusTestDefinitions {
         // If the number of nodes is not divisible by 3 then the last clique will be slightly larger
         final int cliqueSize = numberOfNodes / 3;
 
-        //TODO where did this come from?
-        //return List.of(phase1, phase2, phase3);
+        // TODO where did this come from?
+        // return List.of(phase1, phase2, phase3);
 
         // A node to clique mapping
         final Map<Integer, Integer> cliques = new HashMap<>();

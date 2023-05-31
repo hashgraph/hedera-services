@@ -45,7 +45,6 @@ import com.swirlds.platform.test.event.IndexedEvent;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
-import java.util.function.BiConsumer;
 
 /** Event intake with consensus and shadowgraph, used for testing */
 public class TestIntake implements LoadableFromSignedState {
@@ -70,10 +69,7 @@ public class TestIntake implements LoadableFromSignedState {
     /**
      * @param ab the address book used by this intake
      */
-    public TestIntake(
-            final AddressBook ab,
-            final Time time,
-            final ConsensusConfig consensusConfig) {
+    public TestIntake(final AddressBook ab, final Time time, final ConsensusConfig consensusConfig) {
         output = new ConsensusOutput(time);
         consensus = new ConsensusImpl(consensusConfig, ConsensusUtils.NOOP_CONSENSUS_METRICS, ab);
         shadowGraph = new ShadowGraph(mock(SyncMetrics.class));

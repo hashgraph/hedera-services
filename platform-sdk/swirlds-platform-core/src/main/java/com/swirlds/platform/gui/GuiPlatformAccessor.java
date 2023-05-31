@@ -203,7 +203,9 @@ public final class GuiPlatformAccessor {
                         return Long.compare(o1.getConsensusOrder(), o2.getConsensusOrder());
                     } else if (o1.getConsensusTimestamp() == null && o2.getConsensusTimestamp() == null) {
                         // neither are consensus
-                        return o1.getBaseEvent().getTimeReceived().compareTo(o2.getBaseEvent().getTimeReceived());
+                        return o1.getBaseEvent()
+                                .getTimeReceived()
+                                .compareTo(o2.getBaseEvent().getTimeReceived());
                     } else {
                         // one is consensus, the other is not
                         if (o1.getConsensusTimestamp() == null) {

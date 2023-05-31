@@ -137,12 +137,8 @@ class UptimeTests {
             assertEquals(NO_ROUND, genesisUptimeData.getLastJudgeRound(address.getNodeId()));
         }
 
-        final ConsensusRound roundOne =
-                new ConsensusRound(
-                        firstRoundEvents,
-                        mock(EventImpl.class),
-                        mock(GraphGenerations.class),
-                        mock(ConsensusSnapshot.class));
+        final ConsensusRound roundOne = new ConsensusRound(
+                firstRoundEvents, mock(EventImpl.class), mock(GraphGenerations.class), mock(ConsensusSnapshot.class));
         uptimeTracker.handleRound(roundOne, genesisUptimeData, addressBook);
 
         for (final Address address : addressBook) {
@@ -192,8 +188,8 @@ class UptimeTests {
                 noSecondRoundEvents,
                 noSecondRoundJudges);
 
-        final ConsensusRound roundTwo =
-                new ConsensusRound(secondRoundEvents, mock(EventImpl.class), mock(GraphGenerations.class), mock(ConsensusSnapshot.class));
+        final ConsensusRound roundTwo = new ConsensusRound(
+                secondRoundEvents, mock(EventImpl.class), mock(GraphGenerations.class), mock(ConsensusSnapshot.class));
         uptimeTracker.handleRound(roundTwo, nextRoundUptimeData, addressBook);
 
         for (final Address address : addressBook) {
@@ -276,8 +272,8 @@ class UptimeTests {
             assertEquals(NO_ROUND, genesisUptimeData.getLastJudgeRound(address.getNodeId()));
         }
 
-        final ConsensusRound roundOne =
-                new ConsensusRound(firstRoundEvents, mock(EventImpl.class), mock(GraphGenerations.class), mock(ConsensusSnapshot.class));
+        final ConsensusRound roundOne = new ConsensusRound(
+                firstRoundEvents, mock(EventImpl.class), mock(GraphGenerations.class), mock(ConsensusSnapshot.class));
         uptimeTracker.handleRound(roundOne, genesisUptimeData, addressBook);
 
         for (final Address address : addressBook) {
@@ -333,8 +329,8 @@ class UptimeTests {
                 noSecondRoundEvents,
                 noSecondRoundJudges);
 
-        final ConsensusRound roundTwo =
-                new ConsensusRound(secondRoundEvents, mock(EventImpl.class), mock(GraphGenerations.class), mock(ConsensusSnapshot.class));
+        final ConsensusRound roundTwo = new ConsensusRound(
+                secondRoundEvents, mock(EventImpl.class), mock(GraphGenerations.class), mock(ConsensusSnapshot.class));
         uptimeTracker.handleRound(roundTwo, nextRoundUptimeData, newAddressBook);
 
         for (final Address address : newAddressBook) {
@@ -614,8 +610,8 @@ class UptimeTests {
             assertEquals(NO_ROUND, genesisUptimeData.getLastJudgeRound(address.getNodeId()));
         }
 
-        final ConsensusRound roundOne =
-                new ConsensusRound(firstRoundEvents, mock(EventImpl.class), mock(GraphGenerations.class), mock(ConsensusSnapshot.class));
+        final ConsensusRound roundOne = new ConsensusRound(
+                firstRoundEvents, mock(EventImpl.class), mock(GraphGenerations.class), mock(ConsensusSnapshot.class));
         uptimeTracker.handleRound(roundOne, genesisUptimeData, addressBook);
 
         // Simulate a following round, but allow a long time to pass
@@ -626,8 +622,8 @@ class UptimeTests {
         final List<EventImpl> secondRoundEvents = generateEvents(
                 random, time, 2, Duration.ofSeconds(1), addressBook, eventCount, noSecondRoundEvents, Set.of());
 
-        final ConsensusRound roundTwo =
-                new ConsensusRound(secondRoundEvents, mock(EventImpl.class), mock(GraphGenerations.class), mock(ConsensusSnapshot.class));
+        final ConsensusRound roundTwo = new ConsensusRound(
+                secondRoundEvents, mock(EventImpl.class), mock(GraphGenerations.class), mock(ConsensusSnapshot.class));
         uptimeTracker.handleRound(roundTwo, nextRoundUptimeData, addressBook);
 
         assertTrue(uptimeTracker.isSelfDegraded());
@@ -639,8 +635,8 @@ class UptimeTests {
         final List<EventImpl> thirdRoundEvents =
                 generateEvents(random, time, 3, Duration.ofSeconds(1), addressBook, eventCount, Set.of(), Set.of());
 
-        final ConsensusRound roundThree =
-                new ConsensusRound(thirdRoundEvents, mock(EventImpl.class), mock(GraphGenerations.class), mock(ConsensusSnapshot.class));
+        final ConsensusRound roundThree = new ConsensusRound(
+                thirdRoundEvents, mock(EventImpl.class), mock(GraphGenerations.class), mock(ConsensusSnapshot.class));
         uptimeTracker.handleRound(roundThree, finalRoundUptimeData, addressBook);
 
         assertFalse(uptimeTracker.isSelfDegraded());
