@@ -103,7 +103,7 @@ public final class ConsensusTestDefinitions {
     /** Test consensus in the presence of forks. */
     public static void forkingTests(final TestInput input) {
         // Use a custom event source generator that creates forking event sources
-        final Function<List<Long>, List<EventSource<?>>> eventSourceBuilder = nodeStakes -> {
+        final Function<List<Long>, List<EventSource<?>>> eventSourceBuilder = nodeWeights -> {
             final double forkProbability = 0.1;
             final int numberOfForkedBranches = 10;
             final long totalWeight = nodeWeights.stream().reduce(0L, Long::sum);
@@ -258,7 +258,9 @@ public final class ConsensusTestDefinitions {
         // If the number of nodes is not divisible by 3 then the last clique will be slightly larger
         final int cliqueSize = numberOfNodes / 3;
 
-        return List.of(phase1, phase2, phase3);
+        //TODO where did this come from?
+        //return List.of(phase1, phase2, phase3);
+
         // A node to clique mapping
         final Map<Integer, Integer> cliques = new HashMap<>();
         for (int i = 0; i < cliqueSize; i++) {
