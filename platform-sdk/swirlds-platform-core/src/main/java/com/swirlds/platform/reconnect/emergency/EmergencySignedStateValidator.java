@@ -21,7 +21,7 @@ import static com.swirlds.logging.LogMarker.SIGNED_STATE;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.platform.state.EmergencyRecoveryFile;
+import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.state.StateSettings;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;

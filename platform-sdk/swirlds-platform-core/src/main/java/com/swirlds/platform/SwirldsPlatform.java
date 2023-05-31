@@ -129,7 +129,7 @@ import com.swirlds.platform.metrics.TransactionMetrics;
 import com.swirlds.platform.observers.ConsensusRoundObserver;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.observers.PreConsensusEventObserver;
-import com.swirlds.platform.state.EmergencyRecoveryManager;
+import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.StateSettings;
 import com.swirlds.platform.state.SwirldStateManager;

@@ -32,7 +32,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.logging.payloads.StateSavedToDiskPayload;
 import com.swirlds.platform.Settings;
-import com.swirlds.platform.state.EmergencyRecoveryFile;
+import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.StateSettings;
 import edu.umd.cs.findbugs.annotations.NonNull;

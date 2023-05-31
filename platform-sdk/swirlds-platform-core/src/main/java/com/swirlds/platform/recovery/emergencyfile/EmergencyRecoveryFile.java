@@ -14,18 +14,13 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.state;
+package com.swirlds.platform.recovery.emergencyfile;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.jackson.HashDeserializer;
-import com.swirlds.common.jackson.InstantDeserializer;
 import com.swirlds.platform.Settings;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -47,7 +42,7 @@ public record EmergencyRecoveryFile(Recovery recovery) {
      * @param timestamp the consensus timestamp of the state this file is for
      */
     public EmergencyRecoveryFile(final long round, final Hash hash, final Instant timestamp) {
-        this(new Recovery(new State(round, hash, timestamp), null));
+        this(new Recovery(new State(round, hash, timestamp), null, null, null));
     }
 
     /**
@@ -58,7 +53,7 @@ public record EmergencyRecoveryFile(Recovery recovery) {
      * @param bootstrapTime the consensus timestamp of the bootstrap state used to start the event recovery process
      */
     public EmergencyRecoveryFile(final State state, final Instant bootstrapTime) {
-        this(new Recovery(state, new Boostrap(bootstrapTime)));
+        this(new Recovery(state, new Boostrap(bootstrapTime), null, null));
     }
 
     /**
@@ -132,36 +127,4 @@ public record EmergencyRecoveryFile(Recovery recovery) {
             throw new IOException("Required field 'hash' is null.");
         }
     }
-
-    /**
-     * The top level of the emergency recovery YAML structure.
-     *
-     * @param state    information about the state written to disk
-     * @param boostrap information about the state used to bootstrap event recovery. Not written during normal
-     *                 operation. Only written during event recovery.
-     */
-    public record Recovery(State state, Boostrap boostrap) {}
-
-    /**
-     * Data about the state written to disk, either during normal operation or at the end of event recovery.
-     *
-     * @param round     the round of the state. This value is required by the platform when reading a file.
-     * @param hash      the hash of the state. This value is required by the platform when reading a file.
-     * @param timestamp the consensus timestamp of the state. This value is optional for the platform when reading a
-     *                  file, but should always be populated with an accurate value when written by the platform.
-     */
-    public record State(
-            long round,
-            @JsonSerialize(using = ToStringSerializer.class) @JsonDeserialize(using = HashDeserializer.class) Hash hash,
-            @JsonSerialize(using = ToStringSerializer.class) @JsonDeserialize(using = InstantDeserializer.class)
-                    Instant timestamp) {}
-
-    /**
-     * Data about the bootstrap state loaded during event recovery (the starting state)
-     *
-     * @param timestamp the consensus timestamp of the bootstrap state
-     */
-    public record Boostrap(
-            @JsonSerialize(using = ToStringSerializer.class) @JsonDeserialize(using = InstantDeserializer.class)
-                    Instant timestamp) {}
 }
