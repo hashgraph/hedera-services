@@ -55,9 +55,10 @@ public class RecordsSuite extends HapiSuite {
 
     HapiSpec bigCall() {
         final var contract = "BigBig";
+        final var txName = "BigCall";
         final long byteArraySize = (long) (87.5 * 1_024);
 
-        return defaultHapiSpec("BigRecord")
+        return defaultHapiSpec("bigCall")
                 .given(
                         cryptoCreate("payer").balance(10 * ONE_HUNDRED_HBARS),
                         uploadInitCode(contract),
@@ -65,8 +66,8 @@ public class RecordsSuite extends HapiSuite {
                 .when(contractCall(contract, "pick", byteArraySize)
                         .payingWith("payer")
                         .gas(400_000L)
-                        .via("bigCall"))
-                .then(getTxnRecord("bigCall"));
+                        .via(txName))
+                .then(getTxnRecord(txName));
     }
 
     HapiSpec txRecordsContainValidTransfers() {

@@ -33,9 +33,9 @@ import javax.inject.Singleton;
  * A {@code TransactionDispatcher} provides functionality to forward pre-check, pre-handle, and handle-transaction
  * requests to the appropriate handler
  *
- * <p>For handle, mostly just supports the limited form of the Consensus Service handlers
- * described in https://github.com/hashgraph/hedera-services/issues/4945, while still trying to make a bit of progress
- * toward the general implementation.
+ * <p>For handle, mostly just supports the limited form of the Consensus Service handlers described in
+ * <a href="https://github.com/hashgraph/hedera-services/issues/4945">issue #4945</a>,
+ * while still trying to make a bit of progress toward the general implementation.
  */
 @Singleton
 public class TransactionDispatcher {
@@ -107,6 +107,9 @@ public class TransactionDispatcher {
         } catch (UnsupportedOperationException ex) {
             throw new HandleException(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
         }
+
+        // TODO: Kick off special file handling if needed
+        // TODO: Also load new config into context if needed
     }
 
     @NonNull

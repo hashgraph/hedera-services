@@ -24,6 +24,7 @@ import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.acco
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
+import static com.hedera.services.bdd.spec.keys.SigControl.SECP256K1_ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
@@ -169,7 +170,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                 cryptoTransferV1LazyCreate(),
                 cryptoTransferV2LazyCreate(),
                 transferTokenLazyCreate(),
-                transferTokensLazyCreate(),
+                transferTokensToEVMAddressAliasRevertAndTransferAgainSuccessfully(),
                 transferNftLazyCreate(),
                 transferNftsLazyCreate(),
                 erc20TransferLazyCreate(),
@@ -397,6 +398,8 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                 .maxAutomaticTokenAssociations(1)
                                 .keyShape(ED25519)
                                 .exposingCreatedIdTo(id -> civilianId.set(id.getAccountNum())),
+                        // If running locally, ensures the entity 0.0.<civilianId + 1> is an account w/ EVM address
+                        cryptoCreate("somebody").keyShape(SECP256K1_ON).withMatchingEvmAddress(),
                         tokenCreate(ft)
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
                                 .supplyKey(ftKey)
@@ -915,7 +918,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                 .then();
     }
 
-    private HapiSpec transferTokensLazyCreate() {
+    private HapiSpec transferTokensToEVMAddressAliasRevertAndTransferAgainSuccessfully() {
         final AtomicReference<String> tokenAddr = new AtomicReference<>();
 
         return defaultHapiSpec("transferTokensToEVMAddressAliasRevertAndTransferAgainSuccessfully")

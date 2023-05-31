@@ -71,7 +71,7 @@ public class SelfDestructSuite extends HapiSuite {
     private HapiSpec hscsEvm008SelfDestructInConstructorWorks() {
         final var contract = "FactorySelfDestructConstructor";
         final var nextAccount = "civilian";
-        return defaultHapiSpec("HSCS_EVM_008_SelfDestructInConstructorWorks")
+        return defaultHapiSpec("hscsEvm008SelfDestructInConstructorWorks")
                 .given(cryptoCreate(BENEFICIARY).balance(ONE_HUNDRED_HBARS), uploadInitCode(contract))
                 .when(
                         contractCreate(contract)
@@ -93,7 +93,7 @@ public class SelfDestructSuite extends HapiSuite {
     }
 
     private HapiSpec hscsEvm008SelfDestructWhenCalling() {
-        return defaultHapiSpec("HSCS_EVM_008_SelfDestructWhenCalling")
+        return defaultHapiSpec("hscsEvm008SelfDestructWhenCalling")
                 .given(
                         cryptoCreate("acc").balance(5 * ONE_HUNDRED_HBARS),
                         uploadInitCode(SELF_DESTRUCT_CALLABLE_CONTRACT))

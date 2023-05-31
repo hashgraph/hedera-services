@@ -68,10 +68,10 @@ public class TargetNetworkPrep extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(ensureSystemStateAsExpected());
+        return List.of(ensureSystemStateAsExpectedWithSystemDefaultFiles());
     }
 
-    private HapiSpec ensureSystemStateAsExpected() {
+    private HapiSpec ensureSystemStateAsExpectedWithSystemDefaultFiles() {
         final var emptyKey =
                 Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build();
         final var snapshot800 = "800startBalance";
@@ -84,7 +84,7 @@ public class TargetNetworkPrep extends HapiSuite {
                     Files.readString(relocatedIfNotPresentInWorkingDir(Paths.get(defaultPermissionsLoc)));
             final var serde = StandardSerdes.SYS_FILE_SERDES.get(122L);
 
-            return defaultHapiSpec("EnsureDefaultSystemFiles")
+            return defaultHapiSpec("ensureSystemStateAsExpectedWithSystemDefaultFiles")
                     .given(
                             uploadDefaultFeeSchedules(GENESIS),
                             fileUpdate(API_PERMISSIONS)

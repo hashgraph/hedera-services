@@ -21,6 +21,8 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.state.WrappedHederaState;
+import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
+import com.hedera.node.app.workflows.handle.validation.ExpiryValidatorImpl;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -88,8 +90,8 @@ public class Savepoint {
      * @return the next entity number
      */
     public long newEntityNum() {
-        // TODO: Implement Savepoint.newEntityNum()
-        throw new UnsupportedOperationException("Not implemented yet");
+        // TODO: Implement Savepoint.newEntityNum (https://github.com/hashgraph/hedera-services/issues/6701)
+        return 1L;
     }
 
     /**
@@ -99,8 +101,8 @@ public class Savepoint {
      */
     @NonNull
     public AttributeValidator attributeValidator() {
-        // TODO: Implement Savepoint.attributeValidator()
-        throw new UnsupportedOperationException("Not implemented yet");
+        // TODO: Implement Savepoint.attributeValidator (https://github.com/hashgraph/hedera-services/issues/6701)
+        return new AttributeValidatorImpl();
     }
 
     /**
@@ -110,7 +112,7 @@ public class Savepoint {
      */
     @NonNull
     public ExpiryValidator expiryValidator() {
-        // TODO: Implement Savepoint.expiryValidator()
-        throw new UnsupportedOperationException("Not implemented yet");
+        // TODO: Implement Savepoint.expiryValidator (https://github.com/hashgraph/hedera-services/issues/6701)
+        return new ExpiryValidatorImpl();
     }
 }

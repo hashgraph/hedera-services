@@ -21,8 +21,10 @@ import static com.hedera.node.app.service.mono.state.migration.StateChildIndices
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentCaptor.forClass;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -85,7 +87,7 @@ class MapMigrationToDiskTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void migratesAccountsAsExpected() throws ConstructableRegistryException {
+    void migratesAccountsAsExpectedWithoutConsolidatedFcq() throws ConstructableRegistryException {
         registerForAccountsMerkleMap();
 
         final var accountsOnly = new ToDiskMigrations(true, false);
@@ -106,7 +108,7 @@ class MapMigrationToDiskTest {
         given(accountMigrator.apply(bAccount.state())).willReturn(bPretendOnDiskAccount);
 
         MapMigrationToDisk.migrateToDiskAsApropos(
-                1, mutableState, accountsOnly, virtualMapFactory, accountMigrator, tokenRelMigrator);
+                1, false, mutableState, accountsOnly, virtualMapFactory, accountMigrator, tokenRelMigrator);
 
         verify(mutableState).setChild(ACCOUNTS, accountStore);
         verify(mutableState).setChild(eq(StateChildIndices.PAYER_RECORDS_OR_CONSOLIDATED_FCQ), captor.capture());
@@ -117,6 +119,40 @@ class MapMigrationToDiskTest {
         assertNotNull(bRecords);
         assertEquals(aAccount.records(), aRecords.readOnlyQueue());
         assertEquals(bAccount.records(), bRecords.readOnlyQueue());
+        // and:
+        verify(accountStore).put(new EntityNumVirtualKey(aNum.longValue()), aPretendOnDiskAccount);
+        verify(accountStore).put(new EntityNumVirtualKey(bNum.longValue()), bPretendOnDiskAccount);
+        // and:
+        verify(accountStore, times(2)).copy();
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void migratesAccountsAsExpectedWithConsolidatedFcq() throws ConstructableRegistryException {
+        registerForAccountsMerkleMap();
+
+        final var accountsOnly = new ToDiskMigrations(true, false);
+        final var aAccount = nextAccount(false);
+        final var bAccount = nextAccount(true);
+        final MerkleMap<EntityNum, MerkleAccount> liveAccounts = new MerkleMap<>();
+        liveAccounts.put(aNum, aAccount);
+        liveAccounts.put(bNum, bAccount);
+
+        final var aPretendOnDiskAccount = new OnDiskAccount();
+        final var bPretendOnDiskAccount = new OnDiskAccount();
+
+        given(virtualMapFactory.newOnDiskAccountStorage()).willReturn(accountStore);
+        given(accountStore.copy()).willReturn(accountStore);
+        given(mutableState.getChild(ACCOUNTS)).willReturn(liveAccounts);
+        given(accountMigrator.apply(aAccount.state())).willReturn(aPretendOnDiskAccount);
+        given(accountMigrator.apply(bAccount.state())).willReturn(bPretendOnDiskAccount);
+
+        // All account records will have already been consolidated into a single FCQ
+        MapMigrationToDisk.migrateToDiskAsApropos(
+                1, true, mutableState, accountsOnly, virtualMapFactory, accountMigrator, tokenRelMigrator);
+
+        verify(mutableState).setChild(ACCOUNTS, accountStore);
+        verify(mutableState, never()).setChild(eq(StateChildIndices.PAYER_RECORDS_OR_CONSOLIDATED_FCQ), any());
         // and:
         verify(accountStore).put(new EntityNumVirtualKey(aNum.longValue()), aPretendOnDiskAccount);
         verify(accountStore).put(new EntityNumVirtualKey(bNum.longValue()), bPretendOnDiskAccount);
@@ -147,7 +183,7 @@ class MapMigrationToDiskTest {
         given(tokenRelMigrator.apply(bRel)).willReturn(bPretendOnDiskRel);
 
         MapMigrationToDisk.migrateToDiskAsApropos(
-                1, mutableState, relsOnly, virtualMapFactory, accountMigrator, tokenRelMigrator);
+                1, false, mutableState, relsOnly, virtualMapFactory, accountMigrator, tokenRelMigrator);
 
         verify(mutableState).setChild(TOKEN_ASSOCIATIONS, tokenRelStore);
         // and:
