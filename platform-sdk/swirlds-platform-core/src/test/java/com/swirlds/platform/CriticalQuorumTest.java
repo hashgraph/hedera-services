@@ -93,7 +93,7 @@ class CriticalQuorumTest {
      */
     private static Map<NodeId, Integer> buildEventCountMap(final AddressBook addressBook) {
         final Map<NodeId, Integer> eventCountMap = new HashMap<>();
-        for (Address address : addressBook) {
+        for (final Address address : addressBook) {
             eventCountMap.put(address.getNodeId(), 0);
         }
         return eventCountMap;
