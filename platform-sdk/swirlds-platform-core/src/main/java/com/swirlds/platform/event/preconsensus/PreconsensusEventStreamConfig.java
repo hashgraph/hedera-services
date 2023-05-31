@@ -95,7 +95,7 @@ import java.time.Duration;
  * @param replayHashPoolSize                              the number of threads used for hashing events during replay
  */
 @ConfigData("event.preconsensus")
-public record PreConsensusEventStreamConfig(
+public record PreconsensusEventStreamConfig(
         @ConfigProperty(defaultValue = "1000") int writeQueueCapacity,
         @ConfigProperty(defaultValue = "1h") Duration minimumRetentionPeriod,
         @ConfigProperty(defaultValue = "10") int preferredFileSizeMegabytes,

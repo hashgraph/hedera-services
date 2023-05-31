@@ -39,7 +39,7 @@ import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.components.state.StateManagementComponentFactory;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.dispatch.triggers.control.HaltRequestedConsumer;
-import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.metrics.WiringMetrics;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.Shutdown;
@@ -131,7 +131,7 @@ public class ManualWiring {
             @NonNull final PrioritySystemTransactionSubmitter prioritySystemTransactionSubmitter,
             @NonNull final HaltRequestedConsumer haltRequestedConsumer,
             @NonNull final AppCommunicationComponent appCommunicationComponent,
-            @NonNull final PreConsensusEventWriter preConsensusEventWriter,
+            @NonNull final PreconsensusEventWriter preConsensusEventWriter,
             @NonNull final Supplier<PlatformStatus> getPlatformStatus) {
 
         Objects.requireNonNull(platformSigner, "platformSigner");

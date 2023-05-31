@@ -42,9 +42,9 @@ import org.apache.logging.log4j.Logger;
  * Reads events from the preconsensus event stream, hashes them, and passes them to event intake. Reading from disk,
  * hashing, and intake are done on different threads.
  */
-public class EventReplayPipeline {
+public class PreconsensusEventReplayPipeline {
 
-    private static final Logger logger = LogManager.getLogger(EventReplayPipeline.class);
+    private static final Logger logger = LogManager.getLogger(PreconsensusEventReplayPipeline.class);
 
     private int eventCount = 0;
     private int transactionCount = 0;
@@ -74,7 +74,7 @@ public class EventReplayPipeline {
      * @param unhashedEventIterator iterates over events from the preconsensus event stream, events are unhashed
      * @param hashedEventConsumer   events should be passed to this method, in order, after being hashed
      */
-    public EventReplayPipeline(
+    public PreconsensusEventReplayPipeline(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
             @NonNull final IOIterator<EventImpl> unhashedEventIterator,
@@ -85,8 +85,8 @@ public class EventReplayPipeline {
         this.unhashedEventIterator = Objects.requireNonNull(unhashedEventIterator);
         this.hashedEventConsumer = Objects.requireNonNull(hashedEventConsumer);
 
-        final PreConsensusEventStreamConfig config =
-                platformContext.getConfiguration().getConfigData(PreConsensusEventStreamConfig.class);
+        final PreconsensusEventStreamConfig config =
+                platformContext.getConfiguration().getConfigData(PreconsensusEventStreamConfig.class);
 
         intakeQueue = new QueueThreadConfiguration<EventBeingHashed>(threadManager)
                 .setThreadName("EventReplayPipeline-Ingest")

@@ -25,10 +25,10 @@ import java.util.NoSuchElementException;
 /**
  * Iterates over events from a sequence of preconsensus event files.
  */
-public class PreConsensusEventMultiFileIterator implements IOIterator<EventImpl> {
+public class PreconsensusEventMultiFileIterator implements IOIterator<EventImpl> {
 
-    private final Iterator<PreConsensusEventFile> fileIterator;
-    private PreConsensusEventFileIterator currentIterator;
+    private final Iterator<PreconsensusEventFile> fileIterator;
+    private PreconsensusEventFileIterator currentIterator;
     private final long minimumGeneration;
     private EventImpl next;
     private int truncatedFileCount = 0;
@@ -42,8 +42,8 @@ public class PreConsensusEventMultiFileIterator implements IOIterator<EventImpl>
      * @param fileIterator
      * 		an iterator that walks over event files
      */
-    public PreConsensusEventMultiFileIterator(
-            final long minimumGeneration, final Iterator<PreConsensusEventFile> fileIterator) {
+    public PreconsensusEventMultiFileIterator(
+            final long minimumGeneration, final Iterator<PreconsensusEventFile> fileIterator) {
 
         this.fileIterator = fileIterator;
         this.minimumGeneration = minimumGeneration;
@@ -63,7 +63,7 @@ public class PreConsensusEventMultiFileIterator implements IOIterator<EventImpl>
                     break;
                 }
 
-                currentIterator = new PreConsensusEventFileIterator(fileIterator.next(), minimumGeneration);
+                currentIterator = new PreconsensusEventFileIterator(fileIterator.next(), minimumGeneration);
             } else {
                 next = currentIterator.next();
             }

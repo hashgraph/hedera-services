@@ -42,7 +42,7 @@ import com.swirlds.common.test.RandomAddressBookGenerator.WeightDistributionStra
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.platform.crypto.PlatformSigner;
-import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
@@ -632,7 +632,7 @@ class StateManagementComponentTests {
                 issConsumer::consume,
                 (msg) -> {},
                 (msg, t, code) -> {},
-                mock(PreConsensusEventWriter.class),
+                mock(PreconsensusEventWriter.class),
                 () -> PlatformStatus.ACTIVE);
     }
 }

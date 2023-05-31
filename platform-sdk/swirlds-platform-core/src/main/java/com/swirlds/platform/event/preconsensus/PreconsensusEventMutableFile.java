@@ -30,12 +30,12 @@ import java.nio.file.StandardCopyOption;
 /**
  * Represents a pre-consensus event file that can be written to.
  */
-public class PreConsensusEventMutableFile {
+public class PreconsensusEventMutableFile {
 
     /**
      * Describes the file that is being written to.
      */
-    private final PreConsensusEventFile descriptor;
+    private final PreconsensusEventFile descriptor;
 
     /**
      * Counts the bytes written to the file.
@@ -57,7 +57,7 @@ public class PreConsensusEventMutableFile {
      *
      * @param descriptor a description of the file
      */
-    PreConsensusEventMutableFile(final PreConsensusEventFile descriptor) throws IOException {
+    PreconsensusEventMutableFile(final PreconsensusEventFile descriptor) throws IOException {
         if (Files.exists(descriptor.getPath())) {
             throw new IOException("File " + descriptor.getPath() + " already exists");
         }
@@ -105,13 +105,13 @@ public class PreConsensusEventMutableFile {
      *                                        it is smaller than the previous file's highest generation.
      * @return the new span compressed file
      */
-    public PreConsensusEventFile compressGenerationalSpan(final long highestGenerationInPreviousFile) {
+    public PreconsensusEventFile compressGenerationalSpan(final long highestGenerationInPreviousFile) {
         if (highestGenerationInFile == descriptor.getMaximumGeneration()) {
             // No need to compress, we used the entire span.
             return descriptor;
         }
 
-        final PreConsensusEventFile newDescriptor = descriptor.buildFileWithCompressedSpan(
+        final PreconsensusEventFile newDescriptor = descriptor.buildFileWithCompressedSpan(
                 Math.max(highestGenerationInFile, highestGenerationInPreviousFile));
 
         try {

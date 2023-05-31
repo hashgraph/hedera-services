@@ -54,11 +54,11 @@ import org.apache.logging.log4j.Logger;
 /**
  * This class encapsulates the logic for replaying preconsensus events at boot up time.
  */
-public final class PreconsensusReplayWorkflow {
+public final class PreconsensusEventReplayWorkflow {
 
-    private static final Logger logger = LogManager.getLogger(PreconsensusReplayWorkflow.class);
+    private static final Logger logger = LogManager.getLogger(PreconsensusEventReplayWorkflow.class);
 
-    private PreconsensusReplayWorkflow() {}
+    private PreconsensusEventReplayWorkflow() {}
 
     /**
      * Replays preconsensus events from disk.
@@ -79,8 +79,8 @@ public final class PreconsensusReplayWorkflow {
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
             @NonNull final Time time,
-            @NonNull final PreConsensusEventFileManager preConsensusEventFileManager,
-            @NonNull final PreConsensusEventWriter preConsensusEventWriter,
+            @NonNull final PreconsensusEventFileManager preConsensusEventFileManager,
+            @NonNull final PreconsensusEventWriter preConsensusEventWriter,
             @NonNull final ShadowGraph shadowGraph,
             @NonNull final EventIntake eventIntake,
             @NonNull final QueueThread<EventIntakeTask> intakeQueue,
@@ -111,10 +111,10 @@ public final class PreconsensusReplayWorkflow {
             final Instant start = time.now();
 
             final IOIterator<EventImpl> iterator =
-                    preConsensusEventFileManager.getEventIterator(initialMinimumGenerationNonAncient);
+                    preConsensusEventFileManager.getEventIterator(initialMinimumGenerationNonAncient, true);
 
-            final EventReplayPipeline eventReplayPipeline =
-                    new EventReplayPipeline(platformContext, threadManager, iterator, (EventImpl e) -> {
+            final PreconsensusEventReplayPipeline eventReplayPipeline =
+                    new PreconsensusEventReplayPipeline(platformContext, threadManager, iterator, (EventImpl e) -> {
                         if (shadowGraph.isHashInGraph(e.getBaseEventHashedData().getHash())) {
                             // the shadowgraph doesn't deal with duplicate events well, filter them out here
                             return;

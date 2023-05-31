@@ -33,7 +33,7 @@ import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer
 import com.swirlds.platform.components.state.output.StateToDiskAttemptConsumer;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.dispatch.triggers.control.HaltRequestedConsumer;
-import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.function.Supplier;
@@ -59,7 +59,7 @@ public class DefaultStateManagementComponentFactory implements StateManagementCo
     private IssConsumer issConsumer;
     private HaltRequestedConsumer haltRequestedConsumer;
     private FatalErrorConsumer fatalErrorConsumer;
-    private PreConsensusEventWriter preConsensusEventWriter;
+    private PreconsensusEventWriter preConsensusEventWriter;
 
     public DefaultStateManagementComponentFactory(
             @NonNull final PlatformContext context,
@@ -133,7 +133,7 @@ public class DefaultStateManagementComponentFactory implements StateManagementCo
 
     @Override
     public @NonNull StateManagementComponentFactory setPreConsensusEventWriter(
-            @NonNull final PreConsensusEventWriter preConsensusEventWriter) {
+            @NonNull final PreconsensusEventWriter preConsensusEventWriter) {
         this.preConsensusEventWriter = throwArgNull(preConsensusEventWriter, "preConsensusEventWriter");
         return this;
     }

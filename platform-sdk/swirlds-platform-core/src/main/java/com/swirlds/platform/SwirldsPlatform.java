@@ -93,14 +93,14 @@ import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.linking.OrphanBufferingLinker;
 import com.swirlds.platform.event.linking.ParentFinder;
-import com.swirlds.platform.event.preconsensus.AsyncPreConsensusEventWriter;
-import com.swirlds.platform.event.preconsensus.NoOpPreConsensusEventWriter;
-import com.swirlds.platform.event.preconsensus.PreConsensusEventFileManager;
-import com.swirlds.platform.event.preconsensus.PreConsensusEventStreamConfig;
-import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
+import com.swirlds.platform.event.preconsensus.AsyncPreconsensusEventWriter;
+import com.swirlds.platform.event.preconsensus.NoOpPreconsensusEventWriter;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventFileManager;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventReplayWorkflow;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamSequencer;
-import com.swirlds.platform.event.preconsensus.PreconsensusReplayWorkflow;
-import com.swirlds.platform.event.preconsensus.SyncPreConsensusEventWriter;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
+import com.swirlds.platform.event.preconsensus.SyncPreconsensusEventWriter;
 import com.swirlds.platform.event.validation.AncientValidator;
 import com.swirlds.platform.event.validation.EventDeduplication;
 import com.swirlds.platform.event.validation.EventValidator;
@@ -269,12 +269,12 @@ public class SwirldsPlatform implements Platform, Startable {
     /**
      * Can be used to read preconsensus event files from disk.
      */
-    private final PreConsensusEventFileManager preConsensusEventFileManager;
+    private final PreconsensusEventFileManager preConsensusEventFileManager;
 
     /**
      * Writes pre-consensus events to disk.
      */
-    private final PreConsensusEventWriter preConsensusEventWriter;
+    private final PreconsensusEventWriter preConsensusEventWriter;
 
     /**
      * Responsible for transmitting and receiving events from the network.
@@ -975,9 +975,9 @@ public class SwirldsPlatform implements Platform, Startable {
     /**
      * Build the preconsensus event file manager.
      */
-    private PreConsensusEventFileManager buildPreConsensusEventFileManager() {
+    private PreconsensusEventFileManager buildPreConsensusEventFileManager() {
         try {
-            return new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), selfId.id());
+            return new PreconsensusEventFileManager(platformContext, OSTime.getInstance(), selfId.id());
         } catch (final IOException e) {
             throw new UncheckedIOException("unable load preconsensus files", e);
         }
@@ -987,17 +987,17 @@ public class SwirldsPlatform implements Platform, Startable {
      * Build the preconsensus event writer.
      */
     @NonNull
-    private PreConsensusEventWriter buildPreConsensusEventWriter(final PreConsensusEventFileManager fileManager) {
-        final PreConsensusEventStreamConfig preConsensusEventStreamConfig =
-                platformContext.getConfiguration().getConfigData(PreConsensusEventStreamConfig.class);
+    private PreconsensusEventWriter buildPreConsensusEventWriter(final PreconsensusEventFileManager fileManager) {
+        final PreconsensusEventStreamConfig preConsensusEventStreamConfig =
+                platformContext.getConfiguration().getConfigData(PreconsensusEventStreamConfig.class);
 
         if (!preConsensusEventStreamConfig.enableStorage()) {
-            return new NoOpPreConsensusEventWriter();
+            return new NoOpPreconsensusEventWriter();
         }
 
-        final PreConsensusEventWriter syncWriter = new SyncPreConsensusEventWriter(platformContext, fileManager);
+        final PreconsensusEventWriter syncWriter = new SyncPreconsensusEventWriter(platformContext, fileManager);
 
-        return new AsyncPreConsensusEventWriter(platformContext, threadManager, syncWriter);
+        return new AsyncPreconsensusEventWriter(platformContext, threadManager, syncWriter);
     }
 
     /**
@@ -1035,7 +1035,7 @@ public class SwirldsPlatform implements Platform, Startable {
     private void replayPreconsensusEvents() {
         final boolean enableReplay = platformContext
                 .getConfiguration()
-                .getConfigData(PreConsensusEventStreamConfig.class)
+                .getConfigData(PreconsensusEventStreamConfig.class)
                 .enableReplay();
         if (!enableReplay) {
             final PlatformStatus previous = currentPlatformStatus.getAndSet(PlatformStatus.READY);
@@ -1043,7 +1043,7 @@ public class SwirldsPlatform implements Platform, Startable {
                             "Platform status changed.", previous.name(), PlatformStatus.READY.name())
                     .toString());
         } else {
-            PreconsensusReplayWorkflow.replayPreconsensusEvents(
+            PreconsensusEventReplayWorkflow.replayPreconsensusEvents(
                     platformContext,
                     threadManager,
                     OSTime.getInstance(),
