@@ -21,6 +21,7 @@ import static com.swirlds.common.system.PlatformStatus.READY;
 import static com.swirlds.common.system.PlatformStatus.REPLAYING_EVENTS;
 import static com.swirlds.common.system.PlatformStatus.STARTING_UP;
 import static com.swirlds.common.units.TimeUnit.UNIT_MILLISECONDS;
+import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.PLATFORM_STATUS;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
@@ -41,7 +42,6 @@ import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
@@ -74,8 +74,6 @@ public final class PreconsensusReplayWorkflow {
      * @param stateManagementComponent           manages various copies of the state
      * @param currentPlatformStatus              a pointer to the current platform status
      * @param initialMinimumGenerationNonAncient the minimum generation of events to replay
-     * @param diskStateRound                     the round number of the state on disk
-     * @param diskStateTimestamp                 the timestamp of the state on disk
      */
     public static void replayPreconsensusEvents(
             @NonNull final PlatformContext platformContext,
@@ -89,9 +87,7 @@ public final class PreconsensusReplayWorkflow {
             @NonNull final ConsensusRoundHandler consensusRoundHandler,
             @NonNull final StateManagementComponent stateManagementComponent,
             @NonNull final AtomicReference<PlatformStatus> currentPlatformStatus,
-            final long initialMinimumGenerationNonAncient,
-            final long diskStateRound,
-            @Nullable final Instant diskStateTimestamp) {
+            final long initialMinimumGenerationNonAncient) {
 
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(time);
@@ -134,8 +130,6 @@ public final class PreconsensusReplayWorkflow {
 
             logReplayInfo(
                     stateManagementComponent,
-                    diskStateRound,
-                    diskStateTimestamp,
                     eventReplayPipeline.getEventCount(),
                     eventReplayPipeline.getTransactionCount(),
                     elapsed);
@@ -196,7 +190,7 @@ public final class PreconsensusReplayWorkflow {
         // Wait until all rounds from the preconsensus event stream have been fully processed.
         consensusRoundHandler.waitUntilNotBusy();
 
-        // TODO are there other queues we need to wait on?
+        // TODO are there other queues we need to wait on? (Talk to Lazar)
     }
 
     /**
@@ -204,8 +198,6 @@ public final class PreconsensusReplayWorkflow {
      */
     private static void logReplayInfo(
             @NonNull final StateManagementComponent stateManagementComponent,
-            final long diskStateRound,
-            @Nullable final Instant diskStateTimestamp,
             final long eventCount,
             final long transactionCount,
             @NonNull final Duration elapsedTime) {
@@ -220,19 +212,26 @@ public final class PreconsensusReplayWorkflow {
                         commaSeparatedNumber(eventCount));
                 return;
             }
-            final long latestRound = latestConsensusRound.get().getRound();
-            final long elapsedRounds = latestRound - diskStateRound; // TODO this is wonky for genesis
 
-            // TODO it would be better to use the timestamp of the last transaction in this round
-            final Instant latestRoundTimestamp = latestConsensusRound.get().getConsensusTimestamp();
+            final Instant firstTimestamp = stateManagementComponent.getFirstStateTimestamp();
+            final long firstRound = stateManagementComponent.getFirstStateRound();
 
-            final Duration elapsedConsensusTime;
-            if (diskStateTimestamp != null) {
-                elapsedConsensusTime = Duration.between(diskStateTimestamp, latestRoundTimestamp);
-            } else {
-                elapsedConsensusTime = Duration.ZERO;
-                // TODO we should compare time between first round and last round
+            if (firstTimestamp == null) {
+                // This should be impossible. If we have a state, we should have a timestamp.
+                logger.error(
+                        EXCEPTION.getMarker(),
+                        "Replayed {} preconsensus events. "
+                                + "First state timestamp is null, which should not be possible if a "
+                                + "round has reached consensus",
+                        commaSeparatedNumber(eventCount));
+                return;
             }
+
+            final long latestRound = latestConsensusRound.get().getRound();
+            final long elapsedRounds = latestRound - firstRound;
+
+            final Instant latestRoundTimestamp = latestConsensusRound.get().getConsensusTimestamp();
+            final Duration elapsedConsensusTime = Duration.between(firstTimestamp, latestRoundTimestamp);
 
             logger.info(
                     STARTUP.getMarker(),

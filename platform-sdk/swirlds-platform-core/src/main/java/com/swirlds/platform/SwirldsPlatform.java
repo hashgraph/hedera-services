@@ -221,7 +221,6 @@ public class SwirldsPlatform implements Platform, Startable {
      */
     private final Hash diskStateHash;
 
-    private final Instant diskStateTimestamp;
     private final StateManagementComponent stateManagementComponent;
     private final QueueThread<EventIntakeTask> intakeQueue;
     private final EventLinker eventLinker;
@@ -427,19 +426,12 @@ public class SwirldsPlatform implements Platform, Startable {
                     .getPlatformState()
                     .getPlatformData()
                     .getMinimumGenerationNonAncient();
-            diskStateTimestamp = loadedSignedState
-                    .get()
-                    .getState()
-                    .getPlatformState()
-                    .getPlatformData()
-                    .getConsensusTimestamp();
             startedFromGenesis = false;
         } else {
             diskStateHash = null;
             diskStateRound = -1;
             initialMinimumGenerationNonAncient = 0;
             startedFromGenesis = true;
-            diskStateTimestamp = null;
         }
 
         final LoadedState loadedState = initializeLoadedStateFromSignedState(loadedSignedState);
@@ -1051,9 +1043,7 @@ public class SwirldsPlatform implements Platform, Startable {
                     consensusRoundHandler,
                     stateManagementComponent,
                     currentPlatformStatus,
-                    initialMinimumGenerationNonAncient,
-                    diskStateRound,
-                    diskStateTimestamp);
+                    initialMinimumGenerationNonAncient);
         }
     }
 

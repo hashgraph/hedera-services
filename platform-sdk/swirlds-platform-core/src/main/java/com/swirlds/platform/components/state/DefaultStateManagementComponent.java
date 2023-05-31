@@ -67,6 +67,7 @@ import com.swirlds.platform.state.signed.SourceOfSignedState;
 import com.swirlds.platform.util.HashLogger;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
@@ -599,5 +600,22 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     public List<PostConsensusSystemTransactionTypedHandler<?>> getPostConsensusHandleMethods() {
         return List.of(new PostConsensusSystemTransactionTypedHandler<>(
                 StateSignatureTransaction.class, this::handleStateSignatureTransactionPostConsensus));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Nullable
+    public Instant getFirstStateTimestamp() {
+        return signedStateManager.getFirstStateTimestamp();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public long getFirstStateRound() {
+        return signedStateManager.getFirstStateRound();
     }
 }
