@@ -16,6 +16,7 @@ module com.hedera.node.app.service.contract.impl {
     requires org.hyperledger.besu.datatypes;
     requires tuweni.bytes;
     requires tuweni.units;
+    requires com.hedera.node.config;
 
     provides com.hedera.node.app.service.contract.ContractService with
             ContractServiceImpl;
@@ -28,4 +29,5 @@ module com.hedera.node.app.service.contract.impl {
             com.hedera.node.app.service.contract.impl.test;
     exports com.hedera.node.app.service.contract.impl.utils to
             com.hedera.node.app.service.contract.impl.test;
+    exports com.hedera.node.app.service.contract.impl.infra to com.hedera.node.app.service.contract.impl.test;
 }

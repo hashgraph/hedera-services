@@ -46,7 +46,7 @@ class ConversionUtilsTest {
     void justReturnsNumberFromSmallLongZeroAddress() {
         final var smallNumber = 0x1234L;
         final var address = Address.fromHexString("0x1234");
-        final var actual = ConversionUtils.numberOf(address, dispatch);
+        final var actual = ConversionUtils.maybeMissingNumberOf(address, dispatch);
         assertEquals(smallNumber, actual);
     }
 
@@ -54,22 +54,22 @@ class ConversionUtilsTest {
     void justReturnsNumberFromLargeLongZeroAddress() {
         final var largeNumber = 0x7fffffffffffffffL;
         final var address = Address.fromHexString("0x7fffffffffffffff");
-        final var actual = ConversionUtils.numberOf(address, dispatch);
+        final var actual = ConversionUtils.maybeMissingNumberOf(address, dispatch);
         assertEquals(largeNumber, actual);
     }
 
     @Test
     void returnsZeroIfMissingAlias() {
-        final var address = Address.fromHexString("0x8000000000000000");
-        final var actual = ConversionUtils.numberOf(address, dispatch);
-        assertEquals(0L, actual);
+        final var address = Address.fromHexString("0x010000000000000000");
+        final var actual = ConversionUtils.maybeMissingNumberOf(address, dispatch);
+        assertEquals(-1L, actual);
     }
 
     @Test
     void returnsGivenIfPresentAlias() {
         given(dispatch.resolveAlias(any())).willReturn(new EntityNumber(0x1234L));
-        final var address = Address.fromHexString("0x8000000000000000");
-        final var actual = ConversionUtils.numberOf(address, dispatch);
+        final var address = Address.fromHexString("0x010000000000000000");
+        final var actual = ConversionUtils.maybeMissingNumberOf(address, dispatch);
         assertEquals(0x1234L, actual);
     }
 }

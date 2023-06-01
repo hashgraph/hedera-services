@@ -17,23 +17,24 @@
 package com.hedera.node.app.service.contract.impl.test.state;
 
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.aliasFrom;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static org.hyperledger.besu.datatypes.Address.ALTBN128_ADD;
 import static org.hyperledger.besu.datatypes.Address.ZERO;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameState;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
-import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.node.app.spi.meta.bni.Dispatch;
 import com.hedera.node.app.spi.meta.bni.Scope;
+import java.util.List;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.EvmAccount;
+import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,14 +45,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ProxyWorldUpdaterTest {
     private static final long NUMBER = 123L;
     private static final long NEXT_NUMBER = 124L;
+    private static final long NUMBER_OF_DELETED = 125L;
     private static final long HAPI_PAYER_NUMBER = 777L;
-    private static final Address LONG_ZERO_ADDRESS = ConversionUtils.asLongZeroAddress(NUMBER);
-    private static final Address NEXT_LONG_ZERO_ADDRESS = ConversionUtils.asLongZeroAddress(NEXT_NUMBER);
+    private static final Address LONG_ZERO_ADDRESS = asLongZeroAddress(NUMBER);
+    private static final Address NEXT_LONG_ZERO_ADDRESS = asLongZeroAddress(NEXT_NUMBER);
     private static final Address SOME_EVM_ADDRESS = Address.fromHexString("0x1234123412341234123412341234123412341234");
-    private static final EntityNumber A_NUMBER = new EntityNumber(666L);
 
     @Mock
-    private Account immutableAccount;
+    private Account anImmutableAccount;
+
+    @Mock
+    private Account anotherImmutableAccount;
 
     @Mock
     private EvmAccount mutableAccount;
@@ -61,6 +65,9 @@ class ProxyWorldUpdaterTest {
 
     @Mock
     private Dispatch dispatch;
+
+    @Mock
+    private WorldUpdater parent;
 
     @Mock
     private EvmFrameStateFactory evmFrameStateFactory;
@@ -74,14 +81,14 @@ class ProxyWorldUpdaterTest {
     void setUp() {
         given(evmFrameStateFactory.createIn(scope)).willReturn(evmFrameState);
 
-        subject = new ProxyWorldUpdater(scope, evmFrameStateFactory);
+        subject = new ProxyWorldUpdater(scope, evmFrameStateFactory, null);
     }
 
     @Test
     void getsImmutableAccount() {
-        given(evmFrameState.getAccount(ALTBN128_ADD)).willReturn(immutableAccount);
+        given(evmFrameState.getAccount(ALTBN128_ADD)).willReturn(anImmutableAccount);
 
-        assertSame(immutableAccount, subject.get(ALTBN128_ADD));
+        assertSame(anImmutableAccount, subject.get(ALTBN128_ADD));
     }
 
     @Test
@@ -123,6 +130,18 @@ class ProxyWorldUpdaterTest {
     }
 
     @Test
+    void revertDelegatesToScope() {
+        subject.revert();
+        verify(scope).revert();
+    }
+
+    @Test
+    void commitDelegatesToScope() {
+        subject.commit();
+        verify(scope).commit();
+    }
+
+    @Test
     void usesHapiPayerIfRecipientIsZeroAddress() {
         givenDispatch();
         givenMatchingEntityNumbers();
@@ -156,6 +175,64 @@ class ProxyWorldUpdaterTest {
         givenDispatch();
 
         assertThrows(IllegalStateException.class, () -> subject.setupCreate(SOME_EVM_ADDRESS));
+    }
+
+    @Test
+    void dispatchesDeletingLongZeroAddressByNumber() {
+        givenDispatch();
+
+        subject.deleteAccount(ALTBN128_ADD);
+
+        verify(dispatch).deleteUnaliasedContract(ALTBN128_ADD.toBigInteger().longValueExact());
+    }
+
+    @Test
+    void dispatchesDeletingEvmAddressByAddress() {
+        givenDispatch();
+
+        subject.deleteAccount(SOME_EVM_ADDRESS);
+
+        verify(dispatch).deleteAliasedContract(aliasFrom(SOME_EVM_ADDRESS));
+    }
+
+    @Test
+    void hasEmptyParentIfNull() {
+        assertTrue(subject.parentUpdater().isEmpty());
+    }
+
+    @Test
+    void hasGivenParentIfNonNull() {
+        subject = new ProxyWorldUpdater(scope, evmFrameStateFactory, parent);
+        assertTrue(subject.parentUpdater().isPresent());
+        assertSame(parent, subject.parentUpdater().get());
+    }
+
+    @Test
+    void updaterHasExpectedProperties() {
+        final var updater = subject.updater();
+        assertInstanceOf(ProxyWorldUpdater.class, updater);
+        assertTrue(updater.parentUpdater().isPresent());
+        assertSame(subject, updater.parentUpdater().get());
+    }
+
+    @Test
+    void onlyReturnsNonDeletedAccountsAsTouched() {
+        givenDispatch();
+        given(dispatch.getModifiedAccountNumbers()).willReturn(List.of(NUMBER, NEXT_NUMBER, NUMBER_OF_DELETED));
+        given(evmFrameState.getAddress(NUMBER)).willReturn(asLongZeroAddress(NUMBER));
+        given(evmFrameState.getAddress(NEXT_NUMBER)).willReturn(SOME_EVM_ADDRESS);
+        given(evmFrameState.getAddress(NUMBER_OF_DELETED)).willReturn(null);
+        given(evmFrameState.getAccount(asLongZeroAddress(NUMBER))).willReturn(anImmutableAccount);
+        given(evmFrameState.getAccount(SOME_EVM_ADDRESS)).willReturn(anotherImmutableAccount);
+
+        final var touched = subject.getTouchedAccounts();
+
+        assertEquals(List.of(anImmutableAccount, anotherImmutableAccount), touched);
+    }
+
+    @Test
+    void doesntSupportDeletedAccountAddresses() {
+        assertThrows(UnsupportedOperationException.class, subject::getDeletedAccountAddresses);
     }
 
     private void givenDispatch() {

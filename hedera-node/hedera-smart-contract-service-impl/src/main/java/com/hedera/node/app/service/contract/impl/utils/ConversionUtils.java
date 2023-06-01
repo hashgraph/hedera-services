@@ -20,7 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.meta.bni.Dispatch;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.math.BigInteger;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -28,9 +28,10 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 
 public class ConversionUtils {
-    public static final long EVM_ADDRESS_LENGTH = 20L;
-    public static final long MISSING_ENTITY_NUMBER = 0L;
-    public static final BigInteger LAST_LONG_ZERO_ADDRESS = BigInteger.valueOf(Long.MAX_VALUE);
+    public static final long EVM_ADDRESS_LENGTH_AS_LONG = 20L;
+    public static final long MISSING_ENTITY_NUMBER = -1L;
+    public static final int EVM_ADDRESS_LENGTH_AS_INT = 20;
+    public static final int NUM_LONG_ZEROS = 12;
 
     /**
      * Given an EVM address (possibly long-zero), returns the number of the corresponding Hedera entity
@@ -41,14 +42,33 @@ public class ConversionUtils {
      * @param dispatch the dispatch
      * @return the number of the corresponding Hedera entity, or {@link #MISSING_ENTITY_NUMBER}
      */
-    public static long numberOf(@NonNull final Address address, @NonNull final Dispatch dispatch) {
-        if (isLongZero(address)) {
-            return address.toBigInteger().longValueExact();
+    public static long maybeMissingNumberOf(@NonNull final Address address, @NonNull final Dispatch dispatch) {
+        final var explicit = address.toArrayUnsafe();
+        if (isLongZeroAddress(explicit)) {
+            return longFrom(
+                    explicit[12],
+                    explicit[13],
+                    explicit[14],
+                    explicit[15],
+                    explicit[16],
+                    explicit[17],
+                    explicit[18],
+                    explicit[19]);
         } else {
             final var alias = aliasFrom(address);
             final var maybeNumber = dispatch.resolveAlias(alias);
             return (maybeNumber == null) ? MISSING_ENTITY_NUMBER : maybeNumber.number();
         }
+    }
+
+    /**
+     * Given a long-zero EVM address, returns the implied Hedera entity number.
+     *
+     * @param address the EVM address
+     * @return the implied Hedera entity number
+     */
+    public static long numberOfLongZero(@NonNull final Address address) {
+        return address.toUnsignedBigInteger().longValueExact();
     }
 
     /**
@@ -58,7 +78,7 @@ public class ConversionUtils {
      * @return whether it is long-zero
      */
     public static boolean isLongZero(@NonNull final Address address) {
-        return address.toBigInteger().compareTo(LAST_LONG_ZERO_ADDRESS) <= 0;
+        return isLongZeroAddress(address.toArrayUnsafe());
     }
 
     /**
@@ -97,11 +117,21 @@ public class ConversionUtils {
      * @param bytes the PBJ bytes
      * @return the Tuweni bytes
      */
-    public static @NonNull Bytes pbjToTuweniBytes(@NonNull com.hedera.pbj.runtime.io.buffer.Bytes bytes) {
+    public static @NonNull Bytes pbjToTuweniBytes(@NonNull final com.hedera.pbj.runtime.io.buffer.Bytes bytes) {
         if (bytes.length() == 0) {
             return Bytes.EMPTY;
         }
         return Bytes.wrap(clampedBytes(bytes, 0, Integer.MAX_VALUE));
+    }
+
+    /**
+     * Returns whether the given alias is an EVM address.
+     *
+     * @param alias the alias
+     * @return whether it is an EVM address
+     */
+    public static boolean isEvmAddress(@Nullable final com.hedera.pbj.runtime.io.buffer.Bytes alias) {
+        return alias != null && alias.length() == EVM_ADDRESS_LENGTH_AS_LONG;
     }
 
     /**
@@ -111,8 +141,8 @@ public class ConversionUtils {
      * @return the Besu address
      * @throws IllegalArgumentException if the bytes are not 20 bytes long
      */
-    public static @NonNull Address pbjToBesuAddress(@NonNull com.hedera.pbj.runtime.io.buffer.Bytes bytes) {
-        return Address.wrap(Bytes.wrap(clampedBytes(bytes, 20, 20)));
+    public static @NonNull Address pbjToBesuAddress(@NonNull final com.hedera.pbj.runtime.io.buffer.Bytes bytes) {
+        return Address.wrap(Bytes.wrap(clampedBytes(bytes, EVM_ADDRESS_LENGTH_AS_INT, EVM_ADDRESS_LENGTH_AS_INT)));
     }
 
     /**
@@ -122,7 +152,7 @@ public class ConversionUtils {
      * @return the Besu hash
      * @throws IllegalArgumentException if the bytes are not 32 bytes long
      */
-    public static @NonNull Hash pbjToBesuHash(@NonNull com.hedera.pbj.runtime.io.buffer.Bytes bytes) {
+    public static @NonNull Hash pbjToBesuHash(@NonNull final com.hedera.pbj.runtime.io.buffer.Bytes bytes) {
         return Hash.wrap(Bytes32.wrap(clampedBytes(bytes, 32, 32)));
     }
 
@@ -133,7 +163,7 @@ public class ConversionUtils {
      * @return the Tuweni bytes
      * @throws IllegalArgumentException if the bytes are more than 32 bytes long
      */
-    public static @NonNull UInt256 pbjToTuweniUInt256(@NonNull com.hedera.pbj.runtime.io.buffer.Bytes bytes) {
+    public static @NonNull UInt256 pbjToTuweniUInt256(@NonNull final com.hedera.pbj.runtime.io.buffer.Bytes bytes) {
         return (bytes.length() == 0) ? UInt256.ZERO : UInt256.fromBytes(Bytes32.wrap(clampedBytes(bytes, 0, 32)));
     }
 
@@ -162,5 +192,34 @@ public class ConversionUtils {
             dest[j] = (byte) (value & 0xffL);
             value >>= 8;
         }
+    }
+
+    private static boolean isLongZeroAddress(final byte[] explicit) {
+        for (int i = 0; i < NUM_LONG_ZEROS; i++) {
+            if (explicit[i] != 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @SuppressWarnings("java:S107")
+    private static long longFrom(
+            final byte b1,
+            final byte b2,
+            final byte b3,
+            final byte b4,
+            final byte b5,
+            final byte b6,
+            final byte b7,
+            final byte b8) {
+        return (b1 & 0xFFL) << 56
+                | (b2 & 0xFFL) << 48
+                | (b3 & 0xFFL) << 40
+                | (b4 & 0xFFL) << 32
+                | (b5 & 0xFFL) << 24
+                | (b6 & 0xFFL) << 16
+                | (b7 & 0xFFL) << 8
+                | (b8 & 0xFFL);
     }
 }

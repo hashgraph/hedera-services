@@ -44,4 +44,13 @@ public interface Fees {
      * @return the cost in tinybars
      */
     long transactionFeeInGas(@NonNull TransactionBody syntheticTransaction);
+
+
+    /**
+     * Given a fee in tinycents, return the equivalent cost in tinybars at the active exchange rate.
+     *
+     * @param feeInTinycents the fee in tinycents
+     * @return the equivalent cost in tinybars
+     */
+    long costInTinybars(long feeInTinycents);
 }

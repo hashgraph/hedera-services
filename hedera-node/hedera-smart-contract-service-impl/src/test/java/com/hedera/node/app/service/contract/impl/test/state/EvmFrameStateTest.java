@@ -58,7 +58,7 @@ class EvmFrameStateTest {
                 .willReturn(storage);
         given(writableStates.<EntityNumber, Bytecode>get(ContractServiceImpl.BYTECODE_KEY))
                 .willReturn(bytecode);
-        given(scope.contractState()).willReturn(writableStates);
+        given(scope.writableContractState()).willReturn(writableStates);
         given(scope.dispatch()).willReturn(dispatch);
 
         final var frameState = EvmFrameState.from(scope);

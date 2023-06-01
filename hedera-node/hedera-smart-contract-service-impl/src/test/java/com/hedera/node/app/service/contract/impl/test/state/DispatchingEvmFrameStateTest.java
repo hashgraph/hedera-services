@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.test.state;
 
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToBesuHash;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniUInt256;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -46,6 +45,7 @@ import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.code.CodeFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -63,11 +63,11 @@ class DispatchingEvmFrameStateTest {
     private static final Address LONG_ZERO_ADDRESS = Address.fromHexString("0000000000000000000000009abcdefabcdefbbb");
     private static final Address TOKEN_ADDRESS = Address.fromHexString("0000000000000000000000000000ffffffffffff");
     private static final Bytes SOME_PRETEND_CODE = Bytes.wrap("<NOT-REALLY-CODE>");
-    private static final Bytes SOME_PRETEND_CODE_HASH = Bytes.wrap("<NOT-REALLY-BYTECODE-HASH-12345>");
-    private static final Bytecode SOME_PRETEND_BYTECODE = Bytecode.newBuilder()
-            .code(SOME_PRETEND_CODE)
-            .codeHash(SOME_PRETEND_CODE_HASH)
-            .build();
+    private static final Bytecode SOME_PRETEND_BYTECODE =
+            Bytecode.newBuilder().code(SOME_PRETEND_CODE).build();
+    private static final Hash SOME_PRETEND_CODE_HASH = CodeFactory.createCode(
+                    pbjToTuweniBytes(SOME_PRETEND_CODE), 0, false)
+            .getCodeHash();
     private static final Bytes A_STORAGE_KEY = Bytes.wrap(Bytes32.random().toArrayUnsafe());
     private static final Bytes B_STORAGE_KEY = Bytes.wrap(Bytes32.random().toArrayUnsafe());
     private static final Bytes C_STORAGE_KEY = Bytes.wrap(Bytes32.random().toArrayUnsafe());
@@ -136,6 +136,25 @@ class DispatchingEvmFrameStateTest {
     }
 
     @Test
+    void preservesPrevNextPointersForStorageSlotUpdate() {
+        final var oldSlotValue = A_SLOT_VALUE
+                .copyBuilder()
+                .previousKey(Bytes.fromHex("1234"))
+                .nextKey(Bytes.fromHex("5678"))
+                .build();
+        final var newSlotValue = A_SLOT_VALUE
+                .copyBuilder()
+                .previousKey(Bytes.fromHex("1234"))
+                .nextKey(Bytes.fromHex("5678"))
+                .build();
+
+        given(storage.get(A_SLOT_KEY)).willReturn(oldSlotValue);
+        subject.setStorageValue(ACCOUNT_NUM, pbjToTuweniUInt256(A_STORAGE_KEY), pbjToTuweniUInt256(A_STORAGE_VALUE));
+
+        verify(storage).put(A_SLOT_KEY, newSlotValue);
+    }
+
+    @Test
     void getsZeroWordForMissingSlotKey() {
         final var actualWord = subject.getStorageValue(ACCOUNT_NUM, pbjToTuweniUInt256(A_STORAGE_KEY));
 
@@ -189,7 +208,7 @@ class DispatchingEvmFrameStateTest {
 
     @Test
     void getsEmptyCodeForNull() {
-        given(bytecode.get(new EntityNumber(ACCOUNT_NUM))).willReturn(new Bytecode(null, null));
+        given(bytecode.get(new EntityNumber(ACCOUNT_NUM))).willReturn(new Bytecode(null));
 
         final var actualCode = subject.getCode(ACCOUNT_NUM);
 
@@ -202,20 +221,11 @@ class DispatchingEvmFrameStateTest {
 
         final var actualCodeHash = subject.getCodeHash(ACCOUNT_NUM);
 
-        assertEquals(pbjToBesuHash(SOME_PRETEND_CODE_HASH), actualCodeHash);
+        assertEquals(SOME_PRETEND_CODE_HASH, actualCodeHash);
     }
 
     @Test
     void getsEmptyCodeHashForMissing() {
-        final var actualCodeHash = subject.getCodeHash(ACCOUNT_NUM);
-
-        assertSame(Hash.EMPTY, actualCodeHash);
-    }
-
-    @Test
-    void getsEmptyCodeHashForNull() {
-        given(bytecode.get(new EntityNumber(ACCOUNT_NUM))).willReturn(new Bytecode(null, null));
-
         final var actualCodeHash = subject.getCodeHash(ACCOUNT_NUM);
 
         assertSame(Hash.EMPTY, actualCodeHash);
@@ -317,6 +327,12 @@ class DispatchingEvmFrameStateTest {
         final var account = mockSubject.getAccount(TOKEN_ADDRESS);
 
         assertSame(mockAccount, account);
+    }
+
+    @Test
+    void delegatesSizeOfKvState() {
+        given(storage.size()).willReturn(123L);
+        assertEquals(123L, subject.getKvStateSize());
     }
 
     private void givenWellKnownBytecode() {

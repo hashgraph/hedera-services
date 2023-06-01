@@ -16,10 +16,10 @@
 
 package com.hedera.node.app.service.contract.impl.state;
 
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.EVM_ADDRESS_LENGTH;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.EVM_ADDRESS_LENGTH_AS_LONG;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.MISSING_ENTITY_NUMBER;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToBesuAddress;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToBesuHash;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniUInt256;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
@@ -29,6 +29,7 @@ import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
+import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.node.app.spi.meta.bni.Dispatch;
 import com.hedera.node.app.spi.meta.bni.Scope;
 import com.hedera.node.app.spi.state.WritableKVState;
@@ -43,6 +44,8 @@ import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.code.CodeFactory;
 
+import java.util.List;
+
 /**
  * An implementation of {@link EvmFrameState} that uses {@link WritableKVState}s to manage
  * contract storage and bytecode, and a {@link Dispatch} for additional influence over the
@@ -55,8 +58,6 @@ import org.hyperledger.besu.evm.code.CodeFactory;
  * TODO - get a little further to clarify DI strategy, then bring back a code cache.
  */
 public class DispatchingEvmFrameState implements EvmFrameState {
-    private static final int NUM_LONG_ZEROS = 12;
-    private static final long MISSING_ENTITY_NUMBER = -1;
     private static final String TOKEN_BYTECODE_PATTERN = "fefefefefefefefefefefefefefefefefefefefe";
 
     @SuppressWarnings("java:S6418")
@@ -79,12 +80,12 @@ public class DispatchingEvmFrameState implements EvmFrameState {
     @Override
     public void setStorageValue(final long number, @NonNull final UInt256 key, @NonNull final UInt256 value) {
         final var slotKey = new SlotKey(number, tuweniToPbjBytes(requireNonNull(key)));
-        // The previous and next keys in our iterable slot values are managed by logic that
-        // runs ONLY when the storage is committed to "base" state; leave them empty here
+        final var oldSlotValue = storage.get(slotKey);
+        // Ensure we don't change any prev/next keys until committing the final WorldUpdater
         final var slotValue = new SlotValue(
                 tuweniToPbjBytes(requireNonNull(value)),
-                com.hedera.pbj.runtime.io.buffer.Bytes.EMPTY,
-                com.hedera.pbj.runtime.io.buffer.Bytes.EMPTY);
+                oldSlotValue == null ? com.hedera.pbj.runtime.io.buffer.Bytes.EMPTY : oldSlotValue.previousKey(),
+                oldSlotValue == null ? com.hedera.pbj.runtime.io.buffer.Bytes.EMPTY : oldSlotValue.nextKey());
         storage.put(slotKey, slotValue);
     }
 
@@ -99,6 +100,18 @@ public class DispatchingEvmFrameState implements EvmFrameState {
     public @NonNull UInt256 getOriginalStorageValue(long number, @NonNull UInt256 key) {
         // TODO - when WritableKVState supports getting the original value, use that here
         throw new AssertionError("Not implemented");
+    }
+
+    @NonNull
+    @Override
+    public List<StorageChanges> getPendingStorageChanges() {
+        // TODO - when WritableKVState supports getting the original value, use that here
+        throw new AssertionError("Not implemented");
+    }
+
+    @Override
+    public long getKvStateSize() {
+        return storage.size();
     }
 
     @Override
@@ -118,8 +131,8 @@ public class DispatchingEvmFrameState implements EvmFrameState {
         if (numberedBytecode == null) {
             return Hash.EMPTY;
         } else {
-            final var codeHash = numberedBytecode.codeHash();
-            return codeHash == null ? Hash.EMPTY : pbjToBesuHash(codeHash);
+            return CodeFactory.createCode(pbjToTuweniBytes(numberedBytecode.code()), 0, false)
+                    .getCodeHash();
         }
     }
 
@@ -140,9 +153,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
 
     @Override
     public void setCode(final long number, @NonNull final Bytes code) {
-        bytecode.put(
-                new EntityNumber(number),
-                new Bytecode(tuweniToPbjBytes(requireNonNull(code)), com.hedera.pbj.runtime.io.buffer.Bytes.EMPTY));
+        bytecode.put(new EntityNumber(number), new Bytecode(tuweniToPbjBytes(requireNonNull(code))));
     }
 
     @Override
@@ -162,7 +173,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
     public Address getAddress(final long number) {
         final var account = validatedAccount(number);
         final var alias = account.alias();
-        if (alias.length() == EVM_ADDRESS_LENGTH) {
+        if (alias.length() == EVM_ADDRESS_LENGTH_AS_LONG) {
             return pbjToBesuAddress(alias);
         } else {
             return asLongZeroAddress(number);
@@ -182,7 +193,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
      */
     @Override
     public @Nullable EvmAccount getMutableAccount(@NonNull final Address address) {
-        final var number = maybeMissingNumberOf(requireNonNull(address));
+        final var number = ConversionUtils.maybeMissingNumberOf(address, dispatch);
         if (number == MISSING_ENTITY_NUMBER) {
             return null;
         }
@@ -210,54 +221,9 @@ public class DispatchingEvmFrameState implements EvmFrameState {
     private boolean isNotPriority(
             final Address address, final @NonNull com.hedera.hapi.node.state.token.Account account) {
         final var alias = requireNonNull(account).alias();
-        return alias != null && alias.length() == EVM_ADDRESS_LENGTH && !address.equals(pbjToBesuAddress(alias));
-    }
-
-    private long maybeMissingNumberOf(final Address address) {
-        final var explicit = address.toArrayUnsafe();
-        if (isLongZeroAddress(explicit)) {
-            return longFrom(
-                    explicit[12],
-                    explicit[13],
-                    explicit[14],
-                    explicit[15],
-                    explicit[16],
-                    explicit[17],
-                    explicit[18],
-                    explicit[19]);
-        } else {
-            final var entityNumber = dispatch.resolveAlias(com.hedera.pbj.runtime.io.buffer.Bytes.wrap(explicit));
-            return (entityNumber == null) ? MISSING_ENTITY_NUMBER : entityNumber.number();
-        }
-    }
-
-    private boolean isLongZeroAddress(final byte[] explicit) {
-        for (int i = 0; i < NUM_LONG_ZEROS; i++) {
-            if (explicit[i] != 0) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    @SuppressWarnings("java:S107")
-    private long longFrom(
-            final byte b1,
-            final byte b2,
-            final byte b3,
-            final byte b4,
-            final byte b5,
-            final byte b6,
-            final byte b7,
-            final byte b8) {
-        return (b1 & 0xFFL) << 56
-                | (b2 & 0xFFL) << 48
-                | (b3 & 0xFFL) << 40
-                | (b4 & 0xFFL) << 32
-                | (b5 & 0xFFL) << 24
-                | (b6 & 0xFFL) << 16
-                | (b7 & 0xFFL) << 8
-                | (b8 & 0xFFL);
+        return alias != null
+                && alias.length() == EVM_ADDRESS_LENGTH_AS_LONG
+                && !address.equals(pbjToBesuAddress(alias));
     }
 
     private com.hedera.hapi.node.state.token.Account validatedAccount(final long number) {

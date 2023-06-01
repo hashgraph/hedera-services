@@ -19,14 +19,15 @@ package com.hedera.node.app.spi.meta.bni;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenRelationship;
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.common.UniqueTokenId;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.hapi.node.state.token.Id;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.List;
 
 /**
  * Manages state access and mutation within a {@link Scope}.
@@ -52,7 +53,8 @@ public interface Dispatch {
      * @return the NFT, or {@code null} if no such NFT exists
      */
     @Nullable
-    Nft getNftAndExternalizeResult(Id id, long callingContractNumber, @NonNull ResultTranslator<Nft> translator);
+    Nft getNftAndExternalizeResult(
+            UniqueTokenId id, long callingContractNumber, @NonNull ResultTranslator<Nft> translator);
 
     /**
      * Returns the {@link Token} with the given number, and also externalizes the result of the state read
@@ -208,14 +210,14 @@ public interface Dispatch {
      *
      * @param evmAddress the EVM address of the contract to delete
      */
-    void deleteContract(@NonNull Bytes evmAddress);
+    void deleteAliasedContract(@NonNull Bytes evmAddress);
 
     /**
      * Convenience method to delete an unaliased contract with the given number.
      *
      * @param number the number of the contract to delete
      */
-    void deleteContract(long number);
+    void deleteUnaliasedContract(long number);
 
     /**
      * Updates the storage metadata for the given contract.
@@ -278,6 +280,13 @@ public interface Dispatch {
     Account getAccount(long number);
 
     /**
+     * Returns a list of the account numbers that have been modified in this scope.
+     *
+     * @return the list of modified account numbers
+     */
+    List<Long> getModifiedAccountNumbers();
+
+    /**
      * Returns the {@link Token} with the given number.
      *
      * @param number the token number
@@ -293,5 +302,5 @@ public interface Dispatch {
      * @return the NFT, or {@code null} if no such NFT exists
      */
     @Nullable
-    Nft getNft(@NonNull Id id);
+    Nft getNft(@NonNull UniqueTokenId id);
 }

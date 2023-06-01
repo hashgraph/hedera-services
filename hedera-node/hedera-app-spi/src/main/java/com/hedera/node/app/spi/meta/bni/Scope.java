@@ -32,7 +32,7 @@ public interface Scope {
      *
      * @return the contract state reflecting all changes made up to this {@link Scope}
      */
-    WritableStates contractState();
+    WritableStates writableContractState();
 
     /**
      * Returns a {@link Dispatch} that reflects all changes made up to, and within, this

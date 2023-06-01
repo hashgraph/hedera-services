@@ -17,14 +17,19 @@
 package com.hedera.node.app.service.contract.impl.state;
 
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.MISSING_ENTITY_NUMBER;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.aliasFrom;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOf;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZero;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.maybeMissingNumberOf;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.meta.bni.Scope;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -32,6 +37,18 @@ import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
+/**
+ * A {@link WorldUpdater} that delegates to a given {@link Scope} for state management.
+ *
+ * <p>For convenience, creates a {@link EvmFrameState} to manage the contract storage and
+ * bytecode in the EVM frame via Besu types. <b>Important:</b> however, the {@link EvmFrameState}
+ * does not itself provide any transactional semantics. The {@link Scope} alone has the
+ * responsibility to {@code commit()} and {@code revert()} changes across all forms of
+ * state as a transaction unit.
+ *
+ * <p><i>Note:</i> The {@code sbhRefund} field in the {@code mono-service} {@link WorldUpdater}
+ * hierarchy is---as best I can tell---now always zero. So it does not appear here.
+ */
 public class ProxyWorldUpdater implements WorldUpdater {
     private static final String CANNOT_CREATE = "Cannot create ";
 
@@ -46,18 +63,23 @@ public class ProxyWorldUpdater implements WorldUpdater {
      */
     private final EvmFrameStateFactory evmFrameStateFactory;
     /**
+     * The parent {@link WorldUpdater}, or null if this is the root updater.
+     */
+    @Nullable
+    private final WorldUpdater parent;
+    /**
      * The {@link EvmFrameState} managing this {@code ProxyWorldUpdater}'s state.
      */
-    private final EvmFrameState evmFrameState;
+    protected final EvmFrameState evmFrameState;
 
     /**
      * If our {@code CreateOperation}s used the addresses prescribed by the {@code CREATE} and
-     * {@code CREATE2} specs, they would (clearly) not need Hedera state; and would not need to
-     * call into the frame's {@link ProxyWorldUpdater}. Similarly, if a {@link ProxyWorldUpdater}
-     * did not need any frame context to create a new account, it would not need a call from
-     * the {@code CreateOperation}.
+     * {@code CREATE2} specs, they would not need Hedera state and thus not need to call into
+     * their frame's {@link ProxyWorldUpdater}. Similarly, if a {@link ProxyWorldUpdater}
+     * did not need any frame context to create a new account, it would not need any extra
+     * "setup" help the {@code CreateOperation}.
      *
-     * <p>Both hypotheticals are false:
+     * <p>However,
      * <ul>
      *     <li>The {@code CreateOperation} needs to call into the {@link ProxyWorldUpdater}
      *     because our {@code CREATE} address derives from the next Hedera entity number.</li>
@@ -72,7 +94,11 @@ public class ProxyWorldUpdater implements WorldUpdater {
     @Nullable
     private PendingCreation pendingCreation;
 
-    public ProxyWorldUpdater(@NonNull final Scope scope, @NonNull final EvmFrameStateFactory evmFrameStateFactory) {
+    public ProxyWorldUpdater(
+            @NonNull final Scope scope,
+            @NonNull final EvmFrameStateFactory evmFrameStateFactory,
+            @Nullable final WorldUpdater parent) {
+        this.parent = parent;
         this.scope = requireNonNull(scope);
         this.evmFrameStateFactory = requireNonNull(evmFrameStateFactory);
         this.evmFrameState = evmFrameStateFactory.createIn(scope);
@@ -137,39 +163,86 @@ public class ProxyWorldUpdater implements WorldUpdater {
         return evmFrameState.getMutableAccount(pendingCreation.address());
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void deleteAccount(@NonNull final Address address) {
-        throw new AssertionError("Not implemented");
+        if (isLongZero(address)) {
+            scope.dispatch().deleteUnaliasedContract(numberOfLongZero(address));
+        } else {
+            scope.dispatch().deleteAliasedContract(aliasFrom(address));
+        }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void revert() {
-        throw new AssertionError("Not implemented");
+        // It might seem like we should have a call to evmFrameState.revert() here; but remember the
+        // EvmFrameState is just a convenience wrapper around the Scope to let us use Besu types, and
+        // ultimately the Scope is the one tracking and managing all changes
+        scope.revert();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
+    @SuppressWarnings("java:S125")
     public void commit() {
-        throw new AssertionError("Not implemented");
+        // It might seem like we should have a call to evmFrameState.commit() here; but remember the
+        // EvmFrameState is just a convenience wrapper around the Scope to let us use Besu types, and
+        // ultimately the Scope is the one tracking and managing all changes
+        scope.commit();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public @NonNull Optional<WorldUpdater> parentUpdater() {
-        throw new AssertionError("Not implemented");
+        return Optional.ofNullable(parent);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public @NonNull WorldUpdater updater() {
-        throw new AssertionError("Not implemented");
+        return new ProxyWorldUpdater(scope, evmFrameStateFactory, this);
     }
 
+    /**
+     * Returns the accounts that have been touched (i.e., created or maybe mutated but <i>not</i> deleted)
+     * within the scope of this updater.
+     *
+     * <p>We may not need this; only used in Besu by
+     * {@code AbstractMessageProcessor.clearAccumulatedStateBesidesGasAndOutput()}, which seems to be in
+     * response to unwinding side-effects of an Ethereum consensus bug.
+     *
+     * <p>TODO - revisit whether this is needed.
+     *
+     * @return the accounts that have been touched
+     */
     @Override
     public @NonNull Collection<? extends Account> getTouchedAccounts() {
-        throw new AssertionError("Not implemented");
+        final var modifiedNumbers = scope.dispatch().getModifiedAccountNumbers();
+        final List<Account> touched = new ArrayList<>();
+        for (final var number : modifiedNumbers) {
+            // Returns null if the account has been deleted
+            final var address = evmFrameState.getAddress(number);
+            if (address != null) {
+                touched.add(evmFrameState.getAccount(address));
+            }
+        }
+        return touched;
     }
 
     @Override
     public @NonNull Collection<Address> getDeletedAccountAddresses() {
-        throw new AssertionError("Not implemented");
+        throw new UnsupportedOperationException();
     }
 
     private long getValidatedCreationNumber(
@@ -195,7 +268,7 @@ public class ProxyWorldUpdater implements WorldUpdater {
         final var number = scope.dispatch().peekNextEntityNumber();
         final long parentNumber = Address.ZERO.equals(requireNonNull(origin))
                 ? scope.payerAccountNumber()
-                : numberOf(origin, scope.dispatch());
+                : maybeMissingNumberOf(origin, scope.dispatch());
         if (parentNumber == MISSING_ENTITY_NUMBER) {
             throw new IllegalStateException("Claimed origin " + origin + " has no Hedera account number");
         }

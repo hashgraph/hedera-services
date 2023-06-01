@@ -28,6 +28,8 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.EvmAccount;
 
+import java.util.List;
+
 /**
  * Exposes the full Hedera state that may be read and changed <b>directly </b> from an EVM frame,
  * using data types appropriate to the Besu EVM API.
@@ -49,8 +51,8 @@ public interface EvmFrameState {
     static EvmFrameState from(@NonNull final Scope scope) {
         return new DispatchingEvmFrameState(
                 scope.dispatch(),
-                scope.contractState().get(ContractServiceImpl.STORAGE_KEY),
-                scope.contractState().get(ContractServiceImpl.BYTECODE_KEY));
+                scope.writableContractState().get(ContractServiceImpl.STORAGE_KEY),
+                scope.writableContractState().get(ContractServiceImpl.BYTECODE_KEY));
     }
 
     /**
@@ -128,6 +130,12 @@ public interface EvmFrameState {
     @NonNull
     Hash getTokenRedirectCodeHash(@NonNull Address address);
 
+    /**
+     * Returns the nonce for the account with the given number.
+     *
+     * @param number the account number
+     * @return the nonce
+     */
     long getNonce(long number);
 
     /**
@@ -138,16 +146,40 @@ public interface EvmFrameState {
      */
     void setNonce(long number, long nonce);
 
+    /**
+     * Returns the balance of the account with the given number.
+     *
+     * @param number the account number
+     * @return the balance
+     */
     Wei getBalance(long number);
 
     /**
-     * Returns the "priority" EVM address of the account with the given number. This is its
-     * 20-byte address if it has one; or the "long-zero" address with the account number
-     * as the last 8 bytes of the zero address.
+     * Returns the "priority" EVM address of the account with the given number, or null if the
+     * account has been deleted.
+     *
+     * <p>The priority address is its 20-byte alias if applicable; or else the "long-zero" address
+     * with the account number as the last 8 bytes of the zero address.
      *
      * @param number the account number
-     * @return the priority EVM address of the account
+     * @return the priority EVM address of the account, or null if the account has been deleted
      * @throws IllegalArgumentException if the account does not exist
      */
+    @Nullable
     Address getAddress(long number);
+
+    /**
+     * Returns the full list of account-scoped storage changes in the current scope.
+     *
+     * @return the full list of account-scoped storage changes
+     */
+    @NonNull
+    List<StorageChanges> getPendingStorageChanges();
+
+    /**
+     * Returns the size of the underlying K/V state for contract storage.
+     *
+     * @return the size of the K/V state
+     */
+    long getKvStateSize();
 }
