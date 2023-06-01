@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.tools.impl;
 
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hedera.services.bdd.tools.SuiteKind;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.function.Supplier;
@@ -25,14 +26,5 @@ import java.util.function.Supplier;
 public interface AvailableIntegrationTestSuites {
 
     @NonNull
-    public List<Supplier<HapiSuite>> allPrerequisiteSuites();
-
-    @NonNull
-    public List<Supplier<HapiSuite>> allSequentialSuites();
-
-    @NonNull
-    public List<Supplier<HapiSuite>> allConcurrentSuites();
-
-    @NonNull
-    public List<Supplier<HapiSuite>> allConcurrentEthereumSuites();
+    public List<Supplier<HapiSuite>> allSuitesOfKind(@NonNull final SuiteKind... kinds);
 }

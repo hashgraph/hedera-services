@@ -196,7 +196,7 @@ public abstract class TestBase {
      * @param suiteSupplier
      * @return
      */
-    protected final DynamicContainer extractSpecsFromSuite(final Supplier<HapiSuite> suiteSupplier) {
+    protected DynamicContainer extractSpecsFromSuite(final Supplier<HapiSuite> suiteSupplier) {
         final var suite = suiteSupplier.get();
         final var tests = suite.getSpecsInSuiteWithOverrides().stream()
                 .map(s -> dynamicTest(s.getName(), () -> {
@@ -216,7 +216,7 @@ public abstract class TestBase {
         return dynamicContainer(suite.getClass().getSimpleName(), tests);
     }
 
-    protected final DynamicContainer extractSpecsFromSuiteForEth(final Supplier<HapiSuite> suiteSupplier) {
+    protected DynamicContainer extractSpecsFromSuiteForEth(final Supplier<HapiSuite> suiteSupplier) {
         final var suite = suiteSupplier.get();
         final var tests = suite.getSpecsInSuiteWithOverrides().stream()
                 .map(s -> dynamicTest(s.getName() + ETH_SUFFIX, () -> {

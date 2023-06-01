@@ -27,11 +27,12 @@ public class SuiteSearcher {
 
     public Pair<List<Class<?>>, List<String>> getAllHapiSuiteSubclasses() {
         try (final var scanResult = new ClassGraph()
-                .verbose()
                 .whitelistJars("hedera-*.jar", "hapi-*.jar", "test-*.jar", "cli-*.jar")
                 .whitelistPackages("com.hedera.services.bdd")
                 .scan()) {
-            return Pair.of(scanResult.getSubclasses(HapiSuite.class.getName()).loadClasses(), List.of());
+            return Pair.of(scanResult.getSubclasses(HapiSuite.class.getName())
+                    .filter(ci -> !ci.isAbstract())
+                    .loadClasses(), List.of());
         } catch (final ClassGraphException ex) {
             return Pair.of(
                     List.of(), List.of("*** exception getting classgraph then getting classes: %s%n".formatted(ex)));

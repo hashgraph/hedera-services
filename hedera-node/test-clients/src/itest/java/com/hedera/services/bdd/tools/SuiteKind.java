@@ -21,5 +21,9 @@ public enum SuiteKind {
     prerequisite,
     sequential,
     concurrent,
-    concurrentetherium
+    concurrentetherium,
+    e2e,
+    e2eunused,
+    e2epackagerunner,
+    suiterunner
 }

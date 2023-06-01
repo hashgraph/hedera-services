@@ -22,6 +22,7 @@ import java.lang.StackWalker.Option;
 import java.lang.StackWalker.StackFrame;
 import java.lang.reflect.Method;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Predicate;
 
 /** Utilities to inspect the callstack */
@@ -72,13 +73,46 @@ public class CallStack {
     }
 
     @NonNull
+    public Optional<StackFrame> getTopmostFrameOfAnyOfTheseClassesSatisfying(
+            @NonNull final Set<Class<?>> klasses, @NonNull final Predicate<StackFrame> predicate) {
+        return getTopmostFrameSatisfying(f -> klasses.contains(f.getDeclaringClass()) && predicate.test(f));
+    }
+
+    @NonNull
     public Optional<StackFrame> getTopmostFrameOfClass(@NonNull final Class<?> klass) {
         return getTopmostFrameSatisfying(f -> f.getDeclaringClass().equals(klass));
     }
 
     @NonNull
+    public Optional<StackFrame> getTopmostFrameOfAnyOfTheseClasses(@NonNull Set<Class<?>> klasses) {
+        return getTopmostFrameSatisfying(f -> klasses.contains(f.getDeclaringClass()));
+    }
+
+    @NonNull
     public Optional<StackFrame> getTopmostFrameSatisfying(@NonNull final Predicate<StackFrame> predicate) {
         return frames.stream().dropWhile(sf -> !predicate.test(sf)).findFirst();
+    }
+
+    /** Returns a frame at a relative offset to the given frame.  N.B.: offset is POSITIVE to go deeper in
+     * the stack (away from top) and NEGATIVE to go closer to top.
+     */
+    public enum Towards {
+        TOP,
+        BASE
+    }
+
+    @NonNull
+    public StackFrame frameRelativeTo(@NonNull final StackFrame frame, @NonNull Towards direction, int offset) {
+        if (offset < 0)
+            throw new IllegalArgumentException(
+                    "frame offset must be positive (chose direction with `Towards` parameter)");
+        if (direction == Towards.TOP) offset = -offset;
+        return get(find(frame) + offset);
+    }
+
+    public int find(@NonNull final StackFrame frame) {
+        for (int i = 0; i < size(); i++) if (get(i) == frame) return i;
+        throw new IllegalArgumentException("frame not found in callstack: %s".formatted(frame));
     }
 
     /** Given a stack frame return a `java.lang.reflect.Method` for its method.

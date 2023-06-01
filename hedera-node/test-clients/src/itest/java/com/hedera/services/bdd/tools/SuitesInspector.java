@@ -25,6 +25,7 @@ import com.google.common.collect.Sets;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.tools.impl.HapiTestRegistrar;
+import com.hedera.services.bdd.tools.impl.HapiTestRegistrar.RegisteredSuite;
 import com.hedera.services.bdd.tools.impl.SuiteProvider;
 import com.hedera.services.bdd.tools.impl.SuiteSearcher;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -86,7 +87,7 @@ public class SuitesInspector implements Callable<Integer> {
             if (writeManifest != null) return "--write-manifest=" + writeManifest;
             if (analyze) return "--analyze";
             if (suiteSearch) return "--suite-search";
-            return "--unknown-operation";
+            return "--𝙪𝙣𝙠𝙣𝙤𝙬𝙣-𝙤𝙥𝙚𝙧𝙖𝙩𝙞𝙤𝙣";
         }
     }
 
@@ -336,10 +337,13 @@ public class SuitesInspector implements Callable<Integer> {
 
         registrar.doPostRegistration().analyzeRegistry();
 
+        final var searchedSuiteClasses = new SuiteSearcher().getAllHapiSuiteSubclasses();
+
         // Debugging code to make sure we're getting all tests - counts are different - no conceth
         // via registry:     89 suites, 879 specs
-        // via direct calls: 91 suites (2 prereq, 8 seq, 81 conc, 0 conceth)
+        // via direct calls: 89 suites (2 prereq, 6 seq, 81 conc, 0 conceth)
         //                  854 specs  (3 prereq, 102 seq, 749 conc, 0 conceth)
+        // (counts are old) (remaining difference is due to `EthereumSuite` "matrix" parameterized test)
         final var registry = registrar.getRegistry();
 
         final var onlySuiteNameRegex =
@@ -433,6 +437,36 @@ public class SuitesInspector implements Callable<Integer> {
                         .toList()
                         .toString()
                         .replace(", ", "\n"));
+
+        // compare against searched suite classes
+
+        final var suiteNamesInRegistry = registry.getLeft().values().stream()
+                .map(RegisteredSuite::klass)
+                .map(Class::getName)
+                .collect(Collectors.toSet());
+        final var suiteNamesFromSearch =
+                searchedSuiteClasses.getLeft().stream().map(Class::getName).collect(Collectors.toSet());
+
+        final var suitesInRegistryButNotFromSearch = Sets.difference(suiteNamesInRegistry, suiteNamesFromSearch);
+        final var suitesFromSearchButNotFromRegistry = Sets.difference(suiteNamesFromSearch, suiteNamesInRegistry);
+
+        System.out.printf("%n-------%n%n");
+        System.out.printf(
+                "%d suites in registry but not found in search: %s%n",
+                suitesInRegistryButNotFromSearch.size(),
+                suitesInRegistryButNotFromSearch.stream()
+                        .sorted()
+                        .toList()
+                        .toString()
+                        .replace(", ", "\n"));
+        System.out.printf(
+                "%d suites found in search but not in registry: %s%n",
+                suitesFromSearchButNotFromRegistry.size(),
+                suitesFromSearchButNotFromRegistry.stream()
+                        .sorted()
+                        .toList()
+                        .toString()
+                        .replace(", ", "\n"));
     }
 
     void doSuiteSearch() {
@@ -454,6 +488,7 @@ public class SuitesInspector implements Callable<Integer> {
 
         final var suiteFactories = new SuiteProvider();
 
+        // Do the prerequisites first so that we have their suite names so that they can be filtered out of other suites
         Set<String> prerequisiteSuiteNames;
         {
             final var specs = specsBySuite(SuiteKind.prerequisite, suiteFactories::allPrerequisiteSuites);
@@ -463,30 +498,17 @@ public class SuitesInspector implements Callable<Integer> {
             errors.addAll(specs.getRight());
         }
 
-        if (suiteKinds.contains(SuiteKind.sequential)) {
-            final var specs = specsBySuite(SuiteKind.sequential, suiteFactories::allSequentialSuites);
-
-            // The prerequisite specs - which are always present - also appear in sequential.  Remove them so
-            // they don't get added twice
-
-            final var seqTests = specs.getLeft().stream()
+        for (final var kind : suiteKinds) {
+            // No need to do the prerequisites again
+            if (kind == SuiteKind.prerequisite) continue;
+            // Need to filter out the prerequisite suites from all other suites - they're already added
+            final var rawSpecs = specsBySuite(kind, () -> suiteFactories.allSuitesOfKind(kind));
+            final var specs = rawSpecs.getLeft().stream()
                     .filter(test ->
                             !prerequisiteSuiteNames.contains(test.suite().name()))
                     .toList();
-            tests.addAll(seqTests);
-            errors.addAll(specs.getRight());
-        }
-
-        if (suiteKinds.contains(SuiteKind.concurrent)) {
-            final var specs = specsBySuite(SuiteKind.concurrent, suiteFactories::allConcurrentSuites);
-            tests.addAll(specs.getLeft());
-            errors.addAll(specs.getRight());
-        }
-
-        if (suiteKinds.contains(SuiteKind.concurrentetherium)) {
-            final var specs = specsBySuite(SuiteKind.concurrentetherium, suiteFactories::allConcurrentEthereumSuites);
-            tests.addAll(specs.getLeft());
-            errors.addAll(specs.getRight());
+            tests.addAll(specs);
+            errors.addAll(rawSpecs.getRight());
         }
 
         return Pair.of(tests, errors);

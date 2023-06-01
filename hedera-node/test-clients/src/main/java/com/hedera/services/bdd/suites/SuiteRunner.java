@@ -229,7 +229,8 @@ public class SuiteRunner {
     private static final List<HapiSuite> SUITES_TO_DETAIL = new ArrayList<>();
 
     @SuppressWarnings({"java:S1171", "java:S3599", "java:S125"})
-    private static final Map<String, Supplier<HapiSuite[]>> CATEGORY_MAP = new HashMap<>() {
+    // 1171: static initializer; 3599: double-brace initialization; 125: commented out code
+    protected static final Map<String, Supplier<HapiSuite[]>> CATEGORY_MAP = new HashMap<>() {
         {
             /* Convenience entries, uncomment locally to run CI jobs */
             //		put("CiConsensusAndCryptoJob", aof(

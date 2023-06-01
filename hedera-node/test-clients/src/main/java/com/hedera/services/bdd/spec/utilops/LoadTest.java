@@ -39,7 +39,7 @@ import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class LoadTest extends HapiSuite {
+public abstract class LoadTest extends HapiSuite {
     private static final Logger log = LogManager.getLogger(LoadTest.class);
 
     public static OptionalDouble targetTPS = OptionalDouble.empty();

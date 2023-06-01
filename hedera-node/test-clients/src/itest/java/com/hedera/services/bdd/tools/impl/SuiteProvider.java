@@ -17,14 +17,19 @@
 package com.hedera.services.bdd.tools.impl;
 
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hedera.services.bdd.suites.SuiteRunner;
 import com.hedera.services.bdd.suites.leaky.FeatureFlagSuite;
 import com.hedera.services.bdd.suites.regression.TargetNetworkPrep;
+import com.hedera.services.bdd.tools.SuiteKind;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.lang.reflect.InaccessibleObjectException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
@@ -44,34 +49,90 @@ public class SuiteProvider implements AvailableIntegrationTestSuites {
 
     @NotNull
     @Override
+    public List<Supplier<HapiSuite>> allSuitesOfKind(final SuiteKind @NotNull ... kinds) {
+        final var wanted = EnumSet.of(SuiteKind.prerequisite);
+        wanted.addAll(Arrays.asList(kinds));
+        if (wanted.contains(SuiteKind.all)) {
+            wanted.addAll(EnumSet.allOf(SuiteKind.class));
+            wanted.remove(SuiteKind.all);
+        }
+
+        final var r = new ArrayList<Supplier<HapiSuite>>(2500);
+        for (final var kind : wanted) {
+            r.addAll(
+                    switch (kind) {
+                        case all -> List.of();
+                        case prerequisite -> allPrerequisiteSuites();
+                        case sequential -> allSequentialSuites();
+                        case concurrent -> allConcurrentSuites();
+                        case concurrentetherium -> allConcurrentEthereumSuites();
+                        case e2e -> allE2eSuites();
+                        case e2eunused -> allE2eUnusedSuites();
+                        case e2epackagerunner -> allE2ePackageRunnerSuites();
+                        case suiterunner -> allSuiteRunnerSuites();
+                    });
+        }
+        return r;
+    }
+
+    @NotNull
     public List<Supplier<HapiSuite>> allPrerequisiteSuites() {
         return List.of(TargetNetworkPrep::new, FeatureFlagSuite::new);
     }
 
     @NotNull
-    @Override
     public List<Supplier<HapiSuite>> allSequentialSuites() {
         return Arrays.asList(getSuites("SequentialSuites", "all"));
     }
 
     @NotNull
-    @Override
     public List<Supplier<HapiSuite>> allConcurrentSuites() {
         return Arrays.asList(getSuites("ConcurrentSuites", "all"));
     }
 
     @NotNull
-    @Override
     public List<Supplier<HapiSuite>> allConcurrentEthereumSuites() {
         return Arrays.asList(getSuites("ConcurrentSuites", "ethereumSuites"));
+    }
+
+    @NonNull
+    public List<Supplier<HapiSuite>> allE2eSuites() {
+        return List.of();
+    }
+
+    @NonNull
+    public List<Supplier<HapiSuite>> allE2eUnusedSuites() {
+        return List.of();
+    }
+
+    @NonNull
+    public List<Supplier<HapiSuite>> allE2ePackageRunnerSuites() {
+        return List.of();
+    }
+
+    @NonNull
+    public List<Supplier<HapiSuite>> allSuiteRunnerSuites() {
+        final var suiteRunnerSpy = new SuiteRunner() {
+            @NonNull
+            public Map<String, Supplier<HapiSuite[]>> getCategoryMap() {
+                return CATEGORY_MAP;
+            }
+        };
+        final var categoryMap = suiteRunnerSpy.getCategoryMap();
+
+        return categoryMap.values().stream()
+                .map(Supplier::get)
+                .map(Arrays::asList)
+                .flatMap(List::stream)
+                .<Supplier<HapiSuite>>map(suite -> () -> suite)
+                .toList();
     }
 
     /**
      * Invoke a _static_ method by class name+method name.
      */
-    @SuppressWarnings("unchecked")
     @NonNull
-    static Supplier<HapiSuite>[] getSuites(@NonNull final String klassName, @NonNull final String methodName) {
+    Supplier<HapiSuite>[] getSuites(@NonNull final String klassName, @NonNull final String methodName) {
 
         BiFunction<String, Exception, RuntimeException> thrower =
                 (message, ex) -> new RuntimeException(message.formatted(klassName, methodName), ex);
@@ -114,9 +175,15 @@ public class SuiteProvider implements AvailableIntegrationTestSuites {
         }
 
         try {
-            return (Supplier<HapiSuite>[]) result;
+            return asArrayOfHapiSuiteSuppliers(result);
         } catch (ClassCastException e) {
             throw thrower.apply("Exception casting result of invoking '%s.'%s", e);
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    @NonNull
+    Supplier<HapiSuite>[] asArrayOfHapiSuiteSuppliers(@NonNull final Object o) {
+        return (Supplier<HapiSuite>[]) o;
     }
 }

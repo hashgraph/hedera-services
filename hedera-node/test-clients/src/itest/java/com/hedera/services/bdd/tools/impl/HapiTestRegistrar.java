@@ -22,9 +22,12 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.Sets;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.utilops.LoadTest;
 import com.hedera.services.bdd.suites.BddMethodIsNotATest;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hedera.services.bdd.suites.perf.crypto.CryptoTransferLoadTest;
 import com.hedera.services.bdd.suites.utils.CallStack;
+import com.hedera.services.bdd.suites.utils.CallStack.Towards;
 import com.hedera.services.bdd.suites.utils.CallStack.WithLineNumbers;
 import com.hedera.services.bdd.tools.SuiteKind;
 import com.hedera.services.bdd.tools.SuitesInspector;
@@ -220,11 +223,20 @@ public class HapiTestRegistrar {
         if (!sb.isEmpty()) System.err.print(sb);
     }
 
+    static final Set<Class<?>> hapiSuiteBases = Set.of(HapiSuite.class, LoadTest.class, CryptoTransferLoadTest.class);
+
     /** Given a stack trace which is calling out to us when creating a `HapiSuite` get the suite class */
     @NonNull
     static Class<?> getSuiteClassFromStack(@NonNull final CallStack callStack) {
-        // Last frame grabbed is the HapiSuite subclass
-        return callStack.getDeclaringClassOfFrame(callStack.size() - 1);
+        // Look for _deepest_ `HapiSuite` frame on stack (should be method `<init>`) - suite class is one frame
+        // deeper than that
+        final var hapiSuiteFrame = callStack.getTopmostFrameOfAnyOfTheseClassesSatisfying(
+                hapiSuiteBases, sf -> sf.getMethodName().equals("<init>"));
+        final var targetSuiteFrame = callStack.frameRelativeTo(
+                hapiSuiteFrame.orElseThrow(() -> new IllegalStateException("HapiSuiteFrame.<init> not found")),
+                Towards.BASE,
+                1);
+        return targetSuiteFrame.getDeclaringClass();
     }
 
     /** Given a stack trace which is calling out to us when creating a `HapiSpec` get the spec's class and _method_ */
