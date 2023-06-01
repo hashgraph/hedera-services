@@ -6,19 +6,18 @@
 # All other values are true.
 #######################################################################################
 
-maxOutgoingSyncs,                 1
-# TODO revert
-state.saveStatePeriod,            60
-showInternalStats,                true
-doUpnp,                           false
-useLoopbackIp,                    false
-csvFileName,                      PlatformTesting
-checkSignedStateFromDisk,         true
-loadKeysFromPfxFiles,             false
-# TODO revert
-event.preconsensus.enableStorage, true
-event.preconsensus.enableReplay,  true
-enableEventStreaming,             false
-reconnect.active,                 true
 chatter.useChatter,               false
+checkSignedStateFromDisk,         true
+csvFileName,                      PlatformTesting
+doUpnp,                           false
+enableEventStreaming,             false
+event.preconsensus.enableReplay,  false
+event.preconsensus.enableStorage, false
+loadKeysFromPfxFiles,             false
+maxOutgoingSyncs,                 1
+reconnect.active,                 true
+showInternalStats,                true
+state.saveStatePeriod,            0
+state.saveReconnectStateToDisk,   false
 sync.syncAsProtocolEnabled,       false
+useLoopbackIp,                    false
