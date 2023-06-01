@@ -1314,17 +1314,13 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      * 		The value type referenced by the mutation list
      */
     private static <K, V> void filterMutations(final ConcurrentArray<Mutation<K, V>> array) {
-        final Consumer<Mutation<K, V>> clearFilteredAction = mutation -> {
-            mutation.setFiltered(false);
-        };
-        final Consumer<Mutation<K, V>> markFilteredAction = mutation -> {
+        final Consumer<Mutation<K, V>> action = mutation -> {
             if (mutation.next != null) {
-                mutation.next.setFiltered(true);
+                mutation.next.setFiltered();
             }
         };
         try {
-            array.parallelTraverse(CLEANING_POOL, clearFilteredAction).getAndRethrow();
-            array.parallelTraverse(CLEANING_POOL, markFilteredAction).getAndRethrow();
+            array.parallelTraverse(CLEANING_POOL, action).getAndRethrow();
         } catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException(e);
@@ -1615,8 +1611,8 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
             return getFlag(FLAG_BIT_FILTERED);
         }
 
-        void setFiltered(final boolean filtered) {
-            setFlag(FLAG_BIT_FILTERED, filtered);
+        void setFiltered() {
+            setFlag(FLAG_BIT_FILTERED, true);
         }
     }
 
