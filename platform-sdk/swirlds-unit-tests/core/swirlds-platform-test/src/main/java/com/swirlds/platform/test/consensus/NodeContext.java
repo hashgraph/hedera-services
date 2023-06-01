@@ -36,6 +36,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.random.RandomGenerator;
 
@@ -125,9 +126,10 @@ public class NodeContext {
 
         // load events from signed state into the sources
         for (final Address address : collectingEmitter.getGraphGenerator().getAddressBook()) {
-            final EventSource<?> source = collectingEmitter.getGraphGenerator().getSource((int) address.getId());
+            final EventSource<?> source = collectingEmitter.getGraphGenerator().getSource((int)
+                    address.getNodeId().id());
             final List<IndexedEvent> eventsByCreator = Arrays.stream(indexedEvents)
-                    .filter(e -> e.getCreatorId() == address.getId())
+                    .filter(e -> Objects.equals(e.getCreatorId(), address.getNodeId()))
                     .toList();
             eventsByCreator.forEach(e -> source.setLatestEvent(random, e));
         }

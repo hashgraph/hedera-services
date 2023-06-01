@@ -23,9 +23,11 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
  * Mimics an orphan buffer using {@link CountingChatterEvent}. It buffers the events and only allows an event to emitted
@@ -141,8 +143,8 @@ public class InOrderOrphanBuffer extends AbstractSimulatedEventPipeline<Counting
         }
     }
 
-    private boolean isSelfEvent(final CountingChatterEvent event) {
-        return event.getCreator() == selfId.id();
+    private boolean isSelfEvent(@NonNull final CountingChatterEvent event) {
+        return Objects.equals(event.getCreator(), selfId);
     }
 
     /**

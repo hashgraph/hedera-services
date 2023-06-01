@@ -34,9 +34,9 @@ plugins {
 
 include(":hedera-node")
 
-include(":hedera-node:hedera-networkadmin-service")
+include(":hedera-node:hedera-network-admin-service")
 
-include(":hedera-node:hedera-networkadmin-service-impl")
+include(":hedera-node:hedera-network-admin-service-impl")
 
 include(":hedera-node:hedera-consensus-service")
 
@@ -114,7 +114,7 @@ dependencyResolutionManagement {
     // runtime.
     create("libs") {
       // The HAPI API version to use, this need to match the tag set on gitRepositories above
-      version("hapi-version", "0.40.0-alpha.0-SNAPSHOT")
+      version("hapi-version", "0.40.0-contract-nft-state-SNAPSHOT")
 
       // Definition of version numbers for all libraries
       version("pbj-version", "0.6.0")

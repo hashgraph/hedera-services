@@ -94,7 +94,7 @@ public abstract class AbstractEventHandlerTests {
                 when(event.getTransactions()).thenReturn(new ConsensusTransactionImpl[0]);
                 when(event.isEmpty()).thenReturn(true);
             }
-            when(event.getCreatorId()).thenReturn((long) random.nextInt(NUM_NODES));
+            when(event.getCreatorId()).thenReturn(new NodeId(random.nextInt(NUM_NODES)));
             when(event.getEstimatedTime()).thenReturn(Instant.now());
             when(event.getConsensusTimestamp()).thenReturn(Instant.now());
             final boolean isConsensus = random.nextBoolean();
