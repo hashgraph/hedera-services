@@ -254,7 +254,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
                 OSTime.getInstance(),
                 dispatchBuilder,
                 stateConfig,
-                selfId.id(),
+                selfId,
                 haltRequestedConsumer,
                 fatalErrorConsumer,
                 issConsumer);
@@ -380,19 +380,6 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      *
      * @param creatorId                 the id of the transaction creator
      * @param stateSignatureTransaction the pre-consensus state signature transaction
-     * @deprecated use {@link #handleStateSignatureTransactionPreConsensus(NodeId, StateSignatureTransaction)}
-     */
-    @Deprecated(forRemoval = true, since = "0.39.0")
-    public void handleStateSignatureTransactionPreConsensus(
-            @NonNull final Long creatorId, @NonNull final StateSignatureTransaction stateSignatureTransaction) {
-        handleStateSignatureTransactionPreConsensus(new NodeId(creatorId), stateSignatureTransaction);
-    }
-
-    /**
-     * Do pre consensus handling for a state signature transaction
-     *
-     * @param creatorId                 the id of the transaction creator
-     * @param stateSignatureTransaction the pre-consensus state signature transaction
      */
     public void handleStateSignatureTransactionPreConsensus(
             @NonNull final NodeId creatorId, @NonNull final StateSignatureTransaction stateSignatureTransaction) {
@@ -401,22 +388,6 @@ public class DefaultStateManagementComponent implements StateManagementComponent
 
         signedStateManager.preConsensusSignatureObserver(
                 stateSignatureTransaction.getRound(), creatorId, stateSignatureTransaction.getStateSignature());
-    }
-
-    /**
-     * Do post-consensus handling for a state signature transaction
-     * <p>
-     * The {@code state} parameter isn't used in this function, since a signature transaction doesn't modify the state
-     * @param creatorId                 the id of the transaction creator
-     * @param stateSignatureTransaction the post-consensus state signature transaction
-     * @deprecated use {@link #handleStateSignatureTransactionPostConsensus(State, NodeId, StateSignatureTransaction)}
-     */
-    @Deprecated(forRemoval = true, since = "0.39.0")
-    public void handleStateSignatureTransactionPostConsensus(
-            @NonNull final State state,
-            @NonNull final Long creatorId,
-            @NonNull final StateSignatureTransaction stateSignatureTransaction) {
-        handleStateSignatureTransactionPostConsensus(state, new NodeId(creatorId), stateSignatureTransaction);
     }
 
     /**
@@ -432,7 +403,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         Objects.requireNonNull(stateSignatureTransaction, "stateSignatureTransaction must not be null");
 
         consensusHashManager.postConsensusSignatureObserver(
-                stateSignatureTransaction.getRound(), creatorId.id(), stateSignatureTransaction.getStateHash());
+                stateSignatureTransaction.getRound(), creatorId, stateSignatureTransaction.getStateHash());
     }
 
     /**

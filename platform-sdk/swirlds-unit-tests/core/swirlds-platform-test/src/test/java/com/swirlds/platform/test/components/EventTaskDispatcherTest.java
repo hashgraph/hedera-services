@@ -20,6 +20,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.time.OSTime;
@@ -58,7 +59,7 @@ class EventTaskDispatcherTest {
                 mock(IntakeCycleStats.class));
 
         // create event
-        final long otherId = 5;
+        final NodeId otherId = new NodeId(5);
         final CreateEventTask createTask = new CreateEventTask(otherId);
         dispatcher.dispatchTask(createTask);
         verify(creator).createEvent(otherId);

@@ -20,6 +20,7 @@ import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.system.BasicSoftwareVersion;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.system.transaction.internal.SystemTransaction;
@@ -51,14 +52,14 @@ public final class TransactionHandlingTestUtils {
         return new EventImpl(
                 new BaseEventHashedData(
                         new BasicSoftwareVersion(1),
-                        0,
+                        new NodeId(0),
                         0L,
                         0L,
                         CryptographyHolder.get().getNullHash(),
                         CryptographyHolder.get().getNullHash(),
                         Instant.now(),
                         transactions),
-                new BaseEventUnhashedData(0L, new byte[0]));
+                new BaseEventUnhashedData(new NodeId(0L), new byte[0]));
     }
 
     /**
