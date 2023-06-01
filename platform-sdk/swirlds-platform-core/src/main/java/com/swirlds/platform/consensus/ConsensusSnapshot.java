@@ -18,6 +18,7 @@ package com.swirlds.platform.consensus;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.state.MinGenInfo;
+
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
@@ -26,20 +27,39 @@ import java.util.List;
  * A snapshot of consensus at a particular round. This is all the information (except events)
  * consensus needs to continue from a particular point. Apart from this record, consensus needs all
  * non-ancient events to continue.
- *
- * @param round the latest round for which fame has been decided
- * @param judgeHashes the hashes of all the judges for this round, ordered by their creator ID
- * @param minGens the round generation numbers for all non-ancient rounds
- * @param nextConsensusNumber the consensus order of the next event that will reach consensus
- * @param minConsensusTimestamp the minimum consensus timestamp for the next event that reaches
- *     consensus. this is null if no event has reached consensus yet
  */
-public record ConsensusSnapshot(
-        long round,
-        Collection<Hash> judgeHashes,
-        List<MinGenInfo> minGens,
-        long nextConsensusNumber,
-        Instant minConsensusTimestamp) {
+public final class ConsensusSnapshot {
+    private final long round;
+    private final Collection<Hash> judgeHashes;
+    private final List<MinGenInfo> minGens;
+    private final long nextConsensusNumber;
+    private final Instant minConsensusTimestamp;
+
+    /**
+     * @param round
+     * 		the latest round for which fame has been decided
+     * @param judgeHashes
+     * 		the hashes of all the judges for this round, ordered by their creator ID
+     * @param minGens
+     * 		the round generation numbers for all non-ancient rounds
+     * @param nextConsensusNumber
+     * 		the consensus order of the next event that will reach consensus
+     * @param minConsensusTimestamp
+     * 		the minimum consensus timestamp for the next event that reaches
+     * 		consensus. this is null if no event has reached consensus yet
+     */
+    public ConsensusSnapshot(
+            long round,
+            Collection<Hash> judgeHashes,
+            List<MinGenInfo> minGens,
+            long nextConsensusNumber,
+            Instant minConsensusTimestamp) {
+        this.round = round;
+        this.judgeHashes = judgeHashes;
+        this.minGens = minGens;
+        this.nextConsensusNumber = nextConsensusNumber;
+        this.minConsensusTimestamp = minConsensusTimestamp;
+    }
 
     @Override
     public String toString() {
@@ -58,5 +78,25 @@ public record ConsensusSnapshot(
         sb.append("nextConsensusNumber: ").append(nextConsensusNumber).append('\n');
         sb.append("minConsensusTimestamp: ").append(minConsensusTimestamp).append('\n');
         return sb.toString();
+    }
+
+    public long round() {
+        return round;
+    }
+
+    public Collection<Hash> judgeHashes() {
+        return judgeHashes;
+    }
+
+    public List<MinGenInfo> minGens() {
+        return minGens;
+    }
+
+    public long nextConsensusNumber() {
+        return nextConsensusNumber;
+    }
+
+    public Instant minConsensusTimestamp() {
+        return minConsensusTimestamp;
     }
 }
