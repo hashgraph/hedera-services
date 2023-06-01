@@ -99,7 +99,7 @@ gitRepositories {
     // choose tag or branch of HAPI you would like to test with
     // this looks for a tag in hedera-protobufs repo
     // This version needs to match tha HAPI version below in versionCatalogs
-    tag.set("06654-add-cs-state-types")
+    tag.set("add-pbj-types-for-state")
     // do not load project from repo
     autoInclude.set(false)
   }

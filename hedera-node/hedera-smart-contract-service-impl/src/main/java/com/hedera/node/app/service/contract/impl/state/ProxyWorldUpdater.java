@@ -53,11 +53,6 @@ public class ProxyWorldUpdater implements WorldUpdater {
     private static final String CANNOT_CREATE = "Cannot create ";
 
     /**
-     * The scope in which this {@code ProxyWorldUpdater} operates; stored in case we need to
-     * create a "stacked" updater in a child scope via {@link #updater()}.
-     */
-    private final Scope scope;
-    /**
      * The factory used to create new {@link EvmFrameState} instances; used once in the
      * constructor, and then again in {@link #updater()} if that is called.
      */
@@ -71,6 +66,11 @@ public class ProxyWorldUpdater implements WorldUpdater {
      * The {@link EvmFrameState} managing this {@code ProxyWorldUpdater}'s state.
      */
     protected final EvmFrameState evmFrameState;
+    /**
+     * The scope in which this {@code ProxyWorldUpdater} operates; stored in case we need to
+     * create a "stacked" updater in a child scope via {@link #updater()}.
+     */
+    protected final Scope scope;
 
     /**
      * If our {@code CreateOperation}s used the addresses prescribed by the {@code CREATE} and

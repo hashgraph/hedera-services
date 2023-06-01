@@ -14,21 +14,19 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.state;
+package com.hedera.node.app.service.contract.impl.infra;
 
-import java.util.List;
+import com.hedera.node.app.service.contract.impl.state.EvmFrameState;
+import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
+import dagger.Module;
+import dagger.Provides;
+import javax.inject.Singleton;
 
-public record StorageChanges(long contractNumber, List<StorageChange> changes) {
-    public StorageSizeChange summarizeSizeEffects() {
-        var numRemovals = 0;
-        var numInsertions = 0;
-        for (final var change : changes()) {
-            if (change.isRemoval()) {
-                numRemovals++;
-            } else if (change.isInsertion()) {
-                numInsertions++;
-            }
-        }
-        return new StorageSizeChange(contractNumber, numRemovals, numInsertions);
+@Module
+public interface InfraModule {
+    @Provides
+    @Singleton
+    static EvmFrameStateFactory provideEvmFrameStateFactory() {
+        return EvmFrameState::from;
     }
 }

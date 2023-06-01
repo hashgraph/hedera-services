@@ -35,6 +35,7 @@ import com.hedera.node.app.spi.meta.bni.Scope;
 import com.hedera.node.app.spi.state.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -43,8 +44,6 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.code.CodeFactory;
-
-import java.util.List;
 
 /**
  * An implementation of {@link EvmFrameState} that uses {@link WritableKVState}s to manage
@@ -112,6 +111,11 @@ public class DispatchingEvmFrameState implements EvmFrameState {
     @Override
     public long getKvStateSize() {
         return storage.size();
+    }
+
+    @Override
+    public RentFactors getRentFactorsFor(final long number) {
+        throw new AssertionError("Not implemented");
     }
 
     @Override

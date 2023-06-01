@@ -20,6 +20,7 @@ import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.spi.meta.bni.Scope;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -27,8 +28,6 @@ import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.EvmAccount;
-
-import java.util.List;
 
 /**
  * Exposes the full Hedera state that may be read and changed <b>directly </b> from an EVM frame,
@@ -182,4 +181,12 @@ public interface EvmFrameState {
      * @return the size of the K/V state
      */
     long getKvStateSize();
+
+    /**
+     * Returns the rent factors for the account with the given number.
+     *
+     * @param number the account number
+     * @return the rent factors
+     */
+    RentFactors getRentFactorsFor(long number);
 }

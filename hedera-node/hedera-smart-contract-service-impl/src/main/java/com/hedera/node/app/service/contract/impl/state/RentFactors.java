@@ -16,19 +16,11 @@
 
 package com.hedera.node.app.service.contract.impl.state;
 
-import java.util.List;
-
-public record StorageChanges(long contractNumber, List<StorageChange> changes) {
-    public StorageSizeChange summarizeSizeEffects() {
-        var numRemovals = 0;
-        var numInsertions = 0;
-        for (final var change : changes()) {
-            if (change.isRemoval()) {
-                numRemovals++;
-            } else if (change.isInsertion()) {
-                numInsertions++;
-            }
-        }
-        return new StorageSizeChange(contractNumber, numRemovals, numInsertions);
-    }
-}
+/**
+ * A record of the number of storage slots used by a contract and the consensus second at which
+ * those slots will expire.
+ *
+ * @param numSlotsUsed the number of storage slots used by the contract
+ * @param expiry the consensus second at which the storage slots will expire
+ */
+public record RentFactors(int numSlotsUsed, long expiry) {}
