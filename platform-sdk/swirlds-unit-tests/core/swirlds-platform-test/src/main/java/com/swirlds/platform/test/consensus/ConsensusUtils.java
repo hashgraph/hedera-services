@@ -50,7 +50,6 @@ public abstract class ConsensusUtils {
 
     public static final ConsensusMetrics NOOP_CONSENSUS_METRICS = new NoOpConsensusMetrics();
     public static final IntakeCycleStats NOOP_INTAKE_CYCLE_STATS = new NoOpIntakeCycleStats();
-    public static final BiConsumer<Long, Long> NOOP_MINGEN = (l1, l2) -> {};
 
     public static List<ConsensusRound> applyEventsToConsensus(
             final EventEmitter<?> emitter, final Consensus consensus, final long numberOfEvents) {

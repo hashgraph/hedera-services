@@ -18,29 +18,52 @@ package com.swirlds.platform.test.consensus.framework.validation;
 
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
+
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import org.junit.jupiter.api.Assertions;
 
 public class InputEventsValidation {
-    public static void validateInputsAreTheSame(final ConsensusOutput output1, final ConsensusOutput output2) {
-        // Verify that ALL base events fed into consensus are exactly identical
-        // this will check only pre-consensus data, for non-consensus events, the consensus data
-        // does not have to match
-        assertBaseEventLists("Verifying input events", output1.sortedAddedEvents(), output2.sortedAddedEvents());
+    /**
+     * Validate that the events are added in a different order
+     */
+    public static void validateEventsAreInDifferentOrder(final ConsensusOutput output1, final ConsensusOutput output2) {
+        assertBaseEventLists(
+                "Verifying input events are not equal",
+                output1.getAddedEvents(),
+                output2.getAddedEvents(),
+                false
+        );
     }
 
     /**
-     * Assert that base events are equal. This does not check any consensus data, only
-     * pre-consensus. If they are not equal then cause the test to fail and print a meaningful error
-     * message.
+     * Verify that ALL base events fed into consensus are exactly identical this will check only pre-consensus data, for
+     * non-consensus events, the consensus data does not have to match
+     */
+    public static void validateInputsAreTheSame(final ConsensusOutput output1, final ConsensusOutput output2) {
+        assertBaseEventLists(
+                "Verifying sorted input events are equal",
+                output1.sortedAddedEvents(),
+                output2.sortedAddedEvents(),
+                true
+        );
+    }
+
+    /**
+     * Assert that base events for equality. This does not check any consensus data, only pre-consensus. If the equality
+     * is not met, then cause the test to fail and print a meaningful error message.
      *
      * @param description a string that is printed if the events are unequal
      * @param l1 the first list of events
      * @param l2 the second list of events
+     * @param shouldBeEqual true if we expect lists have equal events, false if we expect unequal
      */
-    public static void assertBaseEventLists(
-            final String description, final List<EventImpl> l1, final List<EventImpl> l2) {
+    private static void assertBaseEventLists(
+            final String description,
+            final List<EventImpl> l1,
+            final List<EventImpl> l2,
+            final boolean shouldBeEqual) {
 
         if (l1.size() != l2.size()) {
             Assertions.fail(String.format("Length of event lists are unequal: %d vs %d", l1.size(), l2.size()));
@@ -49,7 +72,8 @@ public class InputEventsValidation {
         for (int index = 0; index < l1.size(); index++) {
             final EventImpl e1 = l1.get(index);
             final EventImpl e2 = l2.get(index);
-            if (!Objects.equals(e1.getBaseEvent(), e2.getBaseEvent())) {
+            final boolean equals = Objects.equals(e1.getBaseEvent(), e2.getBaseEvent());
+            if (shouldBeEqual && !equals) {
                 final String sb = description
                         + "\n"
                         + "Events are not equal:\n"
@@ -63,6 +87,14 @@ public class InputEventsValidation {
                         + index;
                 Assertions.fail(sb);
             }
+            if(!shouldBeEqual && !equals){
+                // events are not equal, and they are not expected to be, we can stop checking
+                return;
+            }
+        }
+        if(!shouldBeEqual){
+            // events are not expected to be equal, but we have gone through the whole list without finding a mismatch
+            Assertions.fail(String.format("Events are added in exactly the same order. Number of events: %d", l1.size()));
         }
     }
 

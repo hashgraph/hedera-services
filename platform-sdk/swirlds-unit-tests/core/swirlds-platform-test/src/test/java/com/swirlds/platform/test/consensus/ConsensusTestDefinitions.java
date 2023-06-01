@@ -67,8 +67,7 @@ public final class ConsensusTestDefinitions {
     /** Send an ancient event to consensus and check if it is marked stale. */
     public static void ancient(final TestInput input) {
         // Setup: we use a priority emitter so that the dying node's events are added last, when
-        // they are already
-        // ancient
+        // they are already ancient
         final List<Integer> nodePriorities =
                 IntStream.range(0, input.numberOfNodes()).boxed().toList();
         final ConsensusTestOrchestrator orchestrator = OrchestratorBuilder.builder()
@@ -108,7 +107,7 @@ public final class ConsensusTestDefinitions {
             final long totalWeight = nodeWeights.stream().reduce(0L, Long::sum);
 
             // Determine a single forking event source that has less than a strong minority
-            // of weigth
+            // of weigh
             int forkingNodeId = -1;
             for (int i = 0; i < nodeWeights.size(); i++) {
                 final long weight = nodeWeights.get(i);
@@ -214,7 +213,7 @@ public final class ConsensusTestDefinitions {
         final List<List<Double>> fullyConnected = createBalancedOtherParentMatrix(input.numberOfNodes());
         final Set<Integer> partitionedNodes = Util.getSubStrongMinorityNodes(orchestrator.getWeights());
         final int numPartitionedNodes = partitionedNodes.size();
-        // Less than a strong minority of nodes' weigth are partitioned from the network
+        // Less than a strong minority of nodes' weigh are partitioned from the network
         final List<List<Double>> partitioned =
                 createPartitionedOtherParentAffinityMatrix(input.numberOfNodes(), partitionedNodes);
         final int numConsPartitionNodes = input.numberOfNodes() - numPartitionedNodes;
@@ -256,9 +255,6 @@ public final class ConsensusTestDefinitions {
         final int numberOfNodes = input.numberOfNodes();
         // If the number of nodes is not divisible by 3 then the last clique will be slightly larger
         final int cliqueSize = numberOfNodes / 3;
-
-        // TODO where did this come from?
-        // return List.of(phase1, phase2, phase3);
 
         // A node to clique mapping
         final Map<Integer, Integer> cliques = new HashMap<>();
@@ -346,7 +342,7 @@ public final class ConsensusTestDefinitions {
                 .setRecentEventRetentionSize(5000)
                 .setProvidedOtherParentAgeDistribution(integerPowerDistribution(0.002, 300)));
         orchestrator.generateAllEvents();
-        /* If the node providing old events as other parents has a strong minority of weigth, rounds become very
+        /* If the node providing old events as other parents has a strong minority of weigh, rounds become very
         large because many more events are required to strongly see witnesses. Larger rounds means fewer stale
         events. Possibly no stale events at all if there are not enough events to create enough rounds so that
         generations are considered ancient. */
@@ -385,6 +381,9 @@ public final class ConsensusTestDefinitions {
         // than the max of its
         // parents' created rounds
         orchestrator.validateAndClear(Validations.standard()
+                // in this test, only 1 node could end up creating events, which means they have to be added in the same
+                // order, so we disable this validation for this test
+                .remove(Validations.ValidationType.DIFFERENT_ORDER)
                 .ratios(EventRatioValidation.standard()
                         .setMinimumConsensusRatio(0.0)
                         .setMaximumConsensusRatio(0.0)));
@@ -473,7 +472,7 @@ public final class ConsensusTestDefinitions {
         orchestrator.generateEvents(0.1);
         orchestrator.validateAndClear(Validations.standard()
                 .ratios(EventRatioValidation.blank()
-                        // if the shunned node has a lot of weigth, not many events
+                        // if the shunned node has a lot of weigh, not many events
                         // will reach consensus
                         .setMinimumConsensusRatio(0.1)
                         .setMinimumStaleRatio(0.1)));
