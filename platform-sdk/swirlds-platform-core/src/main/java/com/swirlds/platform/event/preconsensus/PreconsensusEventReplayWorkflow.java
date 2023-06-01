@@ -120,6 +120,8 @@ public final class PreconsensusEventReplayWorkflow {
                             return;
                         }
                         eventIntake.addUnlinkedEvent(new GossipEvent(e.getHashedData(), e.getUnhashedData()));
+
+                        // TODO what about the event task creator?
                     });
             eventReplayPipeline.replayEvents();
 
@@ -191,6 +193,8 @@ public final class PreconsensusEventReplayWorkflow {
         consensusRoundHandler.waitUntilNotBusy();
 
         // TODO are there other queues we need to wait on? (Talk to Lazar)
+
+        // TODO wait for hashing/singing queue
     }
 
     /**
