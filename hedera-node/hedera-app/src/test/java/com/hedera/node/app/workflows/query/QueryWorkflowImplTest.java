@@ -70,12 +70,12 @@ import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.ingest.IngestChecker;
 import com.hedera.node.app.workflows.ingest.SubmissionManager;
 import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hederahashgraph.api.proto.java.NetworkGetExecutionTimeQuery;
 import com.swirlds.common.utility.AutoCloseableWrapper;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import java.io.IOException;
@@ -179,7 +179,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         when(handler.findResponse(any(), eq(responseHeader))).thenReturn(response);
 
         final var config =
-                new VersionedConfigImpl(new TestConfigBuilder(false).getOrCreateConfig(), DEFAULT_CONFIG_VERSION);
+                new VersionedConfigImpl(new HederaTestConfigBuilder(false).getOrCreateConfig(), DEFAULT_CONFIG_VERSION);
         when(configProvider.getConfiguration()).thenReturn(config);
 
         workflow = new QueryWorkflowImpl(
