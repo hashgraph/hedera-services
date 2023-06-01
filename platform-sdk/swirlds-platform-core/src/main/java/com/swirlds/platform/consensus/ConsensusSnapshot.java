@@ -27,7 +27,7 @@ import java.util.List;
  * consensus needs to continue from a particular point. Apart from this record, consensus needs all
  * non-ancient events to continue.
  */
-public final class ConsensusSnapshot {
+public class ConsensusSnapshot {
     private final long round;
     private final Collection<Hash> judgeHashes;
     private final List<MinGenInfo> minGens;
