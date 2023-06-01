@@ -16,29 +16,28 @@
 
 package com.swirlds.platform.test.consensus.framework.validation;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import static com.swirlds.platform.test.consensus.framework.validation.Validations.ValidationType.CONSENSUS_EVENTS;
 import static com.swirlds.platform.test.consensus.framework.validation.Validations.ValidationType.CONSENSUS_TIMESTAMPS;
 import static com.swirlds.platform.test.consensus.framework.validation.Validations.ValidationType.DIFFERENT_ORDER;
 import static com.swirlds.platform.test.consensus.framework.validation.Validations.ValidationType.INPUTS_ARE_SAME;
 import static com.swirlds.platform.test.consensus.framework.validation.Validations.ValidationType.RATIOS;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 public class Validations {
     private final Map<ValidationType, ConsensusOutputValidation> map = new HashMap<>(Map.of(
-            INPUTS_ARE_SAME,  InputEventsValidation::validateInputsAreTheSame,
+            INPUTS_ARE_SAME, InputEventsValidation::validateInputsAreTheSame,
             DIFFERENT_ORDER, InputEventsValidation::validateEventsAreInDifferentOrder,
             CONSENSUS_EVENTS, ConsensusRoundValidation::validateConsensusRounds,
-            CONSENSUS_TIMESTAMPS, TimestampChecker::validateConsensusTimestamps
-    ));
+            CONSENSUS_TIMESTAMPS, TimestampChecker::validateConsensusTimestamps));
 
     public static Validations standard() {
         return new Validations();
     }
 
-    public Validations remove(final ValidationType type){
+    public Validations remove(final ValidationType type) {
         map.remove(type);
         return this;
     }

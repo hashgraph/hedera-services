@@ -18,8 +18,6 @@ package com.swirlds.platform.test.consensus.framework.validation;
 
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
-
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import org.junit.jupiter.api.Assertions;
@@ -30,11 +28,7 @@ public class InputEventsValidation {
      */
     public static void validateEventsAreInDifferentOrder(final ConsensusOutput output1, final ConsensusOutput output2) {
         assertBaseEventLists(
-                "Verifying input events are not equal",
-                output1.getAddedEvents(),
-                output2.getAddedEvents(),
-                false
-        );
+                "Verifying input events are not equal", output1.getAddedEvents(), output2.getAddedEvents(), false);
     }
 
     /**
@@ -46,8 +40,7 @@ public class InputEventsValidation {
                 "Verifying sorted input events are equal",
                 output1.sortedAddedEvents(),
                 output2.sortedAddedEvents(),
-                true
-        );
+                true);
     }
 
     /**
@@ -60,10 +53,7 @@ public class InputEventsValidation {
      * @param shouldBeEqual true if we expect lists have equal events, false if we expect unequal
      */
     private static void assertBaseEventLists(
-            final String description,
-            final List<EventImpl> l1,
-            final List<EventImpl> l2,
-            final boolean shouldBeEqual) {
+            final String description, final List<EventImpl> l1, final List<EventImpl> l2, final boolean shouldBeEqual) {
 
         if (l1.size() != l2.size()) {
             Assertions.fail(String.format("Length of event lists are unequal: %d vs %d", l1.size(), l2.size()));
@@ -87,14 +77,15 @@ public class InputEventsValidation {
                         + index;
                 Assertions.fail(sb);
             }
-            if(!shouldBeEqual && !equals){
+            if (!shouldBeEqual && !equals) {
                 // events are not equal, and they are not expected to be, we can stop checking
                 return;
             }
         }
-        if(!shouldBeEqual){
+        if (!shouldBeEqual) {
             // events are not expected to be equal, but we have gone through the whole list without finding a mismatch
-            Assertions.fail(String.format("Events are added in exactly the same order. Number of events: %d", l1.size()));
+            Assertions.fail(
+                    String.format("Events are added in exactly the same order. Number of events: %d", l1.size()));
         }
     }
 

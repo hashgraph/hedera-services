@@ -43,7 +43,6 @@ import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
-import java.util.function.BiConsumer;
 
 /** A class containing utilities for consensus tests. */
 public abstract class ConsensusUtils {

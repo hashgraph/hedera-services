@@ -18,7 +18,6 @@ package com.swirlds.platform.consensus;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.state.MinGenInfo;
-
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
