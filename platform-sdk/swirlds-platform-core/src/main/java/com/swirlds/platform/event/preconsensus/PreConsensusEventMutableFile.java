@@ -58,27 +58,29 @@ public class PreConsensusEventMutableFile {
      * @param descriptor a description of the file
      */
     PreConsensusEventMutableFile(final PreConsensusEventFile descriptor) throws IOException {
-        if (Files.exists(descriptor.path())) {
-            throw new IOException("File " + descriptor.path() + " already exists");
+        if (Files.exists(descriptor.getPath())) {
+            throw new IOException("File " + descriptor.getPath() + " already exists");
         }
 
-        Files.createDirectories(descriptor.path().getParent());
+        Files.createDirectories(descriptor.getPath().getParent());
 
         this.descriptor = descriptor;
         counter = new CountingStreamExtension(false);
         out = new SerializableDataOutputStream(new ExtendableOutputStream(
-                new BufferedOutputStream(new FileOutputStream(descriptor.path().toFile())), counter));
-        highestGenerationInFile = descriptor.minimumGeneration();
+                new BufferedOutputStream(
+                        new FileOutputStream(descriptor.getPath().toFile())),
+                counter));
+        highestGenerationInFile = descriptor.getMinimumGeneration();
     }
 
     /**
      * Check if this file is eligible to contain an event based on generational bounds.
      *
-     * @param event the event in question
+     * @param generation the generation of the event in question
      * @return true if this file is eligible to contain the event
      */
-    public boolean canContain(final EventImpl event) {
-        return descriptor.canContain(event);
+    public boolean canContain(final long generation) {
+        return descriptor.canContain(generation);
     }
 
     /**
@@ -87,7 +89,7 @@ public class PreConsensusEventMutableFile {
      * @param event the event to write
      */
     public void writeEvent(final EventImpl event) throws IOException {
-        if (!descriptor.canContain(event)) {
+        if (!descriptor.canContain(event.getGeneration())) {
             throw new IllegalStateException("Cannot write event " + event.getBaseHash() + " with generation "
                     + event.getGeneration() + " to file " + descriptor);
         }
@@ -104,7 +106,7 @@ public class PreConsensusEventMutableFile {
      * @return the new span compressed file
      */
     public PreConsensusEventFile compressGenerationalSpan(final long highestGenerationInPreviousFile) {
-        if (highestGenerationInFile == descriptor.maximumGeneration()) {
+        if (highestGenerationInFile == descriptor.getMaximumGeneration()) {
             // No need to compress, we used the entire span.
             return descriptor;
         }
@@ -113,7 +115,7 @@ public class PreConsensusEventMutableFile {
                 Math.max(highestGenerationInFile, highestGenerationInPreviousFile));
 
         try {
-            Files.move(descriptor.path(), newDescriptor.path(), StandardCopyOption.ATOMIC_MOVE);
+            Files.move(descriptor.getPath(), newDescriptor.getPath(), StandardCopyOption.ATOMIC_MOVE);
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -149,7 +151,7 @@ public class PreConsensusEventMutableFile {
      * file. Higher values mean that the maximum generation was chosen well.
      */
     public long getUtilizedGenerationalSpan() {
-        return highestGenerationInFile - descriptor.minimumGeneration();
+        return highestGenerationInFile - descriptor.getMinimumGeneration();
     }
 
     /**
@@ -157,14 +159,14 @@ public class PreConsensusEventMutableFile {
      * well, resulting in less overlap between files. A value of 0 represents a "perfect" choice.
      */
     public long getUnUtilizedGenerationalSpan() {
-        return descriptor.maximumGeneration() - highestGenerationInFile;
+        return descriptor.getMaximumGeneration() - highestGenerationInFile;
     }
 
     /**
      * Get the span of generations that this file can legally contain.
      */
     public long getGenerationalSpan() {
-        return descriptor.maximumGeneration() - descriptor.minimumGeneration();
+        return descriptor.getMaximumGeneration() - descriptor.getMinimumGeneration();
     }
 
     /**

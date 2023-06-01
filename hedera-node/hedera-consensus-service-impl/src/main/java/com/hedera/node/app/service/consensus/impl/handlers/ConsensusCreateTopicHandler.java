@@ -88,8 +88,8 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
 
         final var builder = new Topic.Builder();
 
-        /* Validate admin and submit keys and set them */
-        if (op.hasAdminKey()) {
+        /* Validate admin and submit keys and set them. Empty key list is allowed and is used for immutable entities */
+        if (op.hasAdminKey() && !handleContext.attributeValidator().isImmutableKey(op.adminKey())) {
             handleContext.attributeValidator().validateKey(op.adminKey());
             builder.adminKey(op.adminKey());
         }

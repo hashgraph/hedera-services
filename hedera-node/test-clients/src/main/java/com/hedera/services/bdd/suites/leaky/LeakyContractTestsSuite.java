@@ -238,7 +238,6 @@ public class LeakyContractTestsSuite extends HapiSuite {
     private static final String CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS = "contracts.allowSystemUseOfHapiSigs";
     private static final String CRYPTO_TRANSFER = "CryptoTransfer";
     private static final String TOKEN_TRANSFER_CONTRACT = "TokenTransferContract";
-    private static final String TRANSFER_WORKS_WITH_TOP_LEVEL_SIGNATURES = "transferWorksWithTopLevelSignatures";
     private static final String TRANSFER_TOKEN_PUBLIC = "transferTokenPublic";
     private static final String HEDERA_ALLOWANCES_IS_ENABLED = "hedera.allowances.isEnabled";
 
@@ -268,7 +267,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 contractCreationStoragePriceMatchesFinalExpiry(),
                 createTokenWithInvalidFixedFeeWithERC721Denomination(),
                 maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
-                accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation(),
+                etx026AccountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation(),
                 createMaxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
                 lazyCreateThroughPrecompileNotSupportedWhenFlagDisabled(),
                 evmLazyCreateViaSolidityCall(),
@@ -286,7 +285,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
     }
 
     private HapiSpec transferErc20TokenFromErc721TokenFails() {
-        return propertyPreservingHapiSpec("ERC_20_TRANSFER_FROM_ERC_721_TOKEN")
+        return propertyPreservingHapiSpec("transferErc20TokenFromErc721TokenFails")
                 .preserving(HEDERA_ALLOWANCES_IS_ENABLED)
                 .given(
                         overriding(HEDERA_ALLOWANCES_IS_ENABLED, "true"),
@@ -461,7 +460,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaNftID = new AtomicReference<>();
-        return propertyPreservingHapiSpec(TRANSFER_WORKS_WITH_TOP_LEVEL_SIGNATURES)
+        return propertyPreservingHapiSpec("transferDontWorkWithoutTopLevelSignatures")
                 .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS)
                 .given(
                         // disable top level signatures for all functions
@@ -600,7 +599,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaNftID = new AtomicReference<>();
-        return propertyPreservingHapiSpec(TRANSFER_WORKS_WITH_TOP_LEVEL_SIGNATURES)
+        return propertyPreservingHapiSpec("transferWorksWithTopLevelSignatures")
                 .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS)
                 .given(
                         // enable top level signatures for
@@ -754,7 +753,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
 
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
-        return propertyPreservingHapiSpec(TRANSFER_WORKS_WITH_TOP_LEVEL_SIGNATURES)
+        return propertyPreservingHapiSpec("transferFailsWithIncorrectAmounts")
                 .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS)
                 .given(
                         overriding(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CRYPTO_TRANSFER),
@@ -1154,9 +1153,9 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         }));
     }
 
-    HapiSpec accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation() {
+    HapiSpec etx026AccountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation() {
         final String ACCOUNT = "account";
-        return defaultHapiSpec("ETX_026_accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation")
+        return defaultHapiSpec("etx026AccountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation")
                 .given(
                         overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE_VALUE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
@@ -1175,7 +1174,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
     private HapiSpec transferToCaller() {
         final var transferTxn = TRANSFER_TXN;
         final var sender = "sender";
-        return defaultHapiSpec(TRANSFER_TO_CALLER)
+        return defaultHapiSpec("transferToCaller")
                 .given(
                         uploadInitCode(TRANSFERRING_CONTRACT),
                         contractCreate(TRANSFERRING_CONTRACT).balance(10_000L),

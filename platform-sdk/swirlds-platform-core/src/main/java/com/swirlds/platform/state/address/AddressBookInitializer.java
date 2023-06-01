@@ -62,7 +62,7 @@ public class AddressBookInitializer {
     private static final String ADDRESS_BOOK_FILE_PREFIX = "usedAddressBook";
     /** The format of date and time to use when creating address book files. */
     private static final DateTimeFormatter DATE_TIME_FORMAT =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-m-ss").withZone(ZoneId.systemDefault());
+            DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss").withZone(ZoneId.systemDefault());
     /** For logging info, warn, and error. */
     private static final Logger logger = LogManager.getLogger(AddressBookInitializer.class);
     /** The context for the platform */
