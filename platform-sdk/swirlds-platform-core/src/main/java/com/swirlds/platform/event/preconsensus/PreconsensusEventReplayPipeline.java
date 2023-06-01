@@ -109,6 +109,10 @@ public class PreconsensusEventReplayPipeline {
      * @param eventBeingHashed the event
      */
     private void handleEvent(@NonNull final EventBeingHashed eventBeingHashed) {
+        if (error.get()) {
+            // Don't handle anything once an error is observed.
+            return;
+        }
         try {
             eventBeingHashed.hashFuture().get();
             final EventImpl event = eventBeingHashed.event();
