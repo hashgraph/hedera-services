@@ -257,7 +257,6 @@ module com.hedera.node.app.service.mono {
     opens com.hedera.node.app.service.mono.cache to
             com.swirlds.common;
 
-    requires transitive com.hedera.hashgraph.protobuf.java.api;
     requires transitive com.hedera.node.app.hapi.fees;
     requires transitive com.hedera.node.app.hapi.utils;
     requires transitive com.hedera.node.app.service.evm;

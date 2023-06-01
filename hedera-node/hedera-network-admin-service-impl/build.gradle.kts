@@ -26,7 +26,6 @@ dependencies {
         testImplementation(project(":hedera-node:node-app-service-token-impl"))
         testImplementation(testFixtures(project(":hedera-node:node-config")))
         testImplementation(testFixtures(project(":hedera-node:node-app-spi")))
-        testImplementation(gav("com.hedera.hashgraph.protobuf.java.api"))
         testImplementation(gav("com.swirlds.fcqueue"))
         testImplementation(gav("org.assertj.core"))
         testImplementation(gav("org.junit.jupiter.api"))

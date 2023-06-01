@@ -26,7 +26,7 @@ pluginManagement {
 }
 
 plugins {
-    id("com.gradle.enterprise").version("3.11.4")
+  id("com.gradle.enterprise").version("3.11.4")
     // Use GIT plugin to clone HAPI protobuf files
     // See documentation https://melix.github.io/includegit-gradle-plugin/latest/index.html
     id("me.champeau.includegit").version("0.1.6")
@@ -99,14 +99,18 @@ gradleEnterprise {
     }
 }
 
+// The HAPI API version to use for Protobuf sources. This can be a tag or branch
+// name from the hedera-protobufs GIT repo.
+val hapiProtoVersion = "add-pbj-types-for-state"
+
 gitRepositories {
-    checkoutsDirectory.set(file(rootProject.projectDir.absolutePath + "/hedera-node/hapi/"))
+    checkoutsDirectory.set(File(rootDir, "hedera-node/hapi"))
+    // check branch in repo for updates every second
+    refreshIntervalMillis.set(1000)
     include("hedera-protobufs") {
         uri.set("https://github.com/hashgraph/hedera-protobufs.git")
-        // choose tag or branch of HAPI you would like to test with
-        // this looks for a tag in hedera-protobufs repo
-        // This version needs to match tha HAPI version below in versionCatalogs
-        tag.set("add-pbj-types-for-state")
+        // HAPI repo version
+        tag.set(hapiProtoVersion)
         // do not load project from repo
         autoInclude.set(false)
     }
@@ -122,9 +126,6 @@ dependencyResolutionManagement {
         // distribution. These libs can be depended on during compilation, or bundled as part of
         // runtime.
         create("libs") {
-            // The HAPI API version to use, this need to match the tag set on gitRepositories above
-            val hapiVersion = "0.40.0-blocks-state-SNAPSHOT"
-
             val besuNativeVersion = "0.6.1"
             val besuVersion = "23.1.2"
             val bouncycastleVersion = "1.70"
@@ -148,7 +149,6 @@ dependencyResolutionManagement {
             version("com.google.common", "31.1-jre")
             version("com.google.protobuf", "3.19.4")
             version("com.google.protobuf.util", "3.19.2")
-            version("com.hedera.hashgraph.protobuf.java.api", hapiVersion)
             version("com.hedera.pbj.runtime", "0.6.0")
             version("com.sun.jna", "5.12.1")
             version("com.swirlds.base", swirldsVersion)
@@ -171,6 +171,7 @@ dependencyResolutionManagement {
             version("io.helidon.grpc.client", helidonVersion)
             version("io.helidon.grpc.core", helidonVersion)
             version("io.helidon.grpc.server", helidonVersion)
+            version("java.annotation", "3.0.2")
             version("javax.inject", "1")
             version("net.i2p.crypto.eddsa", "0.3.0")
             version("org.antlr.antlr4.runtime", "4.11.1")
@@ -204,6 +205,8 @@ dependencyResolutionManagement {
             version("tuweni.units", tuweniVersion)
             version("uk.org.webcompere.systemstubs.core", systemStubsVersion)
             version("uk.org.webcompere.systemstubs.jupiter", systemStubsVersion)
+
+            version("hapi-proto", hapiProtoVersion)
 
             plugin("pbj", "com.hedera.pbj.pbj-compiler").version("0.6.0")
         }

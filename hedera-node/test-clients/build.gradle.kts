@@ -48,7 +48,7 @@ dependencies {
     api(gav("com.fasterxml.jackson.annotation"))
     api(gav("com.google.common"))
     api(gav("com.google.protobuf"))
-    api(gav("com.hedera.hashgraph.protobuf.java.api"))
+    api(project(":hedera-node:node-hapi"))
     api(gav("com.swirlds.common"))
     api(gav("headlong"))
     api(gav("info.picocli"))
@@ -83,7 +83,7 @@ dependencies {
     itestImplementation(project(path))
     itestImplementation(gav("org.testcontainers"))
     itestImplementation(gav("org.testcontainers.junit.jupiter"))
-    itestImplementation(gav("com.hedera.hashgraph.protobuf.java.api"))
+    itestImplementation(project(":hedera-node:node-hapi"))
     itestImplementation(gav("org.junit.jupiter.api"))
 
     eetImplementation(project(path))

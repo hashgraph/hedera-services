@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
+@Suppress("DSL_SCOPE_VIOLATION")
 plugins {
-  id("com.hedera.hashgraph.conventions")
+  id("com.hedera.hashgraph.hapi")
   alias(libs.plugins.pbj)
   `java-test-fixtures`
 }
@@ -24,11 +25,9 @@ description = "Hedera API"
 
 dependencies {
   javaModuleDependencies {
-    testImplementation(gav("com.google.protobuf"))
     // we depend on the protoc compiled hapi during test as we test our pbj generated code against
     // it to make sure it is compatible
     testImplementation(gav("com.google.protobuf.util"))
-    testImplementation(gav("com.hedera.hashgraph.protobuf.java.api"))
     testImplementation(gav("org.junit.jupiter.api"))
     testImplementation(gav("org.junit.jupiter.params"))
   }
@@ -38,6 +37,10 @@ dependencies {
 sourceSets {
   main {
     pbj {
+      srcDir("hedera-protobufs/services")
+      srcDir("hedera-protobufs/streams")
+    }
+    proto {
       srcDir("hedera-protobufs/services")
       srcDir("hedera-protobufs/streams")
     }
@@ -59,6 +62,3 @@ tasks.withType<Test>().configureEach {
   minHeapSize = "512m"
   maxHeapSize = "4096m"
 }
-
-// Add "hedera-protobufs" repository to clean task
-tasks.named("clean") { doLast { delete(projectDir.absolutePath + "hedera-protobufs") } }

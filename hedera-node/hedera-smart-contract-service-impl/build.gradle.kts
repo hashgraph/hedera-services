@@ -32,5 +32,6 @@ dependencyAnalysis.issues {
   onUnusedDependencies {
     exclude(":hedera-node:node-app-service-mono")
     exclude(":hedera-node:node-app-service-token")
+    exclude("org.apache.tuweni:tuweni-units")
   }
 }
