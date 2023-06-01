@@ -47,16 +47,17 @@ import com.hedera.hapi.node.token.GrantedNftAllowance;
 import com.hedera.hapi.node.token.GrantedTokenAllowance;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
+
 import com.hedera.node.app.service.networkadmin.impl.config.NetworkAdminServiceConfig;
 import com.hedera.node.app.service.networkadmin.impl.utils.NetworkAdminServiceUtil;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.ReadableTokenStore.TokenMetadata;
-import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.config.data.LedgerConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -71,12 +72,9 @@ import javax.inject.Singleton;
 @Singleton
 public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
 
-    private final NetworkInfo networkInfo;
 
     @Inject
     public NetworkGetAccountDetailsHandler() {
-        // Exists for injection
-        this.networkInfo = null;
     }
 
     @Override
@@ -126,6 +124,8 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
         final var op = query.accountDetailsOrThrow();
         final var responseBuilder = GetAccountDetailsResponse.newBuilder();
         final var account = op.accountIdOrElse(AccountID.DEFAULT);
+        final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
+
 
         final var responseType = op.headerOrElse(QueryHeader.DEFAULT).responseType();
         responseBuilder.header(header);
@@ -134,7 +134,7 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
             final var readableTokenStore = context.createStore(ReadableTokenStore.class);
             final var tokenRelationStore = context.createStore(ReadableTokenRelationStore.class);
             final var optionalInfo =
-                    infoForAccount(account, accountStore, networkAdminConfig, readableTokenStore, tokenRelationStore);
+                    infoForAccount(account, accountStore, networkAdminConfig, readableTokenStore, tokenRelationStore, ledgerConfig);
             optionalInfo.ifPresent(responseBuilder::accountDetails);
         }
 
@@ -152,7 +152,8 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final NetworkAdminServiceConfig networkAdminConfig,
             @NonNull final ReadableTokenStore readableTokenStore,
-            @NonNull final ReadableTokenRelationStore tokenRelationStore) {
+            @NonNull final ReadableTokenRelationStore tokenRelationStore,
+            @NonNull final LedgerConfig ledgerConfig) {
         final var account = accountStore.getAccountById(accountID);
         if (account == null) {
             return Optional.empty();
@@ -172,7 +173,7 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
             info.ownedNfts(account.numberOwnedNfts());
             info.maxAutomaticTokenAssociations(account.maxAutoAssociations());
             info.alias(account.alias());
-            info.ledgerId(networkInfo.ledgerId());
+            info.ledgerId(ledgerConfig.id());
             info.grantedCryptoAllowances(getCryptoGrantedAllowancesList(account));
             info.grantedNftAllowances(getNftGrantedAllowancesList(account));
             info.grantedTokenAllowances(getFungibleGrantedTokenAllowancesList(account));
