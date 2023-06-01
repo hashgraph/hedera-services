@@ -51,6 +51,11 @@ public interface PreConsensusEventWriter extends Startable, Stoppable {
     void setMinimumGenerationNonAncient(long minimumGenerationNonAncient) throws InterruptedException;
 
     /**
+     * Inform the preconsensus event writer that a discontinuity has occurred in the preconsensus event stream.
+     */
+    void registerDiscontinuity() throws InterruptedException;
+
+    /**
      * Set the minimum generation needed to be kept on disk.
      *
      * @param minimumGenerationToStore the minimum generation required to be stored on disk
@@ -73,9 +78,9 @@ public interface PreConsensusEventWriter extends Startable, Stoppable {
     boolean isEventDurable(@NonNull EventImpl event);
 
     /**
-     * Wait until an event is guaranteed to be durable, i.e. flushed to disk. Prior to blocking on this method,
-     * the event in question should have been passed to {@link #writeEvent(EventImpl)} and {@link #requestFlush()}
-     * should have been called. Otherwise, this method may block indefinitely.
+     * Wait until an event is guaranteed to be durable, i.e. flushed to disk. Prior to blocking on this method, the
+     * event in question should have been passed to {@link #writeEvent(EventImpl)} and {@link #requestFlush()} should
+     * have been called. Otherwise, this method may block indefinitely.
      *
      * @param event the event in question
      * @throws InterruptedException if interrupted while waiting
@@ -83,9 +88,9 @@ public interface PreConsensusEventWriter extends Startable, Stoppable {
     void waitUntilDurable(@NonNull EventImpl event) throws InterruptedException;
 
     /**
-     * Wait until an event is guaranteed to be durable, i.e. flushed to disk. Prior to blocking on this method,
-     * the event in question should have been passed to {@link #writeEvent(EventImpl)} and {@link #requestFlush()}
-     * should have been called. Otherwise, this method may block until the end of its timeout and return false.
+     * Wait until an event is guaranteed to be durable, i.e. flushed to disk. Prior to blocking on this method, the
+     * event in question should have been passed to {@link #writeEvent(EventImpl)} and {@link #requestFlush()} should
+     * have been called. Otherwise, this method may block until the end of its timeout and return false.
      *
      * @param event      the event in question
      * @param timeToWait the maximum time to wait

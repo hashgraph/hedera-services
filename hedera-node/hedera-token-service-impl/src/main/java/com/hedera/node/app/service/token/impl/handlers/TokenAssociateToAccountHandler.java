@@ -230,7 +230,7 @@ public class TokenAssociateToAccountHandler implements TransactionHandler {
                 MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
 
         // Check that the account exists
-        final var account = accountStore.get(accountId).orElse(null);
+        final var account = accountStore.get(accountId);
         validateTrue(account != null, INVALID_ACCOUNT_ID);
 
         // Check that the given tokens exist and are usable

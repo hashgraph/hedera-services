@@ -203,7 +203,7 @@ public class SyncCaller implements Runnable {
                 // and immediately put it into the hashgraph. No syncing is needed.
 
                 eventTaskCreator.createEvent(
-                        selfId.id() /*selfId assumed to be main*/); // otherID (so self will count as the
+                        selfId /*selfId assumed to be main*/); // otherID (so self will count as the
 
                 // "other")
                 Thread.sleep(50);

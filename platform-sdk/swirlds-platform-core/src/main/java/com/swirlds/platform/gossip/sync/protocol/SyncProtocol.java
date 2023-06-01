@@ -169,7 +169,7 @@ public class SyncProtocol implements Protocol {
         }
 
         // is there a reason to initiate?
-        if (peerNeededForFallenBehind() || criticalQuorum.isInCriticalQuorum(peerId.id())) {
+        if (peerNeededForFallenBehind() || criticalQuorum.isInCriticalQuorum(peerId)) {
             permit = permitProvider.tryAcquire();
             final boolean isLockAcquired = permit.isLockAcquired();
 

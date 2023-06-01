@@ -87,4 +87,8 @@ public class PreCheckException extends Exception {
             throw new PreCheckException(errorStatus);
         }
     }
+
+    public static void validateFalsePreCheck(boolean condition, ResponseCodeEnum errorStatus) throws PreCheckException {
+        validateTruePreCheck(!condition, errorStatus);
+    }
 }

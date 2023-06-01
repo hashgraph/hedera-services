@@ -93,7 +93,7 @@ public class SysDelSysUndelSpec extends HapiSuite {
         var lifetime = THREE_MONTHS_IN_SECONDS;
         AtomicLong initExpiry = new AtomicLong();
 
-        return defaultHapiSpec("happyPathFlows")
+        return defaultHapiSpec("systemDeleteThenUndeleteRestoresContentsAndExpiry")
                 .given(
                         fileCreate("misc").lifetime(lifetime).contents(ORIG_FILE),
                         UtilVerbs.withOpContext((spec, opLog) -> initExpiry.set(

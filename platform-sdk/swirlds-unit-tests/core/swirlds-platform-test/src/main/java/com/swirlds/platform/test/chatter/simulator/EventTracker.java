@@ -109,7 +109,8 @@ public class EventTracker {
      * @param creationTime the time when the event was created
      */
     public void registerNewEvent(final ChatterEventDescriptor descriptor, final Instant creationTime) {
-        final TrackedEvent prev = events.put(descriptor, new TrackedEvent(descriptor.getCreator(), creationTime));
+        final TrackedEvent prev =
+                events.put(descriptor, new TrackedEvent(descriptor.getCreator().id(), creationTime));
 
         if (prev != null) {
             throw new IllegalStateException("new event registered multiple times");
