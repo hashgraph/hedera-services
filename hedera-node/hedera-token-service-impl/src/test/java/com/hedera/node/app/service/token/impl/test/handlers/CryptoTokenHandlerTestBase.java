@@ -17,8 +17,6 @@
 package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.protoToPbj;
-import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static com.hedera.test.utils.KeyUtils.B_COMPLEX_KEY;
 import static com.hedera.test.utils.KeyUtils.C_COMPLEX_KEY;
@@ -34,6 +32,9 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
+import com.hedera.hapi.node.state.token.AccountCryptoAllowance;
+import com.hedera.hapi.node.state.token.AccountFungibleTokenAllowance;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.CryptoAllowance;
@@ -57,7 +58,6 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
-import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -69,62 +69,17 @@ import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mock;
 
-public class CryptoTokenHandlerTestBase {
-    public static final String ACCOUNTS = "ACCOUNTS";
-    protected static final String ALIASES = "ALIASES";
-    protected static final String TOKENS = "TOKENS";
-    protected static final String TOKEN_RELS = "TOKEN_RELS";
-
+public class CryptoTokenHandlerTestBase extends StateBuilders {
+    /* ---------- Keys -----------*/
     protected final Key key = A_COMPLEX_KEY;
-
     protected static final Key payerKey = A_COMPLEX_KEY;
-
-    protected final AccountID id = AccountID.newBuilder().accountNum(3).build();
-    protected final Timestamp consensusTimestamp =
-            Timestamp.newBuilder().seconds(1_234_567L).build();
     protected final Key accountKey = A_COMPLEX_KEY;
-
-    protected final Long accountNum = id.accountNum();
-    protected final EntityNumVirtualKey accountEntityNumVirtualKey = new EntityNumVirtualKey(accountNum);
-    protected final AccountID alias =
-            AccountID.newBuilder().alias(Bytes.wrap("testAlias")).build();
-    protected final byte[] evmAddress = CommonUtils.unhex("6aea3773ea468a814d954e6dec795bfee7d76e25");
-    protected final ContractID contractAlias =
-            ContractID.newBuilder().evmAddress(Bytes.wrap(evmAddress)).build();
-    protected final ContractID contract =
-            ContractID.newBuilder().contractNum(1234).build();
-
-    protected final AccountID deleteAccountId =
-            AccountID.newBuilder().accountNum(3213).build();
-    protected final AccountID transferAccountId =
-            AccountID.newBuilder().accountNum(32134).build();
-    protected final Long deleteAccountNum = deleteAccountId.accountNum();
-    protected final Long transferAccountNum = transferAccountId.accountNum();
-
-    protected final TokenID nft = TokenID.newBuilder().tokenNum(56789).build();
-    protected final TokenID tokenID = TokenID.newBuilder().tokenNum(6789).build();
-    protected final AccountID spender = AccountID.newBuilder().accountNum(12345).build();
-    protected final AccountID delegatingSpender =
-            AccountID.newBuilder().accountNum(1234567).build();
-    protected final AccountID owner = AccountID.newBuilder().accountNum(123456).build();
     protected final Key ownerKey = B_COMPLEX_KEY;
-    protected final CryptoAllowance cryptoAllowance = CryptoAllowance.newBuilder()
-            .spender(spender)
-            .owner(owner)
-            .amount(10L)
-            .build();
-    protected final TokenAllowance tokenAllowance = TokenAllowance.newBuilder()
-            .spender(spender)
-            .amount(10L)
-            .tokenId(tokenID)
-            .owner(owner)
-            .build();
-    protected static final long defaultAutoRenewPeriod = 720000L;
-    protected static final long payerBalance = 10_000L;
-    protected static final HederaKey payerHederaKey = asHederaKey(payerKey).get();
+    protected final Key spenderKey = C_COMPLEX_KEY;
     protected final Key adminKey = A_COMPLEX_KEY;
     protected final Key pauseKey = B_COMPLEX_KEY;
     protected final Key wipeKey = C_COMPLEX_KEY;
@@ -132,33 +87,53 @@ public class CryptoTokenHandlerTestBase {
     protected final Key feeScheduleKey = A_COMPLEX_KEY;
     protected final Key supplyKey = A_COMPLEX_KEY;
     protected final Key freezeKey = A_COMPLEX_KEY;
-    protected final AccountID payerId = protoToPbj(asAccount("0.0.3"), AccountID.class);
-    protected final AccountID treasury = protoToPbj(asAccount("0.0.100"), AccountID.class);
+
+    /* ---------- Account IDs -----------*/
+    protected final AccountID id = AccountID.newBuilder().accountNum(3).build();
+    protected final AccountID deleteAccountId = AccountID.newBuilder().accountNum(3213).build();
+    protected final AccountID transferAccountId = AccountID.newBuilder().accountNum(32134).build();
+    protected final AccountID delegatingSpenderId = AccountID.newBuilder().accountNum(1234567).build();
+    protected final AccountID ownerId = AccountID.newBuilder().accountNum(123456).build();
+    protected final AccountID treasuryId = AccountID.newBuilder().accountNum(100).build();
     protected final AccountID autoRenewId = AccountID.newBuilder().accountNum(4).build();
-    protected final HederaKey adminHederaKey = asHederaKey(adminKey).get();
-    protected final HederaKey wipeHederaKey = asHederaKey(wipeKey).get();
-    protected final HederaKey supplyHederaKey = asHederaKey(supplyKey).get();
-    protected final HederaKey kycHederaKey = asHederaKey(kycKey).get();
-    protected final HederaKey freezeHederaKey = asHederaKey(freezeKey).get();
-    protected final HederaKey feeScheduleHederaKey = asHederaKey(feeScheduleKey).get();
-    protected final HederaKey pauseHederaKey = asHederaKey(A_COMPLEX_KEY).get();
+    protected final AccountID spenderId = AccountID.newBuilder().accountNum(12345).build();
+
+    /* ---------- Account Numbers -----------*/
+    protected final Long accountNum = id.accountNum();
+    protected final Long deleteAccountNum = deleteAccountId.accountNum();
+    protected final Long transferAccountNum = transferAccountId.accountNum();
+
+    /* ---------- Aliases  -----------*/
+    protected final AccountID alias = AccountID.newBuilder().alias(Bytes.wrap("testAlias")).build();
+    protected final byte[] evmAddress = CommonUtils.unhex("6aea3773ea468a814d954e6dec795bfee7d76e25");
+    protected final ContractID contractAlias = ContractID.newBuilder().evmAddress(Bytes.wrap(evmAddress)).build();
+    /*-----------Contracts -----------*/
+    protected final ContractID contract = ContractID.newBuilder().contractNum(1234).build();
+    /* ---------- Tokens -----------*/
+    protected final TokenID nft = TokenID.newBuilder().tokenNum(56789).build();
+    protected final TokenID tokenID = TokenID.newBuilder().tokenNum(6789).build();
     protected final EntityNum fungibleTokenNum = EntityNum.fromLong(1L);
-    protected final TokenID fungibleTokenId =
-            TokenID.newBuilder().tokenNum(fungibleTokenNum.longValue()).build();
+    protected final TokenID fungibleTokenId = TokenID.newBuilder().tokenNum(fungibleTokenNum.longValue()).build();
     protected final EntityNum nonFungibleTokenNum = EntityNum.fromLong(2L);
-    protected final TokenID nonFungibleTokenId =
-            TokenID.newBuilder().tokenNum(nonFungibleTokenNum.longValue()).build();
+    protected final TokenID nonFungibleTokenId = TokenID.newBuilder().tokenNum(nonFungibleTokenNum.longValue()).build();
     protected final EntityNumPair fungiblePair =
             EntityNumPair.fromLongs(accountNum.longValue(), fungibleTokenNum.longValue());
     protected final EntityNumPair nonFungiblePair =
             EntityNumPair.fromLongs(accountNum.longValue(), nonFungibleTokenNum.longValue());
-    protected final TokenID tokenId =
-            TokenID.newBuilder().tokenNum(fungibleTokenNum.longValue()).build();
-    protected final String tokenName = "test token";
-    protected final String tokenSymbol = "TT";
-    protected final String memo = "test memo";
-    protected final long expirationTime = 1_234_567L;
-    protected final long autoRenewSecs = 100L;
+
+    /* ---------- Allowances -----------*/
+    protected final CryptoAllowance cryptoAllowance = CryptoAllowance.newBuilder()
+            .spender(spenderId)
+            .owner(ownerId)
+            .amount(10L)
+            .build();
+    protected final TokenAllowance tokenAllowance = TokenAllowance.newBuilder()
+            .spender(spenderId)
+            .amount(10L)
+            .tokenId(tokenID)
+            .owner(ownerId)
+            .build();
+    /* ---------- Fees -----------*/
     protected FixedFee fixedFee = FixedFee.newBuilder()
             .amount(1_000L)
             .denominatingTokenId(TokenID.newBuilder().tokenNum(1L).build())
@@ -175,7 +150,15 @@ public class CryptoTokenHandlerTestBase {
             .build();
     protected List<CustomFee> customFees = List.of(withFixedFee(fixedFee), withFractionalFee(fractionalFee));
 
-    protected TokensConfig tokensConfig;
+    /* ---------- Misc -----------*/
+    protected final Timestamp consensusTimestamp = Timestamp.newBuilder().seconds(1_234_567L).build();
+    protected final String tokenName = "test token";
+    protected final String tokenSymbol = "TT";
+    protected final String memo = "test memo";
+    protected final long expirationTime = 1_234_567L;
+    protected final long autoRenewSecs = 100L;
+    protected static final long payerBalance = 10_000L;
+    /* ---------- States -----------*/
     protected MapReadableKVState<String, EntityNumValue> readableAliases;
     protected MapReadableKVState<EntityNumVirtualKey, Account> readableAccounts;
     protected MapWritableKVState<String, EntityNumValue> writableAliases;
@@ -184,45 +167,51 @@ public class CryptoTokenHandlerTestBase {
     protected MapWritableKVState<EntityNum, Token> writableTokenState;
     protected MapReadableKVState<EntityNumPair, TokenRelation> readableTokenRelState;
 
+    /* ---------- Stores -----------*/
+
     protected ReadableTokenStore readableTokenStore;
     protected WritableTokenStore writableTokenStore;
 
     protected ReadableAccountStore readableAccountStore;
     protected WritableAccountStore writableAccountStore;
     protected ReadableTokenRelationStore readableTokenRelStore;
-
+    /* ---------- Tokens -----------*/
     protected Token fungibleToken;
     protected Token nonFungibleToken;
-    protected Account account;
+    /* ---------- Token Relations -----------*/
     protected TokenRelation fungibleTokenRelation;
     protected TokenRelation nonFungibleTokenRelation;
-
-    @Mock
+     /* ---------- Accounts -----------*/
+    protected Account account;
     protected Account deleteAccount;
-
-    @Mock
     protected Account transferAccount;
+    protected Account ownerAccount;
+    protected Account spenderAccount;
+
+    private Map<EntityNumVirtualKey, Account> accountsMap = Map.of(
+            EntityNumVirtualKey.fromLong(deleteAccountNum), deleteAccount,
+            EntityNumVirtualKey.fromLong(transferAccountNum), transferAccount,
+            EntityNumVirtualKey.fromLong(ownerId.accountNum()), ownerAccount,
+            EntityNumVirtualKey.fromLong(accountNum), account,
+            EntityNumVirtualKey.fromLong(delegatingSpenderId.accountNum()), account,
+            EntityNumVirtualKey.fromLong(spenderId.accountNum()), spenderAccount);
+
 
     @Mock
     protected ReadableStates readableStates;
-
     @Mock
     protected WritableStates writableStates;
-
-    @Mock
-    protected CryptoSignatureWaiversImpl waivers;
 
     protected Configuration configuration;
 
     @BeforeEach
     public void setUp() {
         configuration = new HederaTestConfigBuilder().getOrCreateConfig();
-        tokensConfig = configuration.getConfigData(TokensConfig.class);
-        givenValidAccount();
-        givenValidFungibleToken();
-        givenValidNonFungibleToken();
-        givenFungibleTokenRelation();
-        givenNonFungibleTokenRelation();
+        givenValidAccounts();
+        fungibleToken = givenValidFungibleToken();
+        nonFungibleToken = givenValidNonFungibleToken();
+        fungibleTokenRelation = givenFungibleTokenRelation();
+        nonFungibleTokenRelation = givenNonFungibleTokenRelation();
         refreshStoresWithEntitiesOnlyInReadable();
     }
 
@@ -268,9 +257,9 @@ public class CryptoTokenHandlerTestBase {
 
     private void givenAccountsInWritableStore() {
         readableAccounts = readableAccountState();
-        writableAccounts = writableAccountStateWithOneKey();
+        writableAccounts = writableAccountState();
         readableAliases = readableAliasState();
-        writableAliases = writableAliasesStateWithOneKey();
+        writableAliases = writableAliasesState();
         given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
         given(readableStates.<String, EntityNumValue>get(ALIASES)).willReturn(readableAliases);
         given(writableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(writableAccounts);
@@ -307,25 +296,25 @@ public class CryptoTokenHandlerTestBase {
     }
 
     @NonNull
-    protected MapWritableKVState<EntityNumVirtualKey, Account> writableAccountStateWithOneKey() {
-        return emptyWritableAccountStateBuilder()
-                .value(accountEntityNumVirtualKey, account)
-                .value(EntityNumVirtualKey.fromLong(deleteAccountNum), deleteAccount)
-                .value(EntityNumVirtualKey.fromLong(transferAccountNum), transferAccount)
-                .build();
+    protected MapWritableKVState<EntityNumVirtualKey, Account> writableAccountState() {
+        final var builder = emptyWritableAccountStateBuilder();
+        for(final var entry : accountsMap.entrySet()){
+            builder.value(entry.getKey(), entry.getValue());
+        }
+        return builder.build();
     }
 
     @NonNull
     protected MapReadableKVState<EntityNumVirtualKey, Account> readableAccountState() {
-        return emptyReadableAccountStateBuilder()
-                .value(accountEntityNumVirtualKey, account)
-                .value(EntityNumVirtualKey.fromLong(deleteAccountNum), deleteAccount)
-                .value(EntityNumVirtualKey.fromLong(transferAccountNum), transferAccount)
-                .build();
+        final var builder = emptyReadableAccountStateBuilder();
+        for(final var entry : accountsMap.entrySet()){
+            builder.value(entry.getKey(), entry.getValue());
+        }
+        return builder.build();
     }
 
     @NonNull
-    protected MapWritableKVState<String, EntityNumValue> writableAliasesStateWithOneKey() {
+    protected MapWritableKVState<String, EntityNumValue> writableAliasesState() {
         return emptyWritableAliasStateBuilder()
                 .value(alias.toString(), new EntityNumValue(accountNum))
                 .value(contractAlias.toString(), new EntityNumValue(contract.contractNum()))
@@ -339,37 +328,6 @@ public class CryptoTokenHandlerTestBase {
                 .value(contractAlias.toString(), new EntityNumValue(contract.contractNum()))
                 .build();
     }
-
-    @NonNull
-    protected MapReadableKVState.Builder<EntityNumVirtualKey, Account> emptyReadableAccountStateBuilder() {
-        return MapReadableKVState.builder(ACCOUNTS);
-    }
-
-    @NonNull
-    protected MapWritableKVState.Builder<EntityNumVirtualKey, Account> emptyWritableAccountStateBuilder() {
-        return MapWritableKVState.builder(ACCOUNTS);
-    }
-
-    @NonNull
-    protected MapReadableKVState.Builder<EntityNumPair, TokenRelation> emptyReadableTokenRelsStateBuilder() {
-        return MapReadableKVState.builder(TOKEN_RELS);
-    }
-
-    @NonNull
-    protected MapWritableKVState.Builder<String, EntityNumValue> emptyWritableAliasStateBuilder() {
-        return MapWritableKVState.builder(ALIASES);
-    }
-
-    @NonNull
-    protected MapReadableKVState.Builder<String, EntityNumValue> emptyReadableAliasStateBuilder() {
-        return MapReadableKVState.builder(ALIASES);
-    }
-
-    @NonNull
-    protected MapWritableKVState<EntityNum, Token> emptyWritableTokenState() {
-        return MapWritableKVState.<EntityNum, Token>builder(TOKENS).build();
-    }
-
     @NonNull
     protected MapWritableKVState<EntityNum, Token> writableTokenStateWithTwoKeys() {
         return MapWritableKVState.<EntityNum, Token>builder(TOKENS)
@@ -386,29 +344,48 @@ public class CryptoTokenHandlerTestBase {
                 .build();
     }
 
-    protected void givenValidFungibleToken() {
-        givenValidFungibleToken(autoRenewId.accountNum());
+    private void givenValidAccounts(){
+        account = givenValidAccount();
+        spenderAccount = givenValidAccount()
+                .copyBuilder()
+                .key(spenderKey)
+                .build();
+        ownerAccount = givenValidAccount()
+                .copyBuilder()
+                .cryptoAllowances(AccountCryptoAllowance.newBuilder()
+                        .spenderNum(spenderId.accountNum())
+                        .amount(100).build())
+                .tokenAllowances(AccountFungibleTokenAllowance.newBuilder()
+                        .tokenNum(tokenID.tokenNum())
+                        .amount(100).build())
+                .approveForAllNftAllowances(AccountApprovalForAllAllowance.newBuilder()
+                        .tokenNum(nonFungibleTokenNum.longValue())
+                        .spenderNum(spenderId.accountNum()).build())
+                .key(ownerKey)
+                .build();
     }
 
-    protected void givenValidFungibleToken(long autoRenewAccountNumber) {
-        givenValidFungibleToken(autoRenewAccountNumber, false, false, false, false, true, true);
+    protected Token givenValidFungibleToken() {
+        return givenValidFungibleToken(autoRenewId.accountNum());
     }
 
-    protected void givenValidFungibleToken(
+    protected Token givenValidFungibleToken(long autoRenewAccountNumber) {
+        return givenValidFungibleToken(autoRenewAccountNumber, false, false, false, false);
+    }
+
+    protected Token givenValidFungibleToken(
             long autoRenewAccountNumber,
             boolean deleted,
             boolean paused,
             boolean accountsFrozenByDefault,
-            boolean accountsKycGrantedByDefault,
-            boolean withAdminKey,
-            boolean withSubmitKey) {
-        fungibleToken = new Token(
-                tokenId.tokenNum(),
+            boolean accountsKycGrantedByDefault) {
+        return new Token(
+                fungibleTokenId.tokenNum(),
                 tokenName,
                 tokenSymbol,
                 1000,
                 1000,
-                treasury.accountNum(),
+                treasuryId.accountNum(),
                 adminKey,
                 kycKey,
                 freezeKey,
@@ -431,9 +408,9 @@ public class CryptoTokenHandlerTestBase {
                 Collections.emptyList());
     }
 
-    protected void givenValidNonFungibleToken() {
+    protected Token givenValidNonFungibleToken() {
         givenValidFungibleToken();
-        nonFungibleToken = fungibleToken
+        return fungibleToken
                 .copyBuilder()
                 .tokenNumber(nonFungibleTokenNum.longValue())
                 .customFees(List.of())
@@ -441,8 +418,8 @@ public class CryptoTokenHandlerTestBase {
                 .build();
     }
 
-    protected void givenValidAccount() {
-        account = new Account(
+    protected Account givenValidAccount() {
+        return new Account(
                 accountNum,
                 alias.alias(),
                 key,
@@ -477,9 +454,9 @@ public class CryptoTokenHandlerTestBase {
                 null);
     }
 
-    protected void givenFungibleTokenRelation() {
-        fungibleTokenRelation = TokenRelation.newBuilder()
-                .tokenNumber(tokenId.tokenNum())
+    protected TokenRelation givenFungibleTokenRelation() {
+        return TokenRelation.newBuilder()
+                .tokenNumber(fungibleTokenId.tokenNum())
                 .accountNumber(accountNum)
                 .balance(1000L)
                 .frozen(false)
@@ -491,8 +468,8 @@ public class CryptoTokenHandlerTestBase {
                 .build();
     }
 
-    protected void givenNonFungibleTokenRelation() {
-        nonFungibleTokenRelation = TokenRelation.newBuilder()
+    protected TokenRelation givenNonFungibleTokenRelation() {
+        return TokenRelation.newBuilder()
                 .tokenNumber(nonFungibleTokenNum.longValue())
                 .accountNumber(accountNum)
                 .balance(1000L)
