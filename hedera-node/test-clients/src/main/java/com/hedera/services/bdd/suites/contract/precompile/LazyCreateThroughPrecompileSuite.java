@@ -170,7 +170,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                 cryptoTransferV1LazyCreate(),
                 cryptoTransferV2LazyCreate(),
                 transferTokenLazyCreate(),
-                transferTokensLazyCreate(),
+                transferTokensToEVMAddressAliasRevertAndTransferAgainSuccessfully(),
                 transferNftLazyCreate(),
                 transferNftsLazyCreate(),
                 erc20TransferLazyCreate(),
@@ -918,7 +918,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                 .then();
     }
 
-    private HapiSpec transferTokensLazyCreate() {
+    private HapiSpec transferTokensToEVMAddressAliasRevertAndTransferAgainSuccessfully() {
         final AtomicReference<String> tokenAddr = new AtomicReference<>();
 
         return defaultHapiSpec("transferTokensToEVMAddressAliasRevertAndTransferAgainSuccessfully")

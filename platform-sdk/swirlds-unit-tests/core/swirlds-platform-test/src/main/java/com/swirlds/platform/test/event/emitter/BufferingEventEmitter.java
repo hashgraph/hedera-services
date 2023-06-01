@@ -65,7 +65,7 @@ public abstract class BufferingEventEmitter<T extends BufferingEventEmitter<T>> 
     protected void attemptToGenerateEventFromNode(final int nodeID) {
         while (events.get(nodeID).isEmpty() && bufferedEvents < MAX_BUFFERED_EVENTS) {
             final IndexedEvent nextEvent = getGraphGenerator().generateEvent();
-            events.get((int) nextEvent.getCreatorId()).add(nextEvent);
+            events.get((int) nextEvent.getCreatorId().id()).add(nextEvent);
             bufferedEvents++;
         }
     }
@@ -112,7 +112,7 @@ public abstract class BufferingEventEmitter<T extends BufferingEventEmitter<T>> 
             return true;
         }
 
-        final long otherNodeID = otherParent.getCreatorId();
+        final long otherNodeID = otherParent.getCreatorId().id();
 
         for (final IndexedEvent event : events.get((int) otherNodeID)) {
             if (event == otherParent) {

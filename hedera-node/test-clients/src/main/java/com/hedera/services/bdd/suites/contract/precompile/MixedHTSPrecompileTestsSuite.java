@@ -91,7 +91,7 @@ public class MixedHTSPrecompileTestsSuite extends HapiSuite {
         final var outerContract = "AssociateTryCatch";
         final var nestedContract = "CalledContract";
 
-        return defaultHapiSpec("HSCS_PREC_021_try_catch_construct_only_rolls_back_the_failed_precompile")
+        return defaultHapiSpec("hscsPrec021TryCatchConstructOnlyRollsBackTheFailedPrecompile")
                 .given(
                         cryptoCreate(theAccount).balance(10 * ONE_HUNDRED_HBARS),
                         cryptoCreate(TOKEN_TREASURY),

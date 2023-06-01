@@ -42,7 +42,7 @@ dependencies {
   api(project(":hedera-node:hapi"))
   api(project(":hedera-node:hedera-evm"))
   api(project(":hedera-node:hedera-app-spi"))
-  api(project(":hedera-node:hedera-networkadmin-service"))
+  api(project(":hedera-node:hedera-network-admin-service"))
   api(project(":hedera-node:hedera-consensus-service"))
   api(project(":hedera-node:hedera-file-service"))
   api(project(":hedera-node:hedera-schedule-service"))

@@ -16,9 +16,11 @@
 
 package com.swirlds.platform.components;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.event.creation.ParentBasedCreationRule;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.EventAddedObserver;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * <p>
@@ -68,7 +70,7 @@ public interface CriticalQuorum extends EventAddedObserver, ParentBasedCreationR
      * 		the id of the node to check
      * @return true if it is in the critical quorum, false otherwise
      */
-    boolean isInCriticalQuorum(long nodeId);
+    boolean isInCriticalQuorum(@Nullable NodeId nodeId);
 
     /**
      * {@inheritDoc}

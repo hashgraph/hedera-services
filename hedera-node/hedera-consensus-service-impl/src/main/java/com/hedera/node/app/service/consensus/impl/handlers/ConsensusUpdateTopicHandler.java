@@ -135,6 +135,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
             @NonNull final Topic topic) {
         if (op.hasAdminKey()) {
             var key = op.adminKey();
+            // Empty key list is allowed and is used for immutable entities (e.g. system accounts)
             if (handleContext.attributeValidator().isImmutableKey(key)) {
                 builder.adminKey((Key) null);
             } else {
@@ -229,7 +230,8 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
     private void validateMaybeNewAdminKey(
             @NonNull final AttributeValidator attributeValidator,
             @NonNull final ConsensusUpdateTopicTransactionBody op) {
-        if (op.hasAdminKey()) {
+        // Empty key list is allowed and is used for immutable entities (e.g. system accounts)
+        if (op.hasAdminKey() && !attributeValidator.isImmutableKey(op.adminKey())) {
             attributeValidator.validateKey(op.adminKey());
         }
     }

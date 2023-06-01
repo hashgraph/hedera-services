@@ -18,10 +18,13 @@ package com.swirlds.platform.test.chatter.network;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.gossip.chatter.protocol.messages.EventDescriptor;
 import com.swirlds.platform.test.chatter.network.framework.SimulatedChatterEvent;
 import java.io.IOException;
 import java.time.Instant;
+import java.util.Objects;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
  * A very simple, fake event that is easy to track and reason about. Each event should have a number which is one more
@@ -40,7 +43,7 @@ public class CountingChatterEvent implements SimulatedChatterEvent {
     /** A unique description of this event */
     private EventDescriptor descriptor;
     /** The creator of this event */
-    private long creator;
+    private NodeId creator;
     /** The unique, monotonically increasing number assigned to each event across all nodes */
     private long order;
     /** The time this event was received by a node. */
@@ -49,7 +52,7 @@ public class CountingChatterEvent implements SimulatedChatterEvent {
     /** Default constructor for constructable registry */
     public CountingChatterEvent() {}
 
-    public CountingChatterEvent(final long creator) {
+    public CountingChatterEvent(@NonNull final NodeId creator) {
         this(creator, orderCounter++);
     }
 
@@ -57,8 +60,8 @@ public class CountingChatterEvent implements SimulatedChatterEvent {
         this(countingChatterEvent.creator, countingChatterEvent.order);
     }
 
-    private CountingChatterEvent(final long creator, final long order) {
-        this.creator = creator;
+    private CountingChatterEvent(@NonNull final NodeId creator, final long order) {
+        this.creator = Objects.requireNonNull(creator, "creator must not be null");
         this.order = order;
         this.descriptor = new CountingEventDescriptor(creator, order);
     }
@@ -67,7 +70,8 @@ public class CountingChatterEvent implements SimulatedChatterEvent {
         return order;
     }
 
-    public long getCreator() {
+    @NonNull
+    public NodeId getCreator() {
         return creator;
     }
 
@@ -78,13 +82,17 @@ public class CountingChatterEvent implements SimulatedChatterEvent {
 
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
-        out.writeLong(creator);
+        // FUTURE WORK: The creator should be a selfSerializable NodeId at some point.
+        // Changing the event format may require a HIP.  The old format is preserved for now.
+        out.writeLong(creator.id());
         out.writeLong(order);
     }
 
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        creator = in.readLong();
+        // FUTURE WORK: The creator should be a selfSerializable NodeId at some point.
+        // Changing the event format may require a HIP.  The old format is preserved for now.
+        creator = NodeId.deserializeLong(in, false);
         order = in.readLong();
         this.descriptor = new CountingEventDescriptor(creator, order);
     }
