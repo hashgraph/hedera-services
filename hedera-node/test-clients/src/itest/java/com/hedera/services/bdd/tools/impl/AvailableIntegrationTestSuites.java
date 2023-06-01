@@ -21,7 +21,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.function.Supplier;
 
-public interface AvailableTestSuites {
+/** Provides factories for all integration test ("itest") execution categories */
+public interface AvailableIntegrationTestSuites {
 
     @NonNull
     public List<Supplier<HapiSuite>> allPrerequisiteSuites();

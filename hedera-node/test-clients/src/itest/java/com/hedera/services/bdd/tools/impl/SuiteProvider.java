@@ -40,7 +40,7 @@ import org.jetbrains.annotations.NotNull;
  * fetch the methods I need.  TODO: Replace this once the test suite factory classes get
  * moved to a proper Java package
  */
-public class SuiteProvider implements AvailableTestSuites {
+public class SuiteProvider implements AvailableIntegrationTestSuites {
 
     @NotNull
     @Override
@@ -71,23 +71,21 @@ public class SuiteProvider implements AvailableTestSuites {
      */
     @SuppressWarnings("unchecked")
     @NonNull
-    protected Supplier<HapiSuite>[] getSuites(@NonNull final String klassName, @NonNull final String methodName) {
+    static Supplier<HapiSuite>[] getSuites(@NonNull final String klassName, @NonNull final String methodName) {
 
         BiFunction<String, Exception, RuntimeException> thrower =
-                (@NonNull final String message, @NonNull final Exception ex) -> {
-                    return new RuntimeException(message.formatted(klassName, methodName), ex);
-                };
+                (message, ex) -> new RuntimeException(message.formatted(klassName, methodName), ex);
 
         // (There really should be a `try-catch-expression` like a `switch-expression`.)
 
-        Class<?> specSupplierKlass = null;
+        Class<?> specSupplierKlass;
         try {
             specSupplierKlass = Objects.requireNonNull(Class.forName(klassName), "Class.forName(klassName)");
         } catch (ClassNotFoundException e) {
             throw thrower.apply("Exception getting class '%s'", e);
         }
 
-        Method[] specSupplierMethods = null;
+        Method[] specSupplierMethods;
         try {
             specSupplierMethods = specSupplierKlass.getDeclaredMethods();
         } catch (SecurityException e) {
@@ -107,7 +105,7 @@ public class SuiteProvider implements AvailableTestSuites {
             throw thrower.apply("Exception setting accessibility of method '%s.%s", ex);
         }
 
-        Object result = null;
+        Object result;
         try {
             result = Objects.requireNonNull(
                     specSupplierMethod.invoke(null /* method is static */), "specSupplierMethod.invoke()");

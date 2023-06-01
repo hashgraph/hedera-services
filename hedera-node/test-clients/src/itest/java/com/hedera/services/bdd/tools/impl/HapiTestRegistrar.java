@@ -32,8 +32,6 @@ import com.swirlds.common.AutoCloseableNonThrowing;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -50,7 +48,7 @@ import org.apache.commons.lang3.tuple.Pair;
  */
 public class HapiTestRegistrar {
 
-    public boolean doVerbose;
+    boolean doVerbose;
 
     public void doVerbose(final boolean doVerbose) {
         this.doVerbose = doVerbose;
@@ -58,18 +56,14 @@ public class HapiTestRegistrar {
 
     SuiteKind currentSuiteKind;
 
-    public AutoCloseableNonThrowing WithSuiteKind(@NonNull final SuiteKind suiteKind) {
+    public AutoCloseableNonThrowing withSuiteKind(@NonNull final SuiteKind suiteKind) {
         currentSuiteKind = suiteKind;
-        return new AutoCloseableNonThrowing() {
-            @Override
-            public void close() {
-                currentSuiteKind = null;
-            }
-        };
+        return () -> currentSuiteKind = null;
     }
 
     public record RegisteredSuite(
             @NonNull HapiSuite suite, @NonNull Class<?> klass, @NonNull SuiteKind kind, @Nullable String other) {
+
         @NonNull
         public String name() {
             return klass.getName();
@@ -78,6 +72,7 @@ public class HapiTestRegistrar {
 
     public record RegisteredSpec(
             @NonNull HapiSpec spec, @NonNull Method method, @NonNull SuiteKind kind, @Nullable String other) {
+
         @NonNull
         public Class<?> klass() {
             return method.getDeclaringClass();
@@ -115,16 +110,23 @@ public class HapiTestRegistrar {
         return Pair.of(suites, specs);
     }
 
+    @NonNull
+    public HapiTestRegistrar doPostRegistration() {
+        final var noLongerRedundant = removeRedundancyFromRegistry();
+        suites = noLongerRedundant.getLeft();
+        specs = noLongerRedundant.getRight();
+        return this;
+    }
+
     /** Return the registered suites & specs, normalized by removing redundant ones */
     @NonNull
-    public Pair<Multimap<String, RegisteredSuite>, Multimap<String, RegisteredSpec>> removeRedundancyFromRegistry() {
+    Pair<Multimap<String, RegisteredSuite>, Multimap<String, RegisteredSpec>> removeRedundancyFromRegistry() {
 
         // Find the prerequisite suites
 
         final var prerequisiteSuites = this.suites.entries().stream()
                 .filter(kv -> kv.getValue().kind() == SuiteKind.prerequisite)
                 .map(Entry::getValue)
-                .distinct()
                 .collect(Collectors.toSet());
         final var prerequisiteSuiteNames =
                 prerequisiteSuites.stream().map(RegisteredSuite::name).collect(Collectors.toSet());
@@ -133,7 +135,6 @@ public class HapiTestRegistrar {
                 .filter(kv -> kv.getValue().kind() != SuiteKind.prerequisite)
                 .filter(kv -> prerequisiteSuiteNames.contains(kv.getKey()))
                 .map(Entry::getValue)
-                .distinct()
                 .collect(Collectors.toSet());
 
         // Get rid of all other versions of prerequisite suites
@@ -153,27 +154,9 @@ public class HapiTestRegistrar {
         return Pair.of(suites, specs);
     }
 
-    @NonNull
-    public HapiTestRegistrar doPostRegistration() {
-        final var noLongerRedundant = removeRedundancyFromRegistry();
-        suites = noLongerRedundant.getLeft();
-        specs = noLongerRedundant.getRight();
-        return this;
-    }
-
-    int nonRedundantSpecs = 0;
-    final List<RegisteredSpec> redundantSpecs = new ArrayList<>();
-
-    boolean isRedundantSpec(@NonNull final RegisteredSpec spec, @NonNull final Set<String> prerequisiteSuiteNames) {
-        final var isRedundant = prerequisiteSuiteNames.contains(
-                        spec.method().getDeclaringClass().getName())
+    static boolean isRedundantSpec(@NonNull final RegisteredSpec spec, @NonNull final Set<String> prereqSuiteNames) {
+        return prereqSuiteNames.contains(spec.method().getDeclaringClass().getName())
                 && spec.kind() != SuiteKind.prerequisite;
-        if (isRedundant) {
-            redundantSpecs.add(spec);
-        } else {
-            nonRedundantSpecs++;
-        }
-        return isRedundant;
     }
 
     public void analyzeRegistry() {
@@ -234,9 +217,7 @@ public class HapiTestRegistrar {
                     "*** some specs have no registered suite, missing suites: %s%n".formatted(specSuitesNotRegistered));
 
         // Report if there's anything to report
-        if (!sb.isEmpty()) {
-            System.err.print(sb.toString());
-        }
+        if (!sb.isEmpty()) System.err.print(sb);
     }
 
     /** Given a stack trace which is calling out to us when creating a `HapiSuite` get the suite class */
@@ -253,10 +234,9 @@ public class HapiTestRegistrar {
         if (hapiSuiteFrame < 2)
             throw new IllegalStateException("Topmost frame of `HapiSuite` is too close to top of stack");
         final var specKlass = callStack.getDeclaringClassOfFrame(hapiSuiteFrame - 1);
-        final var specMethod = CallStack.getMethodFromFrame(callStack
+        return CallStack.getMethodFromFrame(callStack
                 .getTopmostFrameOfClassSatisfying(specKlass, HapiTestRegistrar::frameMethodIsATest)
                 .orElseThrow());
-        return specMethod;
     }
 
     /** Checks that frame's method is _not_ marked with `@BddMethodIsNotATest` */
@@ -267,7 +247,7 @@ public class HapiTestRegistrar {
     }
 
     @NonNull
-    <T> Multimap<String, T> createMultimap(final int expectedNHashKeys) {
+    static <T> Multimap<String, T> createMultimap(final int expectedNHashKeys) {
         return MultimapBuilder.hashKeys(expectedNHashKeys).hashSetValues().build();
     }
 }
