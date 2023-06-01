@@ -16,7 +16,7 @@
 
 plugins { id("com.hedera.hashgraph.conventions") }
 
-description = "Hedera NetworkAdmin Service API"
+description = "Hedera Network-Admin Service API"
 
 dependencies {
   api(project(":hedera-node:hedera-app-spi"))

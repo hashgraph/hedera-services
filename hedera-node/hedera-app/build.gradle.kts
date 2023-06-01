@@ -42,7 +42,7 @@ dependencies {
   implementation(project(":hedera-node:hedera-mono-service"))
   implementation(project(":hedera-node:hapi-utils"))
   implementation(project(":hedera-node:hapi-fees"))
-  implementation(project(":hedera-node:hedera-networkadmin-service-impl"))
+  implementation(project(":hedera-node:hedera-network-admin-service-impl"))
   implementation(project(":hedera-node:hedera-consensus-service-impl"))
   implementation(project(":hedera-node:hedera-file-service-impl"))
   implementation(project(":hedera-node:hedera-schedule-service-impl"))
