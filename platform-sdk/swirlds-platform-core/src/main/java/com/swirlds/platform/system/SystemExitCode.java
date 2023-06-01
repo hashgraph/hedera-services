@@ -16,9 +16,8 @@
 
 package com.swirlds.platform.system;
 
-public enum SystemExitReason {
-    BROWSER_WINDOW_CLOSED(0),
-    STATE_RECOVER_FINISHED(0),
+public enum SystemExitCode {
+    NO_ERROR(0),
     /**
      * This node encountered an ISS.
      */
@@ -52,7 +51,7 @@ public enum SystemExitReason {
 
     private final int exitCode;
 
-    SystemExitReason(int exitCode) {
+    SystemExitCode(int exitCode) {
         this.exitCode = exitCode;
     }
 
