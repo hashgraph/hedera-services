@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -82,16 +83,12 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
         final CryptoGetAccountBalanceQuery op = query.cryptogetAccountBalanceOrThrow();
         if (op.hasAccountID()) {
             final var account = accountStore.getAccountById(requireNonNull(op.accountID()));
-            if (account == null) throw new PreCheckException(INVALID_ACCOUNT_ID);
-            if (account.deleted()) {
-                throw new PreCheckException(ACCOUNT_DELETED);
-            }
+            validateFalsePreCheck(account == null, INVALID_ACCOUNT_ID);
+            validateFalsePreCheck(account.deleted(), ACCOUNT_DELETED);
         } else if (op.hasContractID()) {
             final var contract = accountStore.getContractById(requireNonNull(op.contractID()));
-            if (contract == null || !contract.smartContract()) throw new PreCheckException(INVALID_CONTRACT_ID);
-            if (contract.deleted()) {
-                throw new PreCheckException(CONTRACT_DELETED);
-            }
+            validateFalsePreCheck(contract == null || !contract.smartContract(), INVALID_CONTRACT_ID);
+            validateFalsePreCheck(contract.deleted(), CONTRACT_DELETED);
         } else {
             throw new PreCheckException(INVALID_ACCOUNT_ID);
         }
@@ -121,20 +118,28 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
         return Response.newBuilder().cryptogetAccountBalance(response).build();
     }
 
+    /**
+     * Calculate TokenBalance of an Account
+     * @param tokenConfig use TokenConfig to get maxRelsPerInfoQuery value
+     * @param account the account to be calculated from
+     * @param readableTokenStore readable token store
+     * @param tokenRelationStore token relation store
+     * @return ArrayList of TokenBalance object
+     */
     private List<TokenBalance> getTokenBalances(
-            TokensConfig tokenConfig,
-            Account account,
-            ReadableTokenStore readableTokenStore,
-            ReadableTokenRelationStore tokenRelationStore) {
-        var ret = new ArrayList<TokenBalance>();
+            @NonNull final TokensConfig tokenConfig,
+            @NonNull final Account account,
+            @NonNull final ReadableTokenStore readableTokenStore,
+            @NonNull final ReadableTokenRelationStore tokenRelationStore) {
+        final var ret = new ArrayList<TokenBalance>();
         var tokenNum = account.headTokenNumber();
         int count = 0;
         Optional<TokenRelation> tokenRelation;
-        Token token;
-        TokenBalance tokenBalance;
-        TokenID tokenID;
-        AccountID accountID;
-        while (tokenNum != 0 && count <= tokenConfig.maxRelsPerInfoQuery()) {
+        Token token; // token from readableToken store by tokenID
+        TokenID tokenID; // build from tokenNum
+        AccountID accountID; // build from accountNumber
+        TokenBalance tokenBalance; // created TokenBalance object
+        while (tokenNum != 0 && count < tokenConfig.maxRelsPerInfoQuery()) {
             accountID =
                     AccountID.newBuilder().accountNum(account.accountNumber()).build();
             tokenID = TokenID.newBuilder().tokenNum(tokenNum).build();

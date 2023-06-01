@@ -29,6 +29,7 @@ public record TokensConfig(
         @ConfigProperty(defaultValue = "100") int maxTokenNameUtf8Bytes,
         @ConfigProperty(defaultValue = "10") int maxCustomFeesAllowed,
         @ConfigProperty(defaultValue = "2") int maxCustomFeeDepth,
+        @ConfigProperty(defaultValue = "1000") long maxRelsPerInfoQuery,
         @ConfigProperty(value = "nfts.areEnabled", defaultValue = "true") boolean nftsAreEnabled,
         @ConfigProperty(value = "nfts.maxMetadataBytes", defaultValue = "100") int nftsMaxMetadataBytes,
         @ConfigProperty(value = "nfts.maxBatchSizeBurn", defaultValue = "10") int nftsMaxBatchSizeBurn,
@@ -40,5 +41,4 @@ public record TokensConfig(
         // @ConfigProperty(value = "nfts.mintThrottleScaleFactor", defaultValue = "5:2") ScaleFactor
         // nftsMintThrottleScaleFactor,
         @ConfigProperty(value = "nfts.useVirtualMerkle", defaultValue = "false") boolean nftsUseVirtualMerkle,
-        @ConfigProperty(value = "autoCreations.isEnabled", defaultValue = "true") boolean autoCreationsIsEnabled,
-        @ConfigProperty(value = "tokens.maxRelsPerInfoQuery", defaultValue = "1000") long maxRelsPerInfoQuery) {}
+        @ConfigProperty(value = "autoCreations.isEnabled", defaultValue = "true") boolean autoCreationsIsEnabled) {}
