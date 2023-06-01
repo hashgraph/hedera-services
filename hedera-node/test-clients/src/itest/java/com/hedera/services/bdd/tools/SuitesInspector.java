@@ -26,6 +26,7 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.tools.impl.HapiTestRegistrar;
 import com.hedera.services.bdd.tools.impl.SuiteProvider;
+import com.hedera.services.bdd.tools.impl.SuiteSearcher;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -76,10 +77,15 @@ public class SuitesInspector implements Callable<Integer> {
         @Option(names = {"-a", "--analyze"})
         public boolean analyze;
 
+        @Option(names = {"-s", "--suite-search"})
+        public boolean suiteSearch;
+
         @Override
         public String toString() {
             if (list) return "--list";
             if (writeManifest != null) return "--write-manifest=" + writeManifest;
+            if (analyze) return "--analyze";
+            if (suiteSearch) return "--suite-search";
             return "--unknown-operation";
         }
     }
@@ -134,6 +140,7 @@ public class SuitesInspector implements Callable<Integer> {
         if (operation.list) doListTests();
         if (operation.analyze) doAnalysis();
         if (operation.writeManifest != null) doWriteManifest(operation.writeManifest);
+        if (operation.suiteSearch) doSuiteSearch();
 
         return 0;
     }
@@ -426,6 +433,19 @@ public class SuitesInspector implements Callable<Integer> {
                         .toList()
                         .toString()
                         .replace(", ", "\n"));
+    }
+
+    void doSuiteSearch() {
+        final var suiteKlasses = new SuiteSearcher().getAllHapiSuiteSubclasses();
+        System.out.printf("%d suites found by search%n", suiteKlasses.getLeft().size());
+        if (!suiteKlasses.getRight().isEmpty()) {
+            System.out.printf("%d errors found:%n", suiteKlasses.getRight().size());
+            for (final var err : suiteKlasses.getRight()) System.out.printf("   %s%n", err);
+        }
+        for (final var suiteName :
+                suiteKlasses.getLeft().stream().map(Class::getName).sorted().toList()) {
+            System.out.printf("  %s%n", suiteName);
+        }
     }
 
     Pair<Set<Test>, List<String>> getTestsFromSuites() {
