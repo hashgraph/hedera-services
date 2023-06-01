@@ -67,14 +67,14 @@ public class CryptoDeleteSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            fundsTransferOnDelete(),
-            cannotDeleteAccountsWithNonzeroTokenBalances(),
-            cannotDeleteAlreadyDeletedAccount(),
-            cannotDeleteAccountWithSameBeneficiary(),
-            cannotDeleteTreasuryAccount(),
-            deletedAccountCannotBePayer()
-        });
+        return List.of(
+                fundsTransferOnDelete(),
+                cannotDeleteAccountsWithNonzeroTokenBalances(),
+                cannotDeleteAlreadyDeletedAccount(),
+                cannotDeleteAccountWithSameBeneficiary(),
+                cannotDeleteTreasuryAccount(),
+                deletedAccountCannotBePayer(),
+                canQueryForRecordsWithDeletedPayers());
     }
 
     private HapiSpec deletedAccountCannotBePayer() {
@@ -105,6 +105,18 @@ public class CryptoDeleteSuite extends HapiSuite {
                                 .hasTinyBars(
                                         approxChangeFromSnapshot(SUBMITTING_NODE_AFTER_BALANCE_LOAD, -100000, 50000))
                                 .logged());
+    }
+
+    private HapiSpec canQueryForRecordsWithDeletedPayers() {
+        final var stillQueryableTxn = "stillQueryableTxn";
+        return defaultHapiSpec("CanQueryForRecordsWithDeletedPayers")
+                .given(cryptoCreate(ACCOUNT_TO_BE_DELETED))
+                .when(
+                        cryptoTransfer(tinyBarsFromTo(ACCOUNT_TO_BE_DELETED, FUNDING, 1))
+                                .payingWith(ACCOUNT_TO_BE_DELETED)
+                                .via(stillQueryableTxn),
+                        cryptoDelete(ACCOUNT_TO_BE_DELETED))
+                .then(getTxnRecord(stillQueryableTxn).hasPriority(recordWith().payer(ACCOUNT_TO_BE_DELETED)));
     }
 
     private HapiSpec fundsTransferOnDelete() {

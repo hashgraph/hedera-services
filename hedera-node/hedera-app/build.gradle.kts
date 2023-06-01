@@ -76,6 +76,8 @@ dependencies {
   testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
   testImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
   testImplementation(testLibs.classgraph)
+  testImplementation(testLibs.system.stubs.core)
+  testImplementation(testLibs.system.stubs.jupiter)
   testImplementation(testLibs.bundles.testing)
   testCompileOnly(libs.spotbugs.annotations)
 

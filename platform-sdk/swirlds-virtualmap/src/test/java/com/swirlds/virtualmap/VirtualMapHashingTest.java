@@ -345,39 +345,36 @@ class VirtualMapHashingTest {
         assertEquals(numInternals, deletedInternals, "The number of deleted internals doesn't match");
     }
 
-    @Test
-    void fullLeavesRehash() {
+    @ParameterizedTest
+    @ValueSource(ints = {1001, 3333, 7777})
+    void fullLeavesRehash(int nEntries) {
         final VirtualMap<TestKey, TestValue> map = createMap();
 
-        // add 100 elements
-        IntStream.range(1, 101).forEach(index -> {
-            map.put(new TestKey(index), new TestValue(nextInt()));
-        });
+        // add n elements
+        IntStream.range(1, nEntries).forEach(index -> map.put(new TestKey(index), new TestValue(nextInt())));
 
         VirtualRootNode<TestKey, TestValue> root = map.getRoot();
         root.enableFlush();
         // make sure that the elements have no hashes
-        IntStream.range(1, 101).forEach(index -> {
-            assertNull(root.getRecords().findHash(index));
-        });
+        IntStream.range(1, nEntries)
+                .forEach(index -> assertNull(root.getRecords().findHash(index)));
 
         // prepare the root for h full leaf rehash
         doFullRehash(root);
 
         // make sure that the elements have hashes
-        IntStream.range(1, 101).forEach(index -> {
-            assertNotNull(root.getRecords().findHash(index));
-        });
+        IntStream.range(1, nEntries)
+                .forEach(index -> assertNotNull(root.getRecords().findHash(index)));
 
         // should not throw any exceptions
-        map.fullLeafRehash();
+        map.getRoot().fullLeafRehashIfNecessary();
     }
 
     private static void doFullRehash(VirtualRootNode<TestKey, TestValue> root) {
         root.setImmutable(true);
         root.getCache().seal();
         root.flush();
-        root.fullLeafRehash();
+        root.fullLeafRehashIfNecessary();
     }
 
     @Test

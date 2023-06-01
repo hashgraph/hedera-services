@@ -651,7 +651,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
                         return false;
                     }
                 },
-                Object::toString);
+                id -> "");
     }
 
     /**

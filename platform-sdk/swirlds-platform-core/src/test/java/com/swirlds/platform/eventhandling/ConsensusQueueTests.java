@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.test.AssertionUtils;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
@@ -47,7 +48,7 @@ import org.junit.jupiter.api.Test;
 
 class ConsensusQueueTests {
 
-    private static final long SELF_ID = 0L;
+    private static final NodeId SELF_ID = new NodeId(0L);
 
     private static final int EVENT_CAPACITY = 100;
     public static final String PUT_ERROR = "put() did not update eventsInQueue.";

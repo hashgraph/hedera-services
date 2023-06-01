@@ -46,7 +46,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class UptimeTracker {
 
-    private final long selfId;
+    private final NodeId selfId;
     private final Time time;
     private final AddressBook addressBook;
 
@@ -65,10 +65,10 @@ public class UptimeTracker {
     public UptimeTracker(
             @NonNull PlatformContext platformContext,
             @NonNull final AddressBook addressBook,
-            final long selfId,
+            @NonNull final NodeId selfId,
             @NonNull final Time time) {
 
-        this.selfId = selfId;
+        this.selfId = Objects.requireNonNull(selfId, "selfId must not be null");
         this.time = Objects.requireNonNull(time);
         this.addressBook = Objects.requireNonNull(addressBook);
         this.degradationThreshold = platformContext
@@ -97,8 +97,8 @@ public class UptimeTracker {
         final Instant start = time.now();
 
         addAndRemoveNodes(uptimeData, addressBook);
-        final Map<Long, ConsensusEvent> lastEventsInRoundByCreator = new HashMap<>();
-        final Map<Long, ConsensusEvent> judgesByCreator = new HashMap<>();
+        final Map<NodeId, ConsensusEvent> lastEventsInRoundByCreator = new HashMap<>();
+        final Map<NodeId, ConsensusEvent> judgesByCreator = new HashMap<>();
         scanRound(round, lastEventsInRoundByCreator, judgesByCreator);
         updateState(addressBook, uptimeData, lastEventsInRoundByCreator, judgesByCreator);
         reportUptime(uptimeData, round.getLastEvent().getConsensusTimestamp(), round.getRoundNum());
@@ -120,16 +120,16 @@ public class UptimeTracker {
     private void addAndRemoveNodes(
             @NonNull final MutableUptimeData uptimeData, @NonNull final AddressBook addressBook) {
         final Set<NodeId> addressBookNodes = addressBook.getNodeIdSet();
-        final Set<Long> trackedNodes = uptimeData.getTrackedNodes();
+        final Set<NodeId> trackedNodes = uptimeData.getTrackedNodes();
         for (final NodeId nodeId : addressBookNodes) {
-            if (!trackedNodes.contains(nodeId.id())) {
+            if (!trackedNodes.contains(nodeId)) {
                 // node was added
-                uptimeMetrics.addMetricsForNode(nodeId.id());
-                uptimeData.addNode(nodeId.id());
+                uptimeMetrics.addMetricsForNode(nodeId);
+                uptimeData.addNode(nodeId);
             }
         }
-        for (final long nodeId : trackedNodes) {
-            if (!addressBookNodes.contains(new NodeId(nodeId))) {
+        for (final NodeId nodeId : trackedNodes) {
+            if (!addressBookNodes.contains(nodeId)) {
                 // node was removed
                 uptimeMetrics.removeMetricsForNode(nodeId);
                 uptimeData.removeNode(nodeId);
@@ -163,12 +163,12 @@ public class UptimeTracker {
      */
     private void scanRound(
             @NonNull final Round round,
-            @NonNull final Map<Long, ConsensusEvent> lastEventsInRoundByCreator,
-            @NonNull final Map<Long, ConsensusEvent> judgesByCreator) {
+            @NonNull final Map<NodeId, ConsensusEvent> lastEventsInRoundByCreator,
+            @NonNull final Map<NodeId, ConsensusEvent> judgesByCreator) {
         round.forEach(event -> {
-            lastEventsInRoundByCreator.put(event.getCreatorId(), event);
+            lastEventsInRoundByCreator.put(new NodeId(event.getCreatorId()), event);
             if (((EventImpl) event).isFamous()) {
-                judgesByCreator.put(event.getCreatorId(), event);
+                judgesByCreator.put(new NodeId(event.getCreatorId()), event);
             }
         });
 
@@ -189,16 +189,16 @@ public class UptimeTracker {
     private void updateState(
             @NonNull final AddressBook addressBook,
             @NonNull final MutableUptimeData uptimeData,
-            @NonNull final Map<Long, ConsensusEvent> lastEventsInRoundByCreator,
-            @NonNull final Map<Long, ConsensusEvent> judgesByCreator) {
+            @NonNull final Map<NodeId, ConsensusEvent> lastEventsInRoundByCreator,
+            @NonNull final Map<NodeId, ConsensusEvent> judgesByCreator) {
 
         for (final Address address : addressBook) {
-            final ConsensusEvent lastEvent = lastEventsInRoundByCreator.get(address.getId());
+            final ConsensusEvent lastEvent = lastEventsInRoundByCreator.get(address.getNodeId());
             if (lastEvent != null) {
                 uptimeData.recordLastEvent((EventImpl) lastEvent);
             }
 
-            final ConsensusEvent judge = judgesByCreator.get(address.getId());
+            final ConsensusEvent judge = judgesByCreator.get(address.getNodeId());
             if (judge != null) {
                 uptimeData.recordLastJudge((EventImpl) judge);
             }
@@ -218,7 +218,7 @@ public class UptimeTracker {
         long nonDegradedConsensusWeight = 0;
 
         for (final Address address : addressBook) {
-            final long id = address.getId();
+            final NodeId id = address.getNodeId();
 
             final Instant lastConsensusEventTime = uptimeData.getLastEventTime(id);
             if (lastConsensusEventTime != null) {

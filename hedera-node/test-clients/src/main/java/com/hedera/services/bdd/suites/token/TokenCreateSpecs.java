@@ -770,7 +770,7 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     private HapiSpec feeCollectorSigningReqsWorkForTokenCreate() {
-        return defaultHapiSpec("FeeCollectorSigningReqsEnforced")
+        return defaultHapiSpec("feeCollectorSigningReqsWorkForTokenCreate")
                 .given(
                         newKeyNamed(customFeesKey),
                         cryptoCreate(htsCollector).receiverSigRequired(true),

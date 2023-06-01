@@ -80,6 +80,11 @@ public class MockRecordsHistorian implements RecordsHistorian {
     }
 
     @Override
+    public boolean hasThrottleCapacityForChildTransactions() {
+        return true;
+    }
+
+    @Override
     public int nextChildRecordSourceId() {
         throw new UnsupportedOperationException();
     }
@@ -101,11 +106,6 @@ public class MockRecordsHistorian implements RecordsHistorian {
 
     @Override
     public void revertChildRecordsFromSource(final int sourceId) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void noteNewExpirationEvents() {
         throw new UnsupportedOperationException();
     }
 

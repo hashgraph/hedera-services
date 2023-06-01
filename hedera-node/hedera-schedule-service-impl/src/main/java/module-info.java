@@ -10,6 +10,7 @@ module com.hedera.node.app.service.schedule.impl {
     requires javax.inject;
     requires com.swirlds.common;
     requires com.github.spotbugs.annotations;
+    requires org.apache.logging.log4j;
 
     exports com.hedera.node.app.service.schedule.impl to
             com.hedera.node.app.service.schedule.impl.test,

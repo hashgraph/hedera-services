@@ -25,6 +25,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SEND_RECORD_THRESHOLD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -33,12 +35,10 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
-import com.hedera.hapi.node.token.CryptoCreateTransactionBody.StakedIdOneOfType;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
-import com.hedera.node.app.service.token.impl.records.CreateAccountRecordBuilder;
 import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
-import com.hedera.node.app.spi.meta.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -53,7 +53,7 @@ import javax.inject.Singleton;
  * HederaFunctionality#CRYPTO_CREATE}.
  */
 @Singleton
-public class CryptoCreateHandler implements TransactionHandler {
+public class CryptoCreateHandler extends BaseCryptoHandler implements TransactionHandler {
     @Inject
     public CryptoCreateHandler() {
         // Exists for injection
@@ -63,10 +63,7 @@ public class CryptoCreateHandler implements TransactionHandler {
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
         final var op = context.body().cryptoCreateAccountOrThrow();
-        final var validationResult = pureChecks(op);
-        if (validationResult != OK) {
-            throw new PreCheckException(validationResult);
-        }
+        pureChecks(context.body());
         if (op.hasKey()) {
             final var receiverSigReq = op.receiverSigRequired();
             if (receiverSigReq && op.hasKey()) {
@@ -89,11 +86,10 @@ public class CryptoCreateHandler implements TransactionHandler {
      * account being deleted or has insufficient balance or the account is not created due to
      * the usage of a price regime
      */
-    public void handle(
-            @NonNull final HandleContext handleContext,
-            @NonNull final TransactionBody txnBody,
-            @NonNull final WritableAccountStore accountStore,
-            @NonNull final CryptoCreateRecordBuilder recordBuilder) {
+    @Override
+    public void handle(@NonNull final HandleContext handleContext) {
+        requireNonNull(handleContext);
+        final var txnBody = handleContext.body();
         final var op = txnBody.cryptoCreateAccount();
 
         // validate fields in the transaction body that involves checking with
@@ -107,12 +103,11 @@ public class CryptoCreateHandler implements TransactionHandler {
         //  Currently, this check is being done in `finishCryptoCreate` before `commit`
 
         // validate payer account exists and has enough balance
-        final var optionalPayer = accountStore.getForModify(
+        final var accountStore = handleContext.writableStore(WritableAccountStore.class);
+        final var payer = accountStore.getForModify(
                 txnBody.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT));
-        if (optionalPayer.isEmpty()) {
-            throw new HandleException(INVALID_PAYER_ACCOUNT_ID);
-        }
-        final var payer = optionalPayer.get();
+
+        validateTrue(payer != null, INVALID_PAYER_ACCOUNT_ID);
         final long newPayerBalance = payer.tinybarBalance() - op.initialBalance();
         validatePayer(payer, newPayerBalance);
 
@@ -128,7 +123,10 @@ public class CryptoCreateHandler implements TransactionHandler {
 
         // set newly created account number in the record builder
         final var createdAccountNum = accountCreated.accountNumber();
-        recordBuilder.setCreatedAccount(createdAccountNum);
+        final var createdAccountID =
+                AccountID.newBuilder().accountNum(createdAccountNum).build();
+        final var recordBuilder = handleContext.recordBuilder(CryptoCreateRecordBuilder.class);
+        recordBuilder.accountID(createdAccountID);
 
         // put if any new alias is associated with the account into account store
         if (op.alias() != Bytes.EMPTY) {
@@ -136,38 +134,23 @@ public class CryptoCreateHandler implements TransactionHandler {
         }
     }
 
-    @Override
-    public CryptoCreateRecordBuilder newRecordBuilder() {
-        return new CreateAccountRecordBuilder();
-    }
-
     /* ----------- Helper Methods ----------- */
 
-    /**
-     * Validate the basic fields in the transaction body that does not involve checking with dynamic
-     * properties or state. This check is done as part of the pre-handle workflow.
-     * @param op the transaction body
-     * @return OK if the transaction body is valid, otherwise return the appropriate error code
-     */
-    private ResponseCodeEnum pureChecks(@NonNull final CryptoCreateTransactionBody op) {
-        if (op.initialBalance() < 0L) {
-            return INVALID_INITIAL_BALANCE;
-        }
-        if (!op.hasAutoRenewPeriod()) {
-            return INVALID_RENEWAL_PERIOD;
-        }
-        if (op.sendRecordThreshold() < 0L) {
-            return INVALID_SEND_RECORD_THRESHOLD; // FUTURE: should this return
-            // SEND_RECORD_THRESHOLD_FIELD_IS_DEPRECATED
-        }
-        if (op.receiveRecordThreshold() < 0L) {
-            return INVALID_RECEIVE_RECORD_THRESHOLD; // FUTURE: should this return
-            // RECEIVE_RECORD_THRESHOLD_FIELD_IS_DEPRECATED
-        }
-        if (op.hasProxyAccountID() && !op.proxyAccountID().equals(AccountID.DEFAULT)) {
-            return PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
-        }
-        return OK;
+    @Override
+    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
+        final var op = txn.cryptoCreateAccountOrThrow();
+        validateTruePreCheck(op.initialBalance() >= 0L, INVALID_INITIAL_BALANCE);
+        validateTruePreCheck(op.hasAutoRenewPeriod(), INVALID_RENEWAL_PERIOD);
+        validateTruePreCheck(
+                op.sendRecordThreshold() >= 0L, INVALID_SEND_RECORD_THRESHOLD); // FUTURE: should this return
+        // SEND_RECORD_THRESHOLD_FIELD_IS_DEPRECATED
+        validateTruePreCheck(
+                op.receiveRecordThreshold() >= 0L, INVALID_RECEIVE_RECORD_THRESHOLD); // FUTURE: should this return
+        // RECEIVE_RECORD_THRESHOLD_FIELD_IS_DEPRECATED
+        validateTruePreCheck(
+                !op.hasProxyAccountID()
+                        || (op.hasProxyAccountID() && op.proxyAccountID().equals(AccountID.DEFAULT)),
+                PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED);
     }
 
     /**
@@ -225,11 +208,12 @@ public class CryptoCreateHandler implements TransactionHandler {
         }
 
         if (op.hasStakedAccountId() || op.hasStakedNodeId()) {
-            final var stakeNumber = getStakedId(op);
+            final var stakeNumber =
+                    getStakedId(op.stakedId().kind().toString(), op.stakedNodeId(), op.stakedAccountId());
             builder.stakedNumber(stakeNumber);
         }
         // set the new account number
-        builder.accountNumber(handleContext.newEntityNumSupplier().getAsLong());
+        builder.accountNumber(handleContext.newEntityNum());
         return builder.build();
     }
 
@@ -251,27 +235,5 @@ public class CryptoCreateHandler implements TransactionHandler {
      */
     private boolean keyAndAliasProvided(@NonNull final CryptoCreateTransactionBody op) {
         return op.hasKey() && !op.alias().equals(Bytes.EMPTY);
-    }
-
-    /**
-     * Gets the stakedId from the provided staked_account_id or staked_node_id.
-     * When staked_node_id is provided, it is stored as negative number in state to
-     * distinguish it from staked_account_id. It will be converted back to positive number
-     * when it is retrieved from state.
-     *
-     * To distinguish for node 0, it will be stored as - node_id -1.
-     * For example, if staked_node_id is 0, it will be stored as -1 in state.
-     *
-     * @param op given transaction body
-     * @return valid staked id
-     */
-    private long getStakedId(final CryptoCreateTransactionBody op) {
-        if (StakedIdOneOfType.STAKED_ACCOUNT_ID.equals(op.stakedId().kind())) {
-            return op.stakedAccountIdOrThrow().accountNum();
-        } else {
-            // return a number less than the given node Id, in order to recognize the if nodeId 0 is
-            // set
-            return -op.stakedNodeIdOrThrow() - 1;
-        }
     }
 }

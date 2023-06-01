@@ -41,6 +41,7 @@ import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.common.utility.Clearable;
+import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
@@ -130,8 +131,8 @@ public class EmergencyReconnectTests {
         final Random random = RandomUtils.initRandom(null);
         final NotificationEngine notificationEngine = NotificationEngine.buildEngine(getStaticThreadManager());
         final int numNodes = 4;
-        final List<Long> nodeIds =
-                IntStream.range(0, numNodes).mapToLong(i -> (long) i).boxed().toList();
+        final List<NodeId> nodeIds =
+                IntStream.range(0, numNodes).mapToObj(NodeId::new).toList();
         final long emergencyRound = 1L;
 
         final AddressBook addressBook = newAddressBook(random, numNodes);
@@ -272,7 +273,8 @@ public class EmergencyReconnectTests {
                 signedStateManager,
                 100,
                 mock(ReconnectMetrics.class),
-                reconnectController);
+                reconnectController,
+                mock(FallenBehindManager.class));
     }
 
     private EmergencyReconnectProtocol createLearnerProtocol(
@@ -291,7 +293,8 @@ public class EmergencyReconnectTests {
                 mock(SignedStateManager.class),
                 100,
                 mock(ReconnectMetrics.class),
-                reconnectController);
+                reconnectController,
+                mock(FallenBehindManager.class));
     }
 
     private void mockTeacherHasCompatibleState(

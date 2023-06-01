@@ -16,17 +16,16 @@
 
 package com.hedera.node.app.workflows.ingest;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.annotations.NodeSelfId;
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.node.app.service.mono.context.properties.Profile;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.state.RecordCache;
+import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.SpeedometerMetric;
@@ -35,38 +34,68 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-/** The {@code SubmissionManager} provides functionality to submit transactions to the platform. */
+/**
+ * The {@code SubmissionManager} submits transactions to the platform. As this is an honest node, it makes a strong
+ * attempt to <strong>avoid</strong> submitting duplicate transactions to the platform.
+ *
+ * <p>An honest node does not want to submit duplicate transactions (since it will be charged for it). We use an
+ * in-memory cache to keep track of transactions that have been submitted, sorted by transaction start time. This cache
+ * is not part of state, because it will be different for different nodes.
+ *
+ * <p>Because this cache is not in state, if this node is restarted, it will forget about transactions it has already
+ * submitted and could end up sending a <strong>single</strong> duplicate transaction per transaction. If there is a
+ * poorly behaving client and this node reboots, it will no longer know the transaction is a duplicate and will submit
+ * it, with the node ending up having to pay for it. If we had a shutdown hook we could save this information off during
+ * graceful shutdown and reload it on startup, but we don't have that hook yet, and anyway hard crashes would still
+ * impact the node.
+ *
+ * <p>In addition to tracking transaction IDs submitted <strong>by this node</strong>, the submitted transaction cache
+ * will also contain entries for transactions submitted to other nodes, once this node sees those transactions in
+ * pre-handle. If a user submits a transaction to 10 nodes, it is possible that none of the 10 nodes will recognize the
+ * transaction as a duplicate and will submit all 10 to consensus, causing the user to pay for 1 full transaction and
+ * 9 node+network fees. It is also possible that some of those nodes will learn by gossip about a transaction before
+ * the user transaction hits the {@link SubmissionManager}, in which case those transactions will fail with
+ * {@link com.hedera.hapi.node.base.ResponseCodeEnum#DUPLICATE_TRANSACTION} and the user will only pay for those
+ * transactions which were not detected as duplicates during submission.
+ *
+ * <p>This cache is <strong>NOT</strong> impacted by falling behind or reconnecting, so the only time we will submit
+ * duplicate transactions is if the node is restarted. We hope to improve this in the future.
+ */
 @Singleton
 public class SubmissionManager {
+    /** Metric settings for keeping track of rejected transactions */
     private static final String PLATFORM_TXN_REJECTIONS_NAME = "platformTxnNotCreated/sec";
+
     private static final String PLATFORM_TXN_REJECTIONS_DESC = "number of platform transactions not created per second";
     private static final String SPEEDOMETER_FORMAT = "%,13.2f";
 
+    // FUTURE Consider adding a metric to keep track of the number of duplicate transactions submitted by users.
+
+    /** The {@link Platform} to which transactions will be submitted */
     private final Platform platform;
-    private final RecordCache recordCache;
+    /** Whether this node is running in production mode. We hope to remove this logic in the future.  */
     private final boolean isProduction;
+    /** Metrics related to submissions */
     private final SpeedometerMetric platformTxnRejections;
-    private final AccountID nodeSelfID;
+    /** The {@link DeduplicationCache} that keeps track of transactions that have been submitted */
+    private final DeduplicationCache submittedTxns;
 
     /**
-     * Constructor of {@code SubmissionManager}
+     * Create a new {@code SubmissionManager} instance.
      *
-     * @param nodeSelfID the {@link AccountID} for referring to this node's operator account
      * @param platform the {@link Platform} to which transactions will be submitted
-     * @param recordCache the {@link RecordCache} that tracks submitted transactions
+     * @param deduplicationCache used to prevent submission of duplicate transactions
      * @param nodeLocalProperties the {@link NodeLocalProperties} that keep local properties
      * @param metrics             metrics related to submissions
      */
     @Inject
     public SubmissionManager(
-            @NodeSelfId @NonNull final AccountID nodeSelfID,
             @NonNull final Platform platform,
-            @NonNull final RecordCache recordCache,
+            @NonNull final DeduplicationCache deduplicationCache,
             @NonNull final NodeLocalProperties nodeLocalProperties,
             @NonNull final Metrics metrics) {
-        this.nodeSelfID = requireNonNull(nodeSelfID);
         this.platform = requireNonNull(platform);
-        this.recordCache = requireNonNull(recordCache);
+        this.submittedTxns = requireNonNull(deduplicationCache);
         this.isProduction = requireNonNull(nodeLocalProperties).activeProfile() == Profile.PROD;
         this.platformTxnRejections =
                 metrics.getOrCreate(new SpeedometerMetric.Config("app", PLATFORM_TXN_REJECTIONS_NAME)
@@ -103,14 +132,25 @@ public class SubmissionManager {
             payload = txBody.uncheckedSubmitOrThrow().transactionBytes();
         }
 
-        // An honest node does not want to submit duplicate transactions (since it will be charged for it), so we will
-        // check whether it has been submitted already. It is still possible under high concurrency that a duplicate
-        // transaction could be submitted, but doing this check here makes it much less likely.
-        final var txId = txBody.transactionIDOrThrow();
-        if (recordCache.get(txId) == null) {
+        // This method is not called at a super high rate, so synchronizing here is perfectly fine. We need to check
+        // for containment and then do a bunch of logic that might throw an exception before doing the `add` and we
+        // want to be REALLY SURE that we're not submitting duplicate transactions to the network.
+        synchronized (submittedTxns) {
+            // If we have already submitted this transaction, then fail. Note that both of these calls will throw if
+            // the transaction is malformed. This should NEVER happen, because the transaction was already checked
+            // before we got here. But if it ever does happen, for any reason, we want it to happen BEFORE we submit,
+            // and BEFORE we record the transaction as a duplicate.
+            final var txId = txBody.transactionIDOrThrow();
+            if (submittedTxns.contains(txId)) {
+                throw new PreCheckException(DUPLICATE_TRANSACTION);
+            }
+
+            // This call to submit to the platform should almost always work. Maybe under extreme load it will fail,
+            // or while the system is being shut down. In any event, the user will receive an error code indicating
+            // that the transaction was not submitted and they can retry.
             final var success = platform.createTransaction(PbjConverter.asBytes(payload));
             if (success) {
-                recordCache.put(txBody.transactionIDOrThrow(), nodeSelfID);
+                submittedTxns.add(txId);
             } else {
                 platformTxnRejections.cycle();
                 throw new PreCheckException(PLATFORM_TRANSACTION_NOT_CREATED);

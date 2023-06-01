@@ -26,6 +26,7 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
@@ -96,8 +97,8 @@ final class ReconnectTest {
 
         final long weightPerNode = 100L;
         final int numNodes = 4;
-        final List<Long> nodeIds =
-                IntStream.range(0, numNodes).mapToLong(i -> (long) i).boxed().toList();
+        final List<NodeId> nodeIds =
+                IntStream.range(0, numNodes).mapToObj(NodeId::new).toList();
         final Random random = RandomUtils.getRandomPrintSeed();
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
@@ -169,6 +170,7 @@ final class ReconnectTest {
                 selfId,
                 otherId,
                 lastRoundReceived,
+                () -> false,
                 reconnectMetrics);
     }
 

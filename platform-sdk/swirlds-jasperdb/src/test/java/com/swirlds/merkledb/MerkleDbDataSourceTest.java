@@ -398,7 +398,7 @@ class MerkleDbDataSourceTest {
         // create a snapshot
         final Path snapshotDbPath = testDirectory.resolve("merkledb-" + testType + "_SNAPSHOT");
         final MerkleDb originalDb = dataSource.getDatabase();
-        dataSource.getDatabase().snapshot(snapshotDbPath);
+        dataSource.getDatabase().snapshot(snapshotDbPath, dataSource);
         // close data source
         dataSource.close();
         // check directory still exists and temporary snapshot path does not

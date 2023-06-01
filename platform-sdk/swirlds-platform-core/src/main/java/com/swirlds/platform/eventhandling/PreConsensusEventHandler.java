@@ -29,6 +29,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.PlatformStatNames;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
+import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.config.ThreadConfig;
@@ -93,7 +94,7 @@ public class PreConsensusEventHandler implements PreConsensusEventObserver, Clea
                 INITIAL_PRE_CONS_EVENT_QUEUE_CAPACITY, EventUtils::consensusPriorityComparator);
 
         queueThread = new QueueThreadConfiguration<EventImpl>(threadManager)
-                .setNodeId(selfId.id())
+                .setNodeId(selfId)
                 .setQueue(queue)
                 .setComponent(PLATFORM_THREAD_POOL_NAME)
                 .setThreadName("thread-curr")
@@ -103,6 +104,7 @@ public class PreConsensusEventHandler implements PreConsensusEventObserver, Clea
                         .get()
                         .getConfigData(ThreadConfig.class)
                         .logStackTracePauseDuration())
+                .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics).enableBusyTimeMetric())
                 .build();
 
         final AverageAndMax avgQ1PreConsEvents = new AverageAndMax(
