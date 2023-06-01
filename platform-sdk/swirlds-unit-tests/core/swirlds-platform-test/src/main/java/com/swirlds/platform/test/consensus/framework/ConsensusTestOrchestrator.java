@@ -27,13 +27,13 @@ import java.util.function.Consumer;
 public class ConsensusTestOrchestrator {
     private final List<ConsensusTestNode> nodes;
     private long currentSequence = 0;
-    private final List<Long> stakes;
+    private final List<Long> weights;
     private final int totalEventNum;
 
     public ConsensusTestOrchestrator(
-            final List<ConsensusTestNode> nodes, final List<Long> stakes, final int totalEventNum) {
+            final List<ConsensusTestNode> nodes, final List<Long> weights, final int totalEventNum) {
         this.nodes = nodes;
-        this.stakes = stakes;
+        this.weights = weights;
         this.totalEventNum = totalEventNum;
     }
 
@@ -142,7 +142,7 @@ public class ConsensusTestOrchestrator {
         }
     }
 
-    public List<Long> getStakes() {
-        return stakes;
+    public List<Long> getWeights() {
+        return weights;
     }
 }

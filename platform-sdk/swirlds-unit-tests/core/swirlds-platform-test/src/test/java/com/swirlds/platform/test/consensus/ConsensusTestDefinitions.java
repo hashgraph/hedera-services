@@ -109,7 +109,7 @@ public final class ConsensusTestDefinitions {
             final long totalWeight = nodeWeights.stream().reduce(0L, Long::sum);
 
             // Determine a single forking event source that has less than a strong minority
-            // of stake
+            // of weigth
             int forkingNodeId = -1;
             for (int i = 0; i < nodeWeights.size(); i++) {
                 final long weight = nodeWeights.get(i);
@@ -157,7 +157,7 @@ public final class ConsensusTestDefinitions {
                 OrchestratorBuilder.builder().setTestInput(input).build();
         final List<List<Double>> fullyConnected = createBalancedOtherParentMatrix(input.numberOfNodes());
         final List<List<Double>> partitioned = createPartitionedOtherParentAffinityMatrix(
-                input.numberOfNodes(), Util.getStrongMinorityNodes(orchestrator.getStakes()));
+                input.numberOfNodes(), Util.getStrongMinorityNodes(orchestrator.getWeights()));
 
         //
         // Phase 1
@@ -213,9 +213,9 @@ public final class ConsensusTestDefinitions {
         final ConsensusTestOrchestrator orchestrator =
                 OrchestratorBuilder.builder().setTestInput(input).build();
         final List<List<Double>> fullyConnected = createBalancedOtherParentMatrix(input.numberOfNodes());
-        final Set<Integer> partitionedNodes = Util.getSubStrongMinorityNodes(orchestrator.getStakes());
+        final Set<Integer> partitionedNodes = Util.getSubStrongMinorityNodes(orchestrator.getWeights());
         final int numPartitionedNodes = partitionedNodes.size();
-        // Less than a strong minority of nodes' stake are partitioned from the network
+        // Less than a strong minority of nodes' weigth are partitioned from the network
         final List<List<Double>> partitioned =
                 createPartitionedOtherParentAffinityMatrix(input.numberOfNodes(), partitionedNodes);
         final int numConsPartitionNodes = input.numberOfNodes() - numPartitionedNodes;
@@ -347,7 +347,7 @@ public final class ConsensusTestDefinitions {
                 .setRecentEventRetentionSize(5000)
                 .setProvidedOtherParentAgeDistribution(integerPowerDistribution(0.002, 300)));
         orchestrator.generateAllEvents();
-        /* If the node providing old events as other parents has a strong minority of stake, rounds become very
+        /* If the node providing old events as other parents has a strong minority of weigth, rounds become very
         large because many more events are required to strongly see witnesses. Larger rounds means fewer stale
         events. Possibly no stale events at all if there are not enough events to create enough rounds so that
         generations are considered ancient. */
@@ -363,7 +363,7 @@ public final class ConsensusTestDefinitions {
         // Test setup
         final ConsensusTestOrchestrator orchestrator =
                 OrchestratorBuilder.builder().setTestInput(input).build();
-        final Set<Integer> quorumNodeIds = Util.getStrongMinorityNodes(orchestrator.getStakes());
+        final Set<Integer> quorumNodeIds = Util.getStrongMinorityNodes(orchestrator.getWeights());
 
         //
         // Phase 1
@@ -408,7 +408,7 @@ public final class ConsensusTestDefinitions {
         // Test setup
         final ConsensusTestOrchestrator orchestrator =
                 OrchestratorBuilder.builder().setTestInput(input).build();
-        final Set<Integer> subQuorumNodesIds = Util.getSubStrongMinorityNodes(orchestrator.getStakes());
+        final Set<Integer> subQuorumNodesIds = Util.getSubStrongMinorityNodes(orchestrator.getWeights());
 
         //
         // Phase 1
@@ -474,7 +474,7 @@ public final class ConsensusTestDefinitions {
         orchestrator.generateEvents(0.1);
         orchestrator.validateAndClear(Validations.standard()
                 .ratios(EventRatioValidation.blank()
-                        // if the shunned node has a lot of stake, not many events
+                        // if the shunned node has a lot of weigth, not many events
                         // will reach consensus
                         .setMinimumConsensusRatio(0.1)
                         .setMinimumStaleRatio(0.1)));
