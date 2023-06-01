@@ -84,14 +84,9 @@ public class BaseEventUnhashedData implements SelfSerializable {
     @Override
     public void deserialize(@NonNull final SerializableDataInputStream in, final int version) throws IOException {
         creatorSeq = in.readLong();
-        final long serializedOtherId = in.readLong();
         // FUTURE WORK: The otherId should be a nullable selfSerializable NodeId at some point.
         // Changing the event format may require a HIP.  The old format is preserved for now.
-        if (serializedOtherId < 0) {
-            otherId = null;
-        } else {
-            otherId = new NodeId(serializedOtherId);
-        }
+        otherId = NodeId.deserializeLong(in);
         otherSeq = in.readLong();
         signature = in.readByteArray(MAX_SIG_LENGTH);
     }

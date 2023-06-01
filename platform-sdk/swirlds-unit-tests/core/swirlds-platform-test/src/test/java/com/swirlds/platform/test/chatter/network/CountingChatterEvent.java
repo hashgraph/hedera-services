@@ -92,12 +92,7 @@ public class CountingChatterEvent implements SimulatedChatterEvent {
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         // FUTURE WORK: The creator should be a selfSerializable NodeId at some point.
         // Changing the event format may require a HIP.  The old format is preserved for now.
-        final long serializedCreator = in.readLong();
-        if (serializedCreator < NodeId.LOWEST_NODE_NUMBER) {
-            throw new IOException("Invalid negative creator id: %d".formatted(serializedCreator));
-        } else {
-            creator = new NodeId(serializedCreator);
-        }
+        creator = NodeId.deserializeLong(in);
         order = in.readLong();
         this.descriptor = new CountingEventDescriptor(creator, order);
     }

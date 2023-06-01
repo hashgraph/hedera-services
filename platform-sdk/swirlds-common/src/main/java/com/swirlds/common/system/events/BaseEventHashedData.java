@@ -228,12 +228,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
         }
         // FUTURE WORK: The creatorId should be a selfSerializable NodeId at some point.
         // Changing the event format may require a HIP.  The old format is preserved for now.
-        final long serializedCreatorId = in.readLong();
-        if (serializedCreatorId < NodeId.LOWEST_NODE_NUMBER) {
-            throw new IOException("Invalid negative creatorId: %d".formatted(serializedCreatorId));
-        } else {
-            creatorId = new NodeId(serializedCreatorId);
-        }
+        creatorId = NodeId.deserializeLong(in);
         selfParentGen = in.readLong();
         otherParentGen = in.readLong();
         selfParentHash = in.readSerializable(false, Hash::new);
