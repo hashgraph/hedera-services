@@ -41,6 +41,7 @@ import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.RandomAddressBookGenerator.WeightDistributionStrategy;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
+import com.swirlds.platform.Settings;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
@@ -56,6 +57,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -84,6 +86,7 @@ class StateManagementComponentTests {
             new TestSignedStateWrapperConsumer();
     private final TestSignedStateWrapperConsumer stateLacksSignaturesConsumer = new TestSignedStateWrapperConsumer();
     private final TestIssConsumer issConsumer = new TestIssConsumer();
+    private final TestStateToDiskAttemptConsumer stateToDiskAttemptConsumer = new TestStateToDiskAttemptConsumer();
 
     @TempDir
     private Path tmpDir;
@@ -393,6 +396,37 @@ class StateManagementComponentTests {
         component.stop();
     }
 
+    @Test
+    @DisplayName("Test that the state is saved to disk when it is received via reconnect")
+    void testReconnectStateSaved() throws InterruptedException {
+        final Random random = RandomUtils.getRandomPrintSeed();
+        final AddressBook addressBook = new RandomAddressBookGenerator(random)
+                .setSize(NUM_NODES)
+                .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
+                .setSequentialIds(true)
+                .build();
+        final DefaultStateManagementComponent component = newStateManagementComponent(
+                addressBook, defaultConfigBuilder().withValue("state.saveReconnectStateToDisk", true));
+
+        component.start();
+
+        final List<NodeId> majorityWeightNodes =
+                IntStream.range(0, NUM_NODES - 1).mapToObj(NodeId::new).toList();
+        final SignedState signedState = new RandomSignedStateGenerator(random)
+                .setRound(10)
+                .setSigningNodeIds(majorityWeightNodes)
+                .build();
+        component.stateToLoad(signedState, SourceOfSignedState.RECONNECT);
+        final StateToDiskAttempt attempt =
+                stateToDiskAttemptConsumer.getAttemptQueue().poll(5, TimeUnit.SECONDS);
+        assertNotNull(attempt, "The state should be saved to disk.");
+        assertEquals(
+                attempt.signedState(), signedState, "The state saved to disk should be the same as the state loaded.");
+        assertTrue(attempt.success(), "The state saved to disk should be marked as a success.");
+
+        component.stop();
+    }
+
     private void testCatastrophicIss(
             final Random random,
             final DefaultStateManagementComponent component,
@@ -602,11 +636,22 @@ class StateManagementComponentTests {
     }
 
     @NonNull
-    private DefaultStateManagementComponent newStateManagementComponent(@NonNull final AddressBook addressBook) {
-        final TestConfigBuilder configBuilder = new TestConfigBuilder()
+    private TestConfigBuilder defaultConfigBuilder() {
+        return new TestConfigBuilder()
                 .withValue("state.roundsToKeepForSigning", roundsToKeepForSigning)
                 .withValue("state.saveStatePeriod", 1)
                 .withValue("state.savedStateDirectory", tmpDir.toFile().toString());
+    }
+
+    @NonNull
+    private DefaultStateManagementComponent newStateManagementComponent(@NonNull final AddressBook addressBook) {
+        return newStateManagementComponent(addressBook, defaultConfigBuilder());
+    }
+
+    @NonNull
+    private DefaultStateManagementComponent newStateManagementComponent(
+            @NonNull final AddressBook addressBook, @NonNull final TestConfigBuilder configBuilder) {
+        Settings.getInstance().getState().savedStateDirectory = tmpDir.toFile().toString();
 
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withMetrics(new NoOpMetrics())
@@ -625,7 +670,7 @@ class StateManagementComponentTests {
                 NODE_ID,
                 SWIRLD,
                 systemTransactionConsumer::consume,
-                (ss, dir, success) -> {},
+                stateToDiskAttemptConsumer,
                 newLatestCompleteStateConsumer::consume,
                 stateLacksSignaturesConsumer::consume,
                 stateHasEnoughSignaturesConsumer::consume,
