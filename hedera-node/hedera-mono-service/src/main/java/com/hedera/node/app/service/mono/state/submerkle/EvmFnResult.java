@@ -30,6 +30,7 @@ import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.service.mono.contracts.execution.TransactionProcessingResult;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.ContractNonceInfo;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -38,6 +39,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -74,6 +76,7 @@ public class EvmFnResult implements SelfSerializable {
     private long amount;
     private byte[] functionParameters = EMPTY;
     private EntityId senderId;
+    private Map<ContractID, Long> contractNonces = Collections.emptyMap();
 
     public EvmFnResult() {
         // RuntimeConstructable
@@ -287,6 +290,10 @@ public class EvmFnResult implements SelfSerializable {
         return createdContractIds;
     }
 
+    public Map<ContractID, Long> getContractNonces() {
+        return contractNonces;
+    }
+
     public byte[] getEvmAddress() {
         return evmAddress;
     }
@@ -327,6 +334,10 @@ public class EvmFnResult implements SelfSerializable {
         this.senderId = senderId;
     }
 
+    public void setContractNonces(Map<ContractID, Long> contractNonces) {
+        this.contractNonces = contractNonces;
+    }
+
     public void updateForEvmCall(final EthTxData callContext, final EntityId senderId) {
         setGas(callContext.gasLimit());
         setAmount(callContext.getAmount());
@@ -353,6 +364,15 @@ public class EvmFnResult implements SelfSerializable {
         if (isNotEmpty(createdContractIds)) {
             for (final var createdId : createdContractIds) {
                 grpc.addCreatedContractIDs(createdId.toGrpcContractId());
+            }
+        }
+        if (!contractNonces.isEmpty()) {
+            for (final var contractNonce : contractNonces.entrySet()) {
+                ContractNonceInfo contractNonceInfo = ContractNonceInfo.newBuilder()
+                        .setContractId(contractNonce.getKey())
+                        .setNonce(contractNonce.getValue())
+                        .build();
+                grpc.addContractNonces(contractNonceInfo);
             }
         }
         if (evmAddress.length > 0) {

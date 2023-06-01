@@ -29,6 +29,7 @@ import com.hedera.node.app.service.evm.contracts.operations.CreateOperationExter
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.records.RecordsHistorian;
+import com.hedera.node.app.service.mono.records.TxnAwareRecordsHistorian;
 import com.hedera.node.app.service.mono.state.EntityCreator;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
@@ -41,6 +42,7 @@ import java.util.Collections;
 import java.util.List;
 import javax.inject.Inject;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
@@ -90,6 +92,13 @@ public class HederaCreateOperationExternalizer implements CreateOperationExterna
             createdContractId = EntityIdUtils.asContract(hollowAccountID);
         } else {
             createdContractId = updater.idOfLastNewAddress();
+        }
+
+        if (dynamicProperties.isContractsNoncesExternalizationEnabled()) {
+            final MutableAccount contractAccount = frame.getWorldUpdater()
+                    .getAccount(childFrame.getContractAddress())
+                    .getMutable();
+            updateContractNonces(createdContractId, contractAccount.getNonce());
         }
 
         sideEffects.trackNewContract(createdContractId, childFrame.getContractAddress());
@@ -150,5 +159,9 @@ public class HederaCreateOperationExternalizer implements CreateOperationExterna
 
         // set initial contract nonce to 1
         updater.trackingAccounts().set(hollowAccountID, ETHEREUM_NONCE, 1L);
+    }
+
+    private void updateContractNonces(ContractID contractID, Long nonce) {
+        TxnAwareRecordsHistorian.setContractNonces(contractID, nonce);
     }
 }
