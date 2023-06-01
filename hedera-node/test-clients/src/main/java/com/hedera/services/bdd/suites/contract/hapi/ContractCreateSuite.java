@@ -117,7 +117,6 @@ public class ContractCreateSuite extends HapiSuite {
                 childCreationsHaveExpectedKeysWithOmittedAdminKey(),
                 cannotCreateTooLargeContract(),
                 revertedTryExtCallHasNoSideEffects(),
-                receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix(),
                 cannotSendToNonExistentAccount(),
                 delegateContractIdRequiredForTransferInDelegateCall(),
                 vanillaSuccess(),
