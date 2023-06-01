@@ -1119,11 +1119,12 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         try {
             // Get the leaves that were changed and sort them by path so that lower paths come first
             final Stream<VirtualLeafRecord<K, V>> dirtyLeaves =
-                    cacheToFlush.dirtyLeaves(stateToUse.getFirstLeafPath(), stateToUse.getLastLeafPath(), false);
+                    cacheToFlush.dirtyLeavesForFlush(stateToUse.getFirstLeafPath(), stateToUse.getLastLeafPath());
             // Get the deleted leaves
             final Stream<VirtualLeafRecord<K, V>> deletedLeaves = cacheToFlush.deletedLeaves();
             // Save the dirty hashes
-            final Stream<VirtualHashRecord> dirtyHashes = cacheToFlush.dirtyHashes(stateToUse.getLastLeafPath());
+            final Stream<VirtualHashRecord> dirtyHashes =
+                    cacheToFlush.dirtyHashesForFlush(stateToUse.getLastLeafPath());
             ds.saveRecords(
                     stateToUse.getFirstLeafPath(),
                     stateToUse.getLastLeafPath(),
@@ -1245,7 +1246,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         };
         Hash virtualHash = hasher.hash(
                 records::findHash,
-                cache.dirtyLeaves(state.getFirstLeafPath(), state.getLastLeafPath(), true)
+                cache.dirtyLeavesForHash(state.getFirstLeafPath(), state.getLastLeafPath())
                         .iterator(),
                 state.getFirstLeafPath(),
                 state.getLastLeafPath(),

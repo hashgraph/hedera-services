@@ -102,6 +102,11 @@ final class ConcurrentArray<T> {
     private final AtomicBoolean immutable = new AtomicBoolean(false);
 
     /**
+     * True when this array is created as a merge (concatenation) of other concurrent array instances.
+     */
+    private final AtomicBoolean merged = new AtomicBoolean(false);
+
+    /**
      * Defines the size of each sub-array created by this {@link ConcurrentArray}. This is a fixed-cost overhead
      * for a sub-array. If the value is too small and there are many elements, then you will have many sub-arrays.
      * If the value is too large, and you have few elements, you will waste RAM. It is wise to set this number to
@@ -167,6 +172,8 @@ final class ConcurrentArray<T> {
             tail = other.tail;
         }
         elementCount.addAndGet(other.size());
+
+        merged.set(true);
     }
 
     /**
@@ -186,6 +193,15 @@ final class ConcurrentArray<T> {
      */
     boolean isImmutable() {
         return immutable.get();
+    }
+
+    /**
+     * Get whether this array instance is created as a merge of other concurrent arrays.
+     *
+     * @return true if this instance is a result of merge of other concurrent arrays
+     */
+    boolean isMerged() {
+        return merged.get();
     }
 
     /**
