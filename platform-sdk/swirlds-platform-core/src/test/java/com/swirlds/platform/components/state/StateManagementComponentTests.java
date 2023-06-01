@@ -406,10 +406,7 @@ class StateManagementComponentTests {
                 .setSequentialIds(true)
                 .build();
         final DefaultStateManagementComponent component = newStateManagementComponent(
-                addressBook,
-                defaultConfigBuilder()
-                        .withValue("state.saveReconnectStateToDisk", true)
-                );
+                addressBook, defaultConfigBuilder().withValue("state.saveReconnectStateToDisk", true));
 
         component.start();
 
@@ -653,8 +650,7 @@ class StateManagementComponentTests {
 
     @NonNull
     private DefaultStateManagementComponent newStateManagementComponent(
-            @NonNull final AddressBook addressBook,
-            @NonNull final TestConfigBuilder configBuilder) {
+            @NonNull final AddressBook addressBook, @NonNull final TestConfigBuilder configBuilder) {
         Settings.getInstance().getState().savedStateDirectory = tmpDir.toFile().toString();
 
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
