@@ -180,13 +180,6 @@ public interface Dispatch {
     long useNextEntityNumber();
 
     /**
-     * Releases the last {@code n} reserved entity numbers.
-     *
-     * @param n the number of reserved entity numbers to release
-     */
-    void freePrevEntityNumbers(int n);
-
-    /**
      * Creates a new contract with the given entity number and EVM address; and also "links" the alias.
      *
      * <p>Any inheritable Hedera-native properties managed by the {@code TokenService} should be set on
