@@ -32,14 +32,24 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.handlers.CryptoApproveAllowanceHandler;
+import com.hedera.node.app.service.token.impl.validators.ApproveAllowanceValidator;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.config.ConfigProvider;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
+    private ApproveAllowanceValidator validator;
+
+    @Mock
+    private ConfigProvider configProvider;
+
     @Mock
     private Account ownerAccount;
 
@@ -59,7 +69,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
             .delegatingSpender(delegatingSpender)
             .build();
 
-    private CryptoApproveAllowanceHandler subject = new CryptoApproveAllowanceHandler();
+    private CryptoApproveAllowanceHandler subject;
 
     @BeforeEach
     public void setUp() {
@@ -71,6 +81,8 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
                 .build();
         given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
         readableStore = new ReadableAccountStoreImpl(readableStates);
+        validator = new ApproveAllowanceValidator(configProvider);
+        subject = new CryptoApproveAllowanceHandler(validator);
     }
 
     @Test

@@ -20,7 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.AMOUNT_EXCEEDS_TOKEN_MA
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DELEGATING_SPENDER_CANNOT_GRANT_APPROVE_FOR_ALL;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DELEGATING_SPENDER_DOES_NOT_HAVE_APPROVE_FOR_ALL;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
@@ -28,8 +28,11 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_ACCOUNT_SAME_AS_OWNER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.node.app.service.token.impl.handlers.ContextualRetriever.isFungibleCommon;
+import static com.hedera.node.app.service.token.impl.helpers.AllowanceHelpers.aggregateNftAllowances;
+import static com.hedera.node.app.service.token.impl.helpers.AllowanceHelpers.getEffectiveOwner;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static java.util.Collections.emptyList;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
@@ -47,11 +50,12 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.ReadableUniqueTokenStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.ConfigProvider;
-import com.hedera.node.config.data.HederaConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
+@Singleton
 public class ApproveAllowanceValidator extends BaseAllowanceValidator {
 
     @Inject
@@ -59,37 +63,19 @@ public class ApproveAllowanceValidator extends BaseAllowanceValidator {
         super(configProvider);
     }
 
-    public void validate(@NonNull final HandleContext context) {
-        final var txn = context.body();
-        final var payer = txn.transactionIDOrThrow().accountIDOrThrow();
-
-        final var accountStore = context.readableStore(ReadableAccountStore.class);
-
-        // validate payer account exists
-        final var payerAccount = accountStore.getAccountById(payer);
-        validateTrue(payerAccount != null, INVALID_PAYER_ACCOUNT_ID);
-
-        // validate allowances lists
-        validateAllowances(context, payerAccount, accountStore);
-    }
-
-    private void validateAllowances(
-            @NonNull final HandleContext context,
-            @NonNull final Account payerAccount,
-            @NonNull final ReadableAccountStore accountStore) {
+    public void validate(
+            @NonNull final HandleContext context, Account payerAccount, ReadableAccountStore accountStore) {
         // create stores and config from context
         final var tokenStore = context.readableStore(ReadableTokenStore.class);
         final var tokenRelStore = context.readableStore(ReadableTokenRelationStore.class);
         final var nftStore = context.readableStore(ReadableUniqueTokenStore.class);
-        final var config = context.configuration().getConfigData(HederaConfig.class);
 
         final var txn = context.body();
         final var op = txn.cryptoApproveAllowanceOrThrow();
-        final var payer = txn.transactionIDOrThrow().accountIDOrThrow();
 
-        final var cryptoAllowances = op.cryptoAllowancesOrElse(List.of());
-        final var tokenAllowances = op.tokenAllowancesOrElse(List.of());
-        final var nftAllowances = op.nftAllowancesOrElse(List.of());
+        final var cryptoAllowances = op.cryptoAllowancesOrElse(emptyList());
+        final var tokenAllowances = op.tokenAllowancesOrElse(emptyList());
+        final var nftAllowances = op.nftAllowancesOrElse(emptyList());
 
         // feature flag for allowances. Will probably be moved to some other place in app in the future.
         validateTrue(isEnabled(), NOT_SUPPORTED);
@@ -119,6 +105,9 @@ public class ApproveAllowanceValidator extends BaseAllowanceValidator {
             // check if owner specified in allowances exists.
             // If not set, owner will be treated as payer for the transaction
             final var effectiveOwner = getEffectiveOwner(owner, payerAccount, accountStore);
+            // validate spender account
+            final var spenderAccount = accountStore.getAccountById(spender);
+            validateTrue(spenderAccount != null, INVALID_ALLOWANCE_SPENDER_ID);
             validateTrue(allowance.amount() >= 0, NEGATIVE_ALLOWANCE_AMOUNT);
             validateFalse(effectiveOwner.accountNumber() == spender.accountNum(), SPENDER_ACCOUNT_SAME_AS_OWNER);
         }
@@ -140,6 +129,9 @@ public class ApproveAllowanceValidator extends BaseAllowanceValidator {
             // check if owner specified in allowances exists.
             // If not set, owner will be treated as payer for the transaction
             final var effectiveOwner = getEffectiveOwner(owner, payerAccount, accountStore);
+            // validate spender account
+            final var spenderAccount = accountStore.getAccountById(spender);
+            validateTrue(spenderAccount != null, INVALID_ALLOWANCE_SPENDER_ID);
             validateTrue(isFungibleCommon(token), NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES);
 
             // validate token amount
