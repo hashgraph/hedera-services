@@ -86,7 +86,7 @@ public class BaseEventUnhashedData implements SelfSerializable {
         creatorSeq = in.readLong();
         // FUTURE WORK: The otherId should be a nullable selfSerializable NodeId at some point.
         // Changing the event format may require a HIP.  The old format is preserved for now.
-        otherId = NodeId.deserializeLong(in);
+        otherId = NodeId.deserializeLong(in, true);
         otherSeq = in.readLong();
         signature = in.readByteArray(MAX_SIG_LENGTH);
     }

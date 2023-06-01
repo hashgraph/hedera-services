@@ -157,9 +157,12 @@ public class NodeId implements Comparable<NodeId>, SelfSerializable {
      * @throws IOException
      * 		thrown if an exception occurs while reading from the stream or the long value is negative,
      */
-    public static NodeId deserializeLong(SerializableDataInputStream in) throws IOException {
+    public static NodeId deserializeLong(SerializableDataInputStream in, boolean allowNull) throws IOException {
         final long longValue = in.readLong();
         if (longValue < LOWEST_NODE_NUMBER) {
+            if (allowNull) {
+                return null;
+            }
             throw new IOException("id must be non-negative");
         }
         return new NodeId(longValue);
