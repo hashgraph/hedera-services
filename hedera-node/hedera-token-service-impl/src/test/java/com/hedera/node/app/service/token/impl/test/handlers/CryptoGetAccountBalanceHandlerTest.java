@@ -81,6 +81,7 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
 
     @BeforeEach
     public void setUp() {
+        super.setUp();
         subject = new CryptoGetAccountBalanceHandler();
     }
 
@@ -110,7 +111,7 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
     @Test
     @DisplayName("Validate query is successful with valid account")
     void validatesQueryWhenValidAccount() {
-        givenValidAccount();
+        givenValidAccount(accountNum);
         readableAccounts = emptyReadableAccountStateBuilder()
                 .value(EntityNumVirtualKey.fromLong(accountNum), account)
                 .build();
@@ -196,7 +197,7 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
     @Test
     @DisplayName("deleted account is not valid")
     void validatesQueryIfDeletedAccount() throws Throwable {
-        given(deleteAccount.deleted()).willReturn(true);
+        deleteAccount = deleteAccount.copyBuilder().deleted(true).build();
         readableAccounts = emptyReadableAccountStateBuilder()
                 .value(EntityNumVirtualKey.fromLong(deleteAccountNum), deleteAccount)
                 .build();
@@ -215,7 +216,7 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
     @Test
     @DisplayName("deleted contract is not valid")
     void validatesQueryIfDeletedContract() throws Throwable {
-        given(deleteAccount.deleted()).willReturn(true);
+        deleteAccount = deleteAccount.copyBuilder().deleted(true).build();
         given(deleteAccount.smartContract()).willReturn(true);
         readableAccounts = emptyReadableAccountStateBuilder()
                 .value(EntityNumVirtualKey.fromLong(deleteAccountNum), deleteAccount)
@@ -257,7 +258,7 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
     @Test
     @DisplayName("OK response is correctly handled in findResponse")
     void getsResponseIfOkResponse() {
-        givenValidAccount();
+        givenValidAccount(accountNum);
         final var responseHeader = ResponseHeader.newBuilder()
                 .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
                 .build();
