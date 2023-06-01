@@ -25,7 +25,10 @@ import java.util.Optional;
 
 /**
  * Implementation of {@link ReadableSpecialFileStore}
+ *
+ * @deprecated This is a temporary class. It will be replaced by a new class in FileService.
  */
+@Deprecated
 public class ReadableSpecialFileStoreImpl implements ReadableSpecialFileStore {
 
     /** The underlying data storage class that holds the file data. */

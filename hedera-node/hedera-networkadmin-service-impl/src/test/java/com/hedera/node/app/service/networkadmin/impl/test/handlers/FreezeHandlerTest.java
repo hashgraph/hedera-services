@@ -43,8 +43,12 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.networkadmin.ReadableSpecialFileStore;
 import com.hedera.node.app.service.networkadmin.impl.handlers.FreezeHandler;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.state.WritableFreezeStore;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -58,10 +62,16 @@ class FreezeHandlerTest {
     ReadableSpecialFileStore specialFileStore;
 
     @Mock(strictness = LENIENT)
+    private WritableFreezeStore freezeStore;
+
+    @Mock(strictness = LENIENT)
     private ReadableAccountStore accountStore;
 
     @Mock(strictness = LENIENT)
-    private PreHandleContext context;
+    private PreHandleContext preHandleContext;
+
+    @Mock(strictness = LENIENT)
+    private HandleContext handleContext;
 
     @Mock(strictness = LENIENT)
     private Account account;
@@ -75,23 +85,32 @@ class FreezeHandlerTest {
 
     @BeforeEach
     void setUp() {
+        Configuration config = new HederaTestConfigBuilder().getOrCreateConfig();
+        given(preHandleContext.configuration()).willReturn(config);
+
         given(accountStore.getAccountById(nonAdminAccount)).willReturn(account);
         given(account.key()).willReturn(key);
 
-        given(context.createStore(ReadableAccountStore.class)).willReturn(accountStore);
-        given(context.createStore(ReadableSpecialFileStore.class)).willReturn(specialFileStore);
+        given(preHandleContext.createStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(preHandleContext.createStore(ReadableSpecialFileStore.class)).willReturn(specialFileStore);
+
+        given(handleContext.configuration()).willReturn(config);
+        given(handleContext.readableStore(ReadableSpecialFileStore.class)).willReturn(specialFileStore);
+        given(handleContext.writableStore(WritableFreezeStore.class)).willReturn(freezeStore);
     }
 
     @Test
-    void rejectIfUnknownFreezeType() {
+    void pureChecksFailIfUnknownFreezeType() {
         TransactionBody txn = TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(nonAdminAccount)
+                        .transactionValidStart(
+                                Timestamp.newBuilder().seconds(1000).build()))
                 .freeze(FreezeTransactionBody.newBuilder()
                         .freezeType(UNKNOWN_FREEZE_TYPE)
                         .build())
                 .build();
-        given(context.body()).willReturn(txn);
-        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_FREEZE_TRANSACTION_BODY);
+        assertThrowsPreCheck(() -> subject.pureChecks(txn), INVALID_FREEZE_TRANSACTION_BODY);
     }
 
     @Test
@@ -100,13 +119,16 @@ class FreezeHandlerTest {
         FreezeType[] freezeTypes = {FREEZE_ONLY, FREEZE_UPGRADE, TELEMETRY_UPGRADE};
         for (FreezeType freezeType : freezeTypes) {
             TransactionBody txn = TransactionBody.newBuilder()
-                    .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
+                    .transactionID(TransactionID.newBuilder()
+                            .accountID(nonAdminAccount)
+                            .transactionValidStart(
+                                    Timestamp.newBuilder().seconds(1000).build()))
                     .freeze(FreezeTransactionBody.newBuilder()
                             .freezeType(freezeType)
                             .build())
                     .build();
-            given(context.body()).willReturn(txn);
-            assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_FREEZE_TRANSACTION_BODY);
+            given(preHandleContext.body()).willReturn(txn);
+            assertThrowsPreCheck(() -> subject.preHandle(preHandleContext), INVALID_FREEZE_TRANSACTION_BODY);
         }
     }
 
@@ -126,8 +148,8 @@ class FreezeHandlerTest {
                             .freezeType(freezeType)
                             .startTime(Timestamp.newBuilder().seconds(1000).build()))
                     .build();
-            given(context.body()).willReturn(txn);
-            assertThrowsPreCheck(() -> subject.preHandle(context), FREEZE_START_TIME_MUST_BE_FUTURE);
+            given(preHandleContext.body()).willReturn(txn);
+            assertThrowsPreCheck(() -> subject.preHandle(preHandleContext), FREEZE_START_TIME_MUST_BE_FUTURE);
         }
     }
 
@@ -146,8 +168,8 @@ class FreezeHandlerTest {
                             .freezeType(freezeType)
                             .startTime(Timestamp.newBuilder().seconds(2000).build()))
                     .build();
-            given(context.body()).willReturn(txn);
-            assertThrowsPreCheck(() -> subject.preHandle(context), FREEZE_UPDATE_FILE_DOES_NOT_EXIST);
+            given(preHandleContext.body()).willReturn(txn);
+            assertThrowsPreCheck(() -> subject.preHandle(preHandleContext), FREEZE_UPDATE_FILE_DOES_NOT_EXIST);
         }
     }
 
@@ -172,8 +194,8 @@ class FreezeHandlerTest {
                             .updateFile(fileId)
                             .build())
                     .build();
-            given(context.body()).willReturn(txn);
-            assertThrowsPreCheck(() -> subject.preHandle(context), FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH);
+            given(preHandleContext.body()).willReturn(txn);
+            assertThrowsPreCheck(() -> subject.preHandle(preHandleContext), FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH);
         }
     }
 
@@ -181,13 +203,19 @@ class FreezeHandlerTest {
     void happyPathFreezeAbort() {
         // freeze_abort always returns OK, to allow the node to send multiple commands to abort
         TransactionBody txn = TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(nonAdminAccount)
+                        .transactionValidStart(
+                                Timestamp.newBuilder().seconds(1000).build()))
                 .freeze(FreezeTransactionBody.newBuilder()
                         .freezeType(FREEZE_ABORT)
                         .build())
                 .build();
-        given(context.body()).willReturn(txn);
-        assertDoesNotThrow(() -> subject.preHandle(context));
+        given(preHandleContext.body()).willReturn(txn);
+        assertDoesNotThrow(() -> subject.preHandle(preHandleContext));
+
+        given(handleContext.body()).willReturn(txn);
+        assertDoesNotThrow(() -> subject.handle(handleContext));
     }
 
     @Test
@@ -212,8 +240,11 @@ class FreezeHandlerTest {
                             .fileHash(Bytes.wrap(new byte[48]))
                             .build())
                     .build();
-            given(context.body()).willReturn(txn);
-            assertDoesNotThrow(() -> subject.preHandle(context));
+            given(preHandleContext.body()).willReturn(txn);
+            assertDoesNotThrow(() -> subject.preHandle(preHandleContext));
+
+            given(handleContext.body()).willReturn(txn);
+            assertDoesNotThrow(() -> subject.handle(handleContext));
         }
     }
 
@@ -224,8 +255,10 @@ class FreezeHandlerTest {
 
         FileID fileId = FileID.newBuilder().fileNum(1234L).build();
         given(specialFileStore.get(1234L)).willReturn(Optional.of(new byte[0]));
-        TransactionID txnId =
-                TransactionID.newBuilder().accountID(nonAdminAccount).build();
+        TransactionID txnId = TransactionID.newBuilder()
+                .accountID(nonAdminAccount)
+                .transactionValidStart(Timestamp.newBuilder().seconds(1000).build())
+                .build();
         TransactionBody txn = TransactionBody.newBuilder()
                 .transactionID(txnId)
                 .freeze(FreezeTransactionBody.newBuilder()
@@ -234,8 +267,11 @@ class FreezeHandlerTest {
                         .fileHash(Bytes.wrap(new byte[48]))
                         .build())
                 .build();
-        given(context.body()).willReturn(txn);
-        assertDoesNotThrow(() -> subject.preHandle(context));
+        given(preHandleContext.body()).willReturn(txn);
+        assertDoesNotThrow(() -> subject.preHandle(preHandleContext));
+
+        given(handleContext.body()).willReturn(txn);
+        assertDoesNotThrow(() -> subject.handle(handleContext));
     }
 
     @Test
@@ -253,72 +289,76 @@ class FreezeHandlerTest {
                         .startTime(Timestamp.newBuilder().seconds(2000).build())
                         .build())
                 .build();
-        given(context.body()).willReturn(txn);
-        assertDoesNotThrow(() -> subject.preHandle(context));
+        given(preHandleContext.body()).willReturn(txn);
+        assertDoesNotThrow(() -> subject.preHandle(preHandleContext));
+
+        given(handleContext.body()).willReturn(txn);
+        assertDoesNotThrow(() -> subject.handle(handleContext));
     }
 
     @Test
     void rejectIfNoStartTimeSet() {
         TransactionBody txn = TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(nonAdminAccount)
+                        .transactionValidStart(
+                                Timestamp.newBuilder().seconds(1000).build()))
                 .freeze(FreezeTransactionBody.newBuilder().build())
                 // do not set freeze start time
                 .build();
-        given(context.body()).willReturn(txn);
-        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_FREEZE_TRANSACTION_BODY);
-    }
-
-    @Test
-    void rejectIfNoFreezeTxSet() {
-        TransactionBody txn = TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
-                .build();
-        // do not set freeze transaction body
-        given(context.body()).willReturn(txn);
-        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_FREEZE_TRANSACTION_BODY);
+        given(preHandleContext.body()).willReturn(txn);
+        assertThrowsPreCheck(() -> subject.preHandle(preHandleContext), INVALID_FREEZE_TRANSACTION_BODY);
     }
 
     @Test
     void rejectIfStartHourSet() {
         // start hour is not supported
         TransactionBody txn = TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(nonAdminAccount)
+                        .transactionValidStart(
+                                Timestamp.newBuilder().seconds(1000).build()))
                 .freeze(FreezeTransactionBody.newBuilder().startHour(3).build())
                 .build();
-        given(context.body()).willReturn(txn);
-        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_FREEZE_TRANSACTION_BODY);
+        assertThrowsPreCheck(() -> subject.pureChecks(txn), INVALID_FREEZE_TRANSACTION_BODY);
     }
 
     @Test
     void rejectIfStartMinSet() {
         // start min is not supported
         TransactionBody txn = TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(nonAdminAccount)
+                        .transactionValidStart(
+                                Timestamp.newBuilder().seconds(1000).build()))
                 .freeze(FreezeTransactionBody.newBuilder().startMin(31).build())
                 .build();
-        given(context.body()).willReturn(txn);
-        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_FREEZE_TRANSACTION_BODY);
+        assertThrowsPreCheck(() -> subject.pureChecks(txn), INVALID_FREEZE_TRANSACTION_BODY);
     }
 
     @Test
     void rejectIfEndHourSet() {
         // end hour is not supported
         TransactionBody txn = TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(nonAdminAccount)
+                        .transactionValidStart(
+                                Timestamp.newBuilder().seconds(1000).build()))
                 .freeze(FreezeTransactionBody.newBuilder().endHour(3).build())
                 .build();
-        given(context.body()).willReturn(txn);
-        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_FREEZE_TRANSACTION_BODY);
+        assertThrowsPreCheck(() -> subject.pureChecks(txn), INVALID_FREEZE_TRANSACTION_BODY);
     }
 
     @Test
     void rejectIfEndMinSet() {
         // end min is not supported
         TransactionBody txn = TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(nonAdminAccount)
+                        .transactionValidStart(
+                                Timestamp.newBuilder().seconds(1000).build()))
                 .freeze(FreezeTransactionBody.newBuilder().endMin(16).build())
                 .build();
-        given(context.body()).willReturn(txn);
-        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_FREEZE_TRANSACTION_BODY);
+        assertThrowsPreCheck(() -> subject.pureChecks(txn), INVALID_FREEZE_TRANSACTION_BODY);
     }
 }

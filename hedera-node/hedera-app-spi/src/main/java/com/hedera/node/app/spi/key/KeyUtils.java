@@ -75,7 +75,7 @@ public class KeyUtils {
     }
 
     /**
-     * Checks if the gReaiven key is valid. Based on the key type it checks the basic requirements
+     * Checks if the given key is valid. Based on the key type it checks the basic requirements
      * for the key type.
      * @param pbjKey the key to check
      * @return true if the key is valid, false otherwise

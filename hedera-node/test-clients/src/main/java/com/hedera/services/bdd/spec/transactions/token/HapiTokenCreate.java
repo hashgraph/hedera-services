@@ -88,6 +88,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
     private Optional<String> kycKey = Optional.empty();
     private Optional<String> wipeKey = Optional.empty();
     private Optional<String> supplyKey = Optional.empty();
+    private boolean supplyKeyIsContractReference = false;
     private Optional<String> feeScheduleKey = Optional.empty();
     private Optional<String> pauseKey = Optional.empty();
     private Optional<String> symbol = Optional.empty();
@@ -209,6 +210,12 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
         return this;
     }
 
+    public HapiTokenCreate contractSupplyKey(final String name) {
+        supplyKey = Optional.of(name);
+        supplyKeyIsContractReference = true;
+        return this;
+    }
+
     public HapiTokenCreate feeScheduleKey(final String name) {
         feeScheduleKey = Optional.of(name);
         return this;
@@ -318,8 +325,20 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
                                     k -> b.setAdminKey(spec.registry().getKey(k)));
                             freezeKey.ifPresent(
                                     k -> b.setFreezeKey(spec.registry().getKey(k)));
-                            supplyKey.ifPresent(
-                                    k -> b.setSupplyKey(spec.registry().getKey(k)));
+                            // We often want to use an existing contract to control the supply of a token, and
+                            // in this case we need to use a Key{contractID=0.0.X} as the supply key; so for
+                            // convenience we have a special case and allow the user to specify the name of the
+                            // contract it should use from the registry to create this special key.
+                            if (supplyKeyIsContractReference) {
+                                final var contractId = spec.registry().getContractId(supplyKey.get());
+                                final var contractKey = Key.newBuilder()
+                                        .setContractID(contractId)
+                                        .build();
+                                b.setSupplyKey(contractKey);
+                            } else {
+                                supplyKey.ifPresent(
+                                        k -> b.setSupplyKey(spec.registry().getKey(k)));
+                            }
                             feeScheduleKey.ifPresent(
                                     k -> b.setFeeScheduleKey(spec.registry().getKey(k)));
                             pauseKey.ifPresent(

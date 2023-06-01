@@ -828,6 +828,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         verify(mapToDiskMigration)
                 .migrateToDiskAsApropos(
                         INSERTIONS_PER_COPY,
+                        false,
                         subject,
                         new ToDiskMigrations(true, false),
                         virtualMapFactory,
@@ -880,6 +881,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         verify(mapToDiskMigration)
                 .migrateToDiskAsApropos(
                         INSERTIONS_PER_COPY,
+                        false,
                         subject,
                         new ToDiskMigrations(false, true),
                         virtualMapFactory,
@@ -1014,16 +1016,35 @@ class ServicesStateTest extends ResponsibleVMapUser {
 
     @Test
     void updatesAddressBookWithZeroWeightOnGenesisStart() {
+        final var node0 = new NodeId(0);
+        final var node1 = new NodeId(1);
+        given(platform.getSelfId()).willReturn(node0);
+
+        final var pretendAddressBook = createPretendBookFrom(platform, true);
+
         final MerkleMap<EntityNum, MerkleStakingInfo> stakingMap = subject.getChild(StateChildIndices.STAKING_INFO);
         assertEquals(1, stakingMap.size());
         assertEquals(0, stakingMap.get(EntityNum.fromLong(0L)).getWeight());
 
-        subject.updateWeight(addressBook, platform.getContext());
-        verify(addressBook).updateWeight(new NodeId(0), 0);
+        assertEquals(10L, pretendAddressBook.getAddress(node0).getWeight());
+        assertEquals(10L, pretendAddressBook.getAddress(node1).getWeight());
+
+        subject.updateWeight(pretendAddressBook, platform.getContext());
+
+        // if staking info map has node with 0 weight and a new node is added,
+        // both gets weight of 0
+        assertEquals(0L, pretendAddressBook.getAddress(node0).getWeight());
+        assertEquals(0L, pretendAddressBook.getAddress(node1).getWeight());
     }
 
     @Test
-    void updatesAddressBookWithNonZeroWeightsOnGenesisStart() {
+    void updatesAddressBookWithZeroWeightForNewNodes() {
+        final var node0 = new NodeId(0);
+        final var node1 = new NodeId(1);
+
+        given(platform.getSelfId()).willReturn(node0);
+
+        final var pretendAddressBook = createPretendBookFrom(platform, true);
         final MerkleMap<EntityNum, MerkleStakingInfo> stakingMap = subject.getChild(StateChildIndices.STAKING_INFO);
         assertEquals(1, stakingMap.size());
         assertEquals(0, stakingMap.get(EntityNum.fromLong(0L)).getWeight());
@@ -1035,8 +1056,43 @@ class ServicesStateTest extends ResponsibleVMapUser {
         assertEquals(1000L, stakingMap.get(EntityNum.fromLong(0L)).getStake());
         subject.setChild(StateChildIndices.STAKING_INFO, stakingMap);
 
-        subject.updateWeight(addressBook, platform.getContext());
-        verify(addressBook).updateWeight(new NodeId(0), 500);
+        assertEquals(10L, pretendAddressBook.getAddress(node0).getWeight());
+        assertEquals(10L, pretendAddressBook.getAddress(node1).getWeight());
+
+        subject.updateWeight(pretendAddressBook, platform.getContext());
+
+        // only one node in state and new node added in config.txt gets weight of 0
+        assertEquals(500, pretendAddressBook.getAddress(node0).getWeight());
+        assertEquals(0L, pretendAddressBook.getAddress(node1).getWeight());
+    }
+
+    @Test
+    void updatesAddressBookWithNonZeroWeightsOnGenesisStartIfStakesExist() {
+        final var node0 = new NodeId(0);
+        final var node1 = new NodeId(1);
+        given(platform.getSelfId()).willReturn(node0);
+        final var pretendAddressBook = createPretendBookFrom(platform, true);
+
+        final MerkleMap<EntityNum, MerkleStakingInfo> stakingMap = subject.getChild(StateChildIndices.STAKING_INFO);
+        assertEquals(1, stakingMap.size());
+        assertEquals(0, stakingMap.get(EntityNum.fromLong(0L)).getWeight());
+
+        stakingMap.put(EntityNum.fromLong(1L), new MerkleStakingInfo());
+        stakingMap.forEach((k, v) -> {
+            v.setStake(1000L);
+            v.setWeight(500);
+        });
+        assertEquals(1000L, stakingMap.get(EntityNum.fromLong(0L)).getStake());
+        subject.setChild(StateChildIndices.STAKING_INFO, stakingMap);
+
+        assertEquals(10L, pretendAddressBook.getAddress(node0).getWeight());
+        assertEquals(10L, pretendAddressBook.getAddress(node1).getWeight());
+
+        subject.updateWeight(pretendAddressBook, platform.getContext());
+
+        // both nodes in staking info gets weight as in state
+        assertEquals(500, pretendAddressBook.getAddress(node0).getWeight());
+        assertEquals(500L, pretendAddressBook.getAddress(node1).getWeight());
     }
 
     private static ServicesApp createApp(final Platform platform) {

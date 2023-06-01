@@ -43,8 +43,7 @@ class WinTabSecurity extends PrePaintableJPanel {
             return;
         }
         SwirldsPlatform platform = WinBrowser.memberDisplayed.platform;
-        swirldId = new Reference(GuiPlatformAccessor.getInstance()
-                .getSwirldId(platform.getSelfId().id()));
+        swirldId = new Reference(GuiPlatformAccessor.getInstance().getSwirldId(platform.getSelfId()));
 
         s += "Swirld ID: \n        " + swirldId.to62() + "\n";
         s += swirldId.toWords("        ");

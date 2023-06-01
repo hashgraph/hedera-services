@@ -195,7 +195,7 @@ public class TokenAssociationSpecs extends HapiSuite {
 
     public HapiSpec accountInfoQueriesAsExpected() {
         final var account = "account";
-        return defaultHapiSpec("InfoQueriesAsExpected")
+        return defaultHapiSpec("accountInfoQueriesAsExpected")
                 .given(
                         newKeyNamed(SIMPLE),
                         tokenCreate("a").decimals(1),

@@ -25,6 +25,7 @@ import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -64,7 +65,7 @@ public class ServicesMain implements SwirldMain {
 
     /** {@inheritDoc} */
     @Override
-    public void init(final Platform ignored, final NodeId nodeId) {
+    public void init(@NonNull final Platform ignored, @NonNull final NodeId nodeId) {
         delegate.init(ignored, nodeId);
     }
 

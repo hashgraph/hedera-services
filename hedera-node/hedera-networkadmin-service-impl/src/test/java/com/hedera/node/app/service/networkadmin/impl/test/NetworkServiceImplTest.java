@@ -40,7 +40,7 @@ class NetworkServiceImplTest {
     @Test
     void testSpi() {
         // when
-        final NetworkService service = NetworkService.getInstance();
+        final NetworkService service = new NetworkServiceImpl();
 
         // then
         Assertions.assertNotNull(service, "We must always receive an instance");
@@ -52,7 +52,7 @@ class NetworkServiceImplTest {
 
     @Test
     void doesNotYetHaveModularizedSchema() {
-        final NetworkService subject = NetworkService.getInstance();
+        final NetworkService subject = new NetworkServiceImpl();
 
         subject.registerSchemas(registry);
 
@@ -63,7 +63,7 @@ class NetworkServiceImplTest {
     void registersExpectedSchemaForMonoAdapter() {
         ArgumentCaptor<Schema> schemaCaptor = ArgumentCaptor.forClass(Schema.class);
 
-        final var subject = NetworkService.getInstance();
+        final var subject = new NetworkServiceImpl();
 
         subject.registerMonoAdapterSchemas(registry);
         verify(registry).register(schemaCaptor.capture());

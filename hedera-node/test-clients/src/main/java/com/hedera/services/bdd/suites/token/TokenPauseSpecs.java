@@ -126,7 +126,7 @@ public final class TokenPauseSpecs extends HapiSuite {
     }
 
     private HapiSpec cannotPauseWithInvalidPauseKey() {
-        return defaultHapiSpec("CannotPauseWithInvlaidPauseKey")
+        return defaultHapiSpec("cannotPauseWithInvalidPauseKey")
                 .given(newKeyNamed(PAUSE_KEY), newKeyNamed(OTHER_KEY))
                 .when(tokenCreate(PRIMARY).pauseKey(PAUSE_KEY))
                 .then(tokenPause(PRIMARY).signedBy(DEFAULT_PAYER, OTHER_KEY).hasKnownStatus(INVALID_SIGNATURE));
