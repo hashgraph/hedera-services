@@ -23,6 +23,7 @@ import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -64,7 +65,7 @@ public class PreconsensusEventReplayPipeline {
 
     private final PlatformContext platformContext;
     private final IOIterator<EventImpl> unhashedEventIterator;
-    private final Consumer<EventImpl> hashedEventConsumer;
+    private final Consumer<GossipEvent> hashedEventConsumer;
 
     /**
      * Create a new event replay pipeline.
@@ -78,7 +79,7 @@ public class PreconsensusEventReplayPipeline {
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
             @NonNull final IOIterator<EventImpl> unhashedEventIterator,
-            @NonNull final Consumer<EventImpl> hashedEventConsumer) {
+            @NonNull final Consumer<GossipEvent> hashedEventConsumer) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
         Objects.requireNonNull(threadManager);
@@ -110,7 +111,10 @@ public class PreconsensusEventReplayPipeline {
     private void handleEvent(@NonNull final EventBeingHashed eventBeingHashed) {
         try {
             eventBeingHashed.hashFuture().get();
-            hashedEventConsumer.accept(eventBeingHashed.event());
+            final EventImpl event = eventBeingHashed.event();
+            final GossipEvent gossipEvent = new GossipEvent(event.getHashedData(), event.getUnhashedData());
+            gossipEvent.buildDescriptor();
+            hashedEventConsumer.accept(gossipEvent);
         } catch (final InterruptedException e) {
             logger.error("Interrupted while handling event from PCES", e);
             Thread.currentThread().interrupt();

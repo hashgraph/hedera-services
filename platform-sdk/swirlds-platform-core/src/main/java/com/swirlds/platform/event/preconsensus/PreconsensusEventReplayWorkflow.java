@@ -34,11 +34,10 @@ import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.time.Time;
 import com.swirlds.logging.payloads.PlatformStatusPayload;
 import com.swirlds.platform.components.EventIntake;
+import com.swirlds.platform.components.EventTaskDispatcher;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.event.EventIntakeTask;
-import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
-import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -67,10 +66,11 @@ public final class PreconsensusEventReplayWorkflow {
      * @param threadManager                      the thread manager for this node
      * @param preConsensusEventFileManager       manages the preconsensus event files on disk
      * @param preConsensusEventWriter            writes preconsensus events to disk
-     * @param shadowGraph                        the shadow graph, used by gossip to track the current events
+     * @param eventTaskDispatcher                where events read from the stream should be passed
      * @param eventIntake                        the event intake component where events from the stream are fed
      * @param intakeQueue                        the queue thread for the event intake component
      * @param consensusRoundHandler              the object responsible for applying transactions to consensus rounds
+     * @param stateHashSignQueue                 the queue thread for hashing and signing states
      * @param stateManagementComponent           manages various copies of the state
      * @param currentPlatformStatus              a pointer to the current platform status
      * @param initialMinimumGenerationNonAncient the minimum generation of events to replay
@@ -81,10 +81,11 @@ public final class PreconsensusEventReplayWorkflow {
             @NonNull final Time time,
             @NonNull final PreconsensusEventFileManager preConsensusEventFileManager,
             @NonNull final PreconsensusEventWriter preConsensusEventWriter,
-            @NonNull final ShadowGraph shadowGraph,
+            @NonNull final EventTaskDispatcher eventTaskDispatcher,
             @NonNull final EventIntake eventIntake,
             @NonNull final QueueThread<EventIntakeTask> intakeQueue,
             @NonNull final ConsensusRoundHandler consensusRoundHandler,
+            @NonNull final QueueThread<ReservedSignedState> stateHashSignQueue,
             @NonNull final StateManagementComponent stateManagementComponent,
             @NonNull final AtomicReference<PlatformStatus> currentPlatformStatus,
             final long initialMinimumGenerationNonAncient) {
@@ -93,10 +94,11 @@ public final class PreconsensusEventReplayWorkflow {
         Objects.requireNonNull(time);
         Objects.requireNonNull(preConsensusEventFileManager);
         Objects.requireNonNull(preConsensusEventWriter);
-        Objects.requireNonNull(shadowGraph);
+        Objects.requireNonNull(eventTaskDispatcher);
         Objects.requireNonNull(eventIntake);
         Objects.requireNonNull(intakeQueue);
         Objects.requireNonNull(consensusRoundHandler);
+        Objects.requireNonNull(stateHashSignQueue);
         Objects.requireNonNull(stateManagementComponent);
         Objects.requireNonNull(currentPlatformStatus);
 
@@ -113,19 +115,11 @@ public final class PreconsensusEventReplayWorkflow {
             final IOIterator<EventImpl> iterator =
                     preConsensusEventFileManager.getEventIterator(initialMinimumGenerationNonAncient, true);
 
-            final PreconsensusEventReplayPipeline eventReplayPipeline =
-                    new PreconsensusEventReplayPipeline(platformContext, threadManager, iterator, (EventImpl e) -> {
-                        if (shadowGraph.isHashInGraph(e.getBaseEventHashedData().getHash())) {
-                            // the shadowgraph doesn't deal with duplicate events well, filter them out here
-                            return;
-                        }
-                        eventIntake.addUnlinkedEvent(new GossipEvent(e.getHashedData(), e.getUnhashedData()));
-
-                        // TODO what about the event task creator?
-                    });
+            final PreconsensusEventReplayPipeline eventReplayPipeline = new PreconsensusEventReplayPipeline(
+                    platformContext, threadManager, iterator, eventTaskDispatcher::dispatchTask);
             eventReplayPipeline.replayEvents();
 
-            waitForReplayToComplete(intakeQueue, consensusRoundHandler);
+            waitForReplayToComplete(intakeQueue, consensusRoundHandler, stateHashSignQueue);
 
             final Instant finish = time.now();
             final Duration elapsed = Duration.between(start, finish);
@@ -183,7 +177,8 @@ public final class PreconsensusEventReplayWorkflow {
      */
     private static void waitForReplayToComplete(
             @NonNull final QueueThread<EventIntakeTask> intakeQueue,
-            @NonNull final ConsensusRoundHandler consensusRoundHandler)
+            @NonNull final ConsensusRoundHandler consensusRoundHandler,
+            @NonNull final QueueThread<ReservedSignedState> stateHashSignQueue)
             throws InterruptedException {
 
         // Wait until all events from the preconsensus event stream have been fully ingested.
@@ -192,9 +187,8 @@ public final class PreconsensusEventReplayWorkflow {
         // Wait until all rounds from the preconsensus event stream have been fully processed.
         consensusRoundHandler.waitUntilNotBusy();
 
-        // TODO are there other queues we need to wait on? (Talk to Lazar)
-
-        // TODO wait for hashing/singing queue
+        // Wait until we have hashed/signed all rounds
+        stateHashSignQueue.waitUntilNotBusy();
     }
 
     /**

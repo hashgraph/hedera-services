@@ -7,6 +7,7 @@
 #######################################################################################
 
 maxOutgoingSyncs,                 1
+# TODO revert
 state.saveStatePeriod,            60
 showInternalStats,                true
 doUpnp,                           false

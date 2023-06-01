@@ -222,7 +222,9 @@ public class SwirldsPlatform implements Platform, Startable {
     private final Hash diskStateHash;
 
     private final StateManagementComponent stateManagementComponent;
+    private final EventTaskDispatcher eventTaskDispatcher;
     private final QueueThread<EventIntakeTask> intakeQueue;
+    private final QueueThread<ReservedSignedState> stateHashSignQueue;
     private final EventLinker eventLinker;
     /** Stores and processes consensus events including sending them to {@link SwirldStateManager} for handling */
     private final ConsensusRoundHandler consensusRoundHandler;
@@ -439,10 +441,9 @@ public class SwirldsPlatform implements Platform, Startable {
         try (loadedState.signedStateFromDisk) {
             final SignedState signedStateFromDisk = loadedState.signedStateFromDisk.getNullable();
 
-            // Queue thread that stores and handles signed states that need to be hashed and have signatures collected.
-            final QueueThread<ReservedSignedState> stateHashSignQueueThread = PlatformConstructor.stateHashSignQueue(
+            stateHashSignQueue = PlatformConstructor.stateHashSignQueue(
                     threadManager, selfId, stateManagementComponent::newSignedStateFromTransactions, metrics);
-            stateHashSignQueueThread.start();
+            stateHashSignQueue.start();
 
             final State stateToLoad;
             if (signedStateFromDisk != null) {
@@ -490,7 +491,7 @@ public class SwirldsPlatform implements Platform, Startable {
                     swirldStateManager,
                     new ConsensusHandlingMetrics(metrics, time),
                     eventStreamManager,
-                    stateHashSignQueueThread,
+                    stateHashSignQueue,
                     preConsensusEventWriter::waitUntilDurable,
                     freezeManager::freezeStarted,
                     stateManagementComponent::roundAppliedToState,
@@ -560,7 +561,7 @@ public class SwirldsPlatform implements Platform, Startable {
             /* validates events received from gossip */
             final EventValidator eventValidator = new EventValidator(eventValidators, eventIntake::addUnlinkedEvent);
 
-            final EventTaskDispatcher taskDispatcher = new EventTaskDispatcher(
+            eventTaskDispatcher = new EventTaskDispatcher(
                     time,
                     eventValidator,
                     eventCreator,
@@ -610,7 +611,7 @@ public class SwirldsPlatform implements Platform, Startable {
                     swirldStateManager,
                     startedFromGenesis,
                     stateManagementComponent,
-                    taskDispatcher::dispatchTask,
+                    eventTaskDispatcher::dispatchTask,
                     eventObserverDispatcher,
                     eventMapper,
                     eventIntakeMetrics,
@@ -1005,18 +1006,9 @@ public class SwirldsPlatform implements Platform, Startable {
      */
     @Override
     public void start() {
-
         components.start();
 
-        if (!startedFromGenesis) {
-            // If we loaded from disk then call the appropriate dispatch. This dispatch
-            // must wait until after components have been started.
-            diskStateLoadedDispatcher.dispatch(diskStateRound, diskStateHash);
-
-            // Let the app know that a state was loaded.
-            notificationEngine.dispatch(
-                    StateLoadedFromDiskCompleteListener.class, new StateLoadedFromDiskNotification());
-        }
+        sendStartupNotifications();
 
         metrics.start();
 
@@ -1027,6 +1019,21 @@ public class SwirldsPlatform implements Platform, Startable {
         // in case of a single node network, the platform status update will not be triggered by connections, so it
         // needs to be triggered now
         checkPlatformStatus();
+    }
+
+    /**
+     * Send notifications that can only be sent after components have been started.
+     */
+    private void sendStartupNotifications() {
+        if (!startedFromGenesis) {
+            // If we loaded from disk then call the appropriate dispatch. This dispatch
+            // must wait until after components have been started.
+            diskStateLoadedDispatcher.dispatch(diskStateRound, diskStateHash);
+
+            // Let the app know that a state was loaded.
+            notificationEngine.dispatch(
+                    StateLoadedFromDiskCompleteListener.class, new StateLoadedFromDiskNotification());
+        }
     }
 
     /**
@@ -1049,10 +1056,11 @@ public class SwirldsPlatform implements Platform, Startable {
                     OSTime.getInstance(),
                     preConsensusEventFileManager,
                     preConsensusEventWriter,
-                    shadowGraph,
+                    eventTaskDispatcher,
                     eventIntake,
                     intakeQueue,
                     consensusRoundHandler,
+                    stateHashSignQueue,
                     stateManagementComponent,
                     currentPlatformStatus,
                     initialMinimumGenerationNonAncient);
