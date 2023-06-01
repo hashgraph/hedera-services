@@ -323,7 +323,7 @@ public class SignedStateFileManager implements Startable {
      */
     private boolean shouldSaveToDisk(
             @NonNull final SignedState signedState,
-            @NonNull final Instant previousTimestamp,
+            @Nullable final Instant previousTimestamp,
             @NonNull final SourceOfSignedState source) {
         if (signedState.isFreezeState()) {
             // the state right before a freeze should be written to disk

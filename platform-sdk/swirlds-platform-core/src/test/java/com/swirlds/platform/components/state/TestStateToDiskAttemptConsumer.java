@@ -19,6 +19,7 @@ package com.swirlds.platform.components.state;
 import com.swirlds.platform.components.state.output.StateToDiskAttemptConsumer;
 import com.swirlds.platform.state.signed.SignedState;
 import java.nio.file.Path;
+import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -33,6 +34,8 @@ public class TestStateToDiskAttemptConsumer implements StateToDiskAttemptConsume
     public void stateToDiskAttempt(
             @NonNull final SignedState signedState, @NonNull final Path directory, final boolean success) {
         try {
+            Objects.requireNonNull(signedState);
+            Objects.requireNonNull(directory);
             queue.put(new StateToDiskAttempt(signedState, directory, success));
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
