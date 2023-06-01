@@ -17,6 +17,8 @@
 package com.swirlds.platform.reconnect;
 
 import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.utility.Units.BYTES_TO_BITS;
+import static com.swirlds.common.utility.Units.MEBIBYTES_TO_BYTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -67,7 +69,7 @@ class RandomVirtualMapMerkleDbReconnectTests extends VirtualMapReconnectTestBase
     @BeforeAll
     static void beforeAll() {
         final Configuration config = new TestConfigBuilder()
-                .withValue("merkleDb.keySetBloomFilterSizeInBytes", "16777216")
+                .withValue("merkleDb.keySetBloomFilterSizeInBytes", 2 * MEBIBYTES_TO_BYTES * BYTES_TO_BITS)
                 .withValue("merkleDb.keySetHalfDiskHashMapSize", "10000")
                 .withValue("merkleDb.keySetHalfDiskHashMapBuffer", "1000")
                 .getOrCreateConfig();

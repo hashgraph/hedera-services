@@ -16,6 +16,8 @@
 
 package com.swirlds.virtual.merkle.reconnect;
 
+import static com.swirlds.common.utility.Units.BYTES_TO_BITS;
+import static com.swirlds.common.utility.Units.MEBIBYTES_TO_BYTES;
 import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -56,7 +58,7 @@ class VirtualMapMerkleDbReconnectTest extends VirtualMapMerkleDbReconnectTestBas
     @BeforeAll
     static void beforeAll() throws Exception {
         final Configuration config = new TestConfigBuilder()
-                .withValue("merkleDb.keySetBloomFilterSizeInBytes", "16777216")
+                .withValue("merkleDb.keySetBloomFilterSizeInBytes", 2 * MEBIBYTES_TO_BYTES * BYTES_TO_BITS)
                 .withValue("merkleDb.keySetHalfDiskHashMapSize", "10000")
                 .withValue("merkleDb.keySetHalfDiskHashMapBuffer", "1000")
                 .getOrCreateConfig();
