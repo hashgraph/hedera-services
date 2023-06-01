@@ -43,4 +43,5 @@ module com.hedera.node.hapi {
     exports com.hedera.hapi.node.state.file;
     exports com.hedera.hapi.node.state.recordcache;
     exports com.hedera.hapi.node.state.recordcache.codec;
+    exports com.hedera.hapi.node.state.common;
 }

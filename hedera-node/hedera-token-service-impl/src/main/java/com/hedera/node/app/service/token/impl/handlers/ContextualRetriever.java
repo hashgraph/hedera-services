@@ -24,6 +24,7 @@ import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -57,5 +58,9 @@ public class ContextualRetriever {
         validateFalse(token.deleted(), TOKEN_WAS_DELETED);
         validateFalse(token.paused(), TOKEN_IS_PAUSED);
         return token;
+    }
+
+    public static boolean isFungibleCommon(@NonNull final Token token) {
+        return token.tokenType().equals(TokenType.FUNGIBLE_COMMON);
     }
 }

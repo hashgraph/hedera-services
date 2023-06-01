@@ -23,6 +23,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.node.app.service.token.impl.validators.ApproveAllowanceValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -38,9 +39,11 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class CryptoApproveAllowanceHandler implements TransactionHandler {
+    private final ApproveAllowanceValidator allowanceValidator;
+
     @Inject
-    public CryptoApproveAllowanceHandler() {
-        // Exists for injection
+    public CryptoApproveAllowanceHandler(@NonNull final ApproveAllowanceValidator allowanceValidator) {
+        this.allowanceValidator = allowanceValidator;
     }
 
     @Override
@@ -75,6 +78,12 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
 
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
-        throw new UnsupportedOperationException("Not implemented");
+        validateSemantics(context);
+        //        approveAllowanceLogic.approveAllowance(
+        //                op.getCryptoAllowancesList(), op.getTokenAllowancesList(), op.getNftAllowancesList(), payer);
+    }
+
+    private void validateSemantics(HandleContext context) {
+        allowanceValidator.validate(context);
     }
 }
