@@ -48,8 +48,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-// TODO test
-
 /**
  * This class encapsulates the logic for replaying preconsensus events at boot up time.
  */

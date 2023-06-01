@@ -37,8 +37,6 @@ import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-// TODO test
-
 /**
  * Reads events from the preconsensus event stream, hashes them, and passes them to event intake. Reading from disk,
  * hashing, and intake are done on different threads.
