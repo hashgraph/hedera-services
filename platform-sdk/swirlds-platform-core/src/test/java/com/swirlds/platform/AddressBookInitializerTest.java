@@ -395,7 +395,7 @@ class AddressBookInitializerTest {
         return new RandomAddressBookGenerator()
                 .setSequentialIds(false)
                 .setSize(5)
-                .setCustomWeightGenerator(i -> i)
+                .setCustomWeightGenerator(i -> i.id())
                 .build();
     }
 

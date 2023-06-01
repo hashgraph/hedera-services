@@ -21,6 +21,7 @@ import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.system.EventCreationRule;
 import com.swirlds.common.system.EventCreationRuleResponse;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEvent;
 import com.swirlds.common.system.events.PlatformEvent;
 import com.swirlds.platform.consensus.GraphGenerations;
@@ -87,8 +88,8 @@ class RulesTests {
 
         assertEquals(EventCreationRuleResponse.PASS, tracker.shouldCreateEvent(null, null), "null should always pass");
 
-        final GossipEventBuilder myBuilder = GossipEventBuilder.builder().setCreatorId(1);
-        final GossipEventBuilder otherBuilder = GossipEventBuilder.builder().setCreatorId(2);
+        final GossipEventBuilder myBuilder = GossipEventBuilder.builder().setCreatorId(new NodeId(1));
+        final GossipEventBuilder otherBuilder = GossipEventBuilder.builder().setCreatorId(new NodeId(2));
 
         final GossipEvent other1 = otherBuilder.buildEvent();
         final GossipEvent self1 = otherBuilder.buildEvent();

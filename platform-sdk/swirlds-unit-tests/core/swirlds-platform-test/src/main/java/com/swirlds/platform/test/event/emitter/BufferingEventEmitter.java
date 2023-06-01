@@ -16,11 +16,15 @@
 
 package com.swirlds.platform.test.event.emitter;
 
+import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.test.event.IndexedEvent;
 import com.swirlds.platform.test.event.generator.GraphGenerator;
-import java.util.ArrayList;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Queue;
 
 /**
@@ -42,7 +46,7 @@ public abstract class BufferingEventEmitter<T extends BufferingEventEmitter<T>> 
      * The queue at index 0 corresponds to the source with node ID 0, and so on. Events are strongly ordered within
      * an individual queue.
      */
-    protected List<Queue<IndexedEvent>> events;
+    protected Map<NodeId, Queue<IndexedEvent>> events;
 
     /**
      * The number of events that are currently buffered by this generator.
@@ -51,21 +55,18 @@ public abstract class BufferingEventEmitter<T extends BufferingEventEmitter<T>> 
 
     protected BufferingEventEmitter(final GraphGenerator<?> graphGenerator) {
         super(graphGenerator);
-
-        this.events = new ArrayList<>(graphGenerator.getNumberOfSources());
-        for (int index = 0; index < graphGenerator.getNumberOfSources(); index++) {
-            this.events.add(new LinkedList<>());
-        }
+        clearEvents();
     }
 
     /**
      * Generates 0 or more events that are internally buffered. Events will be generated until there is at least one
      * buffered event from the given node ID or until the buffer fills up.
      */
-    protected void attemptToGenerateEventFromNode(final int nodeID) {
+    protected void attemptToGenerateEventFromNode(@NonNull final NodeId nodeID) {
+        Objects.requireNonNull(nodeID, "nodeID");
         while (events.get(nodeID).isEmpty() && bufferedEvents < MAX_BUFFERED_EVENTS) {
             final IndexedEvent nextEvent = getGraphGenerator().generateEvent();
-            events.get((int) nextEvent.getCreatorId().id()).add(nextEvent);
+            events.get(nextEvent.getCreatorId()).add(nextEvent);
             bufferedEvents++;
         }
     }
@@ -76,9 +77,10 @@ public abstract class BufferingEventEmitter<T extends BufferingEventEmitter<T>> 
     }
 
     protected void clearEvents() {
-        events = new ArrayList<>(getGraphGenerator().getNumberOfSources());
+        final AddressBook addressBook = getGraphGenerator().getAddressBook();
+        events = new HashMap<>(getGraphGenerator().getNumberOfSources());
         for (int index = 0; index < getGraphGenerator().getNumberOfSources(); index++) {
-            events.add(new LinkedList<>());
+            events.put(addressBook.getNodeId(index), new LinkedList<>());
         }
         bufferedEvents = 0;
     }
@@ -90,7 +92,8 @@ public abstract class BufferingEventEmitter<T extends BufferingEventEmitter<T>> 
      *     <li>Events can not be emitted if their generator index is not less than the current active checkpoint.</li>
      * </ul>
      */
-    protected boolean isReadyToEmitEvent(final int nodeID) {
+    protected boolean isReadyToEmitEvent(@NonNull final NodeId nodeID) {
+        Objects.requireNonNull(nodeID, "nodeID");
         final IndexedEvent potentialEvent = events.get(nodeID).peek();
         if (potentialEvent == null) {
             return false;
@@ -112,9 +115,9 @@ public abstract class BufferingEventEmitter<T extends BufferingEventEmitter<T>> 
             return true;
         }
 
-        final long otherNodeID = otherParent.getCreatorId().id();
+        final NodeId otherNodeID = otherParent.getCreatorId();
 
-        for (final IndexedEvent event : events.get((int) otherNodeID)) {
+        for (final IndexedEvent event : events.get(otherNodeID)) {
             if (event == otherParent) {
                 // Our other parent has not yet been emitted
                 return false;
