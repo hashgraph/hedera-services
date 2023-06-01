@@ -329,8 +329,6 @@ public class SignedStateManager implements SignedStateFinder {
         return createNullReservation();
     }
 
-    // TODO test these methods
-
     /**
      * Get the consensus timestamp of the first state ingested by the signed state manager. Useful for computing the
      * total consensus time that this node has been operating for.
