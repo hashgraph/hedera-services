@@ -39,7 +39,7 @@ class FreezeServiceImplTest {
     @Test
     void testSpi() {
         // when
-        final FreezeService service = FreezeService.getInstance();
+        final FreezeService service = new FreezeServiceImpl();
 
         // then
         Assertions.assertNotNull(service, "We must always receive an instance");
@@ -51,7 +51,7 @@ class FreezeServiceImplTest {
 
     @Test
     void registersExpectedSchema() {
-        final var subject = FreezeService.getInstance();
+        final var subject = new FreezeServiceImpl();
         ArgumentCaptor<Schema> schemaCaptor = ArgumentCaptor.forClass(Schema.class);
 
         subject.registerMonoAdapterSchemas(registry);

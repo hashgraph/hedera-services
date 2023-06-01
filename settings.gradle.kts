@@ -122,7 +122,7 @@ dependencyResolutionManagement {
     // runtime.
     create("libs") {
       // The HAPI API version to use, this need to match the tag set on gitRepositories above
-      val hapiVersion = "0.39.0-SNAPSHOT"
+      val hapiVersion = "0.40.0-alpha.0-SNAPSHOT"
 
       val besuNativeVersion = "0.6.1"
       val besuVersion = "23.1.2"
@@ -135,7 +135,7 @@ dependencyResolutionManagement {
       val log4jVersion = "2.17.1"
       val mockitoVersion = "4.6.1"
       val nettyVersion = "4.1.66.Final"
-      val swirldsVersion = "0.39.0-adhoc.xa9477c7f"
+      val swirldsVersion = "0.39.0-alpha.3"
       val systemStubsVersion = "2.0.2"
       val testContainersVersion = "1.17.2"
       val tuweniVersion = "2.2.0"

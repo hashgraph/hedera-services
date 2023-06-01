@@ -1034,7 +1034,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
-        return defaultHapiSpec("callAssociateWithDelegateContractKey")
+        return defaultHapiSpec("callForAssociateWithDelegateContractKey")
                 .given(
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY),
@@ -1074,7 +1074,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
-        return defaultHapiSpec("callAssociateWithContractKey")
+        return defaultHapiSpec("callForAssociateWithContractKey")
                 .given(
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY),
@@ -1116,7 +1116,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final var totalSupply = 1_000;
 
-        return defaultHapiSpec("callDissociateWithDelegateContractKey")
+        return defaultHapiSpec("callForDissociateWithDelegateContractKey")
                 .given(
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY).exposingCreatedIdTo(treasuryID::set),
@@ -1180,7 +1180,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final var totalSupply = 1_000;
 
-        return defaultHapiSpec("callDissociateWithContractKey")
+        return defaultHapiSpec("callForDissociateWithContractKey")
                 .given(
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY).exposingCreatedIdTo(treasuryID::set),
@@ -1239,7 +1239,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     private HapiSpec callForBurnWithDelegateContractKey() {
-        return defaultHapiSpec("callBurnWithDelegateContractKey")
+        return defaultHapiSpec("callForBurnWithDelegateContractKey")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(TOKEN_TREASURY),
@@ -2370,7 +2370,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     private HapiSpec callForBurnWithContractKey() {
-        return defaultHapiSpec("callBurnWithContractKey")
+        return defaultHapiSpec("callForBurnWithContractKey")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(TOKEN_TREASURY),

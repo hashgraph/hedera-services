@@ -100,7 +100,7 @@ public class ContractMintHTSSuite extends HapiSuite {
     private static final String MULTI_KEY = "purpose";
 
     public static final String MINT_CONTRACT = "MintContract";
-    private static final String MINT_NFT_CONTRACT = "MintNFTContract";
+    public static final String MINT_NFT_CONTRACT = "MintNFTContract";
     private static final String NESTED_MINT_CONTRACT = "NestedMint";
     private static final String HELLO_WORLD_MINT = "HelloWorldMint";
     private static final String ACCOUNT = "anybody";
@@ -300,7 +300,7 @@ public class ContractMintHTSSuite extends HapiSuite {
         final var gasUsed = 14085L;
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
 
-        return defaultHapiSpec("FungibleMint")
+        return defaultHapiSpec("happyPathFungibleTokenMint")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).payingWith(GENESIS),
@@ -351,7 +351,7 @@ public class ContractMintHTSSuite extends HapiSuite {
         final var totalSupply = 2;
         final AtomicReference<TokenID> nonFungible = new AtomicReference<>();
 
-        return defaultHapiSpec("NonFungibleMint")
+        return defaultHapiSpec("happyPathNonFungibleTokenMint")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(10 * ONE_HUNDRED_HBARS),

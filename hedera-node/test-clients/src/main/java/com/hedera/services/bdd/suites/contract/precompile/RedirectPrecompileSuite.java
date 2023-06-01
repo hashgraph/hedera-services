@@ -44,6 +44,7 @@ public class RedirectPrecompileSuite extends HapiSuite {
     private static final String MULTI_KEY = "purpose";
     private static final String ACCOUNT = "anybody";
     private static final String CONTRACT = "RedirectTestContract";
+    private static final String NULL_CONTRACT = "RedirectNullContract";
     private static final String TXN = "txn";
 
     public static void main(String... args) {
@@ -57,7 +58,7 @@ public class RedirectPrecompileSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(balanceOf(), redirectToInvalidToken());
+        return List.of(balanceOf(), redirectToInvalidToken(), redirectToNullSelector());
     }
 
     private HapiSpec balanceOf() {
@@ -131,6 +132,32 @@ public class RedirectPrecompileSuite extends HapiSuite {
                         recordWith()
                                 .status(INVALID_TOKEN_ID)
                                 .contractCallResult(resultWith().gasUsed(100L))));
+    }
+
+    private HapiSpec redirectToNullSelector() {
+        return defaultHapiSpec("redirectToNullSelector")
+                .given(
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
+                        cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS),
+                        uploadInitCode(NULL_CONTRACT),
+                        contractCreate(NULL_CONTRACT))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        NULL_CONTRACT,
+                                        "sendNullSelector",
+                                        asHeadlongAddress(asAddress(TokenID.newBuilder()
+                                                .setTokenNum(spec.registry()
+                                                                .getContractId(NULL_CONTRACT)
+                                                                .getContractNum()
+                                                        + 5_555_555)
+                                                .build())))
+                                .payingWith(ACCOUNT)
+                                .via(TXN)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                .gas(1_000_000))))
+                .then();
     }
 
     @Override

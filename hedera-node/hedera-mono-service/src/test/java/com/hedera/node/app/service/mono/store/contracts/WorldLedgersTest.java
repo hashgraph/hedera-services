@@ -58,6 +58,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmKey;
@@ -704,8 +705,15 @@ class WorldLedgersTest {
     }
 
     @Test
+    void notInUseAliasIsStillCanonicalAddress() {
+        assertSame(alias, worldLedgers.canonicalAddress(alias));
+        verifyNoInteractions(accountsLedger);
+    }
+
+    @Test
     void mirrorNoAliasIsCanonicalSourceWithLedgers() {
         final var id = EntityIdUtils.accountIdFromEvmAddress(sponsor);
+        given(aliases.isMirror(sponsor)).willReturn(true);
         given(accountsLedger.exists(id)).willReturn(true);
         given(accountsLedger.get(id, ALIAS)).willReturn(ByteString.EMPTY);
 
@@ -726,6 +734,7 @@ class WorldLedgersTest {
     @Test
     void mirrorNoAliasIsCanonicalSourceWithStaticAccess() {
         worldLedgers = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+        given(aliases.isMirror(sponsor)).willReturn(true);
         given(staticEntityAccess.isExtant(sponsor)).willReturn(true);
         given(staticEntityAccess.alias(sponsor)).willReturn(ByteString.EMPTY);
 
@@ -734,6 +743,7 @@ class WorldLedgersTest {
 
     @Test
     void mirrorWithAliasUsesEvmAddressAliasAsCanonicalSource() {
+        given(aliases.isMirror(sponsor)).willReturn(true);
         final var id = EntityIdUtils.accountIdFromEvmAddress(sponsor);
         given(accountsLedger.exists(id)).willReturn(true);
         given(accountsLedger.get(id, ALIAS)).willReturn(ByteString.copyFrom(alias.toArrayUnsafe()));
@@ -743,6 +753,7 @@ class WorldLedgersTest {
     @Test
     void mirrorWithAliasUsesECDSAKeyAliasAsCanonicalSource() {
         final var id = EntityIdUtils.accountIdFromEvmAddress(sponsor);
+        given(aliases.isMirror(sponsor)).willReturn(true);
         given(accountsLedger.exists(id)).willReturn(true);
         given(accountsLedger.get(id, ALIAS)).willReturn(pkAlias);
         assertEquals(pkAddress, worldLedgers.canonicalAddress(sponsor));
@@ -751,6 +762,7 @@ class WorldLedgersTest {
     @Test
     void mirrorWithAliasSkipsUnsupportedAliasAsCanonicalSource() {
         final var id = EntityIdUtils.accountIdFromEvmAddress(sponsor);
+        given(aliases.isMirror(sponsor)).willReturn(true);
         given(accountsLedger.exists(id)).willReturn(true);
         given(accountsLedger.get(id, ALIAS)).willReturn(unsupportedAlias, pkAliasBadProtobuf, pkAliasBadFormat);
         assertEquals(sponsor, worldLedgers.canonicalAddress(sponsor));

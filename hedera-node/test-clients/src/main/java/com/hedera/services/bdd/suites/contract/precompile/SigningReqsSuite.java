@@ -388,7 +388,7 @@ public class SigningReqsSuite extends HapiSuite {
         final AtomicReference<Address> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<Address> newAutoRenewAliasAddr = new AtomicReference<>();
 
-        return defaultHapiSpec("NewAutoRenewAccountMustSign")
+        return defaultHapiSpec("newAutoRenewAccountMustSignUpdate")
                 .given(
                         newKeyNamed(adminKey),
                         newKeyNamed(narKey).shape(SECP256K1),
