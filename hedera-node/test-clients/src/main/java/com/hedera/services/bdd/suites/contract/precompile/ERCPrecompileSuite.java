@@ -194,14 +194,14 @@ public class ERCPrecompileSuite extends HapiSuite {
                 transferErc20TokenFailWithAccount(),
                 erc20Allowance(),
                 erc20Approve(),
-                someERC20ApproveAllowanceScenariosPass(),
-                someERC20NegativeTransferFromScenariosPass(),
-                someERC20ApproveAllowanceScenarioInOneCall(),
+                someErc20ApproveAllowanceScenariosPass(),
+                someErc20NegativeTransferFromScenariosPass(),
+                someErc20ApproveAllowanceScenarioInOneCall(),
                 getErc20TokenDecimalsFromErc721TokenFails(),
                 transferErc20TokenReceiverContract(),
                 transferErc20TokenAliasedSender(),
-                directCallsWorkForERC20(),
-                erc20TransferFrom(),
+                directCallsWorkForErc20(),
+                erc20TransferFromAllowance(),
                 erc20TransferFromSelf(),
                 getErc20TokenNameExceedingLimits(),
                 transferErc20TokenFromContractWithNoApproval());
@@ -219,21 +219,21 @@ public class ERCPrecompileSuite extends HapiSuite {
                 erc721GetApproved(),
                 getErc721TokenURIFromErc20TokenFails(),
                 getErc721OwnerOfFromErc20TokenFails(),
-                directCallsWorkForERC721(),
-                someERC721ApproveAndRemoveScenariosPass(),
-                someERC721NegativeTransferFromScenariosPass(),
+                directCallsWorkForErc721(),
+                someErc721ApproveAndRemoveScenariosPass(),
+                someErc721NegativeTransferFromScenariosPass(),
                 erc721TransferFromWithApproval(),
                 erc721TransferFromWithApproveForAll(),
-                someERC721GetApprovedScenariosPass(),
-                someERC721BalanceOfScenariosPass(),
-                someERC721OwnerOfScenariosPass(),
-                someERC721IsApprovedForAllScenariosPass(),
+                someErc721GetApprovedScenariosPass(),
+                someErc721BalanceOfScenariosPass(),
+                someErc721OwnerOfScenariosPass(),
+                someErc721IsApprovedForAllScenariosPass(),
                 getErc721IsApprovedForAll(),
-                someERC721SetApprovedForAllScenariosPass());
+                someErc721SetApprovedForAllScenariosPass());
     }
 
     private HapiSpec getErc20TokenName() {
-        return defaultHapiSpec("ERC_20_NAME")
+        return defaultHapiSpec("getErc20TokenName")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
@@ -274,7 +274,7 @@ public class ERCPrecompileSuite extends HapiSuite {
         final var tokenSymbol = "F";
         final AtomicReference<String> tokenAddr = new AtomicReference<>();
 
-        return defaultHapiSpec("ERC_20_SYMBOL")
+        return defaultHapiSpec("getErc20TokenSymbol")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
@@ -320,7 +320,7 @@ public class ERCPrecompileSuite extends HapiSuite {
         final var decimalsTxn = "decimalsTxn";
         final AtomicReference<String> tokenAddr = new AtomicReference<>();
 
-        return defaultHapiSpec("ERC_20_DECIMALS")
+        return defaultHapiSpec("getErc20TokenDecimals")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
@@ -368,7 +368,7 @@ public class ERCPrecompileSuite extends HapiSuite {
         final var supplyTxn = "supplyTxn";
         final AtomicReference<String> tokenAddr = new AtomicReference<>();
 
-        return defaultHapiSpec("ERC_20_TOTAL_SUPPLY")
+        return defaultHapiSpec("getErc20TotalSupply")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
@@ -414,7 +414,7 @@ public class ERCPrecompileSuite extends HapiSuite {
         final AtomicReference<String> tokenAddr = new AtomicReference<>();
         final AtomicReference<String> accountAddr = new AtomicReference<>();
 
-        return defaultHapiSpec("ERC_20_BALANCE_OF")
+        return defaultHapiSpec("getErc20BalanceOfAccount")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT)
@@ -489,7 +489,7 @@ public class ERCPrecompileSuite extends HapiSuite {
         final AtomicReference<String> tokenAddr = new AtomicReference<>();
         final AtomicReference<String> accountAddr = new AtomicReference<>();
 
-        return defaultHapiSpec("ERC_20_TRANSFER")
+        return defaultHapiSpec("transferErc20Token")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT)
@@ -575,7 +575,7 @@ public class ERCPrecompileSuite extends HapiSuite {
         final AtomicReference<String> tokenAddr = new AtomicReference<>();
         final AtomicReference<String> accountAddr = new AtomicReference<>();
 
-        return defaultHapiSpec("ERC_20_TRANSFER")
+        return defaultHapiSpec("transferErc20TokenFailWithAccount")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT)
@@ -618,7 +618,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     private HapiSpec transferErc20TokenReceiverContract() {
         final var nestedContract = NESTED_ERC_20_CONTRACT;
 
-        return defaultHapiSpec("ERC_20_TRANSFER_RECEIVER_CONTRACT")
+        return defaultHapiSpec("transferErc20TokenReceiverContract")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(100 * ONE_MILLION_HBARS),
@@ -702,7 +702,7 @@ public class ERCPrecompileSuite extends HapiSuite {
         final AtomicReference<String> childMirror = new AtomicReference<>();
         final AtomicReference<String> childEip1014 = new AtomicReference<>();
 
-        return defaultHapiSpec("ERC_20_TRANSFER_ALIASED_SENDER")
+        return defaultHapiSpec("transferErc20TokenAliasedSender")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER),
@@ -776,7 +776,7 @@ public class ERCPrecompileSuite extends HapiSuite {
         final var transferFromOtherContractWithSignaturesTxn = "transferFromOtherContractWithSignaturesTxn";
         final var nestedContract = NESTED_ERC_20_CONTRACT;
 
-        return defaultHapiSpec("ERC_20_TRANSFER_FROM_CONTRACT_WITH_NO_APPROVAL")
+        return defaultHapiSpec("transferErc20TokenFromContractWithNoApproval")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(10 * ONE_MILLION_HBARS),
@@ -841,7 +841,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     private HapiSpec erc20Allowance() {
-        return defaultHapiSpec("ERC_20_ALLOWANCE")
+        return defaultHapiSpec("erc20Allowance")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
@@ -896,7 +896,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     private HapiSpec erc20Approve() {
         final var approveTxn = "approveTxn";
 
-        return defaultHapiSpec("ERC_20_APPROVE")
+        return defaultHapiSpec("erc20Approve")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
@@ -936,7 +936,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     private HapiSpec getErc20TokenDecimalsFromErc721TokenFails() {
         final var invalidDecimalsTxn = "decimalsFromErc721Txn";
 
-        return defaultHapiSpec("ERC_20_DECIMALS_FROM_ERC_721_TOKEN")
+        return defaultHapiSpec("getErc20TokenDecimalsFromErc721TokenFails")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
@@ -966,7 +966,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     private HapiSpec getErc721TokenName() {
-        return defaultHapiSpec("ERC_721_NAME")
+        return defaultHapiSpec("getErc721TokenName")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
@@ -1062,7 +1062,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     private HapiSpec getErc721Symbol() {
         final var tokenSymbol = "N";
 
-        return defaultHapiSpec("ERC_721_SYMBOL")
+        return defaultHapiSpec("getErc721Symbol")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
@@ -1104,7 +1104,7 @@ public class ERCPrecompileSuite extends HapiSuite {
         final var nonExistingTokenURITxn = "nonExistingTokenURITxn";
         final var ERC721MetadataNonExistingToken = "ERC721Metadata: URI query for nonexistent token";
 
-        return defaultHapiSpec("ERC_721_TOKEN_URI")
+        return defaultHapiSpec("getErc721TokenURI")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
@@ -1162,7 +1162,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     private HapiSpec getErc721TotalSupply() {
-        return defaultHapiSpec("ERC_721_TOTAL_SUPPLY")
+        return defaultHapiSpec("getErc721TotalSupply")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
@@ -1201,7 +1201,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     private HapiSpec getErc721BalanceOf() {
         final var zeroBalanceOfTxn = "zbalanceOfTxn";
 
-        return defaultHapiSpec("ERC_721_BALANCE_OF")
+        return defaultHapiSpec("getErc721BalanceOf")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
@@ -1268,7 +1268,7 @@ public class ERCPrecompileSuite extends HapiSuite {
         final AtomicReference<byte[]> ownerAddr = new AtomicReference<>();
         final AtomicReference<String> tokenAddr = new AtomicReference<>();
 
-        return defaultHapiSpec("ERC_721_OWNER_OF")
+        return defaultHapiSpec("getErc721OwnerOf")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
@@ -1322,7 +1322,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     private HapiSpec getErc721TokenURIFromErc20TokenFails() {
         final var invalidTokenURITxn = "tokenURITxnFromErc20";
 
-        return defaultHapiSpec("ERC_721_TOKEN_URI_FROM_ERC_20_TOKEN")
+        return defaultHapiSpec("getErc721TokenURIFromErc20TokenFails")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
@@ -1353,7 +1353,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     private HapiSpec getErc721OwnerOfFromErc20TokenFails() {
         final var invalidOwnerOfTxn = "ownerOfTxnFromErc20Token";
 
-        return defaultHapiSpec("ERC_721_OWNER_OF_FROM_ERC_20_TOKEN")
+        return defaultHapiSpec("getErc721OwnerOfFromErc20TokenFails")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
@@ -1383,7 +1383,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                 .then(getTxnRecord(invalidOwnerOfTxn).andAllChildRecords().logged());
     }
 
-    private HapiSpec directCallsWorkForERC20() {
+    private HapiSpec directCallsWorkForErc20() {
         final AtomicReference<String> tokenNum = new AtomicReference<>();
 
         final var tokenSymbol = "FDFGF";
@@ -1393,7 +1393,7 @@ public class ERCPrecompileSuite extends HapiSuite {
 
         final var decimalsTxn = "decimalsTxn";
 
-        return defaultHapiSpec("DirectCallsWorkForERC20")
+        return defaultHapiSpec("directCallsWorkForErc20")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
@@ -1529,14 +1529,14 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                         .withErcFungibleTransferStatus(true)))))));
     }
 
-    private HapiSpec someERC721NegativeTransferFromScenariosPass() {
+    private HapiSpec someErc721NegativeTransferFromScenariosPass() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> contractMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> bCivilianMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> zCivilianMirrorAddr = new AtomicReference<>();
 
-        return defaultHapiSpec("SomeERC721NegativeTransferFromScenariosPass")
+        return defaultHapiSpec("someErc721NegativeTransferFromScenariosPass")
                 .given(
                         newKeyNamed(MULTI_KEY_NAME),
                         cryptoCreate(A_CIVILIAN)
@@ -1638,13 +1638,13 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 recordWith().status(SPENDER_DOES_NOT_HAVE_ALLOWANCE)));
     }
 
-    private HapiSpec someERC721ApproveAndRemoveScenariosPass() {
+    private HapiSpec someErc721ApproveAndRemoveScenariosPass() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> bCivilianMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> zCivilianMirrorAddr = new AtomicReference<>();
 
-        return defaultHapiSpec("SomeERC721ApproveAndRemoveScenariosPass")
+        return defaultHapiSpec("someErc721ApproveAndRemoveScenariosPass")
                 .given(
                         newKeyNamed(MULTI_KEY_NAME),
                         cryptoCreate(A_CIVILIAN)
@@ -1833,14 +1833,14 @@ public class ERCPrecompileSuite extends HapiSuite {
                         getTokenNftInfo(NF_TOKEN, 5L).hasAccountID(B_CIVILIAN).hasNoSpender());
     }
 
-    private HapiSpec someERC20ApproveAllowanceScenariosPass() {
+    private HapiSpec someErc20ApproveAllowanceScenariosPass() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> contractMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> bCivilianMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> zCivilianMirrorAddr = new AtomicReference<>();
 
-        return defaultHapiSpec("someERC20ApproveAllowanceScenariosPass")
+        return defaultHapiSpec("someErc20ApproveAllowanceScenariosPass")
                 .given(
                         newKeyNamed(MULTI_KEY_NAME),
                         cryptoCreate(A_CIVILIAN)
@@ -1984,14 +1984,14 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                         .withAllowance(0L)))));
     }
 
-    private HapiSpec someERC20NegativeTransferFromScenariosPass() {
+    private HapiSpec someErc20NegativeTransferFromScenariosPass() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> contractMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> bCivilianMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> zCivilianMirrorAddr = new AtomicReference<>();
 
-        return defaultHapiSpec("someERC20NegativeTransferFromScenariosPass")
+        return defaultHapiSpec("someErc20NegativeTransferFromScenariosPass")
                 .given(
                         newKeyNamed(MULTI_KEY_NAME),
                         cryptoCreate(A_CIVILIAN)
@@ -2115,14 +2115,14 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 recordWith().status(INSUFFICIENT_TOKEN_BALANCE)));
     }
 
-    private HapiSpec someERC20ApproveAllowanceScenarioInOneCall() {
+    private HapiSpec someErc20ApproveAllowanceScenarioInOneCall() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> contractMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> bCivilianMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> zCivilianMirrorAddr = new AtomicReference<>();
 
-        return defaultHapiSpec("someERC20ApproveAllowanceScenarioInOneCall")
+        return defaultHapiSpec("someErc20ApproveAllowanceScenarioInOneCall")
                 .given(
                         newKeyNamed(MULTI_KEY_NAME),
                         cryptoCreate(A_CIVILIAN)
@@ -2169,7 +2169,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                 .withAllowance(5L)))));
     }
 
-    private HapiSpec directCallsWorkForERC721() {
+    private HapiSpec directCallsWorkForErc721() {
 
         final AtomicReference<String> tokenNum = new AtomicReference<>();
 
@@ -2179,7 +2179,7 @@ public class ERCPrecompileSuite extends HapiSuite {
         final var tokenURITxn = "tokenURITxn";
         final var ownerOfTxn = "ownerOfTxn";
 
-        return defaultHapiSpec("DirectCallsWorkForERC721")
+        return defaultHapiSpec("directCallsWorkForErc721")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
@@ -2308,13 +2308,13 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                                 spec.registry().getAccountID(ACCOUNT)))))))));
     }
 
-    private HapiSpec someERC721GetApprovedScenariosPass() {
+    private HapiSpec someErc721GetApprovedScenariosPass() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> zCivilianMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> zTokenMirrorAddr = new AtomicReference<>();
 
-        return defaultHapiSpec("someERC721GetApprovedScenariosPass")
+        return defaultHapiSpec("someErc721GetApprovedScenariosPass")
                 .given(
                         newKeyNamed(MULTI_KEY_NAME),
                         cryptoCreate(A_CIVILIAN)
@@ -2416,13 +2416,13 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                                 spec.registry().getAccountID(A_CIVILIAN)))))))));
     }
 
-    private HapiSpec someERC721BalanceOfScenariosPass() {
+    private HapiSpec someErc721BalanceOfScenariosPass() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> bCivilianMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> zTokenMirrorAddr = new AtomicReference<>();
 
-        return defaultHapiSpec("someERC721BalanceOfScenariosPass")
+        return defaultHapiSpec("someErc721BalanceOfScenariosPass")
                 .given(
                         newKeyNamed(MULTI_KEY_NAME),
                         cryptoCreate(A_CIVILIAN)
@@ -2495,13 +2495,13 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                         .withBalance(0)))));
     }
 
-    private HapiSpec someERC721OwnerOfScenariosPass() {
+    private HapiSpec someErc721OwnerOfScenariosPass() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> zCivilianMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> zTokenMirrorAddr = new AtomicReference<>();
 
-        return defaultHapiSpec("someERC721OwnerOfScenariosPass")
+        return defaultHapiSpec("someErc721OwnerOfScenariosPass")
                 .given(
                         newKeyNamed(MULTI_KEY_NAME),
                         cryptoCreate(A_CIVILIAN)
@@ -2587,14 +2587,14 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                                 spec.registry().getAccountID(A_CIVILIAN)))))))));
     }
 
-    private HapiSpec someERC721IsApprovedForAllScenariosPass() {
+    private HapiSpec someErc721IsApprovedForAllScenariosPass() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> contractMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> zCivilianMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> zTokenMirrorAddr = new AtomicReference<>();
 
-        return defaultHapiSpec("someERC721IsApprovedForAllScenariosPass")
+        return defaultHapiSpec("someErc721IsApprovedForAllScenariosPass")
                 .given(
                         newKeyNamed(MULTI_KEY_NAME),
                         cryptoCreate(A_CIVILIAN)
@@ -2713,14 +2713,14 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                         .withIsApprovedForAll(true)))))));
     }
 
-    private HapiSpec someERC721SetApprovedForAllScenariosPass() {
+    private HapiSpec someErc721SetApprovedForAllScenariosPass() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> contractMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> zCivilianMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> zTokenMirrorAddr = new AtomicReference<>();
 
-        return defaultHapiSpec("someERC721SetApprovedForAllScenariosPass")
+        return defaultHapiSpec("someErc721SetApprovedForAllScenariosPass")
                 .given(
                         newKeyNamed(MULTI_KEY_NAME),
                         cryptoCreate(A_CIVILIAN)
@@ -2929,7 +2929,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     private HapiSpec erc721TokenApprove() {
-        return defaultHapiSpec("Erc721TokenApprove")
+        return defaultHapiSpec("erc721TokenApprove")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
@@ -2968,7 +2968,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     private HapiSpec erc721GetApproved() {
         final var theSpender2 = "spender2";
 
-        return defaultHapiSpec("Erc721GetApproved")
+        return defaultHapiSpec("erc721GetApproved")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
@@ -3022,10 +3022,10 @@ public class ERCPrecompileSuite extends HapiSuite {
                         getTxnRecord(ALLOWANCE_TXN).andAllChildRecords().logged());
     }
 
-    private HapiSpec erc20TransferFrom() {
+    private HapiSpec erc20TransferFromAllowance() {
         final var allowanceTxn2 = "allowanceTxn2";
 
-        return defaultHapiSpec("ERC_20_ALLOWANCE")
+        return defaultHapiSpec("erc20TransferFromAllowance")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
@@ -3119,7 +3119,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     private HapiSpec erc20TransferFromSelf() {
-        return defaultHapiSpec("Erc20TransferFromSelf")
+        return defaultHapiSpec("erc20TransferFromSelf")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(RECIPIENT),
@@ -3164,7 +3164,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     private HapiSpec erc721TransferFromWithApproval() {
-        return defaultHapiSpec("ERC_721_TRANSFER_FROM_WITH_APPROVAL")
+        return defaultHapiSpec("erc721TransferFromWithApproval")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
@@ -3242,7 +3242,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     private HapiSpec erc721TransferFromWithApproveForAll() {
-        return defaultHapiSpec("ERC_721_TRANSFER_FROM_WITH_APPROVAL_FOR_ALL")
+        return defaultHapiSpec("erc721TransferFromWithApproveForAll")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),

@@ -18,6 +18,7 @@ package com.hedera.node.app.service.mono.throttling;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCallLocal;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -26,6 +27,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions;
+import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.hapi.utils.throttles.GasLimitDeterministicThrottle;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.Query;
@@ -79,6 +81,16 @@ class HapiThrottlingTest {
         assertTrue(ans);
         // and:
         verify(delegate).shouldThrottleTxn(eq(accessor), any());
+    }
+
+    @Test
+    void delegatesSnapshotActions() {
+        final List<DeterministicThrottle.UsageSnapshot> pretend = List.of();
+        given(delegate.getUsageSnapshots()).willReturn(pretend);
+        assertSame(pretend, subject.getUsageSnapshots());
+
+        subject.resetUsageThrottlesTo(pretend);
+        verify(delegate).resetUsageThrottlesTo(pretend);
     }
 
     @Test

@@ -76,7 +76,7 @@ public class MigrationTestingToolMain implements SwirldMain {
         maximumTransactionsPerNode = Integer.parseInt(parameters[1]);
 
         generator = new TransactionGenerator(seed);
-        GuiPlatformAccessor.getInstance().setAbout(platform.getSelfId().id(), "MigrationTestingApp");
+        GuiPlatformAccessor.getInstance().setAbout(platform.getSelfId(), "MigrationTestingApp");
 
         // Initialize application statistics
         initAppStats();

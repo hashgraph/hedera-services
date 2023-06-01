@@ -152,62 +152,61 @@ public class TokenTransactSpecs extends HapiSuite {
     @Override
     @SuppressWarnings("java:S3878")
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            balancesChangeOnTokenTransfer(),
-            accountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue(),
-            senderSigsAreValid(),
-            balancesAreChecked(),
-            duplicateAccountsInTokenTransferRejected(),
-            tokenOnlyTxnsAreAtomic(),
-            tokenPlusHbarTxnsAreAtomic(),
-            nonZeroTransfersRejected(),
-            missingEntitiesRejected(),
-            allRequiredSigsAreChecked(),
-            uniqueTokenTxnAccountBalance(),
-            uniqueTokenTxnAccountBalancesForTreasury(),
-            uniqueTokenTxnWithNoAssociation(),
-            uniqueTokenTxnWithFrozenAccount(),
-            uniqueTokenTxnWithSenderNotSigned(),
-            uniqueTokenTxnWithReceiverNotSigned(),
-            uniqueTokenTxnsAreAtomic(),
-            uniqueTokenDeletedTxn(),
-            cannotSendFungibleToDissociatedContractsOrAccounts(),
-            cannotGiveNftsToDissociatedContractsOrAccounts(),
-            recordsIncludeBothFungibleTokenChangesAndOwnershipChange(),
-            transferListsEnforceTokenTypeRestrictions(),
-            // HIP-18 charging case studies
-            fixedHbarCaseStudy(),
-            fractionalCaseStudy(),
-            simpleHtsFeeCaseStudy(),
-            nestedHbarCaseStudy(),
-            nestedFractionalCaseStudy(),
-            nestedHtsCaseStudy(),
-            treasuriesAreExemptFromAllCustomFees(),
-            collectorsAreExemptFromTheirOwnFeesButNotOthers(),
-            multipleRoyaltyFallbackCaseStudy(),
-            normalRoyaltyCaseStudy(),
-            canTransactInTokenWithSelfDenominatedFixedFee(),
-            nftOwnersChangeAtomically(),
-            fractionalNetOfTransfersCaseStudy(),
-            royaltyAndFractionalTogetherCaseStudy(),
-            respondsCorrectlyWhenNonFungibleTokenWithRoyaltyUsedInTransferList(),
-            // HIP-573 charging case studies
-            collectorIsChargedFixedFeeUnlessExempt(),
-            collectorIsChargedFractionalFeeUnlessExempt(),
-            collectorIsChargedNetOfTransferFractionalFeeUnlessExempt(),
-            collectorIsChargedRoyaltyFeeUnlessExempt(),
-            collectorIsChargedRoyaltyFallbackFeeUnlessExempt(),
-            // HIP-23
-            happyPathAutoAssociationsWorkForBothTokenTypes(),
-            failedAutoAssociationHasNoSideEffectsOrHistoryForUnrelatedProblem(),
-            newSlotsCanBeOpenedViaUpdate(),
-            newSlotsCanBeOpenedViaDissociate(),
-            autoAssociationWithKycTokenHasNoSideEffectsOrHistory(),
-            autoAssociationWithFrozenByDefaultTokenHasNoSideEffectsOrHistory(),
-            autoAssociationWorksForContracts(),
-            // Interactions between HIP-18 and HIP-542
-            customFeesHaveExpectedAutoCreateInteractions(),
-        });
+        return List.of(
+                balancesChangeOnTokenTransfer(),
+                accountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue(),
+                senderSigsAreValid(),
+                balancesAreChecked(),
+                duplicateAccountsInTokenTransferRejected(),
+                tokenOnlyTxnsAreAtomic(),
+                tokenPlusHbarTxnsAreAtomic(),
+                nonZeroTransfersRejected(),
+                missingEntitiesRejected(),
+                allRequiredSigsAreChecked(),
+                uniqueTokenTxnAccountBalance(),
+                uniqueTokenTxnAccountBalancesForTreasury(),
+                uniqueTokenTxnWithNoAssociation(),
+                uniqueTokenTxnWithFrozenAccount(),
+                uniqueTokenTxnWithSenderNotSigned(),
+                uniqueTokenTxnWithReceiverNotSigned(),
+                uniqueTokenTxnsAreAtomic(),
+                uniqueTokenDeletedTxn(),
+                cannotSendFungibleToDissociatedContractsOrAccounts(),
+                cannotGiveNftsToDissociatedContractsOrAccounts(),
+                recordsIncludeBothFungibleTokenChangesAndOwnershipChange(),
+                transferListsEnforceTokenTypeRestrictions(),
+                // HIP-18 charging case studies
+                fixedHbarCaseStudy(),
+                fractionalCaseStudy(),
+                simpleHtsFeeCaseStudy(),
+                nestedHbarCaseStudy(),
+                nestedFractionalCaseStudy(),
+                nestedHtsCaseStudy(),
+                treasuriesAreExemptFromAllCustomFees(),
+                collectorsAreExemptFromTheirOwnFeesButNotOthers(),
+                multipleRoyaltyFallbackCaseStudy(),
+                normalRoyaltyCaseStudy(),
+                canTransactInTokenWithSelfDenominatedFixedFee(),
+                nftOwnersChangeAtomically(),
+                fractionalNetOfTransfersCaseStudy(),
+                royaltyAndFractionalTogetherCaseStudy(),
+                respondsCorrectlyWhenNonFungibleTokenWithRoyaltyUsedInTransferList(),
+                // HIP-573 charging case studies
+                collectorIsChargedFixedFeeUnlessExempt(),
+                collectorIsChargedFractionalFeeUnlessExempt(),
+                collectorIsChargedNetOfTransferFractionalFeeUnlessExempt(),
+                collectorIsChargedRoyaltyFeeUnlessExempt(),
+                collectorIsChargedRoyaltyFallbackFeeUnlessExempt(),
+                // HIP-23
+                happyPathAutoAssociationsWorkForBothTokenTypes(),
+                failedAutoAssociationHasNoSideEffectsOrHistoryForUnrelatedProblem(),
+                newSlotsCanBeOpenedViaUpdate(),
+                newSlotsCanBeOpenedViaDissociate(),
+                autoAssociationWithKycTokenHasNoSideEffectsOrHistory(),
+                autoAssociationWithFrozenByDefaultTokenHasNoSideEffectsOrHistory(),
+                autoAssociationWorksForContracts(),
+                // Interactions between HIP-18 and HIP-542
+                customFeesHaveExpectedAutoCreateInteractions());
     }
 
     private HapiSpec customFeesHaveExpectedAutoCreateInteractions() {
@@ -403,7 +402,7 @@ public class TokenTransactSpecs extends HapiSuite {
         final var multiPurpose = MULTI_PURPOSE;
         final var transferTxn = TRANSFER_TXN;
 
-        return defaultHapiSpec("failedAutoAssociationHasNoSideEffectsOrHistory")
+        return defaultHapiSpec("failedAutoAssociationHasNoSideEffectsOrHistoryForUnrelatedProblem")
                 .given(
                         newKeyNamed(multiPurpose),
                         cryptoCreate(TOKEN_TREASURY),
@@ -804,7 +803,7 @@ public class TokenTransactSpecs extends HapiSuite {
     }
 
     public HapiSpec missingEntitiesRejected() {
-        return defaultHapiSpec("MissingTokensRejected")
+        return defaultHapiSpec("missingEntitiesRejected")
                 .given(tokenCreate("some").treasury(DEFAULT_PAYER))
                 .when()
                 .then(
@@ -1139,7 +1138,7 @@ public class TokenTransactSpecs extends HapiSuite {
     }
 
     public HapiSpec uniqueTokenTxnWithSenderNotSigned() {
-        return defaultHapiSpec("UniqueTokenTxnWithOwnerNotSigned")
+        return defaultHapiSpec("uniqueTokenTxnWithSenderNotSigned")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         newKeyNamed(SIGNING_KEY_TREASURY),
@@ -1158,7 +1157,7 @@ public class TokenTransactSpecs extends HapiSuite {
     }
 
     public HapiSpec uniqueTokenTxnWithReceiverNotSigned() {
-        return defaultHapiSpec("UniqueTokenTxnWithOwnerNotSigned")
+        return defaultHapiSpec("uniqueTokenTxnWithReceiverNotSigned")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         newKeyNamed(SIGNING_KEY_TREASURY),
@@ -1926,7 +1925,7 @@ public class TokenTransactSpecs extends HapiSuite {
         final var txnFromTreasury = TXN_FROM_TREASURY;
         final var txnFromNonTreasury = "txnFromNonTreasury";
 
-        return defaultHapiSpec("TreasuriesAreExemptFromAllFees")
+        return defaultHapiSpec("treasuriesAreExemptFromAllCustomFees")
                 .given(
                         cryptoCreate(edgar),
                         cryptoCreate(nonTreasury),

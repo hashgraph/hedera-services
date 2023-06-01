@@ -66,7 +66,7 @@ import java.util.function.BooleanSupplier;
 /**
  * Used to construct platform components that use DI
  */
-final class PlatformConstructor {
+public final class PlatformConstructor {
 
     /** The maximum size of the queue holding signed states ready to be hashed and signed by others. */
     private static final int STATE_HASH_QUEUE_MAX = 1;
@@ -81,15 +81,15 @@ final class PlatformConstructor {
      *
      * @param threadManager responsible for managing thread lifecycles
      */
-    static ParallelExecutor parallelExecutor(final ThreadManager threadManager) {
+    public static ParallelExecutor parallelExecutor(final ThreadManager threadManager) {
         return new CachedPoolParallelExecutor(threadManager, "node-sync");
     }
 
-    static SettingsProvider settingsProvider() {
+    public static SettingsProvider settingsProvider() {
         return StaticSettingsProvider.getSingleton();
     }
 
-    static SocketFactory socketFactory(final KeysAndCerts keysAndCerts, final CryptoConfig cryptoConfig) {
+    public static SocketFactory socketFactory(final KeysAndCerts keysAndCerts, final CryptoConfig cryptoConfig) {
         if (!Settings.getInstance().isUseTLS()) {
             return new TcpFactory(PlatformConstructor.settingsProvider());
         }
@@ -105,7 +105,8 @@ final class PlatformConstructor {
         }
     }
 
-    static PlatformSigner platformSigner(final KeysAndCerts keysAndCerts) {
+    public static PlatformSigner platformSigner(@NonNull final KeysAndCerts keysAndCerts) {
+        Objects.requireNonNull(keysAndCerts);
         try {
             return new PlatformSigner(keysAndCerts);
         } catch (final NoSuchAlgorithmException | NoSuchProviderException | InvalidKeyException e) {
@@ -123,10 +124,14 @@ final class PlatformConstructor {
      * @param metrics             the metrics object
      */
     static QueueThread<ReservedSignedState> stateHashSignQueue(
-            final ThreadManager threadManager,
-            final long selfId,
-            final InterruptableConsumer<ReservedSignedState> signedStateConsumer,
-            final Metrics metrics) {
+            @NonNull final ThreadManager threadManager,
+            @NonNull final NodeId selfId,
+            @NonNull final InterruptableConsumer<ReservedSignedState> signedStateConsumer,
+            @NonNull final Metrics metrics) {
+        Objects.requireNonNull(threadManager, "threadManager must not be null");
+        Objects.requireNonNull(selfId, "selfId must not be null");
+        Objects.requireNonNull(signedStateConsumer, "signedStateConsumer must not be null");
+        Objects.requireNonNull(metrics, "metrics must not be null");
 
         return new QueueThreadConfiguration<ReservedSignedState>(threadManager)
                 .setNodeId(selfId)
@@ -203,7 +208,7 @@ final class PlatformConstructor {
     static ConsensusRoundHandler consensusHandler(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
-            final long selfId,
+            @NonNull final NodeId selfId,
             @NonNull final SettingsProvider settingsProvider,
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final ConsensusHandlingMetrics consensusHandlingMetrics,

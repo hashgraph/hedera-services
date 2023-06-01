@@ -44,8 +44,7 @@ public class PlatformHashgraphGuiSource implements ShadowgraphGuiSource {
         if (platform == null) {
             return null;
         }
-        return GuiPlatformAccessor.getInstance()
-                .getShadowGraph(platform.getSelfId().id());
+        return GuiPlatformAccessor.getInstance().getShadowGraph(platform.getSelfId());
     }
 
     private SwirldsPlatform getPlatform() {

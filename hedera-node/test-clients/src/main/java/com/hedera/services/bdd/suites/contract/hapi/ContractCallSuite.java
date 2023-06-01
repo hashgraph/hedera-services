@@ -239,7 +239,7 @@ public class ContractCallSuite extends HapiSuite {
                 sendHbarsToDifferentAddresses(),
                 sendHbarsFromDifferentAddressessToAddress(),
                 sendHbarsFromAndToDifferentAddressess(),
-                transferNegativeAmountOfHbars(),
+                transferNegativeAmountOfHbarsFails(),
                 transferZeroHbars(),
                 sendHbarsToOuterContractFromDifferentAddresses(),
                 sendHbarsToCallerFromDifferentAddresses(),
@@ -505,7 +505,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     private HapiSpec depositMoreThanBalanceFailsGracefully() {
-        return defaultHapiSpec("Deposit More Than Balance Fails Gracefully")
+        return defaultHapiSpec("depositMoreThanBalanceFailsGracefully")
                 .given(
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT),
                         cryptoCreate(ACCOUNT).balance(ONE_HBAR - 1))
@@ -944,7 +944,7 @@ public class ContractCallSuite extends HapiSuite {
         // Valid UTF-8 bytes cannot include 0xff
         final var hexedNonUtf8Meta = "ff";
 
-        return defaultHapiSpec("Erc721TokenUriAndHtsNftInfoSeeSameMetadata")
+        return defaultHapiSpec("erc721TokenUriAndHtsNftInfoTreatNonUtf8BytesDifferently")
                 .given(
                         uploadInitCode(contractAlternatives),
                         contractCreate(contractAlternatives),
@@ -1715,7 +1715,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     private HapiSpec hscsEvm006ContractHBarTransferToAccount() {
-        return defaultHapiSpec("HSCS_EVM_006_ContractHBarTransferToAccount")
+        return defaultHapiSpec("hscsEvm006ContractHBarTransferToAccount")
                 .given(
                         cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(RECEIVER).balance(10_000L),
@@ -1744,7 +1744,7 @@ public class ContractCallSuite extends HapiSuite {
         final var subLevelContract = "SubLevelTransferring";
         final var INITIAL_CONTRACT_BALANCE = 100;
 
-        return defaultHapiSpec("HSCS_EVM_005_TransfersWithSubLevelCallsBetweenContracts")
+        return defaultHapiSpec("hscsEvm005TransfersWithSubLevelCallsBetweenContracts")
                 .given(
                         cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
                         uploadInitCode(topLevelContract, subLevelContract))
@@ -1799,7 +1799,7 @@ public class ContractCallSuite extends HapiSuite {
     private HapiSpec hscsEvm005TransferOfHBarsWorksBetweenContracts() {
         final var to = "To";
 
-        return defaultHapiSpec("HSCS_EVM_005_TransferOfHBarsWorksBetweenContracts")
+        return defaultHapiSpec("hscsEvm005TransferOfHBarsWorksBetweenContracts")
                 .given(
                         cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
                         uploadInitCode(TRANSFERRING_CONTRACT),
@@ -1831,7 +1831,7 @@ public class ContractCallSuite extends HapiSuite {
     private HapiSpec hscsEvm010ReceiverMustSignContractTx() {
         final var ACC = "acc";
         final var RECEIVER_KEY = "receiverKey";
-        return defaultHapiSpec("HSCS_EVM_010_ReceiverMustSignContractTx")
+        return defaultHapiSpec("hscsEvm010ReceiverMustSignContractTx")
                 .given(
                         newKeyNamed(RECEIVER_KEY),
                         cryptoCreate(ACC)
@@ -1869,7 +1869,7 @@ public class ContractCallSuite extends HapiSuite {
         final var PAYER_KEY = "pkey";
         final var OTHER_KEY = "okey";
         final var KEY_LIST = "klist";
-        return defaultHapiSpec("HSCS_EVM_010_MultiSignatureAccounts")
+        return defaultHapiSpec("hscsEvm010MultiSignatureAccounts")
                 .given(
                         newKeyNamed(PAYER_KEY),
                         newKeyNamed(OTHER_KEY),
@@ -2204,7 +2204,7 @@ public class ContractCallSuite extends HapiSuite {
                                 .has(contractWith().balance(10_000 - 60L))));
     }
 
-    private HapiSpec transferNegativeAmountOfHbars() {
+    private HapiSpec transferNegativeAmountOfHbarsFails() {
         return defaultHapiSpec("transferNegativeAmountOfHbarsFails")
                 .given(
                         cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
@@ -2318,7 +2318,7 @@ public class ContractCallSuite extends HapiSuite {
         final AtomicReference<String> lpTokenAddr = new AtomicReference<>();
         final AtomicReference<String> rentPayerAddr = new AtomicReference<>();
 
-        return defaultHapiSpec("FarmSimulation")
+        return defaultHapiSpec("lpFarmSimulation")
                 .given(
                         newKeyNamed(adminKey),
                         fileCreate(initcode),

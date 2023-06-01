@@ -62,7 +62,7 @@ public class ERC1155ContractInteractions extends HapiSuite {
     }
 
     private HapiSpec erc1155() {
-        return defaultHapiSpec("ERC-1155")
+        return defaultHapiSpec("erc1155")
                 .given(
                         newKeyNamed("ec").shape(SECP_256K1_SHAPE),
                         cryptoCreate(ACCOUNT1),

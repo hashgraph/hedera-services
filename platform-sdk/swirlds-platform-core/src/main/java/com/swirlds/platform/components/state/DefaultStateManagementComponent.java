@@ -303,13 +303,11 @@ public class DefaultStateManagementComponent implements StateManagementComponent
             logger.error(
                     EXCEPTION.getMarker(),
                     "state written to disk for round {} did not have enough signatures. "
-                            + "Collected signatures representing {}/{} weight. Total unsigned disk states so far: {}. "
-                            + "AB={}",
+                            + "Collected signatures representing {}/{} weight. Total unsigned disk states so far: {}.",
                     signedState.getRound(),
                     signedState.getSigningWeight(),
                     signedState.getAddressBook().getTotalWeight(),
-                    newCount,
-                    signedState.getAddressBook());
+                    newCount);
             signedStateFileManager.saveSignedStateToDisk(signedState);
         }
     }

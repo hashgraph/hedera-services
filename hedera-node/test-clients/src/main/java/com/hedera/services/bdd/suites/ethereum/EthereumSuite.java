@@ -82,6 +82,7 @@ import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.suites.BddTestNameDoesNotMatchMethodName;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -157,7 +158,7 @@ public class EthereumSuite extends HapiSuite {
     HapiSpec sendingLargerBalanceThanAvailableFailsGracefully() {
         final AtomicReference<Address> tokenCreateContractAddress = new AtomicReference<>();
 
-        return defaultHapiSpec("Sending Larger Balance Than Available Fails Gracefully")
+        return defaultHapiSpec("sendingLargerBalanceThanAvailableFailsGracefully")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
@@ -400,7 +401,7 @@ public class EthereumSuite extends HapiSuite {
     HapiSpec etx010TransferToCryptoAccountSucceeds() {
         String RECEIVER = "RECEIVER";
         final String aliasBalanceSnapshot = "aliasBalance";
-        return defaultHapiSpec("ETX_010_transferToCryptoAccountSucceeds")
+        return defaultHapiSpec("etx010TransferToCryptoAccountSucceeds")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RECEIVER).balance(0L),
@@ -482,6 +483,7 @@ public class EthereumSuite extends HapiSuite {
                 .toList();
     }
 
+    @BddTestNameDoesNotMatchMethodName
     HapiSpec matrixedPayerRelayerTest(
             final boolean success, final long senderGasPrice, final long relayerOffered, final long senderCharged) {
         return defaultHapiSpec("feePaymentMatrix "
@@ -564,7 +566,7 @@ public class EthereumSuite extends HapiSuite {
         final String PROXY = "proxy";
         final long INITIAL_BALANCE = 100L;
         final long AUTO_RENEW_PERIOD = THREE_MONTHS_IN_SECONDS + 60;
-        return defaultHapiSpec("ContractCreateInheritsProperties")
+        return defaultHapiSpec("etx014ContractCreateInheritsSignerProperties")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
@@ -611,7 +613,7 @@ public class EthereumSuite extends HapiSuite {
     HapiSpec etx031InvalidNonceEthereumTxFailsAndChargesRelayer() {
         final var relayerSnapshot = "relayer";
         final var senderSnapshot = "sender";
-        return defaultHapiSpec("ETX_031_invalidNonceEthereumTxFailsAndChargesRelayer")
+        return defaultHapiSpec("etx031InvalidNonceEthereumTxFailsAndChargesRelayer")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
@@ -653,7 +655,7 @@ public class EthereumSuite extends HapiSuite {
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
         final String fungibleToken = TOKEN;
         final String mintTxn = MINT_TXN;
-        return defaultHapiSpec("ETX_012_precompileCallSucceedsWhenNeededSignatureInEthTxn")
+        return defaultHapiSpec("etx012PrecompileCallSucceedsWhenNeededSignatureInEthTxn")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
@@ -703,7 +705,7 @@ public class EthereumSuite extends HapiSuite {
         final String fungibleToken = TOKEN;
         final String mintTxn = MINT_TXN;
         final String MULTI_KEY = "MULTI_KEY";
-        return defaultHapiSpec("ETX_013_precompileCallSucceedsWhenNeededSignatureInHederaTxn")
+        return defaultHapiSpec("etx013PrecompileCallSucceedsWhenNeededSignatureInHederaTxn")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
@@ -755,7 +757,7 @@ public class EthereumSuite extends HapiSuite {
         final String fungibleToken = TOKEN;
         final String mintTxn = MINT_TXN;
         final String MULTI_KEY = "MULTI_KEY";
-        return defaultHapiSpec("ETX_013_precompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn")
+        return defaultHapiSpec("etx013PrecompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
@@ -804,7 +806,7 @@ public class EthereumSuite extends HapiSuite {
         final AtomicReference<String> tokenNum = new AtomicReference<>();
         final var totalSupply = 50;
 
-        return defaultHapiSpec("CallsToTokenAddresses")
+        return defaultHapiSpec("etx009CallsToTokenAddresses")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
@@ -894,7 +896,7 @@ public class EthereumSuite extends HapiSuite {
         final var txn = "creation";
         final var contract = "Fuse";
 
-        return defaultHapiSpec("ETX_008_contractCreateExecutesWithExpectedRecord")
+        return defaultHapiSpec("etx008ContractCreateExecutesWithExpectedRecord")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
@@ -925,7 +927,7 @@ public class EthereumSuite extends HapiSuite {
         final var firstTxn = "firstCreateTxn";
         final long DEFAULT_AMOUNT_TO_SEND = 20 * ONE_HBAR;
 
-        return defaultHapiSpec("ETX_007_fungibleTokenCreateWithFeesHappyPath")
+        return defaultHapiSpec("etx007FungibleTokenCreateWithFeesHappyPath")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
@@ -987,7 +989,7 @@ public class EthereumSuite extends HapiSuite {
     private HapiSpec etxSvc003ContractGetBytecodeQueryReturnsDeployedCode() {
         final var txn = "creation";
         final var contract = "EmptyConstructor";
-        return HapiSpec.defaultHapiSpec("contractGetBytecodeQueryReturnsDeployedCode")
+        return HapiSpec.defaultHapiSpec("etxSvc003ContractGetBytecodeQueryReturnsDeployedCode")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),

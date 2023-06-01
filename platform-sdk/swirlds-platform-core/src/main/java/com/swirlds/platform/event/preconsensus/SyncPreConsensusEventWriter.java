@@ -20,6 +20,7 @@ import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.common.units.DataUnit.UNIT_BYTES;
 import static com.swirlds.common.units.DataUnit.UNIT_MEGABYTES;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.LogMarker.STARTUP;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
@@ -30,6 +31,7 @@ import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.time.Duration;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -193,6 +195,31 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
     }
 
     /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void registerDiscontinuity() {
+        logger.warn(
+                STARTUP.getMarker(),
+                "The preconsensus event stream has experienced a discontinuity. "
+                        + "All events written to the preconsensus event stream after this discontinuity "
+                        + "will be unrecoverable until a state snapshot that provides a valid starting "
+                        + "point is written to disk.");
+
+        if (currentMutableFile != null) {
+            closeFile();
+        }
+
+        final PreConsensusEventFile file = fileManager.getNextFileDescriptor(0, 0, true);
+
+        try {
+            Files.createFile(file.getPath());
+        } catch (final IOException e) {
+            throw new UncheckedIOException("unable to create file to mark discontinuity", e);
+        }
+    }
+
+    /**
      * Make sure that the event has a valid stream sequence number.
      */
     private static void validateSequenceNumber(@NonNull final EventImpl event) {
@@ -352,7 +379,7 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
      */
     private void prepareOutputStream(@NonNull final EventImpl eventToWrite) throws IOException {
         if (currentMutableFile != null) {
-            final boolean fileCanContainEvent = currentMutableFile.canContain(eventToWrite);
+            final boolean fileCanContainEvent = currentMutableFile.canContain(eventToWrite.getGeneration());
             final boolean fileIsFull =
                     UNIT_BYTES.convertTo(currentMutableFile.fileSize(), UNIT_MEGABYTES) >= preferredFileSizeMegabytes;
 

@@ -294,9 +294,7 @@ public class SwirldMenu extends JPanel {
                             null, // parentCompoinent
                             (platform == null
                                             ? ""
-                                            : GuiPlatformAccessor.getInstance()
-                                                    .getAbout(
-                                                            platform.getSelfId().id()))
+                                            : GuiPlatformAccessor.getInstance().getAbout(platform.getSelfId()))
                                     + "\n\n"
                                     + PlatformVersion.locateOrDefault().license(), // message
                             "About this app", // title

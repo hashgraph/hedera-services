@@ -79,9 +79,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.IntConsumer;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
@@ -212,13 +210,6 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     /** Flag for if a snapshot is in progress */
     private final AtomicBoolean snapshotInProgress = new AtomicBoolean(false);
 
-    /**
-     * A lock for snapshots / flushes synchronization. Snapshots must be protected against
-     * concurrent saves of new data. Snapshots can not start while an existing save is happening and
-     * save can not start while a snapshot is active.
-     */
-    private final ReentrantLock flushLock = new ReentrantLock();
-
     /** The range of valid leaf paths for data currently stored by this data source. */
     private volatile KeyRange validLeafPathRange = INVALID_KEY_RANGE;
 
@@ -230,7 +221,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
      */
     private static final AtomicBoolean firstStatRegistration = new AtomicBoolean(true);
 
-    private final boolean compactionEnabled;
+    private final AtomicBoolean compactionEnabled = new AtomicBoolean();
 
     /** When was the last medium-sized merge, only touched from single merge thread. */
     private Instant lastMediumMerge;
@@ -257,7 +248,6 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
         this.tableName = tableName;
         this.tableId = tableId;
         this.tableConfig = tableConfig;
-        this.compactionEnabled = compactionEnabled;
 
         // create thread group with label
         final ThreadGroup threadGroup = new ThreadGroup("MerkleDb-" + tableName);
@@ -421,7 +411,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                 .plus((long) (settings.getFullMergePeriod() * Math.random()), settings.getMergePeriodUnit());
 
         // If merging is enabled start merging service
-        if (this.compactionEnabled) {
+        if (compactionEnabled) {
             startBackgroundCompaction();
         }
 
@@ -445,6 +435,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
      */
     @Override
     public void startBackgroundCompaction() {
+        compactionEnabled.set(true);
         synchronized (mergingExecutor) {
             if (mergingFuture == null || mergingFuture.isCancelled()) {
                 mergingFuture = mergingExecutor.scheduleAtFixedRate(
@@ -465,6 +456,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                 mergingFuture = null;
             }
         }
+        compactionEnabled.set(false);
     }
 
     /** {@inheritDoc} */
@@ -499,23 +491,6 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     /** Get the most recent last leaf path */
     public long getLastLeafPath() {
         return validLeafPathRange.getMaxValidKey();
-    }
-
-    /**
-     * Waits for the current flush (if active) to complete and prevents new flushes from happening
-     * until {@link #flushUnlock()}} is called. This method is used by MerkleDb to make sure all
-     * data sources in a single database are in consistent state before taking a snapshot.
-     */
-    void flushLock() {
-        flushLock.lock();
-    }
-
-    /**
-     * Resumes data source flushes. This method is used by MerkleDb after database snapshot is
-     * taken.
-     */
-    void flushUnlock() {
-        flushLock.unlock();
     }
 
     /**
@@ -572,7 +547,6 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
             final Stream<VirtualLeafRecord<K, V>> leafRecordsToAddOrUpdate,
             final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete)
             throws IOException {
-        flushLock.lock();
         try {
             validLeafPathRange = new KeyRange(firstLeafPath, lastLeafPath);
             final CountDownLatch countDownLatch = new CountDownLatch(lastLeafPath > 0 ? 1 : 0);
@@ -609,7 +583,6 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                 Thread.currentThread().interrupt();
             }
         } finally {
-            flushLock.unlock();
             // update file stats
             updateFileStats();
             // update off-heap stats
@@ -1020,7 +993,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
 
     // For testing purpose
     boolean isCompactionEnabled() {
-        return compactionEnabled;
+        return compactionEnabled.get();
     }
 
     private void saveMetadata(final Path targetFile) throws IOException {
@@ -1174,9 +1147,8 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     /**
      * Write all hashes to hashStore
      */
-    private void writeHashes(final long maxValidPath, final Stream<VirtualHashRecord> pathHashRecords)
-            throws IOException {
-        if ((pathHashRecords == null) || (maxValidPath <= 0)) {
+    private void writeHashes(final long maxValidPath, final Stream<VirtualHashRecord> dirtyHashes) throws IOException {
+        if ((dirtyHashes == null) || (maxValidPath <= 0)) {
             // nothing to do
             return;
         }
@@ -1185,9 +1157,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
             hashStoreDisk.startWriting(0, maxValidPath);
         }
 
-        final AtomicLong lastPath = new AtomicLong(INVALID_PATH);
-        pathHashRecords.forEach(rec -> {
-            assert rec.path() > lastPath.getAndSet(rec.path()) : "Path should be in ascending order!";
+        dirtyHashes.forEach(rec -> {
             statistics.cycleInternalNodeWritesPerSecond();
             if (rec.path() < tableConfig.getHashesRamToDiskThreshold()) {
                 hashStoreRam.put(rec.path(), rec.hash());
@@ -1210,10 +1180,10 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     private void writeLeavesToPathToKeyValue(
             final long firstLeafPath,
             final long lastLeafPath,
-            final Stream<VirtualLeafRecord<K, V>> leafRecordsToAddOrUpdate,
-            final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete)
+            final Stream<VirtualLeafRecord<K, V>> dirtyLeaves,
+            final Stream<VirtualLeafRecord<K, V>> deletedLeaves)
             throws IOException {
-        if ((leafRecordsToAddOrUpdate == null) || (firstLeafPath <= 0)) {
+        if ((dirtyLeaves == null) || (firstLeafPath <= 0)) {
             // nothing to do
             return;
         }
@@ -1225,10 +1195,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
         }
 
         // iterate over leaf records
-        final AtomicLong lastPath = new AtomicLong(INVALID_PATH);
-        leafRecordsToAddOrUpdate.forEach(leafRecord -> {
-            assert leafRecord.getPath() > lastPath.getAndSet(leafRecord.getPath())
-                    : "Path should be in ascending order!";
+        dirtyLeaves.forEach(leafRecord -> {
             statistics.cycleLeafWritesPerSecond();
 
             // update objectKeyToPath
@@ -1251,7 +1218,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
         });
 
         // iterate over leaf records to delete
-        leafRecordsToDelete.forEach(leafRecord -> {
+        deletedLeaves.forEach(leafRecord -> {
             // update objectKeyToPath
             if (isLongKeyMode) {
                 longKeyToPath.put(((VirtualLongKey) leafRecord.getKey()).getKeyAsLong(), INVALID_PATH);

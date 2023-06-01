@@ -76,9 +76,9 @@ public class ConcurrentArrayBench {
     }
 
     @Benchmark
-    public void benchmarkSortedStream() {
+    public void benchmarkStream() {
         concurrentArray.seal();
-        concurrentArray.sortedStream(Long::compareTo);
+        concurrentArray.stream();
     }
 
     @Benchmark
@@ -91,8 +91,8 @@ public class ConcurrentArrayBench {
     public void benchmarkConcurrentOps() throws ExecutionException, InterruptedException {
         concurrentArray.seal();
         List<Future<?>> futures = new ArrayList<>();
-        futures.add(executor.submit(() -> concurrentArray.sortedStream(Long::compareTo)));
-        futures.add(executor.submit(() -> concurrentArray.sortedStream(Long::compareTo)));
+        futures.add(executor.submit(() -> concurrentArray.stream()));
+        futures.add(executor.submit(() -> concurrentArray.stream()));
         concurrentArray.parallelTraverse(executor, i -> {}).get();
         for (Future<?> f : futures) {
             f.get();

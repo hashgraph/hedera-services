@@ -30,7 +30,9 @@ configurations.all {
 dependencies {
   implementation(project(":hedera-node:hapi"))
   implementation(project(":hedera-node:hedera-config"))
-  testImplementation(project(mapOf("path" to ":hedera-node:hedera-app")))
+  implementation(project(":hedera-node:hedera-config"))
+  testImplementation(project(":hedera-node:hedera-app"))
+  testImplementation(testFixtures(project(":hedera-node:hedera-config")))
   annotationProcessor(libs.dagger.compiler)
   api(project(":hedera-node:hedera-token-service"))
   implementation(project(":hedera-node:hapi"))
@@ -46,4 +48,5 @@ dependencies {
   testImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
   testImplementation(testLibs.mockito.inline)
   testImplementation(project(":hedera-node:hedera-app-spi"))
+  testImplementation(testFixtures(project(":hedera-node:hedera-config")))
 }

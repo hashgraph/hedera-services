@@ -81,6 +81,7 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_MAX_NUM;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_NONCES_EXTERNALIZATION_ENABLED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_PERMITTED_DELEGATE_CALLERS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_PRECOMPILE_EXCHANGE_RATE_GAS_COST;
@@ -182,6 +183,7 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.QUERIES_BLOB_LOOK_UP_RETRIES;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.RATES_MIDNIGHT_CHECK_INTERVAL;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.RECORDS_USE_CONSOLIDATED_FCQ;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.SCHEDULING_LONG_TERM_ENABLED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.SCHEDULING_MAX_EXPIRATION_FUTURE_SECS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.SCHEDULING_MAX_NUM;
@@ -432,7 +434,8 @@ public final class BootstrapProperties implements PropertySource {
             STAKING_STARTUP_HELPER_RECOMPUTE,
             WORKFLOWS_ENABLED,
             STAKING_SUM_OF_CONSENSUS_WEIGHTS,
-            CONFIG_VERSION);
+            CONFIG_VERSION,
+            RECORDS_USE_CONSOLIDATED_FCQ);
 
     static final Set<String> GLOBAL_DYNAMIC_PROPS = Set.of(
             ACCOUNTS_MAX_NUM,
@@ -479,6 +482,7 @@ public final class BootstrapProperties implements PropertySource {
             CONTRACTS_PRECOMPILE_HTS_UNSUPPORTED_CUSTOM_FEE_RECEIVER_DEBITS,
             CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED,
             CONTRACTS_PRECOMPILE_HRC_FACADE_ASSOCIATE_ENABLED,
+            CONTRACTS_NONCES_EXTERNALIZATION_ENABLED,
             CONTRACTS_EVM_VERSION,
             CONTRACTS_DYNAMIC_EVM_VERSION,
             EXPIRY_MIN_CYCLE_ENTRY_CAPACITY,
@@ -784,11 +788,13 @@ public final class BootstrapProperties implements PropertySource {
             entry(CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE, AS_BOOLEAN),
             entry(CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED, AS_BOOLEAN),
             entry(CONTRACTS_PRECOMPILE_HRC_FACADE_ASSOCIATE_ENABLED, AS_BOOLEAN),
+            entry(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED, AS_BOOLEAN),
             entry(CONTRACTS_THROTTLE_THROTTLE_BY_GAS, AS_BOOLEAN),
             entry(CONTRACTS_EVM_VERSION, AS_STRING),
             entry(CONTRACTS_DYNAMIC_EVM_VERSION, AS_BOOLEAN),
             entry(RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT, AS_INT),
             entry(RATES_MIDNIGHT_CHECK_INTERVAL, AS_LONG),
+            entry(RECORDS_USE_CONSOLIDATED_FCQ, AS_BOOLEAN),
             entry(SIGS_EXPAND_FROM_IMMUTABLE_STATE, AS_BOOLEAN),
             entry(SCHEDULING_LONG_TERM_ENABLED, AS_BOOLEAN),
             entry(SCHEDULING_MAX_TXN_PER_SEC, AS_LONG),

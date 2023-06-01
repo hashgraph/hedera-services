@@ -49,8 +49,8 @@ import org.apache.logging.log4j.Logger;
 public class ReconnectHelper {
     private static final Logger logger = LogManager.getLogger(ReconnectHelper.class);
 
-    /** stops all gossiping */
-    private final Runnable stopGossip;
+    /** pause gossip for reconnect */
+    private final Runnable pauseGossip;
     /** clears all data that is no longer needed since we fell behind */
     private final Clearable clearAll;
     /** supplier of the initial signed state against which to perform a delta based reconnect */
@@ -65,14 +65,14 @@ public class ReconnectHelper {
     private final ReconnectLearnerFactory reconnectLearnerFactory;
 
     public ReconnectHelper(
-            final Runnable stopGossip,
+            final Runnable pauseGossip,
             final Clearable clearAll,
             final Supplier<State> workingStateSupplier,
             final LongSupplier lastCompleteRoundSupplier,
             final ReconnectLearnerThrottle reconnectLearnerThrottle,
             final Consumer<SignedState> loadSignedState,
             final ReconnectLearnerFactory reconnectLearnerFactory) {
-        this.stopGossip = stopGossip;
+        this.pauseGossip = pauseGossip;
         this.clearAll = clearAll;
         this.workingStateSupplier = workingStateSupplier;
         this.lastCompleteRoundSupplier = lastCompleteRoundSupplier;
@@ -87,7 +87,7 @@ public class ReconnectHelper {
     public void prepareForReconnect() {
         reconnectLearnerThrottle.exitIfReconnectIsDisabled();
         logger.info(RECONNECT.getMarker(), "Preparing for reconnect, stopping gossip");
-        stopGossip.run();
+        pauseGossip.run();
         logger.info(RECONNECT.getMarker(), "Preparing for reconnect, start clearing queues");
         clearAll.clear();
         logger.info(RECONNECT.getMarker(), "Queues have been cleared");
