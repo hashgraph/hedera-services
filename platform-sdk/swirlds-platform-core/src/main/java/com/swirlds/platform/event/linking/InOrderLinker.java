@@ -19,10 +19,13 @@ package com.swirlds.platform.event.linking;
 import static com.swirlds.logging.LogMarker.INVALID_EVENT_ERROR;
 
 import com.swirlds.common.config.ConsensusConfig;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.logging.LogMarker;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -35,17 +38,17 @@ public class InOrderLinker extends AbstractEventLinker {
     private static final Logger logger = LogManager.getLogger(InOrderLinker.class);
     private final ParentFinder parentFinder;
     /** Provides the most recent event by the supplied creator ID */
-    private final Function<Long, EventImpl> mostRecentEvent;
+    private final Function<NodeId, EventImpl> mostRecentEvent;
 
     private EventImpl linkedEvent = null;
 
     public InOrderLinker(
-            final ConsensusConfig config,
-            final ParentFinder parentFinder,
-            final Function<Long, EventImpl> mostRecentEvent) {
+            @NonNull final ConsensusConfig config,
+            @NonNull final ParentFinder parentFinder,
+            @NonNull final Function<NodeId, EventImpl> mostRecentEvent) {
         super(config);
-        this.parentFinder = parentFinder;
-        this.mostRecentEvent = mostRecentEvent;
+        this.parentFinder = Objects.requireNonNull(parentFinder, "parentFinder must not be null");
+        this.mostRecentEvent = Objects.requireNonNull(mostRecentEvent, "mostRecentEvent must not be null");
     }
 
     /** {@inheritDoc} */

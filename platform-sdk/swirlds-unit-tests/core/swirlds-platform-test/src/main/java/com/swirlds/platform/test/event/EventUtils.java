@@ -20,11 +20,15 @@ import static java.lang.Integer.max;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.merkle.util.MerkleSerializeUtils;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -72,6 +76,42 @@ public abstract class EventUtils {
                 .toArray(IndexedEvent[]::new);
         State.linkParents(indexedEvents);
         signedState.getState().getPlatformState().getPlatformData().setEvents(indexedEvents);
+        return indexedEvents;
+    }
+
+    /**
+     * Get a map from creator sequence pairs to the corresponding event.
+     *
+     * @param events
+     * 		an array of events
+     */
+    public static Map<Hash, EventImpl> getEventMap(final EventImpl[] events) {
+        final Map<Hash, EventImpl> map = new HashMap<>();
+        for (final EventImpl event : events) {
+            map.put(event.getBaseHash(), event);
+        }
+        return map;
+    }
+
+    /**
+     * Find the max generation number for each node in a sequence of events. Assumes events are sorted and that there
+     * are no forks.
+     *
+     * @param events
+     * 		a list of events
+     * @param numberOfNodes
+     * 		the total number of nodes
+     * @return a map containing the max generation number for each node
+     */
+    @NonNull
+    public static Map<NodeId, Long> getLastGenerationInState(
+            @NonNull final EventImpl[] events, final int numberOfNodes) {
+        Objects.requireNonNull(events, "events must not be null");
+        final Map<NodeId, Long> last = new HashMap<>(numberOfNodes);
+        for (final EventImpl event : events) {
+            last.put(event.getCreatorId(), event.getGeneration());
+        }
+        return last;
     }
 
     /**
@@ -108,19 +148,22 @@ public abstract class EventUtils {
         return choice;
     }
 
-    /** Check to see if all events have increasing generation numbers for each node. */
-    public static boolean areGenerationNumbersValid(final Iterable<IndexedEvent> events, final int numberOfNodes) {
-        final Map<Long, Long> previousGenNumber = new HashMap<>();
-        for (long nodeID = 0; nodeID < numberOfNodes; nodeID++) {
-            previousGenNumber.put(nodeID, -1L);
-        }
+    /**
+     * Check to see if all events have increasing generation numbers for each node.
+     */
+    public static boolean areGenerationNumbersValid(
+            @NonNull final Iterable<IndexedEvent> events, final int numberOfNodes) {
+        Objects.requireNonNull(events, "events must not be null");
+        final Map<NodeId, Long> previousGenNumber = new HashMap<>(numberOfNodes);
 
         for (final IndexedEvent event : events) {
-            final long nodeID = event.getCreatorId();
-            if (previousGenNumber.get(nodeID) >= event.getGeneration()) {
-                return false;
+            final NodeId nodeId = event.getCreatorId();
+            if (previousGenNumber.containsKey(nodeId)) {
+                if (previousGenNumber.get(nodeId) >= event.getGeneration()) {
+                    return false;
+                }
             }
-            previousGenNumber.put(nodeID, event.getGeneration());
+            previousGenNumber.put(nodeId, event.getGeneration());
         }
         return true;
     }
@@ -227,7 +270,7 @@ public abstract class EventUtils {
         if (otherParent == null) {
             return 0;
         }
-        final long otherParentNode = otherParent.getCreatorId();
+        final NodeId otherParentNode = otherParent.getCreatorId();
 
         int age = 0;
         for (int index = eventIndex - 1; index >= 0; index--) {
@@ -235,7 +278,7 @@ public abstract class EventUtils {
             if (nextEvent == otherParent) {
                 break;
             }
-            if (nextEvent.getCreatorId() == otherParentNode) {
+            if (Objects.equals(nextEvent.getCreatorId(), otherParentNode)) {
                 age++;
             }
         }
@@ -259,7 +302,7 @@ public abstract class EventUtils {
      * @return A map: {age : number of events with that age}
      */
     public static Map<Integer, Integer> gatherOtherParentAges(
-            final List<IndexedEvent> events, final Set<Long> excludedNodes) {
+            final List<IndexedEvent> events, final Set<NodeId> excludedNodes) {
         final Map<Integer, Integer> map = new HashMap<>();
         for (int eventIndex = 0; eventIndex < events.size(); eventIndex++) {
 

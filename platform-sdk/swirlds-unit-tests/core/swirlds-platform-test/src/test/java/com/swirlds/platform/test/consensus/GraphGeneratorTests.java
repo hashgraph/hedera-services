@@ -30,6 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.test.event.DynamicValue;
 import com.swirlds.platform.test.event.DynamicValueGenerator;
 import com.swirlds.platform.test.event.IndexedEvent;
@@ -44,6 +45,7 @@ import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -172,7 +174,7 @@ public class GraphGeneratorTests {
 
         int count = 0;
         for (final IndexedEvent event : events) {
-            if (event.getOtherId() == nodeId) {
+            if (Objects.equals(event.getOtherId(), new NodeId(nodeId))) {
                 count++;
             }
         }
@@ -201,7 +203,7 @@ public class GraphGeneratorTests {
 
         int count = 0;
         for (final IndexedEvent event : events) {
-            if (event.getCreatorId() == nodeId) {
+            if (event.getCreatorId().id() == nodeId) {
                 count++;
             }
         }
@@ -452,7 +454,7 @@ public class GraphGeneratorTests {
         // validate only the last event to keep the validation simple
         assertEquals(
                 lastEvent.getGeneration(),
-                generator.getMaxGeneration(lastEvent.getCreatorId()),
+                generator.getMaxGeneration(lastEvent.getCreatorId().id()),
                 "last event should have the max generation");
         generator.reset();
     }
@@ -640,17 +642,17 @@ public class GraphGeneratorTests {
                 new StandardEventSource().setRequestedOtherParentAgeDistribution(integerPowerDistribution(0.5)));
         events = generator.generateEvents(numberOfEvents);
 
-        final HashSet<Long> excludedNodes = new HashSet<>();
-        excludedNodes.add(3L);
+        final HashSet<NodeId> excludedNodes = new HashSet<>();
+        excludedNodes.add(new NodeId(3L));
         eventAges = gatherOtherParentAges(events, excludedNodes);
         assertAgeRatio(eventAges, 0, 0.95, 0.05);
         assertAgeRatio(eventAges, 1, 0.05 * 0.95, 0.05);
         assertAgeRatio(eventAges, 2, 0.05 * 0.05 * 0.95, 0.2);
 
         excludedNodes.clear();
-        excludedNodes.add(0L);
-        excludedNodes.add(1L);
-        excludedNodes.add(2L);
+        excludedNodes.add(new NodeId(0L));
+        excludedNodes.add(new NodeId(1L));
+        excludedNodes.add(new NodeId(2L));
         eventAges = gatherOtherParentAges(events, excludedNodes);
         assertAgeRatio(eventAges, 0, 0.5, 0.05);
         assertAgeRatio(eventAges, 1, 0.5 * 0.5, 0.05);
@@ -671,7 +673,7 @@ public class GraphGeneratorTests {
         events = generator.generateEvents(numberOfEvents);
 
         excludedNodes.clear();
-        excludedNodes.add(3L);
+        excludedNodes.add(new NodeId(3L));
         eventAges = gatherOtherParentAges(events, excludedNodes);
         assertAgeRatio(eventAges, 0, 0.666666, 0.05);
         assertAgeRatio(eventAges, 1, 0.0, 0.0);
@@ -679,9 +681,9 @@ public class GraphGeneratorTests {
         assertAgeRatio(eventAges, 3, 0.333333, 0.05);
 
         excludedNodes.clear();
-        excludedNodes.add(0L);
-        excludedNodes.add(1L);
-        excludedNodes.add(2L);
+        excludedNodes.add(new NodeId(0L));
+        excludedNodes.add(new NodeId(1L));
+        excludedNodes.add(new NodeId(2L));
         eventAges = gatherOtherParentAges(events, excludedNodes);
         assertAgeRatio(eventAges, 0, 1.0, 0.0);
         assertAgeRatio(eventAges, 1, 0.0, 0.0);

@@ -117,7 +117,7 @@ public abstract class BufferingEventEmitter<T extends BufferingEventEmitter<T>> 
             return true;
         }
 
-        final long otherNodeID = otherParent.getCreatorId();
+        final long otherNodeID = otherParent.getCreatorId().id();
 
         for (final IndexedEvent event : events.get((int) otherNodeID)) {
             if (event == otherParent) {

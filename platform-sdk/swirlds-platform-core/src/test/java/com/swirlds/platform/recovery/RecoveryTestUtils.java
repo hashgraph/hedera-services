@@ -88,7 +88,7 @@ public final class RecoveryTestUtils {
 
         final BaseEventHashedData baseEventHashedData = new BaseEventHashedData(
                 new BasicSoftwareVersion(1),
-                random.nextInt(),
+                new NodeId(random.nextLong(Long.MAX_VALUE)),
                 random.nextLong(),
                 random.nextLong(),
                 randomHash(random),
@@ -97,7 +97,8 @@ public final class RecoveryTestUtils {
                 transactions);
 
         final BaseEventUnhashedData baseEventUnhashedData = new BaseEventUnhashedData(
-                random.nextLong(), randomSignature(random).getSignatureBytes());
+                new NodeId(random.nextLong(Long.MAX_VALUE)),
+                randomSignature(random).getSignatureBytes());
 
         final ConsensusData consensusData = new ConsensusData();
         consensusData.setConsensusTimestamp(now);

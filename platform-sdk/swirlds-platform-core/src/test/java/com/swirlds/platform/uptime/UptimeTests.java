@@ -47,6 +47,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -76,7 +77,7 @@ class UptimeTests {
             }
 
             final EventImpl event = mock(EventImpl.class);
-            when(event.getCreatorId()).thenReturn(nodeId.id());
+            when(event.getCreatorId()).thenReturn(nodeId);
 
             when(event.getRoundReceived()).thenReturn(round);
 
@@ -146,7 +147,7 @@ class UptimeTests {
             ConsensusEvent lastEvent = null;
 
             for (final ConsensusEvent event : firstRoundEvents) {
-                if (event.getCreatorId() != address.getNodeId().id()) {
+                if (!Objects.equals(event.getCreatorId(), address.getNodeId())) {
                     continue;
                 }
                 if (judge == null && !noFirstRoundJudges.contains(address.getNodeId())) {
@@ -197,7 +198,7 @@ class UptimeTests {
             ConsensusEvent lastEvent = null;
 
             for (final ConsensusEvent event : secondRoundEvents) {
-                if (event.getCreatorId() != address.getNodeId().id()) {
+                if (!Objects.equals(event.getCreatorId(), address.getNodeId())) {
                     continue;
                 }
                 if (judge == null && !noSecondRoundJudges.contains(address.getNodeId())) {
@@ -281,7 +282,7 @@ class UptimeTests {
             ConsensusEvent lastEvent = null;
 
             for (final ConsensusEvent event : firstRoundEvents) {
-                if (event.getCreatorId() != address.getNodeId().id()) {
+                if (!Objects.equals(event.getCreatorId(), address.getNodeId())) {
                     continue;
                 }
                 if (judge == null && !noFirstRoundJudges.contains(address.getNodeId())) {
@@ -338,7 +339,7 @@ class UptimeTests {
             ConsensusEvent lastEvent = null;
 
             for (final ConsensusEvent event : secondRoundEvents) {
-                if (event.getCreatorId() != address.getNodeId().id()) {
+                if (!Objects.equals(event.getCreatorId(), address.getNodeId())) {
                     continue;
                 }
                 if (judge == null) {
@@ -421,13 +422,13 @@ class UptimeTests {
             final EventImpl lastEvent = mock(EventImpl.class);
             when(lastEvent.getConsensusTimestamp()).thenReturn(eventTimes1.get(i));
             when(lastEvent.getRoundReceived()).thenReturn(eventRounds1.get(i));
-            when(lastEvent.getCreatorId()).thenReturn((long) i);
+            when(lastEvent.getCreatorId()).thenReturn(new NodeId(i));
             uptimeData1.recordLastEvent(lastEvent);
 
             final EventImpl lastJudge = mock(EventImpl.class);
             when(lastJudge.getConsensusTimestamp()).thenReturn(judgeTimes1.get(i));
             when(lastJudge.getRoundReceived()).thenReturn(judgeRounds1.get(i));
-            when(lastJudge.getCreatorId()).thenReturn((long) i);
+            when(lastJudge.getCreatorId()).thenReturn(new NodeId(i));
             uptimeData1.recordLastJudge(lastJudge);
         }
 
@@ -478,13 +479,13 @@ class UptimeTests {
             final EventImpl lastEvent = mock(EventImpl.class);
             when(lastEvent.getConsensusTimestamp()).thenReturn(eventTimes2.get(i));
             when(lastEvent.getRoundReceived()).thenReturn(eventRounds2.get(i));
-            when(lastEvent.getCreatorId()).thenReturn((long) i);
+            when(lastEvent.getCreatorId()).thenReturn(new NodeId(i));
             uptimeData2.recordLastEvent(lastEvent);
 
             final EventImpl lastJudge = mock(EventImpl.class);
             when(lastJudge.getConsensusTimestamp()).thenReturn(judgeTimes2.get(i));
             when(lastJudge.getRoundReceived()).thenReturn(judgeRounds2.get(i));
-            when(lastJudge.getCreatorId()).thenReturn((long) i);
+            when(lastJudge.getCreatorId()).thenReturn(new NodeId(i));
             uptimeData2.recordLastJudge(lastJudge);
         }
 
@@ -545,13 +546,13 @@ class UptimeTests {
             final EventImpl lastEvent = mock(EventImpl.class);
             when(lastEvent.getConsensusTimestamp()).thenReturn(eventTimes.get(i));
             when(lastEvent.getRoundReceived()).thenReturn(eventRounds.get(i));
-            when(lastEvent.getCreatorId()).thenReturn((long) i);
+            when(lastEvent.getCreatorId()).thenReturn(new NodeId(i));
             uptimeData1.recordLastEvent(lastEvent);
 
             final EventImpl lastJudge = mock(EventImpl.class);
             when(lastJudge.getConsensusTimestamp()).thenReturn(judgeTimes.get(i));
             when(lastJudge.getRoundReceived()).thenReturn(judgeRounds.get(i));
-            when(lastJudge.getCreatorId()).thenReturn((long) i);
+            when(lastJudge.getCreatorId()).thenReturn(new NodeId(i));
             uptimeData1.recordLastJudge(lastJudge);
         }
 

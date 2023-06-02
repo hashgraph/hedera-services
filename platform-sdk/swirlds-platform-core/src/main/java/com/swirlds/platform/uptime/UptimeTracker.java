@@ -166,9 +166,9 @@ public class UptimeTracker {
             @NonNull final Map<NodeId, ConsensusEvent> lastEventsInRoundByCreator,
             @NonNull final Map<NodeId, ConsensusEvent> judgesByCreator) {
         round.forEach(event -> {
-            lastEventsInRoundByCreator.put(new NodeId(event.getCreatorId()), event);
+            lastEventsInRoundByCreator.put(event.getCreatorId(), event);
             if (((EventImpl) event).isFamous()) {
-                judgesByCreator.put(new NodeId(event.getCreatorId()), event);
+                judgesByCreator.put(event.getCreatorId(), event);
             }
         });
 

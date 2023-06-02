@@ -853,6 +853,18 @@ public class SwirldsPlatform implements Platform, Startable {
 
             consensusRoundHandler.loadDataFromSignedState(signedState, true);
 
+            try {
+                preConsensusEventWriter.registerDiscontinuity();
+                preConsensusEventWriter.setMinimumGenerationNonAncient(signedState
+                        .getState()
+                        .getPlatformState()
+                        .getPlatformData()
+                        .getMinimumGenerationNonAncient());
+            } catch (final InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException("interrupted while loading updating PCES after reconnect", e);
+            }
+
             // Notify any listeners that the reconnect has been completed
             notificationEngine.dispatch(
                     ReconnectCompleteListener.class,

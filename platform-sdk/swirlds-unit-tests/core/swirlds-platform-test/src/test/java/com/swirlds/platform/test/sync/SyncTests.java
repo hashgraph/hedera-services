@@ -521,7 +521,8 @@ public class SyncTests {
         });
 
         // Do not add events created by the unknown creator to the caller graph to fulfill the premise of this test
-        executor.setCallerAddToGraphTest((indexedEvent -> indexedEvent.getCreatorId() != unknownCallerCreator));
+        executor.setCallerAddToGraphTest(
+                (indexedEvent -> indexedEvent.getCreatorId().id() != unknownCallerCreator));
 
         executor.execute();
 

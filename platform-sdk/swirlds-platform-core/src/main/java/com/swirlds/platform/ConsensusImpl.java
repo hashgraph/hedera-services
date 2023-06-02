@@ -877,7 +877,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus,
         sp = selfParent(x);
 
         for (int mm = 0; mm < numMembers; mm++) {
-            if (x.getCreatorId() == mm) {
+            if (x.getCreatorId().id() == mm) {
                 x.setLastSee(mm, x);
             } else if (sp == null && op == null) {
                 x.setLastSee(mm, null);

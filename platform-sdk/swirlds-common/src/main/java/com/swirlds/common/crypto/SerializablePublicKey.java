@@ -16,6 +16,7 @@
 
 package com.swirlds.common.crypto;
 
+import static com.swirlds.common.utility.CommonUtils.hex;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.swirlds.common.io.SelfSerializable;
@@ -29,7 +30,6 @@ import java.security.PublicKey;
 import java.security.spec.EncodedKeySpec;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
-import java.util.Arrays;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 public class SerializablePublicKey implements SelfSerializable {
@@ -168,7 +168,7 @@ public class SerializablePublicKey implements SelfSerializable {
     @Override
     public String toString() {
         return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
-                .append("publicKey", Arrays.toString(publicKey.getEncoded()))
+                .append("publicKey", hex(publicKey.getEncoded()))
                 .append("keyType", keyType)
                 .toString();
     }

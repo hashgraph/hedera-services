@@ -46,6 +46,7 @@ import com.swirlds.platform.event.EventMetadata;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.util.iterator.SkippingIterator;
 import com.swirlds.platform.util.iterator.TypedIterator;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Instant;
@@ -536,7 +537,7 @@ public class EventImpl extends EventMetadata
     }
 
     public boolean isCreatedBy(final NodeId id) {
-        return getCreatorId() == id.id();
+        return Objects.equals(getCreatorId(), id);
     }
 
     public boolean hasUserTransactions() {
@@ -607,7 +608,8 @@ public class EventImpl extends EventMetadata
 
     /** {@inheritDoc} */
     @Override
-    public long getOtherId() {
+    @Nullable
+    public NodeId getOtherId() {
         return baseEvent.getUnhashedData().getOtherId();
     }
 
@@ -630,7 +632,8 @@ public class EventImpl extends EventMetadata
      * {@inheritDoc}
      */
     @Override
-    public long getCreatorId() {
+    @NonNull
+    public NodeId getCreatorId() {
         return baseEvent.getHashedData().getCreatorId();
     }
 
