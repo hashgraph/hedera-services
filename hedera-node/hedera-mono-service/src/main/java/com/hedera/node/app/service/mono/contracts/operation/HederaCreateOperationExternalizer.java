@@ -66,11 +66,11 @@ public class HederaCreateOperationExternalizer implements CreateOperationExterna
     }
 
     /**
-     * Handle the child record and hollow account completion of a create operation.
-     * Create sidecar with bytecodes of the newly created contract, if sidecards are enabled.
+     * Handle the child record and hollow account completion of a create operation. Create sidecar with bytecodes of the
+     * newly created contract, if sidecards are enabled.
      *
-     * @param frame         current message frame
-     * @param childFrame    child message frame to be created
+     * @param frame      current message frame
+     * @param childFrame child message frame to be created
      */
     @Override
     public void externalize(MessageFrame frame, MessageFrame childFrame) {
@@ -110,9 +110,10 @@ public class HederaCreateOperationExternalizer implements CreateOperationExterna
     }
 
     /**
-     * Fails new contract creation when lazy creation is disabled and the new contract matches the address of an existing hollow account.
+     * Fails new contract creation when lazy creation is disabled and the new contract matches the address of an
+     * existing hollow account.
      *
-     * @param frame current message frame
+     * @param frame           current message frame
      * @param contractAddress the target contract address
      * @return should creation fail
      */
