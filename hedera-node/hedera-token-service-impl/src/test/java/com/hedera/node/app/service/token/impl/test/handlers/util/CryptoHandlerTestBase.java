@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.token.impl.test.handlers;
+package com.hedera.node.app.service.token.impl.test.handlers.util;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;

@@ -23,7 +23,7 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
-import com.hedera.node.app.service.token.impl.test.handlers.CryptoHandlerTestBase;
+import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
