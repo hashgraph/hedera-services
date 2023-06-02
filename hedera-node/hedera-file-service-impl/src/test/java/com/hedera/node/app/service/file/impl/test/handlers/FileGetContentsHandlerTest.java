@@ -43,7 +43,6 @@ import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.handlers.FileGetContentsHandler;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
-import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -57,16 +56,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class FileGetContentsHandlerTest extends FileHandlerTestBase {
 
     @Mock
-    private NetworkInfo networkInfo;
-
-    @Mock
     private QueryContext context;
 
     private FileGetContentsHandler subject;
 
     @BeforeEach
     void setUp() {
-        subject = new FileGetContentsHandler(networkInfo);
+        subject = new FileGetContentsHandler();
     }
 
     @Test
