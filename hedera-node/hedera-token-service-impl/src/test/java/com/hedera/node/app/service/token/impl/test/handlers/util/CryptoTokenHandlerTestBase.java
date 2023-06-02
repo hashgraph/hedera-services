@@ -165,6 +165,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
             .tokenId(nonFungibleTokenId)
             .serialNumbers(List.of(1L, 2L))
             .build();
+    protected final NftAllowance nftAllowanceWithApproveForALl =
+            nftAllowance.copyBuilder().approvedForAll(Boolean.TRUE).build();
     protected final NftAllowance nftAllowanceWithDelegatingSpender = NftAllowance.newBuilder()
             .spender(spenderId)
             .owner(ownerId)
