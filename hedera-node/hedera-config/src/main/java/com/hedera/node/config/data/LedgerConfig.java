@@ -16,7 +16,6 @@
 
 package com.hedera.node.config.data;
 
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
@@ -29,7 +28,7 @@ public record LedgerConfig(
         @ConfigProperty(defaultValue = "5000") int maxAutoAssociations,
         @ConfigProperty(defaultValue = "100") int numSystemAccounts,
         @ConfigProperty(defaultValue = "5000000000000000000") long totalTinyBarFloat,
-        @ConfigProperty(defaultValue = "0x03") Bytes id,
+        @ConfigProperty(defaultValue = "0x03") String id,
         @ConfigProperty(value = "changeHistorian.memorySecs", defaultValue = "20") int changeHistorianMemorySecs,
         @ConfigProperty(value = "autoRenewPeriod.maxDuration", defaultValue = "8000001")
                 long autoRenewPeriodMaxDuration,
