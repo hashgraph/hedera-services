@@ -58,6 +58,7 @@ public final class SystemExitUtils {
             logger.info(STARTUP.getMarker(), new SystemExitPayload(exitCode.name(), exitCode.getExitCode()));
         }
         System.out.println("Exiting System (" + exitCode.name() + ")");
+        System.out.flush();
         System.exit(exitCode.getExitCode());
         if (haltRuntime) {
             Runtime.getRuntime().halt(exitCode.getExitCode());
