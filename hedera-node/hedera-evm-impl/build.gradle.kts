@@ -20,11 +20,10 @@ group = "com.hedera.evm"
 
 description = "Hedera EVM - Implementation"
 
-configurations.all {
-  exclude("javax.annotation", "javax.annotation-api")
-  exclude("com.google.code.findbugs", "jsr305")
-  exclude("org.jetbrains", "annotations")
-  exclude("org.checkerframework", "checker-qual")
+// TODO module-info.java in 'test'
+// https://github.com/autonomousapps/dependency-analysis-android-gradle-plugin/issues/900
+dependencyAnalysis.issues {
+  onUnusedDependencies {
+    exclude(javaModuleDependencies.ga("com.github.spotbugs.annotations").get())
+  }
 }
-
-dependencies { api(project(":hedera-node:hedera-evm")) }
