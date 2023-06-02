@@ -21,25 +21,19 @@ import com.swirlds.platform.dispatch.triggers.control.ShutdownRequestedTrigger;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * A utility for shutting down the JVM.
  */
 public final class Shutdown {
 
-    private static final Logger logger = LogManager.getLogger(Shutdown.class);
-
     public Shutdown() {}
 
     /**
      * Shut down the JVM.
      *
-     * @param reason
-     * 		the reason the JVM is being shut down
-     * @param exitCode
-     * 		the exit code to return when the JVM has been shut down
+     * @param reason   the reason the JVM is being shut down
+     * @param exitCode the exit code to return when the JVM has been shut down
      */
     @Observer(ShutdownRequestedTrigger.class)
     public void shutdown(@Nullable final String reason, @NonNull final SystemExitCode exitCode) {
