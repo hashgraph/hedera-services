@@ -32,10 +32,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public class StateBuilderUtil {
 
     public static final String ACCOUNTS = "ACCOUNTS";
-    protected static final String ALIASES = "ALIASES";
-    protected static final String TOKENS = "TOKENS";
-    protected static final String TOKEN_RELS = "TOKEN_RELS";
-    protected static final String NFTS = "NFTS";
+    public static final String ALIASES = "ALIASES";
+    public static final String TOKENS = "TOKENS";
+    public static final String TOKEN_RELS = "TOKEN_RELS";
+    public static final String NFTS = "NFTS";
 
     @NonNull
     protected MapReadableKVState.Builder<EntityNumVirtualKey, Account> emptyReadableAccountStateBuilder() {

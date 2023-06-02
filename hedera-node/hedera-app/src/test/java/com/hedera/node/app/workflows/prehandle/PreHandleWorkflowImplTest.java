@@ -52,10 +52,10 @@ import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -136,7 +136,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
         storeFactory = new ReadableStoreFactory(fakeHederaState);
 
         final var config =
-                new VersionedConfigImpl(new TestConfigBuilder(false).getOrCreateConfig(), DEFAULT_CONFIG_VERSION);
+                new VersionedConfigImpl(new HederaTestConfigBuilder(false).getOrCreateConfig(), DEFAULT_CONFIG_VERSION);
         when(configProvider.getConfiguration()).thenReturn(config);
 
         workflow = new PreHandleWorkflowImpl(

@@ -274,4 +274,40 @@ public class CryptoHandlerTestBase {
                 false,
                 null);
     }
+
+    protected void givenValidContract() {
+        account = new Account(
+                accountNum,
+                alias.alias(),
+                key,
+                1_234_567L,
+                payerBalance,
+                "testAccount",
+                false,
+                1_234L,
+                1_234_568L,
+                0,
+                true,
+                true,
+                3,
+                2,
+                1,
+                2,
+                10,
+                1,
+                3,
+                true,
+                2,
+                0,
+                1000L,
+                2,
+                72000,
+                0,
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyList(),
+                2,
+                false,
+                null);
+    }
 }
