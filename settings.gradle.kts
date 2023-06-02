@@ -129,7 +129,7 @@ dependencyResolutionManagement {
       val bouncycastleVersion = "1.70"
       val daggerVersion = "2.42"
       val eclipseCollectionsVersion = "10.4.0"
-      val grpcVersion = "1.50.2"
+      val grpcVersion = "1.48.2" // higher 'grpc-netty' versions lead to hanging integration tests
       val helidonVersion = "3.0.2"
       val jacksonVersion = "2.13.3"
       val log4jVersion = "2.17.1"
