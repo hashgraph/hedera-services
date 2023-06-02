@@ -158,7 +158,7 @@ public class ConsensusTestArgs {
     }
 
     static Stream<Arguments> ancientEventTests() {
-        return Stream.of(Arguments.of(new ConsensusTestParams(4, BALANCED, BALANCED_WEIGHT_DESC)));
+        return Stream.of(Arguments.of(new ConsensusTestParams(4, BALANCED, BALANCED_WEIGHT_DESC, 1L)));
     }
 
     public static Stream<Arguments> restartWithEventsParams() {

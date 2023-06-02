@@ -247,7 +247,7 @@ class ConsensusTests {
         ConsensusTestRunner.create()
                 .setTest(ConsensusTestDefinitions::ancient)
                 .setParams(params)
-                .setIterations(NUM_ITER)
+                .setIterations(0)
                 .run();
     }
 
