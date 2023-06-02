@@ -18,7 +18,6 @@ package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
@@ -414,7 +413,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
 
     private HapiSpec burnFungibleV1andV2WithZeroAndNegativeValues() {
         final AtomicReference<Address> tokenAddress = new AtomicReference<>();
-        return onlyDefaultHapiSpec("burnFungibleV1andV2WithZeroAndNegativeValues")
+        return defaultHapiSpec("burnFungibleV1andV2WithZeroAndNegativeValues")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ALICE).balance(10 * ONE_HUNDRED_HBARS),
@@ -494,7 +493,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(SUCCESS))
                 .when(
-                        // Burning negative amount for Fungible tokens should fail
+                        // Burning large number should fail
                         sourcing(() -> contractCall(
                                         MULTIVERSION_BURN_CONTRACT,
                                         BURN_TOKEN_V_1,
@@ -503,7 +502,9 @@ public class ContractBurnHTSSuite extends HapiSuite {
                                         new long[] {1L})
                                 .payingWith(ALICE)
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                 .gas(GAS_TO_OFFER)),
+                        // But a small negative number should succeed as the amount is irrelevant for NFTs
                         sourcing(() -> contractCall(
                                         MULTIVERSION_BURN_CONTRACT,
                                         BURN_TOKEN_V_2,
@@ -514,7 +515,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
                                 .gas(GAS_TO_OFFER)
                                 .logged()))
-                .then(getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 2));
+                .then(getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 1));
     }
 
     @NotNull
