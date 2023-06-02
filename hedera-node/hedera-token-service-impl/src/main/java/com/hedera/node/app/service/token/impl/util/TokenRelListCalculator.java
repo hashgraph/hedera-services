@@ -57,7 +57,7 @@ public class TokenRelListCalculator {
      * or token rel store objects</b>
      *
      * <p>
-     * <h1>Removal Examples</h1>
+     * <h3>Removal Examples</h3>
      * Assume that valid account A has head token number 1, and that the following list of token
      * relations ({@code TR}'s) exists for account A:
      * <ol>
