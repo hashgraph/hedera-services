@@ -63,6 +63,6 @@ public final class FileServiceImpl implements FileService {
 
         final var valueCodec = CodecFactory.newInMemoryCodec(File.PROTOBUF::parse, File.PROTOBUF::write);
 
-        return StateDefinition.onDisk(BLOBS_KEY, keyCodec, valueCodec, Math.toIntExact(MAX_BLOBS) );
+        return StateDefinition.onDisk(BLOBS_KEY, keyCodec, valueCodec, Math.toIntExact(MAX_BLOBS));
     }
 }
