@@ -132,10 +132,10 @@ public class ElectionRound {
                 continue;
             }
             uniqueFamous.merge(
-                    election.getWitness().getCreatorId(), election.getWitness(), ElectionRound::uniqueFamous);
+                    election.getWitness().getCreatorId().id(), election.getWitness(), ElectionRound::uniqueFamous);
         }
         final List<EventImpl> allJudges = new ArrayList<>(uniqueFamous.values());
-        allJudges.sort(Comparator.comparingLong(EventImpl::getCreatorId));
+        allJudges.sort(Comparator.comparingLong(e -> e.getCreatorId().id()));
         minGeneration = allJudges.stream()
                 .mapToLong(EventImpl::getGeneration)
                 .min()

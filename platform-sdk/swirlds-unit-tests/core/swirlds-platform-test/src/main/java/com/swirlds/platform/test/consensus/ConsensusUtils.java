@@ -104,10 +104,10 @@ public abstract class ConsensusUtils {
             final SignedState signedState, final GraphGenerator<?> generator, final Random random) {
         Instant lastTimestamp = Instant.MIN;
         for (final Address address : generator.getAddressBook()) {
-            final EventSource<?> source = generator.getSource((int) address.getId());
+            final EventSource<?> source = generator.getSource((int) address.getNodeId().id());
             final List<IndexedEvent> eventsByCreator = Arrays.stream(signedState.getEvents())
                     .map(IndexedEvent.class::cast)
-                    .filter(e -> e.getCreatorId() == address.getId())
+                    .filter(e -> e.getCreatorId().id() == address.getNodeId().id())
                     .toList();
             eventsByCreator.forEach(e -> source.setLatestEvent(random, e));
             final Instant creatorMax = eventsByCreator.stream()

@@ -620,7 +620,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus,
     private boolean firstVote(final EventImpl voting, final EventImpl votedOn) {
         // first round of an election. Vote TRUE for self-ancestors of those you firstSee. Don't
         // decide.
-        EventImpl w = firstSee(voting, votedOn.getCreatorId());
+        EventImpl w = firstSee(voting, votedOn.getCreatorId().id());
         while (w != null && w.getRoundCreated() > voting.getRoundCreated() - 1 && selfParent(w) != null) {
             w = firstSelfWitnessS(selfParent(w));
         }
@@ -912,7 +912,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus,
         if (notRelevantForConsensus(x)) {
             return null;
         }
-        if (m == m2 && m2 == x.getCreatorId()) {
+        if (m == m2 && m2 == x.getCreatorId().id()) {
             return firstSelfWitnessS(selfParent(x));
         }
         return firstSee(lastSee(x, m2), m);

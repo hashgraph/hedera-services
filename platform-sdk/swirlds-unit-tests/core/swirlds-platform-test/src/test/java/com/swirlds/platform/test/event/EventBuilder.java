@@ -19,6 +19,7 @@ package com.swirlds.platform.test.event;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.system.BasicSoftwareVersion;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
@@ -34,7 +35,7 @@ import java.util.Random;
 public class EventBuilder {
     private static final Instant DEFAULT_TIMESTAMP = Instant.ofEpochMilli(1588771316678L);
     private Random random;
-    private long creatorId;
+    private NodeId creatorId;
     private Instant timestamp;
     private int numberOfTransactions;
     private int transactionSize;
@@ -51,7 +52,7 @@ public class EventBuilder {
 
     public EventBuilder setDefaults() {
         random = new Random();
-        creatorId = 0;
+        creatorId = new NodeId(0);
         timestamp = null;
         numberOfTransactions = 0;
         transactionSize = 4;
@@ -69,6 +70,11 @@ public class EventBuilder {
     }
 
     public EventBuilder setCreatorId(final long creatorId) {
+        this.creatorId = new NodeId(creatorId);
+        return this;
+    }
+
+    public EventBuilder setCreatorId(final NodeId creatorId) {
         this.creatorId = creatorId;
         return this;
     }
@@ -180,7 +186,7 @@ public class EventBuilder {
                 getOtherParentGossip() != null
                         ? getOtherParentGossip().getHashedData().getHash()
                         : null,
-                timestamp == null ? getParentTime().plusMillis(1 + creatorId) : timestamp,
+                timestamp == null ? getParentTime().plusMillis(1 + creatorId.id()) : timestamp,
                 tr);
 
         if (fakeHash) {
@@ -195,7 +201,7 @@ public class EventBuilder {
         final BaseEventUnhashedData unhashedData = new BaseEventUnhashedData(
                 getOtherParentGossip() != null
                         ? getOtherParentGossip().getHashedData().getCreatorId()
-                        : -1,
+                        : null,
                 sig);
         final GossipEvent gossipEvent = new GossipEvent(hashedData, unhashedData);
         gossipEvent.buildDescriptor();

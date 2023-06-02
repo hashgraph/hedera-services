@@ -70,7 +70,7 @@ public abstract class BufferingEventEmitter<T extends BufferingEventEmitter<T>> 
                 && getCheckpoint() > numEventsGenerated) {
             final IndexedEvent nextEvent = getGraphGenerator().generateEvent();
             numEventsGenerated++;
-            events.get((int) nextEvent.getCreatorId()).add(nextEvent);
+            events.get((int) nextEvent.getCreatorId().id()).add(nextEvent);
             bufferedEvents++;
         }
     }

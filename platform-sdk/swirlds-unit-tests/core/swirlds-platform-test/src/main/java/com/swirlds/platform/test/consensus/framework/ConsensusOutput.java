@@ -85,7 +85,7 @@ public class ConsensusOutput implements EventAddedObserver, ConsensusRoundObserv
     public List<EventImpl> sortedAddedEvents() {
         final List<EventImpl> sortedEvents = new ArrayList<>(addedEvents);
         sortedEvents.sort(Comparator.comparingLong(EventImpl::getGeneration)
-                .thenComparingLong(EventImpl::getCreatorId)
+                .thenComparingLong(e -> e.getCreatorId().id())
                 .thenComparing(EventImpl::getBaseHash));
         return sortedEvents;
     }

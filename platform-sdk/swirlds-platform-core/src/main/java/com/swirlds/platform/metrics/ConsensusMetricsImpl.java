@@ -188,7 +188,7 @@ public class ConsensusMetricsImpl implements ConsensusMetrics {
      */
     @Override
     public void lastFamousInRound(final EventImpl event) {
-        if (selfId.id() != event.getCreatorId()) { // record this for events received
+        if (selfId.id() != event.getCreatorId().id()) { // record this for events received
             avgReceivedFamousTime.update(event.getBaseEvent().getTimeReceived().until(Instant.now(), ChronoUnit.NANOS)
                     * NANOSECONDS_TO_SECONDS);
         }
