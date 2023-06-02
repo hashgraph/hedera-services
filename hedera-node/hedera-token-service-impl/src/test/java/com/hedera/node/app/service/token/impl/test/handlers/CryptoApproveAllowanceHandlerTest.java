@@ -27,7 +27,6 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoApproveAllowanceTransactionBody;
-import com.hedera.hapi.node.token.NftAllowance;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
@@ -49,7 +48,6 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
-import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -61,29 +59,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
     private ApproveAllowanceValidator validator;
 
-    @Mock
+    @Mock(strictness = Strictness.LENIENT)
     private ConfigProvider configProvider;
 
     @Mock(strictness = Strictness.LENIENT)
     private HandleContext handleContext;
 
     private Configuration configuration;
-
-    private final NftAllowance nftAllowance = NftAllowance.newBuilder()
-            .spender(spenderId)
-            .owner(ownerId)
-            .tokenId(nonFungibleTokenId)
-            .approvedForAll(Boolean.TRUE)
-            .serialNumbers(List.of(1L, 2L))
-            .build();
-    private final NftAllowance nftAllowanceWithDelegatingSpender = NftAllowance.newBuilder()
-            .spender(spenderId)
-            .owner(ownerId)
-            .tokenId(nonFungibleTokenId)
-            .approvedForAll(Boolean.FALSE)
-            .serialNumbers(List.of(1L, 2L))
-            .delegatingSpender(delegatingSpenderId)
-            .build();
 
     private CryptoApproveAllowanceHandler subject;
 
@@ -94,6 +76,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         validator = new ApproveAllowanceValidator(configProvider);
         configuration = new HederaTestConfigBuilder().getOrCreateConfig();
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
+        given(handleContext.configuration()).willReturn(configuration);
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
         given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
 
@@ -105,6 +88,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
 
         given(handleContext.readableStore(ReadableUniqueTokenStore.class)).willReturn(readableNftStore);
         given(handleContext.writableStore(WritableUniqueTokenStore.class)).willReturn(writableNftStore);
+
         subject = new CryptoApproveAllowanceHandler(validator);
     }
 
@@ -171,11 +155,40 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         final var txn = cryptoApproveAllowanceTransaction(id, false);
         given(handleContext.body()).willReturn(txn);
 
+        assertThat(ownerAccount.cryptoAllowances().size()).isEqualTo(1);
+        assertThat(ownerAccount.tokenAllowances().size()).isEqualTo(1);
+        assertThat(ownerAccount.approveForAllNftAllowances().size()).isEqualTo(1);
+        assertThat(ownerAccount.cryptoAllowances().get(0).spenderNum()).isEqualTo(spenderId.accountNum());
+        assertThat(ownerAccount.cryptoAllowances().get(0).amount()).isEqualTo(100);
+        assertThat(ownerAccount.tokenAllowances().get(0).spenderNum()).isEqualTo(spenderId.accountNum());
+        assertThat(ownerAccount.tokenAllowances().get(0).amount()).isEqualTo(100);
+        assertThat(ownerAccount.tokenAllowances().get(0).tokenNum()).isEqualTo(fungibleTokenId.tokenNum());
+        assertThat(ownerAccount.approveForAllNftAllowances().size()).isEqualTo(1);
+        assertThat(ownerAccount.approveForAllNftAllowances().get(0).spenderNum())
+                .isEqualTo(spenderId.accountNum());
+        assertThat(ownerAccount.approveForAllNftAllowances().get(0).tokenNum())
+                .isEqualTo(nonFungibleTokenId.tokenNum());
+
         subject.handle(handleContext);
 
-        assertEquals(1, ownerAccount.cryptoAllowances().size());
-        assertEquals(1, ownerAccount.tokenAllowances().size());
-        assertEquals(1, ownerAccount.approveForAllNftAllowances().size());
+        assertThat(ownerAccount.cryptoAllowances().size()).isEqualTo(1);
+        assertThat(ownerAccount.tokenAllowances().size()).isEqualTo(1);
+        assertThat(ownerAccount.approveForAllNftAllowances().size()).isEqualTo(1);
+        assertThat(ownerAccount.cryptoAllowances().get(0).spenderNum()).isEqualTo(spenderId.accountNum());
+        assertThat(ownerAccount.cryptoAllowances().get(0).amount()).isEqualTo(10);
+        assertThat(ownerAccount.tokenAllowances().get(0).spenderNum()).isEqualTo(spenderId.accountNum());
+        assertThat(ownerAccount.tokenAllowances().get(0).amount()).isEqualTo(10);
+        assertThat(ownerAccount.tokenAllowances().get(0).tokenNum()).isEqualTo(fungibleTokenId.tokenNum());
+        assertThat(ownerAccount.approveForAllNftAllowances().size()).isEqualTo(1);
+        assertThat(ownerAccount.approveForAllNftAllowances().get(0).spenderNum())
+                .isEqualTo(spenderId.accountNum());
+        assertThat(ownerAccount.approveForAllNftAllowances().get(0).tokenNum())
+                .isEqualTo(nonFungibleTokenId.tokenNum());
+
+        assertThat(writableNftStore.get(uniqueTokenIdSl1)).isNotNull();
+        assertThat(writableNftStore.get(uniqueTokenIdSl2)).isNotNull();
+        assertThat(writableNftStore.get(uniqueTokenIdSl1).spenderNumber()).isEqualTo(ownerId.accountNum());
+        assertThat(writableNftStore.get(uniqueTokenIdSl2).spenderNumber()).isEqualTo(ownerId.accountNum());
     }
 
     //    @Test

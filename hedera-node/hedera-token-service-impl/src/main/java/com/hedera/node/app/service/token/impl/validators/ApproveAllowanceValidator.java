@@ -171,7 +171,6 @@ public class ApproveAllowanceValidator extends BaseAllowanceValidator {
         for (final var allowance : nftAllowancesList) {
             final var owner = allowance.owner();
             final var spender = allowance.spender();
-            final var delegatingSpender = allowance.delegatingSpender();
             final var tokenId = allowance.tokenId();
             final var serialNums = allowance.serialNumbers();
             final var token = tokenStore.get(tokenId);
@@ -182,7 +181,8 @@ public class ApproveAllowanceValidator extends BaseAllowanceValidator {
             final var effectiveOwner = getEffectiveOwner(owner, payerAccount, accountStore);
             validateTokenBasics(effectiveOwner, spender, token, tokenRelStore);
 
-            if (delegatingSpender.accountNum() != 0) {
+            if (allowance.hasDelegatingSpender()
+                    && allowance.delegatingSpender().accountNum() != 0) {
                 validateTrue(!approvedForAll, DELEGATING_SPENDER_CANNOT_GRANT_APPROVE_FOR_ALL);
                 final var approveForAllKey = AccountApprovalForAllAllowance.newBuilder()
                         .tokenNum(tokenId.tokenNum())

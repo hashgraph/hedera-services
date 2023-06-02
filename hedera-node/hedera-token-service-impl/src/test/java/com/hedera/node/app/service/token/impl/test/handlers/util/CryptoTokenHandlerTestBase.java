@@ -39,6 +39,7 @@ import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.CryptoAllowance;
+import com.hedera.hapi.node.token.NftAllowance;
 import com.hedera.hapi.node.token.TokenAllowance;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.FixedFee;
@@ -133,9 +134,13 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
             EntityNumPair.fromLongs(accountNum.longValue(), fungibleTokenNum.longValue());
     protected final EntityNumPair nonFungiblePair =
             EntityNumPair.fromLongs(accountNum.longValue(), nonFungibleTokenNum.longValue());
-    protected final UniqueTokenId uniqueTokenId = UniqueTokenId.newBuilder()
+    protected final UniqueTokenId uniqueTokenIdSl1 = UniqueTokenId.newBuilder()
             .tokenTypeNumber(nonFungibleTokenId.tokenNum())
             .serialNumber(1L)
+            .build();
+    protected final UniqueTokenId uniqueTokenIdSl2 = UniqueTokenId.newBuilder()
+            .tokenTypeNumber(nonFungibleTokenId.tokenNum())
+            .serialNumber(2L)
             .build();
 
     /* ---------- Allowances */
@@ -149,6 +154,21 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
             .amount(10L)
             .tokenId(fungibleTokenId)
             .owner(ownerId)
+            .build();
+    protected final NftAllowance nftAllowance = NftAllowance.newBuilder()
+            .spender(spenderId)
+            .owner(ownerId)
+            .tokenId(nonFungibleTokenId)
+            .approvedForAll(Boolean.TRUE)
+            .serialNumbers(List.of(1L, 2L))
+            .build();
+    protected final NftAllowance nftAllowanceWithDelegatingSpender = NftAllowance.newBuilder()
+            .spender(spenderId)
+            .owner(ownerId)
+            .tokenId(nonFungibleTokenId)
+            .approvedForAll(Boolean.FALSE)
+            .serialNumbers(List.of(1L, 2L))
+            .delegatingSpender(delegatingSpenderId)
             .build();
     /* ---------- Fees */
     protected FixedFee fixedFee = FixedFee.newBuilder()
@@ -202,7 +222,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     /* ---------- Tokens */
     protected Token fungibleToken;
     protected Token nonFungibleToken;
-    protected Nft nft;
+    protected Nft nftSl1;
+    protected Nft nftSl2;
     /* ---------- Token Relations */
     protected TokenRelation fungibleTokenRelation;
     protected TokenRelation nonFungibleTokenRelation;
@@ -330,15 +351,19 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     }
 
     private void givenReadableNftStore() {
-        readableNftState =
-                emptyReadableNftStateBuilder().value(uniqueTokenId, nft).build();
+        readableNftState = emptyReadableNftStateBuilder()
+                .value(uniqueTokenIdSl1, nftSl1)
+                .value(uniqueTokenIdSl2, nftSl2)
+                .build();
         given(readableStates.<UniqueTokenId, Nft>get(NFTS)).willReturn(readableNftState);
         readableNftStore = new ReadableUniqueTokenStoreImpl(readableStates);
     }
 
     private void givenWritableNftStore() {
-        writableNftState =
-                emptyWritableNftStateBuilder().value(uniqueTokenId, nft).build();
+        writableNftState = emptyWritableNftStateBuilder()
+                .value(uniqueTokenIdSl1, nftSl1)
+                .value(uniqueTokenIdSl2, nftSl2)
+                .build();
         given(writableStates.<UniqueTokenId, Nft>get(NFTS)).willReturn(writableNftState);
         writableNftStore = new WritableUniqueTokenStore(writableStates);
     }
@@ -403,20 +428,27 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     private void givenValidTokens() {
         fungibleToken = givenValidFungibleToken();
         nonFungibleToken = givenValidNonFungibleToken();
-        nft = givenNft();
+        nftSl1 = givenNft(uniqueTokenIdSl1);
+        nftSl2 = givenNft(uniqueTokenIdSl2);
     }
 
     private void givenValidAccounts() {
         account = givenValidAccount();
-        spenderAccount = givenValidAccount().copyBuilder().key(spenderKey).build();
+        spenderAccount = givenValidAccount()
+                .copyBuilder()
+                .key(spenderKey)
+                .accountNumber(spenderId.accountNum())
+                .build();
         ownerAccount = givenValidAccount()
                 .copyBuilder()
+                .accountNumber(ownerId.accountNum())
                 .cryptoAllowances(AccountCryptoAllowance.newBuilder()
                         .spenderNum(spenderId.accountNum())
                         .amount(100)
                         .build())
                 .tokenAllowances(AccountFungibleTokenAllowance.newBuilder()
                         .tokenNum(fungibleTokenId.tokenNum())
+                        .spenderNum(spenderId.accountNum())
                         .amount(100)
                         .build())
                 .approveForAllNftAllowances(AccountApprovalForAllAllowance.newBuilder()
@@ -544,8 +576,11 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .build();
     }
 
-    protected Nft givenNft() {
-        return Nft.newBuilder().id(uniqueTokenId).build();
+    protected Nft givenNft(UniqueTokenId uniqueTokenId) {
+        return Nft.newBuilder()
+                .ownerNumber(ownerId.accountNum())
+                .id(uniqueTokenId)
+                .build();
     }
 
     protected CustomFee withFixedFee(final FixedFee fixedFee) {

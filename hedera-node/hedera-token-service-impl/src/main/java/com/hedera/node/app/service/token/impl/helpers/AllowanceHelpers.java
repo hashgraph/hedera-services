@@ -19,6 +19,7 @@ package com.hedera.node.app.service.token.impl.helpers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
@@ -26,7 +27,6 @@ import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.NftAllowance;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.data.HederaConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -84,7 +84,7 @@ public class AllowanceHelpers {
         } else {
             // If owner is in modifications get the modified account from state
             final var ownerAccount = accountStore.getAccountById(owner);
-            HandleException.validateTrue(ownerAccount != null, INVALID_ALLOWANCE_OWNER_ID);
+            validateTrue(ownerAccount != null, INVALID_ALLOWANCE_OWNER_ID);
             return ownerAccount;
         }
     }
