@@ -20,7 +20,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_DELEGATING_SPENDER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
-import static com.hedera.node.app.service.token.impl.helpers.AllowanceHelpers.getEffectiveOwner;
 import static com.hedera.node.app.service.token.impl.helpers.AllowanceHelpers.validateAllowanceLimit;
 import static com.hedera.node.app.service.token.impl.helpers.AllowanceHelpers.validateOwner;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -49,6 +48,7 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.HederaConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -109,9 +109,13 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
         final var payerAccount = accountStore.getAccountById(payer);
         validateTrue(payerAccount != null, INVALID_PAYER_ACCOUNT_ID);
         // validate the transaction body fields that include state or configuration
+        // We can use payerAccount for validations since it's not mutated in validateSemantics
         validateSemantics(context, payerAccount, accountStore);
+
         // Apply all changes to the state modifications
-        approveAllowance(context, payerAccount, accountStore);
+        // We need to look up payer for each modification, since payer would have been modified
+        // by a previous allowance change
+        approveAllowance(context, payer, accountStore);
     }
 
     private void validateSemantics(
@@ -125,13 +129,20 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
         allowanceValidator.validate(context, payerAccount, accountStore);
     }
 
+    /**
+     * Apply all changes to the state modifications for crypto, token, and nft allowances
+     * @param context the handle context
+     * @param payerId the payer account id
+     * @param accountStore the account store
+     * @throws HandleException if there is an error applying the changes
+     */
     private void approveAllowance(
             @NonNull final HandleContext context,
-            @NonNull final Account payerAccount,
+            @NonNull final AccountID payerId,
             @NonNull final WritableAccountStore accountStore)
             throws HandleException {
         requireNonNull(context);
-        requireNonNull(payerAccount);
+        requireNonNull(payerId);
         requireNonNull(accountStore);
 
         final var op = context.body().cryptoApproveAllowanceOrThrow();
@@ -144,59 +155,69 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
         final var uniqueTokenStore = context.writableStore(WritableUniqueTokenStore.class);
 
         /* --- Do the business logic --- */
-        applyCryptoAllowances(cryptoAllowances, payerAccount, accountStore, hederaConfig);
-        applyFungibleTokenAllowances(tokenAllowances, payerAccount, accountStore, hederaConfig);
-        applyNftAllowances(nftAllowances, payerAccount, accountStore, tokenStore, uniqueTokenStore, hederaConfig);
+        final var allowanceMaxAccountLimit = hederaConfig.allowancesMaxAccountLimit();
+        applyCryptoAllowances(cryptoAllowances, payerId, accountStore, allowanceMaxAccountLimit);
+        applyFungibleTokenAllowances(tokenAllowances, payerId, accountStore, allowanceMaxAccountLimit);
+        applyNftAllowances(
+                nftAllowances, payerId, accountStore, tokenStore, uniqueTokenStore, allowanceMaxAccountLimit);
     }
 
     /**
-     * Applies all changes needed for Crypto allowances from the transaction. If the spender already has an allowance,
-     * the allowance value will be replaced with values from transaction
+     * Applies all changes needed for Crypto allowances from the transaction.
+     * If the spender already has an allowance, the allowance value will be replaced with values
+     * from transaction. If the amount specified is 0, the allowance will be removed.
+     * @param cryptoAllowances the list of crypto allowances
+     * @param payerId the payer account id
+     * @param accountStore the account store
+     * @param allowanceMaxAccountLimit the {@link HederaConfig}
      */
     private void applyCryptoAllowances(
             @NonNull final List<CryptoAllowance> cryptoAllowances,
-            @NonNull final Account payerAccount,
+            @NonNull final AccountID payerId,
             @NonNull final WritableAccountStore accountStore,
-            @NonNull final HederaConfig config) {
+            final int allowanceMaxAccountLimit) {
         requireNonNull(cryptoAllowances);
-        requireNonNull(payerAccount);
+        requireNonNull(payerId);
         requireNonNull(accountStore);
-        requireNonNull(config);
 
         for (final var allowance : cryptoAllowances) {
             final var owner = allowance.owner();
-            final var spender = allowance.spender();
-            final var effectiveOwner = getEffectiveOwner(owner, payerAccount, accountStore);
-            final var ownerCryptoAllowances = effectiveOwner.cryptoAllowances();
+            final var spender = allowance.spenderOrThrow();
+            final var effectiveOwner = getEffectiveOwnerAccount(owner, payerId, accountStore);
+            final var mutableAllowances = new ArrayList<>(effectiveOwner.cryptoAllowancesOrElse(emptyList()));
 
             final var amount = allowance.amount();
-            final var allowanceBuilder = AccountCryptoAllowance.newBuilder().spenderNum(spender.accountNum());
-            final var zeroAllowance = allowanceBuilder.amount(0).build();
-//            for(int i = 0 ; i < ownerCryptoAllowances.size(); i++) {
-//                final var existingAllowance = ownerCryptoAllowances.get(i);
-//                if (existingAllowance.spenderNum() == spender.accountNumOrThrow()) {
-//                    if(amount == 0) {
-//                        // remove will keep the changes in the modifications and doesn't persist to state.
-//                        // When we need modify the same account again in the same transaction, we can use the
-//                        // modified account from the modifications
-//                        ownerCryptoAllowances.remove(i);
-//                        break;
-//                    } else {
-//                        ownerCryptoAllowances.set(i, allowanceBuilder.amount(amount).build());
-//                        break;
-//                    }
-//                } else {
-//                    ownerCryptoAllowances.add(allowanceBuilder.amount(amount).build());
-//                    break;
-//                }
-//            }
-            if (ownerCryptoAllowances.contains(zeroAllowance)) {
-                removeCryptoAllowance(zeroAllowance, effectiveOwner, accountStore);
-            }
+
+            updateCryptoAllowance(mutableAllowances, amount, spender.accountNumOrThrow());
+            final var copy = effectiveOwner
+                    .copyBuilder()
+                    .cryptoAllowances(mutableAllowances)
+                    .build();
+            // Only when amount is greater than 0 we add or modify existing allowances.
+            // When removing existing allowances no need to check this.
             if (amount > 0) {
-                final var nonZeroAllowance = allowanceBuilder.amount(amount).build();
-                addCryptoAllowance(nonZeroAllowance, effectiveOwner, accountStore, config);
+                validateAllowanceLimit(copy, allowanceMaxAccountLimit);
             }
+            accountStore.put(copy);
+        }
+    }
+
+    private void updateCryptoAllowance(
+            final ArrayList<AccountCryptoAllowance> mutableAllowances, final long amount, final long spenderNum) {
+        final var newAllowanceBuilder = AccountCryptoAllowance.newBuilder().spenderNum(spenderNum);
+        final var index = lookupSpender(mutableAllowances, spenderNum);
+        // If given amount is zero, if the element exists remove it, otherwise do nothing
+        if (amount == 0) {
+            if (index != -1) {
+                // If amount is 0, remove the allowance
+                mutableAllowances.remove(index);
+            }
+            return;
+        }
+        if (index != -1) {
+            mutableAllowances.set(index, newAllowanceBuilder.amount(amount).build());
+        } else {
+            mutableAllowances.add(newAllowanceBuilder.amount(amount).build());
         }
     }
 
@@ -207,43 +228,52 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
      */
     private void applyFungibleTokenAllowances(
             @NonNull final List<TokenAllowance> tokenAllowances,
-            @NonNull final Account payerAccount,
+            @NonNull final AccountID payerId,
             @NonNull final WritableAccountStore accountStore,
-            @NonNull final HederaConfig config) {
+            final int allowanceMaxAccountLimit) {
         for (final var allowance : tokenAllowances) {
             final var owner = allowance.owner();
             final var amount = allowance.amount();
-            final var tokenId = allowance.tokenId();
-            final var spender = allowance.spender();
+            final var tokenId = allowance.tokenIdOrThrow();
+            final var spender = allowance.spenderOrThrow();
 
-            final var effectiveOwner = getEffectiveOwner(owner, payerAccount, accountStore);
-            final var ownerTokenAllowances = effectiveOwner.tokenAllowances();
+            final var effectiveOwner = getEffectiveOwnerAccount(owner, payerId, accountStore);
+            final var mutableTokenAllowances = new ArrayList<>(effectiveOwner.tokenAllowancesOrElse(emptyList()));
 
-            final var allowanceBuilder = AccountFungibleTokenAllowance.newBuilder()
-                    .spenderNum(spender.accountNum())
-                    .tokenNum(tokenId.tokenNum());
-            final var zeroAllowanceKey = allowanceBuilder.amount(0).build();
-            if (ownerTokenAllowances.contains(zeroAllowanceKey)) {
-                removeTokenAllowance(zeroAllowanceKey, effectiveOwner, accountStore);
-            }
+            updateTokenAllowance(mutableTokenAllowances, amount, spender.accountNumOrThrow(), tokenId.tokenNum());
+            final var copy = effectiveOwner
+                    .copyBuilder()
+                    .tokenAllowances(mutableTokenAllowances)
+                    .build();
+            // Only when amount is greater than 0 we add or modify existing allowances.
+            // When removing existing allowances no need to check this.
             if (amount > 0) {
-                final var nonZeroAllowance = allowanceBuilder.amount(amount).build();
-                addTokenAllowance(nonZeroAllowance, effectiveOwner, accountStore, config);
+                validateAllowanceLimit(copy, allowanceMaxAccountLimit);
             }
-//
-//            for (int i = 0 ; i < ownerTokenAllowances.size(); i++) {
-//                final var tokenAllowance = ownerTokenAllowances.get(i);
-//                if(tokenAllowance.tokenNum() == tokenId.tokenNum() && tokenAllowance.spenderNum() == spender.accountNum()){
-//                    if (amount == 0) {
-//                        ownerTokenAllowances.remove(i);
-//                        break;
-//                    } else {
-//                        ownerTokenAllowances.set(i, allowanceBuilder.amount(amount).build());
-//                    }
-//                } else {
-//                    ownerTokenAllowances.add(allowanceBuilder.amount(amount).build());
-//                }
-//            }
+            accountStore.put(copy);
+        }
+    }
+
+    private void updateTokenAllowance(
+            final ArrayList<AccountFungibleTokenAllowance> mutableAllowances,
+            final long amount,
+            final long spenderNum,
+            final long tokenNum) {
+        final var newAllowanceBuilder = AccountFungibleTokenAllowance.newBuilder()
+                .spenderNum(spenderNum)
+                .tokenNum(tokenNum);
+        final var index = lookupSpenderAndToken(mutableAllowances, spenderNum, tokenNum);
+        // If given amount is zero, if the element exists remove it
+        if (amount == 0) {
+            if (index != -1) {
+                mutableAllowances.remove(index);
+            }
+            return;
+        }
+        if (index != -1) {
+            mutableAllowances.set(index, newAllowanceBuilder.amount(amount).build());
+        } else {
+            mutableAllowances.add(newAllowanceBuilder.amount(amount).build());
         }
     }
 
@@ -254,140 +284,44 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
      */
     protected void applyNftAllowances(
             final List<NftAllowance> nftAllowances,
-            @NonNull final Account payerAccount,
+            @NonNull final AccountID payerId,
             @NonNull final WritableAccountStore accountStore,
             @NonNull final WritableTokenStore tokenStore,
             @NonNull final WritableUniqueTokenStore uniqueTokenStore,
-            @NonNull final HederaConfig config) {
+            final int config) {
         for (final var allowance : nftAllowances) {
             final var owner = allowance.owner();
-            final var tokenId = allowance.tokenId();
-            final var spender = allowance.spender();
+            final var tokenId = allowance.tokenIdOrThrow();
+            final var spender = allowance.spenderOrThrow();
 
-            final var effectiveOwner = getEffectiveOwner(owner, payerAccount, accountStore);
+            final var effectiveOwner = getEffectiveOwnerAccount(owner, payerId, accountStore);
+            final var mutableNftAllowances =
+                    new ArrayList<>(effectiveOwner.approveForAllNftAllowancesOrElse(emptyList()));
 
             if (allowance.hasApprovedForAll()) {
                 final var approveForAllAllowance = AccountApprovalForAllAllowance.newBuilder()
                         .tokenNum(tokenId.tokenNum())
-                        .spenderNum(spender.accountNum())
+                        .spenderNum(spender.accountNumOrThrow())
                         .build();
 
-                if (allowance.approvedForAll().booleanValue()) {
-                    addApproveForAllNftAllowance(approveForAllAllowance, effectiveOwner, accountStore, config);
+                if (Boolean.TRUE.equals(allowance.approvedForAll())) {
+                    if (!mutableNftAllowances.contains(approveForAllAllowance)) {
+                        mutableNftAllowances.add(approveForAllAllowance);
+                    }
                 } else {
-                    removeApproveForAllNftAllowance(approveForAllAllowance, effectiveOwner, accountStore, config);
+                    mutableNftAllowances.remove(approveForAllAllowance);
                 }
+                final var copy = effectiveOwner
+                        .copyBuilder()
+                        .approveForAllNftAllowances(mutableNftAllowances)
+                        .build();
+                validateAllowanceLimit(copy, config);
+                accountStore.put(copy);
             }
             // Update spender on all these Nfts to the new spender
             updateSpender(tokenStore, uniqueTokenStore, effectiveOwner, spender, tokenId, allowance.serialNumbers());
         }
     }
-
-    private void addApproveForAllNftAllowance(
-            @NonNull final AccountApprovalForAllAllowance approveForAllAllowance,
-            @NonNull final Account effectiveOwner,
-            @NonNull final WritableAccountStore accountStore,
-            @NonNull final HederaConfig config) {
-        final var ownerApproveForAllAllowances = effectiveOwner.approveForAllNftAllowances();
-        final var approveForAllSet = new HashSet<>(ownerApproveForAllAllowances);
-        approveForAllSet.add(approveForAllAllowance);
-
-        final var copy = effectiveOwner
-                .copyBuilder()
-                .approveForAllNftAllowances(List.copyOf(approveForAllSet))
-                .build();
-        validateAllowanceLimit(copy, config);
-        accountStore.put(copy);
-    }
-
-    private void removeApproveForAllNftAllowance(
-            @NonNull final AccountApprovalForAllAllowance approveForAllAllowance,
-            @NonNull final Account effectiveOwner,
-            @NonNull final WritableAccountStore accountStore,
-            @NonNull final HederaConfig config) {
-        final var ownerApproveForAllAllowances = effectiveOwner.approveForAllNftAllowances();
-        final var approveForAllSet = new HashSet(ownerApproveForAllAllowances);
-        approveForAllSet.remove(approveForAllAllowance);
-
-        final var copy = effectiveOwner
-                .copyBuilder()
-                .approveForAllNftAllowances(new ArrayList<>(approveForAllSet))
-                .build();
-        validateAllowanceLimit(copy, config);
-        accountStore.put(copy);
-    }
-
-    private void removeCryptoAllowance(
-            @NonNull final AccountCryptoAllowance zeroAllowance,
-            @NonNull final Account effectiveOwner,
-            @NonNull final WritableAccountStore accountStore) {
-        final var ownerCryptoAllowances = effectiveOwner.cryptoAllowances();
-        ownerCryptoAllowances.remove(zeroAllowance);
-        final var copy = effectiveOwner
-                .copyBuilder()
-                .cryptoAllowances(ownerCryptoAllowances)
-                .build();
-        accountStore.put(copy);
-    }
-
-    private void addCryptoAllowance(
-            @NonNull final AccountCryptoAllowance nonZeroAllowance,
-            @NonNull final Account effectiveOwner,
-            @NonNull final WritableAccountStore accountStore,
-            @NonNull final HederaConfig config) {
-        final var ownerCryptoAllowances = new ArrayList<>(effectiveOwner.cryptoAllowances());
-        final var index = lookupSpender(ownerCryptoAllowances, nonZeroAllowance.spenderNum());
-
-        if(index != -1) {
-            ownerCryptoAllowances.set(index, nonZeroAllowance);
-        } else {
-            ownerCryptoAllowances.add(nonZeroAllowance);
-        }
-
-        final var copy = effectiveOwner
-                .copyBuilder()
-                .cryptoAllowances(ownerCryptoAllowances)
-                .build();
-        validateAllowanceLimit(copy, config);
-        accountStore.put(copy);
-    }
-
-    private void removeTokenAllowance(
-            @NonNull final AccountFungibleTokenAllowance zeroAllowance,
-            @NonNull final Account effectiveOwner,
-            @NonNull final WritableAccountStore accountStore) {
-        final var ownerTokenAllowances = effectiveOwner.tokenAllowances();
-        ownerTokenAllowances.remove(zeroAllowance);
-        final var copy = effectiveOwner
-                .copyBuilder()
-                .tokenAllowances(ownerTokenAllowances)
-                .build();
-        accountStore.put(copy);
-    }
-
-    private void addTokenAllowance(
-            @NonNull final AccountFungibleTokenAllowance nonZeroAllowance,
-            @NonNull final Account effectiveOwner,
-            @NonNull final WritableAccountStore accountStore,
-            @NonNull final HederaConfig config) {
-
-        final var ownerTokenAllowances = new ArrayList<>(effectiveOwner.tokenAllowances());
-        final var index = lookupSpenderAndToken(ownerTokenAllowances, nonZeroAllowance.spenderNum(), nonZeroAllowance.tokenNum());
-        if(index != -1) {
-            ownerTokenAllowances.set(index, nonZeroAllowance);
-        } else {
-            ownerTokenAllowances.add(nonZeroAllowance);
-        }
-
-        ownerTokenAllowances.add(nonZeroAllowance);
-        final var copy = effectiveOwner
-                .copyBuilder()
-                .tokenAllowances(ownerTokenAllowances)
-                .build();
-        validateAllowanceLimit(copy, config);
-        accountStore.put(copy);
-    }
-
     /**
      * Updates the Spender of each NFT serial
      *
@@ -407,14 +341,16 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
         for (final var serialNum : serialsSet) {
             final var nft = uniqueTokenStore.get(tokenId, serialNum);
             final var token = tokenStore.get(tokenId);
+
             validateTrue(validateOwner(nft, owner.accountNumber(), token), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
-            final var copy =
-                    nft.copyBuilder().spenderNumber(spenderId.accountNum()).build();
+            final var copy = nft.copyBuilder()
+                    .spenderNumber(spenderId.accountNumOrThrow())
+                    .build();
             uniqueTokenStore.put(copy);
         }
     }
 
-    private int lookupSpender(final List<AccountCryptoAllowance> ownerCryptoAllowances, final long spenderNum){
+    private int lookupSpender(final List<AccountCryptoAllowance> ownerCryptoAllowances, final long spenderNum) {
         for (int i = 0; i < ownerCryptoAllowances.size(); i++) {
             final var allowance = ownerCryptoAllowances.get(i);
             if (allowance.spenderNum() == spenderNum) {
@@ -424,8 +360,10 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
         return -1;
     }
 
-    private int lookupSpenderAndToken(final List<AccountFungibleTokenAllowance> ownerCryptoAllowances,
-                                      final long spenderNum, final long tokenNum){
+    private int lookupSpenderAndToken(
+            final List<AccountFungibleTokenAllowance> ownerCryptoAllowances,
+            final long spenderNum,
+            final long tokenNum) {
         for (int i = 0; i < ownerCryptoAllowances.size(); i++) {
             final var allowance = ownerCryptoAllowances.get(i);
             if (allowance.spenderNum() == spenderNum && allowance.tokenNum() == tokenNum) {
@@ -433,5 +371,22 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
             }
         }
         return -1;
+    }
+
+    private static Account getEffectiveOwnerAccount(
+            @Nullable final AccountID owner,
+            @NonNull final AccountID payerId,
+            @NonNull final ReadableAccountStore accountStore) {
+        final var ownerNum = owner != null ? owner.accountNumOrElse(0L) : 0L;
+        if (ownerNum == 0 || ownerNum == payerId.accountNumOrThrow()) {
+            // The payer would have been modified in the same transaction for previous allowances
+            // So, get it from modifications map.
+            return accountStore.getAccountById(payerId);
+        } else {
+            // If owner is in modifications get the modified account from state
+            final var ownerAccount = accountStore.getAccountById(owner);
+            validateTrue(ownerAccount != null, INVALID_ALLOWANCE_OWNER_ID);
+            return ownerAccount;
+        }
     }
 }

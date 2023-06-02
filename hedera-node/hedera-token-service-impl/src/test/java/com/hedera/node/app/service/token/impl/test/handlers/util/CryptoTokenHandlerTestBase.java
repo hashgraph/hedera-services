@@ -134,6 +134,10 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
             EntityNumPair.fromLongs(accountNum.longValue(), fungibleTokenNum.longValue());
     protected final EntityNumPair nonFungiblePair =
             EntityNumPair.fromLongs(accountNum.longValue(), nonFungibleTokenNum.longValue());
+    protected final EntityNumPair ownerFTPair =
+            EntityNumPair.fromLongs(ownerId.accountNum(), fungibleTokenNum.longValue());
+    protected final EntityNumPair ownerNFTPair =
+            EntityNumPair.fromLongs(ownerId.accountNum(), nonFungibleTokenNum.longValue());
     protected final UniqueTokenId uniqueTokenIdSl1 = UniqueTokenId.newBuilder()
             .tokenTypeNumber(nonFungibleTokenId.tokenNum())
             .serialNumber(1L)
@@ -159,7 +163,6 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
             .spender(spenderId)
             .owner(ownerId)
             .tokenId(nonFungibleTokenId)
-            .approvedForAll(Boolean.TRUE)
             .serialNumbers(List.of(1L, 2L))
             .build();
     protected final NftAllowance nftAllowanceWithDelegatingSpender = NftAllowance.newBuilder()
@@ -227,6 +230,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     /* ---------- Token Relations */
     protected TokenRelation fungibleTokenRelation;
     protected TokenRelation nonFungibleTokenRelation;
+    protected TokenRelation ownerFTRelation;
+    protected TokenRelation ownerNFTRelation;
     /* ---------- Accounts */
     protected Account account;
     protected Account deleteAccount;
@@ -336,6 +341,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         readableTokenRelState = emptyReadableTokenRelsStateBuilder()
                 .value(fungiblePair, fungibleTokenRelation)
                 .value(nonFungiblePair, nonFungibleTokenRelation)
+                .value(ownerFTPair, ownerFTRelation)
+                .value(ownerNFTPair, ownerNFTRelation)
                 .build();
         given(readableStates.<EntityNumPair, TokenRelation>get(TOKEN_RELS)).willReturn(readableTokenRelState);
         readableTokenRelStore = new ReadableTokenRelationStoreImpl(readableStates);
@@ -423,6 +430,14 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     private void givenValidTokenRelations() {
         fungibleTokenRelation = givenFungibleTokenRelation();
         nonFungibleTokenRelation = givenNonFungibleTokenRelation();
+        ownerFTRelation = givenFungibleTokenRelation()
+                .copyBuilder()
+                .accountNumber(ownerId.accountNum())
+                .build();
+        ownerNFTRelation = givenNonFungibleTokenRelation()
+                .copyBuilder()
+                .accountNumber(ownerId.accountNum())
+                .build();
     }
 
     private void givenValidTokens() {
