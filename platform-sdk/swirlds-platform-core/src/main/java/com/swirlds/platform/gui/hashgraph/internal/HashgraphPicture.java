@@ -19,6 +19,7 @@ package com.swirlds.platform.gui.hashgraph.internal;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.platform.gui.hashgraph.internal.HashgraphGuiUtils.HASHGRAPH_PICTURE_FONT;
 
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.PlatformEvent;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
@@ -83,7 +84,8 @@ public class HashgraphPicture extends JPanel {
             createMetadata();
             g.setFont(HASHGRAPH_PICTURE_FONT);
             final FontMetrics fm = g.getFontMetrics();
-            final int numMem = hashgraphSource.getAddressBook().getSize();
+            final AddressBook addressBook = hashgraphSource.getAddressBook();
+            final int numMem = addressBook.getSize();
             final AddressBookMetadata currentMetadata = options.isExpanded() ? expandedMetadata : nonExpandedMetadata;
 
             PlatformEvent[] events;
@@ -100,8 +102,9 @@ public class HashgraphPicture extends JPanel {
             if (events == null) { // in case a screen refresh happens before any events
                 return;
             }
-            events =
-                    Arrays.stream(events).filter(e -> e.getCreatorId() < numMem).toArray(PlatformEvent[]::new);
+            events = Arrays.stream(events)
+                    .filter(e -> addressBook.getIndexOfNodeId(e.getCreatorId()) < numMem)
+                    .toArray(PlatformEvent[]::new);
 
             pictureMetadata = new PictureMetadata(fm, this.getSize(), currentMetadata, events);
 
@@ -141,7 +144,8 @@ public class HashgraphPicture extends JPanel {
         g.setColor(HashgraphGuiUtils.eventColor(event, options));
         final PlatformEvent e1 = event.getSelfParent();
         PlatformEvent e2 = event.getOtherParent();
-        if (e2 != null && e2.getCreatorId() >= hashgraphSource.getNumMembers()) {
+        final AddressBook addressBook = hashgraphSource.getAddressBook();
+        if (e2 != null && addressBook.getIndexOfNodeId(e2.getCreatorId()) >= addressBook.getSize()) {
             // if the creator of the other parent has been removed,
             // treat it as if there is no other parent
             e2 = null;

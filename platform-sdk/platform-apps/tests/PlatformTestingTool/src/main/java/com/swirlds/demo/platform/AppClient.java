@@ -20,6 +20,8 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.demo.merkle.map.internal.ExpectedFCMFamily;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 
 /*
  * Simulate Hedera Client to access file or map without going through
@@ -38,10 +40,15 @@ public class AppClient extends Thread {
     private TransactionSubmitter submitter;
     private ExpectedFCMFamily expectedFCMFamily;
 
-    AppClient(Platform platform, NodeId selfId, SuperConfig currentConfig, String myName) {
-        this.platform = platform;
-        this.myName = myName;
-        this.selfId = selfId;
+    AppClient(
+            @NonNull final Platform platform,
+            @NonNull final NodeId selfId,
+            @NonNull final SuperConfig currentConfig,
+            @NonNull final String myName) {
+        this.platform = Objects.requireNonNull(platform, "platform must not be null");
+        this.selfId = Objects.requireNonNull(selfId, "selfId must not be null");
+        Objects.requireNonNull(currentConfig, "currentConfig must not be null");
+        this.myName = Objects.requireNonNull(myName, "myName must not be null");
 
         PayloadCfgSimple pConfig = currentConfig.getPayloadConfig();
 

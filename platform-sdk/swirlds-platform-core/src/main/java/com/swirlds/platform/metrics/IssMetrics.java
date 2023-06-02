@@ -154,30 +154,8 @@ public class IssMetrics {
      * 		the hash computed by the node
      * @param consensusHash
      * 		the consensus hash computed by the network
-     * @deprecated in 0.39.0, use {@link #stateHashValidityObserver(Long, NodeId, Hash, Hash)} instead
      */
-    @Deprecated(forRemoval = true, since = "0.39.0")
     @Observer(StateHashValidityTrigger.class)
-    public void stateHashValidityObserver(
-            @NonNull final Long round,
-            @NonNull final Long nodeId,
-            @NonNull final Hash nodeHash,
-            @NonNull final Hash consensusHash) {
-        stateHashValidityObserver(round, new NodeId(nodeId), nodeHash, consensusHash);
-    }
-
-    /**
-     * Report the status of a node.
-     *
-     * @param round
-     * 		the round number
-     * @param nodeId
-     * 		the ID of the node that submitted the hash
-     * @param nodeHash
-     * 		the hash computed by the node
-     * @param consensusHash
-     * 		the consensus hash computed by the network
-     */
     public void stateHashValidityObserver(
             @NonNull final Long round,
             @NonNull final NodeId nodeId,

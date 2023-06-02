@@ -17,7 +17,10 @@
 package com.swirlds.platform.state.iss.internal;
 
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.system.NodeId;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -39,7 +42,7 @@ public class HashPartition {
     /**
      * The node IDs that are known to agree with this hash.
      */
-    private final Set<Long> nodes = new HashSet<>();
+    private final Set<NodeId> nodes = new HashSet<>();
 
     /**
      * Create an object that tracks a group of nodes that agree about the hash on the state.
@@ -59,7 +62,8 @@ public class HashPartition {
      * @param weight
      * 		the weight held by the node
      */
-    public void addNodeHash(final long nodeId, final long weight) {
+    public void addNodeHash(@NonNull final NodeId nodeId, final long weight) {
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
         final boolean added = nodes.add(nodeId);
         if (!added) {
             throw new IllegalStateException("node " + nodeId + " is already in the partition");
@@ -84,7 +88,8 @@ public class HashPartition {
     /**
      * Get a set of nodes that are in agreement with this hash. This set should not be modified externally.
      */
-    public Set<Long> getNodes() {
+    @NonNull
+    public Set<NodeId> getNodes() {
         return nodes;
     }
 
@@ -99,7 +104,7 @@ public class HashPartition {
                 .append(", hash = ")
                 .append(hash)
                 .append(", nodes = ");
-        for (final long node : nodes) {
+        for (final NodeId node : nodes) {
             sb.append(node).append(" ");
         }
 

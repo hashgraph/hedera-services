@@ -23,6 +23,7 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.io.SelfSerializable;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.test.TransactionUtils;
 import com.swirlds.common.test.io.SerializationUtils;
 import com.swirlds.platform.Settings;
@@ -62,12 +63,17 @@ public class SerializationTests {
         return Stream.of(arguments(
                 RandomEventUtils.randomEventHashedData(
                         68164523688792345L,
-                        0,
+                        new NodeId(0),
                         RandomEventUtils.DEFAULT_FIRST_EVENT_TIME_CREATED,
                         TransactionUtils.randomSwirldTransactions(1234321, 10),
                         null,
                         null),
                 RandomEventUtils.randomEventHashedData(
-                        68164523688792345L, 0, RandomEventUtils.DEFAULT_FIRST_EVENT_TIME_CREATED, null, null, null)));
+                        68164523688792345L,
+                        new NodeId(0),
+                        RandomEventUtils.DEFAULT_FIRST_EVENT_TIME_CREATED,
+                        null,
+                        null,
+                        null)));
     }
 }

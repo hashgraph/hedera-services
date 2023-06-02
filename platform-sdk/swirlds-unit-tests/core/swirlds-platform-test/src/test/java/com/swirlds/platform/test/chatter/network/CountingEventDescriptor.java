@@ -19,9 +19,11 @@ package com.swirlds.platform.test.chatter.network;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.gossip.chatter.protocol.messages.EventDescriptor;
 import java.io.IOException;
 import java.util.Objects;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
  * A descriptor for a {@link CountingChatterEvent}
@@ -34,15 +36,15 @@ public class CountingEventDescriptor implements EventDescriptor {
     }
 
     /** The creator of the event */
-    private long creator;
+    private NodeId creator;
     /** The unique order number of this event */
     private long order;
 
     /** Default constructor for constructable registry */
     public CountingEventDescriptor() {}
 
-    public CountingEventDescriptor(final long creator, final long order) {
-        this.creator = creator;
+    public CountingEventDescriptor(@NonNull final NodeId creator, final long order) {
+        this.creator = Objects.requireNonNull(creator, "creator must not be null");
         this.order = order;
     }
 
@@ -74,7 +76,7 @@ public class CountingEventDescriptor implements EventDescriptor {
     }
 
     @Override
-    public long getCreator() {
+    public NodeId getCreator() {
         return creator;
     }
 

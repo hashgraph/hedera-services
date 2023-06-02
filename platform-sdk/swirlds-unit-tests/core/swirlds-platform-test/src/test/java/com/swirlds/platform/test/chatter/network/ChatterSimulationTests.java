@@ -219,7 +219,7 @@ public class ChatterSimulationTests {
 
         // An event creator that creates events with a monotonically increasing event number across all nodes
         final TimedEventCreator<CountingChatterEvent> eventCreator =
-                new TimedEventCreator<>(params.time(), () -> new CountingChatterEvent(nodeId.id()));
+                new TimedEventCreator<>(params.time(), () -> new CountingChatterEvent(nodeId));
 
         // Keeps track of all events coming out of chatter and passes it straight to the intake queue
         final GossipEventTracker gossipRecorder = new GossipEventTracker(nodeId);

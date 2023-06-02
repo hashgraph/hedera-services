@@ -16,7 +16,10 @@
 
 package com.swirlds.platform.components.state.output;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.state.notifications.IssNotification;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * Invoked when an Invalid State Signature (ISS) is detected.
@@ -34,5 +37,5 @@ public interface IssConsumer {
      * @param issNodeId
      * 		the id of the node with the ISS, or {@code null} if it is a catastrophic ISS
      */
-    void iss(long round, IssNotification.IssType issType, Long issNodeId);
+    void iss(long round, @NonNull IssNotification.IssType issType, @Nullable NodeId issNodeId);
 }
