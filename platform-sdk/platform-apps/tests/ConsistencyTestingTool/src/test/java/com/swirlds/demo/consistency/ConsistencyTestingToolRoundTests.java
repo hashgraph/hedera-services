@@ -77,9 +77,11 @@ class ConsistencyTestingToolRoundTests {
 
             mockEvents.add(mockEvent);
         });
+        final ConsensusSnapshot mockSnapshot = mock(ConsensusSnapshot.class);
+        Mockito.when(mockSnapshot.round()).thenReturn(roundReceived);
 
         return new ConsensusRound(
-                mockEvents, mock(EventImpl.class), mock(GraphGenerations.class), mock(ConsensusSnapshot.class));
+                mockEvents, mock(EventImpl.class), mock(GraphGenerations.class), mockSnapshot);
     }
 
     @Test
