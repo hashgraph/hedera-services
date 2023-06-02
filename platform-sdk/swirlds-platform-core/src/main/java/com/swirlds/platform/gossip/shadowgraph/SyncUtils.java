@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.gossip.shadowgraph;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.internal.EventImpl;
 import java.util.Collection;
@@ -64,7 +65,7 @@ public final class SyncUtils {
      */
     public static int computeMultiTipCount(Iterable<ShadowEvent> tips) {
         // The number of tips per creator encountered when iterating over the sending tips
-        final Map<Long, Integer> tipCountByCreator = new HashMap<>();
+        final Map<NodeId, Integer> tipCountByCreator = new HashMap<>();
 
         // Make a single O(N) where N is the number of tips including all forks. Typically, N will be equal to the
         // number of network nodes.
@@ -75,7 +76,7 @@ public final class SyncUtils {
         // Walk the entrySet() which is O(N) where N is the number network nodes. This is still more efficient than a
         // O(N^2) loop.
         int creatorsWithForks = 0;
-        for (final Map.Entry<Long, Integer> entry : tipCountByCreator.entrySet()) {
+        for (final Map.Entry<NodeId, Integer> entry : tipCountByCreator.entrySet()) {
             // If the number of tips for a given creator is greater than 1 then we have a fork.
             // This map is broken down by creator ID already as the key so this is guaranteed to be a single increment
             // for each creator with a fork. Therefore, this holds to the method contract.

@@ -6,7 +6,7 @@ module com.hedera.node.app.service.util.impl {
     requires transitive com.hedera.pbj.runtime;
     requires transitive dagger;
     requires transitive javax.inject;
-    requires com.hedera.node.app.service.networkadmin;
+    requires com.hedera.node.app.service.network.admin;
     requires com.hedera.node.config;
     requires com.hedera.node.hapi;
     requires com.github.spotbugs.annotations;

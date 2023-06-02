@@ -27,7 +27,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -249,7 +248,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertTrue(createdAccount.tokenAllowances().isEmpty());
         assertEquals(0, createdAccount.numberTreasuryTitles());
         assertFalse(createdAccount.expiredAndPendingRemoval());
-        assertNull(createdAccount.firstContractStorageKey());
+        assertEquals(0, createdAccount.firstContractStorageKey().length());
 
         // validate payer balance reduced
         assertEquals(9_900L, writableStore.get(id).tinybarBalance());
@@ -315,7 +314,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertTrue(createdAccount.tokenAllowances().isEmpty());
         assertEquals(0, createdAccount.numberTreasuryTitles());
         assertFalse(createdAccount.expiredAndPendingRemoval());
-        assertNull(createdAccount.firstContractStorageKey());
+        assertEquals(0, createdAccount.firstContractStorageKey().length());
 
         // validate payer balance reduced
         assertEquals(9_900L, writableStore.get(id).tinybarBalance());

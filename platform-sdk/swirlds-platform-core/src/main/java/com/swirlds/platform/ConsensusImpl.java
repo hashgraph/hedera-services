@@ -515,13 +515,13 @@ public class ConsensusImpl implements Consensus {
             return null;
         }
         List<EventImpl> cons = new LinkedList<>(); // all events reaching consensus now, in consensus order
-        int voterId = (int) event.getCreatorId();
+        int voterId = (int) event.getCreatorId().id();
         for (RoundInfo.ElectionRound election = roundInfo.elections;
                 election != null;
                 election = election.nextElection) { // for all elections
             if (election.age == 1) {
                 // first round of an election. Vote TRUE for self-ancestors of those you firstSee. Don't decide.
-                EventImpl w = firstSee(event, election.event.getCreatorId());
+                EventImpl w = firstSee(event, election.event.getCreatorId().id());
                 while (w != null && w.getRoundCreated() > event.getRoundCreated() - 1 && w.getSelfParent() != null) {
                     w = firstSelfWitnessS(w.getSelfParent());
                 }
@@ -531,8 +531,8 @@ public class ConsensusImpl implements Consensus {
                 long yesWeight = 0; // total weight of all members voting yes
                 long noWeight = 0; // total weight of all members voting yes
                 for (EventImpl w : stronglySeen) {
-                    int id = (int) w.getCreatorId();
-                    long weight = addressBook.getAddress(id).getWeight();
+                    int id = (int) w.getCreatorId().id();
+                    long weight = addressBook.getAddress(w.getCreatorId()).getWeight();
                     if (election.prevRound.vote[id]) {
                         yesWeight += weight;
                     } else {
@@ -1140,7 +1140,7 @@ public class ConsensusImpl implements Consensus {
         sp = x.getSelfParent();
 
         for (int mm = 0; mm < numMembers; mm++) {
-            if (x.getCreatorId() == mm) {
+            if (x.getCreatorId().id() == mm) {
                 x.setLastSee(mm, x);
             } else if (sp == null && op == null) {
                 x.setLastSee(mm, null);
@@ -1176,7 +1176,7 @@ public class ConsensusImpl implements Consensus {
         if (x == null) {
             return null;
         }
-        if (m == m2 && m2 == x.getCreatorId()) {
+        if (m == m2 && m2 == x.getCreatorId().id()) {
             return firstSelfWitnessS(x.getSelfParent());
         }
         return firstSee(lastSee(x, m2), m);

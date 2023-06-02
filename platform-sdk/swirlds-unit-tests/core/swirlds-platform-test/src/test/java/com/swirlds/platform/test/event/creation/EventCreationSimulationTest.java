@@ -113,7 +113,7 @@ public class EventCreationSimulationTest {
         final TestIntake consensus = new TestIntake(addressBook, time);
         final Set<NodeId> nodeIds = new HashSet<>(params.numNodes());
         for (final Address address : addressBook) {
-            nodeIds.add(new NodeId(address.getId()));
+            nodeIds.add(address.getNodeId());
         }
         final NetworkLatency latency = NetworkLatency.randomLatency(nodeIds, params.maxDelay(), random);
         Map<NodeId, NodeConfig> nodeConfigs = params.nodeConfigs();

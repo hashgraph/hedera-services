@@ -47,7 +47,7 @@ module com.hedera.node.app.service.mono {
             com.hedera.node.app.service.networkadmin.impl.test,
             com.hedera.services.cli,
             com.hedera.node.app.service.file.impl,
-            com.hedera.node.app.service.file.impl.test;
+            com.hedera.node.app.service.file.impl.test, com.hedera.node.app.service.network.admin.impl;
     exports com.hedera.node.app.service.mono.ledger to
             com.hedera.node.app.service.mono.test.fixtures,
             com.hedera.node.app;
@@ -67,7 +67,7 @@ module com.hedera.node.app.service.mono {
             com.hedera.node.app.service.schedule.impl,
             com.hedera.node.app.service.networkadmin.impl.test,
             com.hedera.node.app.service.schedule.impl.test,
-            com.hedera.node.app.service.consensus.impl.test;
+            com.hedera.node.app.service.consensus.impl.test, com.hedera.node.app.service.network.admin.impl;
     exports com.hedera.node.app.service.mono.state.validation to
             com.hedera.node.app,
             com.hedera.node.app.service.consensus.impl,

@@ -1,9 +1,9 @@
 import com.hedera.node.app.service.networkadmin.NetworkService;
 import com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl;
 
-module com.hedera.node.app.service.networkadmin.impl {
+module com.hedera.node.app.service.network.admin.impl {
     requires transitive com.hedera.node.app.service.mono;
-    requires transitive com.hedera.node.app.service.networkadmin;
+    requires transitive com.hedera.node.app.service.network.admin;
     requires transitive com.hedera.node.app.spi;
     requires transitive com.hedera.node.hapi;
     requires transitive com.hedera.pbj.runtime;
@@ -21,7 +21,7 @@ module com.hedera.node.app.service.networkadmin.impl {
 
     exports com.hedera.node.app.service.networkadmin.impl to
             com.hedera.node.app,
-            com.hedera.node.app.service.networkadmin.impl.test;
+            com.hedera.node.app.service.network.admin.impl.test;
     exports com.hedera.node.app.service.networkadmin.impl.handlers;
     exports com.hedera.node.app.service.networkadmin.impl.codec;
     exports com.hedera.node.app.service.networkadmin.impl.serdes to

@@ -6,7 +6,7 @@ module com.hedera.node.app {
     requires transitive com.hedera.node.app.service.contract.impl;
     requires transitive com.hedera.node.app.service.file.impl;
     requires transitive com.hedera.node.app.service.mono;
-    requires transitive com.hedera.node.app.service.networkadmin.impl;
+    requires transitive com.hedera.node.app.service.network.admin.impl;
     requires transitive com.hedera.node.app.service.schedule.impl;
     requires transitive com.hedera.node.app.service.token.impl;
     requires transitive com.hedera.node.app.service.util.impl;
@@ -25,7 +25,7 @@ module com.hedera.node.app {
     requires com.hedera.node.app.service.contract;
     requires com.hedera.node.app.service.evm;
     requires com.hedera.node.app.service.file;
-    requires com.hedera.node.app.service.networkadmin;
+    requires com.hedera.node.app.service.network.admin;
     requires com.hedera.node.app.service.schedule;
     requires com.hedera.node.app.service.token;
     requires com.hedera.node.app.service.util;

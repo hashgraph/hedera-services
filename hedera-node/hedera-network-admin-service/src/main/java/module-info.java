@@ -1,4 +1,4 @@
-module com.hedera.node.app.service.networkadmin {
+module com.hedera.node.app.service.network.admin {
     exports com.hedera.node.app.service.networkadmin;
 
     uses com.hedera.node.app.service.networkadmin.FreezeService;

@@ -18,6 +18,8 @@ package com.swirlds.platform.gossip.chatter.protocol.messages;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SelfSerializable;
+import com.swirlds.common.system.NodeId;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A stripped down description of an event.
@@ -36,7 +38,8 @@ public interface EventDescriptor extends SelfSerializable {
      *
      * @return a node ID
      */
-    long getCreator();
+    @NonNull
+    NodeId getCreator();
 
     /**
      * Get the generation of the event described

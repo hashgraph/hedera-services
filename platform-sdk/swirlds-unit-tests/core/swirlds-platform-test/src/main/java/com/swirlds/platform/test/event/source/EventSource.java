@@ -18,9 +18,11 @@ package com.swirlds.platform.test.event.source;
 
 import static com.swirlds.platform.test.event.EventUtils.staticDynamicValue;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.test.TransactionGenerator;
 import com.swirlds.platform.test.event.DynamicValue;
 import com.swirlds.platform.test.event.IndexedEvent;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Random;
 
@@ -43,7 +45,8 @@ public interface EventSource<T extends EventSource<T>> {
     /**
      * Get the node ID of this event source.
      */
-    int getNodeId();
+    @NonNull
+    NodeId getNodeId();
 
     /**
      * Set the node ID of this source. MUST be called before any events are generated.
@@ -53,7 +56,7 @@ public interface EventSource<T extends EventSource<T>> {
      * 		A unique integer that represents the ID of this node.
      * @return this
      */
-    T setNodeId(int nodeId);
+    T setNodeId(@NonNull NodeId nodeId);
 
     /**
      * Get the weight held by this event source.

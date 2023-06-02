@@ -16,32 +16,36 @@
 
 package com.swirlds.platform.test;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.event.RandomEventUtils;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 
 @Deprecated
 public class SimpleEventGenerator {
     final int numberOfNodes;
-    final EventImpl[] lastEvent;
+    final Map<NodeId, EventImpl> lastEvent;
     final Random random;
-    final Set<Integer> excludeAsOtherParent;
+    final Set<NodeId> excludeAsOtherParent;
 
     public SimpleEventGenerator(int numberOfNodes, Random random) {
         this.numberOfNodes = numberOfNodes;
-        lastEvent = new EventImpl[numberOfNodes];
+        lastEvent = new HashMap<>(numberOfNodes);
         this.random = random;
         excludeAsOtherParent = new HashSet<>();
     }
 
     public EventImpl nextEvent(final boolean fakeHash) {
-        final int nodeId = random.nextInt(numberOfNodes);
-        final int otherId = getOtherParent(nodeId);
-        final EventImpl event =
-                RandomEventUtils.randomEvent(random, nodeId, lastEvent[nodeId], lastEvent[otherId], fakeHash, true);
-        lastEvent[nodeId] = event;
+        final NodeId nodeId = new NodeId(random.nextInt(numberOfNodes));
+        final NodeId otherId = getOtherParent(nodeId);
+        final EventImpl event = RandomEventUtils.randomEvent(
+                random, nodeId, lastEvent.get(nodeId), lastEvent.get(otherId), fakeHash, true);
+        lastEvent.put(nodeId, event);
         return event;
     }
 
@@ -49,19 +53,19 @@ public class SimpleEventGenerator {
         return nextEvent(true);
     }
 
-    private int getOtherParent(int exclude) {
-        int otherId = exclude;
-        while (otherId == exclude || excludeAsOtherParent.contains(otherId)) {
-            otherId = random.nextInt(numberOfNodes);
+    private NodeId getOtherParent(final NodeId exclude) {
+        NodeId otherId = exclude;
+        while (Objects.equals(otherId, exclude) || excludeAsOtherParent.contains(otherId)) {
+            otherId = new NodeId(random.nextInt(numberOfNodes));
         }
         return otherId;
     }
 
-    public void excludeOtherParent(int id) {
+    public void excludeOtherParent(final NodeId id) {
         excludeAsOtherParent.add(id);
     }
 
-    public void includeOtherParent(int id) {
+    public void includeOtherParent(final NodeId id) {
         excludeAsOtherParent.remove(id);
     }
 }

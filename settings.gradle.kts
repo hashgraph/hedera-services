@@ -36,9 +36,9 @@ includeBuild(".") // https://github.com/gradlex-org/java-module-dependencies/iss
 
 include(":hedera-node")
 
-include(":node-app-service-networkadmin", "hedera-networkadmin-service")
+include(":node-app-service-network-admin", "hedera-network-admin-service")
 
-include(":node-app-service-networkadmin-impl", "hedera-networkadmin-service-impl")
+include(":node-app-service-network-admin-impl", "hedera-network-admin-service-impl")
 
 include(":node-app-service-consensus", "hedera-consensus-service")
 
@@ -122,7 +122,7 @@ dependencyResolutionManagement {
     // runtime.
     create("libs") {
       // The HAPI API version to use, this need to match the tag set on gitRepositories above
-      val hapiVersion = "0.40.0-alpha.0-SNAPSHOT"
+      val hapiVersion = "0.40.0-blocks-state-SNAPSHOT"
 
       val besuNativeVersion = "0.6.1"
       val besuVersion = "23.1.2"

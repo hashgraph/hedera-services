@@ -16,7 +16,9 @@
 
 package com.swirlds.platform.components.transaction.system;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.transaction.internal.SystemTransaction;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Handles system transactions pre-consensus
@@ -32,5 +34,5 @@ public interface PreConsensusSystemTransactionHandler<T extends SystemTransactio
      * @param nodeId      the id of the node which created the transaction
      * @param transaction the transaction being handled
      */
-    void handle(long nodeId, T transaction);
+    void handle(@NonNull NodeId nodeId, @NonNull T transaction);
 }
