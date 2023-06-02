@@ -56,7 +56,7 @@ public class TokenRelListCalculator {
      * to – or, in the case of the token rels to remove, removed from – their corresponding account
      * or token rel store objects</b>
      *
-     * <h3>Removal Examples</h3>
+     * <b>Removal Examples</b>
      * <p>
      * Assume that valid account A has head token number 1, and that the following list of token
      * relations ({@code TR}'s) exists for account A:
