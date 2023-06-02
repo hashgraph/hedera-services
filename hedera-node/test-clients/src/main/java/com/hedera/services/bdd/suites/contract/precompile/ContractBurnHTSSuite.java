@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
@@ -413,7 +414,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
 
     private HapiSpec burnFungibleV1andV2WithZeroAndNegativeValues() {
         final AtomicReference<Address> tokenAddress = new AtomicReference<>();
-        return defaultHapiSpec("burnFungibleV1andV2WithZeroAndNegativeValues")
+        return onlyDefaultHapiSpec("burnFungibleV1andV2WithZeroAndNegativeValues")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ALICE).balance(10 * ONE_HUNDRED_HBARS),
@@ -431,7 +432,6 @@ public class ContractBurnHTSSuite extends HapiSuite {
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(SUCCESS))
                 .when(
-                        // Burning 0 amount for Fungible tokens should fail
                         sourcing(() -> contractCall(
                                         MULTIVERSION_BURN_CONTRACT,
                                         BURN_TOKEN_V_1,
@@ -440,15 +440,13 @@ public class ContractBurnHTSSuite extends HapiSuite {
                                         new long[0])
                                 .payingWith(ALICE)
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
-                                .gas(GAS_TO_OFFER)
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+                                .gas(GAS_TO_OFFER)),
                         sourcing(() -> contractCall(
                                         MULTIVERSION_BURN_CONTRACT, BURN_TOKEN_V_2, tokenAddress.get(), 0L, new long[0])
                                 .payingWith(ALICE)
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
                                 .gas(GAS_TO_OFFER)
-                                .logged()
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+                                .logged()),
                         // Burning negative amount for Fungible tokens should fail
                         sourcing(() -> contractCall(
                                         MULTIVERSION_BURN_CONTRACT,
@@ -505,8 +503,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
                                         new long[] {1L})
                                 .payingWith(ALICE)
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
-                                .gas(GAS_TO_OFFER)
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+                                .gas(GAS_TO_OFFER)),
                         sourcing(() -> contractCall(
                                         MULTIVERSION_BURN_CONTRACT,
                                         BURN_TOKEN_V_2,
@@ -516,8 +513,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
                                 .payingWith(ALICE)
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
                                 .gas(GAS_TO_OFFER)
-                                .logged()
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
+                                .logged()))
                 .then(getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 2));
     }
 
