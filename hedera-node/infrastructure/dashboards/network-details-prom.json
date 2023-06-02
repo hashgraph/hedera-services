@@ -327,7 +327,7 @@
             "uid": "${Datasource}"
           },
           "editorMode": "code",
-          "expr": "platform_healthyNetworkFraction_fraction{environment=\"$Network\", type=\"max\"}",
+          "expr": "platform_healthyNetworkFraction_fraction{environment=\"$Network\", type=\"mean\"}",
           "legendFormat": "node{{node_id}}",
           "range": true,
           "refId": "A"
