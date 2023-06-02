@@ -178,9 +178,14 @@ public class TokenRelListCalculator {
      * Getter method that prioritizes current updates to token relations, and falls back to other
      * sources if no updates for that token relation yet exist
      *
-     * @param updatedTokenRels the collection of token relations that have been updated from their original state. Passed in as a map of Token ID -> Token Relation for convenience in looking up token relations
-     * @param tokenRelsToDeleteByTokenId the collection of token relations that are to be deleted. Also passed in as a map of Token ID -> Token Relation for convenience
-     * @param accountId the account ID of the account that the token relations belong to (all token relation account IDs must match this value)
+     * @param updatedTokenRels the collection of token relations that have been updated from their
+     *                         original state. Passed in as a map of Token ID -> Token Relation for
+     *                         convenience in looking up token relations
+     * @param tokenRelsToDeleteByTokenId the collection of token relations that are to be deleted.
+     *                                   Also passed in as a map of Token ID -> Token Relation
+     *                                   for convenience
+     * @param accountId the account ID of the account that the token relations belong to (all token
+     *                 relation account IDs must match this value)
      * @param tokenNumToLookup the token ID of the token relation to retrieve
      */
     private TokenRelation getInPriorityOrder(
