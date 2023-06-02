@@ -42,7 +42,6 @@ import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
-import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.data.LedgerConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
@@ -146,7 +145,7 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
             if (meta.autoRenewAccountNumber() != 0)
                 info.autoRenewAccount(AccountID.newBuilder().accountNum(meta.autoRenewAccountNumber()));
 
-            info.ledgerId(new BytesConverter().convert(config.id()));
+            info.ledgerId(config.id());
             return Optional.of(info.build());
         }
     }
