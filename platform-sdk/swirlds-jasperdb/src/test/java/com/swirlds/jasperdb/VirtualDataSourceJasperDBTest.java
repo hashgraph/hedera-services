@@ -205,10 +205,7 @@ class VirtualDataSourceJasperDBTest {
                 }
             });
         } catch (Exception e) {
-            e.printStackTrace();
-            // close data source
-            dataSource.closeAndDelete();
-            System.exit(1);
+            fail(e);
         } finally {
             // close data source
             dataSource.closeAndDelete();

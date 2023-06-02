@@ -43,8 +43,7 @@ public class SubmitConfig {
     private boolean enableThrottling = false; // default to be false to be backward compatible
 
     /**
-     * Once all transactions have been submitted, sleep for this many milliseconds before calling {@link
-     * System#exit(int)}.
+     * Once all transactions have been submitted, sleep for this many milliseconds before exiting the JVM.
      */
     private int sleepAfterTestMs = 90_000;
 

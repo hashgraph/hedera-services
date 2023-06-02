@@ -35,7 +35,6 @@ import static com.swirlds.merkle.map.test.lifecycle.EntityType.Crypto;
 import static com.swirlds.merkle.map.test.lifecycle.SaveExpectedMapHandler.STORAGE_DIRECTORY;
 import static com.swirlds.merkle.map.test.lifecycle.SaveExpectedMapHandler.createExpectedMapName;
 import static com.swirlds.merkle.map.test.lifecycle.SaveExpectedMapHandler.serialize;
-import static java.lang.System.exit;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -527,7 +526,7 @@ public class PlatformTestingToolMain implements SwirldMain {
                     LOGM_EXCEPTION,
                     "ERROR in getting PayloadCfgSimple, please check JSON file syntax. Stack Trace =",
                     e);
-            exit(-2);
+            SystemExitUtils.exitSystem(SystemExitCode.FATAL_ERROR);
         }
         return null;
     }
@@ -658,14 +657,14 @@ public class PlatformTestingToolMain implements SwirldMain {
                             LOGM_EXCEPTION,
                             "ERROR in parsing JSON configuration file, please check JSON file syntax. Stack Trace =",
                             e);
-                    exit(-2);
+                    SystemExitUtils.exitSystem(SystemExitCode.FATAL_ERROR);
                 }
             }
 
             state.setProgressCfg(progressCfg);
         } catch (final NullPointerException e) {
             logger.error(LOGM_EXCEPTION, "ERROR in parsing JSON configuration file. ", e);
-            exit(-2);
+            SystemExitUtils.exitSystem(SystemExitCode.FATAL_ERROR);
         }
 
         initAppStat();
