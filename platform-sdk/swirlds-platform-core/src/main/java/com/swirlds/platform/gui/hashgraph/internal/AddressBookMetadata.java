@@ -18,11 +18,16 @@ package com.swirlds.platform.gui.hashgraph.internal;
 
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.PlatformEvent;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Objects;
 
 /**
  * Metadata that is calculated based on a {@link AddressBook} that is used to aid in drawing a hashgraph
  */
 public class AddressBookMetadata {
+    /** the address book that this metadata is based on */
+    private final AddressBook addressBook;
     /** the number of members in the addressBook */
     private final int numMembers;
     /** the nicknames of all the members */
@@ -41,7 +46,8 @@ public class AddressBookMetadata {
      * cross), we need several data tables. So fill in four arrays: numMembers, mems2col, col2mems, and
      * names, if they haven't already been filled in, or if the number of members has changed.
      */
-    public AddressBookMetadata(final AddressBook addressBook, final boolean expand) {
+    public AddressBookMetadata(@NonNull final AddressBook addressBook, final boolean expand) {
+        this.addressBook = Objects.requireNonNull(addressBook, "addressBook must not be null");
         final int m = addressBook.getSize();
         numMembers = m;
         names = new String[m];
@@ -115,13 +121,18 @@ public class AddressBookMetadata {
     /**
      * find the column for e2 next to the column for e1
      */
-    public int mems2col(final PlatformEvent e1, final PlatformEvent e2) {
+    public int mems2col(@Nullable final PlatformEvent e1, @NonNull final PlatformEvent e2) {
+        Objects.requireNonNull(e2, "e2 must not be null");
+        // To support Noncontiguous NodeId in the address book,
+        // the mems2col array is now based on indexes of NodeIds in the address book.
+        final int e2Index = addressBook.getIndexOfNodeId(e2.getCreatorId());
         if (e1 != null) {
-            return mems2col[(int) e1.getCreatorId()][(int) e2.getCreatorId()];
+            final int e1Index = addressBook.getIndexOfNodeId(e1.getCreatorId());
+            return mems2col[e1Index][e2Index];
         }
         // there is no e1, so pick one of the e2 columns arbitrarily (next to 0 or 1). If there is only 1
         // member, avoid the array out of bounds exception
-        return mems2col[e2.getCreatorId() == 0 ? getNumColumns() == 1 ? 0 : 1 : 0][(int) e2.getCreatorId()];
+        return mems2col[e2Index == 0 ? getNumColumns() == 1 ? 0 : 1 : 0][e2Index];
     }
 
     /**

@@ -189,7 +189,9 @@ public class HashgraphDemoMain implements SwirldMain {
          * @return the x coordinate for that event
          */
         private int xpos(final PlatformEvent event) {
-            return ((int) event.getCreatorId() + 1) * width / (numColumns + 1);
+            // To support Noncontiguous NodeId, the index of the NodeId in the address book is used.
+            final int nodeIndex = platform.getAddressBook().getIndexOfNodeId(event.getCreatorId());
+            return (nodeIndex + 1) * width / (numColumns + 1);
         }
 
         /**

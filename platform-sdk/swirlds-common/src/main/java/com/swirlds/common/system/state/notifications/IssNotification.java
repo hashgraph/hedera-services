@@ -17,6 +17,10 @@
 package com.swirlds.common.system.state.notifications;
 
 import com.swirlds.common.notification.AbstractNotification;
+import com.swirlds.common.system.NodeId;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Objects;
 
 /**
  * This {@link com.swirlds.common.notification.Notification Notification} is triggered when there is an ISS (i.e. an
@@ -42,7 +46,7 @@ public class IssNotification extends AbstractNotification {
     }
 
     private final IssType issType;
-    private final Long otherNodeId;
+    private final NodeId otherNodeId;
 
     /**
      * Create a new ISS notification.
@@ -51,16 +55,17 @@ public class IssNotification extends AbstractNotification {
      * @param issType     the type of the ISS
      * @param otherNodeId the node with an ISS. If this is a {@link IssType#CATASTROPHIC_ISS} then this is null.
      */
-    public IssNotification(final long round, final IssType issType, final Long otherNodeId) {
+    public IssNotification(final long round, @NonNull final IssType issType, @Nullable final NodeId otherNodeId) {
         this.otherNodeId = otherNodeId;
-        this.issType = issType;
+        this.issType = Objects.requireNonNull(issType, "issType must not be null");
         this.round = round;
     }
 
     /**
      * Get the ID of the node that has an ISS. Null if {@link #getIssType()} does not return {@link IssType#OTHER_ISS}.
      */
-    public long getOtherNodeId() {
+    @Nullable
+    public NodeId getOtherNodeId() {
         return otherNodeId;
     }
 
