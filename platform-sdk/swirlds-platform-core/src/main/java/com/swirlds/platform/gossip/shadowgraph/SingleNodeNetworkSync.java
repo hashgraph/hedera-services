@@ -18,10 +18,11 @@ package com.swirlds.platform.gossip.shadowgraph;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
-import java.util.function.LongConsumer;
+import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 
 /**
@@ -36,7 +37,7 @@ public class SingleNodeNetworkSync implements InterruptableRunnable {
     /**
      * A method which accepts a node ID and creates an event
      */
-    private final LongConsumer eventCreator;
+    private final Consumer<NodeId> eventCreator;
 
     /**
      * A supplier of the amount of time to sleep after creating an event (milliseconds)
@@ -46,7 +47,7 @@ public class SingleNodeNetworkSync implements InterruptableRunnable {
     /**
      * The id of the single running node
      */
-    private final long selfId;
+    private final NodeId selfId;
 
     /**
      * Constructor
@@ -58,14 +59,14 @@ public class SingleNodeNetworkSync implements InterruptableRunnable {
      */
     public SingleNodeNetworkSync(
             @NonNull final Runnable statusChecker,
-            @NonNull final LongConsumer eventCreator,
+            @NonNull final Consumer<NodeId> eventCreator,
             @NonNull final LongSupplier sleepTimeSupplier,
-            final long selfId) {
+            @NonNull final NodeId selfId) {
 
-        this.statusChecker = Objects.requireNonNull(statusChecker);
-        this.eventCreator = Objects.requireNonNull(eventCreator);
-        this.sleepTimeSupplier = Objects.requireNonNull(sleepTimeSupplier);
-        this.selfId = selfId;
+        this.statusChecker = Objects.requireNonNull(statusChecker, "statusChecker must not be null");
+        this.eventCreator = Objects.requireNonNull(eventCreator, "eventCreator must not be null");
+        this.sleepTimeSupplier = Objects.requireNonNull(sleepTimeSupplier, "sleepTimeSupplier must not be null");
+        this.selfId = Objects.requireNonNull(selfId, "selfId must not be null");
     }
 
     /**

@@ -51,11 +51,4 @@ public interface HashgraphGuiSource {
      * @return true if the source is ready to return data
      */
     boolean isReady();
-
-    /**
-     * @return the number of members in the address book
-     */
-    default int getNumMembers() {
-        return getAddressBook().getSize();
-    }
 }

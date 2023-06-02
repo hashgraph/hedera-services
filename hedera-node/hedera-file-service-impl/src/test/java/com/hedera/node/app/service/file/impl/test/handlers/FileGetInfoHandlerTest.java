@@ -26,6 +26,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.FileID;
@@ -44,9 +46,9 @@ import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.handlers.FileGetInfoHandler;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
-import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -56,17 +58,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class FileGetInfoHandlerTest extends FileHandlerTestBase {
 
-    @Mock
-    private NetworkInfo networkInfo;
-
-    @Mock
+    @Mock(strictness = LENIENT)
     private QueryContext context;
 
     private FileGetInfoHandler subject;
 
     @BeforeEach
     void setUp() {
-        subject = new FileGetInfoHandler(networkInfo);
+        subject = new FileGetInfoHandler();
+        final var configuration = new HederaTestConfigBuilder().getOrCreateConfig();
+        lenient().when(context.configuration()).thenReturn(configuration);
     }
 
     @Test
@@ -167,7 +168,6 @@ class FileGetInfoHandlerTest extends FileHandlerTestBase {
     @Test
     void getsResponseIfOkResponse() {
         givenValidFile();
-        given(networkInfo.ledgerId()).willReturn(ledgerId);
         final var responseHeader = ResponseHeader.newBuilder()
                 .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
                 .build();

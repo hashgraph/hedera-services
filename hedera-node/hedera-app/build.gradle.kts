@@ -22,71 +22,49 @@ plugins {
 
 description = "Hedera Application - Implementation"
 
-configurations.all {
-  exclude("javax.annotation", "javax.annotation-api")
-  exclude("com.google.code.findbugs", "jsr305")
-  exclude("org.jetbrains", "annotations")
-  exclude("org.checkerframework", "checker-qual")
-
-  exclude("io.grpc", "grpc-core")
-  exclude("io.grpc", "grpc-context")
-  exclude("io.grpc", "grpc-api")
-  exclude("io.grpc", "grpc-testing")
-}
-
 dependencies {
-  annotationProcessor(libs.dagger.compiler)
+  javaModuleDependencies {
+    annotationProcessor(gav("dagger.compiler"))
 
-  implementation(project(":hedera-node:hedera-app-spi"))
-  implementation(project(":hedera-node:hedera-config"))
-  implementation(project(":hedera-node:hedera-mono-service"))
-  implementation(project(":hedera-node:hapi-utils"))
-  implementation(project(":hedera-node:hapi-fees"))
-  implementation(project(":hedera-node:hedera-networkadmin-service-impl"))
-  implementation(project(":hedera-node:hedera-consensus-service-impl"))
-  implementation(project(":hedera-node:hedera-file-service-impl"))
-  implementation(project(":hedera-node:hedera-schedule-service-impl"))
-  implementation(project(":hedera-node:hedera-smart-contract-service-impl"))
-  implementation(project(":hedera-node:hedera-token-service-impl"))
-  implementation(project(":hedera-node:hedera-util-service-impl"))
-  implementation(project(":hedera-node:hedera-evm"))
-  implementation(libs.bundles.di)
-  implementation(libs.bundles.swirlds)
-  implementation(libs.bundles.helidon)
-  implementation(libs.helidon.grpc.server)
-  implementation(libs.pbj.runtime)
-  implementation(libs.commons.codec) // Temporarily needed for AdaptedMonoProcessLogic
+    testImplementation(testFixtures(project(":hedera-node:node-config")))
+    testImplementation(testFixtures(project(":hedera-node:node-app-service-mono")))
+    testImplementation(testFixtures(project(":hedera-node:node-app-spi")))
+    testImplementation(gav("com.swirlds.base"))
+    testImplementation(gav("com.swirlds.test.framework"))
+    testImplementation(gav("io.github.classgraph"))
+    testImplementation(gav("org.assertj.core"))
+    testImplementation(gav("org.hamcrest"))
+    testImplementation(gav("org.junit.jupiter.api"))
+    testImplementation(gav("org.junit.jupiter.params"))
+    testImplementation(gav("org.mockito"))
+    testImplementation(gav("org.mockito.junit.jupiter"))
+    testImplementation(gav("uk.org.webcompere.systemstubs.jupiter"))
+    testImplementation(gav("uk.org.webcompere.systemstubs.core"))
 
-  jmhImplementation(project(":hedera-node:hedera-app"))
-  jmhImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
-  jmhImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
+    itestImplementation(project(":hedera-node:node-app"))
+    itestImplementation(project(":hedera-node:node-app-spi"))
+    itestImplementation(project(":hedera-node:node-hapi"))
+    itestImplementation(testFixtures(project(":hedera-node:node-app-spi")))
+    itestImplementation(gav("com.github.spotbugs.annotations"))
+    itestImplementation(gav("com.hedera.pbj.runtime"))
+    itestImplementation(gav("com.swirlds.common"))
+    itestImplementation(gav("com.swirlds.config"))
+    itestImplementation(gav("io.grpc"))
+    itestImplementation(gav("io.helidon.grpc.client"))
+    itestImplementation(gav("io.helidon.grpc.server"))
+    itestImplementation(gav("org.assertj.core"))
+    itestImplementation(gav("org.bouncycastle.provider"))
+    itestImplementation(gav("org.junit.jupiter.api"))
+    itestImplementation(gav("org.junit.jupiter.params"))
 
-  itestImplementation(project(":hedera-node:hapi"))
-  itestImplementation(testFixtures(project(":hedera-node:hapi")))
-  itestImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
-  itestImplementation(libs.pbj.runtime)
-  itestImplementation(libs.bundles.helidon)
-  itestImplementation(libs.bundles.swirlds)
-  itestImplementation(testLibs.helidon.grpc.client)
-  itestImplementation(testLibs.bundles.mockito)
-  itestImplementation(testLibs.assertj.core)
-  itestCompileOnly(libs.spotbugs.annotations)
-
-  testImplementation(testFixtures(project(":hedera-node:hedera-config")))
-  testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
-  testImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
-  testImplementation(testLibs.classgraph)
-  testImplementation(testLibs.system.stubs.core)
-  testImplementation(testLibs.system.stubs.jupiter)
-  testImplementation(testLibs.bundles.testing)
-  testCompileOnly(libs.spotbugs.annotations)
-
-  testFixturesImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
-  testFixturesImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
-  testFixturesImplementation(project(":hedera-node:hedera-app"))
-  testFixturesImplementation(testLibs.classgraph)
-  testFixturesImplementation(testLibs.bundles.testing)
-  testFixturesCompileOnly(libs.spotbugs.annotations)
+    jmhImplementation(project(":hedera-node:node-app"))
+    jmhImplementation(project(":hedera-node:node-app-service-mono"))
+    jmhImplementation(project(":hedera-node:node-hapi"))
+    jmhImplementation(testFixtures(project(":hedera-node:node-app-spi")))
+    jmhImplementation(gav("com.hedera.pbj.runtime"))
+    jmhImplementation(gav("com.swirlds.common"))
+    jmhImplementation(gav("jmh.core"))
+  }
 }
 
 tasks.withType<Test> {
@@ -165,7 +143,5 @@ val cleanRun =
 tasks.clean { dependsOn(cleanRun) }
 
 tasks.register("showHapiVersion") {
-  doLast {
-    println(versionCatalogs.named("libs").findVersion("hapi-version").get().requiredVersion)
-  }
+  doLast { println(libs.versions.com.hedera.hashgraph.protobuf.java.api.get()) }
 }

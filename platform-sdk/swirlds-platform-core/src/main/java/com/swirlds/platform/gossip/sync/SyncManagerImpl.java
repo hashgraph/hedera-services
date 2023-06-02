@@ -168,18 +168,24 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
             return list;
         }
         list = new LinkedList<>();
+        final int selfIndex = addressBook.getIndexOfNodeId(selfId);
         for (int i = 0; i < MAXIMUM_NEIGHBORS_TO_QUERY; i++) {
-            final long neighbor = connectionGraph.randomNeighbor(selfId.getIdAsInt());
+            // Noncontiguous NodeId compatibility: connectionGraph is interpreted as addressbook indexes for NodeIds
+            final int neighbor = connectionGraph.randomNeighbor(selfIndex) % addressBook.getSize();
+            if (neighbor == selfIndex) {
+                continue;
+            }
+            final NodeId neighborId = addressBook.getNodeId(neighbor);
 
             // don't add duplicated nodes here
-            if (list.contains(neighbor)) {
+            if (list.contains(neighborId.id())) {
                 continue;
             }
 
             // we try to call a neighbor in the bottom 1/3 by number of events created in the latest round, if
             // we fail to find one after 10 tries, we just call the last neighbor we find
-            if (criticalQuorum.isInCriticalQuorum(neighbor) || i == MAXIMUM_NEIGHBORS_TO_QUERY - 1) {
-                list.add(neighbor);
+            if (criticalQuorum.isInCriticalQuorum(neighborId) || i == MAXIMUM_NEIGHBORS_TO_QUERY - 1) {
+                list.add(neighborId.id());
             }
         }
 
@@ -232,8 +238,7 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
         }
 
         // check 3: if neither node is part of the superMinority in the latest round, don't create an event
-        if (!criticalQuorum.isInCriticalQuorum(info.getOtherId().id())
-                && !criticalQuorum.isInCriticalQuorum(selfId.id())) {
+        if (!criticalQuorum.isInCriticalQuorum(info.getOtherId()) && !criticalQuorum.isInCriticalQuorum(selfId)) {
             return false;
         }
 
