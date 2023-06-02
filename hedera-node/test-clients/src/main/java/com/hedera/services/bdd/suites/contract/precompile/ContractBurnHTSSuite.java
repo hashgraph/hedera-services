@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
@@ -32,6 +33,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
@@ -64,9 +66,11 @@ import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hedera.services.bdd.suites.utils.contracts.precompile.TokenKeyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.math.BigInteger;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -144,15 +148,14 @@ public class ContractBurnHTSSuite extends HapiSuite {
                                         .payingWith(ALICE)
                                         .via(CREATION_TX)
                                         .gas(GAS_TO_OFFER))),
+                        tokenUpdate(TOKEN).contractKey(Set.of(TokenKeyType.SUPPLY_KEY), THE_BURN_CONTRACT),
                         getTxnRecord(CREATION_TX).logged())
                 .when(
-                        // Burning 0 amount for Fungible tokens should fail
                         contractCall(THE_BURN_CONTRACT, BURN_TOKEN_WITH_EVENT, BigInteger.ZERO, new long[0])
                                 .payingWith(ALICE)
-                                .alsoSigningWithFullPrefix(MULTI_KEY)
+                                .alsoSigningWithFullPrefix(MULTI_KEY, THE_BURN_CONTRACT)
                                 .gas(GAS_TO_OFFER)
-                                .via("burnZero")
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                .via("burnZero"),
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 50),
                         contractCall(THE_BURN_CONTRACT, BURN_TOKEN_WITH_EVENT, BigInteger.ONE, new long[0])
                                 .payingWith(ALICE)
@@ -212,6 +215,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
                         tokenCreate(TOKEN)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                                 .initialSupply(0L)
+                                .adminKey(MULTI_KEY)
                                 .supplyKey(MULTI_KEY)
                                 .treasury(TOKEN_TREASURY),
                         mintToken(TOKEN, List.of(copyFromUtf8(FIRST))),
@@ -226,6 +230,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
                                         .payingWith(ALICE)
                                         .via(CREATION_TX)
                                         .gas(GAS_TO_OFFER))),
+                        tokenUpdate(TOKEN).contractKey(Set.of(TokenKeyType.SUPPLY_KEY), THE_BURN_CONTRACT),
                         getTxnRecord(CREATION_TX).logged())
                 .when(
                         withOpContext((spec, opLog) -> {
@@ -337,6 +342,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
                         cryptoCreate(feeCollector).balance(0L),
                         tokenCreate(tokenWithHbarFee)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                .adminKey(SUPPLY_KEY)
                                 .supplyKey(SUPPLY_KEY)
                                 .initialSupply(0L)
                                 .treasury(TOKEN_TREASURY)
@@ -352,13 +358,18 @@ public class ContractBurnHTSSuite extends HapiSuite {
                                                         spec.registry().getTokenID(tokenWithHbarFee))))
                                         .payingWith(bob)
                                         .gas(GAS_TO_OFFER))),
+                        tokenUpdate(tokenWithHbarFee).contractKey(Set.of(TokenKeyType.SUPPLY_KEY), theContract),
                         tokenAssociate(ALICE, tokenWithHbarFee),
                         tokenAssociate(bob, tokenWithHbarFee),
                         tokenAssociate(theContract, tokenWithHbarFee),
                         cryptoTransfer(movingUnique(tokenWithHbarFee, 2L).between(TOKEN_TREASURY, ALICE))
                                 .payingWith(GENESIS),
                         getAccountInfo(feeCollector)
-                                .has(AccountInfoAsserts.accountWith().balance(0L)))
+                                .has(AccountInfoAsserts.accountWith().balance(0L)),
+                        cryptoApproveAllowance()
+                                .payingWith(ALICE)
+                                .addNftAllowance(ALICE, tokenWithHbarFee, theContract, false, List.of(2L))
+                                .fee(ONE_HBAR))
                 .when(
                         withOpContext((spec, opLog) -> {
                             final var serialNumbers = new long[] {1L};
@@ -374,7 +385,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
                                                     BigInteger.ZERO,
                                                     2L,
                                                     serialNumbers)
-                                            .alsoSigningWithFullPrefix(ALICE, SUPPLY_KEY)
+                                            .alsoSigningWithFullPrefix(ALICE, theContract)
                                             .gas(GAS_TO_OFFER)
                                             .via("contractCallTxn")
                                             .hasKnownStatus(CONTRACT_REVERT_EXECUTED));
