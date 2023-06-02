@@ -65,6 +65,11 @@ import picocli.CommandLine.Option;
 @Command(name = "inspector")
 public class SuitesInspector implements Callable<Integer> {
 
+    enum ManifestType {
+        DIRECT, // with HapiSpec names
+        REGISTERED // with actual method names
+    }
+
     @ArgGroup(multiplicity = "1")
     Operation operation;
 
@@ -220,11 +225,6 @@ public class SuitesInspector implements Callable<Integer> {
     }
 
     record Manifest(int count, @NonNull List<TestSkeleton> tests) {}
-
-    enum ManifestType {
-        DIRECT, // with HapiSpec names
-        REGISTERED // with actual method names
-    }
 
     void doWriteManifest(@NonNull final ManifestType type) {
 

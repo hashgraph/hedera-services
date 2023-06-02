@@ -49,7 +49,7 @@ public class SuiteProvider implements AvailableIntegrationTestSuites {
 
     @NotNull
     @Override
-    public List<Supplier<HapiSuite>> allSuitesOfKind(final SuiteKind @NotNull ... kinds) {
+    public List<Supplier<HapiSuite>> allSuitesOfKind(@NonNull final SuiteKind ... kinds) {
         final var wanted = EnumSet.of(SuiteKind.prerequisite);
         wanted.addAll(Arrays.asList(kinds));
         if (wanted.contains(SuiteKind.all)) {
