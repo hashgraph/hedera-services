@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.cli;
 
-import static com.swirlds.platform.system.SystemExitReason.FATAL_ERROR;
+import static com.swirlds.platform.system.SystemExitCode.FATAL_ERROR;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
 import com.swirlds.cli.PlatformCli;
