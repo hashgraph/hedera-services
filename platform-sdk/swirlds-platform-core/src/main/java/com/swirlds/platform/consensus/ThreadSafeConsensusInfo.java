@@ -107,13 +107,13 @@ public class ThreadSafeConsensusInfo implements GraphGenerations, RoundNumberPro
      * <p>Executed only on consensus thread.
      */
     private void updateMaxRoundGeneration() {
-        final MinGenInfo info = storage.get(fameDecidedBelow - 1);
+        final MinGenInfo info = storage.get(getLastRoundDecided());
         if (info == null) {
             // this should never happen
             LOG.error(
                     LogMarker.EXCEPTION.getMarker(),
                     "maxRound({}) is null in updateMaxRoundGeneration()",
-                    fameDecidedBelow - 1);
+                    getLastRoundDecided());
             return;
         }
         long newMaxRoundGeneration = info.minimumGeneration();
@@ -133,7 +133,7 @@ public class ThreadSafeConsensusInfo implements GraphGenerations, RoundNumberPro
      */
     private void updateMinGenNonAncient() {
         final long nonAncientRound =
-                RoundCalculationUtils.getOldestNonAncientRound(config.roundsNonAncient(), fameDecidedBelow);
+                RoundCalculationUtils.getOldestNonAncientRound(config.roundsNonAncient(), getLastRoundDecided());
         final MinGenInfo info = storage.get(nonAncientRound);
         if (info == null) {
             // should never happen

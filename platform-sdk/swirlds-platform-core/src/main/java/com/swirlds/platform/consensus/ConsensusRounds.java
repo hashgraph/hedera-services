@@ -189,7 +189,7 @@ public class ConsensusRounds {
      */
     public List<MinGenInfo> getMinGenInfo() {
         final long oldestNonAncientRound =
-                RoundCalculationUtils.getOldestNonAncientRound(config.roundsNonAncient(), getFameDecidedBelow());
+                RoundCalculationUtils.getOldestNonAncientRound(config.roundsNonAncient(), getLastRoundDecided());
         return LongStream.range(oldestNonAncientRound, getFameDecidedBelow())
                 .mapToObj(this::getMinGen)
                 .filter(Objects::nonNull)
@@ -204,7 +204,7 @@ public class ConsensusRounds {
                     "Missing round {}. Fame decided below {}, oldest non-ancient round {}",
                     round,
                     getFameDecidedBelow(),
-                    RoundCalculationUtils.getOldestNonAncientRound(config.roundsNonAncient(), getFameDecidedBelow()));
+                    RoundCalculationUtils.getOldestNonAncientRound(config.roundsNonAncient(), getLastRoundDecided()));
             return null;
         }
         return minGenInfo;

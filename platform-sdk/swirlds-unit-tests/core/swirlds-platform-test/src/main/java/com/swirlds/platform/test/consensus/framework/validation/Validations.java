@@ -20,6 +20,7 @@ import static com.swirlds.platform.test.consensus.framework.validation.Validatio
 import static com.swirlds.platform.test.consensus.framework.validation.Validations.ValidationType.CONSENSUS_TIMESTAMPS;
 import static com.swirlds.platform.test.consensus.framework.validation.Validations.ValidationType.DIFFERENT_ORDER;
 import static com.swirlds.platform.test.consensus.framework.validation.Validations.ValidationType.INPUTS_ARE_SAME;
+import static com.swirlds.platform.test.consensus.framework.validation.Validations.ValidationType.NO_EVENTS_LOST;
 import static com.swirlds.platform.test.consensus.framework.validation.Validations.ValidationType.RATIOS;
 
 import java.util.HashMap;
@@ -31,7 +32,9 @@ public class Validations {
             INPUTS_ARE_SAME, InputEventsValidation::validateInputsAreTheSame,
             DIFFERENT_ORDER, InputEventsValidation::validateEventsAreInDifferentOrder,
             CONSENSUS_EVENTS, ConsensusRoundValidation::validateConsensusRounds,
-            CONSENSUS_TIMESTAMPS, TimestampChecker::validateConsensusTimestamps));
+            CONSENSUS_TIMESTAMPS, TimestampChecker::validateConsensusTimestamps,
+            NO_EVENTS_LOST, NoEventsLost::validateNoEventsAreLost
+    ));
 
     public static Validations standard() {
         return new Validations();
@@ -56,6 +59,7 @@ public class Validations {
         DIFFERENT_ORDER,
         CONSENSUS_EVENTS,
         CONSENSUS_TIMESTAMPS,
-        RATIOS
+        RATIOS,
+        NO_EVENTS_LOST
     }
 }

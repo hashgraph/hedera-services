@@ -400,7 +400,9 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
      * @param round the round whose minimum generation will be returned
      * @return the minimum generation for the round specified
      * @throws NoSuchElementException if the generation information for this round is not contained withing this state
+     * @deprecated replace with the method in {@link com.swirlds.platform.consensus.ConsensusSnapshot}
      */
+    @Deprecated
     public long getMinGen(final long round) {
         for (final MinGenInfo info : getMinGenInfo()) {
             if (info.round() == round) {
