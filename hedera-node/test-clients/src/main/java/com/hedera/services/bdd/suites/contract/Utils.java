@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.suites.contract;
 
-import static com.hedera.node.app.hapi.utils.keys.Ed25519Utils.relocatedIfNotPresentInWorkingDir;
+import static com.hedera.node.app.hapi.utils.ResourceLocator.relocatedIfNotPresentInWorkingDir;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -26,7 +26,6 @@ import static com.swirlds.common.utility.CommonUtils.hex;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static java.lang.System.arraycopy;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
@@ -309,7 +308,9 @@ public class Utils {
                 numExpectedChildren++;
                 childOfInterest++;
             }
-            assertEquals(numExpectedChildren, response.getChildTransactionRecordsCount(), "Wrong # of children");
+            if (numExpectedChildren != response.getChildTransactionRecordsCount())
+                throw new IllegalStateException("Wrong # of children, have %d expectedd %d"
+                        .formatted(response.getChildTransactionRecordsCount(), numExpectedChildren));
             final var create2Record = response.getChildTransactionRecords(childOfInterest);
             final var create2Address =
                     create2Record.getContractCreateResult().getEvmAddress().getValue();

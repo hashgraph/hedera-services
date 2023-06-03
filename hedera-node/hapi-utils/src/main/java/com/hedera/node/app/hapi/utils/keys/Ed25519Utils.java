@@ -16,8 +16,9 @@
 
 package com.hedera.node.app.hapi.utils.keys;
 
+import static com.hedera.node.app.hapi.utils.ResourceLocator.relocatedIfNotPresentInWorkingDir;
+
 import java.io.*;
-import java.nio.file.Path;
 import java.security.*;
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
@@ -40,8 +41,6 @@ public final class Ed25519Utils {
     private static final Provider BC_PROVIDER = new BouncyCastleProvider();
     private static final Provider ED_PROVIDER = new EdDSASecurityProvider();
 
-    private static final String RESOURCE_PATH_SEGMENT = "src/main/resource";
-    public static final String TEST_CLIENTS_PREFIX = "hedera-node" + File.separator + "test-clients" + File.separator;
     public static final EdDSANamedCurveSpec ED25519_PARAMS =
             EdDSANamedCurveTable.getByName(EdDSANamedCurveTable.ED_25519);
     private static final DrbgParameters.Instantiation DRBG_INSTANTIATION =
@@ -70,14 +69,6 @@ public final class Ed25519Utils {
         } catch (final IOException | OperatorCreationException | PKCSException e) {
             throw new IllegalArgumentException(e);
         }
-    }
-
-    public static Path relocatedIfNotPresentInWorkingDir(final Path p) {
-        return relocatedIfNotPresentInWorkingDir(p.toFile()).toPath();
-    }
-
-    public static File relocatedIfNotPresentInWorkingDir(final File f) {
-        return relocatedIfNotPresentWithCurrentPathPrefix(f, RESOURCE_PATH_SEGMENT, TEST_CLIENTS_PREFIX);
     }
 
     public static void writeKeyTo(final byte[] seed, final String pemLoc, final String passphrase) {
@@ -111,21 +102,6 @@ public final class Ed25519Utils {
     public static KeyPair keyPairFrom(final EdDSAPrivateKey privateKey) {
         final var publicKey = new EdDSAPublicKey(new EdDSAPublicKeySpec(privateKey.getAbyte(), ED25519_PARAMS));
         return new KeyPair(publicKey, privateKey);
-    }
-
-    public static File relocatedIfNotPresentWithCurrentPathPrefix(
-            final File f, final String firstSegmentToRelocate, final String newPathPrefix) {
-        if (!f.exists()) {
-            final var absPath = f.getAbsolutePath();
-            final var idx = absPath.indexOf(firstSegmentToRelocate);
-            if (idx == -1) {
-                return f;
-            }
-            final var relocatedPath = newPathPrefix + absPath.substring(idx);
-            return new File(relocatedPath);
-        } else {
-            return f;
-        }
     }
 
     private Ed25519Utils() {

@@ -16,16 +16,14 @@
 
 package com.hedera.node.app.hapi.utils.keys;
 
-import static com.hedera.node.app.hapi.utils.keys.Ed25519Utils.relocatedIfNotPresentInWorkingDir;
-import static com.hedera.node.app.hapi.utils.keys.Ed25519Utils.relocatedIfNotPresentWithCurrentPathPrefix;
 import static com.swirlds.common.utility.CommonUtils.hex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.node.app.hapi.utils.ResourceLocator;
 import com.swirlds.common.utility.CommonUtils;
 import java.io.File;
-import java.nio.file.Paths;
 import java.security.KeyPair;
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import org.junit.jupiter.api.Test;
@@ -56,31 +54,10 @@ class Ed25519UtilsTest {
     void canRelocateFromWhenFileIsMissing() {
         final var missingLoc = "test/resources/vectors/genesis.pem";
 
-        final var relocated =
-                relocatedIfNotPresentWithCurrentPathPrefix(new File(missingLoc), "test", "src" + File.separator);
+        final var relocated = ResourceLocator.relocatedIfNotPresentWithCurrentPathPrefix(
+                new File(missingLoc), "test", "src" + File.separator);
 
         assertEquals("src/test/resources/vectors/genesis.pem", relocated.getPath());
-    }
-
-    @Test
-    void doesNotRelocateIfSegmentMissing() {
-        final var missingLoc = "test/resources/vectors/genesis.pem";
-
-        final var relocated =
-                relocatedIfNotPresentWithCurrentPathPrefix(new File(missingLoc), "NOPE", "src" + File.separator);
-
-        assertEquals(missingLoc, relocated.getPath());
-    }
-
-    @Test
-    void triesToRelocateObviouslyMissingPath() {
-        final var notPresent = Paths.get("nowhere/src/main/resources/nothing.txt");
-
-        final var expected = Paths.get("hedera-node/test-clients/src/main/resources/nothing.txt");
-
-        final var actual = relocatedIfNotPresentInWorkingDir(notPresent);
-
-        assertEquals(expected, actual);
     }
 
     @Test
