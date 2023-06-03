@@ -237,6 +237,11 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
      * Handles quorum determinations for all {@link ControlTransaction} processed by the handle method.
      */
     private QuorumTriggeredAction<ControlAction> controlQuorum;
+    /**
+     * Indicates whether to use MerkleDb (useMerkleDb==true) or JasperDB (useMerkleDb==false) as
+     * data source backend for virtual maps.
+     */
+    private boolean useMerkleDb = false;
 
     public PlatformTestingToolState() {
         super(ChildIndices.CHILD_COUNT);
@@ -498,6 +503,10 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
 
     private void setNextSeqCons(final NextSeqConsList nextSeqCons) {
         setChild(ChildIndices.NEXT_SEQUENCE_CONSENSUS, nextSeqCons);
+    }
+
+    public boolean shouldUseMerkleDb() {
+        return useMerkleDb;
     }
 
     public VirtualMap<AccountVirtualMapKey, AccountVirtualMapValue> getVirtualMap() {
@@ -1268,6 +1277,13 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         } else {
             setConfig(new PayloadCfgSimple());
         }
+
+        if ((parameters != null) && (parameters.length > 1)) {
+            useMerkleDb = Boolean.parseBoolean(parameters[1]);
+        } else {
+            useMerkleDb = false;
+        }
+        logger.info(LOGM_DEMO_INFO, "Using {} data sources", (useMerkleDb ? "MerkleDb" : "JasperDB"));
 
         expectedFCMFamily.setNodeId(platform.getSelfId().id());
         expectedFCMFamily.setWeightedNodeNum(platform.getAddressBook().getNumberWithWeight());
