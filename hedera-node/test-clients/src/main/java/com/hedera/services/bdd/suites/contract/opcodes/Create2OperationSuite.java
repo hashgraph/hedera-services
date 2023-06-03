@@ -23,7 +23,6 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.literalIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
@@ -31,6 +30,7 @@ import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.re
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocalWithFunctionAbi;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -294,11 +294,12 @@ public class Create2OperationSuite extends HapiSuite {
                                 .nodePayment(ONE_HBAR)))
                 .then(
                         inParallel(IntStream.range(0, timesToFail)
-                                .mapToObj(i -> sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get(), BigInteger.ONE)
-                                        .payingWith(GENESIS)
-                                        .gas(4_000_000L)
-                                        .sending(tcValue)
-                                        .via(creation)))
+                                .mapToObj(i -> sourcing(
+                                        () -> contractCall(contract, DEPLOY, testContractInitcode.get(), BigInteger.ONE)
+                                                .payingWith(GENESIS)
+                                                .gas(4_000_000L)
+                                                .sending(tcValue)
+                                                .via(creation)))
                                 .toArray(HapiSpecOperation[]::new)),
                         sourcing(() -> cryptoCreate("nextUp")
                                 .exposingCreatedIdTo(id -> LOG.info(
@@ -889,8 +890,10 @@ public class Create2OperationSuite extends HapiSuite {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> childMirrorAddr = new AtomicReference<>();
 
-        return onlyDefaultHapiSpec("childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor")
+        return propertyPreservingHapiSpec("childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor")
+                .preserving("contracts.maxNumWithHapiSigsAccess")
                 .given(
+                        overriding("contracts.maxNumWithHapiSigsAccess", "10_000_000"),
                         newKeyNamed(multiKey),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(ft)
@@ -901,6 +904,8 @@ public class Create2OperationSuite extends HapiSuite {
                         .gas(2_000_000)
                         .adminKey(multiKey)
                         .payingWith(GENESIS)
+                        .sigMapPrefixes(uniqueWithFullPrefixesFor(GENESIS, multiKey))
+                        .signedBy(GENESIS, multiKey)
                         .exposingNumTo(n -> childMirrorAddr.set("0.0." + (n + 1)))
                         .via(creationAndAssociation)))
                 .then(sourcing(() -> getContractInfo(childMirrorAddr.get()).logged()));

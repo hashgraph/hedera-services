@@ -141,8 +141,11 @@ public class HederaCreateOperationExternalizer implements CreateOperationExterna
     }
 
     private void finalizeHollowAccountIntoContract(AccountID hollowAccountID, HederaStackedWorldStateUpdater updater) {
-        // reclaim the id for the contract
-        updater.reclaimLatestContractId();
+        // We cannot reclaim the id reserved for a new contract here, even though it will not be used
+        // (since in fact this creation is just finalizing a hollow account). The reason is that it is
+        // possible there were child contracts created by the CONTRACT_CREATION message; and their ids
+        // will not automatically "shrink" to fill a gap left by the reclaimed id. So if we reclaimed
+        // the id here, the next entity number allocated would collide with the last-created child.
 
         // update the hollow account to be a contract
         updater.trackingAccounts().set(hollowAccountID, IS_SMART_CONTRACT, true);

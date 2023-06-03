@@ -242,7 +242,6 @@ class HederaCreateOperationExternalizerTest {
         // then:
         verify(creator)
                 .createSuccessfulSyntheticRecord(eq(Collections.emptyList()), trackerCaptor.capture(), eq(EMPTY_MEMO));
-        verify(updater).reclaimLatestContractId();
         verify(updater.trackingAccounts()).set(hollowAccountId, IS_SMART_CONTRACT, true);
         verify(updater.trackingAccounts()).set(hollowAccountId, KEY, STANDIN_CONTRACT_ID_KEY);
         verify(updater.trackingAccounts()).set(hollowAccountId, ETHEREUM_NONCE, 1L);
@@ -282,7 +281,6 @@ class HederaCreateOperationExternalizerTest {
         // then:
         verify(creator)
                 .createSuccessfulSyntheticRecord(eq(Collections.emptyList()), trackerCaptor.capture(), eq(EMPTY_MEMO));
-        verify(updater).reclaimLatestContractId();
         verify(updater.trackingAccounts()).set(hollowAccountId, IS_SMART_CONTRACT, true);
         verify(updater.trackingAccounts()).set(hollowAccountId, KEY, STANDIN_CONTRACT_ID_KEY);
         verify(updater.trackingAccounts()).set(hollowAccountId, ETHEREUM_NONCE, 1L);
