@@ -22,6 +22,8 @@ import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hederahashgraph.api.proto.java.Key;
 import org.apache.tuweni.bytes.Bytes;
 
+import java.util.Arrays;
+
 public class HapiParserUtil {
 
     private HapiParserUtil() {
