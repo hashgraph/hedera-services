@@ -21,9 +21,8 @@ import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStrea
 import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.parseRecordFileConsensusTime;
 import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.parseSidecarFileConsensusTimeAndSequenceNo;
 import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.readMaybeCompressedRecordStreamFile;
-import static com.hedera.node.app.hapi.utils.keys.Ed25519Utils.TEST_CLIENTS_PREFIX;
-import static com.hedera.node.app.hapi.utils.keys.Ed25519Utils.relocatedIfNotPresentWithCurrentPathPrefix;
 
+import com.hedera.node.app.hapi.utils.ResourceLocator;
 import com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils;
 import com.hedera.services.stream.proto.RecordStreamFile;
 import com.hedera.services.stream.proto.SidecarFile;
@@ -88,7 +87,8 @@ public enum RecordStreamAccess {
         if (!validatingListeners.containsKey(loc)) {
             // In most cases should let us run HapiSpec#main() from both the root and test-clients/
             // directories
-            var fAtLoc = relocatedIfNotPresentWithCurrentPathPrefix(new File(loc), "..", TEST_CLIENTS_PREFIX);
+            var fAtLoc = ResourceLocator.relocatedIfNotPresentWithCurrentPathPrefix(
+                    new File(loc), "..", ResourceLocator.TEST_CLIENTS_PREFIX);
             if (!fAtLoc.exists()) {
                 throw new IllegalArgumentException("No such record stream file location: " + fAtLoc.getAbsolutePath());
             }
@@ -106,7 +106,8 @@ public enum RecordStreamAccess {
      * @throws IOException if there is an error reading the files
      */
     public Data readStreamDataFrom(String loc, final String relativeSidecarLoc) throws IOException {
-        final var fAtLoc = relocatedIfNotPresentWithCurrentPathPrefix(new File(loc), "..", TEST_CLIENTS_PREFIX);
+        final var fAtLoc = ResourceLocator.relocatedIfNotPresentWithCurrentPathPrefix(
+                new File(loc), "..", ResourceLocator.TEST_CLIENTS_PREFIX);
         loc = fAtLoc.getAbsolutePath();
         final var recordFiles = orderedRecordFilesFrom(loc, f -> true);
         final var sidecarLoc = loc + File.separator + relativeSidecarLoc;
