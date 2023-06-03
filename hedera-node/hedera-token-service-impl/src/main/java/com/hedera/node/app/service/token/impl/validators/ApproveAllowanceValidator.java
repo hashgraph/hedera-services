@@ -18,7 +18,6 @@ package com.hedera.node.app.service.token.impl.validators;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
 import static com.hedera.node.app.service.token.impl.handlers.ContextualRetriever.isFungibleCommon;
-import static com.hedera.node.app.service.token.impl.util.AllowanceHelpers.aggregateNftAllowances;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Collections.emptyList;
@@ -40,7 +39,6 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.ConfigProvider;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -49,7 +47,7 @@ import javax.inject.Singleton;
  * This class validates the {@link CryptoApproveAllowanceTransactionBody} transaction
  */
 @Singleton
-public class ApproveAllowanceValidator extends BaseAllowanceValidator {
+public class ApproveAllowanceValidator extends AllowanceValidator {
 
     @Inject
     public ApproveAllowanceValidator(final ConfigProvider configProvider) {
@@ -212,31 +210,5 @@ public class ApproveAllowanceValidator extends BaseAllowanceValidator {
                 SPENDER_ACCOUNT_SAME_AS_OWNER);
         final var relation = tokenRelStore.get(ownerId, tokenId);
         validateTrue(relation.isPresent(), TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
-    }
-
-    /**
-     * Returns owner account to be considered for the allowance changes. If the owner is missing in
-     * allowance, considers payer of the transaction as the owner. This is same for
-     * CryptoApproveAllowance and CryptoDeleteAllowance transaction. Looks at entitiesChanged map
-     * before fetching from accountStore for performance.
-     *
-     * @param owner given owner
-     * @param payer given payer for the transaction
-     * @param accountStore account store
-     * @return owner account
-     */
-    private Account getEffectiveOwner(
-            @Nullable final AccountID owner,
-            @NonNull final Account payer,
-            @NonNull final ReadableAccountStore accountStore) {
-        final var ownerNum = owner != null ? owner.accountNumOrElse(0L) : 0L;
-        if (ownerNum == 0 || ownerNum == payer.accountNumber()) {
-            return payer;
-        } else {
-            // If owner is in modifications get the modified account from state
-            final var ownerAccount = accountStore.getAccountById(owner);
-            validateTrue(ownerAccount != null, INVALID_ALLOWANCE_OWNER_ID);
-            return ownerAccount;
-        }
     }
 }

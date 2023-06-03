@@ -32,9 +32,12 @@ import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.handlers.CryptoDeleteAllowanceHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase;
+import com.hedera.node.app.service.token.impl.validators.DeleteAllowanceValidator;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import java.util.List;
+
+import com.hedera.node.config.ConfigProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -44,8 +47,11 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoHandlerTestBase {
 
     @Mock
     private Account ownerAccount;
+    @Mock
+    private ConfigProvider configProvider;
+    private DeleteAllowanceValidator deleteAllowanceValidator;
 
-    private CryptoDeleteAllowanceHandler subject = new CryptoDeleteAllowanceHandler();
+    private CryptoDeleteAllowanceHandler subject;
 
     @BeforeEach
     public void setUp() {
@@ -57,6 +63,8 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoHandlerTestBase {
                 .build();
         given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
         readableStore = new ReadableAccountStoreImpl(readableStates);
+        deleteAllowanceValidator = new DeleteAllowanceValidator(configProvider);
+        subject = new CryptoDeleteAllowanceHandler(deleteAllowanceValidator);
     }
 
     @Test
