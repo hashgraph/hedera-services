@@ -816,7 +816,8 @@ public class Create2OperationSuite extends HapiSuite {
 
                                     assertEquals(expectedCreate2Address.get(), hexedAddress);
                                 })
-                                .payingWith(GENESIS)));
+                                .payingWith(GENESIS)),
+                        cryptoCreate("confirmingNoEntityIdCollision"));
     }
 
     @SuppressWarnings("java:S5669")
