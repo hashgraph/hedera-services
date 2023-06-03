@@ -18,7 +18,7 @@ package com.hedera.node.app.service.token.impl.validators;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
 import static com.hedera.node.app.service.token.impl.handlers.ContextualRetriever.isFungibleCommon;
-import static com.hedera.node.app.service.token.impl.helpers.AllowanceHelpers.aggregateNftAllowances;
+import static com.hedera.node.app.service.token.impl.util.AllowanceHelpers.aggregateNftAllowances;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Collections.emptyList;
@@ -34,9 +34,9 @@ import com.hedera.hapi.node.token.CryptoApproveAllowanceTransactionBody;
 import com.hedera.hapi.node.token.NftAllowance;
 import com.hedera.hapi.node.token.TokenAllowance;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
-import com.hedera.node.app.service.token.ReadableUniqueTokenStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.ConfigProvider;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -61,7 +61,7 @@ public class ApproveAllowanceValidator extends BaseAllowanceValidator {
         // create stores and config from context
         final var tokenStore = context.readableStore(ReadableTokenStore.class);
         final var tokenRelStore = context.readableStore(ReadableTokenRelationStore.class);
-        final var nftStore = context.readableStore(ReadableUniqueTokenStore.class);
+        final var nftStore = context.readableStore(ReadableNftStore.class);
 
         final var txn = context.body();
         final var op = txn.cryptoApproveAllowanceOrThrow();
@@ -151,7 +151,7 @@ public class ApproveAllowanceValidator extends BaseAllowanceValidator {
             final ReadableAccountStore accountStore,
             final ReadableTokenStore tokenStore,
             final ReadableTokenRelationStore tokenRelStore,
-            final ReadableUniqueTokenStore uniqueTokenStore) {
+            final ReadableNftStore uniqueTokenStore) {
         for (final var allowance : nftAllowancesList) {
             final var owner = allowance.owner();
             final var spender = allowance.spenderOrThrow();

@@ -26,7 +26,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * Provides read-only methods for interacting with the underlying data storage mechanisms for
  * working with Nfts.
  */
-public interface ReadableUniqueTokenStore {
+public interface ReadableNftStore {
     /**
      * Gets {@link Nft} data for a given {@link TokenID} and serial number.
      * @param id the token id to look up

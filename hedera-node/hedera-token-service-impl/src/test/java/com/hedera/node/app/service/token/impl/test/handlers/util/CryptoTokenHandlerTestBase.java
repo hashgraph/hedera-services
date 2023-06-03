@@ -50,17 +50,17 @@ import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
-import com.hedera.node.app.service.token.ReadableUniqueTokenStore;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
+import com.hedera.node.app.service.token.impl.ReadableNftStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
-import com.hedera.node.app.service.token.impl.ReadableUniqueTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
-import com.hedera.node.app.service.token.impl.WritableUniqueTokenStore;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
@@ -222,8 +222,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected WritableAccountStore writableAccountStore;
     protected ReadableTokenRelationStore readableTokenRelStore;
     protected WritableTokenRelationStore writableTokenRelStore;
-    protected ReadableUniqueTokenStore readableNftStore;
-    protected WritableUniqueTokenStore writableNftStore;
+    protected ReadableNftStore readableNftStore;
+    protected WritableNftStore writableNftStore;
     /* ---------- Tokens */
     protected Token fungibleToken;
     protected Token nonFungibleToken;
@@ -365,7 +365,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .value(uniqueTokenIdSl2, nftSl2)
                 .build();
         given(readableStates.<UniqueTokenId, Nft>get(NFTS)).willReturn(readableNftState);
-        readableNftStore = new ReadableUniqueTokenStoreImpl(readableStates);
+        readableNftStore = new ReadableNftStoreImpl(readableStates);
     }
 
     private void givenWritableNftStore() {
@@ -374,7 +374,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .value(uniqueTokenIdSl2, nftSl2)
                 .build();
         given(writableStates.<UniqueTokenId, Nft>get(NFTS)).willReturn(writableNftState);
-        writableNftStore = new WritableUniqueTokenStore(writableStates);
+        writableNftStore = new WritableNftStore(writableStates);
     }
 
     @NonNull

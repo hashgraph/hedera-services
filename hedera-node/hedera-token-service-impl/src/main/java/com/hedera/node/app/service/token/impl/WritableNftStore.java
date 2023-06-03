@@ -36,16 +36,16 @@ import java.util.Set;
  * <p>This class is not exported from the module. It is an internal implementation detail.
  * This class is not complete, it will be extended with other methods like remove, update etc.,
  */
-public class WritableUniqueTokenStore extends ReadableUniqueTokenStoreImpl {
+public class WritableNftStore extends ReadableNftStoreImpl {
     /** The underlying data storage class that holds the NFT data. */
     private final WritableKVState<UniqueTokenId, Nft> nftState;
 
     /**
-     * Create a new {@link WritableUniqueTokenStore} instance.
+     * Create a new {@link WritableNftStore} instance.
      *
      * @param states The state to use.
      */
-    public WritableUniqueTokenStore(@NonNull final WritableStates states) {
+    public WritableNftStore(@NonNull final WritableStates states) {
         super(states);
         this.nftState = states.get(TokenServiceImpl.NFTS_KEY);
     }

@@ -37,14 +37,14 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
-import com.hedera.node.app.service.token.ReadableUniqueTokenStore;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
-import com.hedera.node.app.service.token.impl.WritableUniqueTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoApproveAllowanceHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.ApproveAllowanceValidator;
@@ -92,8 +92,8 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         given(handleContext.readableStore(ReadableTokenRelationStore.class)).willReturn(readableTokenRelStore);
         given(handleContext.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
 
-        given(handleContext.readableStore(ReadableUniqueTokenStore.class)).willReturn(readableNftStore);
-        given(handleContext.writableStore(WritableUniqueTokenStore.class)).willReturn(writableNftStore);
+        given(handleContext.readableStore(ReadableNftStore.class)).willReturn(readableNftStore);
+        given(handleContext.writableStore(WritableNftStore.class)).willReturn(writableNftStore);
 
         subject = new CryptoApproveAllowanceHandler(validator);
     }
@@ -326,7 +326,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
                         nftSl2.copyBuilder().ownerNumber(accountNum).build())
                 .build();
         given(writableStates.<UniqueTokenId, Nft>get(NFTS)).willReturn(writableNftState);
-        writableNftStore = new WritableUniqueTokenStore(writableStates);
+        writableNftStore = new WritableNftStore(writableStates);
 
         final var txn = cryptoApproveAllowanceTransaction(
                 id,

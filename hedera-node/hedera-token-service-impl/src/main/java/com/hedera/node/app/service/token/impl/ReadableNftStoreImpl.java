@@ -21,8 +21,8 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.common.UniqueTokenId;
 import com.hedera.hapi.node.state.token.Nft;
+import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
-import com.hedera.node.app.service.token.ReadableUniqueTokenStore;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -31,16 +31,16 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 /**
  * Default implementation of {@link ReadableTokenStore}.
  */
-public class ReadableUniqueTokenStoreImpl implements ReadableUniqueTokenStore {
+public class ReadableNftStoreImpl implements ReadableNftStore {
     /** The underlying data storage class that holds the token data. */
     private final ReadableKVState<UniqueTokenId, Nft> nftState;
 
     /**
-     * Create a new {@link ReadableUniqueTokenStoreImpl} instance.
+     * Create a new {@link ReadableNftStoreImpl} instance.
      *
      * @param states The state to use.
      */
-    public ReadableUniqueTokenStoreImpl(@NonNull final ReadableStates states) {
+    public ReadableNftStoreImpl(@NonNull final ReadableStates states) {
         requireNonNull(states);
         this.nftState = states.get(TokenServiceImpl.NFTS_KEY);
     }

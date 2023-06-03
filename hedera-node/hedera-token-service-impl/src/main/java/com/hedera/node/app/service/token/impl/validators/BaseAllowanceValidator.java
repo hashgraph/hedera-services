@@ -23,7 +23,7 @@ import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
 import com.hedera.hapi.node.base.TokenID;
-import com.hedera.node.app.service.token.ReadableUniqueTokenStore;
+import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.HederaConfig;
 import java.util.HashSet;
@@ -57,7 +57,7 @@ public class BaseAllowanceValidator {
     }
 
     protected void validateSerialNums(
-            final List<Long> serialNums, final TokenID tokenId, final ReadableUniqueTokenStore nftStore) {
+            final List<Long> serialNums, final TokenID tokenId, final ReadableNftStore nftStore) {
         final var serialsSet = new HashSet<>(serialNums);
         for (var serial : serialsSet) {
             validateTrue(serial > 0, INVALID_TOKEN_NFT_SERIAL_NUMBER);

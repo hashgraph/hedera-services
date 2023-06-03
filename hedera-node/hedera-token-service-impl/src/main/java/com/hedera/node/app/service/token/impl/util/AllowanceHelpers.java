@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.token.impl.helpers;
+package com.hedera.node.app.service.token.impl.util;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
@@ -48,14 +48,6 @@ public class AllowanceHelpers {
             }
         }
         return nftAllowancesTotal;
-    }
-
-    public static int countSerials(final List<NftAllowance> nftAllowancesList) {
-        int totalSerials = 0;
-        for (var allowance : nftAllowancesList) {
-            totalSerials += allowance.serialNumbers().size();
-        }
-        return totalSerials;
     }
 
     /**

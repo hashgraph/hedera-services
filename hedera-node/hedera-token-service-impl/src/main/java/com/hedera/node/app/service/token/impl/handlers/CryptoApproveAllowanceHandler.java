@@ -20,8 +20,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_DELEGATING_SPENDER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
-import static com.hedera.node.app.service.token.impl.helpers.AllowanceHelpers.validateAllowanceLimit;
-import static com.hedera.node.app.service.token.impl.helpers.AllowanceHelpers.validateOwner;
+import static com.hedera.node.app.service.token.impl.util.AllowanceHelpers.validateAllowanceLimit;
+import static com.hedera.node.app.service.token.impl.util.AllowanceHelpers.validateOwner;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
@@ -38,8 +38,8 @@ import com.hedera.hapi.node.token.NftAllowance;
 import com.hedera.hapi.node.token.TokenAllowance;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
-import com.hedera.node.app.service.token.impl.WritableUniqueTokenStore;
 import com.hedera.node.app.service.token.impl.validators.ApproveAllowanceValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -157,7 +157,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
 
         final var hederaConfig = context.configuration().getConfigData(HederaConfig.class);
         final var tokenStore = context.writableStore(WritableTokenStore.class);
-        final var uniqueTokenStore = context.writableStore(WritableUniqueTokenStore.class);
+        final var uniqueTokenStore = context.writableStore(WritableNftStore.class);
 
         /* --- Apply changes to state --- */
         final var allowanceMaxAccountLimit = hederaConfig.allowancesMaxAccountLimit();
@@ -320,7 +320,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
             @NonNull final AccountID payerId,
             @NonNull final WritableAccountStore accountStore,
             @NonNull final WritableTokenStore tokenStore,
-            @NonNull final WritableUniqueTokenStore uniqueTokenStore,
+            @NonNull final WritableNftStore uniqueTokenStore,
             final int allowanceMaxAccountLimit) {
         for (final var allowance : nftAllowances) {
             final var owner = allowance.owner();
@@ -367,7 +367,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
      */
     public void updateSpender(
             @NonNull final WritableTokenStore tokenStore,
-            @NonNull final WritableUniqueTokenStore uniqueTokenStore,
+            @NonNull final WritableNftStore uniqueTokenStore,
             @NonNull final Account owner,
             @NonNull final AccountID spenderId,
             @NonNull final TokenID tokenId,
