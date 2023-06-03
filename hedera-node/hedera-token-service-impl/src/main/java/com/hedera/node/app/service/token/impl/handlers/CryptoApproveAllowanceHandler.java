@@ -117,7 +117,12 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
         // by a previous allowance change
         approveAllowance(context, payer, accountStore);
     }
-
+    /**
+     * Validate the transaction body fields that include state or configuration
+     * @param context the handle context
+     * @param payerAccount the payer account
+     * @param accountStore the account store
+     */
     private void validateSemantics(
             @NonNull final HandleContext context,
             @NonNull final Account payerAccount,
@@ -154,7 +159,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
         final var tokenStore = context.writableStore(WritableTokenStore.class);
         final var uniqueTokenStore = context.writableStore(WritableUniqueTokenStore.class);
 
-        /* --- Do the business logic --- */
+        /* --- Apply changes to state --- */
         final var allowanceMaxAccountLimit = hederaConfig.allowancesMaxAccountLimit();
         applyCryptoAllowances(cryptoAllowances, payerId, accountStore, allowanceMaxAccountLimit);
         applyFungibleTokenAllowances(tokenAllowances, payerId, accountStore, allowanceMaxAccountLimit);
@@ -202,9 +207,17 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
         }
     }
 
+    /**
+     * Updates the crypto allowance amount if the allowance exists, otherwise adds a new allowance
+     * If the amount is zero removes the allowance if it exists in the list
+     * @param mutableAllowances the list of mutable allowances of owner
+     * @param amount the amount
+     * @param spenderNum the spender number
+     */
     private void updateCryptoAllowance(
             final ArrayList<AccountCryptoAllowance> mutableAllowances, final long amount, final long spenderNum) {
         final var newAllowanceBuilder = AccountCryptoAllowance.newBuilder().spenderNum(spenderNum);
+        // get the index of the allowance with same spender in existing list
         final var index = lookupSpender(mutableAllowances, spenderNum);
         // If given amount is zero, if the element exists remove it, otherwise do nothing
         if (amount == 0) {
@@ -225,6 +238,10 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
      * Applies all changes needed for fungible token allowances from the transaction.If the key
      * {token, spender} already has an allowance, the allowance value will be replaced with values
      * from transaction
+     * @param tokenAllowances the list of token allowances
+     * @param payerId the payer account id
+     * @param accountStore the account store
+     * @param allowanceMaxAccountLimit the {@link HederaConfig} allowance max account limit
      */
     private void applyFungibleTokenAllowances(
             @NonNull final List<TokenAllowance> tokenAllowances,
@@ -254,6 +271,15 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
         }
     }
 
+    /**
+     * Updates the token allowance amount if the allowance for given tokenNuma dn spenderNum exists,
+     * otherwise adds a new allowance.
+     * If the amount is zero removes the allowance if it exists in the list
+     * @param mutableAllowances the list of mutable allowances of owner
+     * @param amount the amount
+     * @param spenderNum the spender number
+     * @param tokenNum the token number
+     */
     private void updateTokenAllowance(
             final ArrayList<AccountFungibleTokenAllowance> mutableAllowances,
             final long amount,
@@ -281,6 +307,13 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
      * Applies all changes needed for NFT allowances from the transaction. If the key{tokenNum,
      * spenderNum} doesn't exist in the map the allowance will be inserted. If the key exists,
      * existing allowance values will be replaced with new allowances given in operation
+     *
+     * @param nftAllowances the list of nft allowances
+     * @param payerId the payer account id
+     * @param accountStore the account store
+     * @param tokenStore the token store
+     * @param uniqueTokenStore the unique token store
+     * @param allowanceMaxAccountLimit the {@link HederaConfig} config allowance max account limit
      */
     protected void applyNftAllowances(
             final List<NftAllowance> nftAllowances,
@@ -288,7 +321,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
             @NonNull final WritableAccountStore accountStore,
             @NonNull final WritableTokenStore tokenStore,
             @NonNull final WritableUniqueTokenStore uniqueTokenStore,
-            final int config) {
+            final int allowanceMaxAccountLimit) {
         for (final var allowance : nftAllowances) {
             final var owner = allowance.owner();
             final var tokenId = allowance.tokenIdOrThrow();
@@ -315,16 +348,22 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
                         .copyBuilder()
                         .approveForAllNftAllowances(mutableNftAllowances)
                         .build();
-                validateAllowanceLimit(copy, config);
+                validateAllowanceLimit(copy, allowanceMaxAccountLimit);
                 accountStore.put(copy);
             }
             // Update spender on all these Nfts to the new spender
             updateSpender(tokenStore, uniqueTokenStore, effectiveOwner, spender, tokenId, allowance.serialNumbers());
         }
     }
+
     /**
-     * Updates the Spender of each NFT serial
-     *
+     * Updates the spender of the given NFTs to the new spender
+     * @param tokenStore the token store
+     * @param uniqueTokenStore the unique token store
+     * @param owner the owner account
+     * @param spenderId the spender account id
+     * @param tokenId the token id
+     * @param serialNums the serial numbers
      */
     public void updateSpender(
             @NonNull final WritableTokenStore tokenStore,
@@ -350,9 +389,16 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
         }
     }
 
-    private int lookupSpender(final List<AccountCryptoAllowance> ownerCryptoAllowances, final long spenderNum) {
-        for (int i = 0; i < ownerCryptoAllowances.size(); i++) {
-            final var allowance = ownerCryptoAllowances.get(i);
+    /**
+     * Returns the index of the allowance with the given spender in the list if it exists,
+     * otherwise returns -1
+     * @param ownerAllowances list of allowances
+     * @param spenderNum spender account number
+     * @return index of the allowance if it exists, otherwise -1
+     */
+    private int lookupSpender(final List<AccountCryptoAllowance> ownerAllowances, final long spenderNum) {
+        for (int i = 0; i < ownerAllowances.size(); i++) {
+            final var allowance = ownerAllowances.get(i);
             if (allowance.spenderNum() == spenderNum) {
                 return i;
             }
@@ -360,12 +406,18 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
         return -1;
     }
 
+    /**
+     * Returns the index of the allowance  with the given spender and token in the list if it exists,
+     * otherwise returns -1
+     * @param ownerAllowances list of allowances
+     * @param spenderNum spender account number
+     * @param tokenNum token number
+     * @return index of the allowance if it exists, otherwise -1
+     */
     private int lookupSpenderAndToken(
-            final List<AccountFungibleTokenAllowance> ownerCryptoAllowances,
-            final long spenderNum,
-            final long tokenNum) {
-        for (int i = 0; i < ownerCryptoAllowances.size(); i++) {
-            final var allowance = ownerCryptoAllowances.get(i);
+            final List<AccountFungibleTokenAllowance> ownerAllowances, final long spenderNum, final long tokenNum) {
+        for (int i = 0; i < ownerAllowances.size(); i++) {
+            final var allowance = ownerAllowances.get(i);
             if (allowance.spenderNum() == spenderNum && allowance.tokenNum() == tokenNum) {
                 return i;
             }
@@ -373,6 +425,15 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
         return -1;
     }
 
+    /**
+     * Returns the effective owner account. If the owner is not present or owner is same as payer.
+     * Since we are modifying the payer account in the same transaction for each allowance if owner is not specified,
+     * we need to get the payer account each time from the modifications map.
+     * @param owner owner of the allowance
+     * @param payerId payer of the transaction
+     * @param accountStore account store
+     * @return effective owner account
+     */
     private static Account getEffectiveOwnerAccount(
             @Nullable final AccountID owner,
             @NonNull final AccountID payerId,

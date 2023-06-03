@@ -45,6 +45,9 @@ import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * This class validates the {@link CryptoApproveAllowanceTransactionBody} transaction
+ */
 @Singleton
 public class ApproveAllowanceValidator extends BaseAllowanceValidator {
 
@@ -72,7 +75,7 @@ public class ApproveAllowanceValidator extends BaseAllowanceValidator {
 
         // validate total count of allowances
         validateAllowanceCount(cryptoAllowances, tokenAllowances, nftAllowances);
-
+        // validate all allowances
         validateCryptoAllowances(cryptoAllowances, payerAccount, accountStore);
         validateFungibleTokenAllowances(tokenAllowances, payerAccount, accountStore, tokenStore, tokenRelStore);
         validateNftAllowances(nftAllowances, payerAccount, accountStore, tokenStore, tokenRelStore, nftStore);
