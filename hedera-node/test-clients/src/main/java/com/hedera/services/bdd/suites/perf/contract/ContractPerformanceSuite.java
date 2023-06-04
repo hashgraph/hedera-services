@@ -30,6 +30,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.swirlds.common.utility.CommonUtils.hex;
 
 import com.google.common.io.Files;
+import com.hedera.node.app.hapi.utils.ResourceLocator;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -44,7 +45,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -90,24 +90,28 @@ public class ContractPerformanceSuite extends HapiSuite {
     public List<HapiSpec> getSpecsInSuite() {
         List<String> perfTests;
         try {
-            perfTests =
-                    Files.readLines(new File(PERF_RESOURCES + "performanceContracts.csv"), Charset.defaultCharset())
-                            .stream()
-                            .filter(s -> !s.isEmpty() && !s.startsWith("#"))
-                            .collect(Collectors.toList());
+            perfTests = Files.readLines(
+                            ResourceLocator.relocatedIfNotPresentInWorkingDir(
+                                    new File(PERF_RESOURCES + "performanceContracts.csv")),
+                            Charset.defaultCharset())
+                    .stream()
+                    .filter(s -> !s.isEmpty() && !s.trim().startsWith("#"))
+                    .toList();
         } catch (IOException e) {
             return List.of();
         }
-        List<HapiSpec> hapiSpecs = new ArrayList<>();
-        for (String line : perfTests) {
-            String[] values = line.split(",", 2);
-            String test = values[0];
-            long gasCost = Long.parseLong(values[1]);
-            String path = PERF_RESOURCES + test;
-            String via = test.substring(0, test.length() - 4);
+        List<HapiSpec> hapiSpecs = new ArrayList<>(perfTests.size());
+        for (final String line : perfTests) {
+            final String[] values = line.split(",", 2);
+            final String test = values[0];
+            final long gasCost = Long.parseLong(values[1]);
+            final String path = PERF_RESOURCES + test;
+            final String via = test.substring(0, test.length() - 4);
             String contractCode;
             try {
-                contractCode = new String(Files.toByteArray(new File(path)), StandardCharsets.US_ASCII);
+                contractCode = new String(
+                        Files.toByteArray(ResourceLocator.relocatedIfNotPresentInWorkingDir(new File(path))),
+                        StandardCharsets.US_ASCII);
             } catch (IOException e) {
                 String message = String.format("createTestProgram for %s failed to read bytes from '%s'!", test, path);
                 LOG.warn(message, e);
@@ -130,8 +134,7 @@ public class ContractPerformanceSuite extends HapiSuite {
                 };
             } else {
                 givenBlock = new HapiSpecOperation[] {
-                    fileCreate(BYTECODE).path(PERF_RESOURCES + test),
-                    contractCreate(test).bytecode(BYTECODE)
+                    fileCreate(BYTECODE).path(path), contractCreate(test).bytecode(BYTECODE)
                 };
             }
             hapiSpecs.add(defaultHapiSpec("Perf_" + test)

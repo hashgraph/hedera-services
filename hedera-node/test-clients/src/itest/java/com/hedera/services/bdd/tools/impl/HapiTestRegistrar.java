@@ -25,17 +25,24 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.LoadTest;
 import com.hedera.services.bdd.suites.BddMethodIsNotATest;
 import com.hedera.services.bdd.suites.HapiSuite;
-import com.hedera.services.bdd.suites.perf.crypto.CryptoTransferLoadTest;
+import com.hedera.services.bdd.suites.perf.crypto.AbstractCryptoTransferLoadTest;
 import com.hedera.services.bdd.suites.utils.CallStack;
 import com.hedera.services.bdd.suites.utils.CallStack.Towards;
 import com.hedera.services.bdd.suites.utils.CallStack.WithLineNumbers;
 import com.hedera.services.bdd.tools.SuiteKind;
 import com.hedera.services.bdd.tools.SuitesInspector;
+import com.hedera.services.bdd.tools.SuitesInspector.IgnoresFile;
+import com.hedera.services.bdd.tools.SuitesInspector.ManifestFile;
 import com.swirlds.common.AutoCloseableNonThrowing;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.Pair;
@@ -50,6 +57,8 @@ import org.apache.commons.lang3.tuple.Pair;
  * conditions).
  */
 public class HapiTestRegistrar {
+
+    final ReflectionUtils reflection = new ReflectionUtils();
 
     boolean doVerbose;
 
@@ -95,8 +104,15 @@ public class HapiTestRegistrar {
         final var dump = callStack.dump(WithLineNumbers.YES);
 
         Class<?> klass = getSuiteClassFromStack(callStack);
-        final var regSuite = new RegisteredSuite(suite, klass, currentSuiteKind, dump);
-        suites.put(regSuite.name(), regSuite);
+        final var klassName = klass.getSimpleName();
+        if (klassName.equals("SuiteRunner")) {
+            System.out.printf("*** SuiteRunner as suite:%n%s%n".formatted(dump));
+        }
+        final var isAbstract = Modifier.isAbstract(klass.getModifiers());
+        if (!isAbstract) { // `HapiSuite` and `LoadTest` are abstract
+            final var regSuite = new RegisteredSuite(suite, klass, currentSuiteKind, dump);
+            suites.put(regSuite.name(), regSuite);
+        }
     }
 
     public void registerSpec(@NonNull final HapiSpec spec) {
@@ -104,6 +120,8 @@ public class HapiTestRegistrar {
         final var dump = callStack.dump(WithLineNumbers.YES);
 
         final var method = getSpecMethodFromStack(callStack);
+        final var methodKlass = method.getDeclaringClass();
+        final var methodKlassName = methodKlass.getSimpleName();
         final var regSpec = new RegisteredSpec(spec, method, currentSuiteKind, dump);
         specs.put(regSpec.name(), regSpec);
     }
@@ -162,7 +180,10 @@ public class HapiTestRegistrar {
                 && spec.kind() != SuiteKind.prerequisite;
     }
 
-    public void analyzeRegistry() {
+    public void analyzeRegistry(
+            @NonNull final Optional<ManifestFile> manifest,
+            @NonNull final Optional<IgnoresFile> ignores,
+            @NonNull Collection<String> suitesInError) {
         final var sb = new StringBuilder(10000);
 
         final var allRegisteredSuites =
@@ -209,21 +230,38 @@ public class HapiTestRegistrar {
 
         final var suiteSet = Sets.newHashSet(allRegisteredSuites);
         final var specSuiteSet = Sets.newHashSet(allSpecSuites);
-
         final var suitesWithNoSpec = Sets.difference(suiteSet, specSuiteSet);
-        final var specSuitesNotRegistered = Sets.difference(specSuiteSet, suiteSet);
+        final var specsWithNoSuite = specs.values().stream()
+                .filter(rs -> !suiteSet.contains(rs.klass()))
+                .collect(Collectors.toSet());
 
-        if (!suitesWithNoSpec.isEmpty())
-            sb.append("*** suites with no specs registered: %s%n".formatted(suitesWithNoSpec));
-        if (!specSuitesNotRegistered.isEmpty())
-            sb.append(
-                    "*** some specs have no registered suite, missing suites: %s%n".formatted(specSuitesNotRegistered));
+        // Show suites with no specs (after removing ignores)
+        {
+            final var swns = suitesWithNoSpec.copyInto(new HashSet<>(suitesWithNoSpec.size()));
+            ignores.ifPresent(ignoresFile -> {
+                final var r = reflection.getClassesFromNames(ignoresFile.suitesWithNoSpecs());
+                r.onOk(swns::removeAll);
+            });
+            {
+                final var packagesWithSuites = reflection.getPackagesUnder(hapiSuiteRootPackageName);
+                final var r = reflection.getClassesFromSimpleNames(suitesInError, hapiSuiteRootPackageName, packagesWithSuites);
+                r.onOk(swns::removeAll);
+            }
+            if (!swns.isEmpty()) {
+                sb.append("*** suites (that initialized successfully) with no specs registered: %s%n".formatted(swns));
+            }
+        }
+
+        if (!specsWithNoSuite.isEmpty())
+            sb.append("*** some specs have no registered suite, missing suites: %s%n".formatted(specsWithNoSuite));
 
         // Report if there's anything to report
         if (!sb.isEmpty()) System.err.print(sb);
     }
 
-    static final Set<Class<?>> hapiSuiteBases = Set.of(HapiSuite.class, LoadTest.class, CryptoTransferLoadTest.class);
+    static final String hapiSuiteRootPackageName = "com.hedera.services.bdd.suites";
+    static final Set<Class<?>> hapiSuiteBases =
+            Set.of(HapiSuite.class, LoadTest.class, AbstractCryptoTransferLoadTest.class);
 
     /** Given a stack trace which is calling out to us when creating a `HapiSuite` get the suite class */
     @NonNull
@@ -232,11 +270,17 @@ public class HapiTestRegistrar {
         // deeper than that
         final var hapiSuiteFrame = callStack.getTopmostFrameOfAnyOfTheseClassesSatisfying(
                 hapiSuiteBases, sf -> sf.getMethodName().equals("<init>"));
-        final var targetSuiteFrame = callStack.frameRelativeTo(
-                hapiSuiteFrame.orElseThrow(() -> new IllegalStateException("HapiSuiteFrame.<init> not found")),
-                Towards.BASE,
-                1);
-        return targetSuiteFrame.getDeclaringClass();
+        var targetSuiteFrame =
+                hapiSuiteFrame.orElseThrow(() -> new IllegalStateException("HapiSuite.<init> frame not found"));
+        while (true) {
+            try {
+                targetSuiteFrame = callStack.frameRelativeTo(targetSuiteFrame, Towards.BASE, 1);
+            } catch (final RuntimeException ex) {
+                throw new IllegalStateException("Cannot find most derived suite class from HapiSuite");
+            }
+            final var targetSuiteFrameClass = targetSuiteFrame.getDeclaringClass();
+            if (!hapiSuiteBases.contains(targetSuiteFrameClass)) return targetSuiteFrameClass;
+        }
     }
 
     /** Given a stack trace which is calling out to us when creating a `HapiSpec` get the spec's class and _method_ */

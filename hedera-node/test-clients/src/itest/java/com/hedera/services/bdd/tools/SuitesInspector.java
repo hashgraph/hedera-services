@@ -26,13 +26,16 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.tools.impl.HapiTestRegistrar;
 import com.hedera.services.bdd.tools.impl.HapiTestRegistrar.RegisteredSuite;
+import com.hedera.services.bdd.tools.impl.JsonFileLoader;
 import com.hedera.services.bdd.tools.impl.SuiteProvider;
 import com.hedera.services.bdd.tools.impl.SuiteSearcher;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
@@ -64,6 +67,8 @@ import picocli.CommandLine.Option;
 
 @Command(name = "inspector")
 public class SuitesInspector implements Callable<Integer> {
+
+    // start of picocli argumnent specifications
 
     enum ManifestType {
         DIRECT, // with HapiSpec names
@@ -104,14 +109,33 @@ public class SuitesInspector implements Callable<Integer> {
     EnumSet<SuiteKind> suiteKinds;
 
     @Option(
+            names = {"-i", "--ignore", "--ignore-file"},
+            description = "File containing analysis 'ignores' - known bad suites and specs")
+    Optional<Path> ignoresPath;
+
+    @Option(
+            names = {"-m", "--manifest", "--manifest-file"},
+            description = "File containing manifest of all suites and specs")
+    Optional<Path> manifestPath;
+
+    @Option(
             names = {"-v", "--verbose"},
             description = "More verbose output")
     public boolean doVerbose;
 
+    // end of picocli argument specifications
+
     @NonNull
     final String[] args;
 
+    @NonNull
     static final HapiTestRegistrar registrar = new HapiTestRegistrar();
+
+    @NonNull
+    Optional<ManifestFile> manifest = Optional.empty();
+
+    @NonNull
+    Optional<IgnoresFile> ignores = Optional.empty();
 
     static {
         HapiSuite.setBddSuiteRegistrar(registrar::registerSuite);
@@ -143,12 +167,34 @@ public class SuitesInspector implements Callable<Integer> {
         System.out.printf(
                 "  suiteKinds: %s%n", suiteKinds.stream().map(SuiteKind::name).collect(Collectors.joining(",")));
 
+        {
+            final var loader = new JsonFileLoader();
+            manifestPath.ifPresent(path -> manifest = loader.load(ManifestFile.class, path, "test manifest"));
+            ignoresPath.ifPresent(path -> ignores = loader.load(IgnoresFile.class, path, "ignores file"));
+        }
+
         if (operation.list) doListTests();
         if (operation.analyze) doAnalysis();
         if (operation.writeManifest != null) doWriteManifest(operation.writeManifest);
         if (operation.suiteSearch) doSuiteSearch();
 
         return 0;
+    }
+
+    public record ManifestFile(@NonNull Set<String> suites, @NonNull Set<String> specs) {
+        public ManifestFile {
+            if (suites == null) suites = Set.of();
+            if (specs == null) specs = Set.of();
+        }
+    }
+
+    public record IgnoresFile(
+            @NonNull Set<String> suites, @NonNull Set<String> specs, @NonNull Set<String> suitesWithNoSpecs) {
+        public IgnoresFile {
+            if (suites == null) suites = Set.of();
+            if (specs == null) specs = Set.of();
+            if (suitesWithNoSpecs == null) suitesWithNoSpecs = Set.of();
+        }
     }
 
     public static void main(@NonNull final String... args) {
@@ -228,7 +274,7 @@ public class SuitesInspector implements Callable<Integer> {
 
     void doWriteManifest(@NonNull final ManifestType type) {
 
-        final var results = getTestsFromSuites();
+        final var results = getTestsDirectFromSuites();
         final var tests = results.getLeft();
 
         registrar.doPostRegistration();
@@ -256,7 +302,7 @@ public class SuitesInspector implements Callable<Integer> {
         final var watch = new StopWatch();
         watch.start();
 
-        final var results = getTestsFromSuites();
+        final var results = getTestsDirectFromSuites();
         final var tests = results.getLeft();
         final var errors = results.getRight();
 
@@ -322,11 +368,22 @@ public class SuitesInspector implements Callable<Integer> {
                 "%n%s%n(%.3f seconds elapsed to create specs)%n", sb, watch.getTime(TimeUnit.MILLISECONDS) / 1000.0f);
     }
 
+    @NonNull
+    String getSuiteFromError(@NonNull final String message) {
+        final var m = Pattern.compile("^.* from suite (\\S+) [(].*$").matcher(message);
+        if (m.find()) return m.group(1);
+        throw new IllegalStateException("suite name missing in message where it was expected");
+    }
+
     void doAnalysis() {
 
-        final var results = getTestsFromSuites();
+        final var results = getTestsDirectFromSuites();
         final var tests = results.getLeft();
         final var errors = results.getRight();
+        final var suitesInError = errors.stream()
+                .filter(s -> s.contains("tests from suite"))
+                .map(this::getSuiteFromError)
+                .toList();
 
         if (!errors.isEmpty()) {
             System.out.printf("*** errors while instantiating specs:%n");
@@ -335,7 +392,7 @@ public class SuitesInspector implements Callable<Integer> {
             System.out.printf("no errors while instantiating specs%n");
         }
 
-        registrar.doPostRegistration().analyzeRegistry();
+        registrar.doPostRegistration().analyzeRegistry(manifest, ignores, suitesInError);
 
         final var searchedSuiteClasses = new SuiteSearcher().getAllHapiSuiteSubclasses();
 
@@ -421,7 +478,7 @@ public class SuitesInspector implements Callable<Integer> {
 
         System.out.printf("%n-------%n%n");
         System.out.printf(
-                "%d specs in registry but not direct: %s%n",
+                "*** %d specs in registry but not direct: %s%n",
                 specsInRegistryButNotDirect.size(),
                 specsInRegistryButNotDirect.stream()
                         .sorted()
@@ -430,7 +487,7 @@ public class SuitesInspector implements Callable<Integer> {
                         .replace(", ", "\n"));
         System.out.printf("%n-------%n%n");
         System.out.printf(
-                "%d specs direct but not in registry: %s%n",
+                "*** %d specs direct but not in registry: %s%n",
                 specsDirectButNotInRegistry.size(),
                 specsDirectButNotInRegistry.stream()
                         .sorted()
@@ -452,7 +509,7 @@ public class SuitesInspector implements Callable<Integer> {
 
         System.out.printf("%n-------%n%n");
         System.out.printf(
-                "%d suites in registry but not found in search: %s%n",
+                "*** %d suites in registry but not found in search: %s%n",
                 suitesInRegistryButNotFromSearch.size(),
                 suitesInRegistryButNotFromSearch.stream()
                         .sorted()
@@ -460,7 +517,7 @@ public class SuitesInspector implements Callable<Integer> {
                         .toString()
                         .replace(", ", "\n"));
         System.out.printf(
-                "%d suites found in search but not in registry: %s%n",
+                "*** %d suites found in search but not in registry: %s%n",
                 suitesFromSearchButNotFromRegistry.size(),
                 suitesFromSearchButNotFromRegistry.stream()
                         .sorted()
@@ -482,7 +539,7 @@ public class SuitesInspector implements Callable<Integer> {
         }
     }
 
-    Pair<Set<Test>, List<String>> getTestsFromSuites() {
+    Pair<Set<Test>, List<String>> getTestsDirectFromSuites() {
         final var tests = new TreeSet<Test>();
         final var errors = new ArrayList<String>(100);
 

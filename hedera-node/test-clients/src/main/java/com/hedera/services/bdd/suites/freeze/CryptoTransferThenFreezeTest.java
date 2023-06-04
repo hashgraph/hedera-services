@@ -24,12 +24,13 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
+import com.hedera.services.bdd.suites.perf.crypto.AbstractCryptoTransferLoadTest;
 import com.hedera.services.bdd.suites.perf.crypto.CryptoTransferLoadTest;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class CryptoTransferThenFreezeTest extends CryptoTransferLoadTest {
+public class CryptoTransferThenFreezeTest extends AbstractCryptoTransferLoadTest {
     private static final Logger log = LogManager.getLogger(CryptoTransferThenFreezeTest.class);
 
     public static void main(String... args) {
@@ -41,7 +42,7 @@ public class CryptoTransferThenFreezeTest extends CryptoTransferLoadTest {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(runCryptoTransfers(), freezeAfterTransfers());
+        return List.of(CryptoTransferLoadTest.runCryptoTransfers(), freezeAfterTransfers());
     }
 
     private HapiSpec freezeAfterTransfers() {
