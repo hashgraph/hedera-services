@@ -33,7 +33,6 @@ import com.hedera.hapi.node.network.NetworkGetVersionInfoResponse;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkGetVersionInfoHandler;
-import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
@@ -46,10 +45,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class NetworkGetVersionInfoHandlerTest {
-
-    @Mock
-    private NetworkInfo networkInfo;
-
     @Mock
     private QueryContext context;
 
@@ -60,7 +55,7 @@ class NetworkGetVersionInfoHandlerTest {
 
     @BeforeEach
     void setUp() {
-        subject = new NetworkGetVersionInfoHandler(); // is this needed?
+        subject = new NetworkGetVersionInfoHandler();
     }
 
     @Test
@@ -126,8 +121,9 @@ class NetworkGetVersionInfoHandlerTest {
         given(context.configuration()).willReturn(config);
 
         final var response = subject.findResponse(context, responseHeader);
-        final var op = response.networkGetVersionInfoOrThrow();
-        assertEquals(ResponseCodeEnum.FAIL_FEE, op.header().nodeTransactionPrecheckCode());
+        assertEquals(
+                ResponseCodeEnum.FAIL_FEE,
+                response.networkGetVersionInfoOrThrow().headerOrThrow().nodeTransactionPrecheckCode());
     }
 
     @Test

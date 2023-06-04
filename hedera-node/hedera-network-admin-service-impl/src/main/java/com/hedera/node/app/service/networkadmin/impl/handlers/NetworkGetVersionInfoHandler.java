@@ -37,7 +37,7 @@ import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#GET_VERSION_INFO}.
- *
+ * <p>
  * This query is used to get the version info of the node.
  */
 @Singleton
