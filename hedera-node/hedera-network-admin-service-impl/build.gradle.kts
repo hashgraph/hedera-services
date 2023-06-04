@@ -16,7 +16,7 @@
 
 plugins { id("com.hedera.hashgraph.conventions") }
 
-description = "Default Hedera NetworkAdmin Service Implementation"
+description = "Default Hedera Network Admin Service Implementation"
 
 dependencies {
   javaModuleDependencies {
@@ -25,6 +25,7 @@ dependencies {
     testImplementation(project(":hedera-node:node-app-service-token"))
     testImplementation(testFixtures(project(":hedera-node:node-config")))
     testImplementation(testFixtures(project(":hedera-node:node-app-spi")))
+    testImplementation(testFixtures(project(":hedera-node:node-app-service-mono")))
     testImplementation(gav("com.hedera.hashgraph.protobuf.java.api"))
     testImplementation(gav("com.swirlds.fcqueue"))
     testImplementation(gav("org.assertj.core"))

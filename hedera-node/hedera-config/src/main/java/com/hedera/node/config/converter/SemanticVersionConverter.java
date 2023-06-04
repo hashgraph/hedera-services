@@ -14,22 +14,17 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.info;
+package com.hedera.node.config.converter;
 
-import static com.hedera.node.app.service.mono.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.node.app.service.mono.context.properties.SerializableSemVers;
-import com.hedera.node.app.spi.info.NetworkInfo;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.converter.ConfigConverter;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.regex.Pattern;
 
-/**
- * Implementation of {@link NetworkInfo} that delegates to the mono-service.
- */
-public class MonoNetworkInfo implements NetworkInfo {
+public class SemanticVersionConverter implements ConfigConverter<SemanticVersion> {
     /* From https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string */
     private static final Pattern SEMVER_SPEC_REGEX = Pattern.compile(
             "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)"
@@ -37,38 +32,11 @@ public class MonoNetworkInfo implements NetworkInfo {
                     + "(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)"
                     + "*))?$");
 
-    private final com.hedera.node.app.service.mono.config.NetworkInfo delegate;
-
-    /**
-     * Constructs a {@link MonoNetworkInfo} with the given delegate.
-     *
-     * @param delegate the delegate
-     * @throws NullPointerException if {@code delegate} is {@code null}
-     */
-    public MonoNetworkInfo(@NonNull com.hedera.node.app.service.mono.config.NetworkInfo delegate) {
-        this.delegate = requireNonNull(delegate);
-    }
-
+    @Nullable
     @Override
-    @NonNull
-    public Bytes ledgerId() {
-        final var ledgerId = delegate.ledgerId();
-        return ledgerId != null ? Bytes.wrap(ledgerId.toByteArray()) : Bytes.EMPTY;
-    }
+    public SemanticVersion convert(@NonNull String value) throws IllegalArgumentException, NullPointerException {
+        requireNonNull(value, "Cannot convert null semantic version value");
 
-    @NonNull
-    public SemanticVersion servicesVersion() {
-        final SerializableSemVers version = SEMANTIC_VERSIONS.deployedSoftwareVersion();
-        return asSemanticVer(version.getProtoBuild());
-    }
-
-    @NonNull
-    public SemanticVersion hapiVersion() {
-        final SerializableSemVers version = SEMANTIC_VERSIONS.deployedSoftwareVersion();
-        return asSemanticVer(version.getServicesBuild());
-    }
-
-    private static SemanticVersion asSemanticVer(final String value) {
         final var matcher = SEMVER_SPEC_REGEX.matcher(value);
         if (matcher.matches()) {
             final var builder = SemanticVersion.newBuilder()
@@ -83,7 +51,7 @@ public class MonoNetworkInfo implements NetworkInfo {
             }
             return builder.build();
         } else {
-            throw new IllegalArgumentException("Argument value='" + value + "' is not a valid semver");
+            throw new IllegalArgumentException("'" + value + "' is not a valid semantic version");
         }
     }
 }
