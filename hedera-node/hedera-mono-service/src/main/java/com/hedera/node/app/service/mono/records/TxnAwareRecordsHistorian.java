@@ -65,7 +65,7 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
     private final List<RecordStreamObject> followingChildStreamObjs = new ArrayList<>();
     private final List<InProgressChildRecord> precedingChildRecords = new ArrayList<>();
     private final List<InProgressChildRecord> followingChildRecords = new ArrayList<>();
-    private static Map<ContractID, Long> contractNonces = new HashMap<>();
+    private Map<ContractID, Long> contractNonces = new HashMap<>();
     private final GlobalDynamicProperties dynamicProperties;
 
     private int nextNonce = USER_TRANSACTION_NONCE + 1;
@@ -253,6 +253,7 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
         precedingChildStreamObjs.clear();
         followingChildRecords.clear();
         followingChildStreamObjs.clear();
+        contractNonces.clear();
 
         topLevelStreamObj = null;
         nextNonce = USER_TRANSACTION_NONCE + 1;
@@ -365,8 +366,8 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
         }
     }
 
-    public static void setContractNonces(ContractID contractId, Long contractNonce) {
-        TxnAwareRecordsHistorian.contractNonces.put(contractId, contractNonce);
+    public void setContractNonces(ContractID contractId, Long contractNonce) {
+        contractNonces.put(contractId, contractNonce);
     }
 
     @VisibleForTesting

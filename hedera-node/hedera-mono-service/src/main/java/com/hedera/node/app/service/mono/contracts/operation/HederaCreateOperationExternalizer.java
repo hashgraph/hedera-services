@@ -24,6 +24,7 @@ import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.node.app.service.mono.state.EntityCreator.NO_CUSTOM_FEES;
 import static com.hedera.node.app.service.mono.txns.contract.ContractCreateTransitionLogic.STANDIN_CONTRACT_ID_KEY;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.accountIdFromEvmAddress;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.contractIdFromEvmAddress;
 
 import com.hedera.node.app.service.evm.contracts.operations.CreateOperationExternalizer;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
@@ -54,15 +55,19 @@ public class HederaCreateOperationExternalizer implements CreateOperationExterna
     private final SyntheticTxnFactory syntheticTxnFactory;
     private final RecordsHistorian recordsHistorian;
 
+    private final TxnAwareRecordsHistorian txnAwareRecordsHistorian;
+
     @Inject
     public HederaCreateOperationExternalizer(
             final EntityCreator creator,
             final SyntheticTxnFactory syntheticTxnFactory,
             final RecordsHistorian recordsHistorian,
+            final TxnAwareRecordsHistorian txnAwareRecordsHistorian,
             final GlobalDynamicProperties dynamicProperties) {
         super();
         this.creator = creator;
         this.recordsHistorian = recordsHistorian;
+        this.txnAwareRecordsHistorian = txnAwareRecordsHistorian;
         this.syntheticTxnFactory = syntheticTxnFactory;
         this.dynamicProperties = dynamicProperties;
     }
@@ -118,6 +123,13 @@ public class HederaCreateOperationExternalizer implements CreateOperationExterna
         }
     }
 
+    @Override
+    public void updateParentContractNonce(Address accountAddress, Long nonce) {
+        if (dynamicProperties.isContractsNoncesExternalizationEnabled()) {
+            updateContractNonces(contractIdFromEvmAddress(accountAddress), nonce);
+        }
+    }
+
     /**
      * Fails new contract creation when lazy creation is disabled and the new contract matches the address of an existing hollow account.
      *
@@ -162,6 +174,6 @@ public class HederaCreateOperationExternalizer implements CreateOperationExterna
     }
 
     private void updateContractNonces(ContractID contractID, Long nonce) {
-        TxnAwareRecordsHistorian.setContractNonces(contractID, nonce);
+        txnAwareRecordsHistorian.setContractNonces(contractID, nonce);
     }
 }
