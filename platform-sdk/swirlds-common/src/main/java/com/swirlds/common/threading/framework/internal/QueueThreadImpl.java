@@ -232,8 +232,8 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
         if (buffer.size() == 0) {
             metrics.finishedWork();
             final T item = waitForItem();
-            metrics.startingWork();
             if (item != null) {
+                metrics.startingWork();
                 handler.accept(item);
             }
             return;

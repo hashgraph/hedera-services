@@ -27,11 +27,12 @@ public class QueueThreadMetrics {
     /** Tracks how busy a thread is */
     private final BusyTime busyTime;
 
+    private boolean currentlyWorking;
+
     /**
      * Constructs a new {@link QueueThreadMetrics} instance
      *
-     * @param configuration
-     * 		the configuration for the queue thread
+     * @param configuration the configuration for the queue thread
      */
     public QueueThreadMetrics(@NonNull final AbstractQueueThreadConfiguration<?, ?> configuration) {
         final QueueThreadMetricsConfiguration metricsConfig = configuration.getMetricsConfiguration();
@@ -50,8 +51,7 @@ public class QueueThreadMetrics {
     /**
      * Builds the name of the busy time metric
      *
-     * @param threadName
-     * 		the name of the thread
+     * @param threadName the name of the thread
      * @return the name of the busy time metric
      */
     public static String buildBusyTimeMetricName(@NonNull final String threadName) {
@@ -59,19 +59,23 @@ public class QueueThreadMetrics {
     }
 
     /**
-     * Notifies the metric that work has started
+     * Notifies the metric that work has started. Calling this method when work has already started will have no
+     * effect.
      */
     public void startingWork() {
-        if (busyTime != null) {
+        if (busyTime != null && !currentlyWorking) {
+            currentlyWorking = true;
             busyTime.startingWork();
         }
     }
 
     /**
-     * Notifies the metric that work has finished
+     * Notifies the metric that work has finished. Calling this method when work has already finished will have no
+     * effect.
      */
     public void finishedWork() {
-        if (busyTime != null) {
+        if (busyTime != null && currentlyWorking) {
+            currentlyWorking = false;
             busyTime.finishedWork();
         }
     }
