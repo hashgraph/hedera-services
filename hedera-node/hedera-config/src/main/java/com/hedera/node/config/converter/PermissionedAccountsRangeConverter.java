@@ -24,7 +24,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 public class PermissionedAccountsRangeConverter implements ConfigConverter<PermissionedAccountsRange> {
     @Nullable
     @Override
-    public PermissionedAccountsRange convert(@NonNull String value)
+    public PermissionedAccountsRange convert(@NonNull final String value)
             throws IllegalArgumentException, NullPointerException {
         if (value == null) {
             throw new NullPointerException("null can not be converted");
