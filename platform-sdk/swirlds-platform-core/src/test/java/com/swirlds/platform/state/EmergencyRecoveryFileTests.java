@@ -86,10 +86,10 @@ public class EmergencyRecoveryFileTests {
         assertEquals(toWrite.round(), readIn.round(), "round does not match");
         assertEquals(toWrite.hash(), readIn.hash(), "hash does not match");
         assertEquals(toWrite.timestamp(), readIn.timestamp(), "state timestamp does not match");
-        assertNotNull(readIn.recovery().boostrap(), "bootstrap should not be null");
+        assertNotNull(readIn.recovery().bootstrap(), "bootstrap should not be null");
         assertEquals(
-                toWrite.recovery().boostrap().timestamp(),
-                readIn.recovery().boostrap().timestamp(),
+                toWrite.recovery().bootstrap().timestamp(),
+                readIn.recovery().bootstrap().timestamp(),
                 "bootstrap timestamp does not match");
     }
 

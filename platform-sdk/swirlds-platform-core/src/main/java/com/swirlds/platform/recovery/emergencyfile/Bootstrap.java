@@ -29,6 +29,6 @@ import java.time.Instant;
  * @param timestamp
  * 		the consensus timestamp of the bootstrap state
  */
-public record Boostrap(
+public record Bootstrap(
         @NonNull @JsonSerialize(using = ToStringSerializer.class) @JsonDeserialize(using = InstantDeserializer.class)
                 Instant timestamp) {}

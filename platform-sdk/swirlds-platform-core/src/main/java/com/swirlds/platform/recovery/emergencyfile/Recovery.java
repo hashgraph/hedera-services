@@ -25,7 +25,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  *
  * @param state
  * 		information about the state written to disk
- * @param boostrap
+ * @param bootstrap
  * 		information about the state used to bootstrap event recovery. Not written during normal
  * 		operation. Only written during event recovery.
  * @param pkg information about where to find the emergency recovery package
@@ -33,6 +33,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  */
 public record Recovery(
         @NonNull State state,
-        @Nullable Boostrap boostrap,
+        @Nullable Bootstrap bootstrap,
         @Nullable @JsonProperty("package") Package pkg,
         @Nullable Stream stream) {}

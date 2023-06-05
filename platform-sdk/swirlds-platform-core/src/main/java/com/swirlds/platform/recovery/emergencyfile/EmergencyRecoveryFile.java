@@ -53,7 +53,7 @@ public record EmergencyRecoveryFile(Recovery recovery) {
      * @param bootstrapTime the consensus timestamp of the bootstrap state used to start the event recovery process
      */
     public EmergencyRecoveryFile(final State state, final Instant bootstrapTime) {
-        this(new Recovery(state, new Boostrap(bootstrapTime), null, null));
+        this(new Recovery(state, new Bootstrap(bootstrapTime), null, null));
     }
 
     /**

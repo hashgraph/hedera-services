@@ -55,8 +55,8 @@ public class ValidateManifestFileCommand extends AbstractCommand {
         validateFieldExists(file.recovery().state(), "recovery->state");
         validateFieldExists(file.recovery().state().hash(), "recovery->state->hash");
         validateFieldExists(file.recovery().state().timestamp(), "recovery->state->timestamp");
-        validateFieldExists(file.recovery().boostrap(), "recovery->boostrap");
-        validateFieldExists(file.recovery().boostrap().timestamp(), "recovery->boostrap->timestamp");
+        validateFieldExists(file.recovery().bootstrap(), "recovery->bootstrap");
+        validateFieldExists(file.recovery().bootstrap().timestamp(), "recovery->bootstrap->timestamp");
         validateFieldExists(file.recovery().pkg(), "recovery->package");
         validateFieldExists(file.recovery().pkg().locations(), "recovery->package->locations");
         if (file.recovery().pkg().locations().isEmpty()) {
