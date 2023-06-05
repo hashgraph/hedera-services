@@ -171,7 +171,7 @@ class ConfigProviderImplTest {
     void testUpdateDoesNotUseApplicationProperties() {
         // given
         final var configProvider = new ConfigProviderImpl(InitTrigger.RESTART);
-        final Bytes bytes = Bytes.wrap(new byte[]{});
+        final Bytes bytes = Bytes.wrap(new byte[] {});
 
         // when
         configProvider.update(bytes);
@@ -186,7 +186,7 @@ class ConfigProviderImplTest {
     void testUpdateDoesNotUseGenesisProperties() {
         // given
         final var configProvider = new ConfigProviderImpl(InitTrigger.GENESIS);
-        final Bytes bytes = Bytes.wrap(new byte[]{});
+        final Bytes bytes = Bytes.wrap(new byte[] {});
 
         // when
         configProvider.update(bytes);
