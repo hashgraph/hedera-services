@@ -210,13 +210,13 @@ public final class GuiPlatformAccessor {
         @Override
         public int compareTo(@NonNull final EventOrderInfo that) {
             if (this.consensusOrder == -1 && that.consensusOrder == -1) {
-                // neither are have reached consensus
+                // neither have reached consensus
                 return this.timeReceived.compareTo(that.timeReceived);
             } else if (this.consensusOrder == -1) {
-                // this event has not reached consensus, but the other one has
+                // that has reached consensus but not this
                 return 1;
             } else if (that.consensusOrder == -1) {
-                // this node has reached consensus, but not that one
+                // this has reached consensus but not that
                 return -1;
             } else {
                 // both have reached consensus
