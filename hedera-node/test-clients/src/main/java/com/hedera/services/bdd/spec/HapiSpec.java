@@ -83,8 +83,8 @@ import java.util.Properties;
 import java.util.SplittableRandom;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
-import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -105,9 +105,10 @@ public class HapiSpec implements Runnable {
     private static final SplittableRandom RANDOM = new SplittableRandom();
     private static final String CI_PROPS_FLAG_FOR_NO_UNRECOVERABLE_NETWORK_FAILURES = "suppressNetworkFailures";
     private static final ThreadPoolExecutor THREAD_POOL =
-            new ThreadPoolExecutor(0, 10_000, 250, MILLISECONDS, new SynchronousQueue<>());
+            new ThreadPoolExecutor(4, 1_000, 2_500, MILLISECONDS, new LinkedBlockingQueue<>(1_000));
 
     static final Logger log = LogManager.getLogger(HapiSpec.class);
+    private Logger resultLogger;
 
     public enum SpecStatus {
         PENDING,
@@ -264,6 +265,14 @@ public class HapiSpec implements Runnable {
 
     public String logPrefix() {
         return "'" + name + "' - ";
+    }
+
+    public Logger getResultLogger() {
+        return resultLogger;
+    }
+
+    public void setResultLogger(final Logger resultLogger) {
+        this.resultLogger = resultLogger;
     }
 
     public SpecStatus getStatus() {
@@ -652,7 +661,7 @@ public class HapiSpec implements Runnable {
                 hapiSetup.numOpFinisherThreads(),
                 0,
                 TimeUnit.SECONDS,
-                new SynchronousQueue<>());
+                new LinkedBlockingQueue<>(10));
         finalizingFuture = allOf(IntStream.range(0, hapiSetup.numOpFinisherThreads())
                 .mapToObj(ignore -> runAsync(
                         () -> {
