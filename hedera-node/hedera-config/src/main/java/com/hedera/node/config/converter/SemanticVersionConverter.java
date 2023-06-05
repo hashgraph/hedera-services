@@ -25,6 +25,9 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.regex.Pattern;
 
 public class SemanticVersionConverter implements ConfigConverter<SemanticVersion> {
+    private static final int MAX_VERSION_LENGTH = 100;
+    // Arbitrary limit to prevent stack overflow when parsing unrealistically long versions
+
     /* From https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string */
     private static final Pattern SEMVER_SPEC_REGEX = Pattern.compile(
             "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)"
@@ -35,6 +38,9 @@ public class SemanticVersionConverter implements ConfigConverter<SemanticVersion
     @Nullable
     @Override
     public SemanticVersion convert(@NonNull String value) throws IllegalArgumentException, NullPointerException {
+        if (value.length() > MAX_VERSION_LENGTH) {
+            throw new IllegalArgumentException("Semantic version '" + value + "' is too long");
+        }
         requireNonNull(value, "Cannot convert null semantic version value");
 
         final var matcher = SEMVER_SPEC_REGEX.matcher(value);
