@@ -6,18 +6,54 @@
 # All other values are true.
 #######################################################################################
 
+
+                                          #############################
+                                          #    Gossip / Networking    #
+                                          #############################
+
 chatter.useChatter,               false
-checkSignedStateFromDisk,         true
-csvFileName,                      PlatformTesting
+maxOutgoingSyncs,                 1
+sync.syncAsProtocolEnabled,       false
 doUpnp,                           false
-enableEventStreaming,             false
+useLoopbackIp,                    false
+
+                                          #############################
+                                          # Preconsensus Event Stream #
+                                          #############################
+
 event.preconsensus.enableReplay,  false
 event.preconsensus.enableStorage, false
-loadKeysFromPfxFiles,             false
-maxOutgoingSyncs,                 1
+
+                                          #############################
+                                          # Consensus Event Stream    #
+                                          #############################
+
+enableEventStreaming,             false
+
+                                          #############################
+                                          #         Reconnect         #
+                                          #############################
+
 reconnect.active,                 true
-showInternalStats,                true
-state.saveStatePeriod,            0
 state.saveReconnectStateToDisk,   false
-sync.syncAsProtocolEnabled,       false
-useLoopbackIp,                    false
+
+                                          #############################
+                                          #          Metrics          #
+                                          #############################
+
+csvFileName,                      PlatformTesting
+showInternalStats,                true
+
+                                          #############################
+                                          #           State           #
+                                          #############################
+
+state.saveStatePeriod,            0
+checkSignedStateFromDisk,         true
+
+                                          #############################
+                                          #           Misc.           #
+                                          #############################
+
+loadKeysFromPfxFiles,             false
+
