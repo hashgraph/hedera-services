@@ -21,6 +21,8 @@ import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.EnumSet;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.DoubleSupplier;
@@ -129,13 +131,13 @@ public interface DoubleAccumulator extends Metric {
         }
 
         private Config(
-                final String category,
-                final String name,
-                final String description,
-                final String unit,
-                final String format,
-                final DoubleBinaryOperator accumulator,
-                final DoubleSupplier initializer,
+                @NonNull final String category,
+                @NonNull final String name,
+                @NonNull final String description,
+                @NonNull final String unit,
+                @NonNull final String format,
+                @NonNull final DoubleBinaryOperator accumulator,
+                @Nullable final DoubleSupplier initializer,
                 final double initialValue) {
 
             super(category, name, description, unit, format);
@@ -211,6 +213,7 @@ public interface DoubleAccumulator extends Metric {
          *
          * @return the initializer
          */
+        @Nullable
         public DoubleSupplier getInitializer() {
             return initializer;
         }
@@ -274,7 +277,8 @@ public interface DoubleAccumulator extends Metric {
          * 		the initializer
          * @return a new configuration-object with updated {@code initializer}
          */
-        public DoubleAccumulator.Config withInitializer(final DoubleSupplier initializer) {
+        @NonNull
+        public DoubleAccumulator.Config withInitializer(@NonNull final DoubleSupplier initializer) {
             return new DoubleAccumulator.Config(
                     getCategory(),
                     getName(),

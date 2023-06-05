@@ -38,9 +38,11 @@ public class DefaultLongAccumulator extends DefaultMetric implements LongAccumul
 
     public DefaultLongAccumulator(final LongAccumulator.Config config) {
         super(config);
-        this.accumulator = config.getAccumulator();
         final long initialValue = config.getInitialValue();
-        this.initializer = config.getInitializer() != null ? config.getInitializer() : () -> initialValue;
+        final LongSupplier configInitializer = config.getInitializer();
+
+        this.accumulator = config.getAccumulator();
+        this.initializer = configInitializer != null ? configInitializer : () -> initialValue;
         this.container = new AtomicLong(this.initializer.getAsLong());
     }
 

@@ -22,6 +22,7 @@ import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 import com.swirlds.common.metrics.DoubleAccumulator;
 import com.swirlds.common.metrics.atomic.AtomicDouble;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.DoubleSupplier;
@@ -36,11 +37,13 @@ public class DefaultDoubleAccumulator extends DefaultMetric implements DoubleAcc
     private final DoubleBinaryOperator accumulator;
     private final DoubleSupplier initializer;
 
-    public DefaultDoubleAccumulator(final Config config) {
+    public DefaultDoubleAccumulator(@NonNull final Config config) {
         super(config);
-        this.accumulator = config.getAccumulator();
         final double initialValue = config.getInitialValue();
-        this.initializer = config.getInitializer() != null ? config.getInitializer() : () -> initialValue;
+        final DoubleSupplier configInitializer = config.getInitializer();
+
+        this.accumulator = config.getAccumulator();
+        this.initializer = configInitializer != null ? configInitializer : () -> initialValue;
         this.container = new AtomicDouble(this.initializer.getAsDouble());
     }
 

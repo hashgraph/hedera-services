@@ -19,6 +19,7 @@ package com.swirlds.common.metrics.atomic;
 import static java.lang.Double.doubleToRawLongBits;
 import static java.lang.Double.longBitsToDouble;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.DoubleBinaryOperator;
@@ -122,7 +123,7 @@ public class AtomicDouble {
      * @param accumulatorFunction the accumulator function
      * @return the updated value
      */
-    public final double accumulateAndGet(double x, DoubleBinaryOperator accumulatorFunction) {
+    public final double accumulateAndGet(double x, @NonNull DoubleBinaryOperator accumulatorFunction) {
         Objects.requireNonNull(accumulatorFunction);
         return updateAndGet(oldValue -> accumulatorFunction.applyAsDouble(oldValue, x));
     }
@@ -133,7 +134,8 @@ public class AtomicDouble {
      * @param updateFunction the update function
      * @return the updated value
      */
-    public final double updateAndGet(DoubleUnaryOperator updateFunction) {
+    public final double updateAndGet(@NonNull DoubleUnaryOperator updateFunction) {
+        Objects.requireNonNull(updateFunction);
         while (true) {
             long current = bits;
             double currentVal = longBitsToDouble(current);

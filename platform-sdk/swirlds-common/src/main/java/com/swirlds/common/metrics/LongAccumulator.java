@@ -20,6 +20,8 @@ import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.EnumSet;
 import java.util.function.LongBinaryOperator;
 import java.util.function.LongSupplier;
@@ -129,13 +131,13 @@ public interface LongAccumulator extends Metric {
         }
 
         private Config(
-                final String category,
-                final String name,
-                final String description,
-                final String unit,
-                final String format,
-                final LongBinaryOperator accumulator,
-                final LongSupplier initializer,
+                @NonNull final String category,
+                @NonNull final String name,
+                @NonNull final String description,
+                @NonNull final String unit,
+                @NonNull final String format,
+                @NonNull final LongBinaryOperator accumulator,
+                @Nullable final LongSupplier initializer,
                 final long initialValue) {
 
             super(category, name, description, unit, format);
@@ -211,6 +213,7 @@ public interface LongAccumulator extends Metric {
          *
          * @return the initializer
          */
+        @Nullable
         public LongSupplier getInitializer() {
             return initializer;
         }
@@ -246,7 +249,8 @@ public interface LongAccumulator extends Metric {
          * 		the initializer
          * @return a new configuration-object with updated {@code initializer}
          */
-        public LongAccumulator.Config withInitializer(final LongSupplier initializer) {
+        @NonNull
+        public LongAccumulator.Config withInitializer(@NonNull final LongSupplier initializer) {
             return new LongAccumulator.Config(
                     getCategory(),
                     getName(),
