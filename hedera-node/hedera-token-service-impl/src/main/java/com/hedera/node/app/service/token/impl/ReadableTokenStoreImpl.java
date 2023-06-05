@@ -87,8 +87,8 @@ public class ReadableTokenStoreImpl implements ReadableTokenStore {
                 token.pauseKeyOrElse(null),
                 token.symbol(),
                 hasRoyaltyWithFallback,
-                token.treasuryAccountNumber(),
-                token.decimals()); // remove this and make it a long
+                token.treasuryAccountNumber(), // remove this and make it a long
+                token.decimals());
     }
 
     private boolean isRoyaltyWithFallback(final CustomFee fee) {

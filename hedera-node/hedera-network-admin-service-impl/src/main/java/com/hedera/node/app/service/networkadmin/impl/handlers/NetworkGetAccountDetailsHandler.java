@@ -80,7 +80,7 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
     @NonNull
     public QueryHeader extractHeader(@NonNull final Query query) {
         requireNonNull(query);
-        return requireNonNull(query.accountDetailsOrThrow().header());
+        return query.accountDetailsOrThrow().headerOrThrow();
     }
 
     @Override
