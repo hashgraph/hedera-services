@@ -18,8 +18,8 @@ package com.swirlds.platform.test.system;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.swirlds.platform.system.SystemExitReason;
-import com.swirlds.platform.system.SystemUtils;
+import com.swirlds.platform.system.SystemExitCode;
+import com.swirlds.platform.system.SystemExitUtils;
 import org.junit.jupiter.api.Test;
 
 class SystemUtilsTest {
@@ -34,12 +34,12 @@ class SystemUtilsTest {
         // test with non error reason
         assertThrows(
                 SystemExitException.class,
-                () -> SystemUtils.exitSystem(SystemExitReason.BROWSER_WINDOW_CLOSED),
+                () -> SystemExitUtils.exitSystem(SystemExitCode.NO_ERROR),
                 "the method should call System.exit and throw");
         // test with error reason
         assertThrows(
                 SystemExitException.class,
-                () -> SystemUtils.exitSystem(SystemExitReason.SAVED_STATE_NOT_LOADED),
+                () -> SystemExitUtils.exitSystem(SystemExitCode.SAVED_STATE_NOT_LOADED),
                 "the method should call System.exit and throw");
 
         // reset the security manager

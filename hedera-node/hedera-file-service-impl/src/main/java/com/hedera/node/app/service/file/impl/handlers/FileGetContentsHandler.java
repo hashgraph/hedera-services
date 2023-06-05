@@ -31,7 +31,6 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.base.FileQueryBase;
-import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -45,12 +44,9 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class FileGetContentsHandler extends FileQueryBase {
-    private final NetworkInfo networkInfo;
 
     @Inject
-    public FileGetContentsHandler(@NonNull final NetworkInfo networkInfo) {
-        this.networkInfo = requireNonNull(networkInfo);
-    }
+    public FileGetContentsHandler() {}
 
     @Override
     public @NonNull QueryHeader extractHeader(@NonNull final Query query) {
