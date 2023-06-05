@@ -128,10 +128,6 @@ public class TokenRelListCalculator {
         final var tokenRelsToDeleteByTokenId = cleanedTokenRelsToDelete.stream()
                 .collect(Collectors.toMap(TokenRelation::tokenNumber, tokenRel -> tokenRel));
 
-        // Calculate the account's new head token number, given the token relations to delete
-        final var updatedHeadTokenNum =
-                calculateHeadTokenAfterDeletions(currentHeadTokenNum, accountId, tokenRelsToDeleteByTokenId);
-
         // Recreate all the token relations updated prev and next pointers. This includes the token relations that will
         // be deleted, but these will be filtered out later
         final var updatedTokenRels = new HashMap<Long, TokenRelation>();
@@ -170,6 +166,10 @@ public class TokenRelListCalculator {
         final var updatedTokenRelsToKeep = updatedTokenRels.values().stream()
                 .filter(tokenRel -> !tokenRelsToDeleteByTokenId.containsKey(tokenRel.tokenNumber()))
                 .toList();
+
+        // Calculate the account's new head token number, given the token relations to delete
+        final var updatedHeadTokenNum = calculateHeadTokenAfterDeletions(
+                currentHeadTokenNum, accountId, updatedTokenRels, tokenRelsToDeleteByTokenId);
 
         return new TokenRelsRemovalResult(updatedHeadTokenNum, updatedTokenRelsToKeep);
     }
@@ -255,6 +255,7 @@ public class TokenRelListCalculator {
     private long calculateHeadTokenAfterDeletions(
             final long currentHeadTokenNum,
             final AccountID accountId,
+            final Map<Long, TokenRelation> updatedTokenRels,
             final Map<Long, TokenRelation> tokenRelsToDeleteByTokenId) {
         // Calculate the new head token number by walking the linked token rels until we find a token rel that is not in
         // the list of token rels to delete
@@ -262,11 +263,15 @@ public class TokenRelListCalculator {
         var currentTokenNum = currentHeadTokenNum;
         TokenRelation currentWalkedTokenRel;
         do {
-            currentWalkedTokenRel = tokenRelStore
-                    .get(
-                            accountId,
-                            TokenID.newBuilder().tokenNum(currentTokenNum).build())
-                    .orElse(null);
+            currentWalkedTokenRel = updatedTokenRels.containsKey(currentTokenNum)
+                    ? updatedTokenRels.get(currentTokenNum)
+                    : tokenRelStore
+                            .get(
+                                    accountId,
+                                    TokenID.newBuilder()
+                                            .tokenNum(currentTokenNum)
+                                            .build())
+                            .orElse(null);
             if (currentWalkedTokenRel != null) {
                 if (!tokenRelsToDeleteByTokenId.containsKey(currentWalkedTokenRel.tokenNumber())) {
                     // we found the first existing token rel that is not in the list of token rels to delete

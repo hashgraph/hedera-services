@@ -588,6 +588,22 @@ class MonoTransactionDispatcherTest {
     }
 
     @Test
+    void dispatchesTokenDissociateAsExpected() {
+        final var txnBody = TransactionBody.newBuilder()
+                .tokenDissociate(TokenDissociateTransactionBody.DEFAULT)
+                .build();
+        given(handleContext.body()).willReturn(txnBody);
+        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(handleContext.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
+
+        dispatcher.dispatchHandle(handleContext);
+
+        verify(writableAccountStore).commit();
+        // We don't commit anything to the token store, so no verify() here for that mock
+        verify(writableTokenRelStore).commit();
+    }
+
+    @Test
     void dispatchesTokenFreezeAsExpected() {
         final var txnBody = TransactionBody.newBuilder()
                 .tokenFreeze(TokenFreezeAccountTransactionBody.DEFAULT)

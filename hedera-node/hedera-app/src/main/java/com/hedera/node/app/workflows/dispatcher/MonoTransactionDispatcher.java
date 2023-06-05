@@ -89,6 +89,7 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
             case CRYPTO_UPDATE_ACCOUNT -> dispatchCryptoUpdate(context);
             case FREEZE -> dispatchFreeze(context);
             case TOKEN_ASSOCIATE -> dispatchTokenAssociate(context);
+            case TOKEN_DISSOCIATE -> dispatchTokenDissociate(context);
             case TOKEN_FREEZE -> dispatchTokenFreeze(context);
             case TOKEN_UNFREEZE -> dispatchTokenUnfreeze(context);
             case TOKEN_GRANT_KYC -> dispatchTokenGrantKycToAccount(context);
@@ -228,10 +229,16 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
     private void dispatchTokenAssociate(@NonNull final HandleContext handleContext) {
         final var handler = handlers.tokenAssociateToAccountHandler();
         handler.handle(handleContext);
-        finishTokenAssociateToAccount(handleContext);
+        finishDefaultForTokenRelOps(handleContext);
     }
 
-    private void finishTokenAssociateToAccount(@NonNull final HandleContext handleContext) {
+    private void dispatchTokenDissociate(@NonNull final HandleContext handleContext) {
+        final var handler = handlers.tokenDissociateFromAccountHandler();
+        handler.handle(handleContext);
+        finishDefaultForTokenRelOps(handleContext);
+    }
+
+    private void finishDefaultForTokenRelOps(@NonNull final HandleContext handleContext) {
         final var accountStore = handleContext.writableStore(WritableAccountStore.class);
         accountStore.commit();
 
