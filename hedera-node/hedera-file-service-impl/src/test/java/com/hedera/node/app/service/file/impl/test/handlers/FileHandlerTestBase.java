@@ -77,7 +77,7 @@ public class FileHandlerTestBase {
             FileID.newBuilder().fileNum(fileSystemEntityNum.longValue()).build();
     protected final String beneficiaryIdStr = "0.0.3";
     protected final long paymentAmount = 1_234L;
-    protected final Bytes ledgerId = Bytes.wrap("0x03");
+    protected final Bytes ledgerId = Bytes.wrap(new byte[] {3});
     protected final String memo = "test memo";
     protected final long expirationTime = 1_234_567L;
     protected final long sequenceNumber = 1L;

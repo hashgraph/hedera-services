@@ -33,7 +33,7 @@ tasks.test {
   exclude("**/*")
 }
 
-configurations { evaluationDependsOn(":hedera-node:hapi-fees") }
+configurations { evaluationDependsOn(":hedera-node:node-app-hapi-fees") }
 
 sourceSets {
   // Needed because "resource" directory is misnamed. See
@@ -42,70 +42,55 @@ sourceSets {
 }
 
 dependencies {
-  implementation(project(":hedera-node:hapi-utils"))
-  implementation(project(":hedera-node:hapi-fees"))
-  implementation(libs.bundles.besu) { exclude("javax.annotation", "javax.annotation-api") }
-  implementation(libs.bundles.logging)
-  implementation(testLibs.besu.internal)
-  implementation(testLibs.commons.collections4)
-  implementation(libs.commons.io)
-  implementation(libs.guava)
-  implementation(libs.hapi) { exclude("javax.annotation", "javax.annotation-api") }
+  javaModuleDependencies {
+    api(project(":hedera-node:node-app-hapi-fees"))
+    api(project(":hedera-node:node-app-hapi-utils"))
+    api(gav("com.fasterxml.jackson.annotation"))
+    api(gav("com.google.common"))
+    api(gav("com.google.protobuf"))
+    api(gav("com.hedera.hashgraph.protobuf.java.api"))
+    api(gav("com.swirlds.common"))
+    api(gav("headlong"))
+    api(gav("info.picocli"))
+    api(gav("java.annotation"))
+    api(gav("net.i2p.crypto.eddsa"))
+    api(gav("org.apache.commons.io"))
+    api(gav("org.apache.logging.log4j"))
+    api(gav("org.checkerframework.checker.qual"))
+    api(gav("org.junit.jupiter.api"))
+    api(gav("org.testcontainers"))
+    api(gav("org.yaml.snakeyaml"))
+    api(gav("tuweni.bytes"))
 
-  implementation(libs.grpc.stub)
-  implementation(libs.grpc.protobuf)
-  implementation(libs.grpc.netty)
+    implementation(project(":hedera-node:node-app-service-evm"))
+    implementation(gav("com.fasterxml.jackson.core"))
+    implementation(gav("com.fasterxml.jackson.databind"))
+    implementation(gav("com.github.docker.java.api"))
+    implementation(gav("com.github.spotbugs.annotations"))
+    implementation(gav("grpc.netty"))
+    implementation(gav("io.grpc"))
+    implementation(gav("io.netty.handler"))
+    implementation(gav("org.apache.commons.lang3"))
+    implementation(gav("org.apache.logging.log4j.core"))
+    implementation(gav("org.bouncycastle.provider"))
+    implementation(gav("org.hyperledger.besu.crypto"))
+    implementation(gav("org.hyperledger.besu.datatypes"))
+    implementation(gav("org.hyperledger.besu.evm"))
+    implementation(gav("org.json"))
+    implementation(gav("org.opentest4j"))
+    implementation(gav("tuweni.units"))
 
-  implementation(libs.headlong)
-  implementation(libs.log4j.core)
-  implementation(testLibs.json)
-  implementation(testLibs.junit.jupiter.api)
-  implementation(testLibs.picocli)
-  implementation(libs.protobuf.java)
-  implementation(testLibs.snakeyaml)
-  implementation(libs.swirlds.common)
-  implementation(testLibs.testcontainers.core)
-  itestImplementation(libs.bundles.swirlds)
-  itestImplementation(testLibs.bundles.testcontainers)
-  itestImplementation(project(":hedera-node:hedera-app"))
-  itestImplementation(project(":hedera-node:hedera-app-spi"))
-  itestImplementation(project(":hedera-node:hedera-evm"))
-  itestImplementation(project(":hedera-node:hedera-evm-impl"))
-  itestImplementation(project(":hedera-node:hedera-mono-service"))
-  itestImplementation(project(":hedera-node:hedera-network-admin-service"))
-  itestImplementation(project(":hedera-node:hedera-network-admin-service-impl"))
-  itestImplementation(project(":hedera-node:hedera-consensus-service"))
-  itestImplementation(project(":hedera-node:hedera-consensus-service-impl"))
-  itestImplementation(project(":hedera-node:hedera-file-service"))
-  itestImplementation(project(":hedera-node:hedera-file-service-impl"))
-  itestImplementation(project(":hedera-node:hedera-schedule-service"))
-  itestImplementation(project(":hedera-node:hedera-schedule-service-impl"))
-  itestImplementation(project(":hedera-node:hedera-smart-contract-service"))
-  itestImplementation(project(":hedera-node:hedera-smart-contract-service-impl"))
-  itestImplementation(project(":hedera-node:hedera-token-service"))
-  itestImplementation(project(":hedera-node:hedera-token-service-impl"))
-  itestImplementation(project(":hedera-node:hedera-util-service"))
-  itestImplementation(project(":hedera-node:hedera-util-service-impl"))
-  eetImplementation(testLibs.bundles.testcontainers)
-  eetImplementation(project(":hedera-node:hedera-app"))
-  eetImplementation(project(":hedera-node:hedera-app-spi"))
-  eetImplementation(project(":hedera-node:hedera-evm"))
-  eetImplementation(project(":hedera-node:hedera-evm-impl"))
-  eetImplementation(project(":hedera-node:hedera-mono-service"))
-  eetImplementation(project(":hedera-node:hedera-network-admin-service"))
-  eetImplementation(project(":hedera-node:hedera-network-admin-service-impl"))
-  eetImplementation(project(":hedera-node:hedera-consensus-service"))
-  eetImplementation(project(":hedera-node:hedera-consensus-service-impl"))
-  eetImplementation(project(":hedera-node:hedera-file-service"))
-  eetImplementation(project(":hedera-node:hedera-file-service-impl"))
-  eetImplementation(project(":hedera-node:hedera-schedule-service"))
-  eetImplementation(project(":hedera-node:hedera-schedule-service-impl"))
-  eetImplementation(project(":hedera-node:hedera-smart-contract-service"))
-  eetImplementation(project(":hedera-node:hedera-smart-contract-service-impl"))
-  eetImplementation(project(":hedera-node:hedera-token-service"))
-  eetImplementation(project(":hedera-node:hedera-token-service-impl"))
-  eetImplementation(project(":hedera-node:hedera-util-service"))
-  eetImplementation(project(":hedera-node:hedera-util-service-impl"))
+    itestImplementation(project(path))
+    itestImplementation(gav("org.testcontainers"))
+    itestImplementation(gav("org.testcontainers.junit.jupiter"))
+    itestImplementation(gav("com.hedera.hashgraph.protobuf.java.api"))
+    itestImplementation(gav("org.junit.jupiter.api"))
+
+    eetImplementation(project(path))
+    eetImplementation(gav("org.junit.jupiter.api"))
+    eetImplementation(gav("org.testcontainers"))
+    eetImplementation(gav("org.testcontainers.junit.jupiter"))
+  }
 }
 
 tasks.itest {
@@ -120,7 +105,7 @@ tasks.eet {
 }
 
 tasks.shadowJar {
-  dependsOn(project(":hedera-node:hapi-fees").tasks.jar)
+  dependsOn(project(":hedera-node:node-app-hapi-fees").tasks.jar)
 
   mergeServiceFiles()
 
@@ -138,7 +123,7 @@ tasks.shadowJar {
 
 val yahCliJar =
     tasks.register<ShadowJar>("yahCliJar") {
-      dependsOn(project(":hedera-node:hapi-fees").tasks.jar)
+      dependsOn(project(":hedera-node:node-app-hapi-fees").tasks.jar)
 
       group = "shadow"
       from(sourceSets.main.get().output)
@@ -160,7 +145,7 @@ val yahCliJar =
 
 val validationJar =
     tasks.register<ShadowJar>("validationJar") {
-      dependsOn(project(":hedera-node:hapi-fees").tasks.jar)
+      dependsOn(project(":hedera-node:node-app-hapi-fees").tasks.jar)
 
       group = "shadow"
       from(sourceSets.main.get().output)
