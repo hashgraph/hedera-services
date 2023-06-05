@@ -36,8 +36,12 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.ConfigProvider;
 import java.util.List;
 import java.util.Set;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
+@Singleton
 public class DeleteAllowanceValidator extends AllowanceValidator {
+    @Inject
     public DeleteAllowanceValidator(final ConfigProvider configProvider) {
         super(configProvider);
     }
@@ -48,7 +52,6 @@ public class DeleteAllowanceValidator extends AllowanceValidator {
      * @param nftAllowances given nft serials allowances to remove
      * @param payerAccount payer for the transaction
      * @param accountStore account store
-     * @return validation response
      */
     public void validate(
             final HandleContext handleContext,
@@ -127,7 +130,7 @@ public class DeleteAllowanceValidator extends AllowanceValidator {
      * @param nftAllowances give nft allowances
      * @return number of serials
      */
-    private int aggregateNftDeleteAllowances(List<NftRemoveAllowance> nftAllowances) {
+    private int aggregateNftDeleteAllowances(final List<NftRemoveAllowance> nftAllowances) {
         int count = 0;
         for (final var allowance : nftAllowances) {
             count += Set.of(allowance.serialNumbers()).size();

@@ -60,37 +60,33 @@ public class AllowanceValidator {
         validateFalse(
                 exceedsTxnLimit(totalAllowances, hederaConfig.allowancesMaxTransactionLimit()),
                 MAX_ALLOWANCES_EXCEEDED);
-        validateFalse(emptyAllowances(totalAllowances), EMPTY_ALLOWANCES);
     }
 
     protected void validateSerialNums(
             final List<Long> serialNums, final TokenID tokenId, final ReadableNftStore nftStore) {
         final var serialsSet = new HashSet<>(serialNums);
-        for (var serial : serialsSet) {
+        for (final var serial : serialsSet) {
             validateTrue(serial > 0, INVALID_TOKEN_NFT_SERIAL_NUMBER);
             final var nft = nftStore.get(tokenId, serial);
             validateTrue(nft != null, INVALID_TOKEN_NFT_SERIAL_NUMBER);
         }
     }
 
-    protected boolean exceedsTxnLimit(final int totalAllowances, final int maxLimit) {
+    private boolean exceedsTxnLimit(final int totalAllowances, final int maxLimit) {
         return totalAllowances > maxLimit;
     }
 
-    boolean emptyAllowances(final int totalAllowances) {
-        return totalAllowances == 0;
-    }
-
+    /* ------------------------ Helper methods needed for allowances validation ------------------------ */
     /**
      * Each serial number in an {@code NftAllowance} is considered as an allowance.
      *
      * @param nftAllowances a list of NFT individual allowances
      * @return the number of mentioned serial numbers
      */
-    public static int aggregateNftAllowances(List<NftAllowance> nftAllowances) {
+    public static int aggregateNftAllowances(final List<NftAllowance> nftAllowances) {
         int nftAllowancesTotal = 0;
-        for (var allowances : nftAllowances) {
-            var serials = allowances.serialNumbers();
+        for (final var allowances : nftAllowances) {
+            final var serials = allowances.serialNumbers();
             if (!serials.isEmpty()) {
                 nftAllowancesTotal += serials.size();
             } else {
