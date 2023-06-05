@@ -31,8 +31,8 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.Crypto;
 import com.swirlds.platform.Settings;
 import com.swirlds.platform.Utilities;
-import com.swirlds.platform.system.SystemExitReason;
-import com.swirlds.platform.system.SystemUtils;
+import com.swirlds.platform.system.SystemExitCode;
+import com.swirlds.platform.system.SystemExitUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -122,7 +122,7 @@ public final class CryptoSetup {
                         "ERROR",
                         "ERROR: This Java installation does not have the needed cryptography " + "providers installed");
             }
-            SystemUtils.exitSystem(SystemExitReason.KEY_LOADING_FAILED);
+            SystemExitUtils.exitSystem(SystemExitCode.KEY_LOADING_FAILED);
             throw new CryptographyException(e); // will never reach this line due to exit above
         }
 

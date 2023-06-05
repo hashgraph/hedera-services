@@ -763,7 +763,7 @@ public class Create2OperationSuite extends HapiSuite {
 
         final var salt = unhex(SALT);
 
-        return defaultHapiSpec("CanUseAliasesInPrecompiles")
+        return defaultHapiSpec("canUseAliasesInPrecompilesAndContractKeys")
                 .given(
                         newKeyNamed(multiKey),
                         cryptoCreate(TOKEN_TREASURY),

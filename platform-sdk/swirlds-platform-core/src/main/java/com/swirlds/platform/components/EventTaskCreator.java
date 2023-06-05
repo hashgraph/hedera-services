@@ -21,6 +21,7 @@ import static com.swirlds.logging.LogMarker.STALE_EVENTS;
 import static com.swirlds.logging.LogMarker.SYNC;
 
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.platform.SettingsProvider;
@@ -32,6 +33,8 @@ import com.swirlds.platform.gossip.shadowgraph.SyncResult;
 import com.swirlds.platform.gossip.sync.SyncManager;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.BlockingQueue;
 import java.util.function.Supplier;
@@ -127,7 +130,7 @@ public class EventTaskCreator {
             return;
         }
 
-        createEvent(result.getOtherId().id());
+        createEvent(result.getOtherId());
 
         logger.debug(SYNC.getMarker(), "{} created event for sync otherId:{}", selfId, result.getOtherId());
 
@@ -140,9 +143,10 @@ public class EventTaskCreator {
         final Random r = random.get();
         // maybe create an event with a random other parent
         if (settings.getRandomEventProbability() > 0 && r.nextInt(settings.getRandomEventProbability()) == 0) {
-            final long randomOtherId = r.nextInt(addressBook.getSize());
+            int randomOtherIdIndex = r.nextInt(addressBook.getSize());
+            final NodeId randomOtherId = addressBook.getNodeId(randomOtherIdIndex);
             // we don't want to create an event with selfId==otherId
-            if (selfId.id() != randomOtherId) {
+            if (!Objects.equals(selfId, randomOtherId)) {
                 createEvent(randomOtherId);
                 logger.debug(SYNC.getMarker(), "{} created random event otherId:{}", selfId, randomOtherId);
             }
@@ -160,17 +164,18 @@ public class EventTaskCreator {
             return;
         }
 
-        for (int i = 0; i < addressBook.getSize(); i++) {
-            if (selfId.id() == i) {
+        for (final Address address : addressBook) {
+            final NodeId nodeId = address.getNodeId();
+            if (Objects.equals(selfId, nodeId)) {
                 // we don't rescue our own event, this might have been the cause of a reconnect issue
                 continue;
             }
 
-            if (eventMapper.doesMostRecentEventHaveDescendants(i)) {
+            if (eventMapper.doesMostRecentEventHaveDescendants(nodeId)) {
                 // not childless
                 continue;
             }
-            final EventImpl event = eventMapper.getMostRecentEvent(i);
+            final EventImpl event = eventMapper.getMostRecentEvent(nodeId);
             if (event == null) {
                 // we have no last event for this member
                 continue;
@@ -193,7 +198,7 @@ public class EventTaskCreator {
      * @param otherId
      * 		the ID of the other-parent of the event to be created
      */
-    public void createEvent(final long otherId) {
+    public void createEvent(@Nullable final NodeId otherId) {
         addEvent(new CreateEventTask(otherId));
     }
 

@@ -41,6 +41,7 @@ import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.system.InitTrigger;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SoftwareVersion;
@@ -96,6 +97,7 @@ import com.swirlds.merkle.map.test.pta.MapKey;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.Utilities;
 import com.swirlds.virtualmap.VirtualMap;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.time.Instant;
@@ -614,8 +616,9 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     }
 
     void initControlStructures(final Action<Long, ControlAction> action) {
+        final int nodeIndex = platform.getAddressBook().getIndexOfNodeId(platform.getSelfId());
         this.controlQuorum = new QuorumTriggeredAction<>(
-                () -> platform.getSelfId().id(),
+                () -> nodeIndex,
                 platform.getAddressBook()::getSize,
                 platform.getAddressBook()::getNumberWithWeight,
                 action);
@@ -754,10 +757,11 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
      * Write a special log message if this is the first transaction and total fcm and any file statistics are all
      * zeroes.
      */
-    private void logIfFirstTransaction(final long id) {
+    private void logIfFirstTransaction(final NodeId id) {
+        final int nodeIndex = platform.getAddressBook().getIndexOfNodeId(id);
         if (progressCfg != null
                 && progressCfg.getProgressMarker() > 0
-                && getTransactionCounter().get((int) id).getAllTransactionAmount() == 0) {
+                && getTransactionCounter().get(nodeIndex).getAllTransactionAmount() == 0) {
             logger.info(LOGM_DEMO_INFO, "PlatformTestingDemo HANDLE ALL START");
         }
     }
@@ -765,18 +769,21 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     /**
      * Handle the random bytes transaction type.
      */
-    private void handleBytesTransaction(final TestTransaction testTransaction, final long id) {
+    private void handleBytesTransaction(@NonNull final TestTransaction testTransaction, @NonNull final NodeId id) {
+        Objects.requireNonNull(testTransaction, "testTransaction must not be null");
+        Objects.requireNonNull(id, "id must not be null");
+        final int nodeIndex = platform.getAddressBook().getIndexOfNodeId(id);
         final RandomBytesTransaction bytesTransaction = testTransaction.getBytesTransaction();
         if (bytesTransaction.getIsInserSeq()) {
             final long seq = Utilities.toLong(bytesTransaction.getData().toByteArray());
-            if (getNextSeqCons().get((int) id).getValue() != seq) {
+            if (getNextSeqCons().get(nodeIndex).getValue() != seq) {
                 logger.error(
                         LOGM_EXCEPTION,
                         platform.getSelfId() + " error, new (id=" + id
-                                + ") seq should be " + getNextSeqCons().get((int) id)
+                                + ") seq should be " + getNextSeqCons().get(nodeIndex)
                                 + " but is " + seq);
             }
-            getNextSeqCons().get((int) id).getAndIncrement();
+            getNextSeqCons().get(nodeIndex).getAndIncrement();
         }
     }
 
@@ -784,7 +791,13 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
      * Handle the Virtual Merkle transaction type.
      */
     private void handleVirtualMerkleTransaction(
-            final VirtualMerkleTransaction virtualMerkleTransaction, final long id, final Instant consensusTimestamp) {
+            @NonNull final VirtualMerkleTransaction virtualMerkleTransaction,
+            @NonNull final NodeId id,
+            @NonNull final Instant consensusTimestamp) {
+        Objects.requireNonNull(virtualMerkleTransaction, "virtualMerkleTransaction must not be null");
+        Objects.requireNonNull(id, "id must not be null");
+        Objects.requireNonNull(consensusTimestamp, "consensusTimestamp must not be null");
+        final int nodeIndex = platform.getAddressBook().getIndexOfNodeId(id);
         VirtualMerkleTransactionHandler.handle(
                 consensusTimestamp,
                 virtualMerkleTransaction,
@@ -794,15 +807,15 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
                 getVirtualMapForSmartContractsByteCode());
 
         if (virtualMerkleTransaction.hasCreateAccount()) {
-            getTransactionCounter().get((int) id).vmCreateAmount++;
+            getTransactionCounter().get(nodeIndex).vmCreateAmount++;
         } else if (virtualMerkleTransaction.hasUpdateAccount()) {
-            getTransactionCounter().get((int) id).vmUpdateAmount++;
+            getTransactionCounter().get(nodeIndex).vmUpdateAmount++;
         } else if (virtualMerkleTransaction.hasDeleteAccount()) {
-            getTransactionCounter().get((int) id).vmDeleteAmount++;
+            getTransactionCounter().get(nodeIndex).vmDeleteAmount++;
         } else if (virtualMerkleTransaction.hasSmartContract()) {
-            getTransactionCounter().get((int) id).vmContractCreateAmount++;
+            getTransactionCounter().get(nodeIndex).vmContractCreateAmount++;
         } else if (virtualMerkleTransaction.hasMethodExecution()) {
-            getTransactionCounter().get((int) id).vmContractExecutionAmount++;
+            getTransactionCounter().get(nodeIndex).vmContractExecutionAmount++;
         }
     }
 
@@ -810,14 +823,22 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
      * Handle the FCM transaction type.
      */
     private void handleFCMTransaction(
-            final TestTransaction testTransaction, final long id, final Instant timestamp, final boolean invalidSig) {
+            @NonNull final TestTransaction testTransaction,
+            @NonNull final NodeId id,
+            @NonNull final Instant timestamp,
+            final boolean invalidSig) {
+        Objects.requireNonNull(testTransaction, "testTransaction must not be null");
+        Objects.requireNonNull(id, "id must not be null");
+        Objects.requireNonNull(timestamp, "timestamp must not be null");
+
+        final int nodeIndex = platform.getAddressBook().getIndexOfNodeId(id);
         final FCMTransaction fcmTransaction = testTransaction.getFcmTransaction();
 
         // Handle Activity transaction, which doesn't effect any entity's lifecyle
         if (fcmTransaction.hasActivity()) {
             final Activity.ActivityType activityType =
                     fcmTransaction.getActivity().getType();
-            if (id == 0 && activityType == Activity.ActivityType.SAVE_EXPECTED_MAP) {
+            if (nodeIndex == 0 && activityType == Activity.ActivityType.SAVE_EXPECTED_MAP) {
                 // Serialize ExpectedMap to disk in JSON format
                 TransactionSubmitter.setForcePauseCanSubmitMore(new AtomicBoolean(true));
                 serialize(
@@ -945,65 +966,65 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
             }
         }
         if (fcmTransaction.hasCreateAccount()) {
-            getTransactionCounter().get((int) id).fcmCreateAmount++;
+            getTransactionCounter().get(nodeIndex).fcmCreateAmount++;
             if (progressCfg != null) {
                 logProgress(
                         id,
                         progressCfg.getProgressMarker(),
                         PAYLOAD_TYPE.TYPE_FCM_CREATE,
                         progressCfg.getExpectedFCMCreateAmount(),
-                        getTransactionCounter().get((int) id).fcmCreateAmount);
+                        getTransactionCounter().get(nodeIndex).fcmCreateAmount);
             }
         } else if (fcmTransaction.hasTransferBalance()) {
-            getTransactionCounter().get((int) id).fcmTransferAmount++;
+            getTransactionCounter().get(nodeIndex).fcmTransferAmount++;
             if (progressCfg != null) {
                 logProgress(
                         id,
                         progressCfg.getProgressMarker(),
                         PAYLOAD_TYPE.TYPE_FCM_TRANSFER,
                         progressCfg.getExpectedFCMTransferAmount(),
-                        getTransactionCounter().get((int) id).fcmTransferAmount);
+                        getTransactionCounter().get(nodeIndex).fcmTransferAmount);
             }
         } else if (fcmTransaction.hasDeleteAccount()) {
-            getTransactionCounter().get((int) id).fcmDeleteAmount++;
+            getTransactionCounter().get(nodeIndex).fcmDeleteAmount++;
             if (progressCfg != null) {
                 logProgress(
                         id,
                         progressCfg.getProgressMarker(),
                         PAYLOAD_TYPE.TYPE_FCM_DELETE,
                         progressCfg.getExpectedFCMDeleteAmount(),
-                        getTransactionCounter().get((int) id).fcmDeleteAmount);
+                        getTransactionCounter().get(nodeIndex).fcmDeleteAmount);
             }
         } else if (fcmTransaction.hasUpdateAccount()) {
-            getTransactionCounter().get((int) id).fcmUpdateAmount++;
+            getTransactionCounter().get(nodeIndex).fcmUpdateAmount++;
             if (progressCfg != null) {
                 logProgress(
                         id,
                         progressCfg.getProgressMarker(),
                         PAYLOAD_TYPE.TYPE_FCM_UPDATE,
                         progressCfg.getExpectedFCMUpdateAmount(),
-                        getTransactionCounter().get((int) id).fcmUpdateAmount);
+                        getTransactionCounter().get(nodeIndex).fcmUpdateAmount);
             }
         } else if (fcmTransaction.hasAssortedAccount()) {
-            getTransactionCounter().get((int) id).fcmAssortedAmount++;
+            getTransactionCounter().get(nodeIndex).fcmAssortedAmount++;
             if (progressCfg != null) {
                 logProgress(
                         id,
                         progressCfg.getProgressMarker(),
                         PAYLOAD_TYPE.TYPE_FCM_ASSORTED,
                         progressCfg.getExpectedFCMAssortedAmount(),
-                        getTransactionCounter().get((int) id).fcmAssortedAmount);
+                        getTransactionCounter().get(nodeIndex).fcmAssortedAmount);
             }
         } else if (fcmTransaction.hasAssortedFCQ()) {
-            getTransactionCounter().get((int) id).fcmFCQAssortedAmount++;
+            getTransactionCounter().get(nodeIndex).fcmFCQAssortedAmount++;
         } else if (fcmTransaction.hasCreateAccountFCQ()) {
-            getTransactionCounter().get((int) id).fcmFCQCreateAmount++;
+            getTransactionCounter().get(nodeIndex).fcmFCQCreateAmount++;
         } else if (fcmTransaction.hasUpdateAccountFCQ()) {
-            getTransactionCounter().get((int) id).fcmFCQUpdateAmount++;
+            getTransactionCounter().get(nodeIndex).fcmFCQUpdateAmount++;
         } else if (fcmTransaction.hasTransferBalanceFCQ()) {
-            getTransactionCounter().get((int) id).fcmFCQTransferAmount++;
+            getTransactionCounter().get(nodeIndex).fcmFCQTransferAmount++;
         } else if (fcmTransaction.hasDeleteFCQNode()) {
-            getTransactionCounter().get((int) id).fcmFCQDeleteAmount++;
+            getTransactionCounter().get(nodeIndex).fcmFCQDeleteAmount++;
         }
     }
 
@@ -1011,7 +1032,14 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
      * Handle the control transaction type.
      */
     private void handleControlTransaction(
-            final TestTransaction testTransaction, final long id, final Instant timestamp) {
+            @NonNull final TestTransaction testTransaction,
+            @NonNull final NodeId id,
+            @NonNull final Instant timestamp) {
+        Objects.requireNonNull(testTransaction, "testTransaction must not be null");
+        Objects.requireNonNull(id, "id must not be null");
+        Objects.requireNonNull(timestamp, "timestamp must not be null");
+
+        final long nodeIndex = platform.getAddressBook().getIndexOfNodeId(id);
         final ControlTransaction msg = testTransaction.getControlTransaction();
         logger.info(
                 DEMO_INFO.getMarker(),
@@ -1023,7 +1051,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         // Must use auto reset here, otherwise if reached quorum EXIT_VALIDATION then PTT restart, QuorumResult would be
         // reloaded from saved state with reaching quorum state EXIT_VALIDATION as true,
         // then TransactionSubmitter won't be able to submit transaction due to some check mechanism.
-        controlQuorum.withAutoReset().check(id, new ControlAction(timestamp, msg.getType()));
+        controlQuorum.withAutoReset().check(nodeIndex, new ControlAction(timestamp, msg.getType()));
         // updating quorum result after handling control transactions
         setQuorumResult(controlQuorum.getQuorumResult().copy());
     }
@@ -1094,11 +1122,11 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     }
 
     private void handleTransaction(
-            final long id,
-            final Instant timeCreated,
-            final Instant timestamp,
-            final ConsensusTransaction trans,
-            final SwirldDualState swirldDualState) {
+            @NonNull final NodeId id,
+            @NonNull final Instant timeCreated,
+            @NonNull final Instant timestamp,
+            @NonNull final ConsensusTransaction trans,
+            @NonNull final SwirldDualState swirldDualState) {
         if (getConfig().isAppendSig()) {
             try {
                 final TestTransactionWrapper testTransactionWrapper =
@@ -1330,9 +1358,9 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
      * If markerPercentage is 15, then should report progress at 15%, 30%, 45%, 60%, 75%, 90% and 100%
      */
     private void logProgress(
-            final long id,
+            @NonNull final NodeId id,
             final int markerPercentage,
-            final PAYLOAD_TYPE type,
+            @NonNull final PAYLOAD_TYPE type,
             final long expectedAmount,
             final long currentAmount) {
         if (markerPercentage != 0 && currentAmount != 0 && expectedAmount != 0) {

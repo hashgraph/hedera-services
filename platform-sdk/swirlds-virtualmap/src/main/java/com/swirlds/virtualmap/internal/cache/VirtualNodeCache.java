@@ -68,8 +68,8 @@ import org.apache.logging.log4j.Logger;
  * caches together. The {@link #merge()} method is provided to merge a cache with the one-prior cache.
  * These merges are non-destructive, meaning it is OK to continue to query against a cache that has been merged.
  * <p>
- * At some point, the cache should be flushed to disk. This is done by calling the {@link #dirtyLeaves(long, long,
- * boolean)} and {@link #dirtyHashes(long)} methods and sending them to the code responsible for flushing. The
+ * At some point, the cache should be flushed to disk. This is done by calling the {@link #dirtyLeavesForFlush(long,
+ * long)} and {@link #dirtyHashesForFlush(long)} methods and sending them to the code responsible for flushing. The
  * cache itself knows nothing about the data source or how to save data, it simply maintains a record of mutations
  * so that some other code can perform the flushing.
  * <p>
@@ -283,6 +283,12 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
     private ConcurrentArray<Mutation<Long, Hash>> dirtyHashes = new ConcurrentArray<>();
 
     /**
+     * Indicates if this virtual cache instance contains mutations from older cache versions
+     * as a result of cache merge operation.
+     */
+    private final AtomicBoolean mergedCopy = new AtomicBoolean(false);
+
+    /**
      * A shared lock that prevents two copies from being merged/released at the same time. For example,
      * one thread might be merging two caches while another thread is releasing the oldest copy. These
      * all happen completely in parallel, but we have some bookkeeping which should be done inside
@@ -471,11 +477,12 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
             // Merge my mutations into the previous (newer) cache's arrays.
             // This operation has a high probability of producing override mutations. That is, two mutations
             // for the same key/path but with different versions. Before returning to a caller a stream of
-            // dirty leaves or dirty internals, the stream must be sorted (which we had to do anyway) and
+            // dirty leaves or dirty hashes, the stream must be sorted (which we had to do anyway) and
             // deduplicated. But it makes for a _VERY FAST_ merge operation.
             p.dirtyLeaves.merge(dirtyLeaves);
             p.dirtyLeafPaths.merge(dirtyLeafPaths);
             p.dirtyHashes.merge(dirtyHashes);
+            p.mergedCopy.set(true);
 
             // Remove this cache from the chain and wire the prev and next caches together.
             // This will allow this cache to be garbage collected.
@@ -722,8 +729,49 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
     }
 
     /**
+     * Returns a stream of dirty leaves from this cache instance to hash this virtual map copy. The stream
+     * is sorted by paths.
+     *
+     * @param firstLeafPath
+     * 		The first leaf path to include to the stream
+     * @param lastLeafPath
+     *      The last leaf path to include to the stream
+     * @return
+     *      A stream of dirty leaves for hashing
+     */
+    public Stream<VirtualLeafRecord<K, V>> dirtyLeavesForHash(final long firstLeafPath, final long lastLeafPath) {
+        if (mergedCopy.get()) {
+            throw new IllegalStateException("Cannot get dirty leaves for hashing on a merged cache copy");
+        }
+        final Stream<VirtualLeafRecord<K, V>> result = dirtyLeaves(firstLeafPath, lastLeafPath, false);
+        return result.sorted(Comparator.comparingLong(VirtualLeafRecord::getPath));
+    }
+
+    /**
+     * Returns a stream of dirty leaves from this cache instance to flush this virtual map copy and all
+     * previous copies merged into this one to disk.
+     *
+     * @param firstLeafPath
+     * 		The first leaf path to include to the stream
+     * @param lastLeafPath
+     *      The last leaf path to include to the stream
+     * @return
+     *      A stream of dirty leaves for flushes
+     */
+    public Stream<VirtualLeafRecord<K, V>> dirtyLeavesForFlush(final long firstLeafPath, final long lastLeafPath) {
+        return dirtyLeaves(firstLeafPath, lastLeafPath, true);
+    }
+
+    /**
      * Gets a stream of dirty leaves <strong>from this cache instance</strong>. Deleted leaves are not included
      * in this stream.
+     *
+     * <p>
+     * This method is called for two purposes. First, to get dirty leaves to hash a single virtual map copy. The
+     * resulting stream is expected to be sorted. No duplicate entries are expected in this case, as within a
+     * single version there may not be duplicates. Second, to get dirty leaves to flush them to disk. In this
+     * case, the stream doesn't need to be sorted, but there may be duplicated entries from different versions.
+     *
      * <p>
      * This method may be called concurrently from multiple threads (although in practice, this should never happen).
      *
@@ -735,32 +783,32 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      * 		The last leaf path to receive in the results. It is possible, through merging of multiple rounds,
      * 		for the data to have leaf data that is outside the expected range for the {@link VirtualMap} of
      * 		this cache. We need to provide the leaf boundaries to compensate for this.
-     * @param sorted
-     *      Indicates if the resulting stream should be sorted by path or not
+     * @param dedupe
+     *      Indicates if the duplicated entries should be removed from the stream
      * @return A non-null stream of dirty leaves. May be empty. Will not contain duplicate records
      * @throws MutabilityException
      * 		if called on a cache that still allows dirty leaves to be added
      */
-    public Stream<VirtualLeafRecord<K, V>> dirtyLeaves(
-            final long firstLeafPath, final long lastLeafPath, final boolean sorted) {
+    private Stream<VirtualLeafRecord<K, V>> dirtyLeaves(
+            final long firstLeafPath, final long lastLeafPath, final boolean dedupe) {
         if (!dirtyLeaves.isImmutable()) {
             throw new MutabilityException("Cannot call on a cache that is still mutable for dirty leaves");
         }
-        // Mark obsolete mutations to filter later
-        filterMutations(dirtyLeaves);
-        final Stream<VirtualLeafRecord<K, V>> result = dirtyLeaves.stream()
+        if (dedupe) {
+            // Mark obsolete mutations to filter later
+            filterMutations(dirtyLeaves);
+        }
+        return dirtyLeaves.stream()
                 .filter(mutation -> {
                     final long path = mutation.value.getPath();
                     return path >= firstLeafPath && path <= lastLeafPath;
                 })
-                .filter(mutation -> !mutation.isFiltered())
+                .filter(mutation -> {
+                    assert dedupe || !mutation.isFiltered();
+                    return !mutation.isFiltered();
+                })
                 .filter(mutation -> !mutation.isDeleted())
                 .map(mutation -> mutation.value);
-        if (sorted) {
-            return result.sorted(Comparator.comparingLong(VirtualLeafRecord::getPath));
-        } else {
-            return result;
-        }
     }
 
     /**
@@ -916,7 +964,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
     }
 
     /**
-     * Gets a stream of dirty internal records <strong>from this cache instance</strong>. Deleted records are
+     * Gets a stream of dirty hashes <strong>from this cache instance</strong>. Deleted hashes are
      * not included in this stream. Must be called <strong>after</strong> the cache has been sealed.
      * <p>
      * This method may be called concurrently from multiple threads (although in practice, this should never happen).
@@ -925,11 +973,11 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      * 		The last leaf path at and above which no node results should be returned. It is possible,
      * 		through merging of multiple rounds, for the data to have data that is outside the expected range
      * 		for the {@link VirtualMap} of this cache. We need to provide the leaf boundaries to compensate for this.
-     * @return A non-null stream of dirty records. May be empty. Will not contain duplicate records.
+     * @return A non-null stream of dirty hashes. May be empty. Will not contain duplicate records.
      * @throws MutabilityException
      * 		if called on a non-sealed cache instance.
      */
-    public Stream<VirtualHashRecord> dirtyHashes(final long lastLeafPath) {
+    public Stream<VirtualHashRecord> dirtyHashesForFlush(final long lastLeafPath) {
         if (!dirtyHashes.isImmutable()) {
             throw new MutabilityException("Cannot get the dirty internal records for a non-sealed cache.");
         }
@@ -1138,11 +1186,13 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
                 // Hold a reference to this newest mutation in this cache
                 dirtyPaths.add(nextMutation);
             } else {
+                assert !nextMutation.isFiltered();
                 // This mutation already exists in this version. Simply update its value and deleted status.
                 nextMutation.value = value;
                 nextMutation.setDeleted(value == null);
             }
             if (previousMutation != null) {
+                assert !previousMutation.isFiltered();
                 previousMutation.next = nextMutation;
             } else {
                 mutation = nextMutation;
