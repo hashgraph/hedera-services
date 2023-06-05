@@ -84,7 +84,7 @@ public record VirtualMapConfig(
         @Min(-1) @ConfigProperty(defaultValue = "-1") int numHashThreads,
         @Min(0) @Max(100) @ConfigProperty(defaultValue = "25.0")
                 double percentCleanerThreads, // FUTURE WORK: We need to add min/max support for double values
-        @Min(1) @ConfigProperty(defaultValue = "24") int numCleanerThreads,
+        @Min(-1) @ConfigProperty(defaultValue = "-1") int numCleanerThreads,
         @Min(2) @Max(Integer.MAX_VALUE) @ConfigProperty(defaultValue = "2147483647") long maximumVirtualMapSize,
         @ConstraintMethod("virtualMapWarningThresholdValidation") @Min(1) @ConfigProperty(defaultValue = "5000000")
                 long virtualMapWarningThreshold,
@@ -126,5 +126,22 @@ public record VirtualMapConfig(
                     "virtualMapWarningThreshold must be <=  maximumVirtualMapSize");
         }
         return null;
+    }
+
+    public int getNumHashThreads() {
+        final int threads = (numHashThreads() == -1)
+                ? (int) (Runtime.getRuntime().availableProcessors() * (percentHashThreads() / UNIT_FRACTION_PERCENT))
+                : numHashThreads();
+
+        return Math.max(1, threads);
+    }
+
+    public int getNumCleanerThreads() {
+        final int numProcessors = Runtime.getRuntime().availableProcessors();
+        final int threads = (numCleanerThreads() == -1)
+                ? (int) (numProcessors * (percentCleanerThreads() / UNIT_FRACTION_PERCENT))
+                : numCleanerThreads();
+
+        return Math.max(1, threads);
     }
 }

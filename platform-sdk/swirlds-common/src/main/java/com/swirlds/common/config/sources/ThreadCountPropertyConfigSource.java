@@ -39,8 +39,7 @@ public class ThreadCountPropertyConfigSource implements ConfigSource {
     private static final String ELEMENT_NOT_FOUND = "Element with name %s not found";
     private static final String THREAD_COUNT =
             String.valueOf(Runtime.getRuntime().availableProcessors());
-    private static final Set<String> PROPERTY_NAMES =
-            Set.of("fcHashMap.rebuildThreadCount", "virtualMap.numCleanerThreads");
+    private static final Set<String> PROPERTY_NAMES = Set.of("fcHashMap.rebuildThreadCount");
 
     /**
      * {@inheritDoc}
