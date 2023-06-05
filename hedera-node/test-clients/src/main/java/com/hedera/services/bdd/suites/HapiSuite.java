@@ -27,17 +27,24 @@ import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public abstract class HapiSuite {
@@ -47,6 +54,9 @@ public abstract class HapiSuite {
     public static final String TRUE_VALUE = "true";
     public static final String FALSE_VALUE = "false";
     private static final String STARTING_SUITE = "-------------- STARTING {} SUITE --------------";
+    private static final String RESULTS_OF_SUITE_MESSAGE = "-------------- RESULTS OF {} SUITE --------------";
+    private static final long MAX_SPEC_RUNTIME_MINUTES = 15;
+    private static final long MAX_SUITE_RUNTIME_MINUTES = MAX_SPEC_RUNTIME_MINUTES + 5;
 
     public enum FinalOutcome {
         SUITE_PASSED,
@@ -226,20 +236,21 @@ public abstract class HapiSuite {
             getResultsLogger().info(STARTING_SUITE, name());
         }
 
-        List<HapiSpec> specs = getSpecsInSuite();
-        for (final var spec : specs) {
+        List<HapiSpec> specificationList = getSpecsInSuite();
+        final String name = name();
+        for (final HapiSpec currentSpecification : specificationList) {
             if (!overrides.isEmpty()) {
-                spec.addOverrideProperties(overrides);
+                currentSpecification.addOverrideProperties(overrides);
             }
-            if (spec.isOnlySpecToRunInSuite()) {
-                specs = List.of(spec);
+            currentSpecification.setSuitePrefix(name);
+            currentSpecification.setResultLogger(getResultsLogger());
+            if (currentSpecification.isOnlySpecToRunInSuite()) {
+                specificationList = List.of(currentSpecification);
                 break;
             }
         }
-        final var name = name();
-        specs.forEach(spec -> spec.setSuitePrefix(name));
-        runner.accept(specs);
-        finalSpecs = specs;
+        finalSpecs = specificationList;
+        runner.accept(specificationList);
         summarizeResults(getResultsLogger());
         if (tearDownClientsAfter) {
             HapiApiClients.tearDown();
@@ -274,7 +285,7 @@ public abstract class HapiSuite {
             return;
         }
         log.info(STARTING_SUITE, name());
-        log.info("-------------- RESULTS OF {} SUITE --------------", name());
+        log.info(RESULTS_OF_SUITE_MESSAGE, name());
         for (HapiSpec spec : finalSpecs) {
             log.info(spec);
         }
@@ -285,13 +296,78 @@ public abstract class HapiSuite {
     }
 
     public static void runConcurrentSpecs(final List<HapiSpec> specs) {
-        final var futures = specs.stream()
-                .map(r -> CompletableFuture.runAsync(r, HapiSpec.getCommonThreadPool()))
-                .<CompletableFuture<Void>>toArray(CompletableFuture[]::new);
-        CompletableFuture.allOf(futures).join();
+        final var futures = specs.parallelStream()
+                .map(r -> CompletableFuture.runAsync(r, HapiSpec.getCommonThreadPool())
+                        .orTimeout(MAX_SPEC_RUNTIME_MINUTES, TimeUnit.MINUTES)
+                        .handleAsync(new HandleSpecCompletion(r), HapiSpec.getCommonThreadPool()))
+                .toArray(CompletableFuture[]::new);
+        CompletableFuture.allOf(futures)
+                .orTimeout(MAX_SUITE_RUNTIME_MINUTES, TimeUnit.MINUTES)
+                .join();
     }
 
     public static String salted(String str) {
         return str + RANDOM.nextInt(1_234_567);
+    }
+
+    /**
+     * Basic BiFunction handler to ensure that spec failures are reported as soon as possible.
+     * <br/>This assumes the previous stage is an "<pre>orTimeout</pre>" stage so that when a spec
+     * takes too long to execute, it is stopped and reported rather than running forever.
+     * <p/>
+     * Currently, this just reports failures, as non-failure is adequately summarized elsewhere.
+     * Future work should remove the summary, and add result reporting, with full detail, here so that
+     * results are reported immediately for each spec in the suite rather than waiting until
+     * the entire suite is completed.
+     */
+    @SuppressWarnings("java:S106")
+    private static class HandleSpecCompletion implements BiFunction<Void, Throwable, Void> {
+        private static final String FULL_LOG_MESSAGE =
+                """
+                Spec %2$s failed exceptionally due to %3$s
+                Spec:
+                %1$s
+                Stack Trace:
+                %4$s
+                """;
+        private final HapiSpec specToHandle;
+
+        private HandleSpecCompletion(final HapiSpec specToHandle) {
+            this.specToHandle =
+                    Objects.requireNonNull(specToHandle, "Suite Attempted to run null HAPI spec concurrently.");
+        }
+
+        @Override
+        public Void apply(final Void result, final Throwable error) {
+            if (error != null) {
+                final Logger resultLogger = specToHandle.getResultLogger() == null
+                        ? LogManager.getLogger()
+                        : specToHandle.getResultLogger();
+                // write to stderr, because result log seems to get lost.
+                // Also write to the result log, for after that is fixed.
+                final String stackTrace = writeStackTraceToString(error);
+                final String detailedError =
+                        FULL_LOG_MESSAGE.formatted(specToHandle, specToHandle.getName(), error, stackTrace);
+                System.err.print(detailedError);
+                resultLogger.warn(detailedError);
+                throw new AssertionError(detailedError, error);
+            }
+            return result;
+        }
+
+        private static String writeStackTraceToString(final Throwable error) {
+            String stackTrace;
+            try (final StringWriter outputWriter = new StringWriter();
+                    final PrintWriter stackWriter = new PrintWriter(outputWriter)) {
+                error.printStackTrace(stackWriter);
+                stackWriter.flush();
+                outputWriter.flush();
+                stackTrace = outputWriter.getBuffer().toString();
+            } catch (final IOException ignored) {
+                error.printStackTrace(System.err);
+                stackTrace = "Unable to write stack trace.";
+            }
+            return stackTrace;
+        }
     }
 }
