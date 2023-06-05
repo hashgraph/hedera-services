@@ -28,6 +28,7 @@ import com.hedera.node.config.converter.KeyValuePairConverter;
 import com.hedera.node.config.converter.KnownBlockValuesConverter;
 import com.hedera.node.config.converter.LegacyContractIdActivationsConverter;
 import com.hedera.node.config.converter.MapAccessTypeConverter;
+import com.hedera.node.config.converter.PermissionedAccountsRangeConverter;
 import com.hedera.node.config.converter.ProfileConverter;
 import com.hedera.node.config.converter.RecomputeTypeConverter;
 import com.hedera.node.config.converter.ScaleFactorConverter;
@@ -47,6 +48,7 @@ import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.config.api.validation.ConfigValidator;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Set;
 
 /**
  * A builder for creating {@link Configuration} instances for testing. In future this builder can be based on
@@ -62,11 +64,16 @@ public class HederaTestConfigBuilder {
         this(true);
     }
 
-    public HederaTestConfigBuilder(boolean registerAllTypes) {
+    /**
+     * Creates a new instance of the builder.
+     *
+     * @param packagePrefixes packages that should be scanned for config records
+     */
+    public HederaTestConfigBuilder(@NonNull Set<String> packagePrefixes) {
         this.configLock = Locks.createAutoLock();
         this.configuration = null;
-        if (registerAllTypes) {
-            this.builder = ConfigUtils.scanAndRegisterAllConfigTypes(ConfigurationBuilder.create());
+        if (!packagePrefixes.isEmpty()) {
+            this.builder = ConfigUtils.scanAndRegisterAllConfigTypes(ConfigurationBuilder.create(), packagePrefixes);
         } else {
             this.builder = ConfigurationBuilder.create();
         }
@@ -77,6 +84,7 @@ public class HederaTestConfigBuilder {
                 .withConverter(new KnownBlockValuesConverter())
                 .withConverter(new LegacyContractIdActivationsConverter())
                 .withConverter(new MapAccessTypeConverter())
+                .withConverter(new PermissionedAccountsRangeConverter())
                 .withConverter(new RecomputeTypeConverter())
                 .withConverter(new ScaleFactorConverter())
                 .withConverter(new AccountIDConverter())
@@ -88,6 +96,10 @@ public class HederaTestConfigBuilder {
                 .withConverter(new KeyValuePairConverter())
                 .withConverter(new BytesConverter())
                 .withValidator(new EmulatesMapValidator());
+    }
+
+    public HederaTestConfigBuilder(boolean registerAllTypes) {
+        this(registerAllTypes ? Set.of("com.hedera", "com.swirlds") : Set.of());
     }
 
     public HederaTestConfigBuilder withValue(@NonNull String propertyName, @NonNull String value) {
