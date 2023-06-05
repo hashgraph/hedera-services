@@ -145,7 +145,6 @@ public class Create2OperationSuite extends HapiSuite {
     public static final String EXPECTED_CREATE2_ADDRESS_MESSAGE = "  --> Expected CREATE2 address is {}";
     private static final String ADMIN_KEY = "adminKey";
     public static final String GET_ADDRESS = "getAddress";
-    private static final String CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS = "contracts.allowSystemUseOfHapiSigs";
 
     public static void main(String... args) {
         new Create2OperationSuite().runSuiteSync();
@@ -177,7 +176,6 @@ public class Create2OperationSuite extends HapiSuite {
                 allLogOpcodesResolveExpectedContractId(),
                 eip1014AliasIsPriorityInErcOwnerPrecompile(),
                 canAssociateInConstructor(),
-                childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor(),
                 /* --- HIP 583 --- */
                 canMergeCreate2ChildWithHollowAccount());
     }
@@ -718,38 +716,6 @@ public class Create2OperationSuite extends HapiSuite {
                                         .contractCallResult(htsPrecompileResult()
                                                 .forFunction(FunctionType.ERC_OWNER)
                                                 .withOwner(unhex(userAliasAddr.get())))))));
-    }
-
-    private HapiSpec childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor() {
-        final var ft = "fungibleToken";
-        final var multiKey = SWISS;
-        final var creationAndAssociation = "creationAndAssociation";
-        final var immediateChildAssoc = "ImmediateChildAssociation";
-
-        final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
-        final AtomicReference<String> childMirrorAddr = new AtomicReference<>();
-
-        return propertyPreservingHapiSpec("childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor")
-                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
-                .given(
-                        overridingTwo(
-                                CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS,
-                                "TokenAssociateToAccount",
-                                CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS,
-                                "10_000_000"),
-                        newKeyNamed(multiKey),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(ft)
-                                .exposingCreatedIdTo(id ->
-                                        tokenMirrorAddr.set(hex(asSolidityAddress(HapiPropertySource.asToken(id))))))
-                .when(uploadInitCode(immediateChildAssoc), sourcing(() -> contractCreate(
-                                immediateChildAssoc, asHeadlongAddress(tokenMirrorAddr.get()))
-                        .gas(2_000_000)
-                        .adminKey(multiKey)
-                        .payingWith(GENESIS)
-                        .exposingNumTo(n -> childMirrorAddr.set("0.0." + (n + 1)))
-                        .via(creationAndAssociation)))
-                .then(sourcing(() -> getContractInfo(childMirrorAddr.get()).logged()));
     }
 
     @SuppressWarnings("java:S5669")

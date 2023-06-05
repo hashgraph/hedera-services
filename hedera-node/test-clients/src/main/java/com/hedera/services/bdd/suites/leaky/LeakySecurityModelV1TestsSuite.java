@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.leaky;
 
+import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
@@ -62,6 +63,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.nftTransfer;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferList;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferLists;
@@ -82,11 +84,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
+import static com.swirlds.common.utility.CommonUtils.hex;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
+import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
@@ -175,6 +179,8 @@ public class LeakySecurityModelV1TestsSuite extends HapiSuite {
     private static final String FIRST_MEMO = "firstMemo";
     private static final String SECOND_MEMO = "secondMemo";
     private static final String CRYPTO_TRANSFER_TXN = "cryptoTransferTxn";
+    private static final String SWISS = "swiss";
+    private static final String CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS = "contracts.allowSystemUseOfHapiSigs";
 
     public static void main(String... args) {
         new LeakySecurityModelV1TestsSuite().runSuiteSync();
@@ -201,7 +207,10 @@ public class LeakySecurityModelV1TestsSuite extends HapiSuite {
                 activeContractInFrameIsVerifiedWithoutNeedForSignature(),
                 cryptoTransferNFTsWithCustomFeesMixedScenario(),
                 hapiTransferFromForNFTWithCustomFeesWithApproveForAll(),
-                hapiTransferFromForNFTWithCustomFeesWithBothApproveForAllAndAssignedSpender());
+                hapiTransferFromForNFTWithCustomFeesWithBothApproveForAllAndAssignedSpender(),
+                /* -- Tests moved from Create2OperationSuite because they require property changes -- */
+                childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor()
+                );
     }
 
     @Override
@@ -1782,6 +1791,38 @@ public class LeakySecurityModelV1TestsSuite extends HapiSuite {
                                 .payingWith(GENESIS)
                                 .alsoSigningWithFullPrefix(RECEIVER_SIGNATURE))))
                 .then();
+    }
+
+    private HapiSpec childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor() {
+        final var ft = "fungibleToken";
+        final var multiKey = SWISS;
+        final var creationAndAssociation = "creationAndAssociation";
+        final var immediateChildAssoc = "ImmediateChildAssociation";
+
+        final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
+        final AtomicReference<String> childMirrorAddr = new AtomicReference<>();
+
+        return propertyPreservingHapiSpec("childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor")
+                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
+                .given(
+                        overridingTwo(
+                                CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS,
+                                "TokenAssociateToAccount",
+                                CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS,
+                                "10_000_000"),
+                        newKeyNamed(multiKey),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(ft)
+                                .exposingCreatedIdTo(id ->
+                                        tokenMirrorAddr.set(hex(asSolidityAddress(HapiPropertySource.asToken(id))))))
+                .when(uploadInitCode(immediateChildAssoc), sourcing(() -> contractCreate(
+                        immediateChildAssoc, asHeadlongAddress(tokenMirrorAddr.get()))
+                        .gas(2_000_000)
+                        .adminKey(multiKey)
+                        .payingWith(GENESIS)
+                        .exposingNumTo(n -> childMirrorAddr.set("0.0." + (n + 1)))
+                        .via(creationAndAssociation)))
+                .then(sourcing(() -> getContractInfo(childMirrorAddr.get()).logged()));
     }
 
     /* --- Helpers --- */
