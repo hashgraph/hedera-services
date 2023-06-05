@@ -36,6 +36,7 @@ import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkGetVersionI
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -61,7 +62,7 @@ class NetworkGetVersionInfoHandlerTest {
     @Test
     @DisplayName("Query header is extracted correctly")
     void extractsHeader() {
-        Query query = validQuery();
+        final Query query = validQuery();
         final var header = subject.extractHeader(query);
         final var op = query.networkGetVersionInfoOrThrow();
         assertEquals(op.header(), header);
@@ -117,7 +118,7 @@ class NetworkGetVersionInfoHandlerTest {
         final var query = validQuery();
         given(context.query()).willReturn(query);
 
-        Configuration config = new HederaTestConfigBuilder().getOrCreateConfig();
+        final Configuration config = new HederaTestConfigBuilder().getOrCreateConfig();
         given(context.configuration()).willReturn(config);
 
         final var response = subject.findResponse(context, responseHeader);
@@ -127,6 +128,7 @@ class NetworkGetVersionInfoHandlerTest {
     }
 
     @Test
+    @DisplayName("query happy path succeeds")
     void findResponseSucceeds() {
         final var responseHeader = ResponseHeader.newBuilder()
                 .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
@@ -135,7 +137,7 @@ class NetworkGetVersionInfoHandlerTest {
         final var query = validQuery();
         given(context.query()).willReturn(query);
 
-        Configuration config = new HederaTestConfigBuilder().getOrCreateConfig();
+        final Configuration config = new HederaTestConfigBuilder().getOrCreateConfig();
         given(context.configuration()).willReturn(config);
 
         final NetworkGetVersionInfoResponse op =
@@ -144,6 +146,7 @@ class NetworkGetVersionInfoHandlerTest {
         assertDoesNotThrow(op::hapiProtoVersionOrThrow);
     }
 
+    @NonNull
     private static Query validQuery() {
         final var payment =
                 payerSponsoredPbjTransfer(payerIdLiteral, COMPLEX_KEY_ACCOUNT_KT, beneficiaryIdStr, paymentAmount);
