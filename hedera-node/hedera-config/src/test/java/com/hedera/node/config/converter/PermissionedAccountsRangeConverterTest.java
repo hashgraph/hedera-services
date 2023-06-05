@@ -75,6 +75,6 @@ final class PermissionedAccountsRangeConverterTest {
     }
 
     static Stream<String> invalidDataProvider() {
-        return Stream.of("10-1", "*-1", "*-10", "1", "-1", "-1-10", "null");
+        return Stream.of("10-1", "*-1", "*-10", "1", "-1", "-1-10", "null", "1 - 10", "", "    ", " 1-10   ");
     }
 }
