@@ -16,8 +16,11 @@
 
 package com.swirlds.virtualmap.config;
 
+import com.swirlds.common.config.validators.DefaultConfigViolation;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.validation.ConfigViolation;
 import com.swirlds.config.api.validation.annotation.ConstraintMethod;
 import com.swirlds.config.api.validation.annotation.Max;
 import com.swirlds.config.api.validation.annotation.Min;
@@ -92,4 +95,36 @@ public record VirtualMapConfig(
         @ConfigProperty(defaultValue = "2000000000") long familyThrottleThreshold,
         @ConfigProperty(defaultValue = "2") int preferredFlushQueueSize,
         @ConfigProperty(defaultValue = "200ms") Duration flushThrottleStepSize,
-        @ConfigProperty(defaultValue = "5s") Duration maximumFlushThrottlePeriod) {}
+        @ConfigProperty(defaultValue = "5s") Duration maximumFlushThrottlePeriod) {
+    private static final double UNIT_FRACTION_PERCENT = 100.0;
+
+    public ConfigViolation virtualMapWarningIntervalValidation(final Configuration configuration) {
+        final long virtualMapWarningThreshold =
+                configuration.getConfigData(VirtualMapConfig.class).virtualMapWarningThreshold();
+        final long virtualMapWarningInterval =
+                configuration.getConfigData(VirtualMapConfig.class).virtualMapWarningInterval();
+        if (virtualMapWarningInterval > virtualMapWarningThreshold) {
+            return new DefaultConfigViolation(
+                    "virtualMap.virtualMapWarningInterval",
+                    virtualMapWarningInterval + "",
+                    true,
+                    "virtualMapWarningInterval must be <= virtualMapWarningThreshold");
+        }
+        return null;
+    }
+
+    public ConfigViolation virtualMapWarningThresholdValidation(final Configuration configuration) {
+        final long virtualMapWarningThreshold =
+                configuration.getConfigData(VirtualMapConfig.class).virtualMapWarningThreshold();
+        final long maximumVirtualMapSize =
+                configuration.getConfigData(VirtualMapConfig.class).maximumVirtualMapSize();
+        if (virtualMapWarningThreshold > maximumVirtualMapSize) {
+            return new DefaultConfigViolation(
+                    "virtualMap.virtualMapWarningThreshold",
+                    virtualMapWarningThreshold + "",
+                    true,
+                    "virtualMapWarningThreshold must be <=  maximumVirtualMapSize");
+        }
+        return null;
+    }
+}
