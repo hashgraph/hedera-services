@@ -16,8 +16,7 @@
 
 package com.swirlds.platform.gui;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.PlatformEvent;
 import com.swirlds.platform.Consensus;
@@ -26,7 +25,9 @@ import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Instant;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -186,39 +187,67 @@ public final class GuiPlatformAccessor {
     }
 
     /**
+     * Information required to sort events by consensus order (or, if events have not yet reached consensus, by received
+     * time).
+     *
+     * @param consensusOrder the consensus order if known, else -1 if unknown
+     * @param timeReceived   the time the event was received, used to break ties when consensus order is unknown for
+     *                       both events
+     */
+    private record EventOrderInfo(long consensusOrder, @NonNull Instant timeReceived)
+            implements Comparable<EventOrderInfo> {
+
+        /**
+         * Create a new EventOrderInfo from an event.
+         */
+        public static EventOrderInfo of(@NonNull final EventImpl event) {
+            return new EventOrderInfo(event.getConsensusOrder(), event.getTimeReceived());
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public int compareTo(@NonNull final EventOrderInfo that) {
+            if (this.consensusOrder == -1 && that.consensusOrder == -1) {
+                // neither are have reached consensus
+                return this.timeReceived.compareTo(that.timeReceived);
+            } else if (this.consensusOrder == -1) {
+                // this event has not reached consensus, but the other one has
+                return 1;
+            } else if (that.consensusOrder == -1) {
+                // this node has reached consensus, but not that one
+                return -1;
+            } else {
+                // both have reached consensus
+                return Long.compare(this.consensusOrder, that.consensusOrder);
+            }
+        }
+    }
+
+    /**
      * Get a sorted list of events.
      */
     public PlatformEvent[] getAllEvents(@NonNull NodeId nodeId) {
         Objects.requireNonNull(nodeId, "nodeId must not be null");
-        // There is currently a race condition that can cause an exception if event order changes at
-        // just the right moment. Since this is just a testing utility method and not used in production
-        // environments, we can just retry until we succeed.
-        int maxRetries = 100;
-        while (maxRetries-- > 0) {
-            try {
-                final EventImpl[] allEvents = getShadowGraph(nodeId).getAllEvents();
-                Arrays.sort(allEvents, (o1, o2) -> {
-                    if (o1.getConsensusOrder() != -1 && o2.getConsensusOrder() != -1) {
-                        // both are consensus
-                        return Long.compare(o1.getConsensusOrder(), o2.getConsensusOrder());
-                    } else if (o1.getConsensusTimestamp() == null && o2.getConsensusTimestamp() == null) {
-                        // neither are consensus
-                        return o1.getTimeReceived().compareTo(o2.getTimeReceived());
-                    } else {
-                        // one is consensus, the other is not
-                        if (o1.getConsensusTimestamp() == null) {
-                            return 1;
-                        } else {
-                            return -1;
-                        }
-                    }
-                });
-                return allEvents;
-            } catch (final IllegalArgumentException e) {
-                logger.error(EXCEPTION.getMarker(), "Exception while sorting events", e);
-            }
+
+        final EventImpl[] allEvents = getShadowGraph(nodeId).getAllEvents();
+
+        // If events reach consensus during the execution of this method, order will change.
+        // Capture information before sorting, since sorting breaks if order changes mid-sort.
+        final Map<Hash, EventOrderInfo> orderInfo = new HashMap<>();
+        for (final EventImpl event : allEvents) {
+            orderInfo.put(event.getHashedData().getHash(), EventOrderInfo.of(event));
         }
-        throw new IllegalStateException("Unable to sort events after 100 retries");
+
+        Arrays.sort(allEvents, (eventA, eventB) -> {
+            final EventOrderInfo orderA =
+                    orderInfo.get(eventA.getBaseEventHashedData().getHash());
+            final EventOrderInfo orderB =
+                    orderInfo.get(eventB.getBaseEventHashedData().getHash());
+            return orderA.compareTo(orderB);
+        });
+        return allEvents;
     }
 
     /**
