@@ -16,10 +16,10 @@
 
 package com.hedera.node.app.service.mono.contracts.operation;
 
-import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.ETHEREUM_NONCE;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.KEY;
+import static com.hedera.node.app.service.mono.legacy.core.jproto.JKey.denotesImmutableEntity;
 import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.node.app.service.mono.state.EntityCreator.NO_CUSTOM_FEES;
 import static com.hedera.node.app.service.mono.txns.contract.ContractCreateTransitionLogic.STANDIN_CONTRACT_ID_KEY;
@@ -28,6 +28,7 @@ import static com.hedera.node.app.service.mono.utils.EntityIdUtils.accountIdFrom
 import com.hedera.node.app.service.evm.contracts.operations.CreateOperationExternalizer;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.EntityCreator;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
@@ -132,16 +133,19 @@ public class HederaCreateOperationExternalizer implements CreateOperationExterna
         final var accountID = accountIdFromEvmAddress(updater.aliases().resolveForEvm(contract));
         final var trackingAccounts = updater.trackingAccounts();
         if (trackingAccounts.contains(accountID)) {
-            final var accountKey = updater.trackingAccounts().get(accountID, KEY);
-            return EMPTY_KEY.equals(accountKey) ? accountID : null;
+            final var accountKey = (JKey) updater.trackingAccounts().get(accountID, KEY);
+            return denotesImmutableEntity(accountKey) ? accountID : null;
         } else {
             return null;
         }
     }
 
     private void finalizeHollowAccountIntoContract(AccountID hollowAccountID, HederaStackedWorldStateUpdater updater) {
-        // reclaim the id for the contract
-        updater.reclaimLatestContractId();
+        // We cannot reclaim the id reserved for a new contract here, even though it will not be used
+        // (since in fact this creation is just finalizing a hollow account). The reason is that it is
+        // possible there were child contracts created by the CONTRACT_CREATION message; and their ids
+        // will not automatically "shrink" to fill a gap left by the reclaimed id. So if we reclaimed
+        // the id here, the next entity number allocated would collide with the last-created child.
 
         // update the hollow account to be a contract
         updater.trackingAccounts().set(hollowAccountID, IS_SMART_CONTRACT, true);
