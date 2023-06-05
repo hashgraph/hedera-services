@@ -87,6 +87,88 @@ import java.util.EnumMap;
 import java.util.Objects;
 import java.util.function.Function;
 
+/**
+ * A configuration for the permissions of the API.
+ *
+ * @param createAccount              the permission for {@link HederaFunctionality#CRYPTO_CREATE} functionality
+ * @param cryptoTransfer             the permission for {@link HederaFunctionality#CRYPTO_TRANSFER} functionality
+ * @param updateAccount              the permission for {@link HederaFunctionality#CRYPTO_UPDATE} functionality
+ * @param cryptoGetBalance           the permission for {@link HederaFunctionality#CRYPTO_GET_ACCOUNT_BALANCE}
+ *                                   functionality
+ * @param getAccountInfo             the permission for {@link HederaFunctionality#CRYPTO_GET_INFO} functionality
+ * @param cryptoDelete               the permission for {@link HederaFunctionality#CRYPTO_DELETE} functionality
+ * @param getAccountRecords          the permission for {@link HederaFunctionality#CRYPTO_GET_ACCOUNT_RECORDS}
+ *                                   functionality
+ * @param getTxRecordByTxID          the permission for {@link HederaFunctionality#TRANSACTION_GET_RECORD}
+ *                                   functionality
+ * @param getTransactionReceipts     the permission for {@link HederaFunctionality#TRANSACTION_GET_RECEIPT}
+ *                                   functionality
+ * @param approveAllowances          the permission for {@link HederaFunctionality#CRYPTO_APPROVE_ALLOWANCE}
+ *                                   functionality
+ * @param deleteAllowances           the permission for {@link HederaFunctionality#CRYPTO_DELETE_ALLOWANCE}
+ *                                   functionality
+ * @param utilPrng                   the permission for {@link HederaFunctionality#UTIL_PRNG} functionality
+ * @param createFile                 the permission for {@link HederaFunctionality#FILE_CREATE} functionality
+ * @param updateFile                 the permission for {@link HederaFunctionality#FILE_UPDATE} functionality
+ * @param deleteFile                 the permission for {@link HederaFunctionality#FILE_DELETE} functionality
+ * @param appendContent              the permission for {@link HederaFunctionality#FILE_APPEND} functionality
+ * @param getFileContent             the permission for {@link HederaFunctionality#FILE_GET_CONTENTS} functionality
+ * @param getFileInfo                the permission for {@link HederaFunctionality#FILE_GET_INFO} functionality
+ * @param createContract             the permission for {@link HederaFunctionality#CONTRACT_CREATE} functionality
+ * @param updateContract             the permission for {@link HederaFunctionality#CONTRACT_UPDATE} functionality
+ * @param contractCallMethod         the permission for {@link HederaFunctionality#CONTRACT_CALL} functionality
+ * @param getContractInfo            the permission for {@link HederaFunctionality#CONTRACT_GET_INFO} functionality
+ * @param contractCallLocalMethod    the permission for {@link HederaFunctionality#CONTRACT_CALL_LOCAL} functionality
+ * @param contractGetBytecode        the permission for {@link HederaFunctionality#CONTRACT_GET_BYTECODE} functionality
+ * @param getTxRecordByContractID    the permission for {@link HederaFunctionality#CONTRACT_GET_RECORDS} functionality
+ * @param deleteContract             the permission for {@link HederaFunctionality#CONTRACT_DELETE} functionality
+ * @param createTopic                the permission for {@link HederaFunctionality#CONSENSUS_CREATE_TOPIC}
+ *                                   functionality
+ * @param updateTopic                the permission for {@link HederaFunctionality#CONSENSUS_UPDATE_TOPIC}
+ *                                   functionality
+ * @param deleteTopic                the permission for {@link HederaFunctionality#CONSENSUS_DELETE_TOPIC}
+ *                                   functionality
+ * @param submitMessage              the permission for {@link HederaFunctionality#CONSENSUS_SUBMIT_MESSAGE}
+ *                                   functionality
+ * @param getTopicInfo               the permission for {@link HederaFunctionality#CONSENSUS_GET_TOPIC_INFO}
+ *                                   functionality
+ * @param ethereumTransaction        the permission for {@link HederaFunctionality#ETHEREUM_TRANSACTION} functionality
+ * @param scheduleCreate             the permission for {@link HederaFunctionality#SCHEDULE_CREATE} functionality
+ * @param scheduleSign               the permission for {@link HederaFunctionality#SCHEDULE_SIGN} functionality
+ * @param scheduleDelete             the permission for {@link HederaFunctionality#SCHEDULE_DELETE} functionality
+ * @param scheduleGetInfo            the permission for {@link HederaFunctionality#SCHEDULE_GET_INFO} functionality
+ * @param tokenCreate                the permission for {@link HederaFunctionality#TOKEN_CREATE} functionality
+ * @param tokenFreezeAccount         the permission for {@link HederaFunctionality#TOKEN_FREEZE_ACCOUNT} functionality
+ * @param tokenUnfreezeAccount
+ * @param tokenGrantKycToAccount     the permission for {@link HederaFunctionality#TOKEN_GRANT_KYC_TO_ACCOUNT}
+ *                                   functionality
+ * @param tokenRevokeKycFromAccount  the permission for {@link HederaFunctionality#TOKEN_REVOKE_KYC_FROM_ACCOUNT}
+ *                                   functionality
+ * @param tokenDelete                the permission for {@link HederaFunctionality#TOKEN_DELETE} functionality
+ * @param tokenMint                  the permission for {@link HederaFunctionality#TOKEN_MINT} functionality
+ * @param tokenBurn                  the permission for {@link HederaFunctionality#TOKEN_BURN} functionality
+ * @param tokenAccountWipe           the permission for {@link HederaFunctionality#TOKEN_ACCOUNT_WIPE} functionality
+ * @param tokenUpdate                the permission for {@link HederaFunctionality#TOKEN_UPDATE} functionality
+ * @param tokenGetInfo               the permission for {@link HederaFunctionality#TOKEN_GET_INFO} functionality
+ * @param tokenAssociateToAccount    the permission for {@link HederaFunctionality#TOKEN_ASSOCIATE_TO_ACCOUNT}
+ *                                   functionality
+ * @param tokenDissociateFromAccount the permission for {@link HederaFunctionality#TOKEN_DISSOCIATE_FROM_ACCOUNT}
+ *                                   functionality
+ * @param tokenGetNftInfo            the permission for {@link HederaFunctionality#TOKEN_GET_NFT_INFO} functionality
+ * @param tokenGetNftInfos           the permission for {@link HederaFunctionality#TOKEN_GET_NFT_INFOS} functionality
+ * @param tokenGetAccountNftInfos    the permission for {@link HederaFunctionality#TOKEN_GET_ACCOUNT_NFT_INFOS}
+ *                                   functionality
+ * @param tokenFeeScheduleUpdate
+ * @param tokenPause
+ * @param tokenUnpause
+ * @param getVersionInfo             the permission for {@link HederaFunctionality#GET_VERSION_INFO} functionality
+ * @param networkGetExecutionTime    the permission for {@link HederaFunctionality#NETWORK_GET_EXECUTION_TIME}
+ *                                   functionality
+ * @param systemDelete               the permission for {@link HederaFunctionality#SYSTEM_DELETE} functionality
+ * @param systemUndelete             the permission for {@link HederaFunctionality#SYSTEM_UNDELETE} functionality
+ * @param freeze                     the permission for {@link HederaFunctionality#FREEZE} functionality
+ * @param getAccountDetails          the permission for {@link HederaFunctionality#GET_ACCOUNT_DETAILS} functionality
+ */
 @ConfigData
 public record ApiPermissionConfig(
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange createAccount,
@@ -220,6 +302,13 @@ public record ApiPermissionConfig(
         permissionKeys.put(UTIL_PRNG, c -> c.utilPrng);
     }
 
+    /**
+     * Return the permission for the given functionality based on this config record instance or throws a
+     * {@link IllegalArgumentException} if the functionality is not supported.
+     *
+     * @param functionality the functionality to get the permission for
+     * @return the permission for the given functionality
+     */
     public PermissionedAccountsRange getPermission(@NonNull HederaFunctionality functionality) {
         Objects.requireNonNull(functionality, "functionality cannot be null");
         var function = permissionKeys.get(functionality);
