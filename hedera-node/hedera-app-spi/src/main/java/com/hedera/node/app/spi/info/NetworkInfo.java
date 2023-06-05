@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.spi.info;
 
-import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -32,20 +31,4 @@ public interface NetworkInfo {
      */
     @NonNull
     Bytes ledgerId();
-
-    /**
-     * Gets the current deployed version of software on the network
-     *
-     * @return The deployed version
-     */
-    @NonNull
-    SemanticVersion servicesVersion();
-
-    /**
-     * Get the current deployed HAPI version running on the network.
-     *
-     * @return The HAPI version
-     */
-    @NonNull
-    SemanticVersion hapiVersion();
 }

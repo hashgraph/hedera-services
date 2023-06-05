@@ -82,8 +82,8 @@ public class NetworkGetVersionInfoHandler extends PaidQueryHandler {
         responseBuilder.header(header);
         if (header.nodeTransactionPrecheckCode() == OK && responseType != COST_ANSWER) {
             responseBuilder
-                    .hederaServicesVersion(semanticVersionConfig.servicesVersion())
-                    .hapiProtoVersion(semanticVersionConfig.hapiVersion());
+                    .hederaServicesVersion(semanticVersionConfig.services())
+                    .hapiProtoVersion(semanticVersionConfig.hapi());
         }
 
         return Response.newBuilder().networkGetVersionInfo(responseBuilder).build();

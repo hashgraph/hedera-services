@@ -22,5 +22,5 @@ import com.swirlds.config.api.ConfigProperty;
 
 @ConfigData("version")
 public record SemanticVersionConfig(
-        @ConfigProperty(defaultValue = "0.39.0") SemanticVersion servicesVersion,
-        @ConfigProperty(defaultValue = "0.39.0") SemanticVersion hapiVersion) {}
+        @ConfigProperty(defaultValue = "0.0.0") SemanticVersion services,
+        @ConfigProperty(defaultValue = "0.0.0") SemanticVersion hapi) {}
