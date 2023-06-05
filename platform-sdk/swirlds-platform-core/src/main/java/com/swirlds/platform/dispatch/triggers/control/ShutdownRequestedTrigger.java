@@ -17,12 +17,15 @@
 package com.swirlds.platform.dispatch.triggers.control;
 
 import com.swirlds.platform.dispatch.types.TriggerTwo;
+import com.swirlds.platform.system.SystemExitCode;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * Sends dispatches when a shutdown is requested.
  */
 @FunctionalInterface
-public interface ShutdownRequestedTrigger extends TriggerTwo<String, Integer> {
+public interface ShutdownRequestedTrigger extends TriggerTwo<String, SystemExitCode> {
 
     /**
      * Send a dispatch requesting that the system shut down immediately.
@@ -33,5 +36,5 @@ public interface ShutdownRequestedTrigger extends TriggerTwo<String, Integer> {
      * 		the exit code to return
      */
     @Override
-    void dispatch(String reason, Integer exitCode);
+    void dispatch(@Nullable String reason, @NonNull SystemExitCode exitCode);
 }

@@ -18,6 +18,7 @@ package com.swirlds.platform.event.creation;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.EventCreationRuleResponse;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEvent;
 import java.util.HashMap;
 import java.util.Map;
@@ -27,7 +28,7 @@ import java.util.Map;
  * creator will only use newer other parents and only tracks the most recent event by creator ID.
  */
 public class OtherParentTracker implements ParentBasedCreationRule {
-    private final Map<Long, Hash> otherParentUsed;
+    private final Map<NodeId, Hash> otherParentUsed;
 
     public OtherParentTracker() {
         this.otherParentUsed = new HashMap<>();

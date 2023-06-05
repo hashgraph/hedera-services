@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.test.event.intake;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.intake.ChatterEventMapper;
 import com.swirlds.platform.test.event.GossipEventBuilder;
@@ -27,15 +28,15 @@ class ChatterEventMapperTest {
     @Test
     @DisplayName("basic functionality")
     void test() {
-        final long creator1 = 1;
-        final long creator2 = 2;
+        final NodeId creator1 = new NodeId(1);
+        final NodeId creator2 = new NodeId(2);
 
         final ChatterEventMapper mapper = new ChatterEventMapper();
         Assertions.assertNull(mapper.getMostRecentEvent(creator1), "initially it should be empty");
         Assertions.assertNull(mapper.getMostRecentEvent(creator2), "initially it should be empty");
 
         final GossipEvent cr1gen1 = GossipEventBuilder.builder()
-                .setCreatorId(creator1)
+                .setCreatorId(creator1.id())
                 .setGeneration(1)
                 .buildEvent();
         mapper.mapEvent(cr1gen1);
@@ -44,7 +45,7 @@ class ChatterEventMapperTest {
         Assertions.assertNull(mapper.getMostRecentEvent(creator2), "creator1 should not affect creator2");
 
         final GossipEvent cr1gen10 = GossipEventBuilder.builder()
-                .setCreatorId(creator1)
+                .setCreatorId(creator1.id())
                 .setGeneration(10)
                 .buildEvent();
         mapper.mapEvent(cr1gen10);
@@ -53,7 +54,7 @@ class ChatterEventMapperTest {
         Assertions.assertNull(mapper.getMostRecentEvent(creator2), "creator1 should not affect creator2");
 
         final GossipEvent cr1gen5 = GossipEventBuilder.builder()
-                .setCreatorId(creator1)
+                .setCreatorId(creator1.id())
                 .setGeneration(5)
                 .buildEvent();
         mapper.mapEvent(cr1gen5);

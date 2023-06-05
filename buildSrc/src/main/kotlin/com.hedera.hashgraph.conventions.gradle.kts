@@ -109,9 +109,6 @@ testing {
         // Configure the integration test suite
         register<JvmTestSuite>("itest") {
             testType.set(TestSuiteType.INTEGRATION_TEST)
-            dependencies {
-                implementation(project())
-            }
 
             // "shouldRunAfter" will only make sure if both test and itest are run concurrently,
             // that "test" completes first. If you run "itest" directly, it doesn't force "test" to run.
@@ -141,9 +138,6 @@ testing {
         // Configure the hammer test suite
         register<JvmTestSuite>("hammer") {
             testType.set("hammer-test")
-            dependencies {
-                implementation(project())
-            }
 
             targets.all {
                 testTask {
@@ -155,9 +149,6 @@ testing {
         // Add the EET task for executing end-to-end tests
         register<JvmTestSuite>("eet") {
             testType.set("end-to-end-test")
-            dependencies {
-                implementation(project())
-            }
 
             // "shouldRunAfter" will only make sure if both test and eet are run concurrently,
             // that "test" completes first. If you run "eet" directly, it doesn't force "test" to run.

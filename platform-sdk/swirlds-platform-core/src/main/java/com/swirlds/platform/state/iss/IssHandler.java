@@ -20,6 +20,7 @@ import static com.swirlds.base.ArgumentUtils.throwArgNull;
 
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.state.notifications.IssNotification;
 import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.throttle.RateLimiter;
@@ -32,9 +33,10 @@ import com.swirlds.platform.dispatch.triggers.control.StateDumpRequestedTrigger;
 import com.swirlds.platform.dispatch.triggers.error.CatastrophicIssTrigger;
 import com.swirlds.platform.dispatch.triggers.error.SelfIssTrigger;
 import com.swirlds.platform.dispatch.triggers.flow.StateHashValidityTrigger;
-import com.swirlds.platform.system.SystemExitReason;
+import com.swirlds.platform.system.SystemExitCode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
+import java.util.Objects;
 
 /**
  * This class is responsible for handling the response to an ISS event.
@@ -52,7 +54,7 @@ public class IssHandler {
 
     private boolean halted;
 
-    private final long selfId;
+    private final NodeId selfId;
 
     /**
      * Create an object responsible for handling ISS events.
@@ -68,7 +70,7 @@ public class IssHandler {
             @NonNull final Time time,
             @NonNull final DispatchBuilder dispatchBuilder,
             @NonNull final StateConfig stateConfig,
-            final long selfId,
+            @NonNull final NodeId selfId,
             @NonNull final HaltRequestedConsumer haltRequestedConsumer,
             @NonNull final FatalErrorConsumer fatalErrorConsumer,
             @NonNull final IssConsumer issConsumer) {
@@ -96,7 +98,7 @@ public class IssHandler {
     @Observer(StateHashValidityTrigger.class)
     public void stateHashValidityObserver(
             @NonNull final Long round,
-            @NonNull final Long nodeId,
+            @NonNull final NodeId nodeId,
             @NonNull final Hash nodeHash,
             @NonNull final Hash consensusHash) {
 
@@ -105,7 +107,7 @@ public class IssHandler {
             return;
         }
 
-        if (nodeId == selfId) {
+        if (Objects.equals(nodeId, selfId)) {
             // let the logic in selfIssObserver handle self ISS events
             return;
         }
@@ -155,7 +157,7 @@ public class IssHandler {
             // Automated recovery is a fancy way of saying "turn it off and on again".
             // If we are powering down, always do a state dump.
             stateDumpRequestedDispatcher.dispatch(round, ISS_DUMP_CATEGORY, true);
-            fatalErrorConsumer.fatalError("Self ISS", null, SystemExitReason.ISS.getExitCode());
+            fatalErrorConsumer.fatalError("Self ISS", null, SystemExitCode.ISS);
         } else if (stateConfig.dumpStateOnAnyISS() && issDumpRateLimiter.request()) {
             stateDumpRequestedDispatcher.dispatch(round, ISS_DUMP_CATEGORY, false);
         }

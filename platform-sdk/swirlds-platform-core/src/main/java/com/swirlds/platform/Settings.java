@@ -97,7 +97,6 @@ import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.utility.PlatformVersion;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.jasperdb.settings.JasperDbSettingsFactory;
 import com.swirlds.platform.internal.SubSetting;
 import com.swirlds.platform.state.StateSettings;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
@@ -393,10 +392,6 @@ public class Settings {
      * Settings controlling VirtualMap.
      */
     private VirtualMapSettingsImpl virtualMap = new VirtualMapSettingsImpl();
-    /**
-     * Settings controlling JasperDB.
-     */
-    private JasperDbSettingsImpl jasperDb = new JasperDbSettingsImpl();
 
     private Settings() {}
 
@@ -420,7 +415,6 @@ public class Settings {
         SettingsCommon.verboseStatistics = getInstance().isVerboseStatistics();
 
         VirtualMapSettingsFactory.configure(getInstance().getVirtualMap());
-        JasperDbSettingsFactory.configure(getInstance().getJasperDb());
     }
 
     /**
@@ -911,10 +905,6 @@ public class Settings {
 
     public VirtualMapSettingsImpl getVirtualMap() {
         return virtualMap;
-    }
-
-    public JasperDbSettingsImpl getJasperDb() {
-        return jasperDb;
     }
 
     public String getCsvOutputFolder() {

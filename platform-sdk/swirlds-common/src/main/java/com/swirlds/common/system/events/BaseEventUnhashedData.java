@@ -19,9 +19,13 @@ package com.swirlds.common.system.events;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.utility.CommonUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Objects;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
@@ -52,7 +56,7 @@ public class BaseEventUnhashedData implements SelfSerializable {
     /** sequence number for this by its creator (0 is first) */
     private long creatorSeq;
     /** ID of otherParent (translate before sending) */
-    private long otherId;
+    private NodeId otherId;
     /** sequence number for otherParent event (by its creator) */
     private long otherSeq;
     /** creator's sig for this */
@@ -60,25 +64,29 @@ public class BaseEventUnhashedData implements SelfSerializable {
 
     public BaseEventUnhashedData() {}
 
-    public BaseEventUnhashedData(final long otherId, final byte[] signature) {
+    public BaseEventUnhashedData(@Nullable final NodeId otherId, @NonNull final byte[] signature) {
         this.creatorSeq = SEQUENCE_UNUSED;
         this.otherId = otherId;
-        this.signature = signature;
+        this.signature = Objects.requireNonNull(signature, "signature must not be null");
         this.otherSeq = SEQUENCE_UNUSED;
     }
 
     @Override
-    public void serialize(final SerializableDataOutputStream out) throws IOException {
+    public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
         out.writeLong(creatorSeq);
-        out.writeLong(otherId);
+        // FUTURE WORK: The otherId should be a selfSerializable NodeId at some point.
+        // Changing the event format may require a HIP.  The old format is preserved for now.
+        out.writeLong(otherId == null ? -1 : otherId.id());
         out.writeLong(otherSeq);
         out.writeByteArray(signature);
     }
 
     @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
+    public void deserialize(@NonNull final SerializableDataInputStream in, final int version) throws IOException {
         creatorSeq = in.readLong();
-        otherId = in.readLong();
+        // FUTURE WORK: The otherId should be a nullable selfSerializable NodeId at some point.
+        // Changing the event format may require a HIP.  The old format is preserved for now.
+        otherId = NodeId.deserializeLong(in, true);
         otherSeq = in.readLong();
         signature = in.readByteArray(MAX_SIG_LENGTH);
     }
@@ -96,7 +104,7 @@ public class BaseEventUnhashedData implements SelfSerializable {
         final BaseEventUnhashedData that = (BaseEventUnhashedData) o;
 
         return (creatorSeq == that.creatorSeq)
-                && (otherId == that.otherId)
+                && (Objects.equals(otherId, that.otherId))
                 && (otherSeq == that.otherSeq)
                 && Arrays.equals(signature, that.signature);
     }
@@ -131,7 +139,13 @@ public class BaseEventUnhashedData implements SelfSerializable {
         return CLASS_VERSION;
     }
 
-    public long getOtherId() {
+    /**
+     * Get the other parent's NodeId
+     *
+     * @return the other parent's NodeId
+     */
+    @Nullable
+    public NodeId getOtherId() {
         return otherId;
     }
 

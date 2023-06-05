@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -121,8 +122,8 @@ public class SwirldStateTracker extends DummySwirldState implements TransactionT
                 }
 
                 addHandledTransaction(trans, trans.getConsensusTimestamp());
-                final long creatorId = event.getCreatorId();
-                if (creatorId == selfId.id()) {
+                final NodeId creatorId = event.getCreatorId();
+                if (Objects.equals(creatorId, selfId)) {
                     if (!consensusSelfTxns.add(trans)) {
                         addFailure(String.format("Encountered duplicate self consensus transaction %s", trans));
                     }

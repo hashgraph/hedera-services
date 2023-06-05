@@ -17,8 +17,6 @@
 package com.swirlds.benchmark;
 
 import com.swirlds.common.settings.ParsingUtils;
-import com.swirlds.jasperdb.settings.JasperDbSettingsFactory;
-import com.swirlds.platform.JasperDbSettingsImpl;
 import com.swirlds.platform.VirtualMapSettingsImpl;
 import com.swirlds.virtualmap.VirtualMapSettingsFactory;
 import java.io.File;
@@ -47,11 +45,6 @@ public final class BenchmarkSettings {
     static VirtualMapSettingsImpl virtualMap = new VirtualMapSettingsImpl();
 
     /**
-     * Settings controlling JasperDB.
-     */
-    static JasperDbSettingsImpl jasperDb = new JasperDbSettingsImpl();
-
-    /**
      * Placeholder for BenchmarkConfig properties
      */
     static class BenchmarkConfigStub {
@@ -71,7 +64,6 @@ public final class BenchmarkSettings {
     public static void init() {
         loadSettings();
         VirtualMapSettingsFactory.configure(virtualMap);
-        JasperDbSettingsFactory.configure(jasperDb);
     }
 
     private BenchmarkSettings() {}

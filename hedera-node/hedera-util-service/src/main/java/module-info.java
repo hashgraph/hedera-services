@@ -5,5 +5,4 @@ module com.hedera.node.app.service.util {
 
     requires transitive com.hedera.node.app.spi;
     requires com.github.spotbugs.annotations;
-    requires com.hedera.pbj.runtime;
 }
