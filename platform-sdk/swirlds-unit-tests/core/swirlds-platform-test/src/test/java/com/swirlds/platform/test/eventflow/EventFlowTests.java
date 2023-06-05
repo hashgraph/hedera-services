@@ -74,6 +74,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -82,6 +83,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.provider.Arguments;
@@ -250,11 +252,11 @@ class EventFlowTests {
 
         // Extract the transactions from self events
         final HashSet<Transaction> selfConsensusTransactions =
-                extractTransactions((id) -> id == selfId.id(), consensusRounds);
+                extractTransactions((id) -> Objects.equals(id, selfId), consensusRounds);
 
         // Extract the transactions from other events
         final HashSet<Transaction> otherConsensusTransactions =
-                extractTransactions((id) -> id != selfId.id(), consensusRounds);
+                extractTransactions((id) -> !Objects.equals(id, selfId), consensusRounds);
 
         final TransactionTracker consensusState =
                 (TransactionTracker) swirldStateManager.getConsensusState().getSwirldState();
@@ -663,7 +665,9 @@ class EventFlowTests {
      * @return a set of transactions from the matching events
      */
     protected HashSet<Transaction> extractTransactions(
-            final Predicate<Long> nodeIdMatcher, final List<ConsensusRound> rounds) {
+            @NonNull final Predicate<NodeId> nodeIdMatcher, @NonNull final List<ConsensusRound> rounds) {
+        Objects.requireNonNull(nodeIdMatcher, "nodeIdMatcher must not be null");
+        Objects.requireNonNull(rounds, "rounds must not be null");
         final HashSet<Transaction> selfTransactions = new HashSet<>();
         for (final ConsensusRound round : rounds) {
             for (final EventImpl event : round.getConsensusEvents()) {

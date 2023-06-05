@@ -39,6 +39,7 @@ import java.time.Duration;
  *                                              may not be written to disk.
  * @param saveStatePeriod                       The frequency of writes of a state to disk every this many seconds (0 to
  *                                              never write).
+ * @param saveReconnectStateToDisk              If true, save the state received from a successful reconnect to disk.
  * @param signedStateDisk                       Keep at least this many of the old complete signed states on disk. This
  *                                              should be at least 2 so that  we don't delete an old state while a new
  *                                              one is in the process of writing to disk. set to 0 to not keep any
@@ -107,6 +108,7 @@ public record StateConfig(
         @ConfigProperty(defaultValue = "false") boolean cleanSavedStateDirectory,
         @ConfigProperty(defaultValue = "20") int stateSavingQueueSize,
         @ConfigProperty(defaultValue = "0") int saveStatePeriod,
+        @ConfigProperty(defaultValue = "false") boolean saveReconnectStateToDisk,
         @ConfigProperty(defaultValue = "3") int signedStateDisk,
         @ConfigProperty(defaultValue = "false") boolean dumpStateOnAnyISS,
         @ConfigProperty(defaultValue = "true") boolean dumpStateOnFatal,

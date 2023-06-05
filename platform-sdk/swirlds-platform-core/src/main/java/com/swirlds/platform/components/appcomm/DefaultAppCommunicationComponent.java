@@ -19,6 +19,7 @@ package com.swirlds.platform.components.appcomm;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteNotification;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.state.notifications.IssListener;
 import com.swirlds.common.system.state.notifications.IssNotification;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
@@ -26,6 +27,7 @@ import com.swirlds.common.system.state.notifications.NewSignedStateNotification;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.file.Path;
 
 /**
@@ -70,7 +72,8 @@ public class DefaultAppCommunicationComponent implements AppCommunicationCompone
     }
 
     @Override
-    public void iss(final long round, final IssNotification.IssType issType, final Long otherNodeId) {
+    public void iss(
+            final long round, @NonNull final IssNotification.IssType issType, @Nullable final NodeId otherNodeId) {
         final IssNotification notification = new IssNotification(round, issType, otherNodeId);
         notificationEngine.dispatch(IssListener.class, notification);
     }

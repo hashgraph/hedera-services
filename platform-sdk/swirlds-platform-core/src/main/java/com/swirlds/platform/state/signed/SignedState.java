@@ -213,13 +213,11 @@ public class SignedState implements SignedStateInfo {
     public void setSigSet(@NonNull final SigSet sigSet) {
         this.sigSet = Objects.requireNonNull(sigSet);
         signingWeight = 0;
+        final AddressBook addressBook = getAddressBook();
         for (final NodeId signingNode : sigSet) {
-            final Address address = getAddressBook().getAddress(signingNode);
-            if (address == null) {
-                throw new IllegalStateException(
-                        "Signature for node " + signingNode + " found, but that node is not in the address book");
+            if (addressBook.contains(signingNode)) {
+                signingWeight += addressBook.getAddress(signingNode).getWeight();
             }
-            signingWeight += address.getWeight();
         }
     }
 
@@ -617,7 +615,7 @@ public class SignedState implements SignedStateInfo {
 
         final List<NodeId> signaturesToRemove = new ArrayList<>();
         for (final NodeId nodeId : sigSet) {
-            final Address address = trustedAddressBook.getAddress(nodeId);
+            final Address address = trustedAddressBook.contains(nodeId) ? trustedAddressBook.getAddress(nodeId) : null;
             if (!isSignatureValid(address, sigSet.getSignature(nodeId))) {
                 signaturesToRemove.add(nodeId);
             }
@@ -630,9 +628,8 @@ public class SignedState implements SignedStateInfo {
         // Recalculate signing weight. We should do this even if we don't remove signatures.
         signingWeight = 0;
         for (final NodeId nodeId : sigSet) {
-            final Address address = trustedAddressBook.getAddress(nodeId);
-            if (address != null) {
-                signingWeight += address.getWeight();
+            if (trustedAddressBook.contains(nodeId)) {
+                signingWeight += trustedAddressBook.getAddress(nodeId).getWeight();
             }
         }
     }

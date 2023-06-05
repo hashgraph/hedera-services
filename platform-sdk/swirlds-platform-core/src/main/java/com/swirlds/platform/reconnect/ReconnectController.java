@@ -27,8 +27,8 @@ import com.swirlds.logging.LogMarker;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
-import com.swirlds.platform.system.SystemExitReason;
-import com.swirlds.platform.system.SystemUtils;
+import com.swirlds.platform.system.SystemExitCode;
+import com.swirlds.platform.system.SystemExitUtils;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
@@ -92,7 +92,7 @@ public class ReconnectController implements Runnable {
             }
         } catch (final RuntimeException | InterruptedException e) {
             logger.error(EXCEPTION.getMarker(), "Unexpected error occurred while reconnecting", e);
-            SystemUtils.exitSystem(SystemExitReason.RECONNECT_FAILURE);
+            SystemExitUtils.exitSystem(SystemExitCode.RECONNECT_FAILURE);
         } finally {
             threadRunning.release();
         }

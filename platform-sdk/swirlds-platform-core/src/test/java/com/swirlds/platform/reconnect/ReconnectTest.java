@@ -148,7 +148,7 @@ final class ReconnectTest {
         for (int i = 0; i < numAddresses; i++) {
             final Address address = mock(Address.class);
             when(address.getSigPublicKey()).thenReturn(publicKey);
-            when(address.getId()).thenReturn((long) i);
+            when(address.getNodeId()).thenReturn(new NodeId(i));
             addresses.add(address);
         }
         return new AddressBook(addresses);

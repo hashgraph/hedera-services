@@ -25,6 +25,9 @@ import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.platform.internal.EventImpl;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Objects;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class TestUtils {
 
@@ -47,7 +50,8 @@ public class TestUtils {
         return true;
     }
 
-    static EventImpl createTestEvent(final int creatorId, final int otherId) {
+    static EventImpl createTestEvent(@NonNull final NodeId creatorId, @Nullable final NodeId otherId) {
+        Objects.requireNonNull(creatorId, "creatorId must not be null");
         final Instant startTime = Instant.ofEpochSecond(1554466913);
         final EventImpl e = new EventImpl(
                 new BaseEventHashedData(
@@ -64,7 +68,7 @@ public class TestUtils {
                 null);
         CryptographyHolder.get().digestSync(e.getBaseEventHashedData());
 
-        e.estimateTime(new NodeId(creatorId), startTime.getEpochSecond(), 0);
+        e.estimateTime(creatorId, startTime.getEpochSecond(), 0);
         return e;
     }
 }

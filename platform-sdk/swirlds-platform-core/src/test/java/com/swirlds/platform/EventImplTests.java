@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.system.BasicSoftwareVersion;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
@@ -240,14 +241,14 @@ public class EventImplTests {
         return new EventImpl(
                 new BaseEventHashedData(
                         new BasicSoftwareVersion(1),
-                        0L,
+                        new NodeId(0L),
                         0L,
                         0L,
                         CryptographyHolder.get().getNullHash(),
                         CryptographyHolder.get().getNullHash(),
                         Instant.now(),
                         transactions),
-                new BaseEventUnhashedData(0L, new byte[0]));
+                new BaseEventUnhashedData(new NodeId(0L), new byte[0]));
     }
 
     private record TransactionData(ConsensusTransactionImpl[] transactions, List<Integer> systemIndices) {}

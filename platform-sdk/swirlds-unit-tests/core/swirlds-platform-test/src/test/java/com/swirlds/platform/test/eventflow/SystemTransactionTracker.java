@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.test.eventflow;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.SystemTransactionPing;
 import com.swirlds.common.test.TransactionUtils;
@@ -28,12 +29,14 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 public class SystemTransactionTracker
         implements PreConsensusSystemTransactionConsumer, PostConsensusSystemTransactionConsumer, Failable {
 
-    private final Map<Long, Integer> preConsByCreator = new HashMap<>();
+    private final Map<NodeId, Integer> preConsByCreator = new HashMap<>();
     private final Set<Transaction> preConsensusTransactions = new HashSet<>();
     private final Set<Transaction> consensusTransactions = new HashSet<>();
     private final StringBuilder failureMsg = new StringBuilder();
@@ -52,7 +55,10 @@ public class SystemTransactionTracker
      * @param transaction the transaction to consume. of type {@link SystemTransactionPing}, since
      *                    {@link TransactionUtils#incrementingSystemTransaction()} uses them
      */
-    public void handlePreConsensusSystemTransaction(final long creatorId, final SystemTransactionPing transaction) {
+    public void handlePreConsensusSystemTransaction(
+            @NonNull final NodeId creatorId, @NonNull final SystemTransactionPing transaction) {
+        Objects.requireNonNull(creatorId, "creatorId must not be null");
+        Objects.requireNonNull(transaction, "transaction must not be null");
         preConsByCreator.putIfAbsent(creatorId, 0);
 
         final int prevVal = preConsByCreator.get(creatorId);
@@ -74,7 +80,12 @@ public class SystemTransactionTracker
      *                    {@link TransactionUtils#incrementingSystemTransaction()} uses them
      */
     public void handlePostConsensusSystemTransaction(
-            final State state, final long creatorId, final SystemTransactionPing transaction) {
+            @NonNull final State state,
+            @NonNull final NodeId creatorId,
+            @NonNull final SystemTransactionPing transaction) {
+        Objects.requireNonNull(state, "state must not be null");
+        Objects.requireNonNull(creatorId, "creatorId must not be null");
+        Objects.requireNonNull(transaction, "transaction must not be null");
 
         if (!consensusTransactions.add(transaction)) {
             addFailure(String.format(
