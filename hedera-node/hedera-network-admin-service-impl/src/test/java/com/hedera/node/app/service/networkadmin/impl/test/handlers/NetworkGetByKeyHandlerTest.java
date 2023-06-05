@@ -35,7 +35,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class NetworkGetByKeyHandlerTest {
+class NetworkGetByKeyHandlerTest {
     @Mock
     private QueryContext context;
 
