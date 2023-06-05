@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.service.networkadmin.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -70,7 +73,9 @@ class NetworkGetExecutionTimeHandlerTest {
 
     @Test
     void validateThrowsPreCheck() {
-        assertThrows(PreCheckException.class, () -> subject.validate(context));
+        assertThatThrownBy(() -> subject.validate(context))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(NOT_SUPPORTED));
     }
 
     @Test
