@@ -30,7 +30,7 @@ import java.util.Set;
 
 /** Standard implementation of the {@link FileService} {@link com.hedera.node.app.spi.Service}. */
 public final class FileServiceImpl implements FileService {
-    private static final int MAX_BLOBS = 4096;
+    private static final long MAX_BLOBS = 50_000_000L;
     private static final SemanticVersion CURRENT_VERSION =
             SemanticVersion.newBuilder().minor(34).build();
     public static final String BLOBS_KEY = "FILES";
@@ -61,6 +61,6 @@ public final class FileServiceImpl implements FileService {
 
         final var valueCodec = CodecFactory.newInMemoryCodec(File.PROTOBUF::parse, File.PROTOBUF::write);
 
-        return StateDefinition.onDisk(BLOBS_KEY, keyCodec, valueCodec, MAX_BLOBS);
+        return StateDefinition.onDisk(BLOBS_KEY, keyCodec, valueCodec, Math.toIntExact(MAX_BLOBS));
     }
 }
