@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.service.networkadmin.impl.test.handlers;
 
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
-import static com.hedera.test.utils.TxnUtils.payerSponsoredPbjTransfer;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -50,9 +48,6 @@ class NetworkGetVersionInfoHandlerTest {
     private QueryContext context;
 
     private NetworkGetVersionInfoHandler subject;
-    private static final String payerIdLiteral = "0.0.3";
-    private static final String beneficiaryIdStr = "0.0.3";
-    private static final long paymentAmount = 1_234L;
 
     @BeforeEach
     void setUp() {
@@ -148,10 +143,8 @@ class NetworkGetVersionInfoHandlerTest {
 
     @NonNull
     private static Query validQuery() {
-        final var payment =
-                payerSponsoredPbjTransfer(payerIdLiteral, COMPLEX_KEY_ACCOUNT_KT, beneficiaryIdStr, paymentAmount);
         final var data = NetworkGetVersionInfoQuery.newBuilder()
-                .header(QueryHeader.newBuilder().payment(payment).build())
+                .header(QueryHeader.newBuilder().build())
                 .build();
         return Query.newBuilder().networkGetVersionInfo(data).build();
     }

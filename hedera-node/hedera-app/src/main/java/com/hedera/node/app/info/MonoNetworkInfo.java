@@ -26,6 +26,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * Implementation of {@link NetworkInfo} that delegates to the mono-service.
  */
 public class MonoNetworkInfo implements NetworkInfo {
+
     private final com.hedera.node.app.service.mono.config.NetworkInfo delegate;
 
     /**
