@@ -22,7 +22,7 @@ import com.hedera.node.app.service.mono.context.domain.security.PermissionedAcco
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-class PermissionedAccountsRangeConverterTest {
+final class PermissionedAccountsRangeConverterTest {
 
     @Test
     void testNullParam() {
