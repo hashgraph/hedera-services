@@ -524,6 +524,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         return fungibleToken
                 .copyBuilder()
                 .tokenNumber(nonFungibleTokenNum.longValue())
+                .treasuryAccountNumber(treasuryId.accountNum())
                 .customFees(List.of())
                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                 .build();

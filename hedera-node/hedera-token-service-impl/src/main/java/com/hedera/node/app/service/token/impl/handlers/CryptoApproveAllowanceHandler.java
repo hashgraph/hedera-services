@@ -16,13 +16,11 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_DELEGATING_SPENDER;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
-import static com.hedera.node.app.service.token.impl.util.AllowanceHelpers.validateAllowanceLimit;
-import static com.hedera.node.app.service.token.impl.util.AllowanceHelpers.validateOwner;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
+import static com.hedera.node.app.service.token.impl.validators.AllowanceValidator.isValidOwner;
+import static com.hedera.node.app.service.token.impl.validators.AllowanceValidator.validateAllowanceLimit;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
@@ -36,16 +34,13 @@ import com.hedera.hapi.node.state.token.AccountFungibleTokenAllowance;
 import com.hedera.hapi.node.token.CryptoAllowance;
 import com.hedera.hapi.node.token.NftAllowance;
 import com.hedera.hapi.node.token.TokenAllowance;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.validators.ApproveAllowanceValidator;
-import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.app.spi.workflows.*;
 import com.hedera.node.config.data.HederaConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -68,10 +63,30 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
         this.allowanceValidator = allowanceValidator;
     }
 
+    /**
+     * @param txn the transaction body
+     * @throws PreCheckException if the transaction is invalid for any reason
+     */
+    @Override
+    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
+        requireNonNull(txn);
+        final var op = txn.cryptoApproveAllowanceOrThrow();
+
+        final var cryptoAllowancesSize =
+                op.hasCryptoAllowances() ? op.cryptoAllowances().size() : 0;
+        final var tokenAllowancesSize =
+                op.hasTokenAllowances() ? op.tokenAllowances().size() : 0;
+        final var nftAllowancesSize = op.hasNftAllowances() ? op.nftAllowances().size() : 0;
+        final var totalAllowancesSize = cryptoAllowancesSize + tokenAllowancesSize + nftAllowancesSize;
+        validateTruePreCheck(totalAllowancesSize != 0, EMPTY_ALLOWANCES);
+    }
+
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
-        final var op = context.body().cryptoApproveAllowanceOrThrow();
+        final var txn = context.body();
+        pureChecks(txn);
+        final var op = txn.cryptoApproveAllowanceOrThrow();
         var failureStatus = INVALID_ALLOWANCE_OWNER_ID;
 
         for (final var allowance : op.cryptoAllowancesOrElse(emptyList())) {
@@ -381,7 +396,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
             final var nft = uniqueTokenStore.get(tokenId, serialNum);
             final var token = tokenStore.get(tokenId);
 
-            validateTrue(validateOwner(nft, owner.accountNumber(), token), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
+            validateTrue(isValidOwner(nft, owner.accountNumber(), token), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
             final var copy = nft.copyBuilder()
                     .spenderNumber(spenderId.accountNumOrThrow())
                     .build();
