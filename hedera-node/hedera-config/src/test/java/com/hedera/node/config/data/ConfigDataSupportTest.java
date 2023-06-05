@@ -24,7 +24,7 @@ import com.swirlds.config.api.Configuration;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
-public class ConfigDataSupportTest {
+class ConfigDataSupportTest {
 
     @Test
     void testConfig() {

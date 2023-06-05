@@ -16,6 +16,7 @@
 
 package com.hedera.node.config.data;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -54,6 +55,9 @@ class ApiPermissionConfigTest {
 
         // when
         PermissionedAccountsRange permission = config.getPermission(hederaFunctionality);
+
+        // then
+        assertThat(permission).isNotNull();
     }
 
     @ParameterizedTest
