@@ -34,8 +34,8 @@ import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.ConfigProvider;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -79,7 +79,7 @@ public class DeleteAllowanceValidator extends AllowanceValidator {
      * @param accountStore account store
      * @param tokenStore read only token store
      */
-    public void validateNftDeleteAllowances(
+    private void validateNftDeleteAllowances(
             final List<NftRemoveAllowance> nftAllowances,
             final Account payerAccount,
             final ReadableAccountStore accountStore,
@@ -120,7 +120,7 @@ public class DeleteAllowanceValidator extends AllowanceValidator {
         // each serial number of an NFT is considered as an allowance.
         // So for Nft allowances aggregated amount is considered for transaction limit calculation.
         // Number of serials will not be counted for allowance on account.
-        validateTotalAllowances(aggregateNftDeleteAllowances(nftAllowances));
+        validateTotalAllowancesPerTxn(aggregateNftDeleteAllowances(nftAllowances));
     }
 
     /**
@@ -130,10 +130,13 @@ public class DeleteAllowanceValidator extends AllowanceValidator {
      * @param nftAllowances give nft allowances
      * @return number of serials
      */
-    private int aggregateNftDeleteAllowances(final List<NftRemoveAllowance> nftAllowances) {
-        int count = 0;
+    public static int aggregateNftDeleteAllowances(final List<NftRemoveAllowance> nftAllowances) {
+        var count = 0;
+        final var serialsSet = new HashSet<Long>();
         for (final var allowance : nftAllowances) {
-            count += Set.of(allowance.serialNumbers()).size();
+            serialsSet.addAll(allowance.serialNumbers());
+            count += serialsSet.size();
+            serialsSet.clear();
         }
         return count;
     }

@@ -192,8 +192,8 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
         // each serial number of an NFT is considered as an allowance.
         // So for Nft allowances aggregated amount is considered for limit calculation.
         final var totalAllowances =
-                cryptoAllowances.size() + tokenAllowances.size() + aggregateNftAllowances(nftAllowances);
-        validateTotalAllowances(totalAllowances);
+                cryptoAllowances.size() + tokenAllowances.size() + aggregateApproveNftAllowances(nftAllowances);
+        validateTotalAllowancesPerTxn(totalAllowances);
     }
 
     private void validateTokenBasics(

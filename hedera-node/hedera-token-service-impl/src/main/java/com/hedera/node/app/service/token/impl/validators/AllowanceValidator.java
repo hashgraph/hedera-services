@@ -55,7 +55,7 @@ public class AllowanceValidator {
         return hederaConfig.allowancesIsEnabled();
     }
 
-    protected void validateTotalAllowances(final int totalAllowances) {
+    protected void validateTotalAllowancesPerTxn(final int totalAllowances) {
         final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
         validateFalse(
                 exceedsTxnLimit(totalAllowances, hederaConfig.allowancesMaxTransactionLimit()),
@@ -78,17 +78,21 @@ public class AllowanceValidator {
 
     /* ------------------------ Helper methods needed for allowances validation ------------------------ */
     /**
+     * Aggregate total serial numbers in CryptoApproveAllowance transaction.
      * Each serial number in an {@code NftAllowance} is considered as an allowance.
      *
      * @param nftAllowances a list of NFT individual allowances
      * @return the number of mentioned serial numbers
      */
-    public static int aggregateNftAllowances(final List<NftAllowance> nftAllowances) {
+    public static int aggregateApproveNftAllowances(final List<NftAllowance> nftAllowances) {
         int nftAllowancesTotal = 0;
+        final var setOfSerials = new HashSet<Long>();
+
         for (final var allowances : nftAllowances) {
-            final var serials = allowances.serialNumbers();
-            if (!serials.isEmpty()) {
-                nftAllowancesTotal += serials.size();
+            setOfSerials.addAll(allowances.serialNumbers());
+            if (!setOfSerials.isEmpty()) {
+                nftAllowancesTotal += setOfSerials.size();
+                setOfSerials.clear();
             } else {
                 nftAllowancesTotal++;
             }

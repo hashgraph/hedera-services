@@ -19,15 +19,15 @@ package com.hedera.node.app.service.token.impl.test.validators;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 
 public class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
-    //    @Test
-    //    void failsToUpdateSpenderIfWrongOwner() {
-    //        final var serials = List.of(1, 2);
+    //        @Test
+    //        void failsToUpdateSpenderIfWrongOwner() {
+    //            final var serials = List.of(1, 2);
     //
-    //        assertThatThrownBy(() -> updateSpender(readableTokenStore, readableNftStore,
-    //                ownerId, spenderId, nonFungibleTokenId, serials))
-    //                .isInstanceOf(HandleException.class)
-    //                .has(responseCode(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO));
-    //    }
+    //            assertThatThrownBy(() -> updateSpender(readableTokenStore, readableNftStore,
+    //                    ownerId, spenderId, nonFungibleTokenId, serials))
+    //                    .isInstanceOf(HandleException.class)
+    //                    .has(responseCode(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO));
+    //        }
 
     //
     //    @Test

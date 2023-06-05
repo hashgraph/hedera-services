@@ -82,7 +82,7 @@ class AllowanceValidatorTest extends CryptoTokenHandlerTestBase {
                 .build();
         list.add(Nftid);
         list.add(Nftid2);
-        assertThat(aggregateNftAllowances(list)).isEqualTo(4);
+        assertThat(aggregateApproveNftAllowances(list)).isEqualTo(4);
     }
 
     @Test
@@ -128,8 +128,8 @@ class AllowanceValidatorTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void failsIfEffectiveOwnerDoesntExist() {
-        assertThatThrownBy(() -> getEffectiveOwner(
-                        AccountID.newBuilder().accountNum(1000L).build(), account, readableAccountStore))
+        final var missingOwner = AccountID.newBuilder().accountNum(1000).build();
+        assertThatThrownBy(() -> getEffectiveOwner(missingOwner, account, readableAccountStore))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(INVALID_ALLOWANCE_OWNER_ID));
     }

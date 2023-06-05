@@ -16,190 +16,222 @@
 
 package com.hedera.node.app.service.token.impl.test.validators;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
+import static com.hedera.node.app.service.token.impl.validators.AllowanceValidator.getEffectiveOwner;
+import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static java.util.Collections.emptyList;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mock.Strictness.LENIENT;
 
-public class DeleteAllowanceValidatorTest {
-    //    @Test
-    //    void failsWhenNotSupported() {
-    //        given(dynamicProperties.areAllowancesEnabled()).willReturn(false);
-    //        assertEquals(NOT_SUPPORTED, subject.deleteAllowancesValidation(nftAllowances, payer, view));
-    //    }
-    //
-    //    @Test
-    //    void validateIfSerialsEmpty() {
-    //        final List<Long> serials = List.of();
-    //        var validity = subject.validateDeleteSerialNums(serials, nftModel, tokenStore);
-    //        assertEquals(EMPTY_ALLOWANCES, validity);
-    //    }
-    //
-    //    @Test
-    //    void semanticCheckForEmptyAllowancesInOp() {
-    //        cryptoDeleteAllowanceTxn = TransactionBody.newBuilder()
-    //                .setTransactionID(ourTxnId())
-    //                .setCryptoDeleteAllowance(CryptoDeleteAllowanceTransactionBody.newBuilder())
-    //                .build();
-    //        op = cryptoDeleteAllowanceTxn.getCryptoDeleteAllowance();
-    //        assertEquals(EMPTY_ALLOWANCES, subject.validateAllowancesCount(op.getNftAllowancesList()));
-    //    }
-    //
-    //    @Test
-    //    void rejectsMissingToken() {
-    //        given(tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(nftToken)))
-    //                .willThrow(new InvalidTransactionException(INVALID_TOKEN_ID, true));
-    //        nftAllowances.add(nftAllowance2);
-    //        assertEquals(
-    //                INVALID_TOKEN_ID, subject.validateNftDeleteAllowances(nftAllowances, payer, accountStore,
-    // tokenStore));
-    //    }
-    //
-    //    @Test
-    //    void validatesIfOwnerExists() {
-    //        given(tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(nftToken))).willReturn(nftModel);
-    //        nftAllowances.add(nftAllowance2);
-    //        given(accountStore.loadAccount(Id.fromGrpcAccount(ownerId))).willThrow(InvalidTransactionException.class);
-    //        assertEquals(
-    //                INVALID_ALLOWANCE_OWNER_ID,
-    //                subject.validateNftDeleteAllowances(nftAllowances, payer, accountStore, tokenStore));
-    //    }
-    //
-    //    @Test
-    //    void considersPayerIfOwnerMissing() {
-    //        final var allowance = NftRemoveAllowance.newBuilder().build();
-    //        nftAllowances.add(allowance);
-    //        assertEquals(
-    //                Pair.of(payer, OK),
-    //                subject.fetchOwnerAccount(Id.fromGrpcAccount(allowance.getOwner()), payer, accountStore));
-    //    }
-    //
-    //    @Test
-    //    void failsIfTokenNotAssociatedToAccount() {
-    //        given(tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(nftToken))).willReturn(nftModel);
-    //        nftAllowances.add(nftAllowance2);
-    //        given(accountStore.loadAccount(Id.fromGrpcAccount(ownerId))).willReturn(ownerAccount);
-    //        given(tokenStore.hasAssociation(nftModel, ownerAccount)).willReturn(false);
-    //        assertEquals(
-    //                TOKEN_NOT_ASSOCIATED_TO_ACCOUNT,
-    //                subject.validateNftDeleteAllowances(nftAllowances, payer, accountStore, tokenStore));
-    //    }
-    //
-    //    @Test
-    //    void failsIfInvalidTypes() {
-    //        nftAllowances.clear();
-    //
-    //        nftModel.setType(TokenType.FUNGIBLE_COMMON);
-    //        given(tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(nftToken))).willReturn(nftModel);
-    //        nftModel.initSupplyConstraints(TokenSupplyType.FINITE, 5000L);
-    //        nftAllowances.add(NftRemoveAllowance.newBuilder().setTokenId(nftToken).build());
-    //        assertEquals(
-    //                FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES,
-    //                subject.validateNftDeleteAllowances(nftAllowances, payer, accountStore, tokenStore));
-    //    }
-    //
-    //    @Test
-    //    void returnsValidationOnceFailed() {
-    //        nftAllowances.add(nftAllowance1);
-    //
-    //        given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
-    //        given(dynamicProperties.maxAllowanceLimitPerTransaction()).willReturn(1);
-    //        given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
-    //
-    //        cryptoDeleteAllowanceTxn = TransactionBody.newBuilder()
-    //                .setTransactionID(ourTxnId())
-    //                .setCryptoDeleteAllowance(CryptoDeleteAllowanceTransactionBody.newBuilder()
-    //                        .addAllNftAllowances(nftAllowances)
-    //                        .build())
-    //                .build();
-    //        op = cryptoDeleteAllowanceTxn.getCryptoDeleteAllowance();
-    //
-    //        assertEquals(
-    //                MAX_ALLOWANCES_EXCEEDED, subject.deleteAllowancesValidation(op.getNftAllowancesList(), payer,
-    // view));
-    //    }
-    //
-    //    @Test
-    //    void succeedsWithEmptyLists() {
-    //        cryptoDeleteAllowanceTxn = TransactionBody.newBuilder()
-    //                .setTransactionID(ourTxnId())
-    //                .setCryptoDeleteAllowance(
-    //                        CryptoDeleteAllowanceTransactionBody.newBuilder().build())
-    //                .build();
-    //        assertEquals(
-    //                OK,
-    //                subject.validateNftDeleteAllowances(
-    //                        cryptoDeleteAllowanceTxn.getCryptoDeleteAllowance().getNftAllowancesList(),
-    //                        payer,
-    //                        accountStore,
-    //                        tokenStore));
-    //    }
-    //
-    //    @Test
-    //    void happyPath() {
-    //        setUpForTest();
-    //        getValidTxnCtx();
-    //        given(validator.expiryStatusGiven(anyLong(), anyBoolean(), anyBoolean()))
-    //                .willReturn(OK);
-    //
-    //        given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
-    //        given(dynamicProperties.maxAllowanceLimitPerTransaction()).willReturn(20);
-    //        assertEquals(OK, subject.deleteAllowancesValidation(op.getNftAllowancesList(), payer, view));
-    //    }
-    //
-    //    @Test
-    //    void validateSerialsExistence() {
-    //        final var serials = List.of(1L, 10L);
-    //        given(tokenStore.loadUniqueToken(Id.fromGrpcToken(nftToken),
-    // 1L)).willThrow(InvalidTransactionException.class);
-    //
-    //        var validity = subject.validateSerialNums(serials, nftModel, tokenStore);
-    //        assertEquals(INVALID_TOKEN_NFT_SERIAL_NUMBER, validity);
-    //    }
-    //
-    //    @Test
-    //    void returnsIfSerialsFail() {
-    //        final var serials = List.of(1L, 10L);
-    //        given(tokenStore.loadUniqueToken(Id.fromGrpcToken(nftToken),
-    // 1L)).willThrow(InvalidTransactionException.class);
-    //        var validity = subject.validateSerialNums(serials, nftModel, tokenStore);
-    //        assertEquals(INVALID_TOKEN_NFT_SERIAL_NUMBER, validity);
-    //    }
-    //
-    //    @Test
-    //    void addsSerialsCorrectly() {
-    //        nftAllowances.add(nftAllowance1);
-    //        nftAllowances.add(nftAllowance2);
-    //        assertEquals(5, subject.aggregateNftDeleteAllowances(nftAllowances));
-    //    }
-    //
-    //    @Test
-    //    void validatesNegativeSerialsAreNotValid() {
-    //        final var serials = List.of(-100L, 10L);
-    //
-    //        var validity = subject.validateSerialNums(serials, nftModel, tokenStore);
-    //        assertEquals(INVALID_TOKEN_NFT_SERIAL_NUMBER, validity);
-    //    }
-    //
-    //    @Test
-    //    void validateSerials() {
-    //        given(tokenStore.loadUniqueToken(Id.fromGrpcToken(nftToken), 10L)).willReturn(uniqueToken);
-    //        given(tokenStore.loadUniqueToken(Id.fromGrpcToken(nftToken), 1L)).willReturn(uniqueToken);
-    //
-    //        var serials = List.of(1L, 10L, 1L);
-    //        var validity = subject.validateSerialNums(serials, nftModel, tokenStore);
-    //        assertEquals(OK, validity);
-    //
-    //        serials = List.of(10L, 4L);
-    //        given(tokenStore.loadUniqueToken(Id.fromGrpcToken(nftToken),
-    // 10L)).willThrow(InvalidTransactionException.class);
-    //        given(tokenStore.loadUniqueToken(Id.fromGrpcToken(nftToken), 4L)).willReturn(uniqueToken);
-    //        validity = subject.validateSerialNums(serials, nftModel, tokenStore);
-    //        assertEquals(INVALID_TOKEN_NFT_SERIAL_NUMBER, validity);
-    //
-    //        given(tokenStore.loadUniqueToken(Id.fromGrpcToken(nftToken), 20L)).willReturn(uniqueToken);
-    //        given(tokenStore.loadUniqueToken(Id.fromGrpcToken(nftToken), 4L)).willReturn(uniqueToken);
-    //
-    //        serials = List.of(20L, 4L);
-    //        validity = subject.validateSerialNums(serials, nftModel, tokenStore);
-    //        assertEquals(OK, validity);
-    //    }
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.token.CryptoDeleteAllowanceTransactionBody;
+import com.hedera.hapi.node.token.NftRemoveAllowance;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.config.VersionedConfigImpl;
+import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableNftStore;
+import com.hedera.node.app.service.token.ReadableTokenRelationStore;
+import com.hedera.node.app.service.token.ReadableTokenStore;
+import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.impl.WritableNftStore;
+import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
+import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
+import com.hedera.node.app.service.token.impl.validators.DeleteAllowanceValidator;
+import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
+class DeleteAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
+    private DeleteAllowanceValidator subject;
+
+    @Mock(strictness = LENIENT)
+    private ConfigProvider configProvider;
+
+    @Mock(strictness = LENIENT)
+    private HandleContext handleContext;
+
+    @BeforeEach
+    public void setUp() {
+        super.setUp();
+        subject = new DeleteAllowanceValidator(configProvider);
+    }
+
+    @Test
+    void notSupportedFails() {
+        final var txn = cryptoDeleteAllowanceTransaction(id, ownerId, nonFungibleTokenId, List.of(1L, 2L));
+        final var configuration = new HederaTestConfigBuilder()
+                .withValue("hedera.allowances.isEnabled", false)
+                .getOrCreateConfig();
+        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
+
+        final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowancesOrElse(emptyList());
+        assertThatThrownBy(() -> subject.validate(handleContext, nftAllowances, account, readableAccountStore))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(NOT_SUPPORTED));
+    }
+
+    @Test
+    void rejectsMissingToken() {
+        final var missingToken = TokenID.newBuilder().tokenNum(10000).build();
+        final var txn = cryptoDeleteAllowanceTransaction(id, ownerId, missingToken, List.of(1L, 2L));
+        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
+
+        final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowancesOrElse(emptyList());
+        assertThatThrownBy(() -> subject.validate(handleContext, nftAllowances, account, readableAccountStore))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(INVALID_TOKEN_ID));
+    }
+
+    @Test
+    void failsForFungibleToken() {
+        final var txn = cryptoDeleteAllowanceTransaction(id, ownerId, fungibleTokenId, List.of(1L, 2L));
+        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
+
+        final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowancesOrElse(emptyList());
+        assertThatThrownBy(() -> subject.validate(handleContext, nftAllowances, account, readableAccountStore))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES));
+    }
+
+    @Test
+    void validatesIfOwnerExists() {
+        final var missingOwner = AccountID.newBuilder().accountNum(10000).build();
+        final var txn = cryptoDeleteAllowanceTransaction(id, missingOwner, nonFungibleTokenId, List.of(1L, 2L));
+        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
+
+        final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowancesOrElse(emptyList());
+        assertThatThrownBy(() -> subject.validate(handleContext, nftAllowances, account, readableAccountStore))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(INVALID_ALLOWANCE_OWNER_ID));
+    }
+
+    @Test
+    void considersPayerIfOwnerMissing() {
+        final var txn = cryptoDeleteAllowanceTransaction(id, null, nonFungibleTokenId, List.of(1L, 2L));
+        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
+
+        final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowancesOrElse(emptyList());
+        assertThatNoException()
+                .isThrownBy(() -> subject.validate(handleContext, nftAllowances, account, readableAccountStore));
+        assertThat(getEffectiveOwner(null, account, readableAccountStore)).isEqualTo(account);
+    }
+
+    @Test
+    void failsIfTokenNotAssociatedToAccount() {
+        final var txn = cryptoDeleteAllowanceTransaction(id, spenderId, nonFungibleTokenId, List.of(1L, 2L));
+        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
+
+        final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowancesOrElse(emptyList());
+        assertThatThrownBy(() -> subject.validate(handleContext, nftAllowances, account, readableAccountStore))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
+    }
+
+    @Test
+    void validatesTotalAllowancesInTxn() {
+        // each serial number is considered as one allowance
+        final var txn = cryptoDeleteAllowanceTransaction(id, ownerId, nonFungibleTokenId, List.of(1L, 2L));
+        final var configuration = new HederaTestConfigBuilder()
+                .withValue("hedera.allowances.maxTransactionLimit", 1)
+                .getOrCreateConfig();
+        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
+
+        final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowancesOrElse(emptyList());
+        assertThatThrownBy(() -> subject.validate(handleContext, nftAllowances, account, readableAccountStore))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(MAX_ALLOWANCES_EXCEEDED));
+    }
+
+    @Test
+    void happyPath() {
+        final var txn = cryptoDeleteAllowanceTransaction(id, ownerId, nonFungibleTokenId, List.of(1L, 2L));
+        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
+
+        final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowancesOrElse(emptyList());
+
+        assertThatNoException()
+                .isThrownBy(() -> subject.validate(handleContext, nftAllowances, account, readableAccountStore));
+    }
+
+    @Test
+    void validateSerialsExistence() {
+        final var txn = cryptoDeleteAllowanceTransaction(id, ownerId, nonFungibleTokenId, List.of(1L, 2L, 100L));
+        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
+
+        final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowancesOrElse(emptyList());
+
+        assertThatThrownBy(() -> subject.validate(handleContext, nftAllowances, account, readableAccountStore))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(INVALID_TOKEN_NFT_SERIAL_NUMBER));
+    }
+
+    @Test
+    void aggregatesSerialsCorrectly() {
+        final var allowances = List.of(
+                NftRemoveAllowance.newBuilder()
+                        .owner(ownerId)
+                        .tokenId(nonFungibleTokenId)
+                        .serialNumbers(List.of(2L, 3L))
+                        .build(),
+                NftRemoveAllowance.newBuilder()
+                        .owner(ownerId)
+                        .tokenId(nonFungibleTokenId)
+                        .serialNumbers(List.of(2L, 100L))
+                        .build());
+        assertThat(DeleteAllowanceValidator.aggregateNftDeleteAllowances(allowances))
+                .isEqualTo(3);
+    }
+
+    @Test
+    void validatesNegativeSerialsAreNotValid() {
+        final var txn = cryptoDeleteAllowanceTransaction(id, ownerId, nonFungibleTokenId, List.of(1L, -2L));
+        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
+
+        final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowancesOrElse(emptyList());
+
+        assertThatThrownBy(() -> subject.validate(handleContext, nftAllowances, account, readableAccountStore))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(INVALID_TOKEN_NFT_SERIAL_NUMBER));
+    }
+
+    private TransactionBody cryptoDeleteAllowanceTransaction(
+            final AccountID id, final AccountID ownerId, final TokenID nonFungibleTokenId, final List<Long> serials) {
+        givenStores();
+        final var transactionID = TransactionID.newBuilder().accountID(id).transactionValidStart(consensusTimestamp);
+        final var allowanceTxnBody = CryptoDeleteAllowanceTransactionBody.newBuilder()
+                .nftAllowances(NftRemoveAllowance.newBuilder()
+                        .owner(ownerId)
+                        .tokenId(nonFungibleTokenId)
+                        .serialNumbers(serials)
+                        .build())
+                .build();
+        return TransactionBody.newBuilder()
+                .transactionID(transactionID)
+                .cryptoDeleteAllowance(allowanceTxnBody)
+                .build();
+    }
+
+    private void givenStores() {
+        given(handleContext.writableStore(WritableNftStore.class)).willReturn(writableNftStore);
+        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(handleContext.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
+        given(handleContext.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
+
+        given(handleContext.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
+        given(handleContext.readableStore(ReadableTokenRelationStore.class)).willReturn(readableTokenRelStore);
+        given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
+        given(handleContext.readableStore(ReadableNftStore.class)).willReturn(readableNftStore);
+    }
 }

@@ -378,7 +378,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
-    void emptyAllowanceListInTransactionFails() {
+    void emptyAllowanceListInTransactionFails() throws PreCheckException {
         final var txn = cryptoApproveAllowanceTransaction(id, false, List.of(), List.of(), List.of());
         given(handleContext.body()).willReturn(txn);
         // Two know accounts we are using for these tests. Initial allowances
@@ -391,7 +391,8 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(existingOwner.tokenAllowances()).hasSize(1);
         assertThat(existingOwner.approveForAllNftAllowances()).hasSize(1);
 
-        assertThatThrownBy(() -> subject.preHandle(new FakePreHandleContext(readableAccountStore, txn)))
+        final var preHandleContext = new FakePreHandleContext(readableAccountStore, txn);
+        assertThatThrownBy(() -> subject.preHandle(preHandleContext))
                 .isInstanceOf(PreCheckException.class)
                 .has(responseCode(EMPTY_ALLOWANCES));
 
