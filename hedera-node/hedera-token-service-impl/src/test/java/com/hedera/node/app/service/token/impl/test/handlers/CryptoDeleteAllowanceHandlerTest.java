@@ -49,7 +49,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class CryptoDeleteAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
-    @Mock
+    @Mock(strictness = LENIENT)
     private ConfigProvider configProvider;
 
     @Mock(strictness = LENIENT)
