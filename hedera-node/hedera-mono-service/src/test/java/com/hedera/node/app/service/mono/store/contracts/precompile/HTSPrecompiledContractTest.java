@@ -134,8 +134,8 @@ import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateU
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenCreateWrapper;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.*;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.AssociatePrecompile;
+import com.hedera.node.app.service.mono.store.contracts.precompile.impl.BalanceOfPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.BurnPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.DissociatePrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.ERCTransferPrecompile;
@@ -144,6 +144,8 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.impl.MintPrec
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.MultiAssociatePrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.MultiDissociatePrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.PausePrecompile;
+import com.hedera.node.app.service.mono.store.contracts.precompile.impl.RedirectPrecompile;
+import com.hedera.node.app.service.mono.store.contracts.precompile.impl.SystemContractAbis;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenCreatePrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenGetCustomFeesPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenInfoPrecompile;
@@ -169,6 +171,8 @@ import java.util.Collections;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.Optional;
+import java.util.Random;
+import java.util.stream.Stream;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -181,6 +185,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -1455,6 +1460,42 @@ class HTSPrecompiledContractTest {
         assertEquals(
                 HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT,
                 result.getHaltReason().get());
+    }
+
+    @ParameterizedTest
+    @MethodSource("returnRedirectForTokenBytes")
+    void computeReturnsErrorDecodingIncorrectRedirectForToken(Bytes input) {
+        givenFrameContext();
+        given(messageFrame.getContractAddress()).willReturn(Address.ALTBN128_ADD);
+        given(messageFrame.getRecipientAddress()).willReturn(Address.ALTBN128_ADD);
+        ercTransferPrecompile
+                .when(() -> ERCTransferPrecompile.decodeERCTransferFrom(
+                        any(), any(), anyBoolean(), any(), any(), any(), any()))
+                .thenReturn(CRYPTO_TRANSFER_TOKEN_FROM_WRAPPER);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        subject.prepareFields(messageFrame);
+        final var result = subject.computePrecompile(input, messageFrame);
+
+        verify(messageFrame)
+                .setExceptionalHaltReason(Optional.of(HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT));
+        assertNull(result.getOutput());
+        assertEquals(
+                HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT,
+                result.getHaltReason().get());
+    }
+
+    private static Stream<Bytes> returnRedirectForTokenBytes() {
+        final byte[] bytes10 = new byte[10];
+        final byte[] bytes20 = new byte[20];
+        new Random().nextBytes(bytes10);
+        new Random().nextBytes(bytes20);
+
+        return Stream.of(
+                Bytes.of(Integers.toBytes(ABI_ID_REDIRECT_FOR_TOKEN)),
+                Bytes.concatenate(Bytes.of(Integers.toBytes(ABI_ID_REDIRECT_FOR_TOKEN)), Bytes.wrap(bytes10)),
+                Bytes.concatenate(Bytes.of(Integers.toBytes(ABI_ID_REDIRECT_FOR_TOKEN)), Bytes.wrap(bytes20)));
     }
 
     private void givenFrameContext() {

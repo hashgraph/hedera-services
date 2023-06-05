@@ -28,8 +28,8 @@ import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -88,15 +88,13 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
 
     /**
      * Returns the {@link Account} with the given number. If no such account exists, returns {@code
-     * Optional.empty()}
+     * null}
      *
      * @param accountID - the id of the Account to be retrieved.
      */
-    @NonNull
-    public Optional<Account> get(final AccountID accountID) {
-        requireNonNull(accountID);
-        final var account = getAccountLeaf(accountID);
-        return Optional.ofNullable(account);
+    @Nullable
+    public Account get(@NonNull final AccountID accountID) {
+        return getAccountLeaf(requireNonNull(accountID));
     }
 
     /**
@@ -105,8 +103,9 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      *
      * @param id - the number of the account to be retrieved.
      */
-    @NonNull
-    public Optional<Account> getForModify(final AccountID id) {
+    @Nullable
+    public Account getForModify(@NonNull final AccountID id) {
+        requireNonNull(id);
         // Get the account number based on the account identifier. It may be null.
         final var accountOneOf = id.account();
         final Long accountNum =
@@ -124,7 +123,16 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
                     case UNSET -> EntityNumValue.DEFAULT.num();
                 };
 
-        return Optional.ofNullable(accountState.getForModify(EntityNumVirtualKey.fromLong(accountNum)));
+        return accountState.getForModify(EntityNumVirtualKey.fromLong(accountNum));
+    }
+
+    /**
+     * Removes the {@link Account} with the given {@link AccountID} from the state.
+     * This will add value of the accountId to num in the modifications in state.
+     * @param accountID - the account id of the account to be removed.
+     */
+    public void remove(@NonNull final AccountID accountID) {
+        accountState.remove(EntityNumVirtualKey.fromLong(accountID.accountNum()));
     }
 
     /**

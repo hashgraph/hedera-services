@@ -16,12 +16,14 @@
 
 package com.swirlds.platform.event.intake;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.EventAddedObserver;
 import com.swirlds.platform.state.signed.LoadableFromSignedState;
 import com.swirlds.platform.state.signed.SignedState;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -34,7 +36,7 @@ public class ChatterEventMapper implements EventAddedObserver, Clearable, Loadab
     /**
      * Contains the most recent event added from each node
      */
-    private final Map<Long, GossipEvent> mappings;
+    private final Map<NodeId, GossipEvent> mappings;
 
     public ChatterEventMapper() {
         mappings = new ConcurrentHashMap<>();
@@ -75,7 +77,8 @@ public class ChatterEventMapper implements EventAddedObserver, Clearable, Loadab
      * @param nodeId
      * 		the ID of the node in question
      */
-    public GossipEvent getMostRecentEvent(final long nodeId) {
+    @Nullable
+    public GossipEvent getMostRecentEvent(@Nullable final NodeId nodeId) {
         return mappings.get(nodeId);
     }
 

@@ -17,7 +17,9 @@
 package com.swirlds.platform.dispatch.triggers.flow;
 
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.dispatch.types.TriggerFour;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Sends dispatches when the validity of a node's reported state hash has been determined.
@@ -25,7 +27,7 @@ import com.swirlds.platform.dispatch.types.TriggerFour;
  * so there is no such thing as a valid hash for that round).
  */
 @FunctionalInterface
-public interface StateHashValidityTrigger extends TriggerFour<Long, Long, Hash, Hash> {
+public interface StateHashValidityTrigger extends TriggerFour<Long, NodeId, Hash, Hash> {
 
     /**
      * Signal that the validity of a reported state hash can be determined
@@ -40,5 +42,9 @@ public interface StateHashValidityTrigger extends TriggerFour<Long, Long, Hash, 
      * 		the consensus hash computed by the network
      */
     @Override
-    void dispatch(Long round, Long nodeId, Hash nodeHash, Hash consensusHash);
+    void dispatch(
+            @NonNull final Long round,
+            @NonNull final NodeId nodeId,
+            @NonNull final Hash nodeHash,
+            @NonNull final Hash consensusHash);
 }

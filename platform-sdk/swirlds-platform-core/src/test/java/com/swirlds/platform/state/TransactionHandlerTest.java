@@ -79,13 +79,13 @@ class TransactionHandlerTest {
         return new EventImpl(
                 new BaseEventHashedData(
                         new BasicSoftwareVersion(1),
-                        0L,
+                        new NodeId(0L),
                         0L,
                         0L,
                         CryptographyHolder.get().getNullHash(),
                         CryptographyHolder.get().getNullHash(),
                         Instant.now(),
                         transactions),
-                new BaseEventUnhashedData(0L, new byte[0]));
+                new BaseEventUnhashedData(new NodeId(0L), new byte[0]));
     }
 }

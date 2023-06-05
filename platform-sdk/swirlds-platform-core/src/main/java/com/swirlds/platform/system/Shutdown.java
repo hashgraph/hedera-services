@@ -16,50 +16,28 @@
 
 package com.swirlds.platform.system;
 
-import static com.swirlds.logging.LogMarker.STARTUP;
-
 import com.swirlds.platform.dispatch.Observer;
 import com.swirlds.platform.dispatch.triggers.control.ShutdownRequestedTrigger;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Objects;
 
 /**
  * A utility for shutting down the JVM.
  */
 public final class Shutdown {
 
-    private static final Logger logger = LogManager.getLogger(Shutdown.class);
-
     public Shutdown() {}
 
     /**
      * Shut down the JVM.
      *
-     * @param reason
-     * 		the reason the JVM is being shut down
-     * @param exitCode
-     * 		the exit code to return when the JVM has been shut down
+     * @param reason   the reason the JVM is being shut down
+     * @param exitCode the exit code to return when the JVM has been shut down
      */
     @Observer(ShutdownRequestedTrigger.class)
-    public void shutdown(final String reason, final Integer exitCode) {
-        immediateShutDown(reason, exitCode);
-    }
-
-    /**
-     * Perform an immediate shutdown. Be cautious calling this method directly from code,
-     * as it makes the code difficult to unit test if it can kill the JVM mid-test.
-     *
-     * @param reason
-     * 		the reason the JVM is being shut down
-     * @param exitCode
-     * 		the exit code to return when the JVM has been shut down
-     */
-    public static void immediateShutDown(final String reason, final Integer exitCode) {
-        logger.info(STARTUP.getMarker(), "Node shutting down. Reason: {}", reason);
-        if (exitCode == null) {
-            System.exit(SystemExitReason.FATAL_ERROR.getExitCode());
-        } else {
-            System.exit(exitCode);
-        }
+    public void shutdown(@Nullable final String reason, @NonNull final SystemExitCode exitCode) {
+        Objects.requireNonNull(exitCode);
+        SystemExitUtils.exitSystem(exitCode, reason);
     }
 }

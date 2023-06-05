@@ -16,12 +16,14 @@
 
 package com.swirlds.platform.event;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEvent;
 import com.swirlds.common.system.events.PlatformEvent;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.logging.LogMarker;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.internal.EventImpl;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
@@ -157,7 +159,8 @@ public abstract class EventUtils {
      * @return the creator ID as {@code long} of the given event, or the self-ID
      * 		if the given event is {@code null}
      */
-    public static long getCreatorId(final BaseEvent event) {
+    @Nullable
+    public static NodeId getCreatorId(@Nullable final BaseEvent event) {
         if (event == null) {
             return EventConstants.CREATOR_ID_UNDEFINED;
         } else {

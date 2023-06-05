@@ -24,6 +24,7 @@ import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.sequence.map.ConcurrentSequenceMap;
 import com.swirlds.common.sequence.map.SequenceMap;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.throttle.RateLimiter;
@@ -39,7 +40,9 @@ import com.swirlds.platform.dispatch.triggers.flow.StateHashedTrigger;
 import com.swirlds.platform.state.iss.internal.ConsensusHashFinder;
 import com.swirlds.platform.state.iss.internal.HashValidityStatus;
 import com.swirlds.platform.state.iss.internal.RoundHashValidator;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -188,7 +191,11 @@ public class ConsensusHashManager {
      * @param hash
      * 		the hash that was signed
      */
-    public void postConsensusSignatureObserver(final Long round, final Long signerId, final Hash hash) {
+    public void postConsensusSignatureObserver(
+            @NonNull final Long round, @NonNull final NodeId signerId, @NonNull final Hash hash) {
+        Objects.requireNonNull(round, "round must not be null");
+        Objects.requireNonNull(signerId, "signerId must not be null");
+        Objects.requireNonNull(hash, "hash must not be null");
 
         final long nodeWeight = addressBook.getAddress(signerId).getWeight();
 

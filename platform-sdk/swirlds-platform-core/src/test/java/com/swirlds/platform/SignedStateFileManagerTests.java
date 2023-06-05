@@ -59,6 +59,7 @@ import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.SignedStateFileReader;
 import com.swirlds.platform.state.signed.SignedStateFileUtils;
 import com.swirlds.platform.state.signed.SignedStateMetrics;
+import com.swirlds.platform.state.signed.SourceOfSignedState;
 import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
@@ -510,7 +511,7 @@ class SignedStateFileManagerTests {
                     .setRound(round)
                     .build();
 
-            manager.determineIfStateShouldBeSaved(signedState);
+            manager.determineIfStateShouldBeSaved(signedState, SourceOfSignedState.TRANSACTIONS);
 
             if (signedState.isStateToSave()) {
                 assertTrue(

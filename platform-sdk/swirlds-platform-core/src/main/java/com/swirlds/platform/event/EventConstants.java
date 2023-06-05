@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.event;
 
+import com.swirlds.common.system.NodeId;
+
 public final class EventConstants {
 
     /**
@@ -30,7 +32,7 @@ public final class EventConstants {
      */
     public static final long GENERATION_UNDEFINED = -1;
     /** the ID number used to represent that the ID is undefined */
-    public static final long CREATOR_ID_UNDEFINED = -1;
+    public static final NodeId CREATOR_ID_UNDEFINED = NodeId.UNDEFINED_NODE_ID;
     /** the smallest round an event can belong to */
     public static final long MINIMUM_ROUND_CREATED = 1;
 }

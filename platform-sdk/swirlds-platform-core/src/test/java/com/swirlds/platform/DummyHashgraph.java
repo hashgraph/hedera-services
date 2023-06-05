@@ -16,6 +16,7 @@
 
 package com.swirlds.platform;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
 import java.util.HashMap;
@@ -23,19 +24,19 @@ import java.util.HashMap;
 public class DummyHashgraph {
 
     public int eventIntakeQueueSize;
-    public HashMap<Long, Boolean> isInCriticalQuorum;
-    public long nodeId;
+    public HashMap<NodeId, Boolean> isInCriticalQuorum;
+    public NodeId selfId;
     public long numUserTransEvents;
     public long lastRoundReceivedAllTransCons;
     public AddressBook addressBook;
 
-    DummyHashgraph() {
+    DummyHashgraph(final NodeId selfId) {
         eventIntakeQueueSize = 0;
         isInCriticalQuorum = new HashMap<>();
-        nodeId = 0;
+        this.selfId = selfId;
         numUserTransEvents = 0;
         lastRoundReceivedAllTransCons = 0;
-        addressBook = new RandomAddressBookGenerator().setSize(5).build();
+        addressBook = new RandomAddressBookGenerator().setSize(100).build();
     }
 
     int getEventIntakeQueueSize() {
