@@ -20,9 +20,9 @@ import static com.swirlds.jasperdb.files.DataFileCommon.FOOTER_SIZE;
 import static com.swirlds.jasperdb.files.DataFileCommon.createDataFilePath;
 import static com.swirlds.jasperdb.files.DataFileCommon.getLockFilePath;
 
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.jasperdb.settings.JasperDbSettings;
-import com.swirlds.jasperdb.settings.JasperDbSettingsFactory;
+import com.swirlds.jasperdb.config.JasperDbConfig;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -44,11 +44,11 @@ import java.time.Instant;
  */
 public final class DataFileWriter<D> {
     /**
-     * Since {@code com.swirlds.platform.Browser} populates settings, and it is loaded before
-     * any application classes that might instantiate a data source, the {@link JasperDbSettingsFactory}
-     * holder will have been configured by the time this static initializer runs.
+     * Since {@code com.swirlds.platform.Browser} populates configuration, and it is loaded before
+     * any application classes that might instantiate a data source, the {@link ConfigurationHolder}
+     * will have been configured by the time this static initializer runs.
      */
-    private static final JasperDbSettings settings = JasperDbSettingsFactory.get();
+    private final JasperDbConfig config = ConfigurationHolder.getConfigData(JasperDbConfig.class);
 
     /** The output stream we are writing to */
     private final SerializableDataOutputStream writingStream;
@@ -112,7 +112,7 @@ public final class DataFileWriter<D> {
         }
         writingStream = new SerializableDataOutputStream(new BufferedOutputStream(
                 Files.newOutputStream(path, StandardOpenOption.CREATE, StandardOpenOption.APPEND),
-                settings.getWriterOutputBufferBytes()));
+                config.writerOutputBufferBytes()));
         Files.createFile(lockFilePath);
     }
 
