@@ -17,9 +17,7 @@
 package com.swirlds.benchmark;
 
 import com.swirlds.common.settings.ParsingUtils;
-import com.swirlds.jasperdb.settings.JasperDbSettingsFactory;
 import com.swirlds.merkledb.settings.MerkleDbSettingsFactory;
-import com.swirlds.platform.JasperDbSettingsImpl;
 import com.swirlds.platform.MerkleDbSettingsImpl;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -40,11 +38,6 @@ public final class BenchmarkSettings {
     private static final Logger logger = LogManager.getLogger(BenchmarkSettings.class);
 
     static final File settingsPath = new File(".", "settings.txt");
-
-    /**
-     * Settings controlling JasperDB.
-     */
-    static JasperDbSettingsImpl jasperDb = new JasperDbSettingsImpl();
 
     /**
      * Settings controlling MerkleDb.
@@ -70,7 +63,6 @@ public final class BenchmarkSettings {
 
     public static void init() {
         loadSettings();
-        JasperDbSettingsFactory.configure(jasperDb);
         MerkleDbSettingsFactory.configure(merkleDb);
     }
 

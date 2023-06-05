@@ -19,12 +19,12 @@ package com.swirlds.jasperdb;
 import static com.swirlds.common.io.utility.FileUtils.hardLinkTree;
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
 
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.jasperdb.config.JasperDbConfig;
 import com.swirlds.jasperdb.files.hashmap.KeySerializer;
-import com.swirlds.jasperdb.settings.JasperDbSettings;
-import com.swirlds.jasperdb.settings.JasperDbSettingsFactory;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
@@ -59,11 +59,11 @@ public class JasperDbBuilder<K extends VirtualKey, V extends VirtualValue> imple
     }
 
     /**
-     * Since {@code com.swirlds.platform.Browser} populates settings, and it is loaded before
-     * any application classes that might instantiate a data source, the {@link JasperDbSettingsFactory}
-     * holder will have been configured by the time this static initializer runs.
+     * Since {@code com.swirlds.platform.Browser} populates configuration, and it is loaded before
+     * any application classes that might instantiate a data source, the {@link ConfigurationHolder}
+     * will have been configured by the time this static initializer runs.
      */
-    private final JasperDbSettings settings = JasperDbSettingsFactory.get();
+    private final JasperDbConfig config = ConfigurationHolder.getConfigData(JasperDbConfig.class);
 
     /**
      * The base directory in which the database directory will be created. By default, a temporary location
@@ -83,7 +83,7 @@ public class JasperDbBuilder<K extends VirtualKey, V extends VirtualValue> imple
      * <p><b>IMPORTANT: This can only be set before a new database is created, changing on an existing database will
      * break it.</b></p>
      */
-    private long maxNumOfKeys = settings.getMaxNumOfKeys();
+    private long maxNumOfKeys = config.maxNumOfKeys();
     /**
      * Threshold where we switch from storing node hashes in ram to storing them on disk. If it is 0 then everything
      * is on disk, if it is Long.MAX_VALUE then everything is in ram. Any value in the middle is the path value at which
@@ -93,7 +93,7 @@ public class JasperDbBuilder<K extends VirtualKey, V extends VirtualValue> imple
      * <p><b>IMPORTANT: This can only be set before a new database is created, changing on an existing database will
      * break it.</b></p>
      */
-    private long hashesRamToDiskThreshold = settings.getHashesRamToDiskThreshold();
+    private long hashesRamToDiskThreshold = config.hashesRamToDiskThreshold();
     /**
      * Serializer for converting raw data to/from VirtualLeafRecords
      * <p><b>IMPORTANT: This can only be set before a new database is created, changing on an existing database will
@@ -169,7 +169,7 @@ public class JasperDbBuilder<K extends VirtualKey, V extends VirtualValue> imple
      * Specify the base directory in which the database directory will be created. The database will be created as a
      * sub-directory of this storage directory. By default, it is loaded from settings.
      *
-     * @see com.swirlds.jasperdb.settings.DefaultJasperDbSettings
+     * @see com.swirlds.jasperdb.config.JasperDbConfig
      */
     public JasperDbBuilder<K, V> storageDir(final Path dir) {
         this.storageDir = Objects.requireNonNull(dir);
@@ -444,7 +444,7 @@ public class JasperDbBuilder<K extends VirtualKey, V extends VirtualValue> imple
      * @param label
      * 		Original data source label
      * @return
-     * 		A new unique data source name
+     *        A new unique data source name
      */
     private static String createUniqueDataSourceName(final String label) {
         return label + "-" + System.currentTimeMillis();
