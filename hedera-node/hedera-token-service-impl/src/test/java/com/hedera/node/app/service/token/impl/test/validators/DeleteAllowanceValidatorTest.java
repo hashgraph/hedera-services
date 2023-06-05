@@ -63,7 +63,7 @@ class DeleteAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void notSupportedFails() {
-        final var txn = cryptoDeleteAllowanceTransaction(id, ownerId, nonFungibleTokenId, List.of(1L, 2L));
+        final var txn = cryptoDeleteAllowanceTransaction(payer, ownerId, nonFungibleTokenId, List.of(1L, 2L));
         final var configuration = new HederaTestConfigBuilder()
                 .withValue("hedera.allowances.isEnabled", false)
                 .getOrCreateConfig();
@@ -78,7 +78,7 @@ class DeleteAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     @Test
     void rejectsMissingToken() {
         final var missingToken = TokenID.newBuilder().tokenNum(10000).build();
-        final var txn = cryptoDeleteAllowanceTransaction(id, ownerId, missingToken, List.of(1L, 2L));
+        final var txn = cryptoDeleteAllowanceTransaction(payer, ownerId, missingToken, List.of(1L, 2L));
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
 
         final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowancesOrElse(emptyList());
@@ -89,7 +89,7 @@ class DeleteAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void failsForFungibleToken() {
-        final var txn = cryptoDeleteAllowanceTransaction(id, ownerId, fungibleTokenId, List.of(1L, 2L));
+        final var txn = cryptoDeleteAllowanceTransaction(payer, ownerId, fungibleTokenId, List.of(1L, 2L));
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
 
         final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowancesOrElse(emptyList());
@@ -101,7 +101,7 @@ class DeleteAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     @Test
     void validatesIfOwnerExists() {
         final var missingOwner = AccountID.newBuilder().accountNum(10000).build();
-        final var txn = cryptoDeleteAllowanceTransaction(id, missingOwner, nonFungibleTokenId, List.of(1L, 2L));
+        final var txn = cryptoDeleteAllowanceTransaction(payer, missingOwner, nonFungibleTokenId, List.of(1L, 2L));
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
 
         final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowancesOrElse(emptyList());
@@ -112,7 +112,7 @@ class DeleteAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void considersPayerIfOwnerMissing() {
-        final var txn = cryptoDeleteAllowanceTransaction(id, null, nonFungibleTokenId, List.of(1L, 2L));
+        final var txn = cryptoDeleteAllowanceTransaction(payer, null, nonFungibleTokenId, List.of(1L, 2L));
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
 
         final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowancesOrElse(emptyList());
@@ -123,7 +123,7 @@ class DeleteAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void failsIfTokenNotAssociatedToAccount() {
-        final var txn = cryptoDeleteAllowanceTransaction(id, spenderId, nonFungibleTokenId, List.of(1L, 2L));
+        final var txn = cryptoDeleteAllowanceTransaction(payer, spenderId, nonFungibleTokenId, List.of(1L, 2L));
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
 
         final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowancesOrElse(emptyList());
@@ -135,7 +135,7 @@ class DeleteAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     @Test
     void validatesTotalAllowancesInTxn() {
         // each serial number is considered as one allowance
-        final var txn = cryptoDeleteAllowanceTransaction(id, ownerId, nonFungibleTokenId, List.of(1L, 2L));
+        final var txn = cryptoDeleteAllowanceTransaction(payer, ownerId, nonFungibleTokenId, List.of(1L, 2L));
         final var configuration = new HederaTestConfigBuilder()
                 .withValue("hedera.allowances.maxTransactionLimit", 1)
                 .getOrCreateConfig();
@@ -149,7 +149,7 @@ class DeleteAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void happyPath() {
-        final var txn = cryptoDeleteAllowanceTransaction(id, ownerId, nonFungibleTokenId, List.of(1L, 2L));
+        final var txn = cryptoDeleteAllowanceTransaction(payer, ownerId, nonFungibleTokenId, List.of(1L, 2L));
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
 
         final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowancesOrElse(emptyList());
@@ -160,7 +160,7 @@ class DeleteAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void validateSerialsExistence() {
-        final var txn = cryptoDeleteAllowanceTransaction(id, ownerId, nonFungibleTokenId, List.of(1L, 2L, 100L));
+        final var txn = cryptoDeleteAllowanceTransaction(payer, ownerId, nonFungibleTokenId, List.of(1L, 2L, 100L));
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
 
         final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowancesOrElse(emptyList());
@@ -189,7 +189,7 @@ class DeleteAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void validatesNegativeSerialsAreNotValid() {
-        final var txn = cryptoDeleteAllowanceTransaction(id, ownerId, nonFungibleTokenId, List.of(1L, -2L));
+        final var txn = cryptoDeleteAllowanceTransaction(payer, ownerId, nonFungibleTokenId, List.of(1L, -2L));
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
 
         final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowancesOrElse(emptyList());

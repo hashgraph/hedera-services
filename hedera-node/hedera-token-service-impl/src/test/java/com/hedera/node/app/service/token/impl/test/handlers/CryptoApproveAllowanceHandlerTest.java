@@ -77,7 +77,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     void cryptoApproveAllowanceVanilla() throws PreCheckException {
         final var txn = cryptoApproveAllowanceTransaction(
-                id, false, List.of(cryptoAllowance), List.of(tokenAllowance), List.of(nftAllowance));
+                payer, false, List.of(cryptoAllowance), List.of(tokenAllowance), List.of(nftAllowance));
         final var context = new FakePreHandleContext(readableAccountStore, txn);
         subject.preHandle(context);
         basicMetaAssertions(context, 1);
@@ -94,7 +94,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         readableAccountStore = new ReadableAccountStoreImpl(readableStates);
 
         final var txn = cryptoApproveAllowanceTransaction(
-                id, false, List.of(cryptoAllowance), List.of(tokenAllowance), List.of(nftAllowance));
+                payer, false, List.of(cryptoAllowance), List.of(tokenAllowance), List.of(nftAllowance));
         final var context = new FakePreHandleContext(readableAccountStore, txn);
         assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ALLOWANCE_OWNER_ID);
     }
@@ -113,7 +113,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     void cryptoApproveAllowanceAddsDelegatingSpender() throws PreCheckException {
         final var txn = cryptoApproveAllowanceTransaction(
-                id, true, List.of(cryptoAllowance), List.of(tokenAllowance), List.of(nftAllowance));
+                payer, true, List.of(cryptoAllowance), List.of(tokenAllowance), List.of(nftAllowance));
         final var context = new FakePreHandleContext(readableAccountStore, txn);
         subject.preHandle(context);
         basicMetaAssertions(context, 1);
@@ -131,7 +131,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         readableAccountStore = new ReadableAccountStoreImpl(readableStates);
 
         final var txn = cryptoApproveAllowanceTransaction(
-                id, true, List.of(cryptoAllowance), List.of(tokenAllowance), List.of(nftAllowance));
+                payer, true, List.of(cryptoAllowance), List.of(tokenAllowance), List.of(nftAllowance));
         final var context = new FakePreHandleContext(readableAccountStore, txn);
         assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_DELEGATING_SPENDER);
     }
@@ -147,7 +147,11 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
         final var txn = cryptoApproveAllowanceTransaction(
-                id, false, List.of(cryptoAllowance), List.of(tokenAllowance), List.of(nftAllowanceWithApproveForALl));
+                payer,
+                false,
+                List.of(cryptoAllowance),
+                List.of(tokenAllowance),
+                List.of(nftAllowanceWithApproveForALl));
         given(handleContext.body()).willReturn(txn);
         final var existingOwner = writableAccountStore.getAccountById(ownerId);
 
@@ -190,7 +194,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     void happyPathForUpdatingAllowances() {
         final var txn = cryptoApproveAllowanceTransaction(
-                id, false, List.of(cryptoAllowance), List.of(tokenAllowance), List.of(nftAllowance));
+                payer, false, List.of(cryptoAllowance), List.of(tokenAllowance), List.of(nftAllowance));
         given(handleContext.body()).willReturn(txn);
         final var existingOwner = writableAccountStore.getAccountById(ownerId);
 
@@ -243,7 +247,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     void settingApproveForAllToFalseRemovesAllowance() {
         final var txn = cryptoApproveAllowanceTransaction(
-                id,
+                payer,
                 false,
                 List.of(),
                 List.of(),
@@ -271,14 +275,14 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     void failsIfSenderDoesntOwnNFTSerial() {
         final var txn = cryptoApproveAllowanceTransaction(
-                id,
+                payer,
                 false,
                 List.of(cryptoAllowance.copyBuilder().owner(AccountID.DEFAULT).build()),
                 List.of(tokenAllowance.copyBuilder().owner(AccountID.DEFAULT).build()),
                 List.of(nftAllowance.copyBuilder().owner(AccountID.DEFAULT).build()));
 
         given(handleContext.body()).willReturn(txn);
-        final var payer = writableAccountStore.getAccountById(id);
+        final var payer = writableAccountStore.getAccountById(this.payer);
 
         assertThat(payer.cryptoAllowances()).isEmpty();
         assertThat(payer.tokenAllowances()).isEmpty();
@@ -305,14 +309,14 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         writableNftStore = new WritableNftStore(writableStates);
 
         final var txn = cryptoApproveAllowanceTransaction(
-                id,
+                payer,
                 false,
                 List.of(cryptoAllowance.copyBuilder().owner(AccountID.DEFAULT).build()),
                 List.of(tokenAllowance.copyBuilder().owner(AccountID.DEFAULT).build()),
                 List.of(nftAllowance.copyBuilder().owner(AccountID.DEFAULT).build()));
 
         given(handleContext.body()).willReturn(txn);
-        final var payer = writableAccountStore.getAccountById(id);
+        final var payer = writableAccountStore.getAccountById(this.payer);
 
         assertThat(payer.cryptoAllowances()).isEmpty();
         assertThat(payer.tokenAllowances()).isEmpty();
@@ -322,7 +326,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO));
 
-        final var modifiedPayer = writableAccountStore.getAccountById(id);
+        final var modifiedPayer = writableAccountStore.getAccountById(this.payer);
 
         final var newCryptoAllowances = modifiedPayer.cryptoAllowances();
         final var newTokenAllowances = modifiedPayer.tokenAllowances();
@@ -345,7 +349,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         given(handleContext.configuration()).willReturn(configuration);
 
         final var txn = cryptoApproveAllowanceTransaction(
-                id, false, List.of(cryptoAllowance), List.of(tokenAllowance), List.of(nftAllowance));
+                payer, false, List.of(cryptoAllowance), List.of(tokenAllowance), List.of(nftAllowance));
         given(handleContext.body()).willReturn(txn);
 
         assertThatThrownBy(() -> subject.handle(handleContext))
@@ -355,10 +359,10 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void emptyAllowanceListInTransactionFails() throws PreCheckException {
-        final var txn = cryptoApproveAllowanceTransaction(id, false, List.of(), List.of(), List.of());
+        final var txn = cryptoApproveAllowanceTransaction(payer, false, List.of(), List.of(), List.of());
         given(handleContext.body()).willReturn(txn);
         // Two know accounts we are using for these tests. Initial allowances
-        final var existingPayer = writableAccountStore.getAccountById(id);
+        final var existingPayer = writableAccountStore.getAccountById(payer);
         final var existingOwner = writableAccountStore.getAccountById(ownerId);
         assertThat(existingPayer.cryptoAllowances()).isEmpty();
         assertThat(existingPayer.tokenAllowances()).isEmpty();
@@ -373,7 +377,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
                 .has(responseCode(EMPTY_ALLOWANCES));
 
         // After handle allowances are not modified
-        final var afterHandlePayer = writableAccountStore.getAccountById(id);
+        final var afterHandlePayer = writableAccountStore.getAccountById(payer);
         final var afterHandleOwner = writableAccountStore.getAccountById(ownerId);
         assertThat(afterHandlePayer.cryptoAllowances()).isEmpty();
         assertThat(afterHandlePayer.tokenAllowances()).isEmpty();
@@ -394,7 +398,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
         final var txn = cryptoApproveAllowanceTransaction(
-                id,
+                payer,
                 false,
                 List.of(cryptoAllowance.copyBuilder().amount(0).build()),
                 List.of(tokenAllowance.copyBuilder().amount(0).build()),
@@ -417,7 +421,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     void existingAllowancesDeletedWithAmountZero() {
         final var txn = cryptoApproveAllowanceTransaction(
-                id,
+                payer,
                 false,
                 List.of(cryptoAllowance.copyBuilder().amount(0).build()),
                 List.of(tokenAllowance.copyBuilder().amount(0).build()),

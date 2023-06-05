@@ -100,7 +100,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected final Key freezeKey = A_COMPLEX_KEY;
 
     /* ---------- Account IDs */
-    protected final AccountID id = AccountID.newBuilder().accountNum(3).build();
+    protected final AccountID payer = AccountID.newBuilder().accountNum(3).build();
     protected final AccountID deleteAccountId =
             AccountID.newBuilder().accountNum(3213).build();
     protected final AccountID transferAccountId =
@@ -116,7 +116,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
             AccountID.newBuilder().accountNum(12345).build();
 
     /* ---------- Account Numbers */
-    protected final Long accountNum = id.accountNum();
+    protected final Long accountNum = payer.accountNum();
     protected final Long deleteAccountNum = deleteAccountId.accountNum();
     protected final Long transferAccountNum = transferAccountId.accountNum();
 
@@ -246,6 +246,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected Account transferAccount;
     protected Account ownerAccount;
     protected Account spenderAccount;
+    protected Account delegatingSpenderAccount;
 
     private Map<EntityNumVirtualKey, Account> accountsMap;
     private Map<EntityNum, Account> aliasesMap;
@@ -275,7 +276,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         accountsMap.put(EntityNumVirtualKey.fromLong(deleteAccountNum), deleteAccount);
         accountsMap.put(EntityNumVirtualKey.fromLong(transferAccountNum), transferAccount);
         accountsMap.put(EntityNumVirtualKey.fromLong(ownerId.accountNum()), ownerAccount);
-        accountsMap.put(EntityNumVirtualKey.fromLong(delegatingSpenderId.accountNum()), account);
+        accountsMap.put(EntityNumVirtualKey.fromLong(delegatingSpenderId.accountNum()), delegatingSpenderAccount);
         accountsMap.put(EntityNumVirtualKey.fromLong(spenderId.accountNum()), spenderAccount);
 
         tokensMap = new HashMap<>();
@@ -479,6 +480,10 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                         .spenderNum(spenderId.accountNum())
                         .build())
                 .key(ownerKey)
+                .build();
+        delegatingSpenderAccount = givenValidAccount()
+                .copyBuilder()
+                .accountNumber(delegatingSpenderId.accountNum())
                 .build();
     }
 
