@@ -209,8 +209,7 @@ public class LeakySecurityModelV1TestsSuite extends HapiSuite {
                 hapiTransferFromForNFTWithCustomFeesWithApproveForAll(),
                 hapiTransferFromForNFTWithCustomFeesWithBothApproveForAllAndAssignedSpender(),
                 /* -- Tests moved from Create2OperationSuite because they require property changes -- */
-                childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor()
-                );
+                childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor());
     }
 
     @Override
@@ -1816,7 +1815,7 @@ public class LeakySecurityModelV1TestsSuite extends HapiSuite {
                                 .exposingCreatedIdTo(id ->
                                         tokenMirrorAddr.set(hex(asSolidityAddress(HapiPropertySource.asToken(id))))))
                 .when(uploadInitCode(immediateChildAssoc), sourcing(() -> contractCreate(
-                        immediateChildAssoc, asHeadlongAddress(tokenMirrorAddr.get()))
+                                immediateChildAssoc, asHeadlongAddress(tokenMirrorAddr.get()))
                         .gas(2_000_000)
                         .adminKey(multiKey)
                         .payingWith(GENESIS)
