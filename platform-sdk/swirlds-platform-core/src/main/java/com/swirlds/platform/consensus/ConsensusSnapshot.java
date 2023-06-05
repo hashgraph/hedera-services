@@ -20,7 +20,6 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.state.MinGenInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
@@ -112,7 +111,7 @@ public class ConsensusSnapshot {
      * 		the number of non-ancient rounds
      * @return minimum non-ancient generation
      */
-    public long getMinimumGenerationNonAncient(final int roundsNonAncient){
+    public long getMinimumGenerationNonAncient(final int roundsNonAncient) {
         return RoundCalculationUtils.getMinGenNonAncient(roundsNonAncient, round, this::getMinGen);
     }
 
@@ -141,9 +140,11 @@ public class ConsensusSnapshot {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         final ConsensusSnapshot snapshot = (ConsensusSnapshot) o;
-        return round == snapshot.round && nextConsensusNumber == snapshot.nextConsensusNumber && judgeHashes.equals(
-                snapshot.judgeHashes) && minGens.equals(snapshot.minGens) && Objects.equals(minConsensusTimestamp,
-                snapshot.minConsensusTimestamp);
+        return round == snapshot.round
+                && nextConsensusNumber == snapshot.nextConsensusNumber
+                && judgeHashes.equals(snapshot.judgeHashes)
+                && minGens.equals(snapshot.minGens)
+                && Objects.equals(minConsensusTimestamp, snapshot.minConsensusTimestamp);
     }
 
     @Override
