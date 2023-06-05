@@ -135,22 +135,6 @@ public class ContractCreateSuite extends HapiSuite {
         return true;
     }
 
-    private HapiSpec contractCreateNoncesExternalizationHappyPath() {
-        final var contract = "NoncesExternalization";
-        final var contractCreateFn = "deployContract";
-
-        return defaultHapiSpec("ContractCreateNoncesExternalizationHappyPath")
-                .given(uploadInitCode(contract), contractCreate(contract).via(contractCreateFn))
-                .when()
-                .then(withOpContext((spec, opLog) -> {
-                    HapiGetTxnRecord op = getTxnRecord(contractCreateFn)
-                            .hasPriority(recordWith()
-                                    .contractWithIdHasContractNonces(
-                                            spec.registry().getContractId(contract), 4L));
-                    allRunFor(spec, op);
-                }));
-    }
-
     HapiSpec createContractWithStakingFields() {
         final var contract = "CreateTrivial";
         return defaultHapiSpec("createContractWithStakingFields")
@@ -632,6 +616,22 @@ public class ContractCreateSuite extends HapiSuite {
                                 .logged())
                 .when()
                 .then();
+    }
+
+    private HapiSpec contractCreateNoncesExternalizationHappyPath() {
+        final var contract = "NoncesExternalization";
+        final var contractCreateFn = "deployContract";
+
+        return defaultHapiSpec("ContractCreateNoncesExternalizationHappyPath")
+                .given(uploadInitCode(contract), contractCreate(contract).via(contractCreateFn))
+                .when()
+                .then(withOpContext((spec, opLog) -> {
+                    HapiGetTxnRecord op = getTxnRecord(contractCreateFn)
+                            .hasPriority(recordWith()
+                                    .contractWithIdHasContractNonces(
+                                            spec.registry().getContractId(contract), 4L));
+                    allRunFor(spec, op);
+                }));
     }
 
     @Override
