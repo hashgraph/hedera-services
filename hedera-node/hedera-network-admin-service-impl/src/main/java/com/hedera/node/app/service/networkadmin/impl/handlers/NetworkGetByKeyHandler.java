@@ -33,8 +33,10 @@ import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#GET_BY_KEY}.
+ * </p>
+ * This network service call has been deprecated. Because protobufs promise backwards compatibility,
+ * we cannot remove it. However, it should not be used.
  */
-// not supported
 @Singleton
 public class NetworkGetByKeyHandler extends PaidQueryHandler {
     @Inject

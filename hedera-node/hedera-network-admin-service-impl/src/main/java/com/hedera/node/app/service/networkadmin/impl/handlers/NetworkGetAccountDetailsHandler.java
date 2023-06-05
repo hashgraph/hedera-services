@@ -21,7 +21,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
-import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static java.util.Objects.requireNonNull;
@@ -47,6 +46,7 @@ import com.hedera.hapi.node.token.GrantedNftAllowance;
 import com.hedera.hapi.node.token.GrantedTokenAllowance;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
+import com.hedera.node.app.service.evm.contracts.execution.StaticProperties;
 import com.hedera.node.app.service.networkadmin.impl.config.NetworkAdminServiceConfig;
 import com.hedera.node.app.service.networkadmin.impl.utils.NetworkAdminServiceUtil;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -72,15 +72,19 @@ import javax.inject.Singleton;
 public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
 
     @Inject
-    public NetworkGetAccountDetailsHandler() {}
-
-    @Override
-    public QueryHeader extractHeader(@NonNull final Query query) {
-        requireNonNull(query);
-        return query.accountDetailsOrThrow().header();
+    public NetworkGetAccountDetailsHandler() {
+        // exists for injection
     }
 
     @Override
+    @NonNull
+    public QueryHeader extractHeader(@NonNull final Query query) {
+        requireNonNull(query);
+        return requireNonNull(query.accountDetailsOrThrow().header());
+    }
+
+    @Override
+    @NonNull
     public Response createEmptyResponse(@NonNull final ResponseHeader header) {
         requireNonNull(header);
         final var response = GetAccountDetailsResponse.newBuilder().header(header);
@@ -113,6 +117,7 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
     }
 
     @Override
+    @NonNull
     public Response findResponse(@NonNull final QueryContext context, @NonNull final ResponseHeader header) {
         requireNonNull(context);
         requireNonNull(header);
@@ -143,7 +148,7 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
      * @param accountStore the account store
      * @return the information about the account
      */
-    private Optional<AccountDetails> infoForAccount(
+    private static Optional<AccountDetails> infoForAccount(
             @NonNull final AccountID accountID,
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final NetworkAdminServiceConfig networkAdminConfig,
@@ -159,7 +164,9 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
                     AccountID.newBuilder().accountNum(account.accountNumber()).build());
             info.contractAccountId(NetworkAdminServiceUtil.asHexedEvmAddress(accountID));
             info.deleted(account.deleted());
-            if (!isEmpty(account.key())) info.key(account.key());
+            if (!isEmpty(account.key())) {
+                info.key(account.key());
+            }
             info.balance(account.tinybarBalance());
             info.receiverSigRequired(account.receiverSigRequired());
             info.expirationTime(Timestamp.newBuilder().seconds(account.expiry()).build());
@@ -183,7 +190,7 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
         }
     }
 
-    private List<TokenRelationship> getTokenRelationships(
+    private static List<TokenRelationship> getTokenRelationships(
             final int maxRelationships,
             Account account,
             ReadableTokenStore readableTokenStore,
@@ -198,8 +205,8 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
                     TokenID.newBuilder().tokenNum(tokenNum).build());
             if (optionalTokenRelation.isPresent()) {
                 final var tokenId = TokenID.newBuilder()
-                        .shardNum(STATIC_PROPERTIES.getShard())
-                        .realmNum(STATIC_PROPERTIES.getRealm())
+                        .shardNum(StaticProperties.getShard())
+                        .realmNum(StaticProperties.getRealm())
                         .tokenNum(tokenNum)
                         .build();
                 final TokenMetadata token = readableTokenStore.getTokenMeta(tokenId);
@@ -229,7 +236,7 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
         return tokenRelationshipList;
     }
 
-    private List<GrantedNftAllowance> getNftGrantedAllowancesList(final Account account) {
+    private static List<GrantedNftAllowance> getNftGrantedAllowancesList(final Account account) {
         if (!account.approveForAllNftAllowances().isEmpty()) {
             List<GrantedNftAllowance> nftAllowances = new ArrayList<>();
             for (var a : account.approveForAllNftAllowances()) {
