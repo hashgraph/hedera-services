@@ -1283,7 +1283,8 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         } else {
             useMerkleDb = false;
         }
-        logger.info(LOGM_DEMO_INFO, "Using {} data sources", (useMerkleDb ? "MerkleDb" : "JasperDB"));
+        logger.info(LOGM_DEMO_INFO, "Using {} data sources, state = {}",
+                (useMerkleDb ? "MerkleDb" : "JasperDB"), this);
 
         expectedFCMFamily.setNodeId(platform.getSelfId().id());
         expectedFCMFamily.setWeightedNodeNum(platform.getAddressBook().getNumberWithWeight());
