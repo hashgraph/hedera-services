@@ -20,6 +20,7 @@ import static com.swirlds.common.utility.Units.BYTES_TO_BITS;
 import static com.swirlds.common.utility.Units.MEBIBYTES_TO_BYTES;
 import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.swirlds.common.config.singleton.ConfigurationHolder;
