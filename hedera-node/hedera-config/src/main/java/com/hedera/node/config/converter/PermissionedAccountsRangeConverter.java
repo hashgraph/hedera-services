@@ -25,15 +25,20 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * Implementation of the {@link ConfigConverter} api that adds support for the {@link PermissionedAccountsRange} type to
- * the config api.
+ * the config api. The method {@link PermissionedAccountsRange#from(String)} is used to parse the string value. Instead
+ * of returning {@code null} when {@link PermissionedAccountsRange#from(String)} returns {@code null}, this converter
+ * throws an {@code IllegalArgumentException} in that case.
  */
 public final class PermissionedAccountsRangeConverter implements ConfigConverter<PermissionedAccountsRange> {
 
+    /**
+     * {@inheritDoc}
+     */
     @Nullable
     @Override
     public PermissionedAccountsRange convert(@NonNull final String value)
             throws IllegalArgumentException, NullPointerException {
-        requireNonNull(value, "null can not be converted");
+        requireNonNull(value, "'null' can not be converted");
         final var converted = PermissionedAccountsRange.from(value);
         if (converted == null) {
             throw new IllegalArgumentException("Invalid PermissionedAccountsRange value: " + value);
