@@ -18,9 +18,8 @@ package com.hedera.node.app.service.networkadmin.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
@@ -57,7 +56,7 @@ class NetworkGetByKeyHandlerTest {
         final var query = Query.newBuilder().getByKey(data).build();
         final var header = subject.extractHeader(query);
         final var op = query.getByKeyOrThrow();
-        assertEquals(op.header(), header);
+        assertThat(op.header()).isEqualTo(header);
     }
 
     @Test
@@ -67,7 +66,7 @@ class NetworkGetByKeyHandlerTest {
         final var expectedResponse = Response.newBuilder()
                 .getByKey(GetByKeyResponse.newBuilder().header(responseHeader))
                 .build();
-        assertEquals(expectedResponse, response);
+        assertThat(expectedResponse).isEqualTo(response);
     }
 
     @Test
@@ -80,6 +79,7 @@ class NetworkGetByKeyHandlerTest {
     @Test
     void findResponseThrowsUnsupported() {
         final var responseHeader = ResponseHeader.newBuilder().build();
-        assertThrows(UnsupportedOperationException.class, () -> subject.findResponse(context, responseHeader));
+        assertThatThrownBy(() -> subject.findResponse(context, responseHeader))
+                .isInstanceOf(UnsupportedOperationException.class);
     }
 }
