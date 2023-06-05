@@ -34,7 +34,7 @@ import com.swirlds.platform.state.signed.DeserializedSignedState;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SavedStateInfo;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
-import com.swirlds.platform.system.SystemExitReason;
+import com.swirlds.platform.system.SystemExitCode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Objects;
@@ -173,8 +173,7 @@ public class SavedStateLoader {
                 if (!oldHash.equals(newHash)) {
                     logger.error(EXCEPTION.getMarker(), "Emergency recovery must not be performed during migration.");
                     shutdownRequestedTrigger.dispatch(
-                            "Migration During Emergency Recovery",
-                            SystemExitReason.EMERGENCY_RECOVERY_ERROR.getExitCode());
+                            "Migration During Emergency Recovery", SystemExitCode.EMERGENCY_RECOVERY_ERROR);
                     return createNullReservation();
                 }
 

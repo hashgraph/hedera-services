@@ -23,6 +23,7 @@ import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 
@@ -37,7 +38,7 @@ import java.util.Set;
 public class GossipEventTracker extends AbstractSimulatedEventPipeline<CountingChatterEvent> {
 
     private final NodeId nodeId;
-    private final Map<Long, Queue<CountingChatterEvent>> eventsReceivedByCreator = new HashMap<>();
+    private final Map<NodeId, Queue<CountingChatterEvent>> eventsReceivedByCreator = new HashMap<>();
     private final Queue<CountingChatterEvent> selfEvents = new ArrayDeque<>();
     private final Set<Long> peerEventsReceived = new HashSet<>();
     private long duplicateEventCounter = 0;
@@ -51,8 +52,8 @@ public class GossipEventTracker extends AbstractSimulatedEventPipeline<CountingC
      */
     @Override
     public void addEvent(final CountingChatterEvent event) {
-        final long creator = event.getCreator();
-        if (creator == nodeId.id()) {
+        final NodeId creator = event.getCreator();
+        if (Objects.equals(creator, nodeId)) {
             selfEvents.add(event);
         } else {
             if (!peerEventsReceived.add(event.getOrder())) {
@@ -87,7 +88,7 @@ public class GossipEventTracker extends AbstractSimulatedEventPipeline<CountingC
      */
     @Override
     public void printCurrentState() {
-        final Map<Long, Integer> eventCounts = new HashMap<>();
+        final Map<NodeId, Integer> eventCounts = new HashMap<>();
         eventsReceivedByCreator.forEach((key, value) -> eventCounts.put(key, value.size()));
 
         final StringBuilder sb = new StringBuilder();

@@ -68,7 +68,7 @@ public class SStoreSuite extends HapiSuite {
     HapiSpec multipleSStoreOpsSucceed() {
         final var contract = "GrowArray";
         final var GAS_TO_OFFER = 6_000_000L;
-        return HapiSpec.defaultHapiSpec("MultipleSStoresShouldWork")
+        return HapiSpec.defaultHapiSpec("multipleSStoreOpsSucceed")
                 .given(uploadInitCode(contract), contractCreate(contract))
                 .when(withOpContext((spec, opLog) -> {
                     final var step = 16;
@@ -167,7 +167,7 @@ public class SStoreSuite extends HapiSuite {
         final var GAS_LIMIT = 1_000_000;
         var value = Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000005")
                 .toArray();
-        return defaultHapiSpec("SimpleStorage")
+        return defaultHapiSpec("benchmarkSingleSetter")
                 .given(cryptoCreate("payer").balance(10 * ONE_HUNDRED_HBARS), uploadInitCode(contract))
                 .when(
                         contractCreate(contract)

@@ -17,7 +17,7 @@
 package com.swirlds.platform.recovery;
 
 import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.platform.system.SystemExitReason.EMERGENCY_RECOVERY_ERROR;
+import static com.swirlds.platform.system.SystemExitCode.EMERGENCY_RECOVERY_ERROR;
 
 import com.swirlds.platform.dispatch.triggers.control.ShutdownRequestedTrigger;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
@@ -83,7 +83,7 @@ public class EmergencyRecoveryManager {
                     "Detected an emergency recovery file at {} but was unable to read it",
                     dir,
                     e);
-            shutdownRequestedTrigger.dispatch("Emergency Recovery Error", EMERGENCY_RECOVERY_ERROR.getExitCode());
+            shutdownRequestedTrigger.dispatch("Emergency Recovery Error", EMERGENCY_RECOVERY_ERROR);
             return null;
         }
     }

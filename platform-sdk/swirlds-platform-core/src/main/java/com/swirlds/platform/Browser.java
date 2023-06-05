@@ -32,7 +32,8 @@ import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowser
 import static com.swirlds.platform.state.address.AddressBookUtils.getOwnHostCount;
 import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedStateFiles;
-import static com.swirlds.platform.system.SystemExitReason.NODE_ADDRESS_MISMATCH;
+import static com.swirlds.platform.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
+import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
 
 import com.swirlds.common.StartupTime;
 import com.swirlds.common.config.BasicConfig;
@@ -105,8 +106,7 @@ import com.swirlds.platform.state.signed.SignedStateFileUtils;
 import com.swirlds.platform.swirldapp.AppLoaderException;
 import com.swirlds.platform.swirldapp.SwirldAppLoader;
 import com.swirlds.platform.system.Shutdown;
-import com.swirlds.platform.system.SystemExitReason;
-import com.swirlds.platform.system.SystemUtils;
+import com.swirlds.platform.system.SystemExitCode;
 import com.swirlds.platform.uptime.UptimeConfig;
 import com.swirlds.platform.util.BootstrapUtils;
 import com.swirlds.platform.util.MetricsDocUtils;
@@ -177,6 +177,8 @@ public class Browser {
              // Node is Starting //
             //////////////////////""";
     // @formatter:on
+
+    final Shutdown shutdown = new Shutdown();
 
     /**
      * Prevent this class from being instantiated.
@@ -649,7 +651,7 @@ public class Browser {
                 // We can't send a "real" dispatch, since the dispatcher will not have been started by the
                 // time this class is used.
                 final EmergencyRecoveryManager emergencyRecoveryManager = new EmergencyRecoveryManager(
-                        Shutdown::immediateShutDown, Settings.getInstance().getEmergencyRecoveryFileLoadDir());
+                        shutdown::shutdown, Settings.getInstance().getEmergencyRecoveryFileLoadDir());
 
                 final ReservedSignedState loadedSignedState = getUnmodifiedSignedStateFromDisk(
                         platformContext,
@@ -744,7 +746,7 @@ public class Browser {
         // time this class is used.
         final SavedStateLoader savedStateLoader = new SavedStateLoader(
                 platformContext,
-                Shutdown::immediateShutDown,
+                shutdown::shutdown,
                 configAddressBook,
                 savedStateFiles,
                 appVersion,
@@ -755,7 +757,7 @@ public class Browser {
         } catch (final Exception e) {
             logger.error(EXCEPTION.getMarker(), "Signed state not loaded from disk:", e);
             if (Settings.getInstance().isRequireStateLoad()) {
-                SystemUtils.exitSystem(SystemExitReason.SAVED_STATE_NOT_LOADED);
+                exitSystem(SystemExitCode.SAVED_STATE_NOT_LOADED);
             }
         }
         return createNullReservation();
@@ -794,7 +796,7 @@ public class Browser {
             logger.error(
                     EXCEPTION.getMarker(),
                     new NodeAddressMismatchPayload(Network.getInternalIPAddress(), externalIpAddress));
-            SystemUtils.exitSystem(NODE_ADDRESS_MISMATCH);
+            exitSystem(NODE_ADDRESS_MISMATCH);
         }
 
         // the thread for each Platform.run

@@ -153,7 +153,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                 updateWithTooLongNameAndSymbol(),
                 updateTokenWithKeysNegative(),
                 updateTokenWithInvalidKeyValues(),
-                updateNftTokenKeysWithWrongTokenIdAndMissingAdmin(),
+                updateNftTokenKeysWithWrongTokenIdAndMissingAdminKey(),
                 getTokenKeyForNonFungibleNegative());
     }
 
@@ -947,7 +947,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 .hasPauseKey(TOKEN_UPDATE_AS_KEY))));
     }
 
-    public HapiSpec updateNftTokenKeysWithWrongTokenIdAndMissingAdmin() {
+    public HapiSpec updateNftTokenKeysWithWrongTokenIdAndMissingAdminKey() {
         final AtomicReference<TokenID> nftToken = new AtomicReference<>();
         return defaultHapiSpec("updateNftTokenKeysWithWrongTokenIdAndMissingAdminKey")
                 .given(

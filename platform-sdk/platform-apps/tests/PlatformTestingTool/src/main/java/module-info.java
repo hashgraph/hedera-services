@@ -30,6 +30,7 @@ module com.swirlds.demo.platform {
     exports com.swirlds.demo.virtualmerkle.config to
             com.fasterxml.jackson.databind;
 
+    requires static com.github.spotbugs.annotations;
     requires java.logging;
     requires com.swirlds.platform;
     requires com.swirlds.fcqueue;

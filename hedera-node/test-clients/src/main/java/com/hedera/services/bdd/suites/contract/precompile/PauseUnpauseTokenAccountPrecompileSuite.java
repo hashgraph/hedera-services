@@ -151,7 +151,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
     private HapiSpec noAccountKeyReverts() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
-        return defaultHapiSpec("noKeyReverts")
+        return defaultHapiSpec("noAccountKeyReverts")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(100 * ONE_HBAR).exposingCreatedIdTo(accountID::set),
