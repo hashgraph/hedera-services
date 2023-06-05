@@ -26,9 +26,7 @@ public class PermissionedAccountsRangeConverter implements ConfigConverter<Permi
     @Override
     public PermissionedAccountsRange convert(@NonNull final String value)
             throws IllegalArgumentException, NullPointerException {
-        if (value == null) {
-            throw new NullPointerException("null can not be converted");
-        }
+        requireNonNull(value, "null can not be converted");
         final var converted = PermissionedAccountsRange.from(value);
         if (converted == null) {
             throw new IllegalArgumentException("Invalid PermissionedAccountsRange value: " + value);
