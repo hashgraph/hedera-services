@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.service.networkadmin.impl.test.handlers;
 
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
-import static com.hedera.test.utils.TxnUtils.payerSponsoredPbjTransfer;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -44,7 +42,6 @@ import com.hedera.node.app.service.networkadmin.impl.utils.NetworkAdminServiceUt
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
-import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.util.Collections;
@@ -56,10 +53,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
-
-    @Mock
-    private NetworkInfo networkInfo;
-
     @Mock
     private QueryContext context;
 
@@ -151,7 +144,7 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
         final var response = networkGetAccountDetailsHandler.findResponse(context, responseHeader);
         final var accountDetailsResponse = response.accountDetailsOrThrow();
         assertEquals(ResponseCodeEnum.OK, accountDetailsResponse.header().nodeTransactionPrecheckCode());
-        assertEquals(null, accountDetailsResponse.accountDetails());
+        assertNull(accountDetailsResponse.accountDetails());
     }
 
     @Test
@@ -200,7 +193,6 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
                 .contractAccountId(NetworkAdminServiceUtil.asHexedEvmAddress(
                         AccountID.newBuilder().accountNum(accountNum).build()))
                 .deleted(deleted)
-                .key(key)
                 .balance(payerBalance)
                 .receiverSigRequired(true)
                 .expirationTime(Timestamp.newBuilder().seconds(1_234_567L).build())
@@ -218,11 +210,9 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
     }
 
     private Query createGetAccountDetailsQuery(final long accountNum) {
-        final var payment =
-                payerSponsoredPbjTransfer(payerIdLiteral, COMPLEX_KEY_ACCOUNT_KT, beneficiaryIdStr, paymentAmount);
         final var data = GetAccountDetailsQuery.newBuilder()
                 .accountId(AccountID.newBuilder().accountNum(accountNum).build())
-                .header(QueryHeader.newBuilder().payment(payment).build())
+                .header(QueryHeader.newBuilder().build())
                 .build();
 
         return Query.newBuilder().accountDetails(data).build();

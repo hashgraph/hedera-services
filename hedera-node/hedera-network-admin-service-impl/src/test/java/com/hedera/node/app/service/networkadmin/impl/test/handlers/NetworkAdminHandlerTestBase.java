@@ -16,18 +16,12 @@
 
 package com.hedera.node.app.service.networkadmin.impl.test.handlers;
 
-import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
-import static com.hedera.test.utils.KeyUtils.B_COMPLEX_KEY;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
-import com.hedera.hapi.node.token.CryptoAllowance;
-import com.hedera.hapi.node.token.TokenAllowance;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
@@ -53,12 +47,6 @@ public class NetworkAdminHandlerTestBase {
     protected static final String TOKENS = "TOKENS";
     protected static final String TOKEN_RELS = "TOKEN_RELS";
 
-    protected final Key key = A_COMPLEX_KEY;
-
-    protected static final Key payerKey = A_COMPLEX_KEY;
-    protected final String payerIdLiteral = "0.0.3";
-    protected final String beneficiaryIdStr = "0.0.3";
-    protected final long paymentAmount = 1_234L;
     protected final Bytes ledgerId = Bytes.wrap(new byte[] {3});
 
     protected final AccountID id = AccountID.newBuilder().accountNum(3).build();
@@ -74,24 +62,6 @@ public class NetworkAdminHandlerTestBase {
     protected final Long deleteAccountNum = deleteAccountId.accountNum();
     protected final Long transferAccountNum = transferAccountId.accountNum();
 
-    protected final TokenID nft = TokenID.newBuilder().tokenNum(56789).build();
-    protected final TokenID tokenID = TokenID.newBuilder().tokenNum(6789).build();
-    protected final AccountID spender = AccountID.newBuilder().accountNum(12345).build();
-    protected final AccountID delegatingSpender =
-            AccountID.newBuilder().accountNum(1234567).build();
-    protected final AccountID owner = AccountID.newBuilder().accountNum(123456).build();
-    protected final Key ownerKey = B_COMPLEX_KEY;
-    protected final CryptoAllowance cryptoAllowance = CryptoAllowance.newBuilder()
-            .spender(spender)
-            .owner(owner)
-            .amount(10L)
-            .build();
-    protected final TokenAllowance tokenAllowance = TokenAllowance.newBuilder()
-            .spender(spender)
-            .amount(10L)
-            .tokenId(tokenID)
-            .owner(owner)
-            .build();
     protected static final long payerBalance = 10_000L;
     protected final EntityNum fungibleTokenNum = EntityNum.fromLong(1L);
     protected final EntityNum nonFungibleTokenNum = EntityNum.fromLong(2L);
@@ -187,7 +157,7 @@ public class NetworkAdminHandlerTestBase {
         account = new Account(
                 accountNum,
                 alias.alias(),
-                key,
+                null, //  key,
                 1_234_567L,
                 payerBalance,
                 "testAccount",

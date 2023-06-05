@@ -33,7 +33,7 @@ import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#NETWORK_GET_EXECUTION_TIME}.
- * </p>
+ * <p>
  * This network service call has been deprecated. Because protobufs promise backwards compatibility,
  * we cannot remove it. However, it should not be used.
  */
