@@ -162,8 +162,8 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
     private static final Executor CLEANING_POOL = Boolean.getBoolean("syncCleaningPool")
             ? Runnable::run
             : new ThreadPoolExecutor(
-                    config.numCleanerThreads(),
-                    config.numCleanerThreads(),
+                    config.getNumCleanerThreads(),
+                    config.getNumCleanerThreads(),
                     60L,
                     TimeUnit.SECONDS,
                     new LinkedBlockingQueue<>(),

@@ -74,7 +74,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
      * The number of threads to use when hashing. Can either be supplied by a system property, or
      * will compute a default based on "percentHashThreads".
      */
-    private static final int HASHING_THREAD_COUNT = config.numHashThreads();
+    private static final int HASHING_THREAD_COUNT = config.getNumHashThreads();
 
     /**
      * A thread pool for processing hashing work. A single executor service is shared across all {@link VirtualMap}
