@@ -21,11 +21,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.system.InitTrigger;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
 import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
@@ -38,11 +40,10 @@ class ConfigProviderImplTest {
         assertThatThrownBy(() -> new ConfigProviderImpl(null)).isInstanceOf(NullPointerException.class);
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void testInitialConfig(final boolean isGenesis) {
+    @Test
+    void testInitialConfig() {
         // given
-        final var configProvider = new ConfigProviderImpl(isGenesis);
+        final var configProvider = new ConfigProviderImpl(InitTrigger.RESTART);
 
         // when
         final var configuration = configProvider.getConfiguration();
@@ -55,7 +56,7 @@ class ConfigProviderImplTest {
     @Test
     void testApplicationPropertiesLoaded() {
         // given
-        final var configProvider = new ConfigProviderImpl(false);
+        final var configProvider = new ConfigProviderImpl(InitTrigger.RESTART);
 
         // when
         final var configuration = configProvider.getConfiguration();
@@ -65,10 +66,28 @@ class ConfigProviderImplTest {
         assertThat(value).isEqualTo("123");
     }
 
+    @ParameterizedTest
+    @EnumSource(InitTrigger.class)
+    void testCorrectInitTriggerUsage(final InitTrigger initTrigger) {
+        // given
+        final var configProvider = new ConfigProviderImpl(initTrigger);
+
+        // when
+        final var configuration = configProvider.getConfiguration();
+        final String value = configuration.getValue("bar.test");
+
+        // then
+        if (Objects.equals(initTrigger, InitTrigger.GENESIS)) {
+            assertThat(value).isEqualTo("genesis");
+        } else {
+            assertThat(value).isEqualTo("456");
+        }
+    }
+
     @Test
     void testGenesisNotAlwaysUsed() {
         // given
-        final var configProvider = new ConfigProviderImpl(false);
+        final var configProvider = new ConfigProviderImpl(InitTrigger.RESTART);
 
         // when
         final var configuration = configProvider.getConfiguration();
@@ -81,7 +100,7 @@ class ConfigProviderImplTest {
     @Test
     void testGenesisOverwritesApplication() {
         // given
-        final var configProvider = new ConfigProviderImpl(true);
+        final var configProvider = new ConfigProviderImpl(InitTrigger.GENESIS);
 
         // when
         final var configuration = configProvider.getConfiguration();
@@ -95,7 +114,7 @@ class ConfigProviderImplTest {
     void testDifferentApplicationPropertiesFile(final EnvironmentVariables environment) {
         // given
         environment.set(ConfigProviderImpl.APPLICATION_PROPERTIES_PATH_ENV, "for-test/application.properties.test");
-        final var configProvider = new ConfigProviderImpl(false);
+        final var configProvider = new ConfigProviderImpl(InitTrigger.RESTART);
 
         // when
         final var configuration = configProvider.getConfiguration();
@@ -109,7 +128,7 @@ class ConfigProviderImplTest {
     void testDifferentGenesisPropertiesFile(final EnvironmentVariables environment) {
         // given
         environment.set(ConfigProviderImpl.GENESIS_PROPERTIES_PATH_ENV, "for-test/genesis.properties.test");
-        final var configProvider = new ConfigProviderImpl(true);
+        final var configProvider = new ConfigProviderImpl(InitTrigger.GENESIS);
 
         // when
         final var configuration = configProvider.getConfiguration();
@@ -123,7 +142,7 @@ class ConfigProviderImplTest {
     void testApplicationPropertiesFileIsOptional(final EnvironmentVariables environment) {
         // given
         environment.set(ConfigProviderImpl.APPLICATION_PROPERTIES_PATH_ENV, "does-not-exist");
-        final var configProvider = new ConfigProviderImpl(true);
+        final var configProvider = new ConfigProviderImpl(InitTrigger.GENESIS);
 
         // when
         final var configuration = configProvider.getConfiguration();
@@ -138,7 +157,7 @@ class ConfigProviderImplTest {
     void testGenesisPropertiesFileIsOptional(final EnvironmentVariables environment) {
         // given
         environment.set(ConfigProviderImpl.GENESIS_PROPERTIES_PATH_ENV, "does-not-exist");
-        final var configProvider = new ConfigProviderImpl(true);
+        final var configProvider = new ConfigProviderImpl(InitTrigger.GENESIS);
 
         // when
         final var configuration = configProvider.getConfiguration();
@@ -151,8 +170,8 @@ class ConfigProviderImplTest {
     @Test
     void testUpdateDoesNotUseApplicationProperties() {
         // given
-        final var configProvider = new ConfigProviderImpl(false);
-        final Bytes bytes = Bytes.wrap(new byte[] {});
+        final var configProvider = new ConfigProviderImpl(InitTrigger.RESTART);
+        final Bytes bytes = Bytes.wrap(new byte[]{});
 
         // when
         configProvider.update(bytes);
@@ -166,8 +185,8 @@ class ConfigProviderImplTest {
     @Test
     void testUpdateDoesNotUseGenesisProperties() {
         // given
-        final var configProvider = new ConfigProviderImpl(true);
-        final Bytes bytes = Bytes.wrap(new byte[] {});
+        final var configProvider = new ConfigProviderImpl(InitTrigger.GENESIS);
+        final Bytes bytes = Bytes.wrap(new byte[]{});
 
         // when
         configProvider.update(bytes);
@@ -181,7 +200,7 @@ class ConfigProviderImplTest {
     @Test
     void testUpdateProvidesConfigProperty() {
         // given
-        final var configProvider = new ConfigProviderImpl(true);
+        final var configProvider = new ConfigProviderImpl(InitTrigger.GENESIS);
         final Bytes bytes = Bytes.wrap("update.test=789".getBytes(StandardCharsets.UTF_8));
 
         // when
@@ -198,7 +217,7 @@ class ConfigProviderImplTest {
     @Test
     void testUpdateProvidesConfigProperties() {
         // given
-        final var configProvider = new ConfigProviderImpl(true);
+        final var configProvider = new ConfigProviderImpl(InitTrigger.GENESIS);
         final StringBuilder sb = new StringBuilder("update.test1=789")
                 .append(System.lineSeparator())
                 .append("update.test2=abc")
@@ -222,7 +241,7 @@ class ConfigProviderImplTest {
     @Test
     void testUpdateWithNullBytes() {
         // given
-        final var configProvider = new ConfigProviderImpl(true);
+        final var configProvider = new ConfigProviderImpl(InitTrigger.GENESIS);
 
         // then
         assertThatThrownBy(() -> configProvider.update(null)).isInstanceOf(NullPointerException.class);
@@ -231,7 +250,7 @@ class ConfigProviderImplTest {
     @Test
     void testUpdateWithInvalidBytes() {
         // given
-        final var configProvider = new ConfigProviderImpl(true);
+        final var configProvider = new ConfigProviderImpl(InitTrigger.GENESIS);
         final Bytes bytes = Bytes.wrap("\\uxxxx".getBytes(StandardCharsets.UTF_8));
 
         // then

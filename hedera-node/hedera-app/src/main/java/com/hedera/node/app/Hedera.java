@@ -143,7 +143,8 @@ public final class Hedera implements SwirldMain {
      * @param registry The {@link MerkleSchemaRegistry} with which the service registers its schemas.
      */
     private record ServiceRegistration(
-            @NonNull String name, @NonNull Service service, @NonNull MerkleSchemaRegistry registry) {}
+            @NonNull String name, @NonNull Service service, @NonNull MerkleSchemaRegistry registry) {
+    }
 
     /** The registry of all known services */
     private final Map<String, ServiceRegistration> serviceRegistry;
@@ -737,7 +738,6 @@ public final class Hedera implements SwirldMain {
                     .maxSignedTxnSize(MAX_SIGNED_TXN_SIZE)
                     .crypto(CryptographyHolder.get())
                     .selfId(nodeSelfAccount)
-                    .genesisUsage(trigger == InitTrigger.GENESIS)
                     .build();
         }
     }
