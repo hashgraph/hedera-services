@@ -196,6 +196,7 @@ public class LegacySyncGossip extends AbstractGossip {
                                 stateManagementComponent,
                                 reconnectConfig,
                                 reconnectThrottle,
+                                fallenBehindManager,
                                 reconnectMetrics)),
                 ProtocolMapping.map(
                         UnidirectionalProtocols.HEARTBEAT.getInitialByte(),
@@ -287,7 +288,7 @@ public class LegacySyncGossip extends AbstractGossip {
     @NonNull
     @Override
     protected CriticalQuorum buildCriticalQuorum() {
-        return new CriticalQuorumImpl(platformContext.getMetrics(), selfId.id(), addressBook);
+        return new CriticalQuorumImpl(platformContext.getMetrics(), selfId, addressBook);
     }
 
     /**

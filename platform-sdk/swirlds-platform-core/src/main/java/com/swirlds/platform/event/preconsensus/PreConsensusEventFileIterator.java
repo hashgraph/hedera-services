@@ -54,7 +54,7 @@ public class PreConsensusEventFileIterator implements IOIterator<EventImpl> {
         counter = new CountingStreamExtension();
         stream = new SerializableDataInputStream(new ExtendableInputStream(
                 new BufferedInputStream(
-                        new FileInputStream(fileDescriptor.path().toFile())),
+                        new FileInputStream(fileDescriptor.getPath().toFile())),
                 counter));
     }
 

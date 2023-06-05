@@ -262,7 +262,8 @@ public class ChatterGossip extends AbstractGossip {
                                             stateManagementComponent,
                                             reconnectConfig.asyncStreamTimeoutMilliseconds(),
                                             reconnectMetrics,
-                                            reconnectController),
+                                            reconnectController,
+                                            fallenBehindManager),
                                     new ReconnectProtocol(
                                             threadManager,
                                             otherId,
@@ -363,7 +364,7 @@ public class ChatterGossip extends AbstractGossip {
     protected CriticalQuorum buildCriticalQuorum() {
         final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
         return new CriticalQuorumImpl(
-                platformContext.getMetrics(), selfId.id(), addressBook, false, chatterConfig.criticalQuorumSoftening());
+                platformContext.getMetrics(), selfId, addressBook, false, chatterConfig.criticalQuorumSoftening());
     }
 
     /**

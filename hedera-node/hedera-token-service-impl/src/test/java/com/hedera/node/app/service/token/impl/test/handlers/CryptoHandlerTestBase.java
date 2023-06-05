@@ -22,6 +22,7 @@ import static com.hedera.test.utils.KeyUtils.B_COMPLEX_KEY;
 import static com.hedera.test.utils.KeyUtils.C_COMPLEX_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mock.Strictness.LENIENT;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
@@ -104,6 +105,7 @@ public class CryptoHandlerTestBase {
     protected static final long defaultAutoRenewPeriod = 720000L;
     protected static final long payerBalance = 10_000L;
     protected MapReadableKVState<String, EntityNumValue> readableAliases;
+
     protected MapReadableKVState<EntityNumVirtualKey, Account> readableAccounts;
     protected MapWritableKVState<String, EntityNumValue> writableAliases;
     protected MapWritableKVState<EntityNumVirtualKey, Account> writableAccounts;
@@ -111,16 +113,14 @@ public class CryptoHandlerTestBase {
     protected ReadableAccountStore readableStore;
     protected WritableAccountStore writableStore;
 
-    @Mock
     protected Account deleteAccount;
 
-    @Mock
     protected Account transferAccount;
 
     @Mock
     protected ReadableStates readableStates;
 
-    @Mock
+    @Mock(strictness = LENIENT)
     protected WritableStates writableStates;
 
     @Mock
@@ -128,7 +128,19 @@ public class CryptoHandlerTestBase {
 
     @BeforeEach
     public void setUp() {
-        givenValidAccount();
+        account = givenValidAccount(accountNum);
+        deleteAccount = givenValidAccount(deleteAccountNum)
+                .copyBuilder()
+                .accountNumber(deleteAccountNum)
+                .key(accountKey)
+                .numberPositiveBalances(0)
+                .numberTreasuryTitles(0)
+                .build();
+        transferAccount = givenValidAccount(transferAccountNum)
+                .copyBuilder()
+                .accountNumber(transferAccountNum)
+                .key(key)
+                .build();
         refreshStoresWithCurrentTokenOnlyInReadable();
     }
 
@@ -227,7 +239,43 @@ public class CryptoHandlerTestBase {
         return MapReadableKVState.builder(ALIASES);
     }
 
-    protected void givenValidAccount() {
+    protected Account givenValidAccount(final long accountNum) {
+        return new Account(
+                accountNum,
+                alias.alias(),
+                key,
+                1_234_567L,
+                payerBalance,
+                "testAccount",
+                false,
+                1_234L,
+                1_234_568L,
+                0,
+                true,
+                true,
+                3,
+                2,
+                1,
+                2,
+                10,
+                2,
+                3,
+                false,
+                2,
+                0,
+                1000L,
+                2,
+                72000,
+                0,
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyList(),
+                2,
+                false,
+                null);
+    }
+
+    protected void givenValidContract() {
         account = new Account(
                 accountNum,
                 alias.alias(),
@@ -248,7 +296,7 @@ public class CryptoHandlerTestBase {
                 10,
                 1,
                 3,
-                false,
+                true,
                 2,
                 0,
                 1000L,

@@ -129,7 +129,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
 
     /* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
     private HapiSpec functionCallWithLessThanFourBytesFailsWithinSingleContractCall() {
-        return defaultHapiSpec("FunctionCallWithLessThanFourBytesFailsWithinSingleContractCall")
+        return defaultHapiSpec("functionCallWithLessThanFourBytesFailsWithinSingleContractCall")
                 .given(uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT), contractCreate(THE_GRACEFULLY_FAILING_CONTRACT))
                 .when(contractCall(
                                 THE_GRACEFULLY_FAILING_CONTRACT,
@@ -144,7 +144,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
 
     /* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
     private HapiSpec invalidAbiCallGracefullyFailsWithinSingleContractCall() {
-        return defaultHapiSpec("InvalidAbiCallGracefullyFailsWithinSingleContractCall")
+        return defaultHapiSpec("invalidAbiCallGracefullyFailsWithinSingleContractCall")
                 .given(uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT), contractCreate(THE_GRACEFULLY_FAILING_CONTRACT))
                 .when(contractCall(
                                 THE_GRACEFULLY_FAILING_CONTRACT,
@@ -161,7 +161,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
 
     /* -- HSCS-PREC-26 from HTS Precompile Test Plan -- */
     private HapiSpec nonSupportedAbiCallGracefullyFailsWithinSingleContractCall() {
-        return defaultHapiSpec("NonSupportedAbiCallGracefullyFailsWithinSingleContractCall")
+        return defaultHapiSpec("nonSupportedAbiCallGracefullyFailsWithinSingleContractCall")
                 .given(uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT), contractCreate(THE_GRACEFULLY_FAILING_CONTRACT))
                 .when(contractCall(
                                 THE_GRACEFULLY_FAILING_CONTRACT,
@@ -178,7 +178,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
-        return defaultHapiSpec("NonSupportedAbiCallGracefullyFails")
+        return defaultHapiSpec("nonSupportedAbiCallGracefullyFailsWithMultipleContractCalls")
                 .given(
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY),
@@ -227,7 +227,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final var invalidAbiArgument = new byte[20];
 
-        return defaultHapiSpec("InvalidlyFormattedAbiCallGracefullyFails")
+        return defaultHapiSpec("invalidlyFormattedAbiCallGracefullyFailsWithMultipleContractCalls")
                 .given(
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY),
@@ -407,7 +407,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
                 Address.wrap(Address.toChecksumAddress("0xabababababababababababababababababababab"));
         final var txn = "txn";
 
-        return defaultHapiSpec("AssociateWithMissingEvmAddressHasSaneTxnAndRecord")
+        return defaultHapiSpec("associateWithMissingEvmAddressHasSaneTxnAndRecord")
                 .given(
                         cryptoCreate(TOKEN_TREASURY),
                         uploadInitCode(INNER_CONTRACT),
@@ -427,7 +427,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
 
     /* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
     private HapiSpec invalidSingleAbiCallConsumesAllProvidedGas() {
-        return defaultHapiSpec("InvalidSingleAbiCallConsumesAllProvidedGas")
+        return defaultHapiSpec("invalidSingleAbiCallConsumesAllProvidedGas")
                 .given(uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT), contractCreate(THE_GRACEFULLY_FAILING_CONTRACT))
                 .when(
                         contractCall(

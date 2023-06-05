@@ -22,13 +22,12 @@ plugins {
 description = "Hedera Configuration"
 
 dependencies {
-  implementation(project(":hedera-node:hedera-mono-service"))
-  implementation(project(":hedera-node:hapi-utils"))
-  implementation(libs.swirlds.config)
-  compileOnlyApi(libs.spotbugs.annotations)
-
-  testImplementation(testLibs.bundles.testing)
-
-  testFixturesImplementation(libs.swirlds.test.framework)
-  testFixturesCompileOnlyApi(libs.spotbugs.annotations)
+  javaModuleDependencies {
+    testImplementation(gav("org.assertj.core"))
+    testImplementation(gav("org.hyperledger.besu.datatypes"))
+    testImplementation(gav("org.junit.jupiter.api"))
+    testImplementation(gav("org.junit.jupiter.params"))
+    testImplementation(gav("org.mockito"))
+    testImplementation(gav("org.mockito.junit.jupiter"))
+  }
 }

@@ -249,7 +249,8 @@ public class SyncGossip extends AbstractGossip {
                                             stateManagementComponent,
                                             reconnectConfig.asyncStreamTimeoutMilliseconds(),
                                             reconnectMetrics,
-                                            reconnectController),
+                                            reconnectController,
+                                            fallenBehindManager),
                                     new ReconnectProtocol(
                                             threadManager,
                                             otherId,
@@ -306,7 +307,7 @@ public class SyncGossip extends AbstractGossip {
     @NonNull
     @Override
     protected CriticalQuorum buildCriticalQuorum() {
-        return new CriticalQuorumImpl(platformContext.getMetrics(), selfId.id(), addressBook);
+        return new CriticalQuorumImpl(platformContext.getMetrics(), selfId, addressBook);
     }
 
     /**

@@ -139,7 +139,7 @@ public class ContractHTSSuite extends HapiSuite {
         final var tokenWithHbarFee = "tokenWithHbarFee";
         final var theContract = "TransferAmountAndToken";
 
-        return defaultHapiSpec("HSCS_PREC_017_rollback_after_insufficient_balance")
+        return defaultHapiSpec("hscsPrec017RollbackAfterInsufficientBalance")
                 .given(
                         newKeyNamed(supplyKey),
                         cryptoCreate(alice).balance(7 * ONE_HBAR),

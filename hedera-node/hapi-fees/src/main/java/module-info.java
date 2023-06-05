@@ -14,12 +14,14 @@ module com.hedera.node.app.hapi.fees {
     exports com.hedera.node.app.hapi.fees.usage.contract;
     exports com.hedera.node.app.hapi.fees.usage.token.entities;
 
+    requires transitive com.hedera.hashgraph.protobuf.java.api;
     requires transitive com.hedera.node.app.hapi.utils;
-    requires com.github.spotbugs.annotations;
+    requires transitive com.google.common;
+    requires transitive com.google.protobuf;
+    requires transitive dagger;
+    requires transitive javax.inject;
     requires com.fasterxml.jackson.databind;
-    requires org.apache.logging.log4j;
-    requires javax.inject;
-    requires com.google.protobuf;
+    requires com.github.spotbugs.annotations;
     requires org.apache.commons.lang3;
-    requires com.google.common;
+    requires org.apache.logging.log4j;
 }

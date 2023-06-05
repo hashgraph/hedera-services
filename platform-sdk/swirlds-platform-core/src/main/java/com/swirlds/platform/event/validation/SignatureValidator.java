@@ -20,6 +20,7 @@ import static com.swirlds.logging.LogMarker.EVENT_SIG;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.INVALID_EVENT_ERROR;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.BaseEvent;
@@ -84,7 +85,7 @@ public class SignatureValidator implements GossipEventValidator {
      */
     @Override
     public boolean isEventValid(final GossipEvent event) {
-        final long creatorId = event.getHashedData().getCreatorId();
+        final NodeId creatorId = event.getHashedData().getCreatorId();
         final Address address = addressBook.getAddress(creatorId);
         if (address == null) {
             logger.error(EXCEPTION.getMarker(), "Cannot find address for creator with ID: {}", () -> creatorId);

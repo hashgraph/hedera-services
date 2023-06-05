@@ -257,14 +257,6 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
         if (trigger == InitTrigger.GENESIS) {
             logger.info(MARKER, "Doing genesis initialization");
             genesisInit(platform);
-        } else {
-            if (virtualMap != null) {
-                // enable full rehash on load
-                logger.info(MARKER, "Doing full rehash for the initialized VirtualMap");
-                // the tree leaves no longer contain hashes, so we need to rehash
-                virtualMap.fullLeafRehash();
-                logger.info(MARKER, "Full rehash is complete");
-            }
         }
     }
 
