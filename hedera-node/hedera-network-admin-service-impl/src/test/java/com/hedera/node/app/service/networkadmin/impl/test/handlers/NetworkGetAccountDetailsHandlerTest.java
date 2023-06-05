@@ -32,9 +32,16 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.base.ResponseType;
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
+import com.hedera.hapi.node.state.token.AccountCryptoAllowance;
+import com.hedera.hapi.node.state.token.AccountFungibleTokenAllowance;
 import com.hedera.hapi.node.token.AccountDetails;
 import com.hedera.hapi.node.token.GetAccountDetailsQuery;
 import com.hedera.hapi.node.token.GetAccountDetailsResponse;
+import com.hedera.hapi.node.token.GrantedCryptoAllowance;
+import com.hedera.hapi.node.token.GrantedNftAllowance;
+import com.hedera.hapi.node.token.GrantedTokenAllowance;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkGetAccountDetailsHandler;
@@ -44,7 +51,9 @@ import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -129,8 +138,6 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
 
     @Test
     void getsResponseIsEmptyWhenAccountNotExist() {
-        givenValidAccount(true);
-        refreshStoresWithEntitiesOnlyInReadable();
         final var responseHeader = ResponseHeader.newBuilder()
                 .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
                 .build();
@@ -149,12 +156,13 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
 
     @Test
     void getsResponseIfFileDeletedOkResponse() {
-        givenValidAccount(true);
+        givenValidAccount(true, Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
         refreshStoresWithEntitiesOnlyInReadable();
         final var responseHeader = ResponseHeader.newBuilder()
                 .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
                 .build();
-        final var expectedInfo = getExpectedInfo(true);
+        final var expectedInfo =
+                getExpectedInfo(true, Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
 
         final var query = createGetAccountDetailsQuery(accountNum);
         when(context.query()).thenReturn(query);
@@ -173,7 +181,8 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
         final var responseHeader = ResponseHeader.newBuilder()
                 .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
                 .build();
-        final var expectedInfo = getExpectedInfo(false);
+        final var expectedInfo =
+                getExpectedInfo(false, Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
 
         final var query = createGetAccountDetailsQuery(accountNum);
         when(context.query()).thenReturn(query);
@@ -187,7 +196,60 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
         assertEquals(expectedInfo, accountDetailsResponse.accountDetails());
     }
 
-    private AccountDetails getExpectedInfo(boolean deleted) {
+    @Test
+    void getsResponseIfOkResponseWhenAllowancesListAsExpected() {
+        List<AccountCryptoAllowance> cryptoAllowancesList = new ArrayList<>();
+        AccountCryptoAllowance cryptoAllowance = new AccountCryptoAllowance(123L, 456L);
+        cryptoAllowancesList.add(cryptoAllowance);
+        List<AccountApprovalForAllAllowance> accountApprovalForAllAllowanceList = new ArrayList<>();
+        AccountApprovalForAllAllowance accountApprovalForAllAllowance = new AccountApprovalForAllAllowance(456L, 567L);
+        accountApprovalForAllAllowanceList.add(accountApprovalForAllAllowance);
+        List<AccountFungibleTokenAllowance> accountFungibleTokenAllowanceList = new ArrayList<>();
+        AccountFungibleTokenAllowance accountFungibleTokenAllowance =
+                new AccountFungibleTokenAllowance(789L, 890L, 901L);
+        accountFungibleTokenAllowanceList.add(accountFungibleTokenAllowance);
+        givenValidAccount(
+                false, cryptoAllowancesList, accountApprovalForAllAllowanceList, accountFungibleTokenAllowanceList);
+        refreshStoresWithEntitiesOnlyInReadable();
+        final var responseHeader = ResponseHeader.newBuilder()
+                .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
+                .build();
+
+        List<GrantedCryptoAllowance> grantedCryptoAllowancesList = new ArrayList<>();
+        GrantedCryptoAllowance grantedCryptoAllowance = new GrantedCryptoAllowance(
+                AccountID.newBuilder().accountNum(123L).build(), 456L);
+        grantedCryptoAllowancesList.add(grantedCryptoAllowance);
+        List<GrantedNftAllowance> grantedNftAllowancesList = new ArrayList<>();
+        GrantedNftAllowance grantedNftAllowance = new GrantedNftAllowance(
+                TokenID.newBuilder().tokenNum(456L).build(),
+                AccountID.newBuilder().accountNum(567L).build());
+        grantedNftAllowancesList.add(grantedNftAllowance);
+        List<GrantedTokenAllowance> grantedTokenAllowancesList = new ArrayList<>();
+        GrantedTokenAllowance grantedTokenAllowance = new GrantedTokenAllowance(
+                TokenID.newBuilder().tokenNum(789L).build(),
+                AccountID.newBuilder().accountNum(890L).build(),
+                901L);
+        grantedTokenAllowancesList.add(grantedTokenAllowance);
+        final var expectedInfo = getExpectedInfo(
+                false, grantedCryptoAllowancesList, grantedNftAllowancesList, grantedTokenAllowancesList);
+
+        final var query = createGetAccountDetailsQuery(accountNum);
+        when(context.query()).thenReturn(query);
+        when(context.createStore(ReadableAccountStore.class)).thenReturn(readableAccountStore);
+        when(context.createStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
+        when(context.createStore(ReadableTokenRelationStore.class)).thenReturn(readableTokenRelStore);
+
+        final var response = networkGetAccountDetailsHandler.findResponse(context, responseHeader);
+        final var accountDetailsResponse = response.accountDetailsOrThrow();
+        assertEquals(ResponseCodeEnum.OK, accountDetailsResponse.header().nodeTransactionPrecheckCode());
+        assertEquals(expectedInfo, accountDetailsResponse.accountDetails());
+    }
+
+    private AccountDetails getExpectedInfo(
+            boolean deleted,
+            List<GrantedCryptoAllowance> grantedCryptoAllowances,
+            List<GrantedNftAllowance> grantedNftAllowances,
+            List<GrantedTokenAllowance> grantedTokenAllowances) {
         return AccountDetails.newBuilder()
                 .accountId(AccountID.newBuilder().accountNum(accountNum).build())
                 .contractAccountId(NetworkAdminServiceUtil.asHexedEvmAddress(
@@ -202,9 +264,9 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
                 .maxAutomaticTokenAssociations(10)
                 .alias(alias.alias())
                 .ledgerId(ledgerId)
-                .grantedCryptoAllowances(Collections.emptyList())
-                .grantedNftAllowances(Collections.emptyList())
-                .grantedTokenAllowances(Collections.emptyList())
+                .grantedCryptoAllowances(grantedCryptoAllowances)
+                .grantedNftAllowances(grantedNftAllowances)
+                .grantedTokenAllowances(grantedTokenAllowances)
                 .tokenRelationships(Collections.emptyList())
                 .build();
     }

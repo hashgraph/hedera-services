@@ -19,7 +19,11 @@ package com.hedera.node.app.service.networkadmin.impl.test.handlers;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
+import com.hedera.hapi.node.state.token.AccountCryptoAllowance;
+import com.hedera.hapi.node.state.token.AccountFungibleTokenAllowance;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
@@ -35,13 +39,12 @@ import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
-@ExtendWith(MockitoExtension.class)
 public class NetworkAdminHandlerTestBase {
     public static final String ACCOUNTS = "ACCOUNTS";
     protected static final String TOKENS = "TOKENS";
@@ -70,6 +73,9 @@ public class NetworkAdminHandlerTestBase {
     protected final EntityNumPair nonFungiblePair =
             EntityNumPair.fromLongs(accountNum.longValue(), nonFungibleTokenNum.longValue());
 
+    protected final TokenID tokenId =
+            TokenID.newBuilder().tokenNum(fungibleTokenNum.longValue()).build();
+
     protected MapReadableKVState<EntityNumVirtualKey, Account> readableAccounts;
     protected MapReadableKVState<EntityNum, Token> readableTokenState;
     protected MapReadableKVState<EntityNumPair, TokenRelation> readableTokenRelState;
@@ -96,7 +102,7 @@ public class NetworkAdminHandlerTestBase {
 
     @BeforeEach
     void commonSetUp() {
-        givenValidAccount(false);
+        givenValidAccount(false, Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
         refreshStoresWithEntitiesOnlyInReadable();
     }
 
@@ -153,7 +159,11 @@ public class NetworkAdminHandlerTestBase {
                 .build();
     }
 
-    protected void givenValidAccount(boolean isDeleted) {
+    protected void givenValidAccount(
+            boolean isDeleted,
+            @Nullable List<AccountCryptoAllowance> cryptoAllowances,
+            @Nullable List<AccountApprovalForAllAllowance> approveForAllNftAllowances,
+            @Nullable List<AccountFungibleTokenAllowance> tokenAllowances) {
         account = new Account(
                 accountNum,
                 alias.alias(),
@@ -181,9 +191,9 @@ public class NetworkAdminHandlerTestBase {
                 2,
                 72000,
                 0,
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyList(),
+                cryptoAllowances,
+                approveForAllNftAllowances,
+                tokenAllowances,
                 2,
                 false,
                 null);
