@@ -151,6 +151,8 @@ public record MerkleDbConfig(
         @ConfigProperty(defaultValue = "262144") int reservedBufferLengthForLeafList,
         @ConfigProperty(defaultValue = "1048576") int leafRecordCacheSize) {
 
+    static double UNIT_FRACTION_PERCENT = 100.0;
+
     public ConfigViolation maxNumberOfFilesInMergeValidation(final Configuration configuration) {
         final long maxNumberOfFilesInMerge =
                 configuration.getConfigData(MerkleDbConfig.class).maxNumberOfFilesInMerge();
@@ -180,5 +182,13 @@ public record MerkleDbConfig(
                     "Cannot configure minNumberOfFilesInMerge to " + minNumberOfFilesInMerge + ", it must be >= 2");
         }
         return null;
+    }
+
+    public int getNumHalfDiskHashMapFlushThreads() {
+        final int numProcessors = Runtime.getRuntime().availableProcessors();
+        final int threads = (numHalfDiskHashMapFlushThreads() == -1)
+                ? (int) (numProcessors * (percentHalfDiskHashMapFlushThreads() / UNIT_FRACTION_PERCENT))
+                : numHalfDiskHashMapFlushThreads();
+        return Math.max(1, threads);
     }
 }

@@ -135,7 +135,7 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
 
     /** Executor for parallel bucket reads/updates in {@link #endWriting()} */
     private static final ExecutorService flushExecutor = Executors.newFixedThreadPool(
-            config.numHalfDiskHashMapFlushThreads(),
+            config.getNumHalfDiskHashMapFlushThreads(),
             new ThreadConfiguration(getStaticThreadManager())
                     .setComponent(MERKLEDB_COMPONENT)
                     .setThreadName("HalfDiskHashMap Flushing")
