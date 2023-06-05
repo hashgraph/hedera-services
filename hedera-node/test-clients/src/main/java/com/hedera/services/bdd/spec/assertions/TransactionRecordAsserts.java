@@ -30,7 +30,9 @@ import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hederahashgraph.api.proto.java.*;
 import java.lang.reflect.Method;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -199,6 +201,23 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
         this.<TransactionReceipt>registerTypedProvider(RECEIPT, spec -> receipt -> {
             try {
                 assertEquals(versionNumber, receipt.getTopicRunningHashVersion(), "Bad TopicRunningHashVerions!");
+            } catch (Throwable t) {
+                return List.of(t);
+            }
+            return EMPTY_LIST;
+        });
+        return this;
+    }
+
+    public TransactionRecordAsserts contractWithIdHasContractNonces(
+            final ContractID contractID, final Long expectedNonce) {
+        this.<ContractFunctionResult>registerTypedProvider("contractCreateResult", spec -> fnResult -> {
+            try {
+                Map<ContractID, Long> contractNonces = new HashMap<>();
+                for (final var contractNonceItem : fnResult.getContractNoncesList()) {
+                    contractNonces.put(contractNonceItem.getContractId(), contractNonceItem.getNonce());
+                }
+                assertEquals(expectedNonce, contractNonces.get(contractID), "Wrong nonce expectations");
             } catch (Throwable t) {
                 return List.of(t);
             }

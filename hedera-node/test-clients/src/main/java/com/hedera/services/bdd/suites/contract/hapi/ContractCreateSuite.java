@@ -76,6 +76,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.keys.KeyShape;
+import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
@@ -126,8 +127,7 @@ public class ContractCreateSuite extends HapiSuite {
                 blockTimestampChangesWithinFewSeconds(),
                 contractWithAutoRenewNeedSignatures(),
                 createContractWithStakingFields(),
-                contractCreateNoncesExternalization(),
-                contractCreateNoncesExternalizationAndRevert());
+                contractCreateNoncesExternalizationHappyPath());
     }
 
     @Override
@@ -135,73 +135,20 @@ public class ContractCreateSuite extends HapiSuite {
         return true;
     }
 
-    private HapiSpec contractCreateNoncesExternalization() {
+    private HapiSpec contractCreateNoncesExternalizationHappyPath() {
         final var contract = "NoncesExternalization";
-        final var payer = "payer";
-        final var deployParentContract = "deployParentContract";
-        final var deployChildFromParentFn = "deployChildFromParentContract";
+        final var contractCreateFn = "deployContract";
 
-        final var deployContractTxn = "deployContractTxn";
-        final var deployContractTxnTwo = "deployContractTxnTwo";
-        final var deployChildFromParentTxn = "deployChildFromParentContractTx";
-        final var deployChildFromParentTxn2 = "deployChildFromParentContractTxTwo";
-
-        return defaultHapiSpec("ContractCreateNoncesExternalization")
-                .given(
-                        cryptoCreate(payer).balance(10 * ONE_HUNDRED_HBARS),
-                        uploadInitCode(contract),
-                        contractCreate(contract))
-                .when(withOpContext((spec, opLog) -> allRunFor(
-                        spec,
-                        contractCall(contract, deployParentContract)
-                                .payingWith(payer)
-                                .via(deployContractTxn)
-                                .gas(GAS_TO_OFFER)
-                                .hasKnownStatus(SUCCESS),
-                        contractCall(contract, deployParentContract)
-                                .payingWith(payer)
-                                .via(deployContractTxnTwo)
-                                .gas(GAS_TO_OFFER)
-                                .hasKnownStatus(SUCCESS),
-                        contractCall(contract, deployChildFromParentFn, BigInteger.valueOf(0))
-                                .payingWith(payer)
-                                .via(deployChildFromParentTxn)
-                                .gas(GAS_TO_OFFER)
-                                .hasKnownStatus(SUCCESS),
-                        contractCall(contract, deployChildFromParentFn, BigInteger.valueOf(0))
-                                .payingWith(payer)
-                                .via(deployChildFromParentTxn2)
-                                .gas(GAS_TO_OFFER)
-                                .hasKnownStatus(SUCCESS))))
-                .then(
-                        getTxnRecord(deployContractTxn).andAllChildRecords().logged(),
-                        getTxnRecord(deployContractTxnTwo).andAllChildRecords().logged(),
-                        getTxnRecord(deployChildFromParentTxn)
-                                .andAllChildRecords()
-                                .logged(),
-                        getTxnRecord(deployChildFromParentTxn2)
-                                .andAllChildRecords()
-                                .logged());
-    }
-
-    private HapiSpec contractCreateNoncesExternalizationAndRevert() {
-        final var contract = "NoncesExternalization";
-        final var payer = "payer";
-        final var deployParentContractAndRevert = "deployParentContractAndRevert";
-
-        final var deployContractAndRevertTxn = "deployParentContractAndRevertTxn";
-
-        return defaultHapiSpec("ContractCreateNoncesExternalization")
-                .given(
-                        cryptoCreate(payer).balance(10 * ONE_HUNDRED_HBARS),
-                        uploadInitCode(contract),
-                        contractCreate(contract))
-                .when(contractCall(contract, deployParentContractAndRevert)
-                        .payingWith(payer)
-                        .via(deployContractAndRevertTxn)
-                        .gas(GAS_TO_OFFER)
-                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
-                .then(getTxnRecord(deployContractAndRevertTxn).andAllChildRecords().logged());
+        return defaultHapiSpec("ContractCreateNoncesExternalizationHappyPath")
+                .given(uploadInitCode(contract), contractCreate(contract).via(contractCreateFn))
+                .when()
+                .then(withOpContext((spec, opLog) -> {
+                    HapiGetTxnRecord op = getTxnRecord(contractCreateFn)
+                            .hasPriority(recordWith()
+                                    .contractWithIdHasContractNonces(
+                                            spec.registry().getContractId(contract), 4L));
+                    allRunFor(spec, op);
+                }));
     }
 
     HapiSpec createContractWithStakingFields() {
