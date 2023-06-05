@@ -16,7 +16,7 @@
 
 package com.hedera.node.config.converter;
 
-import com.hedera.node.app.service.mono.context.properties.EntityType;
+import com.hedera.node.app.spi.validation.EntityType;
 import com.swirlds.config.api.converter.ConfigConverter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 

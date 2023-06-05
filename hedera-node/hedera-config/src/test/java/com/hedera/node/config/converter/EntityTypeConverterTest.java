@@ -19,7 +19,7 @@ package com.hedera.node.config.converter;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.hedera.node.app.service.mono.context.properties.EntityType;
+import com.hedera.node.app.spi.validation.EntityType;
 import org.junit.jupiter.api.Test;
 
 class EntityTypeConverterTest {

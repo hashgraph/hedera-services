@@ -16,16 +16,18 @@
 
 package com.hedera.node.config.data;
 
+import com.hedera.node.app.service.mono.ledger.accounts.staking.StakeStartupHelper.RecomputeType;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
+import java.util.Set;
 
 @ConfigData("staking")
 public record StakingConfig(
         @ConfigProperty(defaultValue = "1440") long periodMins,
         @ConfigProperty(value = "rewardHistory.numStoredPeriods", defaultValue = "365")
                 int rewardHistoryNumStoredPeriods,
-        // ConfigProperty(value = "startupHelper.recompute", defaultValue = "NODE_STAKES,PENDING_REWARDS")
-        // Set<StakeStartupHelper.RecomputeType> startupHelperRecompute
+        @ConfigProperty(value = "startupHelper.recompute", defaultValue = "NODE_STAKES,PENDING_REWARDS")
+                Set<RecomputeType> startupHelperRecompute,
         @ConfigProperty(value = "fees.nodeRewardPercentage", defaultValue = "0") int feesNodeRewardPercentage,
         @ConfigProperty(value = "fees.stakingRewardPercentage", defaultValue = "0") int feesStakingRewardPercentage,
         // @ConfigProperty(defaultValue = "") Map<Long, Long> nodeMaxToMinStakeRatios,

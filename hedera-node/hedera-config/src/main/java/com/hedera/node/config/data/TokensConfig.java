@@ -16,6 +16,7 @@
 
 package com.hedera.node.config.data;
 
+import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ScaleFactor;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
@@ -38,7 +39,7 @@ public record TokensConfig(
         @ConfigProperty(value = "nfts.maxAllowedMints", defaultValue = "5000000") long nftsMaxAllowedMints,
         @ConfigProperty(value = "nfts.maxQueryRange", defaultValue = "100") long nftsMaxQueryRange,
         @ConfigProperty(value = "nfts.useTreasuryWildcards", defaultValue = "true") boolean nftsUseTreasuryWildcards,
-        // @ConfigProperty(value = "nfts.mintThrottleScaleFactor", defaultValue = "5:2") ScaleFactor
-        // nftsMintThrottleScaleFactor,
+        @ConfigProperty(value = "nfts.mintThrottleScaleFactor", defaultValue = "5:2")
+                ScaleFactor nftsMintThrottleScaleFactor,
         @ConfigProperty(value = "nfts.useVirtualMerkle", defaultValue = "false") boolean nftsUseVirtualMerkle,
         @ConfigProperty(value = "autoCreations.isEnabled", defaultValue = "true") boolean autoCreationsIsEnabled) {}

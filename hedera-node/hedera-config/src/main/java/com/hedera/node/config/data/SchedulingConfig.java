@@ -16,16 +16,18 @@
 
 package com.hedera.node.config.data;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
+import java.util.Set;
 
 @ConfigData("scheduling")
 public record SchedulingConfig(
         @ConfigProperty(defaultValue = "false") boolean longTermEnabled,
         @ConfigProperty(defaultValue = "100") long maxTxnPerSec,
         @ConfigProperty(defaultValue = "10000000") long maxNumber,
-        @ConfigProperty(defaultValue = "5356800") long maxExpirationFutureSeconds
-        // @ConfigProperty(defaultValue =
-        // "ConsensusSubmitMessage,CryptoTransfer,TokenMint,TokenBurn,CryptoApproveAllowance") Set<HederaFunctionality>
-        // whitelist
-        ) {}
+        @ConfigProperty(defaultValue = "5356800") long maxExpirationFutureSeconds,
+        @ConfigProperty(
+                        defaultValue =
+                                "CONSENSUS_SUBMIT_MESSAGE,CRYPTO_TRANSFER,TOKEN_MINT,TOKEN_BURN,CRYPTO_APPROVE_ALLOWANCE")
+                Set<HederaFunctionality> whitelist) {}

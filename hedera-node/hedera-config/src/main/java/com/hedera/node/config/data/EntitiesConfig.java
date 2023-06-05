@@ -16,11 +16,13 @@
 
 package com.hedera.node.config.data;
 
+import com.hedera.node.app.spi.validation.EntityType;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
+import java.util.Set;
 
 @ConfigData("entities")
 public record EntitiesConfig(
         @ConfigProperty(defaultValue = "3153600000") long maxLifetime,
-        // @ConfigProperty(defaultValue = "FILE") Set<EntityType> systemDeletable
+        @ConfigProperty(defaultValue = "FILE") Set<EntityType> systemDeletable,
         @ConfigProperty(defaultValue = "false") boolean limitTokenAssociations) {}

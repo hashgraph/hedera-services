@@ -16,12 +16,15 @@
 
 package com.hedera.node.config.data;
 
+import com.hedera.node.app.service.mono.throttling.MapAccessType;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
+import java.util.List;
 
 @ConfigData("expiry")
-public record ExpiryConfig(@ConfigProperty(defaultValue = "expiry-throttle.json") String throttleResource
-        // @ConfigProperty(defaultValue =
-        // "ACCOUNTS_GET,ACCOUNTS_GET_FOR_MODIFY,STORAGE_GET,STORAGE_GET,STORAGE_REMOVE,STORAGE_PUT")
-        // List<MapAccessType> minCycleEntryCapacity
-        ) {}
+public record ExpiryConfig(
+        @ConfigProperty(defaultValue = "expiry-throttle.json") String throttleResource,
+        @ConfigProperty(
+                        defaultValue =
+                                "ACCOUNTS_GET,ACCOUNTS_GET_FOR_MODIFY,STORAGE_GET,STORAGE_GET,STORAGE_REMOVE,STORAGE_PUT")
+                List<MapAccessType> minCycleEntryCapacity) {}

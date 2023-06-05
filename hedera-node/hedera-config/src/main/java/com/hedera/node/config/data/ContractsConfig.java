@@ -16,8 +16,12 @@
 
 package com.hedera.node.config.data;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.streams.SidecarType;
+import com.hedera.node.app.service.mono.keys.LegacyContractIdActivations;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
+import java.util.Set;
 
 @ConfigData("contracts")
 public record ContractsConfig(
@@ -28,13 +32,15 @@ public record ContractsConfig(
         @ConfigProperty(defaultValue = "0til100M,2000til450M") String storageSlotPriceTiers,
         @ConfigProperty(defaultValue = "7890000") long defaultLifetime,
         // @ConfigProperty(defaultValue = "") KnownBlockValues knownBlockHash,
-        // @ConfigProperty(value = "keys.legacyActivations", defaultValue="1058134by[1062784]")
-        // LegacyContractIdActivations keysLegacyActivations,
+        @ConfigProperty(value = "keys.legacyActivations", defaultValue = "1058134by[1062784]")
+                LegacyContractIdActivations keysLegacyActivations,
         @ConfigProperty(value = "localCall.estRetBytes", defaultValue = "32") int localCallEstRetBytes,
         @ConfigProperty(defaultValue = "true") boolean allowCreate2,
         @ConfigProperty(defaultValue = "false") boolean allowAutoAssociations,
-        // @ConfigProperty(defaultValue =
-        // "TokenAssociateToAccount,TokenDissociateFromAccount,TokenFreezeAccount,TokenUnfreezeAccount,TokenGrantKycToAccount,TokenRevokeKycFromAccount,TokenAccountWipe,TokenBurn,TokenDelete,TokenMint,TokenUnpause,TokenPause,TokenCreate,TokenUpdate,ContractCall,CryptoTransfer") Set<HederaFunctionality> allowSystemUseOfHapiSigs,
+        @ConfigProperty(
+                        defaultValue =
+                                "TOKEN_ASSOCIATE_TO_ACCOUNT,TOKEN_DISSOCIATE_FROM_ACCOUNT,TOKEN_FREEZE_ACCOUNT,TOKEN_UNFREEZE_ACCOUNT,TOKEN_GRANT_KYC_TO_ACCOUNT,TOKEN_REVOKE_KYC_FROM_ACCOUNT,TOKEN_ACCOUNT_WIPE,TOKEN_BURN,TOKEN_DELETE,TOKEN_MINT,TOKEN_UNPAUSE,TOKEN_PAUSE,TOKEN_CREATE,TOKEN_UPDATE,CONTRACT_CALL,CRYPTO_TRANSFER")
+                Set<HederaFunctionality> allowSystemUseOfHapiSigs,
         @ConfigProperty(defaultValue = "10000000") long maxNumWithHapiSigsAccess,
         // @ConfigProperty(defaultValue = "") Set<Address> withSpecialHapiSigsAccess,
         @ConfigProperty(defaultValue = "false") boolean enforceCreationThrottle,
@@ -43,8 +49,8 @@ public record ContractsConfig(
         @ConfigProperty(value = "maxKvPairs.individual", defaultValue = "163840") int maxKvPairsIndividual,
         @ConfigProperty(defaultValue = "5000000") long maxNumber,
         @ConfigProperty(defaultValue = "295") int chainId,
-        // @ConfigProperty(defaultValue = "CONTRACT_STATE_CHANGE,CONTRACT_BYTECODE,CONTRACT_ACTION") Set<SidecarType>
-        // sidecars,
+        @ConfigProperty(defaultValue = "CONTRACT_STATE_CHANGE,CONTRACT_BYTECODE,CONTRACT_ACTION")
+                Set<SidecarType> sidecars,
         @ConfigProperty(defaultValue = "false") boolean sidecarValidationEnabled,
         @ConfigProperty(value = "throttle.throttleByGas", defaultValue = "true") boolean throttleThrottleByGas,
         @ConfigProperty(defaultValue = "20") int maxRefundPercentOfGasLimit,

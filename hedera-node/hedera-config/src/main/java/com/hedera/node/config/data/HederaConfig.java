@@ -16,6 +16,7 @@
 
 package com.hedera.node.config.data;
 
+import com.hedera.node.app.service.mono.context.properties.Profile;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
@@ -46,7 +47,7 @@ public record HederaConfig(
         @ConfigProperty(value = "prefetch.queueCapacity", defaultValue = "70000") int prefetchQueueCapacity,
         @ConfigProperty(value = "prefetch.threadPoolSize", defaultValue = "4") int prefetchThreadPoolSize,
         @ConfigProperty(value = "prefetch.codeCacheTtlSecs", defaultValue = "600") int prefetchCodeCacheTtlSecs,
-        // @ConfigProperty(value = "profiles.active", defaultValue = "PROD") Profile profilesActive,
+        @ConfigProperty(value = "profiles.active", defaultValue = "PROD") Profile profilesActive,
         @ConfigProperty(value = "recordStream.isEnabled", defaultValue = "true") boolean recordStreamIsEnabled,
         @ConfigProperty(value = "recordStream.logDir", defaultValue = "/opt/hgcapp/recordStreams")
                 String recordStreamLogDir,
