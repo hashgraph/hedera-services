@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.networkadmin.impl.test.handlers;
 
-
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.utils.TxnUtils.payerSponsoredPbjTransfer;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -198,7 +197,8 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
     private AccountDetails getExpectedInfo(boolean deleted) {
         return AccountDetails.newBuilder()
                 .accountId(AccountID.newBuilder().accountNum(accountNum).build())
-                .contractAccountId(NetworkAdminServiceUtil.asHexedEvmAddress(AccountID.newBuilder().accountNum(accountNum).build()))
+                .contractAccountId(NetworkAdminServiceUtil.asHexedEvmAddress(
+                        AccountID.newBuilder().accountNum(accountNum).build()))
                 .deleted(deleted)
                 .key(key)
                 .balance(payerBalance)

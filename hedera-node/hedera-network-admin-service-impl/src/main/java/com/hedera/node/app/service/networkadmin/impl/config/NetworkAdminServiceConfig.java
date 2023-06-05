@@ -28,5 +28,5 @@ import com.swirlds.config.api.ConfigProperty;
 @ConfigData("networkAdmin")
 public record NetworkAdminServiceConfig(
         @ConfigProperty(defaultValue = "/opt/hgcapp/services-hedera/HapiApp2.0/data/upgrade/current")
-        String upgradeArtifactsPath,
+                String upgradeArtifactsPath,
         @ConfigProperty(defaultValue = "10") int maxTokensForAccountInfo) {}

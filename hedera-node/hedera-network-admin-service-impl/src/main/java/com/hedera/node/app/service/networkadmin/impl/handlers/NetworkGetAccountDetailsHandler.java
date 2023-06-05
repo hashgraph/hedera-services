@@ -47,7 +47,6 @@ import com.hedera.hapi.node.token.GrantedNftAllowance;
 import com.hedera.hapi.node.token.GrantedTokenAllowance;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
-
 import com.hedera.node.app.service.networkadmin.impl.config.NetworkAdminServiceConfig;
 import com.hedera.node.app.service.networkadmin.impl.utils.NetworkAdminServiceUtil;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -72,10 +71,8 @@ import javax.inject.Singleton;
 @Singleton
 public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
 
-
     @Inject
-    public NetworkGetAccountDetailsHandler() {
-    }
+    public NetworkGetAccountDetailsHandler() {}
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {
@@ -126,15 +123,14 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
         final var account = op.accountIdOrElse(AccountID.DEFAULT);
         final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
 
-
         final var responseType = op.headerOrElse(QueryHeader.DEFAULT).responseType();
         responseBuilder.header(header);
         if (header.nodeTransactionPrecheckCode() == OK && responseType != COST_ANSWER) {
             final var networkAdminConfig = context.configuration().getConfigData(NetworkAdminServiceConfig.class);
             final var readableTokenStore = context.createStore(ReadableTokenStore.class);
             final var tokenRelationStore = context.createStore(ReadableTokenRelationStore.class);
-            final var optionalInfo =
-                    infoForAccount(account, accountStore, networkAdminConfig, readableTokenStore, tokenRelationStore, ledgerConfig);
+            final var optionalInfo = infoForAccount(
+                    account, accountStore, networkAdminConfig, readableTokenStore, tokenRelationStore, ledgerConfig);
             optionalInfo.ifPresent(responseBuilder::accountDetails);
         }
 

@@ -16,30 +16,17 @@
 
 package com.hedera.node.app.service.networkadmin.impl.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
-import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
-import com.hedera.hapi.node.network.NetworkGetVersionInfoQuery;
 import com.hedera.hapi.node.network.NetworkGetVersionInfoResponse;
-import com.hedera.hapi.node.token.GetAccountDetailsQuery;
-import com.hedera.hapi.node.token.GetAccountDetailsResponse;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
-import com.hedera.node.app.service.networkadmin.impl.config.NetworkAdminServiceConfig;
-import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.service.token.ReadableTokenRelationStore;
-import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
-import com.hedera.node.config.data.LedgerConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -47,7 +34,6 @@ import javax.inject.Singleton;
 /**
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#GET_VERSION_INFO}.
  */
-// to read from property files or from jar file to get version info
 @Singleton
 public class NetworkGetVersionInfoHandler extends PaidQueryHandler {
     @Inject
@@ -70,30 +56,14 @@ public class NetworkGetVersionInfoHandler extends PaidQueryHandler {
 
     @Override
     public void validate(@NonNull final QueryContext context) throws PreCheckException {
-        final var query = context.query();
-        final NetworkGetVersionInfoQuery op = query.networkGetVersionInfoOrThrow();
+        requireNonNull(context);
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
     public Response findResponse(@NonNull final QueryContext context, @NonNull final ResponseHeader header) {
         requireNonNull(context);
         requireNonNull(header);
-        final var query = context.query();
-        final var accountStore = context.createStore(ReadableAccountStore.class);
-        final var op = query.networkGetVersionInfoOrThrow();
-        final var responseBuilder = NetworkGetVersionInfoResponse.newBuilder();
-        final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
-
-
-        final var responseType = op.headerOrElse(QueryHeader.DEFAULT).responseType();
-        responseBuilder.header(header);
-        if (header.nodeTransactionPrecheckCode() == OK && responseType != COST_ANSWER) {
-            final var networkAdminConfig = context.configuration().getConfigData(NetworkAdminServiceConfig.class);
-//            final var optionalInfo =
-//                    infoForAccount(account, accountStore, networkAdminConfig, readableTokenStore, tokenRelationStore, ledgerConfig);
-//            optionalInfo.ifPresent(responseBuilder::accountDetails);
-        }
-
-        return Response.newBuilder().accountDetails(responseBuilder).build();
+        throw new UnsupportedOperationException("Not implemented");
     }
 }
