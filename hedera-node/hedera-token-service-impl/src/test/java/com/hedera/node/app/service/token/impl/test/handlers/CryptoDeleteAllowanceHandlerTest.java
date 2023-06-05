@@ -31,10 +31,6 @@ import com.hedera.hapi.node.token.CryptoDeleteAllowanceTransactionBody;
 import com.hedera.hapi.node.token.NftRemoveAllowance;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.config.VersionedConfigImpl;
-import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.service.token.ReadableNftStore;
-import com.hedera.node.app.service.token.ReadableTokenRelationStore;
-import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.*;
 import com.hedera.node.app.service.token.impl.handlers.CryptoDeleteAllowanceHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
@@ -67,7 +63,7 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         final var deleteAllowanceValidator = new DeleteAllowanceValidator(configProvider);
         subject = new CryptoDeleteAllowanceHandler(deleteAllowanceValidator);
         refreshWritableStores();
-        givenStores();
+        givenStoresAndConfig(configProvider, handleContext);
 
         given(handleContext.configuration()).willReturn(configuration);
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
@@ -269,17 +265,5 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
                 .transactionID(transactionID)
                 .cryptoDeleteAllowance(allowanceTxnBody)
                 .build();
-    }
-
-    private void givenStores() {
-        given(handleContext.writableStore(WritableNftStore.class)).willReturn(writableNftStore);
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-        given(handleContext.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
-        given(handleContext.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
-
-        given(handleContext.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
-        given(handleContext.readableStore(ReadableTokenRelationStore.class)).willReturn(readableTokenRelStore);
-        given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
-        given(handleContext.readableStore(ReadableNftStore.class)).willReturn(readableNftStore);
     }
 }

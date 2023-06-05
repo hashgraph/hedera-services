@@ -45,6 +45,7 @@ import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.FixedFee;
 import com.hedera.hapi.node.transaction.FractionalFee;
 import com.hedera.hapi.node.transaction.RoyaltyFee;
+import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.utils.EntityNum;
@@ -65,7 +66,9 @@ import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
@@ -76,8 +79,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     /* ---------- Keys */
     protected final Key key = A_COMPLEX_KEY;
@@ -507,7 +513,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 0,
                 deleted,
                 TokenType.FUNGIBLE_COMMON,
-                TokenSupplyType.INFINITE,
+                TokenSupplyType.FINITE,
                 autoRenewAccountNumber,
                 autoRenewSecs,
                 expirationTime,
@@ -623,5 +629,22 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .feeCollectorAccountId(
                         AccountID.newBuilder().accountNum(accountNum).build())
                 .build();
+    }
+
+    protected void givenStoresAndConfig(final ConfigProvider configProvider, final HandleContext handleContext) {
+        configuration = new HederaTestConfigBuilder().getOrCreateConfig();
+        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
+        given(handleContext.configuration()).willReturn(configuration);
+        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
+
+        given(handleContext.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
+        given(handleContext.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
+
+        given(handleContext.readableStore(ReadableTokenRelationStore.class)).willReturn(readableTokenRelStore);
+        given(handleContext.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
+
+        given(handleContext.readableStore(ReadableNftStore.class)).willReturn(readableNftStore);
+        given(handleContext.writableStore(WritableNftStore.class)).willReturn(writableNftStore);
     }
 }

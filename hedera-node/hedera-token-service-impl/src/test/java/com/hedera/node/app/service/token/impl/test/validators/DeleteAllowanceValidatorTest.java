@@ -31,14 +31,6 @@ import com.hedera.hapi.node.token.CryptoDeleteAllowanceTransactionBody;
 import com.hedera.hapi.node.token.NftRemoveAllowance;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.config.VersionedConfigImpl;
-import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.service.token.ReadableNftStore;
-import com.hedera.node.app.service.token.ReadableTokenRelationStore;
-import com.hedera.node.app.service.token.ReadableTokenStore;
-import com.hedera.node.app.service.token.impl.WritableAccountStore;
-import com.hedera.node.app.service.token.impl.WritableNftStore;
-import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
-import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.DeleteAllowanceValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -65,6 +57,7 @@ class DeleteAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     @BeforeEach
     public void setUp() {
         super.setUp();
+        givenStoresAndConfig(configProvider, handleContext);
         subject = new DeleteAllowanceValidator(configProvider);
     }
 
@@ -208,7 +201,6 @@ class DeleteAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
 
     private TransactionBody cryptoDeleteAllowanceTransaction(
             final AccountID id, final AccountID ownerId, final TokenID nonFungibleTokenId, final List<Long> serials) {
-        givenStores();
         final var transactionID = TransactionID.newBuilder().accountID(id).transactionValidStart(consensusTimestamp);
         final var allowanceTxnBody = CryptoDeleteAllowanceTransactionBody.newBuilder()
                 .nftAllowances(NftRemoveAllowance.newBuilder()
@@ -221,17 +213,5 @@ class DeleteAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
                 .transactionID(transactionID)
                 .cryptoDeleteAllowance(allowanceTxnBody)
                 .build();
-    }
-
-    private void givenStores() {
-        given(handleContext.writableStore(WritableNftStore.class)).willReturn(writableNftStore);
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-        given(handleContext.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
-        given(handleContext.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
-
-        given(handleContext.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
-        given(handleContext.readableStore(ReadableTokenRelationStore.class)).willReturn(readableTokenRelStore);
-        given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
-        given(handleContext.readableStore(ReadableNftStore.class)).willReturn(readableNftStore);
     }
 }

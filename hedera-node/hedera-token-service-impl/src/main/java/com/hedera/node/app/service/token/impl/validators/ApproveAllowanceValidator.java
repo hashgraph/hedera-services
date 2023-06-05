@@ -163,6 +163,8 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
             final var effectiveOwner = getEffectiveOwner(owner, payer, accountStore);
             validateTokenBasics(effectiveOwner, spender, token, tokenRelStore);
 
+            // If a spender has been given approveForAll privileges, then it has the same privileges as owner of NFT.
+            // But, the spender is not allowed to grant approveForAll privileges to anyone else.
             if (allowance.hasDelegatingSpender()
                     && allowance.delegatingSpenderOrThrow().accountNumOrThrow() != 0) {
                 if (allowance.hasApprovedForAll()) {
