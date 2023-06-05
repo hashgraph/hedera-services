@@ -31,4 +31,13 @@ module com.hedera.node.app.service.contract.impl {
             com.hedera.node.app.service.contract.impl.test;
     exports com.hedera.node.app.service.contract.impl.infra to
             com.hedera.node.app.service.contract.impl.test;
+    exports com.hedera.node.app.service.contract.impl.exec.v030 to
+            com.hedera.node.app.service.contract.impl.test;
+    exports com.hedera.node.app.service.contract.impl.exec.utils to
+            com.hedera.node.app.service.contract.impl.test;
+    exports com.hedera.node.app.service.contract.impl.exec.failure to
+            com.hedera.node.app.service.contract.impl.test;
+    exports com.hedera.node.app.service.contract.impl.exec;
+    exports com.hedera.node.app.service.contract.impl.exec.operations;
+    exports com.hedera.node.app.service.contract.impl.exec.v034;
 }

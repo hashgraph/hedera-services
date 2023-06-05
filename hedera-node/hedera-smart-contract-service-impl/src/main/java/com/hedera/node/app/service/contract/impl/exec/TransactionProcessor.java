@@ -16,7 +16,31 @@
 
 package com.hedera.node.app.service.contract.impl.exec;
 
-import javax.inject.Singleton;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import org.hyperledger.besu.evm.gascalculator.GasCalculator;
+import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
+import org.hyperledger.besu.evm.processor.MessageCallProcessor;
+import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
-@Singleton
-public class TransactionProcessor {}
+import java.util.Objects;
+
+public class TransactionProcessor {
+    public static final String CONFIG_CONTEXT_VARIABLE = "contractsConfig";
+
+    private final GasCalculator gasCalculator;
+    private final MessageCallProcessor messageCallProcessor;
+    private final ContractCreationProcessor contractCreationProcessor;
+
+    public TransactionProcessor(
+            @NonNull final GasCalculator gasCalculator,
+            @NonNull final MessageCallProcessor messageCallProcessor,
+            @NonNull final ContractCreationProcessor contractCreationProcessor) {
+        this.gasCalculator = Objects.requireNonNull(gasCalculator);
+        this.messageCallProcessor = Objects.requireNonNull(messageCallProcessor);
+        this.contractCreationProcessor = Objects.requireNonNull(contractCreationProcessor);
+    }
+
+    public void processTransaction(@NonNull final WorldUpdater worldUpdater) {
+        throw new AssertionError("Not implemented");
+    }
+}
