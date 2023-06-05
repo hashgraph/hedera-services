@@ -77,21 +77,22 @@ public final class VirtualMerkleStateInitializer {
      * @param virtualMerkleConfig
      */
     public static void initStateChildren(
-            Platform platform, final long nodeId, final VirtualMerkleConfig virtualMerkleConfig) {
+            final Platform platform, final long nodeId, final VirtualMerkleConfig virtualMerkleConfig,
+            final boolean useMerkleDb) {
 
         try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
                 UnsafeMutablePTTStateAccessor.getInstance().getUnsafeMutableState(platform.getSelfId())) {
 
             final Path storageDir = Path.of(virtualMerkleConfig.getJasperDBStoragePath(), Long.toString(nodeId));
             final PlatformTestingToolState state = wrapper.get();
-            logger.info(LOGM_DEMO_INFO, "State = {}, useMerkleDb = {}", state, state.shouldUseMerkleDb());
+            logger.info(LOGM_DEMO_INFO, "State = {}, useMerkleDb = {}", state, useMerkleDb);
 
             final long totalAccounts = virtualMerkleConfig.getTotalAccountCreations();
             logger.info(LOGM_DEMO_INFO, "total accounts = {}", totalAccounts);
             if (state.getVirtualMap() == null && totalAccounts > 0) {
                 logger.info(LOGM_DEMO_INFO, "Creating virtualmap for {} accounts.", totalAccounts);
                 final VirtualMap<AccountVirtualMapKey, AccountVirtualMapValue> virtualMap =
-                        createAccountsVM(state.shouldUseMerkleDb(), storageDir, totalAccounts);
+                        createAccountsVM(useMerkleDb, storageDir, totalAccounts);
                 logger.info(LOGM_DEMO_INFO, "accounts VM = {}, DS = {}", virtualMap, virtualMap.getDataSource());
                 virtualMap.registerMetrics(platform.getContext().getMetrics());
                 state.setVirtualMap(virtualMap);
@@ -105,7 +106,7 @@ public final class VirtualMerkleStateInitializer {
                         "Creating virtualmap for max {} key value pairs.",
                         maximumNumberOfKeyValuePairs);
                 final VirtualMap<SmartContractMapKey, SmartContractMapValue> virtualMap =
-                        createSmartContractsVM(state.shouldUseMerkleDb(), storageDir, maximumNumberOfKeyValuePairs);
+                        createSmartContractsVM(useMerkleDb, storageDir, maximumNumberOfKeyValuePairs);
                 logger.info(LOGM_DEMO_INFO, "SC VM = {}, DS = {}", virtualMap, virtualMap.getDataSource());
                 virtualMap.registerMetrics(platform.getContext().getMetrics());
                 state.setVirtualMapForSmartContracts(virtualMap);
@@ -116,7 +117,7 @@ public final class VirtualMerkleStateInitializer {
             if (state.getVirtualMapForSmartContractsByteCode() == null && totalSmartContracts > 0) {
                 logger.info(LOGM_DEMO_INFO, "Creating virtualmap for {} bytecodes.", totalSmartContracts);
                 final VirtualMap<SmartContractByteCodeMapKey, SmartContractByteCodeMapValue> virtualMap =
-                        createSmartContractByteCodeVM(state.shouldUseMerkleDb(), storageDir, totalSmartContracts);
+                        createSmartContractByteCodeVM(useMerkleDb, storageDir, totalSmartContracts);
                 logger.info(LOGM_DEMO_INFO, "SCBC VM = {}, DS = {}", virtualMap, virtualMap.getDataSource());
                 virtualMap.registerMetrics(platform.getContext().getMetrics());
                 state.setVirtualMapForSmartContractsByteCode(virtualMap);

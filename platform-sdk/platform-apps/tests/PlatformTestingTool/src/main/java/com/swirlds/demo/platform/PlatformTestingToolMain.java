@@ -553,6 +553,12 @@ public class PlatformTestingToolMain implements SwirldMain {
                 jsonFileName = parameters[0];
             }
 
+            boolean useMerkleDb = false;
+            if ((parameters != null) && (parameters.length > 1)) {
+                useMerkleDb = Boolean.parseBoolean(parameters[1]);
+            }
+            logger.info(LOGM_DEMO_INFO, "Using {} data sources", (useMerkleDb ? "MerkleDb" : "JasperDB"));
+
             final ProgressCfg progressCfg = new ProgressCfg();
 
             if (jsonFileName != null && jsonFileName.length() > 0) {
@@ -609,7 +615,8 @@ public class PlatformTestingToolMain implements SwirldMain {
                             final Pair<Long, Long> entitiesFirstIds = extractFirstIdForEntitiesFromSavedState(platform);
                             virtualMerkleConfig.setFirstAccountId(entitiesFirstIds.getKey());
                             virtualMerkleConfig.setFirstSmartContractId(entitiesFirstIds.getValue());
-                            VirtualMerkleStateInitializer.initStateChildren(platform, selfId.id(), virtualMerkleConfig);
+                            VirtualMerkleStateInitializer.initStateChildren(
+                                    platform, selfId.id(), virtualMerkleConfig, useMerkleDb);
                         }
                         final Metrics metrics = platform.getContext().getMetrics();
                         if (state.getVirtualMap() != null) {
