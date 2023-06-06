@@ -89,7 +89,8 @@ public class VirtualMapFactory {
             this.storageDir = storageDir;
         } else {
             try {
-                this.storageDir = TemporaryFileBuilder.buildTemporaryDirectory(USE_MERKLE_DB ? "merkledb" : "jasperdb");
+                // Let MerkleDb manage its paths
+                this.storageDir = USE_MERKLE_DB ? null : TemporaryFileBuilder.buildTemporaryDirectory("jasperdb");
             } catch (final IOException z) {
                 throw new UncheckedIOException(z);
             }
