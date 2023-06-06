@@ -74,6 +74,14 @@ repositories {
     }
 }
 
+dependencies {
+    annotationProcessor(platform("com.hedera.hashgraph:app-platform"))
+    api(platform("com.hedera.hashgraph:app-platform"))
+}
+javaModuleDependencies {
+    versionsFromConsistentResolution(":app")
+}
+
 // Make sure we use UTF-8 encoding when compiling
 tasks.withType<JavaCompile>().configureEach {
     options.encoding = "UTF-8"

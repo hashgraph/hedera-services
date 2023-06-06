@@ -21,14 +21,13 @@ import com.hedera.hashgraph.gradlebuild.rules.IoNettyNativeEpollMetadataRule
 import com.hedera.hashgraph.gradlebuild.rules.JavaxAnnotationMetadataRule
 
 plugins {
-    id("java")
     id("org.gradlex.java-ecosystem-capabilities")
     id("org.gradlex.extra-java-module-info")
     id("org.gradlex.java-module-dependencies")
 }
 
 javaModuleDependencies {
-    versionsFromConsistentResolution(":app")
+    warnForMissingVersions.set(false) // do not expect versions in catalog
 
     moduleNameToGA.put("com.hedera.hashgraph.protobuf.java.api", "com.hedera.hashgraph:hedera-protobuf-java-api")
     moduleNameToGA.put("com.hedera.pbj.runtime", "com.hedera.pbj:pbj-runtime")

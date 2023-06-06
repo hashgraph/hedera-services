@@ -67,7 +67,10 @@ dependencies {
 
 val apt = configurations.create("apt")
 
-dependencies { @Suppress("UnstableApiUsage") apt(javaModuleDependencies.gav("dagger.compiler")) }
+dependencies {
+    @Suppress("UnstableApiUsage") apt(javaModuleDependencies.gav("dagger.compiler"))
+    apt(platform("com.hedera.hashgraph:app-platform"))
+}
 
 tasks.withType<JavaCompile> { options.annotationProcessorPath = apt }
 
