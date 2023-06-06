@@ -237,10 +237,8 @@ public final class GuiPlatformAccessor {
         }
 
         Arrays.sort(allEvents, (eventA, eventB) -> {
-            final EventOrderInfo orderA =
-                    orderInfo.get(eventA.getBaseEventHashedData().getHash());
-            final EventOrderInfo orderB =
-                    orderInfo.get(eventB.getBaseEventHashedData().getHash());
+            final EventOrderInfo orderA = orderInfo.get(eventA.getHashedData().getHash());
+            final EventOrderInfo orderB = orderInfo.get(eventB.getHashedData().getHash());
             return orderA.compareTo(orderB);
         });
         return allEvents;
