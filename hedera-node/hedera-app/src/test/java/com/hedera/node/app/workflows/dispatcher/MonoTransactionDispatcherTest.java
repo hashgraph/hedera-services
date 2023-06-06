@@ -716,6 +716,19 @@ class MonoTransactionDispatcherTest {
     }
 
     @Test
+    void dispatchesNetworkUncheckedSubmitAsExpected() {
+        final var txnBody = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder())
+                .uncheckedSubmit(UncheckedSubmitBody.newBuilder().build())
+                .build();
+        given(handleContext.body()).willReturn(txnBody);
+
+        dispatcher.dispatchHandle(handleContext);
+
+        verifyNoInteractions(txnCtx);
+    }
+
+    @Test
     void doesntCommitWhenUsageLimitsExceeded() {
         final var txnBody = TransactionBody.newBuilder()
                 .cryptoCreateAccount(CryptoCreateTransactionBody.DEFAULT)

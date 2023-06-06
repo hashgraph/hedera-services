@@ -88,6 +88,7 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
             case CRYPTO_DELETE -> dispatchCryptoDelete(context);
             case CRYPTO_UPDATE_ACCOUNT -> dispatchCryptoUpdate(context);
             case FREEZE -> dispatchFreeze(context);
+            case UNCHECKED_SUBMIT -> dispatchNetworkUncheckedSubmit(context);
             case TOKEN_ASSOCIATE -> dispatchTokenAssociate(context);
             case TOKEN_FREEZE -> dispatchTokenFreeze(context);
             case TOKEN_UNFREEZE -> dispatchTokenUnfreeze(context);
@@ -307,5 +308,11 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
     private void finishTokenFeeScheduleUpdate(@NonNull final HandleContext handleContext) {
         final var tokenStore = handleContext.writableStore(WritableTokenStore.class);
         requireNonNull(tokenStore).commit();
+    }
+
+    private void dispatchNetworkUncheckedSubmit(@NonNull final HandleContext handleContext) {
+        requireNonNull(handleContext);
+        final var handler = handlers.networkUncheckedSubmitHandler();
+        handler.handle(handleContext);
     }
 }
