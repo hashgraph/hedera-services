@@ -111,7 +111,7 @@ public class AtomicDouble {
      * @param delta the value to add
      * @return the updated value
      */
-    public final double addAndGet(double delta) {
+    public final double addAndGet(final double delta) {
         return accumulateAndGet(delta, Double::sum);
     }
 
@@ -119,13 +119,13 @@ public class AtomicDouble {
      * Atomically updates the current value with the results of applying the given function to the
      * current and given values.
      *
-     * @param x the update value
+     * @param updateValue the update value
      * @param accumulatorFunction the accumulator function
      * @return the updated value
      */
-    public final double accumulateAndGet(double x, @NonNull DoubleBinaryOperator accumulatorFunction) {
+    public final double accumulateAndGet(final double updateValue, @NonNull DoubleBinaryOperator accumulatorFunction) {
         Objects.requireNonNull(accumulatorFunction);
-        return updateAndGet(oldValue -> accumulatorFunction.applyAsDouble(oldValue, x));
+        return updateAndGet(oldValue -> accumulatorFunction.applyAsDouble(oldValue, updateValue));
     }
 
     /**
@@ -134,7 +134,7 @@ public class AtomicDouble {
      * @param updateFunction the update function
      * @return the updated value
      */
-    public final double updateAndGet(@NonNull DoubleUnaryOperator updateFunction) {
+    public final double updateAndGet(@NonNull final DoubleUnaryOperator updateFunction) {
         Objects.requireNonNull(updateFunction);
         while (true) {
             long current = bits;
