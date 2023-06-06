@@ -21,7 +21,6 @@ import com.hedera.node.app.spi.fixtures.state.ListWritableQueueState;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
-import com.hedera.node.app.spi.state.EmptyReadableStates;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -61,7 +60,8 @@ public class FakeSchemaRegistry implements SchemaRegistry {
 
             // Run the migration which will populate the writable states
             final var writableStates = new MapWritableStates(dataSources);
-            schema.migrate(new EmptyReadableStates(), writableStates);
+            // TODO Fix this
+            //            schema.migrate(writableStates);
 
             // Now commit them all
             for (final var s : writables.values()) {

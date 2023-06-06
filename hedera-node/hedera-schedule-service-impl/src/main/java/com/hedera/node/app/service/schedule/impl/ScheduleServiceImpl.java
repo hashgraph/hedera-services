@@ -18,6 +18,7 @@ package com.hedera.node.app.service.schedule.impl;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.service.mono.state.codec.MonoMapCodecAdapter;
+import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactionsState;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKeySerializer;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEqualityVirtualKey;
@@ -29,6 +30,7 @@ import com.hedera.node.app.service.mono.state.virtual.temporal.SecondSinceEpocVi
 import com.hedera.node.app.service.mono.state.virtual.temporal.SecondSinceEpocVirtualKeySerializer;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.impl.serdes.MonoSchedulingStateAdapterCodec;
+import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
@@ -48,7 +50,7 @@ public final class ScheduleServiceImpl implements ScheduleService {
     public static final String SCHEDULES_BY_EQUALITY_KEY = "SCHEDULES_BY_EQUALITY";
 
     @Override
-    public void registerMonoAdapterSchemas(@NonNull SchemaRegistry registry) {
+    public void registerSchemas(@NonNull SchemaRegistry registry) {
         registry.register(scheduleSchema());
     }
 
@@ -63,6 +65,13 @@ public final class ScheduleServiceImpl implements ScheduleService {
                         schedulesByIdDef(),
                         schedulesByExpirySec(),
                         schedulesByEquality());
+            }
+
+            @Override
+            public void migrate(@NonNull MigrationContext ctx) {
+                // Prepopulate the ScheduleServices state with default values for genesis
+                final var s = ctx.newStates().getSingleton(SCHEDULING_STATE_KEY);
+                s.put(new MerkleScheduledTransactionsState()); // never scheduled
             }
         };
     }

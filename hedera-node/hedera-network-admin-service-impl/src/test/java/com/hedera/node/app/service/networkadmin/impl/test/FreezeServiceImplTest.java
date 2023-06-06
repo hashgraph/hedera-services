@@ -54,7 +54,7 @@ class FreezeServiceImplTest {
         final var subject = new FreezeServiceImpl();
         ArgumentCaptor<Schema> schemaCaptor = ArgumentCaptor.forClass(Schema.class);
 
-        subject.registerMonoAdapterSchemas(registry);
+        subject.registerSchemas(registry);
         verify(registry).register(schemaCaptor.capture());
         final var schema = schemaCaptor.getValue();
 
