@@ -62,3 +62,12 @@ tasks.withType<Test>().configureEach {
   minHeapSize = "512m"
   maxHeapSize = "4096m"
 }
+
+tasks.withType<com.hedera.pbj.compiler.PbjCompilerTask> {
+  doFirst {
+    // Clean output directories before generating new code
+    // TODO move this into 'pbj-core/pbj-compiler/src/main/java/com/hedera/pbj/compiler/PbjCompilerTask.java'
+    delete(javaMainOutputDirectory)
+    delete(javaTestOutputDirectory)
+  }
+}
