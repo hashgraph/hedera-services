@@ -60,7 +60,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
@@ -73,7 +72,6 @@ import static com.hedera.services.bdd.suites.contract.Utils.captureChildCreate2M
 import static com.hedera.services.bdd.suites.contract.Utils.captureOneChildCreate2MetaFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.ocWith;
-import static com.hedera.services.bdd.suites.contract.precompile.ContractKeysStillWorkAsExpectedSuite.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.A_TOKEN;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.LAZY_MEMO;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.NFT_CREATE;
@@ -185,7 +183,6 @@ public class Create2OperationSuite extends HapiSuite {
                 allLogOpcodesResolveExpectedContractId(),
                 eip1014AliasIsPriorityInErcOwnerPrecompile(),
                 canAssociateInConstructor(),
-                childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor(),
                 /* --- HIP 583 --- */
                 canMergeCreate2ChildWithHollowAccount(),
                 canMergeCreate2MultipleCreatesWithHollowAccount());
@@ -782,40 +779,6 @@ public class Create2OperationSuite extends HapiSuite {
                                         .contractCallResult(htsPrecompileResult()
                                                 .forFunction(FunctionType.ERC_OWNER)
                                                 .withOwner(unhex(userAliasAddr.get())))))));
-    }
-
-    private HapiSpec childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor() {
-        final var ft = "fungibleToken";
-        final var multiKey = SWISS;
-        final var creationAndAssociation = "creationAndAssociation";
-        final var immediateChildAssoc = "ImmediateChildAssociation";
-
-        final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
-        final AtomicReference<String> childMirrorAddr = new AtomicReference<>();
-
-        return propertyPreservingHapiSpec("childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor")
-                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
-                .given(
-                        overridingTwo(
-                                CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS,
-                                "TokenAssociateToAccount",
-                                CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS,
-                                "10_000_000"),
-                        newKeyNamed(multiKey),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(ft)
-                                .exposingCreatedIdTo(id ->
-                                        tokenMirrorAddr.set(hex(asSolidityAddress(HapiPropertySource.asToken(id))))))
-                .when(uploadInitCode(immediateChildAssoc), sourcing(() -> contractCreate(
-                                immediateChildAssoc, asHeadlongAddress(tokenMirrorAddr.get()))
-                        .gas(2_000_000)
-                        .adminKey(multiKey)
-                        .payingWith(GENESIS)
-                        .sigMapPrefixes(uniqueWithFullPrefixesFor(GENESIS, multiKey))
-                        .signedBy(GENESIS, multiKey)
-                        .exposingNumTo(n -> childMirrorAddr.set("0.0." + (n + 1)))
-                        .via(creationAndAssociation)))
-                .then(sourcing(() -> getContractInfo(childMirrorAddr.get()).logged()));
     }
 
     @SuppressWarnings("java:S5669")

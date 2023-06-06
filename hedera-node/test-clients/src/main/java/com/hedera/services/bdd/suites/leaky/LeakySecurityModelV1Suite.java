@@ -1,0 +1,68 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.hedera.services.bdd.suites.leaky;
+
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
+import com.hedera.services.bdd.suites.contract.hapi.ContractCreateV1SecurityModelSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.Create2OperationV1SecurityModelSuite;
+import com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileV1SecurityModelSuite;
+import com.hedera.services.bdd.suites.contract.precompile.CryptoTransferHTSV1SecurityModelSuite;
+import com.hedera.services.bdd.suites.contract.precompile.DissociatePrecompileV1SecurityModelSuite;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+public class LeakySecurityModelV1Suite extends HapiSuite {
+
+    private static final Logger log = LogManager.getLogger(LeakySecurityModelV1Suite.class);
+
+    public static void main(String... args) {
+        new LeakySecurityModelV1Suite().runSuiteSync();
+    }
+
+    @NonNull
+    final List<HapiSuite> suites;
+
+    public LeakySecurityModelV1Suite() {
+        suites = List.of(
+                new ContractCreateV1SecurityModelSuite(),
+                new CreatePrecompileV1SecurityModelSuite(),
+                new CryptoTransferHTSV1SecurityModelSuite(),
+                new DissociatePrecompileV1SecurityModelSuite(),
+                new Create2OperationV1SecurityModelSuite());
+    }
+
+    @Override
+    public List<HapiSpec> getSpecsInSuite() {
+        return suites.stream()
+                .map(HapiSuite::getSpecsInSuite)
+                .flatMap(List::stream)
+                .toList();
+    }
+
+    @Override
+    public boolean canRunConcurrent() {
+        return false;
+    }
+
+    @Override
+    protected Logger getResultsLogger() {
+        return log;
+    }
+}
