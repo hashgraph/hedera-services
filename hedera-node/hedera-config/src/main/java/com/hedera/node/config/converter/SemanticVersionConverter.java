@@ -16,8 +16,6 @@
 
 package com.hedera.node.config.converter;
 
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.config.api.converter.ConfigConverter;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -29,7 +27,9 @@ import java.util.regex.Pattern;
  * formatted according to the <a href="https://semver.org/">Semantic Versioning 2.0.0</a> specification.
  */
 public final class SemanticVersionConverter implements ConfigConverter<SemanticVersion> {
-    /* From https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string */
+    /** Arbitrary limit to prevent stack overflow when parsing unrealistically long versions. */
+    private static final int MAX_VERSION_LENGTH = 100;
+    /** From <a href="https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string"></a> */
     private static final Pattern SEMVER_SPEC_REGEX = Pattern.compile(
             "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)"
                     + "(?:\\."
@@ -39,7 +39,9 @@ public final class SemanticVersionConverter implements ConfigConverter<SemanticV
     @Nullable
     @Override
     public SemanticVersion convert(@NonNull String value) throws IllegalArgumentException, NullPointerException {
-        requireNonNull(value, "Cannot convert null semantic version value");
+        if (value.length() > MAX_VERSION_LENGTH) {
+            throw new IllegalArgumentException("Semantic version '" + value + "' is too long");
+        }
 
         final var matcher = SEMVER_SPEC_REGEX.matcher(value);
         if (matcher.matches()) {
