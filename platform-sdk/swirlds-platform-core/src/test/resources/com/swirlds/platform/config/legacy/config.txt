@@ -20,10 +20,10 @@ swirld, 123
 # app,      ISSTestingTool.jar, 10000, 60:0-1+2+3, 120:0-1-2+3
 # ** END REMOVE FROM SDK RELEASES **
 
- address,  A, Alice,    1, 127.0.0.1, 15301, 127.0.0.1, 15301
- address,  B, Bob,      1, 127.0.0.1, 15302, 127.0.0.1, 15302
- address,  C, Carol,    1, 127.0.0.1, 15303, 127.0.0.1, 15303
- address,  D, Dave,     1, 127.0.0.1, 15304, 127.0.0.1, 15304
+ address, 1, A, Alice,    1, 127.0.0.1, 15301, 127.0.0.1, 15301, has a memo
+ address, 3,  B, Bob,      1, 127.0.0.1, 15302, 127.0.0.1, 15302 # comment
+ address, 20,  C, Carol,    1, 127.0.0.1, 15303, 127.0.0.1, 15303, has a memo # and a comment
+ address, 95,  D, Dave,     1, 127.0.0.1, 15304, 127.0.0.1, 15304
 # address,  E, Eric,     1, 127.0.0.1, 15305, 127.0.0.1, 15305
 # address,  F, Fred,     1, 127.0.0.1, 15306, 127.0.0.1, 15306
 # address,  G, Gina,     1, 127.0.0.1, 15307, 127.0.0.1, 15307

@@ -28,7 +28,7 @@ import static com.swirlds.platform.gui.internal.BrowserWindowManager.getStateHie
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.setInsets;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.setStateHierarchy;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowserWindow;
-import static com.swirlds.platform.state.address.AddressBookUtils.getOwnHostCount;
+import static com.swirlds.platform.state.address.AddressBookNetworkUtils.getOwnHostCount;
 import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedStateFiles;
 import static com.swirlds.platform.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
@@ -101,6 +101,7 @@ import com.swirlds.platform.network.Network;
 import com.swirlds.platform.reconnect.emergency.EmergencySignedStateValidator;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.address.AddressBookInitializer;
+import com.swirlds.platform.state.address.AddressBookNetworkUtils;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SavedStateInfo;
 import com.swirlds.platform.state.signed.SignedStateFileUtils;
@@ -403,7 +404,7 @@ public class Browser {
             final Map<NodeId, SwirldMain> appMains = new HashMap<>();
             final AddressBook addressBook = appDefinition.getAddressBook();
             for (final Address address : addressBook) {
-                if (localNodesToStart.contains(address.getNodeId()) || address.isOwnHost()) {
+                if (localNodesToStart.contains(address.getNodeId()) || AddressBookNetworkUtils.isLocal(address)) {
                     appMains.put(address.getNodeId(), buildAppMain(appDefinition, appLoader));
                 }
             }
@@ -628,8 +629,9 @@ public class Browser {
 
         int ownHostIndex = 0;
 
-        for (final Address address : addressBook) {
-            final NodeId nodeId = address.getNodeId();
+        for (int nodeIndex = 0; nodeIndex < addressBook.getSize(); nodeIndex++) {
+            final NodeId nodeId = addressBook.getNodeId(nodeIndex);
+            final Address address = addressBook.getAddress(nodeId);
             final int instanceNumber = addressBook.getIndexOfNodeId(nodeId);
 
             if (appMains.containsKey(nodeId)) {

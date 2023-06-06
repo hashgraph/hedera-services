@@ -16,10 +16,8 @@
 
 package com.swirlds.common.internal;
 
-import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import java.nio.file.Path;
-import java.util.List;
 
 /**
  * Temporary internal only class to facilitate an incremental refactor of the {@code com.swirlds.platform.Browser} class.
@@ -43,13 +41,13 @@ public class ApplicationDefinition {
             final String appJarFileName,
             final String mainClassName,
             final Path appJarPath,
-            final List<Address> bookData) {
+            final AddressBook addressBook) {
         this.swirldName = swirldName;
         this.appParameters = appParameters;
         this.appJarFileName = appJarFileName;
         this.mainClassName = mainClassName;
         this.appJarPath = appJarPath;
-        this.addressBook = new AddressBook(bookData);
+        this.addressBook = addressBook;
     }
 
     public String getSwirldName() {
