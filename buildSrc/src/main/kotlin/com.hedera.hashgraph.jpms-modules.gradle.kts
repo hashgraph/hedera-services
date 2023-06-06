@@ -201,6 +201,10 @@ extraJavaModuleInfo {
         exportAllPackages()
         // no dependencies
     }
+    module("io.netty:netty-transport-native-epoll", "io.netty.transport.epoll") {
+        exportAllPackages()
+        // no dependencies
+    }
 
     knownModule("com.github.ben-manes.caffeine:caffeine", "com.github.benmanes.caffeine")
     knownModule("com.google.code.gson:gson", "com.google.gson")

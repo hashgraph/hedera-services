@@ -61,7 +61,7 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     @Test
     void notSupportedFails() {
         givenApproveAllowanceTxn(
-                payer, false, List.of(cryptoAllowance), List.of(tokenAllowance), List.of(nftAllowance));
+                payerId, false, List.of(cryptoAllowance), List.of(tokenAllowance), List.of(nftAllowance));
         final var configuration = new HederaTestConfigBuilder()
                 .withValue("hedera.allowances.isEnabled", false)
                 .getOrCreateConfig();
@@ -76,7 +76,7 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     void returnsValidationOnceFailed() {
         // each serial number is considered as one allowance for nft allowances
         givenApproveAllowanceTxn(
-                payer, false, List.of(cryptoAllowance), List.of(tokenAllowance), List.of(nftAllowance));
+                payerId, false, List.of(cryptoAllowance), List.of(tokenAllowance), List.of(nftAllowance));
         final var configuration = new HederaTestConfigBuilder()
                 .withValue("hedera.allowances.maxTransactionLimit", 1)
                 .getOrCreateConfig();
@@ -89,15 +89,15 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void succeedsWithEmptyLists() {
-        givenApproveAllowanceTxn(payer, false, List.of(), List.of(tokenAllowance), List.of(nftAllowance));
+        givenApproveAllowanceTxn(payerId, false, List.of(), List.of(tokenAllowance), List.of(nftAllowance));
 
         assertThatNoException().isThrownBy(() -> subject.validate(handleContext, account, readableAccountStore));
 
-        givenApproveAllowanceTxn(payer, false, List.of(cryptoAllowance), List.of(), List.of(nftAllowance));
+        givenApproveAllowanceTxn(payerId, false, List.of(cryptoAllowance), List.of(), List.of(nftAllowance));
 
         assertThatNoException().isThrownBy(() -> subject.validate(handleContext, account, readableAccountStore));
 
-        givenApproveAllowanceTxn(payer, false, List.of(cryptoAllowance), List.of(tokenAllowance), List.of());
+        givenApproveAllowanceTxn(payerId, false, List.of(cryptoAllowance), List.of(tokenAllowance), List.of());
 
         assertThatNoException().isThrownBy(() -> subject.validate(handleContext, account, readableAccountStore));
     }
@@ -105,7 +105,7 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     @Test
     void validatesSpenderSameAsOwner() {
         givenApproveAllowanceTxn(
-                payer,
+                payerId,
                 false,
                 List.of(cryptoAllowance.copyBuilder().spender(ownerId).build()),
                 List.of(tokenAllowance),
@@ -116,7 +116,7 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
                 .has(responseCode(SPENDER_ACCOUNT_SAME_AS_OWNER));
 
         givenApproveAllowanceTxn(
-                payer,
+                payerId,
                 false,
                 List.of(cryptoAllowance),
                 List.of(tokenAllowance),
@@ -130,7 +130,7 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     @Test
     void allowsSelfApprovalForFungibleTokens() {
         givenApproveAllowanceTxn(
-                payer,
+                payerId,
                 false,
                 List.of(cryptoAllowance),
                 List.of(tokenAllowance.copyBuilder().spender(ownerId).build()),
@@ -142,7 +142,7 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     @Test
     void validateNegativeAmounts() {
         givenApproveAllowanceTxn(
-                payer,
+                payerId,
                 false,
                 List.of(CryptoAllowance.newBuilder()
                         .amount(-1L)
@@ -157,7 +157,7 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
                 .has(responseCode(NEGATIVE_ALLOWANCE_AMOUNT));
 
         givenApproveAllowanceTxn(
-                payer,
+                payerId,
                 false,
                 List.of(cryptoAllowance),
                 List.of(TokenAllowance.newBuilder()
@@ -176,7 +176,7 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     @Test
     void failsWhenExceedsMaxTokenSupply() {
         givenApproveAllowanceTxn(
-                payer,
+                payerId,
                 false,
                 List.of(cryptoAllowance),
                 List.of(TokenAllowance.newBuilder()
@@ -195,7 +195,7 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     @Test
     void failsForNftInFungibleTokenAllowances() {
         givenApproveAllowanceTxn(
-                payer,
+                payerId,
                 false,
                 List.of(cryptoAllowance),
                 List.of(TokenAllowance.newBuilder()
@@ -214,7 +214,7 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     @Test
     void cannotGrantApproveForAllWhenDelegatingSpenderIsSet() {
         givenApproveAllowanceTxn(
-                payer,
+                payerId,
                 false,
                 List.of(),
                 List.of(),
@@ -242,7 +242,7 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
                 .isTrue();
 
         givenApproveAllowanceTxn(
-                payer,
+                payerId,
                 false,
                 List.of(),
                 List.of(),
@@ -257,13 +257,13 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     @Test
     void cannotGrantNftSerialAllowanceIfDelegatingSpenderHasNoApproveForAllAllowance() {
         givenApproveAllowanceTxn(
-                payer,
+                payerId,
                 false,
                 List.of(),
                 List.of(),
                 List.of(nftAllowance
                         .copyBuilder()
-                        .spender(payer)
+                        .spender(payerId)
                         .delegatingSpender(transferAccountId)
                         .build()));
 
@@ -271,7 +271,7 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
                         .getAccountById(ownerId)
                         .approveForAllNftAllowances()
                         .contains(AccountApprovalForAllAllowance.newBuilder()
-                                .spenderNum(payer.accountNum())
+                                .spenderNum(payerId.accountNum())
                                 .tokenNum(nonFungibleTokenId.tokenNum())
                                 .build()))
                 .isFalse();
@@ -284,7 +284,7 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     @Test
     void failsWhenTokenNotAssociatedToAccount() {
         givenApproveAllowanceTxn(
-                payer,
+                payerId,
                 false,
                 List.of(cryptoAllowance),
                 List.of(tokenAllowance.copyBuilder().owner(delegatingSpenderId).build()),
@@ -294,7 +294,7 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
                 .has(responseCode(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
 
         givenApproveAllowanceTxn(
-                payer,
+                payerId,
                 false,
                 List.of(cryptoAllowance),
                 List.of(tokenAllowance),
@@ -307,14 +307,14 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     @Test
     void happyPath() {
         givenApproveAllowanceTxn(
-                payer, false, List.of(cryptoAllowance), List.of(tokenAllowance), List.of(nftAllowance));
+                payerId, false, List.of(cryptoAllowance), List.of(tokenAllowance), List.of(nftAllowance));
         assertThatNoException().isThrownBy(() -> subject.validate(handleContext, account, readableAccountStore));
     }
 
     @Test
     void fungibleInNFTAllowances() {
         givenApproveAllowanceTxn(
-                payer,
+                payerId,
                 false,
                 List.of(cryptoAllowance),
                 List.of(tokenAllowance),
@@ -333,7 +333,7 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     @Test
     void validateSerialsExistence() {
         givenApproveAllowanceTxn(
-                payer,
+                payerId,
                 false,
                 List.of(cryptoAllowance),
                 List.of(tokenAllowance),
@@ -353,7 +353,7 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     @Test
     void validateNegativeSerials() {
         givenApproveAllowanceTxn(
-                payer,
+                payerId,
                 false,
                 List.of(cryptoAllowance),
                 List.of(tokenAllowance),
@@ -373,7 +373,7 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     @Test
     void validatesAndFiltersRepeatedSerials() {
         givenApproveAllowanceTxn(
-                payer,
+                payerId,
                 false,
                 List.of(cryptoAllowance),
                 List.of(tokenAllowance),
@@ -392,7 +392,7 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     void validatesTotalAllowancesInTxn() {
         // each serial number is considered as one allowance
         givenApproveAllowanceTxn(
-                payer, false, List.of(cryptoAllowance), List.of(tokenAllowance), List.of(nftAllowance));
+                payerId, false, List.of(cryptoAllowance), List.of(tokenAllowance), List.of(nftAllowance));
         final var configuration = new HederaTestConfigBuilder()
                 .withValue("hedera.allowances.maxTransactionLimit", 1)
                 .getOrCreateConfig();
@@ -423,17 +423,17 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
                 .tokenId(nonFungibleTokenId)
                 .serialNumbers(List.of(1L))
                 .build();
-        givenApproveAllowanceTxn(payer, false, List.of(missingCryptoAllowance), List.of(), List.of());
+        givenApproveAllowanceTxn(payerId, false, List.of(missingCryptoAllowance), List.of(), List.of());
         assertThatThrownBy(() -> subject.validate(handleContext, account, readableAccountStore))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(INVALID_ALLOWANCE_OWNER_ID));
 
-        givenApproveAllowanceTxn(payer, false, List.of(), List.of(missingTokenAllowance), List.of());
+        givenApproveAllowanceTxn(payerId, false, List.of(), List.of(missingTokenAllowance), List.of());
         assertThatThrownBy(() -> subject.validate(handleContext, account, readableAccountStore))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(INVALID_ALLOWANCE_OWNER_ID));
 
-        givenApproveAllowanceTxn(payer, false, List.of(), List.of(), List.of(missingNftAllowance));
+        givenApproveAllowanceTxn(payerId, false, List.of(), List.of(), List.of(missingNftAllowance));
         assertThatThrownBy(() -> subject.validate(handleContext, account, readableAccountStore))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(INVALID_ALLOWANCE_OWNER_ID));
@@ -442,7 +442,7 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     @Test
     void considersPayerIfOwnerMissing() {
         givenApproveAllowanceTxn(
-                payer,
+                payerId,
                 false,
                 List.of(cryptoAllowance.copyBuilder().owner(AccountID.DEFAULT).build()),
                 List.of(),
@@ -450,7 +450,7 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
         assertThatNoException().isThrownBy(() -> subject.validate(handleContext, account, readableAccountStore));
 
         givenApproveAllowanceTxn(
-                payer,
+                payerId,
                 false,
                 List.of(cryptoAllowance),
                 List.of(tokenAllowance.copyBuilder().owner(AccountID.DEFAULT).build()),
@@ -458,7 +458,7 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
         assertThatNoException().isThrownBy(() -> subject.validate(handleContext, account, readableAccountStore));
 
         givenApproveAllowanceTxn(
-                payer,
+                payerId,
                 false,
                 List.of(cryptoAllowance),
                 List.of(tokenAllowance),

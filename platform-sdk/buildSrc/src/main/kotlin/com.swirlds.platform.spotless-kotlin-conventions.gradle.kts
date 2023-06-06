@@ -19,8 +19,8 @@ plugins {
 }
 
 spotless {
-    kotlinGradle({
-        ktfmt()
+    kotlinGradle {
+        ktfmt().kotlinlangStyle()
 
         licenseHeader(
             """
@@ -41,5 +41,5 @@ spotless {
             */${"\n\n"}
         """.trimIndent(), "(import|plugins)"
         ).updateYearWithLatest(true)
-    })
+    }
 }

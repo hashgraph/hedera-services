@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers.util;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.common.UniqueTokenId;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
@@ -38,12 +39,12 @@ public class StateBuilderUtil {
     public static final String NFTS = "NFTS";
 
     @NonNull
-    protected MapReadableKVState.Builder<EntityNumVirtualKey, Account> emptyReadableAccountStateBuilder() {
+    protected MapReadableKVState.Builder<AccountID, Account> emptyReadableAccountStateBuilder() {
         return MapReadableKVState.builder(ACCOUNTS);
     }
 
     @NonNull
-    protected MapWritableKVState.Builder<EntityNumVirtualKey, Account> emptyWritableAccountStateBuilder() {
+    protected MapWritableKVState.Builder<AccountID, Account> emptyWritableAccountStateBuilder() {
         return MapWritableKVState.builder(ACCOUNTS);
     }
 

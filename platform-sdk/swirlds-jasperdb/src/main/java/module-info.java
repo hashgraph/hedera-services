@@ -25,7 +25,6 @@ open module com.swirlds.jasperdb {
     exports com.swirlds.jasperdb.files;
     exports com.swirlds.jasperdb.files.hashmap;
     exports com.swirlds.jasperdb;
-    exports com.swirlds.jasperdb.settings;
     exports com.swirlds.jasperdb.config;
     exports com.swirlds.merkledb;
     exports com.swirlds.merkledb.collections;

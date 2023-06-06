@@ -27,7 +27,6 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.NftAllowance;
 import com.hedera.node.app.config.VersionedConfigImpl;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.AllowanceValidator;
@@ -53,11 +52,11 @@ class AllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     public void setUp() {
         super.setUp();
         readableAccounts = emptyReadableAccountStateBuilder()
-                .value(EntityNumVirtualKey.fromLong(ownerId.accountNum()), ownerAccount)
-                .value(EntityNumVirtualKey.fromLong(accountNum), account)
-                .value(EntityNumVirtualKey.fromLong(spenderId.accountNum()), spenderAccount)
+                .value(ownerId, ownerAccount)
+                .value(payerId, account)
+                .value(spenderId, spenderAccount)
                 .build();
-        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
         readableAccountStore = new ReadableAccountStoreImpl(readableStates);
 
         subject = new AllowanceValidator(configProvider);
