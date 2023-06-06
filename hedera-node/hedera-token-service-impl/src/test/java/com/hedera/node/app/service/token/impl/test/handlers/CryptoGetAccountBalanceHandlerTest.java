@@ -42,7 +42,6 @@ import com.hedera.hapi.node.token.CryptoGetAccountBalanceQuery;
 import com.hedera.hapi.node.token.CryptoGetAccountBalanceResponse;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -112,10 +111,8 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
     @DisplayName("Validate query is successful with valid account")
     void validatesQueryWhenValidAccount() {
         givenValidAccount(accountNum);
-        readableAccounts = emptyReadableAccountStateBuilder()
-                .value(EntityNumVirtualKey.fromLong(accountNum), account)
-                .build();
-        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        readableAccounts = emptyReadableAccountStateBuilder().value(id, account).build();
+        given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
         readableStore = new ReadableAccountStoreImpl(readableStates);
 
         final var query = createGetAccountBalanceQuery(accountNum);
@@ -129,10 +126,8 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
     @DisplayName("Validate query is successful with valid contract")
     void validatesQueryWhenValidContract() {
         givenValidContract();
-        readableAccounts = emptyReadableAccountStateBuilder()
-                .value(EntityNumVirtualKey.fromLong(accountNum), account)
-                .build();
-        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        readableAccounts = emptyReadableAccountStateBuilder().value(id, account).build();
+        given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
         readableStore = new ReadableAccountStoreImpl(readableStates);
 
         final var query = createGetAccountBalanceQueryWithContract(accountNum);
@@ -145,9 +140,9 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
     @Test
     @DisplayName("Empty account failed during validate")
     void validatesQueryIfEmptyAccount() throws Throwable {
-        final var state = MapReadableKVState.<EntityNumVirtualKey, Account>builder(ACCOUNTS)
-                .build();
-        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(state);
+        final var state =
+                MapReadableKVState.<AccountID, Account>builder(ACCOUNTS).build();
+        given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(state);
         final var store = new ReadableAccountStoreImpl(readableStates);
 
         final var query = createEmptyGetAccountBalanceQuery();
@@ -163,9 +158,9 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
     @Test
     @DisplayName("Account Id is needed during validate")
     void validatesQueryIfInvalidAccount() throws Throwable {
-        final var state = MapReadableKVState.<EntityNumVirtualKey, Account>builder(ACCOUNTS)
-                .build();
-        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(state);
+        final var state =
+                MapReadableKVState.<AccountID, Account>builder(ACCOUNTS).build();
+        given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(state);
         final var store = new ReadableAccountStoreImpl(readableStates);
 
         final var query = createGetAccountBalanceQuery(accountNum);
@@ -180,9 +175,9 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
     @Test
     @DisplayName("Contract Id is needed during validate")
     void validatesQueryIfInvalidContract() throws Throwable {
-        final var state = MapReadableKVState.<EntityNumVirtualKey, Account>builder(ACCOUNTS)
-                .build();
-        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(state);
+        final var state =
+                MapReadableKVState.<AccountID, Account>builder(ACCOUNTS).build();
+        given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(state);
         final var store = new ReadableAccountStoreImpl(readableStates);
 
         final var query = createGetAccountBalanceQueryWithContract(accountNum);
@@ -199,9 +194,9 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
     void validatesQueryIfDeletedAccount() throws Throwable {
         deleteAccount = deleteAccount.copyBuilder().deleted(true).build();
         readableAccounts = emptyReadableAccountStateBuilder()
-                .value(EntityNumVirtualKey.fromLong(deleteAccountNum), deleteAccount)
+                .value(deleteAccountId, deleteAccount)
                 .build();
-        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
         readableStore = new ReadableAccountStoreImpl(readableStates);
 
         final var query = createGetAccountBalanceQuery(deleteAccountNum);
@@ -219,9 +214,9 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
         deleteAccount =
                 deleteAccount.copyBuilder().deleted(true).smartContract(true).build();
         readableAccounts = emptyReadableAccountStateBuilder()
-                .value(EntityNumVirtualKey.fromLong(deleteAccountNum), deleteAccount)
+                .value(deleteAccountId, deleteAccount)
                 .build();
-        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
         readableStore = new ReadableAccountStoreImpl(readableStates);
 
         final var query = createGetAccountBalanceQueryWithContract(deleteAccountNum);
@@ -264,10 +259,10 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
                 .build();
         final var expectedInfo = getExpectedInfo();
 
-        final var readableAccounts = MapReadableKVState.<EntityNumVirtualKey, Account>builder(ACCOUNTS)
-                .value(EntityNumVirtualKey.fromLong(accountNum), account)
+        final var readableAccounts = MapReadableKVState.<AccountID, Account>builder(ACCOUNTS)
+                .value(id, account)
                 .build();
-        given(readableStates1.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        given(readableStates1.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
         ReadableAccountStore ReadableAccountStore = new ReadableAccountStoreImpl(readableStates1);
 
         given(token1.decimals()).willReturn(100);
@@ -321,10 +316,10 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
                 .build();
         final var expectedInfo = getExpectedInfo();
 
-        final var readableAccounts = MapReadableKVState.<EntityNumVirtualKey, Account>builder(ACCOUNTS)
-                .value(EntityNumVirtualKey.fromLong(accountNum), account)
+        final var readableAccounts = MapReadableKVState.<AccountID, Account>builder(ACCOUNTS)
+                .value(id, account)
                 .build();
-        given(readableStates1.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        given(readableStates1.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
         ReadableAccountStore ReadableAccountStore = new ReadableAccountStoreImpl(readableStates1);
 
         given(token1.decimals()).willReturn(100);
