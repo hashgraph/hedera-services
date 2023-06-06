@@ -59,7 +59,8 @@ public class ReadableTopicStoreImpl implements ReadableTopicStore {
      * @return topic's metadata
      */
     @Nullable
-    public Topic getTopic(@Nullable final TopicID id) {
+    public Topic getTopic(@NonNull final TopicID id) {
+        requireNonNull(id);
         return getTopicLeaf(id).orElse(null);
     }
 

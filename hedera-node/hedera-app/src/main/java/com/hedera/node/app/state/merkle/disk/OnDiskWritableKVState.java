@@ -31,7 +31,7 @@ import java.util.Objects;
  * @param <K> The type of key for the state
  * @param <V> The type of value for the state
  */
-public final class OnDiskWritableKVState<K extends Comparable<K>, V> extends WritableKVStateBase<K, V> {
+public final class OnDiskWritableKVState<K, V> extends WritableKVStateBase<K, V> {
     /** The backing merkle data structure */
     private final VirtualMap<OnDiskKey<K>, OnDiskValue<V>> virtualMap;
 

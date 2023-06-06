@@ -84,6 +84,8 @@ import com.swirlds.merkle.map.test.pta.TransactionRecord;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
+import com.swirlds.platform.system.SystemExitCode;
+import com.swirlds.platform.system.SystemExitUtils;
 import com.swirlds.virtualmap.internal.merkle.VirtualLeafNode;
 import java.io.File;
 import java.io.FileInputStream;
@@ -1200,7 +1202,7 @@ public class PlatformTestingToolMain implements SwirldMain {
 
         if (currentConfig.isQuitJVMAfterTest()) {
             logger.info(LOGM_DEMO_QUORUM, "Terminating the JVM [ consensusTime = {} ]", consensusTime);
-            System.exit(0);
+            SystemExitUtils.exitSystem(SystemExitCode.NO_ERROR);
         }
     }
 

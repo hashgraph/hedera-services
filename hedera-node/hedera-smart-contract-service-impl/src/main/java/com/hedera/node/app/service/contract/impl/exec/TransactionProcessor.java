@@ -17,12 +17,11 @@
 package com.hedera.node.app.service.contract.impl.exec;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
-
-import java.util.Objects;
 
 public class TransactionProcessor {
     public static final String CONFIG_CONTEXT_VARIABLE = "contractsConfig";

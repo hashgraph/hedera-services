@@ -21,6 +21,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAdd
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyPropertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
@@ -48,6 +49,7 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.CONSTRUCTOR;
@@ -109,7 +111,8 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                 topLevelSendToReceiverSigRequiredAccountReverts(),
                 internalBurnToZeroAddressReverts(),
                 ethereumCallWithCalldataBiggerThanMaxSucceeds(),
-                createWithSelfDestructInConstructorHasSaneRecord());
+                createWithSelfDestructInConstructorHasSaneRecord(),
+                internalSendToSpecialFileReverts());
     }
 
     List<HapiSpec> ethereumCreates() {
@@ -566,6 +569,30 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                         .gasLimit(1_000_000L)
                         .sending(depositAmount)
                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED));
+    }
+
+    HapiSpec internalSendToSpecialFileReverts() {
+        return onlyPropertyPreservingHapiSpec("internalSendToSpecialFileReverts")
+                .preserving("contracts.evm.version")
+                .given(
+                        overriding("contracts.evm.version", "v0.34"),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(RELAYER).balance(123 * ONE_HUNDRED_HBARS),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)))
+                .when(uploadInitCode(JUST_SEND_CONTRACT), contractCreate(JUST_SEND_CONTRACT))
+                .then(
+                        ethereumCall(JUST_SEND_CONTRACT, SEND_TO, BigInteger.valueOf(123L), BigInteger.valueOf(123))
+                                .type(EthTxData.EthTransactionType.EIP1559)
+                                .signingWith(SECP_256K1_SOURCE_KEY)
+                                .payingWith(RELAYER)
+                                .nonce(0)
+                                .maxFeePerGas(50L)
+                                .maxPriorityGas(2L)
+                                .gasLimit(1_000_000L)
+                                .sending(depositAmount)
+                                .via("hmm")
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        getTxnRecord("hmm").andAllChildRecords().logged());
     }
 
     @Override

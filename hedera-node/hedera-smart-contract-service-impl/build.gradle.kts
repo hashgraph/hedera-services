@@ -18,33 +18,22 @@ plugins { id("com.hedera.hashgraph.conventions") }
 
 description = "Default Hedera Smart Contract Service Implementation"
 
-configurations.all {
-    exclude("javax.annotation", "javax.annotation-api")
+dependencies {
+    testImplementation(project(mapOf("path" to ":hedera-node:node-config")))
+    javaModuleDependencies {
+        annotationProcessor(gav("dagger.compiler"))
 
-    exclude("io.grpc", "grpc-core")
-    exclude("io.grpc", "grpc-context")
-    exclude("io.grpc", "grpc-api")
-    exclude("io.grpc", "grpc-testing")
+        testImplementation(testFixtures(project(":hedera-node:node-app-spi")))
+        testImplementation(testFixtures(project(":hedera-node:node-config")))
+        testRuntimeOnly(gav("org.mockito.inline"))
+    }
 }
 
-dependencies {
-    implementation(project(mapOf("path" to ":hedera-node:hedera-config")))
-    testImplementation("org.junit.jupiter:junit-jupiter:5.8.1")
-    testImplementation(project(mapOf("path" to ":hedera-node:hedera-config")))
-    annotationProcessor(libs.dagger.compiler)
-    api(project(":hedera-node:hedera-smart-contract-service"))
-    implementation(project(":hedera-node:hedera-mono-service"))
-    api(libs.besu.evm)
-    api(libs.besu.datatypes)
-    implementation(libs.bundles.di)
-
-    implementation(libs.swirlds.virtualmap)
-    implementation(libs.swirlds.jasperdb)
-    testImplementation(testLibs.bundles.testing)
-    testImplementation(testLibs.mockito.inline)
-    testImplementation(project(":hedera-node:hedera-app-spi"))
-    testImplementation(project(":hedera-node:hedera-mono-service"))
-    testImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
-    testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
-    testImplementation(testFixtures(project(":hedera-node:hedera-config")))
+// TODO module-info.java in 'test'
+// https://github.com/autonomousapps/dependency-analysis-android-gradle-plugin/issues/900
+dependencyAnalysis.issues {
+    onUnusedDependencies {
+        exclude(":hedera-node:node-app-service-mono")
+        exclude(":hedera-node:node-app-service-token")
+    }
 }
