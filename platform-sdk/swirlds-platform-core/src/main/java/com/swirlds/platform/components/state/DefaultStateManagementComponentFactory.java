@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.components.state;
 
-import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.common.formatting.StringFormattingUtils.addLine;
 
 import com.swirlds.common.context.PlatformContext;
@@ -59,7 +58,7 @@ public class DefaultStateManagementComponentFactory implements StateManagementCo
     private IssConsumer issConsumer;
     private HaltRequestedConsumer haltRequestedConsumer;
     private FatalErrorConsumer fatalErrorConsumer;
-    private PreconsensusEventWriter preConsensusEventWriter;
+    private PreconsensusEventWriter preconsensusEventWriter;
 
     public DefaultStateManagementComponentFactory(
             @NonNull final PlatformContext context,
@@ -132,9 +131,9 @@ public class DefaultStateManagementComponentFactory implements StateManagementCo
     }
 
     @Override
-    public @NonNull StateManagementComponentFactory setPreConsensusEventWriter(
-            @NonNull final PreconsensusEventWriter preConsensusEventWriter) {
-        this.preConsensusEventWriter = throwArgNull(preConsensusEventWriter, "preConsensusEventWriter");
+    public @NonNull StateManagementComponentFactory setPreconsensusEventWriter(
+            @NonNull final PreconsensusEventWriter preconsensusEventWriter) {
+        this.preconsensusEventWriter = Objects.requireNonNull(preconsensusEventWriter);
         return this;
     }
 
@@ -157,7 +156,7 @@ public class DefaultStateManagementComponentFactory implements StateManagementCo
                 issConsumer,
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                preConsensusEventWriter,
+                preconsensusEventWriter,
                 getPlatformStatus);
     }
 
@@ -187,7 +186,7 @@ public class DefaultStateManagementComponentFactory implements StateManagementCo
         if (fatalErrorConsumer == null) {
             addLine(errors, "fatalErrorConsumer must not be null");
         }
-        if (preConsensusEventWriter == null) {
+        if (preconsensusEventWriter == null) {
             addLine(errors, "preConsensusEventWriter must not be null");
         }
         if (!errors.isEmpty()) {

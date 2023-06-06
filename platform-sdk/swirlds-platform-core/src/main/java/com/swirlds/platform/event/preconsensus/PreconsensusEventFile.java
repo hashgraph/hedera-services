@@ -35,7 +35,7 @@ import java.util.stream.Stream;
 
 /**
  * <p>
- * Describes a pre-consensus event stream file.
+ * Describes a preconsensus event stream file.
  * </p>
  *
  * <p>
@@ -56,7 +56,7 @@ import java.util.stream.Stream;
 public final class PreconsensusEventFile implements Comparable<PreconsensusEventFile> {
 
     /**
-     * The file extension for standard files. Stands for "Pre-Consensus Event Stream".
+     * The file extension for standard files. Stands for "PreConsensus Event Stream".
      */
     public static final String EVENT_FILE_EXTENSION = ".pces";
 

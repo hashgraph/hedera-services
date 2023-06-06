@@ -179,7 +179,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
             @NonNull final IssConsumer issConsumer,
             @NonNull final HaltRequestedConsumer haltRequestedConsumer,
             @NonNull final FatalErrorConsumer fatalErrorConsumer,
-            @NonNull final PreconsensusEventWriter preConsensusEventWriter,
+            @NonNull final PreconsensusEventWriter preconsensusEventWriter,
             @NonNull final Supplier<PlatformStatus> getPlatformStatus) {
 
         Objects.requireNonNull(platformContext);
@@ -197,7 +197,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         Objects.requireNonNull(issConsumer);
         Objects.requireNonNull(haltRequestedConsumer);
         Objects.requireNonNull(fatalErrorConsumer);
-        Objects.requireNonNull(preConsensusEventWriter);
+        Objects.requireNonNull(preconsensusEventWriter);
         Objects.requireNonNull(getPlatformStatus);
 
         this.signer = signer;
@@ -225,7 +225,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
                 selfId,
                 swirldName,
                 stateToDiskEventConsumer,
-                preConsensusEventWriter::setMinimumGenerationToStore);
+                preconsensusEventWriter::setMinimumGenerationToStore);
 
         final StateHasEnoughSignaturesConsumer combinedStateHasEnoughSignaturesConsumer = ss -> {
             stateHasEnoughSignatures(ss);

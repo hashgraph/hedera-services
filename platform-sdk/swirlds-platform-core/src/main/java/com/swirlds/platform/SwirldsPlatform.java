@@ -182,7 +182,7 @@ public class SwirldsPlatform implements Platform, Startable {
      * Hashgraph Event graph. Used for gossiping.
      */
     private final ShadowGraph shadowGraph;
-    /** The last status of the platform that was determined, is null until the platform starts up */
+    /** The last status of the platform that was determined */
     private final AtomicReference<PlatformStatus> currentPlatformStatus =
             new AtomicReference<>(PlatformStatus.STARTING_UP);
     /**
@@ -212,10 +212,6 @@ public class SwirldsPlatform implements Platform, Startable {
      * genesis state, this is 0.
      */
     private final long initialMinimumGenerationNonAncient;
-    /**
-     * Events from gossip and/or the preconsensus event stream are processed by this class.
-     */
-    private final EventIntake eventIntake;
     /**
      * If a state was loaded from disk, this will have the hash of that state.
      */
@@ -271,12 +267,12 @@ public class SwirldsPlatform implements Platform, Startable {
     /**
      * Can be used to read preconsensus event files from disk.
      */
-    private final PreconsensusEventFileManager preConsensusEventFileManager;
+    private final PreconsensusEventFileManager preconsensusEventFileManager;
 
     /**
-     * Writes pre-consensus events to disk.
+     * Writes preconsensus events to disk.
      */
-    private final PreconsensusEventWriter preConsensusEventWriter;
+    private final PreconsensusEventWriter preconsensusEventWriter;
 
     /**
      * Responsible for transmitting and receiving events from the network.
@@ -368,8 +364,8 @@ public class SwirldsPlatform implements Platform, Startable {
         final AppCommunicationComponent appCommunicationComponent =
                 wiring.wireAppCommunicationComponent(notificationEngine);
 
-        preConsensusEventFileManager = buildPreConsensusEventFileManager();
-        preConsensusEventWriter = components.add(buildPreConsensusEventWriter(preConsensusEventFileManager));
+        preconsensusEventFileManager = buildPreconsensusEventFileManager();
+        preconsensusEventWriter = components.add(buildPreconsensusEventWriter(preconsensusEventFileManager));
 
         stateManagementComponent = wiring.wireStateManagementComponent(
                 PlatformConstructor.platformSigner(crypto.getKeysAndCerts()),
@@ -379,7 +375,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 txn -> this.createSystemTransaction(txn, true),
                 this::haltRequested,
                 appCommunicationComponent,
-                preConsensusEventWriter,
+                preconsensusEventWriter,
                 currentPlatformStatus::get);
         wiring.registerComponents(components);
 
@@ -492,7 +488,7 @@ public class SwirldsPlatform implements Platform, Startable {
                     new ConsensusHandlingMetrics(metrics, time),
                     eventStreamManager,
                     stateHashSignQueue,
-                    preConsensusEventWriter::waitUntilDurable,
+                    preconsensusEventWriter::waitUntilDurable,
                     freezeManager::freezeStarted,
                     stateManagementComponent::roundAppliedToState,
                     appVersion));
@@ -514,18 +510,18 @@ public class SwirldsPlatform implements Platform, Startable {
                     (PreConsensusEventObserver) event -> {
                         sequencer.assignStreamSequenceNumber(event);
                         abortAndThrowIfInterrupted(
-                                preConsensusEventWriter::writeEvent,
+                                preconsensusEventWriter::writeEvent,
                                 event,
                                 "Interrupted while attempting to enqueue preconsensus event for writing");
                     },
                     (ConsensusRoundObserver) round -> {
                         abortAndThrowIfInterrupted(
-                                preConsensusEventWriter::setMinimumGenerationNonAncient,
+                                preconsensusEventWriter::setMinimumGenerationNonAncient,
                                 round.getGenerations().getMinGenerationNonAncient(),
                                 "Interrupted while attempting to enqueue change in minimum generation non-ancient");
 
                         abortAndThrowIfInterrupted(
-                                preConsensusEventWriter::requestFlush,
+                                preconsensusEventWriter::requestFlush,
                                 "Interrupted while requesting preconsensus event flush");
                     });
 
@@ -535,7 +531,8 @@ public class SwirldsPlatform implements Platform, Startable {
             eventLinker = buildEventLinker(isDuplicateChecks);
 
             final IntakeCycleStats intakeCycleStats = new IntakeCycleStats(time, metrics);
-            eventIntake = new EventIntake(
+
+            final EventIntake eventIntake = new EventIntake(
                     selfId,
                     eventLinker,
                     consensusRef::get,
@@ -874,8 +871,8 @@ public class SwirldsPlatform implements Platform, Startable {
             consensusRoundHandler.loadDataFromSignedState(signedState, true);
 
             try {
-                preConsensusEventWriter.registerDiscontinuity();
-                preConsensusEventWriter.setMinimumGenerationNonAncient(signedState
+                preconsensusEventWriter.registerDiscontinuity();
+                preconsensusEventWriter.setMinimumGenerationNonAncient(signedState
                         .getState()
                         .getPlatformState()
                         .getPlatformData()
@@ -976,7 +973,8 @@ public class SwirldsPlatform implements Platform, Startable {
     /**
      * Build the preconsensus event file manager.
      */
-    private PreconsensusEventFileManager buildPreConsensusEventFileManager() {
+    @NonNull
+    private PreconsensusEventFileManager buildPreconsensusEventFileManager() {
         try {
             return new PreconsensusEventFileManager(platformContext, OSTime.getInstance(), selfId.id());
         } catch (final IOException e) {
@@ -988,11 +986,13 @@ public class SwirldsPlatform implements Platform, Startable {
      * Build the preconsensus event writer.
      */
     @NonNull
-    private PreconsensusEventWriter buildPreConsensusEventWriter(final PreconsensusEventFileManager fileManager) {
-        final PreconsensusEventStreamConfig preConsensusEventStreamConfig =
+    private PreconsensusEventWriter buildPreconsensusEventWriter(
+            @NonNull final PreconsensusEventFileManager fileManager) {
+
+        final PreconsensusEventStreamConfig preconsensusEventStreamConfig =
                 platformContext.getConfiguration().getConfigData(PreconsensusEventStreamConfig.class);
 
-        if (!preConsensusEventStreamConfig.enableStorage()) {
+        if (!preconsensusEventStreamConfig.enableStorage()) {
             return new NoOpPreconsensusEventWriter();
         }
 
@@ -1045,24 +1045,21 @@ public class SwirldsPlatform implements Platform, Startable {
                 .getConfigData(PreconsensusEventStreamConfig.class)
                 .enableReplay();
         if (!enableReplay) {
-            final PlatformStatus previous = currentPlatformStatus.getAndSet(PlatformStatus.READY);
-            logger.info(PLATFORM_STATUS.getMarker(), () -> new PlatformStatusPayload(
-                            "Platform status changed.", previous.name(), PlatformStatus.READY.name())
-                    .toString());
+            setPlatformStatus(PlatformStatus.READY);
         } else {
             PreconsensusEventReplayWorkflow.replayPreconsensusEvents(
                     platformContext,
                     threadManager,
                     OSTime.getInstance(),
-                    preConsensusEventFileManager,
-                    preConsensusEventWriter,
+                    preconsensusEventFileManager,
+                    preconsensusEventWriter,
                     eventTaskDispatcher,
-                    eventIntake,
                     intakeQueue,
                     consensusRoundHandler,
                     stateHashSignQueue,
                     stateManagementComponent,
-                    currentPlatformStatus,
+                    currentPlatformStatus::get,
+                    this::setPlatformStatus,
                     initialMinimumGenerationNonAncient);
         }
     }
@@ -1089,28 +1086,33 @@ public class SwirldsPlatform implements Platform, Startable {
         final int numNodes = initialAddressBook.getSize();
 
         synchronized (currentPlatformStatus) {
-            final PlatformStatus newStatus;
             if (numNodes > 1 && gossip.activeConnectionNumber() == 0) {
-                newStatus = PlatformStatus.DISCONNECTED;
+                setPlatformStatus(PlatformStatus.DISCONNECTED);
             } else if (gossip.hasFallenBehind()) {
-                newStatus = PlatformStatus.BEHIND;
+                setPlatformStatus(PlatformStatus.BEHIND);
             } else if (freezeManager.isFreezeStarted()) {
-                newStatus = PlatformStatus.MAINTENANCE;
+                setPlatformStatus(PlatformStatus.MAINTENANCE);
             } else if (freezeManager.isFreezeComplete()) {
-                newStatus = PlatformStatus.FREEZE_COMPLETE;
+                setPlatformStatus(PlatformStatus.FREEZE_COMPLETE);
             } else {
-                newStatus = PlatformStatus.ACTIVE;
+                setPlatformStatus(PlatformStatus.ACTIVE);
             }
+        }
+    }
 
-            final PlatformStatus oldStatus = currentPlatformStatus.getAndSet(newStatus);
-            if (oldStatus != newStatus) {
-                logger.info(PLATFORM_STATUS.getMarker(), () -> new PlatformStatusPayload(
-                                "Platform status changed.", oldStatus == null ? "" : oldStatus.name(), newStatus.name())
-                        .toString());
+    /**
+     * Change the current platform status.
+     * @param newStatus the new platform status
+     */
+    private void setPlatformStatus(@NonNull final PlatformStatus newStatus) {
+        final PlatformStatus oldStatus = currentPlatformStatus.getAndSet(newStatus);
+        if (oldStatus != newStatus) {
+            logger.info(PLATFORM_STATUS.getMarker(), () -> new PlatformStatusPayload(
+                            "Platform status changed.", oldStatus == null ? "" : oldStatus.name(), newStatus.name())
+                    .toString());
 
-                notificationEngine.dispatch(
-                        PlatformStatusChangeListener.class, new PlatformStatusChangeNotification(newStatus));
-            }
+            notificationEngine.dispatch(
+                    PlatformStatusChangeListener.class, new PlatformStatusChangeNotification(newStatus));
         }
     }
 

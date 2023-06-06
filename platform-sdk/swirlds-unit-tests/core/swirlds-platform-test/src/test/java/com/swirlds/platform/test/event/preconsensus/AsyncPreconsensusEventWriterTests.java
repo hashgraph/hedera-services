@@ -79,8 +79,8 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-@DisplayName("AsyncPreConsensusEventWriter Tests")
-class AsyncPreConsensusEventWriterTests {
+@DisplayName("AsyncPreconsensusEventWriter Tests")
+class AsyncPreconsensusEventWriterTests {
 
     /**
      * Temporary directory provided by JUnit

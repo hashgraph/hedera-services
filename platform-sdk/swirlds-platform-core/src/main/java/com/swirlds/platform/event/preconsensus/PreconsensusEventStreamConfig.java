@@ -23,14 +23,14 @@ import java.nio.file.Path;
 import java.time.Duration;
 
 /**
- * Configuration for pre-consensus event storage.
+ * Configuration for preconsensus event storage.
  *
- * @param writeQueueCapacity                              the queue capacity for pre-consensus events waiting to be
+ * @param writeQueueCapacity                              the queue capacity for preconsensus events waiting to be
  *                                                        written to disk
- * @param minimumRetentionPeriod                          the minimum amount of time that pre-consensus events should be
+ * @param minimumRetentionPeriod                          the minimum amount of time that preconsensus events should be
  *                                                        stored on disk. At a minimum, should exceed the length of time
  *                                                        between state saving.
- * @param preferredFileSizeMegabytes                      the preferred file size for pre-consensus event files. Not a
+ * @param preferredFileSizeMegabytes                      the preferred file size for preconsensus event files. Not a
  *                                                        strong guarantee on file size, more of a suggestion.
  * @param bootstrapGenerationalSpan                       when first starting up a preconsensus event file manager, the
  *                                                        running average for the generational utilization will not have
@@ -81,11 +81,11 @@ import java.time.Duration;
  *                                                        com.swirlds.platform.state.StateSettings#savedStateDirectory}.
  * @param recycleBinDirectory                             the directory where invalid preconsensus event files will be
  *                                                        moved if a discontinuity is detected
- * @param enableStorage                                   if true, then stream pre-consensus events to files on disk. If
+ * @param enableStorage                                   if true, then stream preconsensus events to files on disk. If
  *                                                        this is disabled then a network wide crash (perhaps due to a
  *                                                        bug) can cause transactions that previously reached consensus
  *                                                        to be "forgotten" and effectively rolled back.
- * @param enableReplay                                    if true, then replay pre-consensus events at boot time after
+ * @param enableReplay                                    if true, then replay preconsensus events at boot time after
  *                                                        loading a signed state. If this is disabled then a network
  *                                                        wide crash (perhaps due to a bug) can cause transactions that
  *                                                        previously reached consensus to be "forgotten" and effectively

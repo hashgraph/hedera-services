@@ -12,9 +12,9 @@
                                           #############################
 
 chatter.useChatter,               false
+doUpnp,                           false
 maxOutgoingSyncs,                 1
 sync.syncAsProtocolEnabled,       false
-doUpnp,                           false
 useLoopbackIp,                    false
 
                                           #############################
@@ -25,7 +25,7 @@ event.preconsensus.enableReplay,  false
 event.preconsensus.enableStorage, false
 
                                           #############################
-                                          # Consensus Event Stream    #
+                                          #  Consensus Event Stream   #
                                           #############################
 
 enableEventStreaming,             false
@@ -48,8 +48,8 @@ showInternalStats,                true
                                           #           State           #
                                           #############################
 
-state.saveStatePeriod,            0
 checkSignedStateFromDisk,         true
+state.saveStatePeriod,            0
 
                                           #############################
                                           #           Misc.           #

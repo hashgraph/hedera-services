@@ -22,7 +22,6 @@ import static com.swirlds.common.system.PlatformStatus.REPLAYING_EVENTS;
 import static com.swirlds.common.system.PlatformStatus.STARTING_UP;
 import static com.swirlds.common.units.TimeUnit.UNIT_MILLISECONDS;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.PLATFORM_STATUS;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
 import com.swirlds.common.context.PlatformContext;
@@ -32,8 +31,6 @@ import com.swirlds.common.system.PlatformStatus;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.time.Time;
-import com.swirlds.logging.payloads.PlatformStatusPayload;
-import com.swirlds.platform.components.EventIntake;
 import com.swirlds.platform.components.EventTaskDispatcher;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.event.EventIntakeTask;
@@ -44,7 +41,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -62,45 +60,46 @@ public final class PreconsensusEventReplayWorkflow {
      *
      * @param platformContext                    the platform context for this node
      * @param threadManager                      the thread manager for this node
-     * @param preConsensusEventFileManager       manages the preconsensus event files on disk
-     * @param preConsensusEventWriter            writes preconsensus events to disk
+     * @param preconsensusEventFileManager       manages the preconsensus event files on disk
+     * @param preconsensusEventWriter            writes preconsensus events to disk
      * @param eventTaskDispatcher                where events read from the stream should be passed
-     * @param eventIntake                        the event intake component where events from the stream are fed
      * @param intakeQueue                        the queue thread for the event intake component
      * @param consensusRoundHandler              the object responsible for applying transactions to consensus rounds
      * @param stateHashSignQueue                 the queue thread for hashing and signing states
      * @param stateManagementComponent           manages various copies of the state
-     * @param currentPlatformStatus              a pointer to the current platform status
+     * @param getPlatformStatus                  used to get the current platform status
+     * @param setPlatformStatus                  used to set the current platform status
      * @param initialMinimumGenerationNonAncient the minimum generation of events to replay
      */
     public static void replayPreconsensusEvents(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
             @NonNull final Time time,
-            @NonNull final PreconsensusEventFileManager preConsensusEventFileManager,
-            @NonNull final PreconsensusEventWriter preConsensusEventWriter,
+            @NonNull final PreconsensusEventFileManager preconsensusEventFileManager,
+            @NonNull final PreconsensusEventWriter preconsensusEventWriter,
             @NonNull final EventTaskDispatcher eventTaskDispatcher,
-            @NonNull final EventIntake eventIntake,
             @NonNull final QueueThread<EventIntakeTask> intakeQueue,
             @NonNull final ConsensusRoundHandler consensusRoundHandler,
             @NonNull final QueueThread<ReservedSignedState> stateHashSignQueue,
             @NonNull final StateManagementComponent stateManagementComponent,
-            @NonNull final AtomicReference<PlatformStatus> currentPlatformStatus,
+            @NonNull final Supplier<PlatformStatus> getPlatformStatus,
+            @NonNull final Consumer<PlatformStatus> setPlatformStatus,
             final long initialMinimumGenerationNonAncient) {
 
         Objects.requireNonNull(platformContext);
+        Objects.requireNonNull(threadManager);
         Objects.requireNonNull(time);
-        Objects.requireNonNull(preConsensusEventFileManager);
-        Objects.requireNonNull(preConsensusEventWriter);
+        Objects.requireNonNull(preconsensusEventFileManager);
+        Objects.requireNonNull(preconsensusEventWriter);
         Objects.requireNonNull(eventTaskDispatcher);
-        Objects.requireNonNull(eventIntake);
         Objects.requireNonNull(intakeQueue);
         Objects.requireNonNull(consensusRoundHandler);
         Objects.requireNonNull(stateHashSignQueue);
         Objects.requireNonNull(stateManagementComponent);
-        Objects.requireNonNull(currentPlatformStatus);
+        Objects.requireNonNull(getPlatformStatus);
+        Objects.requireNonNull(setPlatformStatus);
 
-        setupReplayStatus(currentPlatformStatus);
+        setupReplayStatus(getPlatformStatus, setPlatformStatus);
 
         logger.info(
                 STARTUP.getMarker(),
@@ -111,7 +110,7 @@ public final class PreconsensusEventReplayWorkflow {
             final Instant start = time.now();
 
             final IOIterator<EventImpl> iterator =
-                    preConsensusEventFileManager.getEventIterator(initialMinimumGenerationNonAncient, true);
+                    preconsensusEventFileManager.getEventIterator(initialMinimumGenerationNonAncient, true);
 
             final PreconsensusEventReplayPipeline eventReplayPipeline = new PreconsensusEventReplayPipeline(
                     platformContext, threadManager, iterator, eventTaskDispatcher::dispatchTask);
@@ -128,49 +127,51 @@ public final class PreconsensusEventReplayWorkflow {
                     eventReplayPipeline.getTransactionCount(),
                     elapsed);
 
-            preConsensusEventWriter.beginStreamingNewEvents();
+            preconsensusEventWriter.beginStreamingNewEvents();
 
         } catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("interrupted while replaying preconsensus event stream", e);
         }
 
-        setupEndOfReplayStatus(currentPlatformStatus);
+        setupEndOfReplayStatus(getPlatformStatus, setPlatformStatus);
     }
 
     /**
      * Update the platform status for PCES replay.
      */
-    private static void setupReplayStatus(@NonNull final AtomicReference<PlatformStatus> currentPlatformStatus) {
+    private static void setupReplayStatus(
+            @NonNull final Supplier<PlatformStatus> getPlatformStatus,
+            @NonNull final Consumer<PlatformStatus> setPlatformStatus) {
+
         // Sanity check for platform status can be removed after we clean up platform status management
-        if (currentPlatformStatus.get() != STARTING_UP) {
+        final PlatformStatus currentPlatformStatus = getPlatformStatus.get();
+        if (currentPlatformStatus != STARTING_UP) {
             throw new IllegalStateException(
-                    "Platform status should be STARTING_UP, current status is " + currentPlatformStatus.get());
+                    "Platform status should be STARTING_UP, current status is " + currentPlatformStatus);
         }
 
-        currentPlatformStatus.set(REPLAYING_EVENTS);
-        logger.info(PLATFORM_STATUS.getMarker(), () -> new PlatformStatusPayload(
-                        "Platform status changed.", STARTING_UP.name(), REPLAYING_EVENTS.name())
-                .toString());
+        setPlatformStatus.accept(REPLAYING_EVENTS);
     }
 
     /**
-     * Update the platform status to indicate that PCES replay has completed.\
+     * Update the platform status to indicate that PCES replay has completed.
      */
-    private static void setupEndOfReplayStatus(@NonNull final AtomicReference<PlatformStatus> currentPlatformStatus) {
+    private static void setupEndOfReplayStatus(
+            @NonNull final Supplier<PlatformStatus> getPlatformStatus,
+            @NonNull final Consumer<PlatformStatus> setPlatformStatus) {
+
         // Sanity check for platform status can be removed after we clean up platform status management
-        if (currentPlatformStatus.get() != REPLAYING_EVENTS) {
+        final PlatformStatus currentPlatformStatus = getPlatformStatus.get();
+        if (currentPlatformStatus != REPLAYING_EVENTS) {
             throw new IllegalStateException(
-                    "Platform status should be REPLAYING_EVENTS, current status is " + currentPlatformStatus.get());
+                    "Platform status should be REPLAYING_EVENTS, current status is " + currentPlatformStatus);
         }
-        currentPlatformStatus.set(READY);
-        logger.info(PLATFORM_STATUS.getMarker(), () -> new PlatformStatusPayload(
-                        "Platform status changed.", REPLAYING_EVENTS.name(), READY.name())
-                .toString());
+        setPlatformStatus.accept(READY);
     }
 
     /**
-     * Wait for all events to be replied. Some of this work happens on asynchronous threads, so we need to wait for them
+     * Wait for all events to be replayed. Some of this work happens on asynchronous threads, so we need to wait for them
      * to complete even after we exhaust all available events from the stream.
      */
     private static void waitForReplayToComplete(
@@ -237,9 +238,13 @@ public final class PreconsensusEventReplayWorkflow {
                     commaSeparatedNumber(eventCount),
                     commaSeparatedNumber(transactionCount),
                     commaSeparatedNumber(elapsedRounds),
-                    new UnitFormatter(elapsedConsensusTime.toMillis(), UNIT_MILLISECONDS).setAbbreviate(false),
+                    new UnitFormatter(elapsedConsensusTime.toMillis(), UNIT_MILLISECONDS)
+                            .setAbbreviate(false)
+                            .render(),
                     commaSeparatedNumber(latestRound),
-                    new UnitFormatter(elapsedTime.toMillis(), UNIT_MILLISECONDS).setAbbreviate(false));
+                    new UnitFormatter(elapsedTime.toMillis(), UNIT_MILLISECONDS)
+                            .setAbbreviate(false)
+                            .render());
         }
     }
 }

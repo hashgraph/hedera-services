@@ -18,7 +18,7 @@ package com.swirlds.platform.test.event.preconsensus;
 
 import static com.swirlds.common.test.io.FileManipulation.corruptFile;
 import static com.swirlds.common.test.io.FileManipulation.truncateFile;
-import static com.swirlds.platform.test.event.preconsensus.AsyncPreConsensusEventWriterTests.assertEventsAreEqual;
+import static com.swirlds.platform.test.event.preconsensus.AsyncPreconsensusEventWriterTests.assertEventsAreEqual;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -54,8 +54,8 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-@DisplayName("PreConsensusEventFileIterator Tests")
-class PreConsensusEventReadWriteTests {
+@DisplayName("PreconsensusEventFileIterator Tests")
+class PreconsensusEventReadWriteTests {
 
     /**
      * Temporary directory provided by JUnit

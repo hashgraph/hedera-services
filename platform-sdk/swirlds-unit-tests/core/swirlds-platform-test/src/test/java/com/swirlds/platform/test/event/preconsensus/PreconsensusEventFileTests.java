@@ -50,8 +50,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-@DisplayName("PreConsensusEventFile Tests")
-class PreConsensusEventFileTests {
+@DisplayName("PreconsensusEventFile Tests")
+class PreconsensusEventFileTests {
 
     /**
      * Temporary directory provided by JUnit

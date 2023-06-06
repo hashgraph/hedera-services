@@ -28,7 +28,7 @@ import java.io.IOException;
 import java.util.NoSuchElementException;
 
 /**
- * Iterates over the events in a single pre-consensus event file.
+ * Iterates over the events in a single preconsensus event file.
  */
 public class PreconsensusEventFileIterator implements IOIterator<EventImpl> {
 
@@ -39,10 +39,10 @@ public class PreconsensusEventFileIterator implements IOIterator<EventImpl> {
     private EventImpl next;
 
     /**
-     * Create a new iterator that walks over events in a pre-consensus event file.
+     * Create a new iterator that walks over events in a preconsensus event file.
      *
      * @param fileDescriptor
-     * 		describes a pre-consensus event file
+     * 		describes a preconsensus event file
      * @param minimumGeneration
      * 		the minimum generation to return, any events in the file with a smaller
      * 		generation are ignored and not returned

@@ -112,22 +112,22 @@ public class PreconsensusEventFileManager {
         throwArgNull(platformContext, "platformContext");
         throwArgNull(time, "time");
 
-        final PreconsensusEventStreamConfig preConsensusEventStreamConfig =
+        final PreconsensusEventStreamConfig preconsensusEventStreamConfig =
                 platformContext.getConfiguration().getConfigData(PreconsensusEventStreamConfig.class);
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
 
         this.time = time;
         this.metrics = new PreconsensusEventMetrics(platformContext.getMetrics());
 
-        minimumRetentionPeriod = preConsensusEventStreamConfig.minimumRetentionPeriod();
+        minimumRetentionPeriod = preconsensusEventStreamConfig.minimumRetentionPeriod();
 
         final Path savedStateDirectory = stateConfig.savedStateDirectory();
 
         this.databaseDirectory = savedStateDirectory
-                .resolve(preConsensusEventStreamConfig.databaseDirectory())
+                .resolve(preconsensusEventStreamConfig.databaseDirectory())
                 .resolve(Long.toString(selfId));
 
-        this.recycleBinDirectory = savedStateDirectory.resolve(preConsensusEventStreamConfig.recycleBinDirectory());
+        this.recycleBinDirectory = savedStateDirectory.resolve(preconsensusEventStreamConfig.recycleBinDirectory());
 
         if (!Files.exists(databaseDirectory)) {
             Files.createDirectories(databaseDirectory);
@@ -141,7 +141,7 @@ public class PreconsensusEventFileManager {
                     .map(PreconsensusEventFileManager::parseFile)
                     .filter(Objects::nonNull)
                     .sorted()
-                    .forEachOrdered(buildFileHandler(preConsensusEventStreamConfig.permitGaps()));
+                    .forEachOrdered(buildFileHandler(preconsensusEventStreamConfig.permitGaps()));
         }
 
         // Measure the size of each file.
@@ -237,7 +237,7 @@ public class PreconsensusEventFileManager {
 
         // Sequence number should always monotonically increase
         if (!permitGaps && previousSequenceNumber + 1 != descriptor.getSequenceNumber()) {
-            throw new IllegalStateException("Gap in pre-consensus event files detected! Previous sequence number was "
+            throw new IllegalStateException("Gap in preconsensus event files detected! Previous sequence number was "
                     + previousSequenceNumber + ", next sequence number is "
                     + descriptor.getSequenceNumber());
         }

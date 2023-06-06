@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.test.event.preconsensus;
 
-import static com.swirlds.platform.test.event.preconsensus.AsyncPreConsensusEventWriterTests.buildGraphGenerator;
-import static com.swirlds.platform.test.event.preconsensus.AsyncPreConsensusEventWriterTests.verifyStream;
+import static com.swirlds.platform.test.event.preconsensus.AsyncPreconsensusEventWriterTests.buildGraphGenerator;
+import static com.swirlds.platform.test.event.preconsensus.AsyncPreconsensusEventWriterTests.verifyStream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -58,8 +58,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-@DisplayName("SyncPreConsensusEventWriter Tests")
-class SyncPreConsensusEventWriterTests {
+@DisplayName("SyncPreconsensusEventWriter Tests")
+class SyncPreconsensusEventWriterTests {
 
     /**
      * Temporary directory provided by JUnit

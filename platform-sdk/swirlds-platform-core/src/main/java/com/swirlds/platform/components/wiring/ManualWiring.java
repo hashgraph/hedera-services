@@ -119,7 +119,7 @@ public class ManualWiring {
      * @param prioritySystemTransactionSubmitter submits priority system transactions
      * @param haltRequestedConsumer              consumer to invoke when a halt is requested
      * @param appCommunicationComponent          the {@link AppCommunicationComponent}
-     * @param preConsensusEventWriter            writes preconsensus events to disk
+     * @param preconsensusEventWriter            writes preconsensus events to disk
      * @param getPlatformStatus                  a supplier that returns the current platform status
      * @return a fully wired {@link StateManagementComponent}
      */
@@ -131,7 +131,7 @@ public class ManualWiring {
             @NonNull final PrioritySystemTransactionSubmitter prioritySystemTransactionSubmitter,
             @NonNull final HaltRequestedConsumer haltRequestedConsumer,
             @NonNull final AppCommunicationComponent appCommunicationComponent,
-            @NonNull final PreconsensusEventWriter preConsensusEventWriter,
+            @NonNull final PreconsensusEventWriter preconsensusEventWriter,
             @NonNull final Supplier<PlatformStatus> getPlatformStatus) {
 
         Objects.requireNonNull(platformSigner, "platformSigner");
@@ -141,7 +141,7 @@ public class ManualWiring {
         Objects.requireNonNull(prioritySystemTransactionSubmitter, "prioritySystemTransactionSubmitter");
         Objects.requireNonNull(haltRequestedConsumer, "haltRequestedConsumer");
         Objects.requireNonNull(appCommunicationComponent, "appCommunicationComponent");
-        Objects.requireNonNull(preConsensusEventWriter, "preConsensusEventWriter");
+        Objects.requireNonNull(preconsensusEventWriter, "preconsensusEventWriter");
         Objects.requireNonNull(getPlatformStatus, "getPlatformStatus");
 
         final StateManagementComponentFactory stateManagementComponentFactory =
@@ -187,7 +187,7 @@ public class ManualWiring {
         // FUTURE WORK: make this asynchronous
         stateManagementComponentFactory.issConsumer(appCommunicationComponent);
         stateManagementComponentFactory.fatalErrorConsumer(this::handleFatalError);
-        stateManagementComponentFactory.setPreConsensusEventWriter(preConsensusEventWriter);
+        stateManagementComponentFactory.setPreconsensusEventWriter(preconsensusEventWriter);
 
         final StateManagementComponent stateManagementComponent = stateManagementComponentFactory.build();
         platformComponentList.add(stateManagementComponent);

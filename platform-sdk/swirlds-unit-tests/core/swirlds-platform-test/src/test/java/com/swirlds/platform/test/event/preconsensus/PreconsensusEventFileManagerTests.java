@@ -62,8 +62,8 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-@DisplayName("PreConsensusEventFileManager Tests")
-class PreConsensusEventFileManagerTests {
+@DisplayName("PreconsensusEventFileManager Tests")
+class PreconsensusEventFileManagerTests {
 
     /**
      * Temporary directory provided by JUnit

@@ -18,9 +18,11 @@ package com.swirlds.platform.event.preconsensus;
 
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.platform.internal.EventImpl;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 
 /**
  * Iterates over events from a sequence of preconsensus event files.
@@ -43,9 +45,9 @@ public class PreconsensusEventMultiFileIterator implements IOIterator<EventImpl>
      * 		an iterator that walks over event files
      */
     public PreconsensusEventMultiFileIterator(
-            final long minimumGeneration, final Iterator<PreconsensusEventFile> fileIterator) {
+            final long minimumGeneration, @NonNull final Iterator<PreconsensusEventFile> fileIterator) {
 
-        this.fileIterator = fileIterator;
+        this.fileIterator = Objects.requireNonNull(fileIterator);
         this.minimumGeneration = minimumGeneration;
     }
 

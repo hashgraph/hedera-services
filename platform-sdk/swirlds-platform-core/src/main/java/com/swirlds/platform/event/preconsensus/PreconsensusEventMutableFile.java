@@ -20,6 +20,7 @@ import com.swirlds.common.io.extendable.ExtendableOutputStream;
 import com.swirlds.common.io.extendable.extensions.CountingStreamExtension;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.platform.internal.EventImpl;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -28,7 +29,7 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 
 /**
- * Represents a pre-consensus event file that can be written to.
+ * Represents a preconsensus event file that can be written to.
  */
 public class PreconsensusEventMutableFile {
 
@@ -53,11 +54,11 @@ public class PreconsensusEventMutableFile {
     private final SerializableDataOutputStream out;
 
     /**
-     * Create a new pre-consensus event file that can be written to.
+     * Create a new preconsensus event file that can be written to.
      *
      * @param descriptor a description of the file
      */
-    PreconsensusEventMutableFile(final PreconsensusEventFile descriptor) throws IOException {
+    PreconsensusEventMutableFile(@NonNull final PreconsensusEventFile descriptor) throws IOException {
         if (Files.exists(descriptor.getPath())) {
             throw new IOException("File " + descriptor.getPath() + " already exists");
         }
