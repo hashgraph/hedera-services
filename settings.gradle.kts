@@ -129,7 +129,6 @@ dependencyResolutionManagement {
       val bouncycastleVersion = "1.70"
       val daggerVersion = "2.42"
       val eclipseCollectionsVersion = "10.4.0"
-      val grpcVersion = "1.48.2" // higher 'grpc-netty' versions lead to hanging integration tests
       val helidonVersion = "3.0.2"
       val jacksonVersion = "2.13.3"
       val log4jVersion = "2.17.1"
@@ -166,8 +165,8 @@ dependencyResolutionManagement {
       version("com.swirlds.virtualmap", swirldsVersion)
       version("dagger", daggerVersion)
       version("dagger.compiler", daggerVersion)
-      version("grpc.netty", grpcVersion)
-      version("grpc.stub", grpcVersion)
+      version("grpc.netty", "1.45.1") // higher versions lead to hanging integration tests
+      version("grpc.stub", "1.50.2")
       version("headlong", "6.1.1")
       version("info.picocli", "4.6.3")
       version("io.github.classgraph", "4.8.65")
