@@ -20,7 +20,7 @@ plugins {
 
 spotless {
     kotlinGradle {
-        ktfmt()
+        ktfmt().kotlinlangStyle()
 
         licenseHeader(
             """
