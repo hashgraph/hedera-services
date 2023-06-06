@@ -96,6 +96,7 @@ import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.jasperdb.VirtualDataSourceJasperDB;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.gui.SwirldsGui;
 import com.swirlds.platform.state.DualStateImpl;
 import com.swirlds.virtualmap.VirtualKey;
@@ -147,11 +148,13 @@ public class ServicesState extends PartialNaryMerkleInternal
     public ServicesState() {
         // RuntimeConstructable
         bootstrapProperties = null;
+        resetDefaultMerkleDbPathIfNeeded();
     }
 
     @VisibleForTesting
     ServicesState(final BootstrapProperties bootstrapProperties) {
         this.bootstrapProperties = bootstrapProperties;
+        resetDefaultMerkleDbPathIfNeeded();
     }
 
     private ServicesState(final ServicesState that) {
@@ -333,6 +336,20 @@ public class ServicesState extends PartialNaryMerkleInternal
         // irrespective of the weight provided in config.txt
         configNodeIds.forEach(nodeId -> configAddressBook.updateWeight(nodeId, 0));
         return configAddressBook;
+    }
+
+    private void resetDefaultMerkleDbPathIfNeeded() {
+        // This is a workaround to support multiple nodes running in a single process for testing
+        // purposes. When a node is restored from a saved state, all virtual maps are restored to
+        // the default MerkleDb instance. There is no way yet to provide node config to MerkleDb,
+        // it's a singleton. It leads to nodes to overwrite each other's data. To work it around,
+        // let's reset the default MerkleDb path. It has to be done before the state is loaded
+        // from disk, so I'm putting this code right into the constructor
+        final boolean enabledJasperdbToMerkleDb =
+                getBootstrapProperties().getBooleanProperty(PropertyNames.VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB);
+        if (enabledJasperdbToMerkleDb) {
+            MerkleDb.setDefaultPath(null);
+        }
     }
 
     private ServicesApp deserializedInit(
