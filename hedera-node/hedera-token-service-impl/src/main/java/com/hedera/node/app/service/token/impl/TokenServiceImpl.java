@@ -18,7 +18,9 @@ package com.hedera.node.app.service.token.impl;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.mono.state.codec.MonoMapCodecAdapter;
 import com.hedera.node.app.service.mono.state.merkle.MerklePayerRecords;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
@@ -28,7 +30,6 @@ import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKeySeriali
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKey;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKeySerializer;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
-import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.TokenService;
@@ -45,8 +46,7 @@ public class TokenServiceImpl implements TokenService {
     private static final int MAX_ACCOUNTS = 1024;
     private static final int MAX_TOKEN_RELS = 1042;
     private static final int MAX_MINTABLE_NFTS = 4096;
-    private static final SemanticVersion CURRENT_VERSION =
-            SemanticVersion.newBuilder().minor(34).build();
+    private static final SemanticVersion GENESIS_VERSION = SemanticVersion.DEFAULT;
 
     public static final String NFTS_KEY = "NFTS";
     public static final String TOKENS_KEY = "TOKENS";
@@ -57,14 +57,14 @@ public class TokenServiceImpl implements TokenService {
     public static final String STAKING_INFO_KEY = "STAKING_INFOS";
 
     @Override
-    public void registerMonoAdapterSchemas(final @NonNull SchemaRegistry registry) {
+    public void registerMonoAdapterSchemas(@NonNull SchemaRegistry registry) {
         requireNonNull(registry);
         registry.register(tokenSchema());
     }
 
     private Schema tokenSchema() {
         // Everything on disk that can be
-        return new Schema(CURRENT_VERSION) {
+        return new Schema(GENESIS_VERSION) {
             @NonNull
             @Override
             public Set<StateDefinition> statesToCreate() {
@@ -79,11 +79,9 @@ public class TokenServiceImpl implements TokenService {
         };
     }
 
-    private StateDefinition<EntityNumVirtualKey, OnDiskAccount> onDiskAccountsDef() {
-        final var keySerdes = MonoMapCodecAdapter.codecForVirtualKey(
-                EntityNumVirtualKey.CURRENT_VERSION, EntityNumVirtualKey::new, new EntityNumVirtualKeySerializer());
-        final var valueSerdes =
-                MonoMapCodecAdapter.codecForVirtualValue(OnDiskAccount.CURRENT_VERSION, OnDiskAccount::new);
+    private StateDefinition<AccountID, Account> onDiskAccountsDef() {
+        final var keySerdes = AccountID.PROTOBUF;
+        final var valueSerdes = Account.PROTOBUF;
         return StateDefinition.onDisk(ACCOUNTS_KEY, keySerdes, valueSerdes, MAX_ACCOUNTS);
     }
 
