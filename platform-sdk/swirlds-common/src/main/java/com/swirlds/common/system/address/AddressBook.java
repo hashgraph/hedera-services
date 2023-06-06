@@ -260,18 +260,6 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
     }
 
     /**
-     * Find the ID for the member at a given index within the address book.
-     *
-     * @param index the index within the address book
-     * @return a node ID
-     * @deprecated use {@link #getNodeId(int)} instead
-     */
-    @Deprecated(since = "0.39.0", forRemoval = true)
-    public long getId(final int index) {
-        return getNodeId(index).id();
-    }
-
-    /**
      * Get the index within the address book of a given node ID.
      *
      * @param id the node's ID
@@ -322,15 +310,21 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
     }
 
     /**
-     * Get the address for the member with the given ID
+     * Get the address for the member with the given ID.  Use {@link #contains(NodeId)} to check for its existence and
+     * avoid an exception.
      *
      * @param id the member ID of the address to get
      * @return the address
+     * @throws NoSuchElementException if no address with the given ID exists
      */
-    @Nullable
+    @NonNull
     public Address getAddress(@NonNull final NodeId id) {
         Objects.requireNonNull(id, "NodeId is null");
-        return addresses.get(id);
+        final Address address = addresses.get(id);
+        if (address == null) {
+            throw new NoSuchElementException("no address with id " + id + " exists");
+        }
+        return address;
     }
 
     /**
@@ -400,9 +394,6 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
         Objects.requireNonNull(id, "NodeId is null");
         throwIfImmutable();
         final Address address = getAddress(id);
-        if (address == null) {
-            throw new NoSuchElementException("no address with ID " + id + " exists");
-        }
         if (weight < 0) {
             throw new IllegalArgumentException("weight must be nonnegative");
         }
@@ -622,15 +613,20 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
     public String toConfigText() {
         final TextTable table = new TextTable().setBordersEnabled(false);
         for (final Address address : this) {
+            final String memo = address.getMemo();
+            final boolean hasMemo = !memo.trim().isEmpty();
+            final boolean hasInternalIpv4 = address.getAddressInternalIpv4() != null;
+            final boolean hasExternalIpv4 = address.getAddressExternalIpv4() != null;
             table.addRow(
                     "address,",
                     address.getNickname() + ",",
                     address.getSelfName() + ",",
                     address.getWeight() + ",",
-                    ipString(address.getAddressInternalIpv4()) + ",",
+                    (hasInternalIpv4 ? ipString(address.getAddressInternalIpv4()) : "") + ",",
                     address.getPortInternalIpv4() + ",",
-                    ipString(address.getAddressExternalIpv4()) + ",",
-                    address.getPortExternalIpv4());
+                    (hasExternalIpv4 ? ipString(address.getAddressExternalIpv4()) : "") + ",",
+                    address.getPortExternalIpv4() + (hasMemo ? "," : ""),
+                    memo);
         }
         return table.render();
     }

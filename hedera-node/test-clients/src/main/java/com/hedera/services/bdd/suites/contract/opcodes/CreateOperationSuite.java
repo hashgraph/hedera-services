@@ -81,7 +81,7 @@ public class CreateOperationSuite extends HapiSuite {
                 inheritanceOfNestedCreatedContracts(),
                 factoryAndSelfDestructInConstructorContract(),
                 factoryQuickSelfDestructContract(),
-                contractCreateWithNewOpInConstructor(),
+                contractCreateWithNewOpInConstructorAbandoningParent(),
                 childContractStorageWorks());
     }
 
@@ -143,7 +143,7 @@ public class CreateOperationSuite extends HapiSuite {
     }
 
     HapiSpec simpleFactoryWorks() {
-        return defaultHapiSpec("ContractFactoryWorksHappyPath")
+        return defaultHapiSpec("simpleFactoryWorks")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, DEPLOYMENT_SUCCESS_FUNCTION)
                         .gas(780_000)
@@ -275,9 +275,9 @@ public class CreateOperationSuite extends HapiSuite {
                 }));
     }
 
-    private HapiSpec contractCreateWithNewOpInConstructor() {
+    private HapiSpec contractCreateWithNewOpInConstructorAbandoningParent() {
         final var contract = "AbandoningParent";
-        return defaultHapiSpec("ContractCreateWithNewOpInConstructorAbandoningParent")
+        return defaultHapiSpec("contractCreateWithNewOpInConstructorAbandoningParent")
                 .given(uploadInitCode(contract), contractCreate(contract).via("AbandoningParentTxn"))
                 .when()
                 .then(

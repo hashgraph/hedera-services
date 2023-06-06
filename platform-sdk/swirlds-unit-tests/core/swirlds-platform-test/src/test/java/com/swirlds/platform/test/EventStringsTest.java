@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.BasicSoftwareVersion;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
@@ -51,7 +52,7 @@ class EventStringsTest {
 
         BaseEventHashedData hashedData = new BaseEventHashedData(
                 new BasicSoftwareVersion(1),
-                id,
+                new NodeId(id),
                 spGen,
                 opGen,
                 new Hash(),
@@ -59,7 +60,7 @@ class EventStringsTest {
                 Instant.now(),
                 new ConsensusTransactionImpl[0]);
         hashedData.setHash(new Hash());
-        BaseEventUnhashedData unhashedData = new BaseEventUnhashedData(opId, new byte[0]);
+        BaseEventUnhashedData unhashedData = new BaseEventUnhashedData(new NodeId(opId), new byte[0]);
         printAssert(
                 EventStrings.toShortString(new EventImpl(hashedData, unhashedData)),
                 String.format("%d,%d", id, BaseEventHashedData.calculateGeneration(spGen, opGen)),

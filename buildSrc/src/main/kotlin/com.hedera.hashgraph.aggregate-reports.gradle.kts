@@ -18,7 +18,6 @@ import java.io.BufferedOutputStream
  */
 
 plugins {
-    `java-platform`
     id("org.sonarqube")
     id("lazy.zoo.gradle.git-data-plugin")
 }
@@ -52,7 +51,7 @@ sonarqube {
     }
 }
 
-tasks.create("githubVersionSummary") {
+tasks.register("githubVersionSummary") {
     group = "github"
     doLast {
         val ghStepSummaryPath: String? = System.getenv("GITHUB_STEP_SUMMARY")
@@ -65,14 +64,14 @@ tasks.create("githubVersionSummary") {
     }
 }
 
-tasks.create("showVersion") {
+tasks.register("showVersion") {
     group = "versioning"
     doLast {
         println(project.version)
     }
 }
 
-tasks.create("versionAsPrefixedCommit") {
+tasks.register("versionAsPrefixedCommit") {
     group = "versioning"
     doLast {
         gitData.lastCommitHash?.let {
@@ -89,7 +88,7 @@ tasks.create("versionAsPrefixedCommit") {
     }
 }
 
-tasks.create("versionAsSnapshot") {
+tasks.register("versionAsSnapshot") {
     group = "versioning"
     doLast {
         val currVer = SemVer.parse(rootProject.version.toString())
@@ -99,7 +98,7 @@ tasks.create("versionAsSnapshot") {
     }
 }
 
-tasks.create("versionAsSpecified") {
+tasks.register("versionAsSpecified") {
     group = "versioning"
     doLast {
         val verStr = findProperty("newVersion")?.toString()

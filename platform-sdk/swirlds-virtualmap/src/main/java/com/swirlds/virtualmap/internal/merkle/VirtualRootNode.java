@@ -86,6 +86,7 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
@@ -163,10 +164,10 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
     private static final int MAX_RECONNECT_HASHING_BUFFER_TIMEOUT = 60;
 
     /**
-     * The number of seconds to wait for the hashing buffer during full leaf rehash
-     * (see {@link VirtualRootNode#fullLeafRehash()}) before we cancel the rehashing with an exception.
+     * The number of seconds to wait for the full leaf rehash process to finish
+     * (see {@link VirtualRootNode#fullLeafRehashIfNecessary()}) before we fail with an exception.
      */
-    private static final int MAX_FULL_REHASHING_BUFFER_TIMEOUT = 10;
+    private static final int MAX_FULL_REHASHING_TIMEOUT = 3600; // 1 hour
 
     /**
      * Placeholder (since this is such a hotspot) to hold the results from {@link VirtualMapSettingsFactory#get()}
@@ -412,19 +413,22 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
     }
 
     /**
-     * Do a full rehash of the persisted leaves of the map.
-     * This will iterate over all the leaf nodes from the disk and rehash them.
+     * Do a full rehash of the persisted leaves of the map if the leaf hashes are absent. To determine if the leaf hashes
+     * are available it checks tries to load a hash by the last leaf path.
+     *
+     * If the hash is not available, it will iterate over all the leaf nodes from the disk and rehash them.
      * The main difference between this and {@link VirtualRootNode#computeHash()} is that {@code computeHash}
      * update hashes for dirty leaves that are in the cache, while this method will rehash all the leaves from the disk.
      * {@code computeHash} doesn't have to take memory consumption into account because the cache is already in memory and
      * for this method it is critical to not load all the leaves into memory because there are too many of them.
      */
-    public void fullLeafRehash() {
+    public void fullLeafRehashIfNecessary() {
         Objects.requireNonNull(records, "Records must be initialized before rehashing");
 
         final ConcurrentBlockingIterator<VirtualLeafRecord<K, V>> rehashIterator =
                 new ConcurrentBlockingIterator<>(MAX_REHASHING_BUFFER_SIZE, Integer.MAX_VALUE, MILLISECONDS);
         final CompletableFuture<Hash> fullRehashFuture = new CompletableFuture<>();
+        final CompletableFuture<Void> leafFeedFuture = new CompletableFuture<>();
         // getting a range that is relevant for the data source
         final long firstLeafPath = dataSource.getFirstLeafPath();
         final long lastLeafPath = dataSource.getLastLeafPath();
@@ -477,41 +481,81 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                 .build()
                 .start();
 
-        for (long i = firstLeafPath; i <= lastLeafPath; i++) {
-
-            try {
-                VirtualLeafRecord<K, V> leafRecord = dataSource.loadLeafRecord(i);
-                if (leafRecord != null) {
+        // This background thread will be responsible for feeding the iterator with data.
+        new ThreadConfiguration(getStaticThreadManager())
+                .setComponent("virtualmap")
+                .setThreadName("leafFeeder")
+                .setRunnable(() -> {
+                    final long onePercent = (lastLeafPath - firstLeafPath) / 100 + 1;
                     try {
-                        final boolean success =
-                                rehashIterator.supply(leafRecord, MAX_FULL_REHASHING_BUFFER_TIMEOUT, SECONDS);
-                        if (!success) {
-                            throw new MerkleSynchronizationException(
-                                    "Timed out waiting to supply a new leaf to the hashing iterator buffer");
+                        for (long i = firstLeafPath; i <= lastLeafPath; i++) {
+                            try {
+                                VirtualLeafRecord<K, V> leafRecord = dataSource.loadLeafRecord(i);
+                                assert leafRecord != null : "Leaf record should not be null";
+                                try {
+                                    final boolean success =
+                                            rehashIterator.supply(leafRecord, Integer.MAX_VALUE, SECONDS);
+                                    if (!success) {
+                                        throw new MerkleSynchronizationException(
+                                                "Timed out waiting to supply a new leaf to the hashing iterator buffer");
+                                    }
+                                } catch (final MerkleSynchronizationException e) {
+                                    throw e;
+                                } catch (final InterruptedException e) {
+                                    Thread.currentThread().interrupt();
+                                    throw new MerkleSynchronizationException(
+                                            "Interrupted while waiting to supply a new leaf to the hashing iterator buffer",
+                                            e);
+                                } catch (final Exception e) {
+                                    throw new MerkleSynchronizationException(
+                                            "Failed to handle a leaf during full rehashing", e);
+                                }
+                            } catch (IOException e) {
+                                throw new UncheckedIOException(e);
+                            }
+                            // we don't care about tracking progress on small maps.
+                            if (onePercent > 10 && i % onePercent == 0) {
+                                logger.info(
+                                        STARTUP.getMarker(),
+                                        "Full rehash progress for the VirtualMap at {}: {}%",
+                                        getRoute(),
+                                        (i - firstLeafPath) / onePercent + 1);
+                            }
                         }
-                    } catch (final MerkleSynchronizationException e) {
-                        throw e;
-                    } catch (final InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        throw new MerkleSynchronizationException(
-                                "Interrupted while waiting to supply a new leaf to the hashing iterator buffer", e);
-                    } catch (final Exception e) {
-                        throw new MerkleSynchronizationException("Failed to handle a leaf during full rehashing", e);
+                    } finally {
+                        rehashIterator.close();
                     }
-                }
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        }
-        rehashIterator.close();
+                    leafFeedFuture.complete(null);
+                })
+                .setExceptionHandler((thread, exception) -> {
+                    // Shut down the iterator.
+                    rehashIterator.close();
+                    final var message = "VirtualMap@" + getRoute() + " failed to feed all leaves the hasher";
+                    logger.error(EXCEPTION.getMarker(), message, exception);
+                    leafFeedFuture.completeExceptionally(new MerkleSynchronizationException(message, exception));
+                })
+                .build()
+                .start();
+
         try {
-            super.setHash(fullRehashFuture.get());
+            final long start = System.currentTimeMillis();
+            leafFeedFuture.get(MAX_FULL_REHASHING_TIMEOUT, SECONDS);
+            final long secondsSpent = (System.currentTimeMillis() - start) / 1000;
+            logger.info(
+                    STARTUP.getMarker(),
+                    "It took {} seconds to feed all leaves to the hasher for the VirtualMap at {}",
+                    secondsSpent,
+                    getRoute());
+            super.setHash(fullRehashFuture.get(MAX_FULL_REHASHING_TIMEOUT - secondsSpent, SECONDS));
         } catch (ExecutionException e) {
             final var message = "VirtualMap@" + getRoute() + " failed to get hash during full rehashing";
             throw new MerkleSynchronizationException(message, e);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             final var message = "VirtualMap@" + getRoute() + " interrupted while full rehashing";
+            throw new MerkleSynchronizationException(message, e);
+        } catch (TimeoutException e) {
+            final var message = "VirtualMap@" + getRoute() + "wasn't able to finish full rehashing in time";
             throw new MerkleSynchronizationException(message, e);
         }
     }
@@ -1074,22 +1118,19 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             VirtualNodeCache<K, V> cacheToFlush, VirtualStateAccessor stateToUse, VirtualDataSource<K, V> ds) {
         try {
             // Get the leaves that were changed and sort them by path so that lower paths come first
-            final Stream<VirtualLeafRecord<K, V>> sortedDirtyLeaves =
-                    cacheToFlush.dirtyLeaves(stateToUse.getFirstLeafPath(), stateToUse.getLastLeafPath());
-
+            final Stream<VirtualLeafRecord<K, V>> dirtyLeaves =
+                    cacheToFlush.dirtyLeavesForFlush(stateToUse.getFirstLeafPath(), stateToUse.getLastLeafPath());
             // Get the deleted leaves
             final Stream<VirtualLeafRecord<K, V>> deletedLeaves = cacheToFlush.deletedLeaves();
-
             // Save the dirty hashes
-            final Stream<VirtualHashRecord> sortedDirtyHashes = cacheToFlush.dirtyHashes(stateToUse.getLastLeafPath());
-
+            final Stream<VirtualHashRecord> dirtyHashes =
+                    cacheToFlush.dirtyHashesForFlush(stateToUse.getLastLeafPath());
             ds.saveRecords(
                     stateToUse.getFirstLeafPath(),
                     stateToUse.getLastLeafPath(),
-                    sortedDirtyHashes,
-                    sortedDirtyLeaves,
+                    dirtyHashes,
+                    dirtyLeaves,
                     deletedLeaves);
-
         } catch (final ClosedByInterruptException ex) {
             logger.info(
                     TESTING_EXCEPTIONS_ACCEPTABLE_RECONNECT.getMarker(),
@@ -1205,7 +1246,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         };
         Hash virtualHash = hasher.hash(
                 records::findHash,
-                cache.dirtyLeaves(state.getFirstLeafPath(), state.getLastLeafPath())
+                cache.dirtyLeavesForHash(state.getFirstLeafPath(), state.getLastLeafPath())
                         .iterator(),
                 state.getFirstLeafPath(),
                 state.getLastLeafPath(),
@@ -1435,27 +1476,13 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
     }
 
     /**
-     * Loads the leaf, sibling and siblings of parents on the path to root.
+     * Loads the leaf record.
      * Lower level caches (VirtualDataSource, the OS file cache) should make subsequent value retrievals faster.
      * Warming keys can be done in parallel.
      * @param key key to the leaf node
      */
     public void warm(final K key) {
-
-        // Warm the leaf node
-        final VirtualLeafRecord<K, V> leafRecord = records.findLeafRecord(key, false);
-        if (leafRecord == null) {
-            return;
-        }
-
-        // Warm node hashes for all siblings on the path to root.
-        // Those are used when rehashing the tree due to a changed leaf.
-        for (long path = leafRecord.getPath(); path > 0; path = getParentPath(path)) {
-            final long siblingPath = getSiblingPath(path);
-            if (siblingPath != INVALID_PATH) {
-                records.findHash(siblingPath);
-            }
-        }
+        records.findLeafRecord(key, false);
     }
 
     ////////////////////////

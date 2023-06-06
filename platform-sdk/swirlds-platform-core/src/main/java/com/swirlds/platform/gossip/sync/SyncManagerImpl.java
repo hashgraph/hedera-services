@@ -36,6 +36,7 @@ import com.swirlds.platform.network.RandomGraph;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.logging.log4j.LogManager;
@@ -87,24 +88,23 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
      */
     public SyncManagerImpl(
             @NonNull final Metrics metrics,
-            final BlockingQueue<EventIntakeTask> intakeQueue,
-            final RandomGraph connectionGraph,
-            final NodeId selfId,
-            final EventCreationRules eventCreationRules,
-            final CriticalQuorum criticalQuorum,
-            final AddressBook addressBook,
-            final FallenBehindManager fallenBehindManager) {
-        super();
+            @NonNull final BlockingQueue<EventIntakeTask> intakeQueue,
+            @NonNull final RandomGraph connectionGraph,
+            @NonNull final NodeId selfId,
+            @NonNull final EventCreationRules eventCreationRules,
+            @NonNull final CriticalQuorum criticalQuorum,
+            @NonNull final AddressBook addressBook,
+            @NonNull final FallenBehindManager fallenBehindManager) {
 
-        this.intakeQueue = intakeQueue;
-        this.connectionGraph = connectionGraph;
-        this.selfId = selfId;
+        this.intakeQueue = Objects.requireNonNull(intakeQueue);
+        this.connectionGraph = Objects.requireNonNull(connectionGraph);
+        this.selfId = Objects.requireNonNull(selfId);
 
-        this.eventCreationRules = eventCreationRules;
-        this.criticalQuorum = criticalQuorum;
-        this.addressBook = addressBook;
+        this.eventCreationRules = Objects.requireNonNull(eventCreationRules);
+        this.criticalQuorum = Objects.requireNonNull(criticalQuorum);
+        this.addressBook = Objects.requireNonNull(addressBook);
 
-        this.fallenBehindManager = fallenBehindManager;
+        this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager);
 
         metrics.getOrCreate(
                 new FunctionGauge.Config<>(INTERNAL_CATEGORY, "hasFallenBehind", Object.class, this::hasFallenBehind)
@@ -168,18 +168,24 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
             return list;
         }
         list = new LinkedList<>();
+        final int selfIndex = addressBook.getIndexOfNodeId(selfId);
         for (int i = 0; i < MAXIMUM_NEIGHBORS_TO_QUERY; i++) {
-            final long neighbor = connectionGraph.randomNeighbor(selfId.getIdAsInt());
+            // Noncontiguous NodeId compatibility: connectionGraph is interpreted as addressbook indexes for NodeIds
+            final int neighbor = connectionGraph.randomNeighbor(selfIndex) % addressBook.getSize();
+            if (neighbor == selfIndex) {
+                continue;
+            }
+            final NodeId neighborId = addressBook.getNodeId(neighbor);
 
             // don't add duplicated nodes here
-            if (list.contains(neighbor)) {
+            if (list.contains(neighborId.id())) {
                 continue;
             }
 
             // we try to call a neighbor in the bottom 1/3 by number of events created in the latest round, if
             // we fail to find one after 10 tries, we just call the last neighbor we find
-            if (criticalQuorum.isInCriticalQuorum(neighbor) || i == MAXIMUM_NEIGHBORS_TO_QUERY - 1) {
-                list.add(neighbor);
+            if (criticalQuorum.isInCriticalQuorum(neighborId) || i == MAXIMUM_NEIGHBORS_TO_QUERY - 1) {
+                list.add(neighborId.id());
             }
         }
 
@@ -232,8 +238,7 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
         }
 
         // check 3: if neither node is part of the superMinority in the latest round, don't create an event
-        if (!criticalQuorum.isInCriticalQuorum(info.getOtherId().id())
-                && !criticalQuorum.isInCriticalQuorum(selfId.id())) {
+        if (!criticalQuorum.isInCriticalQuorum(info.getOtherId()) && !criticalQuorum.isInCriticalQuorum(selfId)) {
             return false;
         }
 

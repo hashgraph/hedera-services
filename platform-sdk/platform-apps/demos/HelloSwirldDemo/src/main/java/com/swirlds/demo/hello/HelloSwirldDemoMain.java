@@ -80,7 +80,7 @@ public class HelloSwirldDemoMain implements SwirldMain {
         this.platform = (SwirldsPlatform) platform;
         this.selfId = id.id();
         this.console = createConsole(platform, true); // create the window, make it visible
-        GuiPlatformAccessor.getInstance().setAbout(platform.getSelfId().id(), "Hello Swirld v. 1.0\n");
+        GuiPlatformAccessor.getInstance().setAbout(platform.getSelfId(), "Hello Swirld v. 1.0\n");
     }
 
     @Override

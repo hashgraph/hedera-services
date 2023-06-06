@@ -21,7 +21,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_DELEGATING_SPEN
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -30,7 +29,6 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoApproveAllowanceTransactionBody;
 import com.hedera.hapi.node.token.NftAllowance;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.handlers.CryptoApproveAllowanceHandler;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
@@ -66,11 +64,11 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
     public void setUp() {
         super.setUp();
         readableAccounts = emptyReadableAccountStateBuilder()
-                .value(EntityNumVirtualKey.fromLong(owner.accountNum()), ownerAccount)
-                .value(EntityNumVirtualKey.fromLong(accountNum), account)
-                .value(EntityNumVirtualKey.fromLong(delegatingSpender.accountNum()), account)
+                .value(owner, ownerAccount)
+                .value(id, account)
+                .value(delegatingSpender, account)
                 .build();
-        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
         readableStore = new ReadableAccountStoreImpl(readableStates);
     }
 
@@ -88,10 +86,8 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void cryptoApproveAllowanceFailsWithInvalidOwner() throws PreCheckException {
-        readableAccounts = emptyReadableAccountStateBuilder()
-                .value(EntityNumVirtualKey.fromLong(accountNum), account)
-                .build();
-        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        readableAccounts = emptyReadableAccountStateBuilder().value(id, account).build();
+        given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
         readableStore = new ReadableAccountStoreImpl(readableStates);
 
         final var txn = cryptoApproveAllowanceTransaction(id, false);
@@ -126,21 +122,16 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
     @Test
     void cryptoApproveAllowanceFailsIfDelegatingSpenderMissing() throws PreCheckException {
         readableAccounts = emptyReadableAccountStateBuilder()
-                .value(EntityNumVirtualKey.fromLong(accountNum), account)
-                .value(EntityNumVirtualKey.fromLong(owner.accountNum()), ownerAccount)
+                .value(id, account)
+                .value(owner, ownerAccount)
                 .build();
-        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
         readableStore = new ReadableAccountStoreImpl(readableStates);
         given(ownerAccount.key()).willReturn(ownerKey);
 
         final var txn = cryptoApproveAllowanceTransaction(id, true);
         final var context = new FakePreHandleContext(readableStore, txn);
         assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_DELEGATING_SPENDER);
-    }
-
-    @Test
-    void handleNotImplemented() {
-        assertThrows(UnsupportedOperationException.class, () -> subject.handle());
     }
 
     private TransactionBody cryptoApproveAllowanceTransaction(

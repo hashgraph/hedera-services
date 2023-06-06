@@ -182,9 +182,10 @@ public final class SignedStateFileWriter {
         try {
             logger.info(
                     STATE_TO_DISK.getMarker(),
-                    "Started writing round {} state to disk. Reason: {}",
+                    "Started writing round {} state to disk. Reason: {}, directory: {}",
                     signedState.getRound(),
-                    taskDescription);
+                    taskDescription,
+                    savedStateDirectory);
 
             executeAndRename(
                     savedStateDirectory, directory -> writeSignedStateFilesToDirectory(selfId, directory, signedState));

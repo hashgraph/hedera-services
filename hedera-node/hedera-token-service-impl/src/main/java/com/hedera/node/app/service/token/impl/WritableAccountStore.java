@@ -22,14 +22,13 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -41,9 +40,9 @@ import java.util.Set;
  */
 public class WritableAccountStore extends ReadableAccountStoreImpl {
     /** The underlying data storage class that holds the account data. */
-    private final WritableKVState<EntityNumVirtualKey, Account> accountState;
+    private final WritableKVState<AccountID, Account> accountState;
     /** The underlying data storage class that holds the aliases data built from the state. */
-    private final WritableKVState<String, EntityNumValue> aliases;
+    private final WritableKVState<String, AccountID> aliases;
 
     /**
      * Create a new {@link WritableAccountStore} instance.
@@ -66,7 +65,8 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      */
     public void put(@NonNull final Account account) {
         Objects.requireNonNull(account);
-        accountState.put(EntityNumVirtualKey.fromLong(account.accountNumber()), Objects.requireNonNull(account));
+        accountState.put(
+                AccountID.newBuilder().accountNum(account.accountNumber()).build(), Objects.requireNonNull(account));
     }
 
     /**
@@ -77,7 +77,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      */
     public void putAlias(@NonNull final String alias, final long accountNum) {
         Objects.requireNonNull(alias);
-        aliases.put(alias, new EntityNumValue(accountNum));
+        aliases.put(alias, AccountID.newBuilder().accountNum(accountNum).build());
     }
 
     /** Commits the changes to the underlying data storage. */
@@ -88,15 +88,13 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
 
     /**
      * Returns the {@link Account} with the given number. If no such account exists, returns {@code
-     * Optional.empty()}
+     * null}
      *
      * @param accountID - the id of the Account to be retrieved.
      */
-    @NonNull
-    public Optional<Account> get(final AccountID accountID) {
-        requireNonNull(accountID);
-        final var account = getAccountLeaf(accountID);
-        return Optional.ofNullable(account);
+    @Nullable
+    public Account get(@NonNull final AccountID accountID) {
+        return getAccountLeaf(requireNonNull(accountID));
     }
 
     /**
@@ -105,8 +103,9 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      *
      * @param id - the number of the account to be retrieved.
      */
-    @NonNull
-    public Optional<Account> getForModify(final AccountID id) {
+    @Nullable
+    public Account getForModify(@NonNull final AccountID id) {
+        requireNonNull(id);
         // Get the account number based on the account identifier. It may be null.
         final var accountOneOf = id.account();
         final Long accountNum =
@@ -117,14 +116,26 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
                         if (alias.length() == EVM_ADDRESS_LEN && isMirror(alias)) {
                             yield fromMirror(alias);
                         } else {
-                            final var entityNum = aliases.get(alias.asUtf8String());
-                            yield entityNum == null ? EntityNumValue.DEFAULT.num() : entityNum.num();
+                            final var accountID = aliases.get(alias.asUtf8String());
+                            yield accountID == null ? AccountID.DEFAULT.accountNum() : accountID.accountNum();
                         }
                     }
                     case UNSET -> EntityNumValue.DEFAULT.num();
                 };
 
-        return Optional.ofNullable(accountState.getForModify(EntityNumVirtualKey.fromLong(accountNum)));
+        return accountNum == null
+                ? null
+                : accountState.getForModify(
+                        AccountID.newBuilder().accountNum(accountNum).build());
+    }
+
+    /**
+     * Removes the {@link Account} with the given {@link AccountID} from the state.
+     * This will add value of the accountId to num in the modifications in state.
+     * @param accountID - the account id of the account to be removed.
+     */
+    public void remove(@NonNull final AccountID accountID) {
+        accountState.remove(accountID);
     }
 
     /**
@@ -153,7 +164,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      * @return the set of accounts modified in existing state
      */
     @NonNull
-    public Set<EntityNumVirtualKey> modifiedAccountsInState() {
+    public Set<AccountID> modifiedAccountsInState() {
         return accountState.modifiedKeys();
     }
 

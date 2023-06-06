@@ -34,15 +34,14 @@ import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
-import com.hedera.node.app.service.token.impl.config.TokenServiceConfig;
 import com.hedera.node.app.service.token.impl.handlers.TokenFeeScheduleUpdateHandler;
 import com.hedera.node.app.service.token.impl.validators.CustomFeesValidator;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
-import com.hedera.node.app.spi.meta.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.swirlds.config.api.Configuration;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -57,16 +56,12 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     private TokenFeeScheduleUpdateHandler subject;
     private CustomFeesValidator validator;
     private TransactionBody txn;
-    private TokenServiceConfig config = new TokenServiceConfig(1000);
 
     @Mock(strictness = LENIENT)
     private HandleContext context;
 
     @Mock
     private PreHandleContext preHandleContext;
-
-    @Mock(strictness = LENIENT)
-    private Configuration tokenServiceConfig;
 
     @BeforeEach
     void setup() {
@@ -75,58 +70,62 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         validator = new CustomFeesValidator();
         subject = new TokenFeeScheduleUpdateHandler(validator);
         givenTxn();
-        given(context.getConfiguration()).willReturn(tokenServiceConfig);
-        given(tokenServiceConfig.getConfigData(TokenServiceConfig.class)).willReturn(config);
-        given(context.createReadableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
-        given(context.createReadableStore(ReadableTokenRelationStore.class)).willReturn(readableTokenRelStore);
+        final var config = new HederaTestConfigBuilder()
+                .withValue("tokens.maxCustomFeesAllowed", 1000)
+                .getOrCreateConfig();
+        given(context.configuration()).willReturn(config);
+        given(context.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
+        given(context.readableStore(ReadableTokenRelationStore.class)).willReturn(readableTokenRelStore);
+        given(context.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
     }
 
     @Test
     @DisplayName("fee schedule update works as expected for fungible token")
     void handleWorksAsExpectedForFungibleToken() {
         // before fee schedule update, validate no custom fees on the token
-        final var originalToken = writableTokenStore.get(fungibleTokenNum.longValue());
-        assertThat(originalToken.get().customFees()).isEmpty();
+        final var originalToken = writableTokenStore.get(fungibleTokenId);
+        assertThat(originalToken.customFees()).isEmpty();
         assertThat(writableTokenStore.modifiedTokens()).isEmpty();
 
-        subject.handle(context, txn, writableTokenStore);
+        subject.handle(context);
 
         // validate after fee schedule update fixed and fractional custom fees are added to the token
         assertThat(writableTokenStore.modifiedTokens()).hasSize(1);
         assertThat(writableTokenStore.modifiedTokens()).hasSameElementsAs(Set.of(fungibleTokenNum));
 
-        final var expectedToken = writableTokenStore.get(fungibleTokenNum.longValue());
-        assertThat(expectedToken.get().customFees()).hasSize(2);
-        assertThat(expectedToken.get().customFees())
+        final var expectedToken = writableTokenStore.get(fungibleTokenId);
+        assertThat(expectedToken.customFees()).hasSize(2);
+        assertThat(expectedToken.customFees())
                 .hasSameElementsAs(List.of(withFractionalFee(fractionalFee), withFixedFee(fixedFee)));
     }
 
     @Test
     @DisplayName("fee schedule update works as expected for non-fungible token")
     void handleWorksAsExpectedForNonFungibleToken() {
+        final var tokenId =
+                TokenID.newBuilder().tokenNum(nonFungibleTokenNum.longValue()).build();
         txn = TransactionBody.newBuilder()
                 .tokenFeeScheduleUpdate(TokenFeeScheduleUpdateTransactionBody.newBuilder()
-                        .tokenId(TokenID.newBuilder()
-                                .tokenNum(nonFungibleTokenNum.longValue())
-                                .build())
+                        .tokenId(tokenId)
                         .customFees(List.of(withRoyaltyFee(royaltyFee)))
                         .build())
                 .build();
+        given(context.body()).willReturn(txn);
 
         // before fee schedule update, validate no custom fees on the token
-        final var originalToken = writableTokenStore.get(nonFungibleTokenNum.longValue());
-        assertThat(originalToken.get().customFees()).isEmpty();
+        final var originalToken = writableTokenStore.get(tokenId);
+        assertThat(originalToken.customFees()).isEmpty();
         assertThat(writableTokenStore.modifiedTokens()).isEmpty();
 
-        subject.handle(context, txn, writableTokenStore);
+        subject.handle(context);
 
         // validate after fee schedule update royalty custom fees are added to the token
         assertThat(writableTokenStore.modifiedTokens()).hasSize(1);
         assertThat(writableTokenStore.modifiedTokens()).hasSameElementsAs(Set.of(nonFungibleTokenNum));
 
-        final var expectedToken = writableTokenStore.get(nonFungibleTokenNum.longValue());
-        assertThat(expectedToken.get().customFees()).hasSize(1);
-        assertThat(expectedToken.get().customFees()).hasSameElementsAs(List.of(withRoyaltyFee(royaltyFee)));
+        final var expectedToken = writableTokenStore.get(nonFungibleTokenId);
+        assertThat(expectedToken.customFees()).hasSize(1);
+        assertThat(expectedToken.customFees()).hasSameElementsAs(List.of(withRoyaltyFee(royaltyFee)));
     }
 
     @Test
@@ -139,8 +138,9 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
                 .build();
         given(writableStates.<EntityNum, Token>get(TOKENS)).willReturn(writableTokenState);
         writableTokenStore = new WritableTokenStore(writableStates);
+        given(context.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
 
-        assertThatThrownBy(() -> subject.handle(context, txn, writableTokenStore))
+        assertThatThrownBy(() -> subject.handle(context))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(TOKEN_HAS_NO_FEE_SCHEDULE_KEY));
     }
@@ -151,8 +151,9 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         writableTokenState = emptyWritableTokenState();
         given(writableStates.<EntityNum, Token>get(TOKENS)).willReturn(writableTokenState);
         writableTokenStore = new WritableTokenStore(writableStates);
+        given(context.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
 
-        assertThatThrownBy(() -> subject.handle(context, txn, writableTokenStore))
+        assertThatThrownBy(() -> subject.handle(context))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(INVALID_TOKEN_ID));
     }
@@ -160,8 +161,11 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     @DisplayName("fee schedule update fails if custom fees list is too long")
     void failsIfTooManyCustomFees() {
-        given(tokenServiceConfig.getConfigData(TokenServiceConfig.class)).willReturn(new TokenServiceConfig(1));
-        assertThatThrownBy(() -> subject.handle(context, txn, writableTokenStore))
+        final var config = new HederaTestConfigBuilder()
+                .withValue("tokens.maxCustomFeesAllowed", 1)
+                .getOrCreateConfig();
+        given(context.configuration()).willReturn(config);
+        assertThatThrownBy(() -> subject.handle(context))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(CUSTOM_FEES_LIST_TOO_LONG));
     }
@@ -189,5 +193,6 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
                         .customFees(customFees)
                         .build())
                 .build();
+        given(context.body()).willReturn(txn);
     }
 }

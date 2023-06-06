@@ -19,7 +19,6 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -29,7 +28,6 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoDeleteAllowanceTransactionBody;
 import com.hedera.hapi.node.token.NftRemoveAllowance;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.handlers.CryptoDeleteAllowanceHandler;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
@@ -51,11 +49,11 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoHandlerTestBase {
     public void setUp() {
         super.setUp();
         readableAccounts = emptyReadableAccountStateBuilder()
-                .value(EntityNumVirtualKey.fromLong(owner.accountNum()), ownerAccount)
-                .value(EntityNumVirtualKey.fromLong(accountNum), account)
-                .value(EntityNumVirtualKey.fromLong(delegatingSpender.accountNum()), account)
+                .value(owner, ownerAccount)
+                .value(id, account)
+                .value(delegatingSpender, account)
                 .build();
-        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
         readableStore = new ReadableAccountStoreImpl(readableStates);
     }
 
@@ -81,11 +79,6 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoHandlerTestBase {
         basicMetaAssertions(context, 0);
         assertEquals(ownerKey, context.payerKey());
         assertIterableEquals(List.of(), context.requiredNonPayerKeys());
-    }
-
-    @Test
-    void handleNotImplemented() {
-        assertThrows(UnsupportedOperationException.class, () -> subject.handle());
     }
 
     private TransactionBody cryptoDeleteAllowanceTransaction(final AccountID id) {

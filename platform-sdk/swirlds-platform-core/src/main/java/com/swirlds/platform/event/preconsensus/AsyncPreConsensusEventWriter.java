@@ -84,6 +84,18 @@ public class AsyncPreConsensusEventWriter implements PreConsensusEventWriter {
     private final BlockingQueueInserter<FlushRequested> flushRequestedInserter;
 
     /**
+     * This class is used as a flag to indicate that there is a discontinuity in the stream.
+     */
+    private static class Discontinuity {}
+
+    private static final Discontinuity DISCONTINUITY = new Discontinuity();
+
+    /**
+     * Used to push the Discontinuity flag onto the handle queue.
+     */
+    private final BlockingQueueInserter<Discontinuity> discontinuityInserter;
+
+    /**
      * Create a new AsyncPreConsensusEventWriter.
      *
      * @param platformContext the platform context
@@ -110,6 +122,7 @@ public class AsyncPreConsensusEventWriter implements PreConsensusEventWriter {
                 .addHandler(EventImpl.class, this::addEventHandler)
                 .addHandler(BeginStreamingNewEvents.class, this::beginStreamingNewEventsHandler)
                 .addHandler(FlushRequested.class, this::flushRequestedHandler)
+                .addHandler(Discontinuity.class, this::discontinuityHandler)
                 .setMetricsConfiguration(
                         new QueueThreadMetricsConfiguration(platformContext.getMetrics()).enableBusyTimeMetric())
                 .build();
@@ -118,6 +131,7 @@ public class AsyncPreConsensusEventWriter implements PreConsensusEventWriter {
         eventInserter = handleThread.getInserter(EventImpl.class);
         beginStreamingNewEventsInserter = handleThread.getInserter(BeginStreamingNewEvents.class);
         flushRequestedInserter = handleThread.getInserter(FlushRequested.class);
+        discontinuityInserter = handleThread.getInserter(Discontinuity.class);
     }
 
     /**
@@ -172,6 +186,14 @@ public class AsyncPreConsensusEventWriter implements PreConsensusEventWriter {
     @Override
     public void setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) throws InterruptedException {
         minimumGenerationNonAncientInserter.put(minimumGenerationNonAncient);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void registerDiscontinuity() throws InterruptedException {
+        discontinuityInserter.put(DISCONTINUITY);
     }
 
     /**
@@ -263,6 +285,20 @@ public class AsyncPreConsensusEventWriter implements PreConsensusEventWriter {
             // Unless we do something silly like wrapping an asynchronous writer inside another asynchronous writer,
             // this should never throw an InterruptedException.
             logger.error(EXCEPTION.getMarker(), "interrupted while attempting to call flush on writer", e);
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    /**
+     * Notify the wrapped writer that there is a discontinuity.
+     */
+    private void discontinuityHandler(@NonNull final Discontinuity discontinuity) {
+        try {
+            writer.registerDiscontinuity();
+        } catch (final InterruptedException e) {
+            // Unless we do something silly like wrapping an asynchronous writer inside another asynchronous writer,
+            // this should never throw an InterruptedException.
+            logger.error(EXCEPTION.getMarker(), "interrupted while attempting to register a discontinuity", e);
             Thread.currentThread().interrupt();
         }
     }

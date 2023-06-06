@@ -145,6 +145,10 @@ public class BurnPrecompile extends AbstractWritePrecompile {
         final var fungibleAmount = SystemContractAbis.toLongSafely(decodedArguments.get(1));
         final var serialNumbers = (long[]) decodedArguments.get(2);
 
+        if (fungibleAmount < 0 || (fungibleAmount == 0 && serialNumbers.length == 0)) {
+            throw new IllegalArgumentException("Illegal amount of tokens to burn");
+        }
+
         if (fungibleAmount > 0) {
             return BurnWrapper.forFungible(tokenID, fungibleAmount);
         } else {

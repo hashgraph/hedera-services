@@ -161,7 +161,7 @@ public class UptimeDataImpl implements FastCopyable, SelfSerializable, MutableUp
      */
     @Override
     public void recordLastEvent(@NonNull final EventImpl event) {
-        final NodeUptimeData nodeData = data.get(new NodeId(event.getCreatorId()));
+        final NodeUptimeData nodeData = data.get(event.getCreatorId());
         if (nodeData == null) {
             logger.warn(
                     EXCEPTION.getMarker(), "Node {} is not being tracked by the uptime tracker.", event.getCreatorId());
@@ -176,7 +176,7 @@ public class UptimeDataImpl implements FastCopyable, SelfSerializable, MutableUp
      */
     @Override
     public void recordLastJudge(@NonNull final EventImpl event) {
-        final NodeUptimeData nodeData = data.get(new NodeId(event.getCreatorId()));
+        final NodeUptimeData nodeData = data.get(event.getCreatorId());
         if (nodeData == null) {
             logger.warn(
                     EXCEPTION.getMarker(), "Node {} is not being tracked by the uptime tracker.", event.getCreatorId());

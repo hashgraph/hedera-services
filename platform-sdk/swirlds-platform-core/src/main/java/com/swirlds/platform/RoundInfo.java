@@ -187,7 +187,7 @@ public class RoundInfo {
      * 		the witness to add
      */
     protected void addFamousWitness(EventImpl w) {
-        int creator = (int) w.getCreatorId();
+        int creator = (int) w.getCreatorId().id();
         if (judges[creator] == null) {
             judges[creator] = w;
         } else {

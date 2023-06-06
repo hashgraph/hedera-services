@@ -16,12 +16,12 @@
 
 package com.hedera.node.app.service.token.impl.test;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.test.handlers.CryptoHandlerTestBase;
 import java.util.Collections;
@@ -53,11 +53,10 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
 
         writableStore.put(account);
 
-        final var maybeReadAccount = writableStore.get(id);
+        final var readaccount = writableStore.get(id);
 
-        assertTrue(maybeReadAccount.isPresent());
-        final var readaccount = maybeReadAccount.get();
-        assertEquals(account, readaccount);
+        assertThat(readaccount).isNotNull();
+        assertThat(account).isEqualTo(readaccount);
     }
 
     @Test
@@ -66,11 +65,10 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
 
         writableStore.put(account);
 
-        final var maybeReadAccount = writableStore.getForModify(id);
+        final var readaccount = writableStore.getForModify(id);
 
-        assertTrue(maybeReadAccount.isPresent());
-        final var readaccount = maybeReadAccount.get();
-        assertEquals(account, readaccount);
+        assertThat(readaccount).isNotNull();
+        assertThat(account).isEqualTo(readaccount);
     }
 
     @Test
@@ -80,11 +78,10 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
         writableStore.put(account);
         writableStore.putAlias(alias.alias().asUtf8String(), accountNum);
 
-        final var maybeReadAccount = writableStore.getForModify(alias);
+        final var readaccount = writableStore.getForModify(alias);
 
-        assertTrue(maybeReadAccount.isPresent());
-        final var readaccount = maybeReadAccount.get();
-        assertEquals(account, readaccount);
+        assertThat(readaccount).isNotNull();
+        assertThat(account).isEqualTo(readaccount);
         assertEquals(1, writableStore.sizeOfAliasesState());
         assertEquals(Set.of(alias.alias().asUtf8String()), writableStore.modifiedAliasesInState());
     }
@@ -93,50 +90,32 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
     void getForModifyReturnEmptyIfAliasNotPresent() {
         writableStore.put(account);
 
-        final var maybeReadAccount = writableStore.getForModify(alias);
+        final var readaccount = writableStore.getForModify(alias);
 
-        assertFalse(maybeReadAccount.isPresent());
-        assertEquals(0, writableStore.sizeOfAliasesState());
+        assertThat(readaccount).isNull();
+        assertThat(writableStore.sizeOfAliasesState()).isZero();
     }
 
     @Test
     void putsAccountChangesToStateInModifications() {
-        assertFalse(writableStore.get(id).isPresent());
+        assertThat(writableStore.get(id)).isNull();
 
         // put, keeps the account in the modifications
         writableStore.put(account);
 
-        assertTrue(writableAccounts.contains(accountEntityNumVirtualKey));
-        final var writtenaccount = writableAccounts.get(accountEntityNumVirtualKey);
-        assertEquals(account, writtenaccount);
-    }
-
-    @Test
-    void commitsAccountChangesToState() {
-        assertFalse(writableAccounts.contains(accountEntityNumVirtualKey));
-        // put, keeps the account in the modifications.
-        // Size of state includes modifications and size of backing state.
-        writableStore.put(account);
-
-        assertTrue(writableAccounts.contains(accountEntityNumVirtualKey));
-        final var writtenaccount = writableAccounts.get(accountEntityNumVirtualKey);
-        assertEquals(1, writableStore.sizeOfAccountState());
-        assertTrue(writableStore.modifiedAccountsInState().contains(accountEntityNumVirtualKey));
-        assertEquals(account, writtenaccount);
-
-        // commit, pushes modifications to backing store. But the size of state is still 1
-        writableStore.commit();
-        assertEquals(1, writableStore.sizeOfAccountState());
-        assertTrue(writableStore.modifiedAccountsInState().contains(accountEntityNumVirtualKey));
+        assertTrue(writableAccounts.contains(id));
+        final var writtenaccount = writableAccounts.get(id);
+        assertThat(account).isEqualTo(writtenaccount);
     }
 
     @Test
     void getsSizeOfState() {
-        assertEquals(0, writableStore.sizeOfAccountState());
-        assertEquals(Collections.EMPTY_SET, writableStore.modifiedAccountsInState());
-        writableStore.put(account);
+        assertThat(writableStore.sizeOfAliasesState()).isZero();
+        assertThat(writableStore.modifiedAccountsInState()).isEqualTo(Collections.EMPTY_SET);
 
-        assertEquals(1, writableStore.sizeOfAccountState());
-        assertEquals(Set.of(EntityNumVirtualKey.fromLong(3)), writableStore.modifiedAccountsInState());
+        writableStore.put(account);
+        assertThat(writableStore.sizeOfAccountState()).isEqualTo(1);
+        assertThat(writableStore.modifiedAccountsInState())
+                .isEqualTo(Set.of(AccountID.newBuilder().accountNum(3).build()));
     }
 }

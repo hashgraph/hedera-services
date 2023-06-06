@@ -18,13 +18,13 @@ package com.swirlds.platform.gui.internal;
 
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowserWindow;
-import static com.swirlds.platform.system.SystemUtils.exitSystem;
+import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
 
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.utility.PlatformVersion;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
-import com.swirlds.platform.system.SystemExitReason;
+import com.swirlds.platform.system.SystemExitCode;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -294,9 +294,7 @@ public class SwirldMenu extends JPanel {
                             null, // parentCompoinent
                             (platform == null
                                             ? ""
-                                            : GuiPlatformAccessor.getInstance()
-                                                    .getAbout(
-                                                            platform.getSelfId().id()))
+                                            : GuiPlatformAccessor.getInstance().getAbout(platform.getSelfId()))
                                     + "\n\n"
                                     + PlatformVersion.locateOrDefault().license(), // message
                             "About this app", // title
@@ -325,7 +323,7 @@ public class SwirldMenu extends JPanel {
                     showBrowserWindow(WinBrowser.tabPosts);
                     break;
                 case "Quit":
-                    exitSystem(SystemExitReason.BROWSER_WINDOW_CLOSED, true);
+                    exitSystem(SystemExitCode.NO_ERROR, "quit", true);
                     break;
                 case "Default":
                     break;
@@ -337,7 +335,7 @@ public class SwirldMenu extends JPanel {
      * Popup a dialog box with an OK button, giving a scrollable view of the given HTML file within the .jar
      * file.
      * <p>
-     * For example, if the path is "/docs/license.html", then the license.html file miust be in the docs
+     * For example, if the path is "/docs/license.html", then the license.html file must be in the docs
      * directory inside the swirlds.jar file.
      * <p>
      * That will work from the command line. To also work in Eclipse, the file must also be copied to

@@ -41,6 +41,7 @@ import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.common.utility.Clearable;
+import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
@@ -272,7 +273,8 @@ public class EmergencyReconnectTests {
                 signedStateManager,
                 100,
                 mock(ReconnectMetrics.class),
-                reconnectController);
+                reconnectController,
+                mock(FallenBehindManager.class));
     }
 
     private EmergencyReconnectProtocol createLearnerProtocol(
@@ -291,7 +293,8 @@ public class EmergencyReconnectTests {
                 mock(SignedStateManager.class),
                 100,
                 mock(ReconnectMetrics.class),
-                reconnectController);
+                reconnectController,
+                mock(FallenBehindManager.class));
     }
 
     private void mockTeacherHasCompatibleState(

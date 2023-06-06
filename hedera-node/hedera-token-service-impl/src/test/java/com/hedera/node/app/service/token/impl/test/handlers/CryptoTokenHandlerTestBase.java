@@ -43,7 +43,6 @@ import com.hedera.hapi.node.transaction.FixedFee;
 import com.hedera.hapi.node.transaction.FractionalFee;
 import com.hedera.hapi.node.transaction.RoyaltyFee;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -61,8 +60,11 @@ import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.config.data.TokensConfig;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.List;
@@ -85,7 +87,6 @@ public class CryptoTokenHandlerTestBase {
     protected final Key accountKey = A_COMPLEX_KEY;
 
     protected final Long accountNum = id.accountNum();
-    protected final EntityNumVirtualKey accountEntityNumVirtualKey = new EntityNumVirtualKey(accountNum);
     protected final AccountID alias =
             AccountID.newBuilder().alias(Bytes.wrap("testAlias")).build();
     protected final byte[] evmAddress = CommonUtils.unhex("6aea3773ea468a814d954e6dec795bfee7d76e25");
@@ -98,8 +99,6 @@ public class CryptoTokenHandlerTestBase {
             AccountID.newBuilder().accountNum(3213).build();
     protected final AccountID transferAccountId =
             AccountID.newBuilder().accountNum(32134).build();
-    protected final Long deleteAccountNum = deleteAccountId.accountNum();
-    protected final Long transferAccountNum = transferAccountId.accountNum();
 
     protected final TokenID nft = TokenID.newBuilder().tokenNum(56789).build();
     protected final TokenID tokenID = TokenID.newBuilder().tokenNum(6789).build();
@@ -140,7 +139,11 @@ public class CryptoTokenHandlerTestBase {
     protected final HederaKey feeScheduleHederaKey = asHederaKey(feeScheduleKey).get();
     protected final HederaKey pauseHederaKey = asHederaKey(A_COMPLEX_KEY).get();
     protected final EntityNum fungibleTokenNum = EntityNum.fromLong(1L);
+    protected final TokenID fungibleTokenId =
+            TokenID.newBuilder().tokenNum(fungibleTokenNum.longValue()).build();
     protected final EntityNum nonFungibleTokenNum = EntityNum.fromLong(2L);
+    protected final TokenID nonFungibleTokenId =
+            TokenID.newBuilder().tokenNum(nonFungibleTokenNum.longValue()).build();
     protected final EntityNumPair fungiblePair =
             EntityNumPair.fromLongs(accountNum.longValue(), fungibleTokenNum.longValue());
     protected final EntityNumPair nonFungiblePair =
@@ -168,10 +171,11 @@ public class CryptoTokenHandlerTestBase {
             .build();
     protected List<CustomFee> customFees = List.of(withFixedFee(fixedFee), withFractionalFee(fractionalFee));
 
+    protected TokensConfig tokensConfig;
     protected MapReadableKVState<String, EntityNumValue> readableAliases;
-    protected MapReadableKVState<EntityNumVirtualKey, Account> readableAccounts;
+    protected MapReadableKVState<AccountID, Account> readableAccounts;
     protected MapWritableKVState<String, EntityNumValue> writableAliases;
-    protected MapWritableKVState<EntityNumVirtualKey, Account> writableAccounts;
+    protected MapWritableKVState<AccountID, Account> writableAccounts;
     protected MapReadableKVState<EntityNum, Token> readableTokenState;
     protected MapWritableKVState<EntityNum, Token> writableTokenState;
     protected MapReadableKVState<EntityNumPair, TokenRelation> readableTokenRelState;
@@ -204,8 +208,12 @@ public class CryptoTokenHandlerTestBase {
     @Mock
     protected CryptoSignatureWaiversImpl waivers;
 
+    protected Configuration configuration;
+
     @BeforeEach
     public void setUp() {
+        configuration = new HederaTestConfigBuilder().getOrCreateConfig();
+        tokensConfig = configuration.getConfigData(TokensConfig.class);
         givenValidAccount();
         givenValidFungibleToken();
         givenValidNonFungibleToken();
@@ -223,9 +231,9 @@ public class CryptoTokenHandlerTestBase {
         writableAccounts = emptyWritableAccountStateBuilder().build();
         readableAliases = emptyReadableAliasStateBuilder().build();
         writableAliases = emptyWritableAliasStateBuilder().build();
-        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
         given(readableStates.<String, EntityNumValue>get(ALIASES)).willReturn(readableAliases);
-        given(writableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(writableAccounts);
+        given(writableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(writableAccounts);
         given(writableStates.<String, EntityNumValue>get(ALIASES)).willReturn(writableAliases);
         readableAccountStore = new ReadableAccountStoreImpl(readableStates);
         writableAccountStore = new WritableAccountStore(writableStates);
@@ -248,7 +256,7 @@ public class CryptoTokenHandlerTestBase {
         writableAccounts = emptyWritableAccountStateBuilder().build();
         readableAliases = readableAliasState();
         writableAliases = emptyWritableAliasStateBuilder().build();
-        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
         given(readableStates.<String, EntityNumValue>get(ALIASES)).willReturn(readableAliases);
         readableAccountStore = new ReadableAccountStoreImpl(readableStates);
         writableAccountStore = new WritableAccountStore(writableStates);
@@ -259,9 +267,9 @@ public class CryptoTokenHandlerTestBase {
         writableAccounts = writableAccountStateWithOneKey();
         readableAliases = readableAliasState();
         writableAliases = writableAliasesStateWithOneKey();
-        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
         given(readableStates.<String, EntityNumValue>get(ALIASES)).willReturn(readableAliases);
-        given(writableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(writableAccounts);
+        given(writableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(writableAccounts);
         given(writableStates.<String, EntityNumValue>get(ALIASES)).willReturn(writableAliases);
         readableAccountStore = new ReadableAccountStoreImpl(readableStates);
         writableAccountStore = new WritableAccountStore(writableStates);
@@ -295,20 +303,20 @@ public class CryptoTokenHandlerTestBase {
     }
 
     @NonNull
-    protected MapWritableKVState<EntityNumVirtualKey, Account> writableAccountStateWithOneKey() {
+    protected MapWritableKVState<AccountID, Account> writableAccountStateWithOneKey() {
         return emptyWritableAccountStateBuilder()
-                .value(accountEntityNumVirtualKey, account)
-                .value(EntityNumVirtualKey.fromLong(deleteAccountNum), deleteAccount)
-                .value(EntityNumVirtualKey.fromLong(transferAccountNum), transferAccount)
+                .value(id, account)
+                .value(deleteAccountId, deleteAccount)
+                .value(transferAccountId, transferAccount)
                 .build();
     }
 
     @NonNull
-    protected MapReadableKVState<EntityNumVirtualKey, Account> readableAccountState() {
+    protected MapReadableKVState<AccountID, Account> readableAccountState() {
         return emptyReadableAccountStateBuilder()
-                .value(accountEntityNumVirtualKey, account)
-                .value(EntityNumVirtualKey.fromLong(deleteAccountNum), deleteAccount)
-                .value(EntityNumVirtualKey.fromLong(transferAccountNum), transferAccount)
+                .value(id, account)
+                .value(deleteAccountId, deleteAccount)
+                .value(transferAccountId, transferAccount)
                 .build();
     }
 
@@ -329,12 +337,12 @@ public class CryptoTokenHandlerTestBase {
     }
 
     @NonNull
-    protected MapReadableKVState.Builder<EntityNumVirtualKey, Account> emptyReadableAccountStateBuilder() {
+    protected MapReadableKVState.Builder<AccountID, Account> emptyReadableAccountStateBuilder() {
         return MapReadableKVState.builder(ACCOUNTS);
     }
 
     @NonNull
-    protected MapWritableKVState.Builder<EntityNumVirtualKey, Account> emptyWritableAccountStateBuilder() {
+    protected MapWritableKVState.Builder<AccountID, Account> emptyWritableAccountStateBuilder() {
         return MapWritableKVState.builder(ACCOUNTS);
     }
 

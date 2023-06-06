@@ -28,14 +28,18 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.RECEIVER_S
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.RECEIVER_SIG_ALIAS;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
+import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.node.app.spi.state.WritableKVState;
+import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.StateKeyAdapter;
 import com.hedera.test.utils.TestFixturesKeyLookup;
@@ -69,12 +73,20 @@ public class AdapterUtils {
         return mockStates;
     }
 
-    private static ReadableKVState<EntityNumVirtualKey, ? extends HederaAccount> wellKnownAccountsState() {
-        final var wrappedState = new MapReadableKVState<>(ACCOUNTS_KEY, TxnHandlingScenario.wellKnownAccounts());
-        return new StateKeyAdapter<>(wrappedState, EntityNumVirtualKey::asEntityNum);
+    public static WritableStates mockWritableStates(final Map<String, WritableKVState> keysToMock) {
+        final var mockStates = Mockito.mock(WritableStates.class);
+        keysToMock.forEach((key, state) -> given(mockStates.get(key)).willReturn(state));
+        return mockStates;
     }
 
-    public static MapReadableKVState<String, EntityNumValue> wellKnownAliasState() {
+    private static ReadableKVState<AccountID, ? extends HederaAccount> wellKnownAccountsState() {
+        final var wrappedState = new MapReadableKVState<>(ACCOUNTS_KEY, TxnHandlingScenario.wellKnownAccounts());
+        return new StateKeyAdapter<>(
+                wrappedState,
+                (AccountID id) -> new EntityNum(id.accountNumOrThrow().intValue()));
+    }
+
+    public static WritableKVState<String, EntityNumValue> wellKnownAliasState() {
         final Map<String, EntityNumValue> wellKnownAliases = Map.ofEntries(
                 Map.entry(CURRENTLY_UNUSED_ALIAS, new EntityNumValue(MISSING_NUM.longValue())),
                 Map.entry(
@@ -86,7 +98,7 @@ public class AdapterUtils {
                 Map.entry(
                         FIRST_TOKEN_SENDER_LITERAL_ALIAS.toStringUtf8(),
                         new EntityNumValue(fromAccountId(FIRST_TOKEN_SENDER).longValue())));
-        return new MapReadableKVState<>(ALIASES_KEY, wellKnownAliases);
+        return new MapWritableKVState<>(ALIASES_KEY, wellKnownAliases);
     }
 
     public static TransactionBody txnFrom(final TxnHandlingScenario scenario) {
