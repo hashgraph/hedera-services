@@ -44,9 +44,14 @@ class RecycleBinTests {
     @TempDir
     Path testDirectory;
 
+    private Configuration configuration;
+
     @BeforeEach
     void beforeEach() throws IOException {
         FileUtils.deleteDirectory(testDirectory);
+        configuration = new TestConfigBuilder()
+                .withValue("state.savedStateDirectory", testDirectory.toString())
+                .getOrCreateConfig();
     }
 
     @AfterEach
@@ -78,10 +83,6 @@ class RecycleBinTests {
     @Test
     @DisplayName("Recycle File Test")
     void recycleFileTest() throws IOException {
-        final Configuration configuration = new TestConfigBuilder()
-                .withValue("state.savedStateDirectory", testDirectory.toString())
-                .getOrCreateConfig();
-
         final RecycleBin recycleBin = new RecycleBin(configuration, new NodeId(0));
 
         final Path path1 = testDirectory.resolve("file1.txt");
@@ -122,10 +123,6 @@ class RecycleBinTests {
     @Test
     @DisplayName("Recycle Directory Test")
     void recycleDirectoryTest() throws IOException {
-        final Configuration configuration = new TestConfigBuilder()
-                .withValue("state.savedStateDirectory", testDirectory.toString())
-                .getOrCreateConfig();
-
         final RecycleBin recycleBin = new RecycleBin(configuration, new NodeId(0));
 
         final Path directory = testDirectory.resolve("foo/bar/baz");
@@ -176,10 +173,6 @@ class RecycleBinTests {
     @Test
     @DisplayName("Recycle Non-Existent File Test")
     void recycleNonExistentFileTest() throws IOException {
-        final Configuration configuration = new TestConfigBuilder()
-                .withValue("state.savedStateDirectory", testDirectory.toString())
-                .getOrCreateConfig();
-
         final RecycleBin recycleBin = new RecycleBin(configuration, new NodeId(0));
 
         final Path path = testDirectory.resolve("file.txt");
@@ -193,10 +186,6 @@ class RecycleBinTests {
     @Test
     @DisplayName("Recycle Duplicate File Test")
     void recycleDuplicateFileTest() throws IOException {
-        final Configuration configuration = new TestConfigBuilder()
-                .withValue("state.savedStateDirectory", testDirectory.toString())
-                .getOrCreateConfig();
-
         final RecycleBin recycleBin = new RecycleBin(configuration, new NodeId(0));
 
         final Path path = testDirectory.resolve("file.txt");
