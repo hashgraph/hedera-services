@@ -17,10 +17,12 @@
 package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -50,10 +52,17 @@ public class TokenDeleteHandler implements TransactionHandler {
         final var tokenStore = context.createStore(ReadableTokenStore.class);
         final var tokenMetadata = tokenStore.getTokenMeta(tokenId);
         if (tokenMetadata == null) throw new PreCheckException(INVALID_TOKEN_ID);
-        // we will fail in handle() if token has no admin key
+        // we will fail in handle() if token has no admin key (no need to fail here)
         if (tokenMetadata.hasAdminKey()) {
             context.requireKey(tokenMetadata.adminKey());
         }
+    }
+
+    @Override
+    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
+        final var op = txn.tokenDeletionOrThrow();
+
+        validateTruePreCheck(op.hasToken(), INVALID_TOKEN_ID);
     }
 
     @Override
