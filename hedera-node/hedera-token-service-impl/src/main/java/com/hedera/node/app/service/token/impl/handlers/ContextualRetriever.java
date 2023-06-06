@@ -34,9 +34,9 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
-import com.hedera.node.app.service.token.impl.validators.ExpiryValidator;
+import com.hedera.node.app.spi.validation.EntityType;
+import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.config.data.AutoRenewConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -56,16 +56,16 @@ public class ContextualRetriever {
      *
      * @param accountId the ID of the account to get
      * @param accountStore the {@link ReadableTokenStore} to use for account retrieval
-     * @param autoRenewConfig the {@link AutoRenewConfig} to use for determining account expiry validation
+     * @param expiryValidator the {@link ExpiryValidator} to determine if the account is expired
      * @throws HandleException if any of the account conditions are not met
      */
     public static Account getIfUsable(
             @NonNull final AccountID accountId,
             @NonNull final ReadableAccountStore accountStore,
-            @NonNull final AutoRenewConfig autoRenewConfig) {
+            @NonNull final ExpiryValidator expiryValidator) {
         requireNonNull(accountId);
         requireNonNull(accountStore);
-        requireNonNull(autoRenewConfig);
+        requireNonNull(expiryValidator);
 
         final var acct = accountStore.getAccountById(accountId);
         validateTrue(acct != null, INVALID_ACCOUNT_ID);
@@ -75,12 +75,8 @@ public class ContextualRetriever {
                 acct.expiredAndPendingRemoval(),
                 isSmartContract ? CONTRACT_EXPIRED_AND_PENDING_REMOVAL : ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 
-        final var expiryStatus = ExpiryValidator.getAccountOrContractExpiryStatus(
-                acct.tinybarBalance(),
-                false,
-                isSmartContract,
-                autoRenewConfig.expireContracts(),
-                autoRenewConfig.expireAccounts());
+        final var expiryStatus = expiryValidator.expirationStatus(
+                isSmartContract ? EntityType.CONTRACT : EntityType.ACCOUNT, false, acct.tinybarBalance());
         validateTrue(expiryStatus == OK, expiryStatus);
 
         return acct;

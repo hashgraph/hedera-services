@@ -36,11 +36,11 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.util.TokenRelListCalculator;
 import com.hedera.node.app.service.token.impl.validators.TokenListChecks;
+import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hedera.node.config.data.AutoRenewConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -91,12 +91,12 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
         final var accountStore = context.writableStore(WritableAccountStore.class);
         final var tokenStore = context.readableStore(ReadableTokenStore.class);
         final var tokenRelStore = context.writableStore(WritableTokenRelationStore.class);
+        final var expiryValidator = context.expiryValidator();
         final var txn = context.body();
         final var op = txn.tokenDissociateOrThrow();
         final var tokenIds = op.tokensOrThrow();
-        final var autoRenewConfig = context.configuration().getConfigData(AutoRenewConfig.class);
         final var validated = validateSemantics(
-                op.accountOrThrow(), tokenIds, accountStore, tokenStore, tokenRelStore, autoRenewConfig);
+                op.accountOrThrow(), tokenIds, accountStore, tokenStore, tokenRelStore, expiryValidator);
 
         // Update the account and relevant token relations
         // Note: since we can't query an Account copyBuilder for current values, and since the account object is
@@ -206,9 +206,9 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
             @NonNull final WritableAccountStore accountStore,
             @NonNull final ReadableTokenStore tokenStore,
             @NonNull final WritableTokenRelationStore tokenRelStore,
-            @NonNull final AutoRenewConfig autoRenewConfig) {
+            @NonNull final ExpiryValidator expiryValidator) {
         // Check that the account is usable
-        final var acct = ContextualRetriever.getIfUsable(accountId, accountStore, autoRenewConfig);
+        final var acct = ContextualRetriever.getIfUsable(accountId, accountStore, expiryValidator);
 
         // Construct the dissociation for each token ID
         final var dissociations = new ArrayList<Dissociation>();

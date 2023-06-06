@@ -26,10 +26,10 @@ import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -113,14 +113,9 @@ public class TokenRelListCalculator {
         }
 
         // Data Preprocessing: remove nulls and duplicate token rels
-        final var currentHeadTokenNum = account.headTokenNumber();
-        final var cleanedTokenRelsToDelete = tokenRelsToDelete.stream()
-                // Filter the nulls
-                .filter(Objects::nonNull)
-                // And de-duplicate the token rels
-                .distinct()
-                .toList();
+        final var cleanedTokenRelsToDelete = filterNullsAndDuplicates(tokenRelsToDelete);
 
+        final var currentHeadTokenNum = account.headTokenNumber();
         final var accountId = fromAccountNum(account.accountNumber());
 
         // We'll create this mapping of (tokenId -> tokenRel) to make it easier to check if a token rel is in the list
@@ -172,6 +167,18 @@ public class TokenRelListCalculator {
                 currentHeadTokenNum, accountId, updatedTokenRels, tokenRelsToDeleteByTokenId);
 
         return new TokenRelsRemovalResult(updatedHeadTokenNum, updatedTokenRelsToKeep);
+    }
+
+    private List<TokenRelation> filterNullsAndDuplicates(final List<TokenRelation> tokenRelsToDelete) {
+        // We could use a simple .stream() for this functionality, but don't do so in order to avoid the performance
+        // overhead
+        final var cleaned = new ArrayList<TokenRelation>(tokenRelsToDelete.size());
+        for (final TokenRelation tokenRel : tokenRelsToDelete) {
+            if (tokenRel != null && !cleaned.contains(tokenRel)) {
+                cleaned.add(tokenRel);
+            }
+        }
+        return cleaned;
     }
 
     /**
