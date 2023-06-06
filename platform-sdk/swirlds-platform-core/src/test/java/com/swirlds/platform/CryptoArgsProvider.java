@@ -68,8 +68,7 @@ public class CryptoArgsProvider {
 
         for (int i = 0; i < addresses.getSize(); i++) {
             final NodeId nodeId = addresses.getNodeId(i);
-            addresses.add(
-                    addresses.getAddress(nodeId).copySetSelfName(memberName(i)).copySetOwnHost(true));
+            addresses.add(addresses.getAddress(nodeId).copySetSelfName(memberName(i)));
         }
 
         return addresses;

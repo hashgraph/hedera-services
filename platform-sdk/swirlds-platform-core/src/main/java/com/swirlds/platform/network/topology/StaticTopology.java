@@ -101,8 +101,8 @@ public class StaticTopology implements NetworkTopology {
             return false;
         }
         final int selfIndex = addressBook.getIndexOfNodeId(selfId);
-        final int otherIndex = addressBook.getIndexOfNodeId(nodeId);
-        return connectionGraph.isAdjacent(selfIndex, otherIndex);
+        final int nodeIndex = addressBook.getIndexOfNodeId(nodeId);
+        return connectionGraph.isAdjacent(selfIndex, nodeIndex);
     }
 
     /**

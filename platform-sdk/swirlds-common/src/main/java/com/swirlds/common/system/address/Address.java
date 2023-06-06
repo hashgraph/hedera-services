@@ -64,8 +64,6 @@ public class Address implements SelfSerializable {
     private String nickname;
     /** name that member uses to refer to their self */
     private String selfName;
-    /** is this member running on the local computer? */
-    private boolean ownHost;
     /** the member's nonnegative weight, used for weighted voting */
     private long weight;
     /** IP address on the local network (IPv4) */
@@ -104,7 +102,6 @@ public class Address implements SelfSerializable {
                 "",
                 "",
                 1,
-                false,
                 null,
                 -1,
                 null,
@@ -124,7 +121,6 @@ public class Address implements SelfSerializable {
             @NonNull final String nickname,
             @NonNull final String selfName,
             final long weight,
-            final boolean ownHost,
             @Nullable final byte[] addressInternalIpv4,
             final int portInternalIpv4,
             @Nullable final byte[] addressExternalIpv4,
@@ -135,7 +131,6 @@ public class Address implements SelfSerializable {
                 nickname,
                 selfName,
                 weight, // weight
-                ownHost, // ownHost
                 addressInternalIpv4,
                 portInternalIpv4,
                 addressExternalIpv4,
@@ -155,77 +150,12 @@ public class Address implements SelfSerializable {
     }
 
     /**
-     * Same as
-     * {@link #Address(NodeId, String, String, long, boolean, byte[], int, byte[], int, byte[], int, byte[], int,
-     * SerializablePublicKey, SerializablePublicKey, SerializablePublicKey, String)} but with different key types.
-     * Deprecated, should use the method mentioned above.
-     *
-     * @param id                  the ID for that member
-     * @param nickname            the name given to that member by the member creating this address
-     * @param selfName            the name given to that member by themself
-     * @param weight              the amount of weight (0 if they should have no influence on the consensus)
-     * @param ownHost             is that member running on the same machine as the member creating this address?
-     * @param addressInternalIpv4 IPv4 address on the inside of the NATing router
-     * @param portInternalIpv4    port for the internal IPv4 address
-     * @param addressExternalIpv4 IPv4 address on the outside of the NATing router (same as internal if there is no
-     *                            NAT)
-     * @param portExternalIpv4    port port for the external IPv4 address
-     * @param addressInternalIpv6 IPv6 address on the inside of the NATing router
-     * @param portInternalIpv6    port for the internal IPv6 address
-     * @param addressExternalIpv6 address on the outside of the NATing router
-     * @param portExternalIpv6    port for the external IPv6 address
-     * @param sigPublicKey        public key used for signing
-     * @param encPublicKey        public key used for encryption
-     * @param agreePublicKey      public key used for key agreement in TLS
-     * @param memo                additional information about the node, can be null
-     */
-    @Deprecated
-    public Address(
-            long id,
-            @NonNull String nickname,
-            @NonNull String selfName,
-            long weight,
-            boolean ownHost,
-            @Nullable byte[] addressInternalIpv4,
-            int portInternalIpv4,
-            @Nullable byte[] addressExternalIpv4,
-            int portExternalIpv4,
-            @Nullable byte[] addressInternalIpv6,
-            int portInternalIpv6,
-            @Nullable byte[] addressExternalIpv6,
-            int portExternalIpv6,
-            @Nullable PublicKey sigPublicKey,
-            @Nullable PublicKey encPublicKey,
-            @Nullable PublicKey agreePublicKey,
-            @NonNull String memo) {
-        this(
-                new NodeId(id),
-                nickname,
-                selfName,
-                weight,
-                ownHost,
-                addressInternalIpv4,
-                portInternalIpv4,
-                addressExternalIpv4,
-                portExternalIpv4,
-                addressInternalIpv6,
-                portInternalIpv6,
-                addressExternalIpv6,
-                portExternalIpv6,
-                sigPublicKey == null ? null : new SerializablePublicKey(sigPublicKey),
-                encPublicKey == null ? null : new SerializablePublicKey(encPublicKey),
-                agreePublicKey == null ? null : new SerializablePublicKey(agreePublicKey),
-                memo);
-    }
-
-    /**
      * constructor for a mutable address for one member.
      *
      * @param id                  the ID for that member
      * @param nickname            the name given to that member by the member creating this address
      * @param selfName            the name given to that member by themself
      * @param weight              the amount of weight (0 if they should have no influence on the consensus)
-     * @param ownHost             is that member running on the same machine as the member creating this address?
      * @param addressInternalIpv4 IPv4 address on the inside of the NATing router
      * @param portInternalIpv4    port for the internal IPv4 address
      * @param addressExternalIpv4 IPv4 address on the outside of the NATing router (same as internal if there is no
@@ -245,7 +175,6 @@ public class Address implements SelfSerializable {
             @NonNull final String nickname,
             @NonNull final String selfName,
             final long weight,
-            final boolean ownHost,
             @Nullable final byte[] addressInternalIpv4,
             final int portInternalIpv4,
             @Nullable final byte[] addressExternalIpv4,
@@ -262,7 +191,6 @@ public class Address implements SelfSerializable {
         this.nickname = Objects.requireNonNull(nickname, "nickname must not be null");
         this.selfName = Objects.requireNonNull(selfName, "selfName must not be null");
         this.weight = weight;
-        this.ownHost = ownHost;
         this.portInternalIpv4 = portInternalIpv4;
         this.portInternalIpv6 = portInternalIpv6;
         this.portExternalIpv4 = portExternalIpv4;
@@ -347,15 +275,6 @@ public class Address implements SelfSerializable {
     @NonNull
     public String getSelfName() {
         return selfName;
-    }
-
-    /**
-     * Tells whether this member is running on the local computer.
-     *
-     * @return Whether this member is running on local computer.
-     */
-    public boolean isOwnHost() {
-        return ownHost;
     }
 
     /**
@@ -569,19 +488,6 @@ public class Address implements SelfSerializable {
     }
 
     /**
-     * Create a new Address object based this one with different ownHost value.
-     *
-     * @param ownHost New ownHost for the created Address.
-     * @return The new Address.
-     */
-    @NonNull
-    public Address copySetOwnHost(boolean ownHost) {
-        Address a = copy();
-        a.ownHost = ownHost;
-        return a;
-    }
-
-    /**
      * Create a new Address object based this one with different internal IPv4 port.
      *
      * @param portInternalIpv4 New portInternalIpv4 for the created Address.
@@ -756,7 +662,6 @@ public class Address implements SelfSerializable {
                 nickname,
                 selfName,
                 weight,
-                ownHost,
                 addressInternalIpv4,
                 portInternalIpv4,
                 addressExternalIpv4,
@@ -836,7 +741,6 @@ public class Address implements SelfSerializable {
         nickname = inStream.readNormalisedString(STRING_MAX_BYTES);
         selfName = inStream.readNormalisedString(STRING_MAX_BYTES);
         weight = inStream.readLong();
-        ownHost = false;
 
         addressInternalIpv4 = inStream.readByteArray(MAX_IP_LENGTH);
         portInternalIpv4 = inStream.readInt();
@@ -898,7 +802,7 @@ public class Address implements SelfSerializable {
         }
 
         Address address = (Address) o;
-        return equalsWithoutWeightAndOwnHost(address) && ownHost == address.ownHost && weight == address.weight;
+        return equalsWithoutWeight(address) && weight == address.weight;
     }
 
     /**
@@ -908,7 +812,7 @@ public class Address implements SelfSerializable {
      * @return true if all values in the other address match this address without consideration of weight or ownHost
      * values, false otherwise.
      */
-    public boolean equalsWithoutWeightAndOwnHost(@NonNull final Address address) {
+    public boolean equalsWithoutWeight(@NonNull final Address address) {
         return Objects.equals(id, address.id)
                 && portInternalIpv4 == address.portInternalIpv4
                 && portExternalIpv4 == address.portExternalIpv4
@@ -949,7 +853,6 @@ public class Address implements SelfSerializable {
                 .append("id", id)
                 .append("nickname", nickname)
                 .append("selfName", selfName)
-                .append("ownHost", ownHost)
                 .append("weight", weight)
                 .append("addressInternalIpv4", Arrays.toString(addressInternalIpv4))
                 .append("portInternalIpv4", portInternalIpv4)

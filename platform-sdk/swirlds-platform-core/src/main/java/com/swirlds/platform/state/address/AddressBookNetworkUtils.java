@@ -21,19 +21,36 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.network.Network;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.net.InetAddress;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
  * {@link AddressBook AddressBook} utility methods.
  */
-public final class AddressBookUtils {
+public final class AddressBookNetworkUtils {
 
     /** For logging info, warn, and error. */
-    private static final Logger logger = LogManager.getLogger(AddressBookUtils.class);
+    private static final Logger logger = LogManager.getLogger(AddressBookNetworkUtils.class);
 
-    private AddressBookUtils() {}
+    private AddressBookNetworkUtils() {}
+
+    public static boolean isLocal(@NonNull final Address address) {
+        Objects.requireNonNull(address, "The address must not be null.");
+        try {
+            return Network.isOwn(InetAddress.getByAddress(address.getAddressInternalIpv4()));
+        } catch (final Exception e) {
+            logger.error(
+                    EXCEPTION.getMarker(),
+                    "Error while checking if address {} for node {} is local",
+                    address.getAddressInternalIpv4(),
+                    address.getNodeId(),
+                    e);
+            throw new IllegalStateException("Error while checking if ip of address was local", e);
+        }
+    }
 
     /**
      * Get the number of addresses currently in the address book that are running on this computer. When the browser is
@@ -46,18 +63,8 @@ public final class AddressBookUtils {
     public static int getOwnHostCount(final AddressBook addressBook) {
         int count = 0;
         for (final Address address : addressBook) {
-            try {
-                if (Network.isOwn(InetAddress.getByAddress(address.getAddressInternalIpv4()))) {
-                    count++;
-                }
-            } catch (final Exception e) {
-                logger.error(
-                        EXCEPTION.getMarker(),
-                        "Error while checking if address {} for node {} is local",
-                        address.getAddressInternalIpv4(),
-                        address.getNodeId(),
-                        e);
-                throw new IllegalStateException("Error while checking if ip of address was local", e);
+            if (isLocal(address)) {
+                count++;
             }
         }
         return count;

@@ -26,6 +26,7 @@ import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.logging.LogMarker;
+import com.swirlds.platform.state.address.AddressBookNetworkUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -352,10 +353,16 @@ public final class CryptoStatic {
         final Map<NodeId, KeysAndCerts> keysAndCerts = new HashMap<>();
         for (int i = 0; i < n; i++) {
             final NodeId nodeId = addressBook.getNodeId(i);
-            if (!addressBook.getAddress(nodeId).isOwnHost()) {
-                // in case we are not creating keys but loading them from disk, we do not need to create
-                // a KeysAndCerts object for every node, just the local ones
-                continue;
+            final Address address = addressBook.getAddress(nodeId);
+            try {
+                if (!AddressBookNetworkUtils.isLocal(address)) {
+                    // in case we are not creating keys but loading them from disk, we do not need to create
+                    // a KeysAndCerts object for every node, just the local ones
+                    continue;
+                }
+            } catch (final Exception e) {
+                logger.error(LogMarker.EXCEPTION.getMarker(), "Not able to determine if node is local", e);
+                throw new IllegalStateException("Not able to determine if node is local", e);
             }
             final String name = nameToAlias(addressBook.getAddress(nodeId).getSelfName());
             final KeyStore privateKS = loadKeys(keysDirPath.resolve(getPrivateKeysFileName(name)), password);
