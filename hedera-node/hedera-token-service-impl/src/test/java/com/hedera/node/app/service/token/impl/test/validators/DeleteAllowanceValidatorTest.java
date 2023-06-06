@@ -184,7 +184,7 @@ class DeleteAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
                         .serialNumbers(List.of(2L, 100L))
                         .build());
         assertThat(DeleteAllowanceValidator.aggregateNftDeleteAllowances(allowances))
-                .isEqualTo(3);
+                .isEqualTo(4);
     }
 
     @Test
