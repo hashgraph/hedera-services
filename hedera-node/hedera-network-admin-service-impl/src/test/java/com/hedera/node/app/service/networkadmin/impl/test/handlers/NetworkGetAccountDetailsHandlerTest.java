@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.networkadmin.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -32,7 +34,10 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.base.ResponseType;
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.TokenFreezeStatus;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TokenKycStatus;
+import com.hedera.hapi.node.base.TokenRelationship;
 import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.AccountCryptoAllowance;
 import com.hedera.hapi.node.state.token.AccountFungibleTokenAllowance;
@@ -44,6 +49,7 @@ import com.hedera.hapi.node.token.GrantedNftAllowance;
 import com.hedera.hapi.node.token.GrantedTokenAllowance;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
+import com.hedera.node.app.service.evm.contracts.execution.StaticProperties;
 import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkGetAccountDetailsHandler;
 import com.hedera.node.app.service.networkadmin.impl.utils.NetworkAdminServiceUtil;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -121,6 +127,16 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
     }
 
     @Test
+    void validatesQueryWhenNoAccount() throws Throwable {
+
+        final var query = createEmptysQuery();
+        given(context.query()).willReturn(query);
+        given(context.createStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
+
+        assertThrowsPreCheck(() -> networkGetAccountDetailsHandler.validate(context), INVALID_ACCOUNT_ID);
+    }
+
+    @Test
     void getsResponseIfFailedResponse() {
         final var responseHeader = ResponseHeader.newBuilder()
                 .nodeTransactionPrecheckCode(ResponseCodeEnum.FAIL_FEE)
@@ -156,14 +172,18 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
     }
 
     @Test
-    void getsResponseIfFileDeletedOkResponse() {
+    void getsResponseIfAccountMarkDeletedOkResponse() {
         givenValidAccount(true, Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
         refreshStoresWithEntitiesOnlyInReadable();
         final var responseHeader = ResponseHeader.newBuilder()
                 .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
                 .build();
-        final var expectedInfo =
-                getExpectedInfo(true, Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
+        final var expectedInfo = getExpectedInfo(
+                true,
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyList());
 
         final var query = createGetAccountDetailsQuery(id);
         when(context.query()).thenReturn(query);
@@ -182,9 +202,53 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
         final var responseHeader = ResponseHeader.newBuilder()
                 .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
                 .build();
-        final var expectedInfo =
-                getExpectedInfo(false, Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
+        final var expectedInfo = getExpectedInfo(
+                false,
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyList());
 
+        final var query = createGetAccountDetailsQuery(id);
+        when(context.query()).thenReturn(query);
+        when(context.createStore(ReadableAccountStore.class)).thenReturn(readableAccountStore);
+        when(context.createStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
+        when(context.createStore(ReadableTokenRelationStore.class)).thenReturn(readableTokenRelStore);
+
+        final var response = networkGetAccountDetailsHandler.findResponse(context, responseHeader);
+        final var accountDetailsResponse = response.accountDetailsOrThrow();
+        assertEquals(ResponseCodeEnum.OK, accountDetailsResponse.header().nodeTransactionPrecheckCode());
+        assertEquals(expectedInfo, accountDetailsResponse.accountDetails());
+    }
+
+    @Test
+    void getsResponseWithTokenRelations() {
+        givenValidAccount(false, Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
+        givenValidFungibleToken();
+        givenValidNonFungibleToken();
+        givenFungibleTokenRelation();
+        givenNonFungibleTokenRelation();
+        refreshStoresWithEntitiesOnlyInReadable();
+        final var responseHeader = ResponseHeader.newBuilder()
+                .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
+                .build();
+        List<TokenRelationship> tokenRelationships = new ArrayList<>();
+        var tokenRelation = TokenRelationship.newBuilder()
+                .tokenId(TokenID.newBuilder()
+                        .shardNum(StaticProperties.getShard())
+                        .realmNum(StaticProperties.getRealm())
+                        .tokenNum(nonFungibleTokenNum.longValue())
+                        .build())
+                .balance(1000L)
+                .decimals(1000)
+                .symbol(tokenSymbol)
+                .kycStatus(TokenKycStatus.KYC_NOT_APPLICABLE)
+                .freezeStatus(TokenFreezeStatus.UNFROZEN)
+                .automaticAssociation(true)
+                .build();
+        tokenRelationships.add(tokenRelation);
+        final var expectedInfo = getExpectedInfo(
+                false, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), tokenRelationships);
         final var query = createGetAccountDetailsQuery(id);
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableAccountStore.class)).thenReturn(readableAccountStore);
@@ -232,7 +296,11 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
                 901L);
         grantedTokenAllowancesList.add(grantedTokenAllowance);
         final var expectedInfo = getExpectedInfo(
-                false, grantedCryptoAllowancesList, grantedNftAllowancesList, grantedTokenAllowancesList);
+                false,
+                grantedCryptoAllowancesList,
+                grantedNftAllowancesList,
+                grantedTokenAllowancesList,
+                Collections.emptyList());
 
         final var query = createGetAccountDetailsQuery(id);
         when(context.query()).thenReturn(query);
@@ -250,7 +318,8 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
             boolean deleted,
             List<GrantedCryptoAllowance> grantedCryptoAllowances,
             List<GrantedNftAllowance> grantedNftAllowances,
-            List<GrantedTokenAllowance> grantedTokenAllowances) {
+            List<GrantedTokenAllowance> grantedTokenAllowances,
+            List<TokenRelationship> tokenRelationships) {
         return AccountDetails.newBuilder()
                 .accountId(AccountID.newBuilder().accountNum(accountNum).build())
                 .contractAccountId(NetworkAdminServiceUtil.asHexedEvmAddress(
@@ -268,13 +337,21 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
                 .grantedCryptoAllowances(grantedCryptoAllowances)
                 .grantedNftAllowances(grantedNftAllowances)
                 .grantedTokenAllowances(grantedTokenAllowances)
-                .tokenRelationships(Collections.emptyList())
+                .tokenRelationships(tokenRelationships)
                 .build();
     }
 
     private Query createGetAccountDetailsQuery(final AccountID id) {
         final var data = GetAccountDetailsQuery.newBuilder()
                 .accountId(id)
+                .header(QueryHeader.newBuilder().build())
+                .build();
+
+        return Query.newBuilder().accountDetails(data).build();
+    }
+
+    private Query createEmptysQuery() {
+        final var data = GetAccountDetailsQuery.newBuilder()
                 .header(QueryHeader.newBuilder().build())
                 .build();
 
