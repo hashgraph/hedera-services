@@ -123,7 +123,8 @@ public class AtomicDouble {
      * @param accumulatorFunction the accumulator function
      * @return the updated value
      */
-    public final double accumulateAndGet(final double updateValue, @NonNull DoubleBinaryOperator accumulatorFunction) {
+    public final double accumulateAndGet(
+            final double updateValue, @NonNull final DoubleBinaryOperator accumulatorFunction) {
         Objects.requireNonNull(accumulatorFunction);
         return updateAndGet(oldValue -> accumulatorFunction.applyAsDouble(oldValue, updateValue));
     }
