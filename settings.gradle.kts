@@ -133,7 +133,7 @@ dependencyResolutionManagement {
       val jacksonVersion = "2.13.3"
       val log4jVersion = "2.17.1"
       val mockitoVersion = "4.6.1"
-      val nettyVersion = "4.1.77.Final"
+      val nettyVersion = "4.1.72.Final"
       val swirldsVersion = "0.39.0-alpha.3"
       val systemStubsVersion = "2.0.2"
       val testContainersVersion = "1.17.2"
