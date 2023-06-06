@@ -76,7 +76,7 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
 
     @Test
     void extractsHeader() {
-        final var query = createGetAccountDetailsQuery(accountNum);
+        final var query = createGetAccountDetailsQuery(id);
         final var header = networkGetAccountDetailsHandler.extractHeader(query);
         final var op = query.accountDetailsOrThrow();
         assertEquals(op.header(), header);
@@ -113,7 +113,7 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
     @Test
     void validatesQueryWhenValidAccount() throws Throwable {
 
-        final var query = createGetAccountDetailsQuery(accountNum);
+        final var query = createGetAccountDetailsQuery(id);
         given(context.query()).willReturn(query);
         given(context.createStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
 
@@ -126,7 +126,7 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
                 .nodeTransactionPrecheckCode(ResponseCodeEnum.FAIL_FEE)
                 .build();
 
-        final var query = createGetAccountDetailsQuery(accountNum);
+        final var query = createGetAccountDetailsQuery(id);
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableAccountStore.class)).thenReturn(readableAccountStore);
 
@@ -142,7 +142,8 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
                 .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
                 .build();
 
-        final var query = createGetAccountDetailsQuery(567L);
+        final var query = createGetAccountDetailsQuery(
+                AccountID.newBuilder().accountNum(567L).build());
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableAccountStore.class)).thenReturn(readableAccountStore);
         when(context.createStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
@@ -164,7 +165,7 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
         final var expectedInfo =
                 getExpectedInfo(true, Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
 
-        final var query = createGetAccountDetailsQuery(accountNum);
+        final var query = createGetAccountDetailsQuery(id);
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableAccountStore.class)).thenReturn(readableAccountStore);
         when(context.createStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
@@ -184,7 +185,7 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
         final var expectedInfo =
                 getExpectedInfo(false, Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
 
-        final var query = createGetAccountDetailsQuery(accountNum);
+        final var query = createGetAccountDetailsQuery(id);
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableAccountStore.class)).thenReturn(readableAccountStore);
         when(context.createStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
@@ -233,7 +234,7 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
         final var expectedInfo = getExpectedInfo(
                 false, grantedCryptoAllowancesList, grantedNftAllowancesList, grantedTokenAllowancesList);
 
-        final var query = createGetAccountDetailsQuery(accountNum);
+        final var query = createGetAccountDetailsQuery(id);
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableAccountStore.class)).thenReturn(readableAccountStore);
         when(context.createStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
@@ -271,9 +272,9 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
                 .build();
     }
 
-    private Query createGetAccountDetailsQuery(final long accountNum) {
+    private Query createGetAccountDetailsQuery(final AccountID id) {
         final var data = GetAccountDetailsQuery.newBuilder()
-                .accountId(AccountID.newBuilder().accountNum(accountNum).build())
+                .accountId(id)
                 .header(QueryHeader.newBuilder().build())
                 .build();
 

@@ -26,7 +26,6 @@ import com.hedera.hapi.node.state.token.AccountCryptoAllowance;
 import com.hedera.hapi.node.state.token.AccountFungibleTokenAllowance;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -54,7 +53,6 @@ public class NetworkAdminHandlerTestBase {
 
     protected final AccountID id = AccountID.newBuilder().accountNum(3).build();
     protected final Long accountNum = id.accountNum();
-    protected final EntityNumVirtualKey accountEntityNumVirtualKey = new EntityNumVirtualKey(accountNum);
     protected final AccountID alias =
             AccountID.newBuilder().alias(Bytes.wrap("testAlias")).build();
 
@@ -62,8 +60,6 @@ public class NetworkAdminHandlerTestBase {
             AccountID.newBuilder().accountNum(3213).build();
     protected final AccountID transferAccountId =
             AccountID.newBuilder().accountNum(32134).build();
-    protected final Long deleteAccountNum = deleteAccountId.accountNum();
-    protected final Long transferAccountNum = transferAccountId.accountNum();
 
     protected static final long payerBalance = 10_000L;
     protected final EntityNum fungibleTokenNum = EntityNum.fromLong(1L);
@@ -76,7 +72,7 @@ public class NetworkAdminHandlerTestBase {
     protected final TokenID tokenId =
             TokenID.newBuilder().tokenNum(fungibleTokenNum.longValue()).build();
 
-    protected MapReadableKVState<EntityNumVirtualKey, Account> readableAccounts;
+    protected MapReadableKVState<AccountID, Account> readableAccounts;
     protected MapReadableKVState<EntityNum, Token> readableTokenState;
     protected MapReadableKVState<EntityNumPair, TokenRelation> readableTokenRelState;
 
@@ -114,7 +110,7 @@ public class NetworkAdminHandlerTestBase {
 
     private void givenAccountsInReadableStore() {
         readableAccounts = readableAccountState();
-        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
         readableAccountStore = new ReadableAccountStoreImpl(readableStates);
     }
 
@@ -133,16 +129,16 @@ public class NetworkAdminHandlerTestBase {
         readableTokenRelStore = new ReadableTokenRelationStoreImpl(readableStates);
     }
 
-    protected MapReadableKVState<EntityNumVirtualKey, Account> readableAccountState() {
+    protected MapReadableKVState<AccountID, Account> readableAccountState() {
         return emptyReadableAccountStateBuilder()
-                .value(accountEntityNumVirtualKey, account)
-                .value(EntityNumVirtualKey.fromLong(deleteAccountNum), deleteAccount)
-                .value(EntityNumVirtualKey.fromLong(transferAccountNum), transferAccount)
+                .value(id, account)
+                .value(deleteAccountId, deleteAccount)
+                .value(transferAccountId, transferAccount)
                 .build();
     }
 
     @NonNull
-    protected MapReadableKVState.Builder<EntityNumVirtualKey, Account> emptyReadableAccountStateBuilder() {
+    protected MapReadableKVState.Builder<AccountID, Account> emptyReadableAccountStateBuilder() {
         return MapReadableKVState.builder(ACCOUNTS);
     }
 
