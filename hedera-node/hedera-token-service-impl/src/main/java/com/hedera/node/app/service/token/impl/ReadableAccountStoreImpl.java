@@ -27,7 +27,6 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.evm.contracts.execution.StaticProperties;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
@@ -50,7 +49,7 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
     }
 
     /** The underlying data storage class that holds the account data. */
-    private final ReadableKVState<EntityNumVirtualKey, Account> accountState;
+    private final ReadableKVState<AccountID, Account> accountState;
     /** The underlying data storage class that holds the aliases data built from the state. */
     private final ReadableKVState<String, EntityNumValue> aliases;
 
@@ -110,7 +109,9 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
                     case UNSET -> EntityNumValue.DEFAULT.num();
                 };
 
-        return accountNum == null ? null : accountState.get(EntityNumVirtualKey.fromLong(accountNum));
+        return accountNum == null
+                ? null
+                : accountState.get(AccountID.newBuilder().accountNum(accountNum).build());
     }
 
     /**
@@ -155,7 +156,10 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
                     case UNSET -> EntityNumValue.DEFAULT.num();
                 };
 
-        return contractNum == null ? null : accountState.get(EntityNumVirtualKey.fromLong(contractNum));
+        return contractNum == null
+                ? null
+                : accountState.get(
+                        AccountID.newBuilder().accountNum(contractNum).build());
     }
 
     private static long numFromEvmAddress(final Bytes bytes) {
