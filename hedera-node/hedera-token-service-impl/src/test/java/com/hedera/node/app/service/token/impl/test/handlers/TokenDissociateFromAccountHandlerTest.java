@@ -60,7 +60,6 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenDissociateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
@@ -620,12 +619,9 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
         }
 
         private WritableAccountStore newWritableStoreWithAccounts(Account... accounts) {
-            final var backingMap = new HashMap<EntityNumVirtualKey, Account>();
+            final var backingMap = new HashMap<AccountID, Account>();
             for (final Account account : accounts) {
-                backingMap.put(
-                        EntityNumVirtualKey.fromAccountId(
-                                fromPbj(IdConvenienceUtils.fromAccountNum(account.accountNumber()))),
-                        account);
+                backingMap.put(IdConvenienceUtils.fromAccountNum(account.accountNumber()), account);
             }
 
             final var wrappingState = new MapWritableKVState<>(ACCOUNTS_KEY, backingMap);
