@@ -106,7 +106,8 @@ public record EmergencyRecoveryFile(Recovery recovery) {
      * exists
      * @throws IOException if an exception occurs reading from the file, or the file content is not properly formatted
      */
-    public static EmergencyRecoveryFile read(final Path directory, final boolean failOnMissingFields) throws IOException {
+    public static EmergencyRecoveryFile read(final Path directory, final boolean failOnMissingFields)
+            throws IOException {
         final Path fileToRead = directory.resolve(INPUT_FILENAME);
         if (!Files.exists(fileToRead)) {
             return null;
