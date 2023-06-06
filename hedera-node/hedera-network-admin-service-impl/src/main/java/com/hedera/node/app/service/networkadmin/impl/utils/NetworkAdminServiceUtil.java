@@ -27,6 +27,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * Provides utility methods for network admin operations.
  */
 public final class NetworkAdminServiceUtil {
+    private NetworkAdminServiceUtil() {
+        throw new UnsupportedOperationException("Utility class");
+    }
 
     /**
      * Function that converts Account ID to Hexed EVM address.

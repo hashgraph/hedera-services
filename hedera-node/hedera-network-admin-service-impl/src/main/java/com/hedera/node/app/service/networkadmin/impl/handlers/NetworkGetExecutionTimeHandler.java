@@ -60,13 +60,13 @@ public class NetworkGetExecutionTimeHandler extends PaidQueryHandler {
     @Override
     public void validate(@NonNull final QueryContext context) throws PreCheckException {
         requireNonNull(context);
-        throw new UnsupportedOperationException("Not supporting");
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
     public Response findResponse(@NonNull final QueryContext context, @NonNull final ResponseHeader header) {
         requireNonNull(context);
         requireNonNull(header);
-        throw new UnsupportedOperationException("Not supporting");
+        throw new UnsupportedOperationException("Not implemented");
     }
 }
