@@ -72,8 +72,7 @@ public class NetworkGetVersionInfoHandler extends PaidQueryHandler {
     public Response findResponse(@NonNull final QueryContext context, @NonNull final ResponseHeader header) {
         requireNonNull(context);
         requireNonNull(header);
-        final VersionConfig semanticVersionConfig =
-                context.configuration().getConfigData(VersionConfig.class);
+        final VersionConfig semanticVersionConfig = context.configuration().getConfigData(VersionConfig.class);
 
         final var query = context.query();
         final var op = query.networkGetVersionInfoOrThrow();

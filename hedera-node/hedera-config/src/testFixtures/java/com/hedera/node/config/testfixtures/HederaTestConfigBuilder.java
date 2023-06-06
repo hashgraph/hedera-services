@@ -90,7 +90,6 @@ public class HederaTestConfigBuilder {
                 .withConverter(new BytesConverter())
                 .withConverter(new SemanticVersionConverter())
                 .withValidator(new EmulatesMapValidator());
-
     }
 
     public HederaTestConfigBuilder withValue(@NonNull String propertyName, @NonNull String value) {
