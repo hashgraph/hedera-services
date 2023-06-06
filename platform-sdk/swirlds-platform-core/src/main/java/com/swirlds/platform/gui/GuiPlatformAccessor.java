@@ -32,8 +32,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Provides a way to access private platform objects from the GUI. Suboptimal, but necessary to preserve the current UI
@@ -43,8 +41,6 @@ import org.apache.logging.log4j.Logger;
  */
 @Deprecated(forRemoval = true)
 public final class GuiPlatformAccessor {
-
-    private static final Logger logger = LogManager.getLogger(GuiPlatformAccessor.class);
 
     private final Map<NodeId, String> aboutStrings = new ConcurrentHashMap<>();
     private final Map<NodeId, String> platformNames = new ConcurrentHashMap<>();
