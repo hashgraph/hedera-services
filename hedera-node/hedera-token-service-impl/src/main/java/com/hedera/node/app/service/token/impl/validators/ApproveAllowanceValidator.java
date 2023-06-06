@@ -24,6 +24,7 @@ import static java.util.Collections.emptyList;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenSupplyType;
+import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.Token;
@@ -122,7 +123,7 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
             // validate spender account
             final var spenderAccount = accountStore.getAccountById(spender);
             validateTrue(spenderAccount != null, INVALID_ALLOWANCE_SPENDER_ID);
-            validateTrue(isFungibleCommon(token), NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES);
+            validateTrue(token.tokenType().equals(TokenType.FUNGIBLE_COMMON), NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES);
 
             // validate token amount
             final var amount = allowance.amount();
@@ -157,7 +158,7 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
 
             final var token = tokenStore.get(tokenId);
             validateTrue(token != null, INVALID_TOKEN_ID);
-            validateFalse(isFungibleCommon(token), FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES);
+            validateFalse(token.tokenType().equals(TokenType.FUNGIBLE_COMMON), FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES);
 
             final var effectiveOwner = getEffectiveOwner(owner, payer, accountStore);
             validateTokenBasics(effectiveOwner, spender, token, tokenRelStore);
@@ -207,7 +208,8 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
         final var tokenId = TokenID.newBuilder().tokenNum(token.tokenNumber()).build();
         // ONLY reject self-approval for NFT's; else allow to match OZ ERC-20
         validateFalse(
-                !isFungibleCommon(token) && owner.accountNumber() == spender.accountNumOrThrow(),
+                !token.tokenType().equals(TokenType.FUNGIBLE_COMMON)
+                        && owner.accountNumber() == spender.accountNumOrThrow(),
                 SPENDER_ACCOUNT_SAME_AS_OWNER);
         final var relation = tokenRelStore.get(ownerId, tokenId);
         validateTrue(relation.isPresent(), TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);

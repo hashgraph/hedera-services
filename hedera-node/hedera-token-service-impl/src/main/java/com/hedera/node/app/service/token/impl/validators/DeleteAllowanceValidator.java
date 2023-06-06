@@ -18,12 +18,12 @@ package com.hedera.node.app.service.token.impl.validators;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
 import static com.hedera.node.app.service.token.impl.handlers.TokenHandlerHelper.getIfUsable;
-import static com.hedera.node.app.service.token.impl.validators.ApproveAllowanceValidator.isFungibleCommon;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.CryptoDeleteAllowanceTransactionBody;
@@ -95,7 +95,7 @@ public class DeleteAllowanceValidator extends AllowanceValidator {
             final var serialNums = allowance.serialNumbers();
 
             final Token token = getIfUsable(allowance.tokenIdOrElse(TokenID.DEFAULT), tokenStore);
-            validateFalse(isFungibleCommon(token), FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES);
+            validateFalse(token.tokenType().equals(TokenType.FUNGIBLE_COMMON), FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES);
 
             final var effectiveOwner = getEffectiveOwner(ownerId, payerAccount, accountStore);
 

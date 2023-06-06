@@ -23,7 +23,6 @@ import static java.util.Collections.emptyList;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
-import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
@@ -155,9 +154,5 @@ public class AllowanceValidator {
             validateTrue(ownerAccount != null, INVALID_ALLOWANCE_OWNER_ID);
             return ownerAccount;
         }
-    }
-
-    public static boolean isFungibleCommon(@NonNull final Token token) {
-        return token.tokenType().equals(TokenType.FUNGIBLE_COMMON);
     }
 }
