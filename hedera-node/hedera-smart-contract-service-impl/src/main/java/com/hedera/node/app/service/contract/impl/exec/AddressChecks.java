@@ -9,5 +9,6 @@ import org.hyperledger.besu.evm.worldstate.WorldUpdater;
  */
 public interface AddressChecks {
    boolean isPresent(@NonNull Address address, @NonNull WorldUpdater worldUpdater);
-   boolean isSystemContract(@NonNull Address address);
+   boolean isSystemAccount(@NonNull Address address);
+   boolean isHederaPrecompile(@NonNull Address address);
 }

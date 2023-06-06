@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class TestHelpers {
     public static Address SYSTEM_ADDRESS = Address.fromHexString(BigInteger.valueOf(750).toString(16));
     public static Address NOT_SYSTEM_ADDRESS = Address.fromHexString("0x1234576890");
+    public static Address EIP_1014_ADDRESS = Address.fromHexString("0x89abcdef89abcdef89abcdef89abcdef89abcdef");
     public static void assertSameResult(final Operation.OperationResult expected, final Operation.OperationResult actual) {
         assertEquals(expected.getHaltReason(), actual.getHaltReason());
         assertEquals(expected.getGasCost(), actual.getGasCost());

@@ -7,12 +7,17 @@ import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
 public class SystemAgnosticAddressChecks implements AddressChecks {
     @Override
-    public boolean isPresent(@NonNull Address address, @NonNull WorldUpdater worldUpdater) {
+    public boolean isPresent(@NonNull final Address address, @NonNull final WorldUpdater worldUpdater) {
         throw new AssertionError("Not implemented");
     }
 
     @Override
-    public boolean isSystemContract(@NonNull Address address) {
+    public boolean isSystemAccount(@NonNull final Address address) {
+        throw new AssertionError("Not implemented");
+    }
+
+    @Override
+    public boolean isHederaPrecompile(@NonNull final Address address) {
         throw new AssertionError("Not implemented");
     }
 }

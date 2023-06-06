@@ -3,10 +3,8 @@ package com.hedera.node.app.service.contract.impl.test.exec.operations;
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomBalanceOperation;
-import com.hedera.node.app.service.mono.utils.NonAtomicReference;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -59,7 +57,7 @@ class CustomBalanceOperationTest {
     void systemAccountBalanceHardCodedToZero() {
         setupWarmGasCost();
         given(frame.getStackItem(0)).willReturn(SYSTEM_ADDRESS);
-        given(addressChecks.isSystemContract(SYSTEM_ADDRESS)).willReturn(true);
+        given(addressChecks.isSystemAccount(SYSTEM_ADDRESS)).willReturn(true);
         final var expected = new Operation.OperationResult(3L, null);
         final var actual = subject.execute(frame, evm);
         assertSameResult(expected, actual);
