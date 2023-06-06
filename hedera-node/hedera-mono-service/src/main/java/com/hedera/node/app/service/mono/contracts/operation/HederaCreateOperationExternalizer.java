@@ -30,7 +30,6 @@ import com.hedera.node.app.service.evm.contracts.operations.CreateOperationExter
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.records.RecordsHistorian;
-import com.hedera.node.app.service.mono.records.TxnAwareRecordsHistorian;
 import com.hedera.node.app.service.mono.state.EntityCreator;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
@@ -55,19 +54,15 @@ public class HederaCreateOperationExternalizer implements CreateOperationExterna
     private final SyntheticTxnFactory syntheticTxnFactory;
     private final RecordsHistorian recordsHistorian;
 
-    private final TxnAwareRecordsHistorian txnAwareRecordsHistorian;
-
     @Inject
     public HederaCreateOperationExternalizer(
             final EntityCreator creator,
             final SyntheticTxnFactory syntheticTxnFactory,
             final RecordsHistorian recordsHistorian,
-            final TxnAwareRecordsHistorian txnAwareRecordsHistorian,
             final GlobalDynamicProperties dynamicProperties) {
         super();
         this.creator = creator;
         this.recordsHistorian = recordsHistorian;
-        this.txnAwareRecordsHistorian = txnAwareRecordsHistorian;
         this.syntheticTxnFactory = syntheticTxnFactory;
         this.dynamicProperties = dynamicProperties;
     }
@@ -174,6 +169,6 @@ public class HederaCreateOperationExternalizer implements CreateOperationExterna
     }
 
     private void updateContractNonces(ContractID contractID, Long nonce) {
-        txnAwareRecordsHistorian.setContractNonces(contractID, nonce);
+        recordsHistorian.setContractNonces(contractID, nonce);
     }
 }

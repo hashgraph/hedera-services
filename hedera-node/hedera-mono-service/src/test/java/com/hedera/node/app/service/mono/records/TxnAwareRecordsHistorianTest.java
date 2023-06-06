@@ -44,6 +44,7 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
 import com.hedera.node.app.service.mono.state.expiry.ExpiringCreations;
 import com.hedera.node.app.service.mono.state.submerkle.CurrencyAdjustments;
@@ -138,11 +139,15 @@ class TxnAwareRecordsHistorianTest {
     @Mock
     private FunctionalityThrottling handleThrottling;
 
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
+
     private TxnAwareRecordsHistorian subject;
 
     @BeforeEach
     void setUp() {
-        subject = new TxnAwareRecordsHistorian(recordCache, txnCtx, consensusTimeTracker, handleThrottling);
+        subject = new TxnAwareRecordsHistorian(
+                recordCache, txnCtx, consensusTimeTracker, dynamicProperties, handleThrottling);
         subject.setCreator(creator);
     }
 
