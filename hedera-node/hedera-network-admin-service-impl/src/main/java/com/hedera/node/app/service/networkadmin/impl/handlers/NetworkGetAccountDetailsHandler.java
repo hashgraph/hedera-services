@@ -16,12 +16,12 @@
 
 package com.hedera.node.app.service.networkadmin.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
-import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static java.util.Objects.requireNonNull;
 
@@ -110,6 +110,8 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
         if (op.hasAccountId()) {
             final var accountMetadata = accountStore.getAccountById(op.accountIdOrElse(AccountID.DEFAULT));
             mustExist(accountMetadata, INVALID_ACCOUNT_ID);
+        } else {
+            throw new PreCheckException(INVALID_ACCOUNT_ID);
         }
     }
 
@@ -133,7 +135,13 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
             final var tokenRelationStore = context.createStore(ReadableTokenRelationStore.class);
             final var optionalInfo = infoForAccount(
                     account, accountStore, tokensConfig, readableTokenStore, tokenRelationStore, ledgerConfig);
-            optionalInfo.ifPresent(responseBuilder::accountDetails);
+
+            if (optionalInfo.isEmpty()) {
+                header.copyBuilder().nodeTransactionPrecheckCode(FAIL_INVALID).build();
+                responseBuilder.header(header);
+            } else {
+                optionalInfo.ifPresent(responseBuilder::accountDetails);
+            }
         }
 
         return Response.newBuilder().accountDetails(responseBuilder).build();
@@ -161,9 +169,7 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
                     AccountID.newBuilder().accountNum(account.accountNumber()).build());
             info.contractAccountId(NetworkAdminServiceUtil.asHexedEvmAddress(accountID));
             info.deleted(account.deleted());
-            if (!isEmpty(account.key())) {
-                info.key(account.key());
-            }
+            info.key(account.key());
             info.balance(account.tinybarBalance());
             info.receiverSigRequired(account.receiverSigRequired());
             info.expirationTime(Timestamp.newBuilder().seconds(account.expiry()).build());
@@ -187,6 +193,14 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
         }
     }
 
+    /**
+     * Returns a list of token relationship for the given account.
+     * @param maxRelsPerInfoQuery the maximum number of token relationships to return
+     * @param account account to get token relationships for
+     * @param readableTokenStore the readable token store
+     * @param tokenRelationStore the token relationship store
+     * @return list of token relationships for the given account
+     */
     private static List<TokenRelationship> getTokenRelationships(
             final long maxRelsPerInfoQuery,
             Account account,
@@ -233,6 +247,11 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
         return tokenRelationshipList;
     }
 
+    /**
+     * Returns the list of granted NFT allowances for the given account.
+     * @param account the account to get granted crypto allowances for
+     * @return list of granted NFT allowances for specific account
+     */
     private static List<GrantedNftAllowance> getNftGrantedAllowancesList(final Account account) {
         if (!account.approveForAllNftAllowances().isEmpty()) {
             List<GrantedNftAllowance> nftAllowances = new ArrayList<>();
@@ -249,6 +268,11 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
         return Collections.emptyList();
     }
 
+    /**
+     * Returns the list of granted token allowances for the given account.
+     * @param account the account to get granted token allowances for
+     * @return list of granted token allowances for specific account
+     */
     private static List<GrantedTokenAllowance> getFungibleGrantedTokenAllowancesList(final Account account) {
         if (!account.tokenAllowances().isEmpty()) {
             List<GrantedTokenAllowance> tokenAllowances = new ArrayList<>();
@@ -266,6 +290,11 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
         return Collections.emptyList();
     }
 
+    /**
+     * Returns the list of granted crypto allowances for the given account.
+     * @param account the account to get granted crypto allowances for
+     * @return list of granted crypto allowances for specific account
+     */
     private static List<GrantedCryptoAllowance> getCryptoGrantedAllowancesList(final Account account) {
         if (!account.cryptoAllowances().isEmpty()) {
             List<GrantedCryptoAllowance> cryptoAllowances = new ArrayList<>();
