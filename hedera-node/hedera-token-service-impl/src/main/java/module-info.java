@@ -16,6 +16,7 @@ module com.hedera.node.app.service.token.impl {
     requires org.apache.commons.lang3;
     requires org.slf4j;
     requires tuweni.bytes;
+    requires org.jetbrains.annotations;
 
     provides com.hedera.node.app.service.token.TokenService with
             com.hedera.node.app.service.token.impl.TokenServiceImpl;

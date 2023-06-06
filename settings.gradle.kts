@@ -106,7 +106,7 @@ gitRepositories {
     // choose tag or branch of HAPI you would like to test with
     // this looks for a tag in hedera-protobufs repo
     // This version needs to match tha HAPI version below in versionCatalogs
-    tag.set("add-pbj-types-for-state")
+    tag.set("add-staking-info")
     // do not load project from repo
     autoInclude.set(false)
   }
@@ -122,7 +122,7 @@ dependencyResolutionManagement {
     // runtime.
     create("libs") {
       // The HAPI API version to use, this need to match the tag set on gitRepositories above
-      val hapiVersion = "0.40.0-blocks-state-SNAPSHOT"
+      val hapiVersion = "0.40.0-staking-SNAPSHOT"
 
       val besuNativeVersion = "0.6.1"
       val besuVersion = "23.1.2"

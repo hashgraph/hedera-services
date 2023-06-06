@@ -86,6 +86,7 @@ import org.apache.logging.log4j.Logger;
 public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
     private static final int EVM_ADDRESS_SIZE = 20;
     private static final Logger log = LogManager.getLogger(CryptoGetAccountInfoHandler.class);
+
     @Inject
     public CryptoGetAccountInfoHandler() {
         // Exists for injection
@@ -108,6 +109,7 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
     public boolean requiresNodePayment(@NonNull ResponseType responseType) {
         return responseType == ANSWER_ONLY || responseType == ANSWER_STATE_PROOF;
     }
+
     @Override
     public boolean needsAnswerOnlyCost(@NonNull ResponseType responseType) {
         return COST_ANSWER == responseType;
@@ -145,7 +147,8 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
         response.header(header);
         final var responseType = op.headerOrElse(QueryHeader.DEFAULT).responseType();
         if (header.nodeTransactionPrecheckCode() == OK && responseType != COST_ANSWER) {
-            final var optionalInfo = infoForAccount(accountId, accountStore, tokenStore, tokenRelationStore, tokensConfig, ledgerConfig);
+            final var optionalInfo =
+                    infoForAccount(accountId, accountStore, tokenStore, tokenRelationStore, tokensConfig, ledgerConfig);
             optionalInfo.ifPresent(response::accountInfo);
         }
 
@@ -187,11 +190,11 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
             info.ownedNfts(account.numberOwnedNfts());
             info.maxAutomaticTokenAssociations(account.maxAutoAssociations());
             info.ethereumNonce(account.ethereumNonce());
-//            info.proxyAccountID(); Deprecated
+            //            info.proxyAccountID(); Deprecated
             info.alias(account.alias());
             info.tokenRelationships(getTokenRelationship(tokensConfig, account, tokenStore, tokenRelationStore));
             info.stakingInfo(getStakingInfo(account));
-           return Optional.of(info.build());
+            return Optional.of(info.build());
         }
     }
 
@@ -221,7 +224,7 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
                     AccountID.newBuilder().accountNum(account.accountNumber()).build();
             tokenID = TokenID.newBuilder().tokenNum(tokenNum).build();
             tokenRelation = tokenRelationStore.get(accountID, tokenID);
-            if(tokenRelation.isPresent()) {
+            if (tokenRelation.isPresent()) {
                 token = readableTokenStore.get(tokenID);
                 if (token != null) {
                     tokenRelationship = TokenRelationship.newBuilder()
@@ -229,8 +232,8 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
                             .symbol(token.symbol())
                             .balance(tokenRelation.get().balance())
                             .decimals(token.decimals())
-                            .kycStatus(tokenRelation.get().kycGranted()? GRANTED : KYC_NOT_APPLICABLE)
-                            .freezeStatus(tokenRelation.get().frozen()? FROZEN : FREEZE_NOT_APPLICABLE)
+                            .kycStatus(tokenRelation.get().kycGranted() ? GRANTED : KYC_NOT_APPLICABLE)
+                            .freezeStatus(tokenRelation.get().frozen() ? FROZEN : FREEZE_NOT_APPLICABLE)
                             .automaticAssociation(tokenRelation.get().automaticAssociation())
                             .build();
                     ret.add(tokenRelationship);
@@ -269,7 +272,7 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
             final var keyBytes = key.ecdsaSecp256k1().toByteArray();
             if (keyBytes.length == JECDSASecp256k1Key.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH) {
                 final var evmAddress = addressRecovery.apply(keyBytes);
-                if ( evmAddress != null && evmAddress.length == EVM_ADDRESS_LEN) {
+                if (evmAddress != null && evmAddress.length == EVM_ADDRESS_LEN) {
                     return evmAddress;
                 } else {
                     // Not ever expected, since above checks should imply a valid input to the
@@ -282,9 +285,8 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
     }
 
     private StakingInfo getStakingInfo(final Account account) {
-        final var stakingInfo = StakingInfo.newBuilder()
-                .declineReward(account.declineReward())
-                .stakedToMe(account.stakedToMe());
+        final var stakingInfo =
+                StakingInfo.newBuilder().declineReward(account.declineReward()).stakedToMe(account.stakedToMe());
 
         final var stakedNum = account.stakedNumber();
         if (stakedNum < 0) {
@@ -292,16 +294,14 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
             stakingInfo.stakedNodeId(-stakedNum - 1);
             addNodeStakeMeta(stakingInfo, account);
         } else if (stakedNum > 0) {
-            stakingInfo.stakedAccountId("0.0." + stakedNum));
+            stakingInfo.stakedAccountId("0.0." + stakedNum);
         }
 
         return stakingInfo.build();
     }
 
     private void addNodeStakeMeta(
-            final StakingInfo.Builder stakingInfo,
-            final Account account,
-            final RewardCalculator rewardCalculator) {
+            final StakingInfo.Builder stakingInfo, final Account account, final RewardCalculator rewardCalculator) {
         final var startSecond = rewardCalculator.epochSecondAtStartOfPeriod(account.stakePeriodStart());
         stakingInfo.stakePeriodStart(Timestamp.newBuilder().seconds(startSecond));
         if (account.mayHavePendingReward()) {
@@ -312,4 +312,3 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
         }
     }
 }
-
