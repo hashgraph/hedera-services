@@ -50,6 +50,8 @@ public class NetworkUncheckedSubmitHandler implements TransactionHandler {
 
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
+        // this will never actually get called
+        // because preHandle will always throw
         requireNonNull(context);
         throw new HandleException(NOT_SUPPORTED);
     }
