@@ -73,13 +73,13 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
             @NonNull
             @Override
             public ReadableStates createReadableStates(@NonNull String serviceName) {
-                return serviceName == TokenService.NAME ? writableStates : null;
+                return TokenService.NAME.equals(serviceName) ? writableStates : null;
             }
 
             @NonNull
             @Override
             public WritableStates createWritableStates(@NonNull String serviceName) {
-                return serviceName == TokenService.NAME ? writableStates : null;
+                return TokenService.NAME.equals(serviceName) ? writableStates : null;
             }
         };
     }

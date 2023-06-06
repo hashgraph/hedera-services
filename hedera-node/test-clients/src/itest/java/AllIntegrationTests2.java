@@ -45,24 +45,28 @@ import org.junit.jupiter.api.TestMethodOrder;
  */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @SuppressWarnings("java:S2699")
-class AllIntegrationTests extends DockerIntegrationTestBase {
+class AllIntegrationTests2 extends DockerIntegrationTestBase {
     private static final String TEST_CONTAINER_NODE0_STREAMS = "build/network/itest/records/node_0";
+    private static final String TEST_FILTER_PROP_NAME = "itests";
 
-    @Tag("integration")
-    @Order(0)
-    @TestFactory
-    Collection<DynamicContainer> globalPrerequisiteSpecsBySuite() {
-        return Arrays.stream(SequentialSuites.globalPrerequisiteSuites())
-                .map(this::extractSpecsFromSuite)
-                .toList();
+    private final String filter;
+    private final boolean enabled;
+
+    public AllIntegrationTests2() {
+        filter = System.getProperty(TEST_FILTER_PROP_NAME, ".*");
+        enabled = System.getProperty("enable-modular-itest", "false").equals("true");
     }
 
     @Tag("integration")
     @Order(1)
     @TestFactory
     Collection<DynamicContainer> sequentialSpecsBySuite() {
-        return Arrays.stream(SequentialSuites.sequentialSuites())
-                .map(this::extractSpecsFromSuite)
+        if (enabled) {
+            return List.of();
+        }
+
+        return Arrays.stream(SequentialSuites.all())
+                .map(suite -> extractSpecsFromSuite(suite, filter))
                 .toList();
     }
 
@@ -70,6 +74,10 @@ class AllIntegrationTests extends DockerIntegrationTestBase {
     @Order(2)
     @TestFactory
     List<DynamicTest> concurrentSpecs() {
+        if (enabled) {
+            return List.of();
+        }
+
         return List.of(
                 concurrentSpecsFrom(ConcurrentSuites.all()), concurrentEthSpecsFrom(ConcurrentSuites.ethereumSuites()));
     }
@@ -78,6 +86,10 @@ class AllIntegrationTests extends DockerIntegrationTestBase {
     @Order(3)
     @TestFactory
     List<DynamicTest> logValidation() {
+        if (enabled) {
+            return List.of();
+        }
+
         return List.of(
                 hgcaaLogValidation("build/network/itest/output/node_0/hgcaa.log"),
                 queriesLogValidation("build/network/itest/output/node_0/queries.log"));
@@ -87,6 +99,10 @@ class AllIntegrationTests extends DockerIntegrationTestBase {
     @Order(4)
     @TestFactory
     List<DynamicTest> recordStreamValidation() {
+        if (enabled) {
+            return List.of();
+        }
+
         return List.of(recordStreamValidation(
                 TEST_CONTAINER_NODE0_STREAMS,
                 new BalanceReconciliationValidator(),

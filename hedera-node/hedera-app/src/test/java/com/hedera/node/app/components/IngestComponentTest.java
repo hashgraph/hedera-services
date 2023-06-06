@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.components;
 
+import static com.swirlds.common.system.status.PlatformStatus.ACTIVE;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -24,6 +25,7 @@ import static org.mockito.Mockito.when;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.DaggerHederaInjectionComponent;
 import com.hedera.node.app.HederaInjectionComponent;
+import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.context.PlatformContext;
@@ -34,7 +36,6 @@ import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.gui.SwirldsGui;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -59,21 +60,19 @@ class IngestComponentTest {
         when(platformContext.getConfiguration()).thenReturn(configuration);
         when(platform.getContext()).thenReturn(platformContext);
 
-        given(platformContext.getCryptography()).willReturn(cryptography);
-
         final var selfNodeId = new NodeId(666L);
 
         app = DaggerHederaInjectionComponent.builder()
                 .initTrigger(InitTrigger.GENESIS)
                 .platform(platform)
                 .crypto(CryptographyHolder.get())
-                .consoleCreator(SwirldsGui::createConsole)
                 .staticAccountMemo("memo")
                 .bootstrapProps(new BootstrapProperties())
+                .configuration(new ConfigProviderImpl(false))
                 .selfId(AccountID.newBuilder().accountNum(selfNodeId.id() + 3).build())
                 .initialHash(new Hash())
                 .maxSignedTxnSize(1024)
-                .genesisUsage(false)
+                .currentPlatformStatus(() -> ACTIVE)
                 .servicesRegistry(Set::of)
                 .build();
     }

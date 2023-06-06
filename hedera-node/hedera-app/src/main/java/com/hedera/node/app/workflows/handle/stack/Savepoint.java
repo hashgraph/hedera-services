@@ -91,7 +91,7 @@ public class Savepoint {
      */
     public long newEntityNum() {
         // TODO: Implement Savepoint.newEntityNum (https://github.com/hashgraph/hedera-services/issues/6701)
-        return 1L;
+        return 1000L;
     }
 
     /**
