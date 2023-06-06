@@ -653,6 +653,21 @@ class MonoTransactionDispatcherTest {
     }
 
     @Test
+    void dispatchesTokenDeleteAsExpected() {
+        final var txnBody = TransactionBody.newBuilder()
+                .tokenDeletion(TokenDeleteTransactionBody.DEFAULT)
+                .build();
+        given(handleContext.body()).willReturn(txnBody);
+        given(handleContext.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
+        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+
+        dispatcher.dispatchHandle(handleContext);
+
+        verify(writableTokenStore).commit();
+        verify(writableAccountStore).commit();
+    }
+
+    @Test
     void dispatchesCryptoCreateAsExpected() {
         final var txnBody = TransactionBody.newBuilder()
                 .cryptoCreateAccount(CryptoCreateTransactionBody.DEFAULT)

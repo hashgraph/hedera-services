@@ -93,7 +93,7 @@ import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
-import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
+import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -134,6 +134,22 @@ public class SigReqAdapterUtils {
      * @return the well-known token store
      */
     public static ReadableTokenStore wellKnownTokenStoreAt() {
+        final var wrappedState = wellKnownTokenState();
+        final var state = new StateKeyAdapter<>(wrappedState, Function.identity());
+        return new ReadableTokenStoreImpl(mockStates(Map.of(TOKENS_KEY, state)));
+    }
+
+    /**
+     * Returns the {@link WritableTokenStore} containing the "well-known" tokens that exist in a
+     * {@code SigRequirementsTest} scenario (see also {@link #wellKnownTokenStoreAt()})
+     *
+     * @return the well-known token store
+     */
+    public static WritableTokenStore wellKnownWritableTokenStoreAt() {
+        return new WritableTokenStore(mockWritableStates(Map.of(TOKENS_KEY, wellKnownTokenState())));
+    }
+
+    private static WritableKVState<EntityNum, Token> wellKnownTokenState() {
         final var source = sigReqsMockTokenStore();
         final Map<EntityNum, Token> destination = new HashMap<>();
         List.of(
@@ -148,9 +164,7 @@ public class SigReqAdapterUtils {
                         toPbj(KNOWN_TOKEN_WITH_WIPE),
                         toPbj(DELETED_TOKEN))
                 .forEach(id -> destination.put(EntityNum.fromLong(id.tokenNum()), asToken(source.get(fromPbj(id)))));
-        final var wrappedState = new MapReadableKVState<>("TOKENS", destination);
-        final var state = new StateKeyAdapter<>(wrappedState, Function.identity());
-        return new ReadableTokenStoreImpl(mockStates(Map.of(TOKENS_KEY, state)));
+        return new MapWritableKVState<>("TOKENS", destination);
     }
 
     public static WritableTokenRelationStore wellKnownTokenRelStoreAt() {

@@ -17,6 +17,12 @@
 package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_PAUSED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_WAS_DELETED;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKENS_KEY;
+import static com.hedera.node.app.service.token.impl.test.handlers.AdapterUtils.mockWritableStates;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.test.factories.scenarios.TokenDeleteScenarios.DELETE_WITH_KNOWN_TOKEN;
@@ -25,23 +31,37 @@ import static com.hedera.test.factories.scenarios.TokenDeleteScenarios.DELETE_WI
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.TokenDeleteTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.ReadableTokenStore;
+import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenDeleteHandler;
+import com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils;
 import com.hedera.node.app.service.token.impl.util.IdConvenienceUtils;
+import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import java.util.HashMap;
+import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class TokenDeleteHandlerTest extends ParityTestBase {
     private static final AccountID ACCOUNT_1339 = IdConvenienceUtils.fromAccountNum(1339);
+    private static final TokenID TOKEN_987_ID = IdConvenienceUtils.fromTokenNum(987L);
 
     private final TokenDeleteHandler subject = new TokenDeleteHandler();
 
@@ -87,6 +107,133 @@ class TokenDeleteHandlerTest extends ParityTestBase {
 
             Assertions.assertThat(context.payerKey()).isEqualTo(DEFAULT_PAYER_KT.asPbjKey());
             Assertions.assertThat(context.requiredNonPayerKeys()).isEmpty();
+        }
+    }
+
+    @Nested
+    class HandleTests extends ParityTestBase {
+        private WritableTokenStore writableTokenStore;
+
+        @Test
+        void rejectsNonexistingToken() {
+            writableTokenStore = SigReqAdapterUtils.wellKnownWritableTokenStoreAt();
+
+            final var context = mockContext();
+            final var txn = newDissociateTxn(TOKEN_987_ID);
+            given(context.body()).willReturn(txn);
+
+            Assertions.assertThatThrownBy(() -> subject.handle(context))
+                    .isInstanceOf(HandleException.class)
+                    .has(responseCode(INVALID_TOKEN_ID));
+        }
+
+        @Test
+        void rejectsDeletedToken() {
+            // Create the token store with a deleted token
+            writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
+                    .tokenNumber(TOKEN_987_ID.tokenNum())
+                    .deleted(true)
+                    .adminKey(DEFAULT_PAYER_KT.asPbjKey())
+                    .build());
+
+            // Create the context and transaction
+            final var context = mockContext();
+            final var txn = newDissociateTxn(TOKEN_987_ID);
+            given(context.body()).willReturn(txn);
+
+            Assertions.assertThatThrownBy(() -> subject.handle(context))
+                    .isInstanceOf(HandleException.class)
+                    .has(responseCode(TOKEN_WAS_DELETED));
+        }
+
+        @Test
+        void rejectsPausedToken() {
+            // Create the token store with a paused token
+            writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
+                    .tokenNumber(TOKEN_987_ID.tokenNum())
+                    .deleted(false)
+                    .paused(true)
+                    .adminKey(DEFAULT_PAYER_KT.asPbjKey())
+                    .build());
+
+            // Create the context and transaction
+            final var context = mockContext();
+            final var txn = newDissociateTxn(TOKEN_987_ID);
+            given(context.body()).willReturn(txn);
+
+            Assertions.assertThatThrownBy(() -> subject.handle(context))
+                    .isInstanceOf(HandleException.class)
+                    .has(responseCode(TOKEN_IS_PAUSED));
+        }
+
+        @Test
+        void rejectsTokenWithoutAdminKey() {
+            // Create the token store with a null admin key
+            writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
+                    .tokenNumber(TOKEN_987_ID.tokenNum())
+                    .deleted(false)
+                    .paused(false)
+                    .adminKey((Key) null) // here's the null admin key
+                    .build());
+
+            // Create the context and transaction
+            final var context = mockContext();
+            final var txn = newDissociateTxn(TOKEN_987_ID);
+            given(context.body()).willReturn(txn);
+
+            Assertions.assertThatThrownBy(() -> subject.handle(context))
+                    .isInstanceOf(HandleException.class)
+                    .has(responseCode(TOKEN_IS_IMMUTABLE));
+        }
+
+        @Test
+        void deletesValidToken() {
+            // Verify that the treasury account's treasury titles count is correct before the test
+            final var treasuryAcctId = IdConvenienceUtils.fromAccountNum(3);
+            final var treasuryAcct = writableAccountStore.get(treasuryAcctId);
+            Assertions.assertThat(treasuryAcct.numberTreasuryTitles()).isEqualTo(2);
+
+            // Create the writable token store
+            writableTokenStore = SigReqAdapterUtils.wellKnownWritableTokenStoreAt();
+
+            // Create the context and transaction
+            final var context = mockContext();
+            final var token535Id = IdConvenienceUtils.fromTokenNum(535);
+            final var txn = newDissociateTxn(token535Id);
+            given(context.body()).willReturn(txn);
+
+            // Run the subject's handle method
+            subject.handle(context);
+            // Commit the updated treasury account and deleted token, so we can retrieve and verify their values
+            writableTokenStore.commit();
+            writableAccountStore.commit();
+
+            // Verify the token was deleted
+            final var deletedToken = writableTokenStore.get(token535Id);
+            Assertions.assertThat(deletedToken.deleted()).isTrue();
+            // Verify the token treasury account's treasury titles count was updated accordingly
+            final var updatedTreasuryAcct = writableAccountStore.get(treasuryAcctId);
+            Assertions.assertThat(updatedTreasuryAcct.numberTreasuryTitles()).isEqualTo(1);
+        }
+
+        private HandleContext mockContext() {
+            final var context = mock(HandleContext.class);
+
+            given(context.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
+            given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+
+            return context;
+        }
+
+        private WritableTokenStore newWritableStoreWithTokens(Token... tokens) {
+            final var backingMap = new HashMap<EntityNum, Token>();
+            for (final Token token : tokens) {
+                backingMap.put(
+                        EntityNum.fromTokenId(fromPbj(IdConvenienceUtils.fromTokenNum(token.tokenNumber()))), token);
+            }
+
+            final var wrappingState = new MapWritableKVState<>(TOKENS_KEY, backingMap);
+            return new WritableTokenStore(mockWritableStates(Map.of(TOKENS_KEY, wrappingState)));
         }
     }
 
