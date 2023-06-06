@@ -136,7 +136,7 @@
         <MarkerFilter marker="SNAPSHOT_MANAGER"       onMatch="ACCEPT"   onMismatch="NEUTRAL"/>
         <MarkerFilter marker="STATE_TO_DISK"          onMatch="ACCEPT"   onMismatch="DENY"/>
       </Filters>
-      <!-- <AppenderRef ref="Console"/> -->
+      <AppenderRef ref="Console"/>
       <AppenderRef ref="fileLog"/>
     </Root>
 

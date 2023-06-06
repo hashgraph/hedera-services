@@ -100,8 +100,8 @@
 
   </Appenders>
   <Loggers>
-    <Root level="FATAL">
-      <!-- <AppenderRef ref="Console"/> -->
+    <Root level="INFO">
+      <AppenderRef ref="Console"/>
       <AppenderRef ref="fileLog"/>
     </Root>
 
