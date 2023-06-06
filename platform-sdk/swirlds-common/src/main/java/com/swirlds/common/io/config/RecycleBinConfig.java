@@ -40,7 +40,7 @@ public record RecycleBinConfig(@ConfigProperty(defaultValue = "swirlds-recycle-b
      * @param selfId      the ID of this node
      * @return the location where recycle bin files are stored
      */
-    public Path getRecycleBinPath(final StateConfig stateConfig, @NonNull final NodeId selfId) {
+    public Path getRecycleBinPath(@NonNull final StateConfig stateConfig, @NonNull final NodeId selfId) {
         return stateConfig.savedStateDirectory().resolve(recycleBinPath()).resolve(Long.toString(selfId.id()));
     }
 }
