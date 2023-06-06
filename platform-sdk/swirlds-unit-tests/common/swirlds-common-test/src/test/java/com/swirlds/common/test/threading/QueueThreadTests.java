@@ -17,12 +17,14 @@
 package com.swirlds.common.test.threading;
 
 import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
+import static com.swirlds.common.test.AssertionUtils.assertEventuallyEquals;
 import static com.swirlds.common.test.AssertionUtils.assertEventuallyFalse;
 import static com.swirlds.common.test.AssertionUtils.assertEventuallyTrue;
 import static com.swirlds.common.test.AssertionUtils.completeBeforeTimeout;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -48,6 +50,7 @@ import com.swirlds.common.threading.framework.ThreadSeed;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
+import com.swirlds.common.threading.framework.internal.AbstractBlockingQueue;
 import com.swirlds.common.threading.framework.internal.QueueThreadMetrics;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.config.api.Configuration;
@@ -77,8 +80,10 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -104,15 +109,21 @@ class QueueThreadTests {
     }
 
     private Metrics metrics;
+    private ScheduledExecutorService executor;
 
     @BeforeEach
     void setUp() {
         final MetricKeyRegistry registry = new MetricKeyRegistry();
-        final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+        executor = Executors.newSingleThreadScheduledExecutor();
         final MetricsFactory factory = new DefaultMetricsFactory();
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
         metrics = new DefaultMetrics(null, registry, executor, factory, metricsConfig);
+    }
+
+    @AfterEach
+    void teardown() {
+        executor.shutdown();
     }
 
     @Test
@@ -884,6 +895,48 @@ class QueueThreadTests {
         assertThat(minSizeMetric.get()).isZero();
     }
 
+    /**
+     * This queue implementation allows us to artificially cause poll() to block.
+     */
+    private static class ControllableQueue extends AbstractBlockingQueue<Integer> {
+        private final ReentrantLock pollLock = new ReentrantLock();
+        private final AtomicInteger pollBlockedCount = new AtomicInteger(0);
+
+        public ControllableQueue() {
+            super(new LinkedBlockingQueue<>());
+        }
+
+        @Override
+        public synchronized Integer poll(long timeout, TimeUnit unit) throws InterruptedException {
+            pollBlockedCount.incrementAndGet();
+            pollLock.lock();
+            pollLock.unlock();
+            pollBlockedCount.decrementAndGet();
+            return super.poll(timeout, unit);
+        }
+
+        /**
+         * Cause poll() to block forever on all threads.
+         */
+        public synchronized void blockPolling() {
+            pollLock.lock();
+        }
+
+        /**
+         * Allow poll() to proceed.
+         */
+        public void unblockPolling() {
+            pollLock.unlock();
+        }
+
+        /**
+         * Get the number of threads currently waiting to acquire the poll lock.
+         */
+        public int getPollBlockedCount() {
+            return pollBlockedCount.get();
+        }
+    }
+
     @Test
     @DisplayName("busyTimeMetricTest() Test")
     @SuppressWarnings("unchecked")
@@ -897,9 +950,11 @@ class QueueThreadTests {
         };
         final FakeTime time = new FakeTime();
 
+        final ControllableQueue queue = new ControllableQueue();
         final QueueThread<Integer> queueThread = new QueueThreadConfiguration<Integer>(getStaticThreadManager())
                 .setThreadName(THREAD_NAME)
                 .setHandler(handler)
+                .setQueue(queue)
                 .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics)
                         .setCategory(METRIC_CATEGORY)
                         .setTime(time)
@@ -920,11 +975,21 @@ class QueueThreadTests {
         handling2.release();
         // wait for handling to finish
         queueThread.waitUntilNotBusy();
+        // cause all future calls to poll() to block
+        queue.blockPolling();
+        // wait until the thread becomes blocked on poll()
+        while (queue.getPollBlockedCount() == 0) {
+            NANOSECONDS.sleep(1);
+        }
         // advance time again
         time.tick(Duration.ofSeconds(1));
+        // allow the thread to unblock from polling
+        queue.unblockPolling();
 
         // then
-        assertThat(busyTimeMetric.get()).isEqualTo(0.5);
+        assertEventuallyEquals(0.5, busyTimeMetric::get, Duration.ofSeconds(1), "busy time was not measured correctly");
+
+        queueThread.stop();
     }
 
     @Test
