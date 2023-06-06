@@ -239,6 +239,7 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
             return;
         }
 
+        metrics.startingWork();
         for (final T item : buffer) {
             handler.accept(item);
         }

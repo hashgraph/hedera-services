@@ -885,7 +885,7 @@ class QueueThreadTests {
     }
 
     @Test
-    @DisplayName("busyTimeMetricTest() Test")
+    @DisplayName("Busy Time Metric Test")
     @SuppressWarnings("unchecked")
     void busyTimeMetricTest() throws InterruptedException {
         // given
