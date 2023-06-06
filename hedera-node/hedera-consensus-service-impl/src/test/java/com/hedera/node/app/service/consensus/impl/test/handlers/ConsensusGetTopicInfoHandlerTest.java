@@ -47,9 +47,10 @@ import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusGetTopicInfoHandler;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
-import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.config.converter.BytesConverter;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -62,16 +63,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
 
     @Mock
-    private NetworkInfo networkInfo;
-
-    @Mock
     private QueryContext context;
 
     private ConsensusGetTopicInfoHandler subject;
 
     @BeforeEach
     void setUp() {
-        subject = new ConsensusGetTopicInfoHandler(networkInfo);
+        subject = new ConsensusGetTopicInfoHandler();
     }
 
     @Test
@@ -189,6 +187,10 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableTopicStore.class)).thenReturn(readableStore);
 
+        final var config =
+                new HederaTestConfigBuilder().withValue("ledger.id", "0x03").getOrCreateConfig();
+        given(context.configuration()).willReturn(config);
+
         final var response = subject.findResponse(context, responseHeader);
         final var op = response.consensusGetTopicInfoOrThrow();
         assertEquals(ResponseCodeEnum.FAIL_FEE, op.header().nodeTransactionPrecheckCode());
@@ -199,7 +201,6 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
     @DisplayName("OK response is correctly handled in findResponse")
     void getsResponseIfOkResponse() {
         givenValidTopic();
-        given(networkInfo.ledgerId()).willReturn(ledgerId);
         final var responseHeader = ResponseHeader.newBuilder()
                 .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
                 .build();
@@ -208,6 +209,10 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
         final var query = createGetTopicInfoQuery(topicEntityNum.intValue());
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableTopicStore.class)).thenReturn(readableStore);
+
+        final var config =
+                new HederaTestConfigBuilder().withValue("ledger.id", "0x03").getOrCreateConfig();
+        given(context.configuration()).willReturn(config);
 
         final var response = subject.findResponse(context, responseHeader);
         final var topicInfoResponse = response.consensusGetTopicInfoOrThrow();
@@ -225,7 +230,7 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
                 .submitKey(key)
                 .autoRenewAccount(AccountID.newBuilder().accountNum(topic.autoRenewAccountNumber()))
                 .autoRenewPeriod(WELL_KNOWN_AUTO_RENEW_PERIOD)
-                .ledgerId(ledgerId)
+                .ledgerId(new BytesConverter().convert("0x03"))
                 .build();
     }
 

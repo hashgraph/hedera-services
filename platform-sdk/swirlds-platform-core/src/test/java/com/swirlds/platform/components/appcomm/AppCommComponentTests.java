@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.state.notifications.IssListener;
 import com.swirlds.common.system.state.notifications.IssNotification;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
@@ -124,7 +125,7 @@ public class AppCommComponentTests {
         final long round = random.nextLong();
         final int numTypes = IssNotification.IssType.values().length;
         final IssNotification.IssType issType = IssNotification.IssType.values()[random.nextInt(numTypes)];
-        final Long otherNodeId = random.nextDouble() > 0.8 ? null : random.nextLong();
+        final NodeId otherNodeId = random.nextDouble() > 0.8 ? null : new NodeId(Math.abs(random.nextLong()));
 
         final AtomicInteger numInvocations = new AtomicInteger();
         final NotificationEngine notificationEngine = NotificationEngine.buildEngine(getStaticThreadManager());

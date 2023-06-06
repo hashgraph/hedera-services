@@ -58,7 +58,6 @@ import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -499,8 +498,8 @@ class HandleContextImplTest extends StateTestBase {
                 E_KEY, EGGPLANT,
                 F_KEY, FIG,
                 G_KEY, GRAPE);
-        private static final Configuration CONFIG_1 = new TestConfigBuilder().getOrCreateConfig();
-        private static final Configuration CONFIG_2 = new TestConfigBuilder().getOrCreateConfig();
+        private static final Configuration CONFIG_1 = new HederaTestConfigBuilder().getOrCreateConfig();
+        private static final Configuration CONFIG_2 = new HederaTestConfigBuilder().getOrCreateConfig();
 
         @Mock(strictness = LENIENT)
         private HederaState baseState;
