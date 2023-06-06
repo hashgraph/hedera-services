@@ -463,6 +463,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
 
         // when:
+        subject = tracked(new ServicesState());
         subject.init(platform, dualState, InitTrigger.GENESIS, null);
 
         // then:
@@ -499,6 +500,9 @@ class ServicesStateTest extends ResponsibleVMapUser {
     @Test
     void genesisInitRespectsSelectedOnDiskMapsAndConsolidatedRecords() {
         // setup:
+        // it should correspond to the default value in test/resources/bootstrap.properties
+        given(bootstrapProperties.getBooleanProperty(PropertyNames.VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB))
+                .willReturn(true);
         subject = tracked(new ServicesState(bootstrapProperties));
         given(bootstrapProperties.getBooleanProperty(PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE))
                 .willReturn(true);
@@ -535,7 +539,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
 
         // when:
         subject.init(platform, dualState, InitTrigger.GENESIS, null);
-        setAllChildren();
 
         // then:
         assertTrue(subject.uniqueTokens().isVirtual());
