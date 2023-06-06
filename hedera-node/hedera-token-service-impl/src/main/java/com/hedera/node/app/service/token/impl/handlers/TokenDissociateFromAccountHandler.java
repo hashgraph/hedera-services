@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -187,13 +188,10 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
     @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
         final TokenDissociateTransactionBody op = txn.tokenDissociateOrThrow();
-        if (!op.hasAccount()) {
-            throw new PreCheckException(INVALID_ACCOUNT_ID);
-        }
 
-        if (TokenListChecks.repeatsItself(op.tokensOrThrow())) {
-            throw new PreCheckException(TOKEN_ID_REPEATED_IN_TOKEN_LIST);
-        }
+        validateTruePreCheck(op.hasAccount(), INVALID_ACCOUNT_ID);
+
+        validateTruePreCheck(!TokenListChecks.repeatsItself(op.tokensOrThrow()), TOKEN_ID_REPEATED_IN_TOKEN_LIST);
     }
 
     /**

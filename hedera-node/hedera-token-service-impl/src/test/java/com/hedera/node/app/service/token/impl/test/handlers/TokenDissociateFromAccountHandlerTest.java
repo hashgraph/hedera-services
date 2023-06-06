@@ -43,11 +43,15 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOU
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.TransactionID;
@@ -66,11 +70,10 @@ import com.hedera.node.app.service.token.impl.handlers.TokenDissociateFromAccoun
 import com.hedera.node.app.service.token.impl.util.IdConvenienceUtils;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.config.data.AutoRenewConfig;
-import com.swirlds.config.api.Configuration;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
@@ -632,9 +635,12 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
     }
 
     private HandleContext mockContext() {
-
         final var handleContext = mock(HandleContext.class);
-        mockConfig(handleContext);
+
+        final var expiryValidator = mock(ExpiryValidator.class);
+        given(handleContext.expiryValidator()).willReturn(expiryValidator);
+        given(expiryValidator.expirationStatus(notNull(), anyBoolean(), anyLong()))
+                .willReturn(ResponseCodeEnum.OK);
 
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochMilli(0L));
 
@@ -645,16 +651,6 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
                 .thenReturn(writableTokenRelStore);
 
         return handleContext;
-    }
-
-    private void mockConfig(final HandleContext mockedContext) {
-        final var config = mock(Configuration.class);
-        lenient().when(mockedContext.configuration()).thenReturn(config);
-
-        final var autoRenewConfig = mock(AutoRenewConfig.class);
-        lenient().when(autoRenewConfig.expireAccounts()).thenReturn(true);
-        lenient().when(autoRenewConfig.expireContracts()).thenReturn(true);
-        lenient().when(config.getConfigData(AutoRenewConfig.class)).thenReturn(autoRenewConfig);
     }
 
     private TransactionBody newDissociateTxn(AccountID account, List<TokenID> tokens) {
