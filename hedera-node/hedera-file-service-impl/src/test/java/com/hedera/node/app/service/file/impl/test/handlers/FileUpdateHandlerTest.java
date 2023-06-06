@@ -141,7 +141,7 @@ class FileUpdateHandlerTest extends FileHandlerTestBase {
 
         subject.handle(handleContext);
 
-        final var newFile = writableFileState.get(fileEntityNum);
+        final var newFile = writableFileState.get(fileId);
         final var expectedKey = anotherKeys;
         assertEquals(expectedKey, newFile.keys());
     }
@@ -176,7 +176,7 @@ class FileUpdateHandlerTest extends FileHandlerTestBase {
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
         subject.handle(handleContext);
 
-        final var newFile = writableFileState.get(fileEntityNum);
+        final var newFile = writableFileState.get(fileId);
         assertEquals(newMemo, newFile.memo());
     }
 
@@ -212,7 +212,7 @@ class FileUpdateHandlerTest extends FileHandlerTestBase {
         // expect:
         subject.handle(handleContext);
 
-        final var updatedFile = writableFileState.get(fileEntityNum);
+        final var updatedFile = writableFileState.get(fileId);
         assertEquals(file.contents(), updatedFile.contents());
     }
 
@@ -228,7 +228,7 @@ class FileUpdateHandlerTest extends FileHandlerTestBase {
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
         subject.handle(handleContext);
 
-        final var newFile = writableFileState.get(fileEntityNum);
+        final var newFile = writableFileState.get(fileId);
         assertEquals(newContent, newFile.contents());
     }
 
@@ -242,7 +242,7 @@ class FileUpdateHandlerTest extends FileHandlerTestBase {
         when(handleContext.body()).thenReturn(txBody);
         subject.handle(handleContext);
 
-        final var newFile = writableFileState.get(fileEntityNum);
+        final var newFile = writableFileState.get(fileId);
         assertEquals(1_234_568L, newFile.expirationTime());
     }
 
@@ -256,7 +256,7 @@ class FileUpdateHandlerTest extends FileHandlerTestBase {
         when(handleContext.body()).thenReturn(txBody);
         subject.handle(handleContext);
 
-        final var newFile = writableFileState.get(fileEntityNum);
+        final var newFile = writableFileState.get(fileId);
         assertEquals(1_234_567L, newFile.expirationTime());
     }
 
@@ -271,7 +271,7 @@ class FileUpdateHandlerTest extends FileHandlerTestBase {
 
         subject.handle(handleContext);
 
-        final var newFile = writableFileState.get(fileEntityNum);
+        final var newFile = writableFileState.get(fileId);
         assertEquals(file, newFile);
     }
 
@@ -309,6 +309,6 @@ class FileUpdateHandlerTest extends FileHandlerTestBase {
     }
 
     private FileID wellKnownId() {
-        return FileID.newBuilder().fileNum(fileEntityNum.longValue()).build();
+        return fileId;
     }
 }

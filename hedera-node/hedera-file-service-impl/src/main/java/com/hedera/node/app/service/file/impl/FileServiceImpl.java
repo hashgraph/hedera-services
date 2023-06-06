@@ -16,12 +16,10 @@
 
 package com.hedera.node.app.service.file.impl;
 
+import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.FileService;
-import com.hedera.node.app.service.file.impl.codec.EntityNumCodec;
-import com.hedera.node.app.service.mono.state.codec.CodecFactory;
-import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
@@ -56,11 +54,7 @@ public final class FileServiceImpl implements FileService {
     }
 
     @NonNull
-    private static StateDefinition<EntityNum, File> filesDef() {
-        final var keyCodec = new EntityNumCodec();
-
-        final var valueCodec = CodecFactory.newInMemoryCodec(File.PROTOBUF::parse, File.PROTOBUF::write);
-
-        return StateDefinition.onDisk(BLOBS_KEY, keyCodec, valueCodec, Math.toIntExact(MAX_BLOBS));
+    private static StateDefinition<FileID, File> filesDef() {
+        return StateDefinition.onDisk(BLOBS_KEY, FileID.PROTOBUF, File.PROTOBUF, Math.toIntExact(MAX_BLOBS));
     }
 }

@@ -16,14 +16,13 @@
 
 plugins { id("com.hedera.hashgraph.conventions") }
 
-description = "Default Hedera NetworkAdmin Service Implementation"
+description = "Default Hedera Network Admin Service Implementation"
 
 dependencies {
     javaModuleDependencies {
         annotationProcessor(gav("dagger.compiler"))
 
         testImplementation(project(":hedera-node:node-app-service-token"))
-        testImplementation(project(":hedera-node:node-app-service-token-impl"))
         testImplementation(testFixtures(project(":hedera-node:node-config")))
         testImplementation(testFixtures(project(":hedera-node:node-app-spi")))
         testImplementation(gav("com.hedera.hashgraph.protobuf.java.api"))
