@@ -111,6 +111,7 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.queries.contract.HapiContractCallLocal;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
+import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -537,13 +538,7 @@ public class Create2OperationSuite extends HapiSuite {
                         mintToken(
                                 NFT_INFINITE_SUPPLY_TOKEN,
                                 List.of(ByteString.copyFromUtf8("a"), ByteString.copyFromUtf8("b"))),
-                        withOpContext((spec, opLog) -> {
-                            final var registry = spec.registry();
-                            ftId.set(registry.getTokenID(A_TOKEN));
-                            nftId.set(registry.getTokenID(NFT_INFINITE_SUPPLY_TOKEN));
-                            partyId.set(registry.getAccountID(PARTY));
-                            partyAlias.set(ByteString.copyFrom(asSolidityAddress(partyId.get())));
-                        }))
+                        setIdentifiers(ftId, nftId, partyId, partyAlias))
                 .when(
                         sourcing(() -> contractCallLocal(
                                         contract, GET_BYTECODE, asHeadlongAddress(factoryEvmAddress.get()), salt)
@@ -664,13 +659,7 @@ public class Create2OperationSuite extends HapiSuite {
                         mintToken(
                                 NFT_INFINITE_SUPPLY_TOKEN,
                                 List.of(ByteString.copyFromUtf8("a"), ByteString.copyFromUtf8("b"))),
-                        withOpContext((spec, opLog) -> {
-                            final var registry = spec.registry();
-                            ftId.set(registry.getTokenID(A_TOKEN));
-                            nftId.set(registry.getTokenID(NFT_INFINITE_SUPPLY_TOKEN));
-                            partyId.set(registry.getAccountID(PARTY));
-                            partyAlias.set(ByteString.copyFrom(asSolidityAddress(partyId.get())));
-                        }))
+                        setIdentifiers(ftId, nftId, partyId, partyAlias))
                 .when(
                         sourcing(() -> contractCallLocal(
                                         contract, GET_BYTECODE, asHeadlongAddress(factoryEvmAddress.get()), salt)
@@ -1374,5 +1363,19 @@ public class Create2OperationSuite extends HapiSuite {
                     assertEquals(expectedCreate2Address.get(), hexedAddress);
                 })
                 .payingWith(GENESIS);
+    }
+
+    private CustomSpecAssert setIdentifiers(
+            AtomicReference<TokenID> ftId,
+            AtomicReference<TokenID> nftId,
+            AtomicReference<AccountID> partyId,
+            AtomicReference<ByteString> partyAlias) {
+        return withOpContext((spec, opLog) -> {
+            final var registry = spec.registry();
+            ftId.set(registry.getTokenID(A_TOKEN));
+            nftId.set(registry.getTokenID(NFT_INFINITE_SUPPLY_TOKEN));
+            partyId.set(registry.getAccountID(PARTY));
+            partyAlias.set(ByteString.copyFrom(asSolidityAddress(partyId.get())));
+        });
     }
 }
