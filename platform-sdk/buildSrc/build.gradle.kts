@@ -25,7 +25,7 @@ repositories {
 
 dependencies {
     implementation("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:3.5.0.2730")
-    implementation("com.diffplug.spotless:spotless-plugin-gradle:6.15.0")
+    implementation("com.diffplug.spotless:spotless-plugin-gradle:6.19.0")
     implementation("gradle.plugin.com.google.cloud.artifactregistry:artifactregistry-gradle-plugin:2.1.5")
     implementation("com.gorylenko.gradle-git-properties:gradle-git-properties:2.4.1")
     implementation("gradle.plugin.lazy.zoo.gradle:git-data-plugin:1.2.2")

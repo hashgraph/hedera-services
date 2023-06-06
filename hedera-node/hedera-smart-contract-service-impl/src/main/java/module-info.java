@@ -8,6 +8,11 @@ module com.hedera.node.app.service.contract.impl {
     requires transitive javax.inject;
     requires com.hedera.node.app.service.mono;
     requires com.hedera.node.app.service.token;
+    requires org.hyperledger.besu.evm;
+    requires org.hyperledger.besu.datatypes;
+    requires tuweni.bytes;
+    requires tuweni.units;
+    requires com.hedera.node.config;
     requires com.hedera.pbj.runtime;
     requires com.github.spotbugs.annotations;
     requires com.swirlds.jasperdb;
@@ -19,4 +24,10 @@ module com.hedera.node.app.service.contract.impl {
             com.hedera.node.app,
             com.hedera.node.app.service.contract.impl.test;
     exports com.hedera.node.app.service.contract.impl.handlers;
+    exports com.hedera.node.app.service.contract.impl.state to
+            com.hedera.node.app.service.contract.impl.test;
+    exports com.hedera.node.app.service.contract.impl.utils to
+            com.hedera.node.app.service.contract.impl.test;
+    exports com.hedera.node.app.service.contract.impl.infra to
+            com.hedera.node.app.service.contract.impl.test;
 }
