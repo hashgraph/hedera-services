@@ -45,7 +45,7 @@ import java.util.Objects;
  *
  * @param <K>
  */
-public final class OnDiskKeySerializer<K extends Comparable<? super K>>
+public final class OnDiskKeySerializer<K>
         implements KeySerializer<OnDiskKey<K>>, SelfSerializableSupplier<OnDiskKey<K>> {
     /** This is a hint for virtual maps, but isn't actually useful. We just pick some size. */
     private static final int TYPICAL_SIZE = 256;
