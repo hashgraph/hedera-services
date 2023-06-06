@@ -23,9 +23,9 @@ import com.hedera.hapi.node.state.common.UniqueTokenId;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.spi.state.WritableKVState;
-import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import java.util.Set;
 
@@ -58,14 +58,7 @@ public class WritableNftStore extends ReadableNftStoreImpl {
      */
     public void put(@NonNull final Nft nft) {
         Objects.requireNonNull(nft);
-        nftState.put(nft.id(), Objects.requireNonNull(nft));
-    }
-
-    /**
-     * Commits the changes to the underlying data storage.
-     */
-    public void commit() {
-        ((WritableKVStateBase) nftState).commit();
+        nftState.put(nft.id(), nft);
     }
 
     /**
@@ -73,10 +66,9 @@ public class WritableNftStore extends ReadableNftStoreImpl {
      * If no such token exists, returns {@code Optional.empty()}
      * @param id - the number of the unique token id to be retrieved.
      */
-    @NonNull
+    @Nullable
     public Nft getForModify(final UniqueTokenId id) {
-        requireNonNull(id);
-        return nftState.getForModify(id);
+        return nftState.getForModify(requireNonNull(id));
     }
 
     /**
@@ -84,10 +76,9 @@ public class WritableNftStore extends ReadableNftStoreImpl {
      * If no such token exists, returns {@code Optional.empty()}
      * @param tokenId - the number of the unique token id to be retrieved.
      */
-    @NonNull
+    @Nullable
     public Nft getForModify(final TokenID tokenId, final long serialNumber) {
         requireNonNull(tokenId);
-        requireNonNull(serialNumber);
         return nftState.getForModify(UniqueTokenId.newBuilder()
                 .tokenTypeNumber(tokenId.tokenNum())
                 .serialNumber(serialNumber)

@@ -498,7 +498,6 @@ class MonoTransactionDispatcherTest {
         dispatcher.dispatchHandle(handleContext);
 
         verify(txnCtx).setCreated(PbjConverter.fromPbj(topicID));
-        verify(writableTopicStore).commit();
     }
 
     @Test
@@ -554,8 +553,6 @@ class MonoTransactionDispatcherTest {
         given(handleContext.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
 
         dispatcher.dispatchHandle(handleContext);
-
-        verify(writableTokenRelStore).commit();
     }
 
     @Test
@@ -567,8 +564,6 @@ class MonoTransactionDispatcherTest {
         given(handleContext.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
 
         dispatcher.dispatchHandle(handleContext);
-
-        verify(writableTokenRelStore).commit();
     }
 
     @Test
@@ -581,10 +576,6 @@ class MonoTransactionDispatcherTest {
         given(handleContext.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
 
         dispatcher.dispatchHandle(handleContext);
-
-        verify(writableAccountStore).commit();
-        // We don't commit anything to the token store, so no verify() here for that mock
-        verify(writableTokenRelStore).commit();
     }
 
     @Test
@@ -596,8 +587,6 @@ class MonoTransactionDispatcherTest {
         given(handleContext.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
 
         dispatcher.dispatchHandle(handleContext);
-
-        verify(writableTokenRelStore).commit();
     }
 
     @Test
@@ -609,8 +598,6 @@ class MonoTransactionDispatcherTest {
         given(handleContext.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
 
         dispatcher.dispatchHandle(handleContext);
-
-        verify(writableTokenRelStore).commit();
     }
 
     @Test
@@ -622,8 +609,6 @@ class MonoTransactionDispatcherTest {
         given(handleContext.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
 
         dispatcher.dispatchHandle(handleContext);
-
-        verify(writableTokenStore).commit();
     }
 
     @Test
@@ -635,8 +620,6 @@ class MonoTransactionDispatcherTest {
         given(handleContext.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
 
         dispatcher.dispatchHandle(handleContext);
-
-        verify(writableTokenStore).commit();
     }
 
     @Test
@@ -648,8 +631,6 @@ class MonoTransactionDispatcherTest {
         given(handleContext.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
 
         dispatcher.dispatchHandle(handleContext);
-
-        verify(writableTokenStore).commit();
     }
 
     @Test
@@ -669,7 +650,6 @@ class MonoTransactionDispatcherTest {
         dispatcher.dispatchHandle(handleContext);
 
         verify(txnCtx).setCreated(PbjConverter.fromPbj(accountID));
-        verify(writableAccountStore).commit();
     }
 
     @Test
@@ -681,8 +661,6 @@ class MonoTransactionDispatcherTest {
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
         dispatcher.dispatchHandle(handleContext);
-
-        verify(writableAccountStore).commit();
     }
 
     @Test
@@ -695,7 +673,6 @@ class MonoTransactionDispatcherTest {
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
         dispatcher.dispatchHandle(handleContext);
-        verify(writableAccountStore).commit();
     }
 
     @Test
@@ -726,7 +703,6 @@ class MonoTransactionDispatcherTest {
         assertThatThrownBy(() -> dispatcher.dispatchHandle(handleContext)).isInstanceOf(HandleException.class);
 
         verify(txnCtx, never()).setCreated(any(com.hederahashgraph.api.proto.java.AccountID.class));
-        verify(writableAccountStore, never()).commit();
     }
 
     @Test

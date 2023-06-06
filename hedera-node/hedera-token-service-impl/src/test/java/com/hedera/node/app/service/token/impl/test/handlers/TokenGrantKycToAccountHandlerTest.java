@@ -213,7 +213,6 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
                     .has(responseCode(INVALID_TOKEN_ID));
 
             verify(tokenRelStore, never()).put(any(TokenRelation.class));
-            verify(tokenRelStore, never()).commit();
         }
 
         @Test

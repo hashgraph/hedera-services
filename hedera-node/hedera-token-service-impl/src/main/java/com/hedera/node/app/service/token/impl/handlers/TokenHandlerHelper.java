@@ -16,32 +16,18 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_PAUSED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_WAS_DELETED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.TokenID;
-import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-/**
- * Class for retrieving objects in a certain context, e.g. during a {@code handler.handle(...)} call.
- * This allows compartmentalizing common validation logic without requiring store implementations to
- * throw inappropriately-contextual exceptions, and also abstracts duplicated business logic out of
- * multiple handlers.
- */
-public class ContextualRetriever {
-
-    private ContextualRetriever() {
-        throw new UnsupportedOperationException("Utility class only");
-    }
-
+public class TokenHandlerHelper {
     /**
      * Returns the token if it exists and is usable. A {@link HandleException} is thrown if the token is invalid
      *
@@ -58,9 +44,5 @@ public class ContextualRetriever {
         validateFalse(token.deleted(), TOKEN_WAS_DELETED);
         validateFalse(token.paused(), TOKEN_IS_PAUSED);
         return token;
-    }
-
-    public static boolean isFungibleCommon(@NonNull final Token token) {
-        return token.tokenType().equals(TokenType.FUNGIBLE_COMMON);
     }
 }

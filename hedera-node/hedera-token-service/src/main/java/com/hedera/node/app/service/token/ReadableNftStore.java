@@ -35,7 +35,13 @@ public interface ReadableNftStore {
      * or {@code null} if the token serial doesn't exist
      */
     @Nullable
-    Nft get(@NonNull TokenID id, long serialNumber);
+    default Nft get(@NonNull final TokenID id, final long serialNumber) {
+        final var uniqueTokenId = UniqueTokenId.newBuilder()
+                .tokenTypeNumber(id.tokenNum())
+                .serialNumber(serialNumber)
+                .build();
+        return get(uniqueTokenId);
+    }
 
     /**
      * Gets {@link Nft} data for a given {@link UniqueTokenId}.

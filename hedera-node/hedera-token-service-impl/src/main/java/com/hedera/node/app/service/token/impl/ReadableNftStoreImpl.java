@@ -18,7 +18,6 @@ package com.hedera.node.app.service.token.impl;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.common.UniqueTokenId;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.node.app.service.token.ReadableNftStore;
@@ -43,17 +42,6 @@ public class ReadableNftStoreImpl implements ReadableNftStore {
     public ReadableNftStoreImpl(@NonNull final ReadableStates states) {
         requireNonNull(states);
         this.nftState = states.get(TokenServiceImpl.NFTS_KEY);
-    }
-
-    @Override
-    @Nullable
-    public Nft get(@NonNull final TokenID id, final long serialNumber) {
-        requireNonNull(id);
-        final var tokenId = UniqueTokenId.newBuilder()
-                .tokenTypeNumber(id.tokenNum())
-                .serialNumber(serialNumber)
-                .build();
-        return getNftLeaf(tokenId);
     }
 
     @Override
