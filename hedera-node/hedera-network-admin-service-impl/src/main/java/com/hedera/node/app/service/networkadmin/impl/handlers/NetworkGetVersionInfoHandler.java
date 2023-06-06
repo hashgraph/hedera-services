@@ -27,10 +27,10 @@ import com.hedera.hapi.node.base.ResponseType;
 import com.hedera.hapi.node.network.NetworkGetVersionInfoResponse;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
-import com.hedera.node.app.service.networkadmin.impl.config.SemanticVersionConfig;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.config.data.VersionConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -72,8 +72,8 @@ public class NetworkGetVersionInfoHandler extends PaidQueryHandler {
     public Response findResponse(@NonNull final QueryContext context, @NonNull final ResponseHeader header) {
         requireNonNull(context);
         requireNonNull(header);
-        final SemanticVersionConfig semanticVersionConfig =
-                context.configuration().getConfigData(SemanticVersionConfig.class);
+        final VersionConfig semanticVersionConfig =
+                context.configuration().getConfigData(VersionConfig.class);
 
         final var query = context.query();
         final var op = query.networkGetVersionInfoOrThrow();
@@ -82,8 +82,8 @@ public class NetworkGetVersionInfoHandler extends PaidQueryHandler {
         responseBuilder.header(header);
         if (header.nodeTransactionPrecheckCode() == OK && responseType != COST_ANSWER) {
             responseBuilder
-                    .hederaServicesVersion(semanticVersionConfig.services())
-                    .hapiProtoVersion(semanticVersionConfig.hapi());
+                    .hederaServicesVersion(semanticVersionConfig.servicesVersion())
+                    .hapiProtoVersion(semanticVersionConfig.hapiVersion());
         }
 
         return Response.newBuilder().networkGetVersionInfo(responseBuilder).build();

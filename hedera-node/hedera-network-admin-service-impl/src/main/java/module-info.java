@@ -13,6 +13,7 @@ module com.hedera.node.app.service.network.admin.impl {
     requires transitive javax.inject;
     requires com.github.spotbugs.annotations;
     requires org.apache.logging.log4j;
+    requires com.hedera.node.config;
 
     provides com.hedera.node.app.service.networkadmin.FreezeService with
             FreezeServiceImpl;

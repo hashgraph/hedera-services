@@ -16,8 +16,9 @@
 
 package com.hedera.node.app.spi.state;
 
+import static com.hedera.node.app.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
+
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.node.app.spi.SemanticVersionComparator;
 import com.hedera.pbj.runtime.Codec;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
@@ -100,7 +101,7 @@ public abstract class Schema implements Comparable<Schema> {
     /** {@inheritDoc} */
     @Override
     public int compareTo(Schema o) {
-        return SemanticVersionComparator.INSTANCE.compare(this.version, o.version);
+        return SEMANTIC_VERSION_COMPARATOR.compare(this.version, o.version);
     }
 
     /** {@inheritDoc} */
