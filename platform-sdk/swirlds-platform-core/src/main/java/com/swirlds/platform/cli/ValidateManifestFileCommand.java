@@ -47,39 +47,8 @@ public class ValidateManifestFileCommand extends AbstractCommand {
 
     @Override
     public @NonNull Integer call() throws IOException {
-        final EmergencyRecoveryFile file = EmergencyRecoveryFile.read(dir);
-        if (file == null) {
-            throw new IOException("Emergency recovery file could not be read from: " + dir.toAbsolutePath());
-        }
-        validateFieldExists(file.recovery(), "recovery");
-        validateFieldExists(file.recovery().state(), "recovery->state");
-        validateFieldExists(file.recovery().state().hash(), "recovery->state->hash");
-        validateFieldExists(file.recovery().state().timestamp(), "recovery->state->timestamp");
-        validateFieldExists(file.recovery().bootstrap(), "recovery->bootstrap");
-        validateFieldExists(file.recovery().bootstrap().timestamp(), "recovery->bootstrap->timestamp");
-        validateFieldExists(file.recovery().pkg(), "recovery->package");
-        validateFieldExists(file.recovery().pkg().locations(), "recovery->package->locations");
-        if (file.recovery().pkg().locations().isEmpty()) {
-            throw new IOException(
-                    "The file should have at least one location in the recovery->package->locations field");
-        }
-        final List<Location> locations = file.recovery().pkg().locations();
-        for (int i = 0; i < locations.size(); i++) {
-            final Location location = locations.get(i);
-            validateFieldExists(location.type(), String.format("recovery->package->locations[%d]->type", i));
-            validateFieldExists(location.url(), String.format("recovery->package->locations[%d]->url", i));
-            validateFieldExists(location.hash(), String.format("recovery->package->locations[%d]->hash", i));
-        }
-        validateFieldExists(file.recovery().stream(), "recovery->stream");
-        validateFieldExists(file.recovery().stream().intervals(), "recovery->stream->intervals");
-
+        EmergencyRecoveryFile.read(dir, true);
         System.out.println("The emergency recovery file is well formed and has the necessary information.");
         return 0;
-    }
-
-    private static void validateFieldExists(final Object field, final String fieldName) throws IOException {
-        if (field == null) {
-            throw new IOException("The field " + fieldName + " is missing from the emergency recovery file.");
-        }
     }
 }

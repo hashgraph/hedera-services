@@ -101,11 +101,12 @@ public record EmergencyRecoveryFile(Recovery recovery) {
      * the file does not exist.
      *
      * @param directory the directory containing the emergency recovery file. Must exist and be readable.
+     * @param failOnMissingFields if true, throw an exception if the file is missing any fields. If false, ignore
      * @return a new record containing the emergency recovery data in the file, or null if no emergency recovery file
      * exists
      * @throws IOException if an exception occurs reading from the file, or the file content is not properly formatted
      */
-    public static EmergencyRecoveryFile read(final Path directory) throws IOException {
+    public static EmergencyRecoveryFile read(final Path directory, final boolean failOnMissingFields) throws IOException {
         final Path fileToRead = directory.resolve(INPUT_FILENAME);
         if (!Files.exists(fileToRead)) {
             return null;
@@ -113,9 +114,20 @@ public record EmergencyRecoveryFile(Recovery recovery) {
         final ObjectMapper mapper = new ObjectMapper(new YAMLFactory())
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
                 .configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true);
+        if (failOnMissingFields) {
+            mapper.configure(DeserializationFeature.FAIL_ON_MISSING_CREATOR_PROPERTIES, true);
+            mapper.configure(DeserializationFeature.FAIL_ON_NULL_CREATOR_PROPERTIES, true);
+        }
         final EmergencyRecoveryFile file = mapper.readValue(fileToRead.toFile(), EmergencyRecoveryFile.class);
         validate(file);
         return file;
+    }
+
+    /**
+     * Same as {@link #read(Path, boolean)} but with failOnMissingFields set to false.
+     */
+    public static EmergencyRecoveryFile read(final Path directory) throws IOException {
+        return read(directory, false);
     }
 
     private static void validate(final EmergencyRecoveryFile file) throws IOException {

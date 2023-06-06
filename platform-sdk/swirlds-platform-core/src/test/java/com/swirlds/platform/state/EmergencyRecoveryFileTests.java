@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.test.RandomUtils;
+import com.swirlds.platform.recovery.emergencyfile.Bootstrap;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.recovery.emergencyfile.Intervals;
 import com.swirlds.platform.recovery.emergencyfile.Location;
@@ -36,6 +37,7 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -43,6 +45,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
+
+import com.swirlds.test.framework.ResourceLoader;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
@@ -218,6 +222,18 @@ public class EmergencyRecoveryFileTests {
                 new Stream(new Intervals(2000, 5000, 900000))));
         file.write(tmpDir);
         assertDoesNotThrow(() -> EmergencyRecoveryFile.read(tmpDir), "Reading a valid file should not throw");
+    }
+
+    @Test
+    void testReadAllFields() throws URISyntaxException {
+        final Path dir = ResourceLoader.getFile("com/swirlds/platform/recovery/emergencyfile/valid/");
+        assertDoesNotThrow(() -> EmergencyRecoveryFile.read(dir, true));
+    }
+
+    @Test
+    void testFieldMissing() throws URISyntaxException {
+        final Path dir = ResourceLoader.getFile("com/swirlds/platform/recovery/emergencyfile/invalid/");
+        assertThrows(Exception.class, () -> EmergencyRecoveryFile.read(dir, true));
     }
 
     private EmergencyRecoveryFile createRecoveryFile(final Random r) {
